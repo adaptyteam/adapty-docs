@@ -139,6 +139,10 @@ const config = {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
       },
+      sidebar: {
+          autoCollapseCategories: true,
+          hideable: false,
+      }
     }),
 };
 
