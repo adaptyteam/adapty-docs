@@ -12,8 +12,7 @@ Adapty's charts provide a comprehensive view of your app's performance metrics, 
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/3b4b570-CleanShot_2023-07-10_at_17.27.102x.png" 
-    alt="Adapty Charts" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 

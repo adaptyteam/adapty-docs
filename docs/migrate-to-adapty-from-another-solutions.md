@@ -12,9 +12,11 @@ Migration has three steps:
 
 Let's quickly go through each part.
 
-> 👍 Your subscribers will migrate automatically
-> 
-> All users who have ever activated subscription will move as soon as they open a new version with Adapty SDK. The subscription status validation and premium access will be restored automatically.
+:::info
+Your subscribers will migrate automatically
+
+All users who have ever activated subscription will move as soon as they open a new version with Adapty SDK. The subscription status validation and premium access will be restored automatically.
+:::
 
 ### Installing Adapty SDK
 
@@ -43,7 +45,6 @@ When switching from a legacy system, sometimes you want two systems to work simu
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/c7d4fd0-Seamless_migrat_a.png" 
-    alt="Raw Apple events" 
     style={{ width: 'auto', border: '1px solid grey' }}
   />
 </div>

@@ -21,8 +21,7 @@ With this information, you will be able to gain insights into how your subscript
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/fd6b0af-new.gif" 
-    alt="LTV chart in Adapty analytics" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -60,8 +59,7 @@ In addition, the LTV chart can be used to compare different customer segments, a
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/cf75633-Area2.gif" 
-    alt="Filtering and grouping options for LTV chart" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 

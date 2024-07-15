@@ -51,8 +51,7 @@ We have 2 formats of date and time - American and European. You can set one of t
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png" 
-    alt="Date filtering for charts " 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -78,8 +77,7 @@ Here's how you can interpret the insights provided by the comparison feature:
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/c07addf-CleanShot_2023-07-10_at_20.59.372x.png" 
-    alt="See the comparison on a chart or just as a number" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -115,8 +113,7 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png" 
-    alt="Filtering and grouping options" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -134,8 +131,7 @@ To change the view of a chart, simply locate and select the view dropdown menu, 
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png" 
-    alt="Chart views" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -155,8 +151,7 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png" 
-    alt="Exporting chat data in .csv format" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
@@ -174,8 +169,7 @@ In the charts tab of the Analytics section, Adapty introduces a dropdown field w
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png" 
-    alt="Store commission and taxes controls" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 

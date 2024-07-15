@@ -13,9 +13,11 @@ Your migration plan will have 5 logical steps and take an average of 2 hours. 90
 5. (Optional) Ask RevenueCat support for historical data in CSV format  _(5 minutes);_
 6. (Optional) Import historical data via Adapty support _(30 minutes)_.
 
-> 👍 Your subscribers will migrate automatically
-> 
-> All users who have ever activated a subscription will instantly move to Adapty as soon as they open a new version of your app with Adapty SDK. The subscription status validation and premium access will be restored automatically.
+:::info
+Your subscribers will migrate automatically
+
+All users who have ever activated a subscription will instantly move to Adapty as soon as they open a new version of your app with Adapty SDK. The subscription status validation and premium access will be restored automatically.
+:::
 
 Before you push a new version of your app with Adapty SDK, make sure to check our [release сhecklist](https://docs.adapty.io/docs/release-checklist).
 
@@ -41,7 +43,6 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/2406d97-image.png" 
-    alt="Adapty Placement concept" 
     style={{ width: '600px', border: '1px solid grey' }}
   />
 </div>
@@ -123,9 +124,11 @@ If you're reading this, you've already:
 
 If you checked the points above, just make a test purchase in the Sandbox and then release the app.
 
-> 👍 Go through [release checklist](release-checklist)
-> 
-> Make the final check using our list to validate the existing integration or add additional features such as [attribution](attribution-integration) or [analytics](analytics-integration) integrations.
+:::info
+Go through [release checklist](release-checklist)
+
+Make the final check using our list to validate the existing integration or add additional features such as [attribution](attribution-integration) or [analytics](analytics-integration) integrations.
+:::
 
 ### (Optional) Ask RevenueCat support for historical data in CSV format
 
@@ -141,7 +144,6 @@ Ask RevenueCat about the historical data on their [support page](https://app.rev
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png" 
-    alt="Image" 
     style={{ width: 'auto', border: '1px solid grey' }}
   />
 </div>
@@ -153,8 +155,6 @@ Ask RevenueCat about the historical data on their [support page](https://app.rev
 ### Write us to import your historical data
 
 Contact us using the website messenger or just email us at [support@adapty.io](mailto:support@adapty.io) with your CSV file.
-
-
 
 ### FAQ
 

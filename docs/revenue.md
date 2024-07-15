@@ -10,8 +10,7 @@ The revenue chart displays the total revenue earned from both subscriptions and 
 <div style={{ textAlign: 'center' }}>
   <img 
     src="https://files.readme.io/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png" 
-    alt="Revenue chart" 
-    style={{ width: 'auto', border: 'none' }}
+    style={{ width: '700px', border: '1px solid grey' }}
   />
 </div>
 
