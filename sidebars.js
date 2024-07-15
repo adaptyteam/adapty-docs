@@ -19,12 +19,27 @@ const sidebars = {
   // But you can create a sidebar manually
   /*
   tutorialSidebar: [
-    'intro',
-    'hello',
+    {
+      type: 'doc',
+      id: 'what-is-adapty',
+      label: 'What is Adapty?',
+    },
     {
       type: 'category',
-      label: 'Tutorial',
-      items: ['tutorial-basics/create-a-document'],
+      label: 'Migrate to Adapty',
+      link: {
+        type: 'doc',
+        id: 'migrate-to-adapty-from-another-solutions',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'migration-from-revenuecat',
+          label: 'Migration from RevenueCat',
+        },
+      ],
     },
   ],
    */
