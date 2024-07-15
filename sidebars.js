@@ -37,6 +37,50 @@ const sidebars = {
         },
       ],
     },
+    {
+      type: 'category',
+      label: 'Analytics',
+      link: {
+        type: 'doc',
+        id: 'how-adapty-analytics-works',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'overview',
+          label: 'Analytics overview',
+        },
+        {
+          type: 'doc',
+          id: 'controls-filters-grouping-compare-proceeds',
+          label: 'Analytics controls',
+        },
+        {
+          type: 'category',
+          label: 'Analytics charts',
+          link: {
+            type: 'doc',
+            id: 'charts',
+          },
+          collapsible: true,
+          collapsed: false,
+          items: [
+            {
+              type: 'doc',
+              id: 'revenue',
+              label: 'Revenue',
+            },
+            {
+              type: 'doc',
+              id: 'ltv',
+              label: 'Lifetime Value (LTV)',
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
 
