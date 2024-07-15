@@ -33,7 +33,7 @@ const sidebars = {
         id: 'migrate-to-adapty-from-another-solutions',
       },
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',
@@ -60,7 +60,7 @@ const sidebars = {
         id: 'getting-started',
       },
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'category',
@@ -70,7 +70,7 @@ const sidebars = {
             id: 'initial_ios',
           },
           collapsible: true,
-          collapsed: false,
+          collapsed: true,
           items: [
             {
               type: 'doc',
@@ -97,7 +97,7 @@ const sidebars = {
             id: 'initial-android',
           },
           collapsible: true,
-          collapsed: false,
+          collapsed: true,
           items: [
             {
               type: 'doc',
@@ -140,7 +140,7 @@ const sidebars = {
         id: 'how-adapty-analytics-works',
       },
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',
@@ -160,7 +160,7 @@ const sidebars = {
             id: 'charts',
           },
           collapsible: true,
-          collapsed: false,
+          collapsed: true,
           items: [
             {
               type: 'doc',
