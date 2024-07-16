@@ -12,7 +12,7 @@ Make sure you've added the [products](product)  and [paywalls](paywall) in Adapt
 
 In order to display the products, you first need to query the paywall that contains them:
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PAYWALL_ID", locale: "en");
   // the requested paywall
@@ -35,7 +35,7 @@ Response:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -51,7 +51,7 @@ Every time the data is fetched from a remote server, it will be stored in the lo
 
 Next, build your paywall view using fetched products and show it to the user. Later on, when the user makes a purchase, simply call `.makePurchase()` with the product from your paywall.
 
-```swift
+```swift title="Swift"
 final product = products.first; // don't forget to check the List is not empty
 
 try {
@@ -89,7 +89,7 @@ We recommend working with `unknown` in the same way as `ineligible`
 
 If for some reason you observe `.unknown` values in the `introductoryOfferEligibility` fields when loading products for the first time, you should restart the `.getProductsForPaywall` method in special mode:
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall, fetchPolicy: AdaptyIOSProductsFetchPolicy.waitForReceiptValidation);
   // update your UI
@@ -110,7 +110,7 @@ We urge you to be very careful with this scenario, as Apple's reviewers can chec
 Adapty helps you to measure the performance of the paywalls. We automatically collect all the metrics related to purchases except for paywall views. This is because only you know when the paywall was shown to a customer.  
 Whenever you show a paywall to your user, call `.logShowPaywall(paywall)` to log the event, and it will be accumulated in the paywall metrics.
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   await adapty.logShowPaywall(paywall: paywall);
 } on AdaptyError catch (adaptyError) {
@@ -132,7 +132,7 @@ Keep in mind that if your application is offline during the first run, the `.get
 To set fallback paywalls, use `.setFallbackPaywalls` method. You should pass exactly the same payload you're getting from Adapty backend. You can copy it from Adapty Dashboard.  
 Here's an example of getting fallback paywall data from the locally stored JSON file named `fallback_paywalls`.
 
-```javascript Flutter
+```javascript title="Flutter"
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -160,7 +160,7 @@ You can also hardcode fallback paywall data or receive it from your remote serve
 
 There is a remote config available with Adapty which [can be built](https://docs.adapty.io/docs/paywall#paywall-remote-config) right through the dashboard and then used inside your app. To get such config, just access `remoteConfig` property and extract needed values.
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PAYWALL_ID");
   final String? headerText = paywall.remoteConfig?['header_text'];

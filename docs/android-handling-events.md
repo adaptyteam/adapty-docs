@@ -18,7 +18,7 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 If a user has performed some action  (`Close`, `OpenURL` or `Custom`, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 override fun onActionPerformed(action: AdaptyUI.Action, view: AdaptyPaywallView) {
     when (action) {
         AdaptyUI.Action.Close -> (view.context as? Activity)?.onBackPressed()
@@ -50,7 +50,7 @@ This method is _not_ invoked when user taps the system back button instead of th
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
 
-```kotlin Kotlin
+```kotlin title="Kotlin"
 public override fun onProductSelected(
     product: AdaptyPaywallProduct,
     view: AdaptyPaywallView,
@@ -61,7 +61,7 @@ public override fun onProductSelected(
 
 If a user initiates the purchase process, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onPurchaseStarted(
     product: AdaptyPaywallProduct,
     view: AdaptyPaywallView,
@@ -74,7 +74,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If a user initiates the purchase process but manually interrupts it afterward, the method below will be invoked. This event occurs when the `Adapty.makePurchase()` function completes with the `USER_CANCELED` error:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onPurchaseCanceled(
     product: AdaptyPaywallProduct,
     view: AdaptyPaywallView,
@@ -87,7 +87,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onPurchaseSuccess(
     profile: AdaptyProfile?,
     product: AdaptyPaywallProduct,
@@ -105,7 +105,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onPurchaseFailure(
     error: AdaptyError,
     product: AdaptyPaywallProduct,
@@ -119,7 +119,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onRestoreSuccess(
     profile: AdaptyProfile,
     view: AdaptyPaywallView,
@@ -132,7 +132,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onRestoreFailure(
     error: AdaptyError,
     view: AdaptyPaywallView,
@@ -145,7 +145,7 @@ public override fun onRestoreFailure(
 
 If you don't pass the products during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by invoking this method:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onLoadingProductsFailure(
     error: AdaptyError,
     view: AdaptyPaywallView,
@@ -158,7 +158,7 @@ If you return `true`, AdaptyUI will repeat the request in 2 seconds.
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```kotlin
+```kotlin title="Kotlin"
 public override fun onRenderingError(
     error: AdaptyError,
     view: AdaptyPaywallView,

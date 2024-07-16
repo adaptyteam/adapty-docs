@@ -6,7 +6,7 @@ metadataTitle: ""
 
 To make the purchase, you have to call `.makePurchase()` method:
 
-```swift
+```swift title="Swift"
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(profile):
@@ -31,7 +31,7 @@ Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Ada
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```swift
+```swift title="Swift"
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(profile):
@@ -60,7 +60,7 @@ Adapty signs the request according to Apple guidelines, please make sure you've 
 
 To restore purchases, you have to call `.restorePurchases()` method:
 
-```swift
+```swift title="Swift"
 Adapty.restorePurchases { [weak self] result in
     switch result {
         case let .success(profile):
@@ -79,7 +79,7 @@ Response parameters:
 
 For deferred purchases, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store `makeDeferredPurchase` and call it later if you want to hold your purchase for now. Then show the paywall to your user. To continue purchase, call `makeDeferredPurchase`.
 
-```swift
+```swift title="Swift"
 extension AppDelegate: AdaptyDelegate {
 
     func paymentQueue(shouldAddStorePaymentFor product: AdaptyDeferredProduct, defermentCompletion makeDeferredPurchase: @escaping (ResultCompletion<AdaptyProfile>?) -> Void) {
@@ -98,7 +98,7 @@ extension AppDelegate: AdaptyDelegate {
 
 Since iOS 14.0 your users can redeem Offer Codes. To allow them to do so, you can present the Offer Code redemption sheet by calling the related SDK method.
 
-```swift
+```swift title="Swift"
 Adapty.presentCodeRedemptionSheet()
 ```
 

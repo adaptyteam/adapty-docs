@@ -67,7 +67,7 @@ The Adapty Unity Plugin on iOS is initialized automatically. To make it work pro
 
 1. Manually create the `Adapty-Info.plist` file and add it to the `/Assets` folder of your Unity project. It will be automatically copied to the Xcode project during the build phase. Below is an example of how this file should be structured:
 
-```xml
+```xml title="Xml"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -95,7 +95,7 @@ The Adapty Unity Plugin on Android is automatically initialized. To ensure it wo
 
 1. Add `<meta-data` section with "AdaptyPublicSdkKey" as a direct child of the `<application` section to your project's AndroidManifest.xml file. If you don't have one, it can be easily created in **Project Settings** -> **Player** -> **Settings for Android** -> **Publishing settings** -> **Custom Main Manifest** checkbox). Here is an example:
 
-```xml
+```xml title="Xml"
 <?xml version="1.0" encoding="utf-8"?>
 <manifest ...>
     <application ...>
@@ -138,13 +138,13 @@ Configurational options:
 
 Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
 
-```csharp
+```csharp title="C#"
 using AdaptySDK;
 ```
 
 2. Subscribe to Adapty events:
 
-```csharp
+```csharp title="C#"
 using UnityEngine;
 using AdaptySDK;
 

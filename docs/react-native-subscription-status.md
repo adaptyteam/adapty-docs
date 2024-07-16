@@ -6,7 +6,7 @@ metadataTitle: ""
 
 With Adapty you don't have to hardcode product ids to check subscription status. You just have to verify that the user has an active access level. To do this, you have to call `.getProfile()` method:
 
-```typescript
+```typescript title="Typescript"
 const profile = await adapty.getProfile();
 ```
 
@@ -20,7 +20,7 @@ The `.getProfile` method provides the most up-to-date result as it always tries 
 
 Below there is a complete example of checking the user's access level.
 
-```typescript
+```typescript title="Typescript"
 const profile = adapty.getProfile();
 const isActive = profile.accessLevels["premium"]?.isActive;
 
@@ -39,7 +39,7 @@ Read more about access levels in the [Access Level](access-level) section.
 
 Whenever the user's subscription changes, Adapty will fire an event. To receive subscription updates, you can  implement `.addEventListener` with `'onLatestProfileLoad'`event. This event will also be called at the start of the application, and the cached profile will get into it:
 
-```typescript
+```typescript title="Typescript"
 adapty.addEventListener('onLatestProfileLoad', profile => {
 	// handle any changes to subscription state
 });

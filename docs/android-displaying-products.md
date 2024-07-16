@@ -12,7 +12,7 @@ Make sure you've added the [products](product)  and [paywalls](paywall) in Adapt
 
 In order to display the products, you first need to query the paywall that contains them:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.getPaywall("YOUR_PAYWALL_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -26,7 +26,7 @@ Adapty.getPaywall("YOUR_PAYWALL_ID", locale = "en") { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.getPaywall("YOUR_PAYWALL_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -54,7 +54,7 @@ Response:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -68,7 +68,7 @@ Adapty.getPaywallProducts(paywall) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.getPaywallProducts(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
@@ -88,7 +88,7 @@ Every time the data is fetched from a remote server, it will be stored in the lo
 
 Next, build your paywall view using `products` and show it to the user. Later on, when the user makes a purchase, simply call `.makePurchase()` with the product from your paywall.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -102,7 +102,7 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -127,10 +127,10 @@ Since the paywalls are configured remotely, the available products, the number o
 Adapty helps you to measure the performance of the paywalls. We automatically collect all the metrics related to purchases except for paywall views. This is because only you know when the paywall was shown to a customer.  
 Whenever you show a paywall to your user, call `.logShowPaywall(paywall)` to log the event, and it will be accumulated in the paywall metrics.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.logShowPaywall(paywall)
 ```
-```java
+```java title="Java"
 Adapty.logShowPaywall(paywall);
 ```
 
@@ -147,12 +147,12 @@ Keep in mind that if your application is offline during the first run, the `.get
 To set fallback paywalls, use `.setFallbackPaywalls` method. You should pass exactly the same payload you're getting from Adapty backend. You can copy it from Adapty Dashboard.  
 Here's an example of getting fallback paywall data from the locally stored JSON file named `fallback_paywalls`.
 
-```kotlin
+```kotlin title="Kotlin"
 val paywalls: String = //get paywalls JSON from where you stored it
 
 Adapty.setFallbackPaywalls(paywalls)
 ```
-```java
+```java title="Java"
 String paywalls = //get paywalls JSON from where you stored it
 
 Adapty.setFallbackPaywalls(paywalls);
@@ -170,7 +170,7 @@ You can also hardcode fallback paywall data or receive it from your remote serve
 
 There is a remote config available with Adapty which [can be built](https://docs.adapty.io/docs/paywall#paywall-remote-config) right through the dashboard and then used inside your app. To get such config, just access `remoteConfig` property and extract needed values.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.getPaywall("YOUR_PAYWALL_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -184,7 +184,7 @@ Adapty.getPaywall("YOUR_PAYWALL_ID") { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.getPaywall("YOUR_PAYWALL_ID", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();

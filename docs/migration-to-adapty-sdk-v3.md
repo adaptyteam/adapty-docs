@@ -26,14 +26,14 @@ Upgrade to new Paywall Builder consists of:
 
 Change your `Podfile` to fir the new Adapty SDK version:
 
-1. ```shell Podfile
+1. ```shell title="Podfile"
    pod 'Adapty', '~> 3.0.0-beta.1'
    pod 'AdaptyUI', '~> 3.0.0-beta.1'
    ```
 
 2. Run:
 
-   ```sh
+   ```sh title="Sh"
    pod install
    ```
 
@@ -41,7 +41,7 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 Activate Adapty and AdaptyUI SDK. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
-```swift
+```swift title="Swift"
 // In your AppDelegate class:
 import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
@@ -61,7 +61,7 @@ Adapty.activate(with: configurationBuilder) { error in
 // Only if you are going to use AdaptyUI
 AdaptyUI.activate()
 ```
-```swift SwiftUI
+```swift title="SwiftUI"
 import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
 

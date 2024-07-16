@@ -47,7 +47,7 @@ This guide will help you create the necessary credentials in your AWS Console.
 
 4. In the **JSON** tab, paste the following JSON and replace `adapty-s3-integration-test` with your S3 bucket name: 
 
-```json
+```json title="Json"
 {
     "Version": "2012-10-17",
     "Statement": [

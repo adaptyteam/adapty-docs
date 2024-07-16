@@ -16,7 +16,7 @@ This is not all steps required for Adapty to work, just some useful tips for int
 
 If you're using Firebase auth, this snippet may help you keep your users in sync between Firebase and Adapty. Note that it's just an example, and you should consider your app auth specifics.
 
-```swift iOS with Firebase
+```swift title="iOS with Firebase"
 import Adapty
 import Firebase
  
@@ -66,7 +66,7 @@ extension AppDelegate: AdaptyDelegate {
  
 }
 ```
-```kotlin Android with Firebase
+```kotlin title="Android with Firebase"
 class App : Application() {
 
     override fun onCreate() {

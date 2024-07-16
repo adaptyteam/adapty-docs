@@ -6,7 +6,7 @@ metadataTitle: ""
 
 With Adapty you don't have to hardcode product ids to check subscription status. You just have to verify that the user has an active access level. To do this, you have to call `.getProfile()` method:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -20,7 +20,7 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -43,7 +43,7 @@ The `.getProfile` method provides the most up-to-date result as it always tries 
 
 Below is a complete example of checking the user's access level.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -60,7 +60,7 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -87,12 +87,12 @@ Read more about access levels in the [Access Level](access-level) section.
 
 You can respond to any changes in the user's subscription by setting an optional `OnProfileUpdatedListener`. The callback will fire whenever we receive a change in profile:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to subscription state
 }
 ```
-```java
+```java title="Java"
 Adapty.setOnProfileUpdatedListener(profile -> {
     // handle any changes to subscription state
 });

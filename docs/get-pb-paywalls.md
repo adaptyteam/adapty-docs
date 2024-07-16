@@ -25,7 +25,7 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 
 To get a paywall, use the `getPaywall` method:
 
-```swift
+```swift title="Swift"
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -35,7 +35,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 import com.adapty.utils.seconds
 
 ...
@@ -53,7 +53,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
     }
 }
 ```
-```java
+```java title="Java"
 import com.adapty.utils.TimeInterval;
 
 ...
@@ -70,7 +70,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -79,7 +79,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -89,7 +89,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	const id = 'YOUR_PLACEMENT_ID';
 	const locale = 'en';
@@ -124,7 +124,7 @@ Once you've fetched the paywall, check whether it includes a `ViewConfiguration`
 
 For paywalls with `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. For cross-platform SDKs, you can directly call the `createPaywallView` method, as there is no need to manually fetch the view configuration beforehand.
 
-```swift
+```swift title="Swift"
 import Adapty
 
 guard paywall.hasViewConfiguration else {
@@ -141,7 +141,7 @@ AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 if (!paywall.hasViewConfiguration) {
   	// use your custom logic
   	return
@@ -160,7 +160,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
@@ -177,7 +177,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
 
 try {
@@ -188,7 +188,7 @@ try {
   // handle the error
 }
 ```
-```typescript React Native (TSX)
+```typescript title="React Native (TSX)"
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -201,7 +201,7 @@ if (paywall.hasViewConfiguration) {
   	//use your custom logic
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
 });

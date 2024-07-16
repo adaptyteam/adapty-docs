@@ -6,7 +6,7 @@ metadataTitle: ""
 
 To make the purchase, you have to call `.makePurchase()` method:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -22,7 +22,7 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -50,7 +50,7 @@ Make sure you've uploaded [Service Account Key File](service-account-key-file) i
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -68,7 +68,7 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -96,7 +96,7 @@ Make sure to set up [Real-time Developer Notifications (RTDN)](real-time-develop
 
 If you need a subscription to be replaced with another one, you have to call `.makePurchase()` method with additional parameter:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -112,7 +112,7 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -148,7 +148,7 @@ If you use [`DEFERRED`](https://developer.android.com/reference/com/android/bill
 
 To restore purchases, you have to call `.restorePurchases()` method:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.restorePurchases { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -162,7 +162,7 @@ Adapty.restorePurchases { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();

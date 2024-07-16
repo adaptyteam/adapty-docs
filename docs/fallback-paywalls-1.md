@@ -46,12 +46,12 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the exact
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `fallback_paywalls`.
 
-```swift
+```swift title="Swift"
 if let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") {
      Adapty.setFallbackPaywalls(fileURL: url)
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 val fallbackUri: Uri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
@@ -64,7 +64,7 @@ val fallbackUri: Uri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fallbackUri, callback)
 ```
-```java
+```java title="Java"
 Uri fallbackUri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
@@ -77,7 +77,7 @@ Uri fallbackUri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fallbackUri, callback);
 ```
-```javascript Flutter
+```javascript title="Flutter"
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -92,14 +92,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.SetFallbackPaywalls("<FALLBACK_PAYWALL_DATA>", (error) => {
     if(error != null) {
         // handle error
     }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 const fallbackPaywalls = require('./fallback_paywalls.json');
 // React Native automatically parses JSON, but we do not need that
 const fallbackString = JSON.stringify(fallbackPaywalls);

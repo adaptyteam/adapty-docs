@@ -10,16 +10,16 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-```swift
+```swift title="Swift"
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
 ```
-```java
+```java title="Java"
 Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 adapty.activate("PUBLIC_SDK_KEY", {
 	customerUserId: "YOUR_USER_ID"
 });
@@ -31,28 +31,28 @@ You may notice that there are no snippets for Flutter and Unity. Unfortunately, 
 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
-```swift
+```swift title="Swift"
 Adapty.identify("YOUR_USER_ID") { error in
     if error == nil {
         // successful identify
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.identify("YOUR_USER_ID") { error ->
     if (error == null) {
         // successful identify
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.identify("YOUR_USER_ID", error -> {
     if (error == null) {
         // successful identify
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   await Adapty().identify(customerUserId);
 } on AdaptyError catch (adaptyError) {
@@ -60,14 +60,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
     // successful identify
   }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	await adapty.identify("YOUR_USER_ID");
 	// successfully identified
@@ -92,28 +92,28 @@ It's also important to note that you should re-request all paywalls and products
 
 You can logout the user anytime by calling `.logout()` method:
 
-```swift
+```swift title="Swift"
 Adapty.logout { error in
     if error == nil {
         // successful logout
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.logout { error ->
     if (error == null) {
         // successful logout
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.logout(error -> {
     if (error == null) {
         // successful logout
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   await Adapty().logout();
 } on AdaptyError catch (adaptyError) {
@@ -121,14 +121,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.Logout((error) => {
   if(error == null) {
     // successful logout
   }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	await adapty.logout();
 	// successful logout

@@ -18,37 +18,37 @@ You can avoid local builds with EAS, configuration may vary depending on your se
 
 0.1. If you don't have EAS CLI yet, install it with following command
 
-```sh
+```sh title="Sh"
 npm install -g eas-cli
 ```
 
 0.2. Then in the root of your project install dev client to make a development build
 
-```sh
+```sh title="Sh"
 expo install expo-dev-client
 ```
 
 1. Run the installation command:
 
-```sh
+```sh title="Sh"
 expo install react-native-adapty
 ```
 
 2. iOS: Make an iOS build with EAS CLI. This command may prompt you for an additional info. You can refer to [official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) to find out more.
 
-```sh
+```sh title="Sh"
 eas build --profile development --platform ios
 ```
 
 3. Android: Make an Android with EAS CLI. This command may prompt you for an additional info. You can refer to [official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) to find out more.
 
-```sh
+```sh title="Sh"
 eas build --profile development --platform android
 ```
 
 4. Start a development server with the following command.
 
-```sh
+```sh title="Sh"
 expo start --dev-client
 ```
 
@@ -67,19 +67,19 @@ If you prefer a pure workflow. refer to following instructions:
 
 1. In your project run the installation command:
 
-```sh
+```sh title="Sh"
 yarn add react-native-adapty
 ```
 
 2. iOS: Install required pods:
 
-```sh
+```sh title="Sh"
 pod install --project-directory=ios
 ```
 
 3. Android: Update `/android/build.gradle` file. Make sure there is a `kotlin-gradle-plugin:1.8.0` dependency or newer:
 
-```groovy /android/build.gradle
+```groovy title="/android/build.gradle"
 ...
 buildscript {
   ...

@@ -86,11 +86,11 @@ It's very important to send Branch attribution data from the device to Adapty us
 
 To connect the Branch and Adapty user, make sure you provide your `customerUserId` as Branch Identity id. If you prefer not to use `customerUserId` in Branch, use `networkUserId` param in attribution method to specify the Branch user ID to attach to.
 
-```swift iOS (Swift)
+```swift title="iOS (Swift)"
 // login
 Branch.getInstance().setIdentity("YOUR_USER_ID")
 ```
-```kotlin Android (Kotlin)
+```kotlin title="Android (Kotlin)"
 // login and update attribution
 Branch.getAutoInstance(this)
     .setIdentity("YOUR_USER_ID") { referringParams, error ->
@@ -106,23 +106,23 @@ Branch.getAutoInstance(this)
 // logout
 Branch.getAutoInstance(context).logout()
 ```
-```csharp Flutter (Dart)
+```csharp title="Flutter (Dart)"
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.setIdentity('YOUR_USER_ID');
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 import branch from 'react-native-branch';
 
 branch.setIdentity('YOUR_USER_ID');
 ```
-```csharp Unity (C#)
+```csharp title="Unity (C#)"
 Branch.setIdentity("your user id");
 ```
 
 Next, pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 
-```swift iOS (Swift)
+```swift title="iOS (Swift)"
 // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
     if let data = data {
@@ -130,10 +130,10 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
     }
 }
 ```
-```kotlin Android (Kotlin)
+```kotlin title="Android (Kotlin)"
 //everything is in the above snippet for Android
 ```
-```Text Flutter (Dart)
+```Text title="Flutter (Dart)"
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.initSession().listen((data) async {
@@ -144,7 +144,7 @@ FlutterBranchSdk.initSession().listen((data) async {
     } catch (e) {}
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 import { adapty, AttributionSource } from 'react-native-adapty';
 import branch from 'react-native-branch';
 
@@ -156,7 +156,7 @@ branch.subscribe({
   },
 });
 ```
-```csharp Unity (C#)
+```csharp title="Unity (C#)"
 Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
     string attributionString = JsonUtility.ToJson(parameters);
     Adapty.UpdateAttribution(attributionString, AttributionSource.Branch, (error) => {

@@ -10,7 +10,7 @@ Adapty creates an internal profile id for every user. But if you have your authe
 
 If you have a user id during configuration, just pass it as `customerUserId` parameter to `activate` method:
 
-```typescript
+```typescript title="Typescript"
 adapty.activate("PUBLIC_SDK_KEY", {
 	customerUserId: "YOUR_USER_ID"
 });
@@ -20,7 +20,7 @@ adapty.activate("PUBLIC_SDK_KEY", {
 
 If you don't have a user id on SDK configuration, you can set it later at any time with `.identify()` method. The most common cases are after registration/authorization when the user switches from being an anonymous user to an authenticated user.
 
-```typescript
+```typescript title="Typescript"
 try {
 	await adapty.identify("YOUR_USER_ID");
 	// successfully identified
@@ -45,7 +45,7 @@ it is also quite important to re-request all paywalls and products after identif
 
 You can logout the user anytime by calling `.logout()` method:
 
-```typescript
+```typescript title="Typescript"
 try {
 	await adapty.logout();
 	// successful logout

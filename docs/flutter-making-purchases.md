@@ -6,7 +6,7 @@ metadataTitle: ""
 
 To make the purchase, you have to call `.makePurchase()` method:
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().makePurchase(product: product);
   // successful purchase
@@ -30,7 +30,7 @@ Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Ada
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['premium']?.isActive ?? false) {
@@ -58,7 +58,7 @@ Adapty signs the request according to Apple guidelines, please make sure you've 
 
 To restore purchases, you have to call `.restorePurchases()` method:
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().restorePurchases();
   // check the access level
@@ -76,7 +76,7 @@ Response parameters:
 
 Since iOS 14.0 your users can redeem Offer Codes. To allow them to do so, you can present the Offer Code redemption sheet by calling the related SDK method.
 
-```javascript Flutter
+```javascript title="Flutter"
 try {
   await Adapty().presentCodeRedemptionSheet();
 } on AdaptyError catch (adaptyError) {

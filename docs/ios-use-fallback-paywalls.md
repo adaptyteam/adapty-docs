@@ -11,7 +11,7 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `ios_fallback.json`.
 
-```swift
+```swift title="Swift"
 if let url = Bundle.main.url(forResource: "ios_fallback", withExtension: "json") {
      Adapty.setFallbackPaywalls(fileURL: url)
 

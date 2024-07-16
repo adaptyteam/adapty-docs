@@ -6,7 +6,7 @@ metadataTitle: ""
 
 If you need to control or monitor the processes that take place on the purchase screen, you need to implement the `AdaptyUIObserver` methods and register the observer before presenting any screen:
 
-```javascript Flutter
+```javascript title="Flutter"
 AdaptyUI().addObserver(this);
 ```
 
@@ -16,7 +16,7 @@ AdaptyUI().addObserver(this);
 
 If user has performed some action, this method will be invoked:
 
-```javascript Flutter
+```javascript title="Flutter"
 
 void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
   switch (action.type) {
@@ -40,7 +40,7 @@ Note that `AdaptyUIAction` has optional value property: look at this in case of 
 
 If product was selected for purchase (by user or by system), this method will be invoked.
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidSelectProduct(AdaptyUIView view, AdaptyPaywallProduct product) {
 }
 ```
@@ -49,7 +49,7 @@ void paywallViewDidSelectProduct(AdaptyUIView view, AdaptyPaywallProduct product
 
 If user initiates the purchase process, this method will be invoked.
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIView view, AdaptyPaywallProduct product) {
 }
 ```
@@ -58,7 +58,7 @@ void paywallViewDidStartPurchase(AdaptyUIView view, AdaptyPaywallProduct product
 
 If the user initiates the purchase process but manually interrupts it, this function will be called. Basically, this event occurs when the `Adapty.makePurchase()` function completes with a `.paymentCancelled` error:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidCancelPurchase(AdaptyUIView view, AdaptyPaywallProduct product) {
 }
 ```
@@ -67,7 +67,7 @@ void paywallViewDidCancelPurchase(AdaptyUIView view, AdaptyPaywallProduct produc
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyProfile profile) {
@@ -80,7 +80,7 @@ We recommend to dismiss the screen in that case.
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
@@ -91,7 +91,7 @@ void paywallViewDidFailPurchase(AdaptyUIView view,
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIView view, AdaptyProfile profile) {
 }
 ```
@@ -102,7 +102,7 @@ We recommend to dismiss the screen if the user [has](subscription-status) the re
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIView view, AdaptyError error) {
 }
 ```
@@ -113,7 +113,7 @@ void paywallViewDidFailRestore(AdaptyUIView view, AdaptyError error) {
 
 If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. In this case, this operation may fail, and AdaptyUI will report the error by invoking this method:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIView view, AdaptyIOSProductsFetchPolicy? fetchPolicy, AdaptyError error) {
 }
 ```
@@ -122,7 +122,7 @@ void paywallViewDidFailLoadingProducts(AdaptyUIView view, AdaptyIOSProductsFetch
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```javascript Flutter
+```javascript title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIView view, AdaptyError error) {
 }
 ```

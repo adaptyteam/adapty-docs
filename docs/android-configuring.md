@@ -6,7 +6,7 @@ metadataTitle: ""
 
 Add the following to your `Application` class:
 
-```kotlin
+```kotlin title="Kotlin"
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -24,7 +24,7 @@ override fun onCreate() {
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
-```java
+```java title="Java"
 @Override
 public void onCreate() {
     super.onCreate();
@@ -73,10 +73,10 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
 ```
-```java
+```java title="Java"
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 ```
 
@@ -84,12 +84,12 @@ Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.setLogHandler { level, message ->
     //handle the log
 }
 ```
-```java
+```java title="Java"
 Adapty.setLogHandler((level, message) -> {
     //handle the log
 });

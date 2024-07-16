@@ -40,7 +40,7 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event is wrapped into the following structure:
 
-```json
+```json title="Json"
 {
   "s2s": 1,
   "adid": "1c4188b31930bc7778f7cd7dc5fe093d",

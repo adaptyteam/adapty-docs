@@ -6,7 +6,7 @@ metadataTitle: ""
 
 To initialize Adapty SDK, import `adapty` and call `activate` in your _core component_ such as `App.tsx`. Preferably, place activation before the React component to make sure no other Adapty call will happen before the activation call.
 
-```typescript /src/App.tsx
+```typescript title="/src/App.tsx"
 import { adapty } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY');
@@ -18,7 +18,7 @@ const App = () => {
 
 There are a number of optional parameters, that you can pass during activation:
 
-```typescript
+```typescript title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
@@ -30,7 +30,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
   },
 });
 ```
-```javascript JavaScript
+```javascript title="JavaScript"
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
@@ -83,10 +83,10 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-```typescript
+```typescript title="Typescript"
 adapty.setLogLevel('verbose');
 ```
-```javascript
+```javascript title="Javascript"
 import { LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.VERBOSE);
@@ -98,7 +98,7 @@ For both `activate` and `setLogLevel` methods TypeScript would validate the stri
 
 If you save your stdout logs, you might want to filter Adapty logs from others. To do this you can add a prefix for all `AdaptyError` instances that would be consoled:
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.prefix = "[ADAPTY]";
@@ -106,7 +106,7 @@ AdaptyError.prefix = "[ADAPTY]";
 
 You also can handle all the raised errors from any place you like with `onError`. Errors would be thrown where expected, but also duplicated to your event listener:
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.onError = error => {
@@ -127,7 +127,7 @@ Turning `__debugDeferActivation` property on and holds `activate` call until the
 
 Thus, here is the preferred way to use it:
 
-```typescript
+```typescript title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
 });

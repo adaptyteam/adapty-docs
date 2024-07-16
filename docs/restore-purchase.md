@@ -12,7 +12,7 @@ In paywalls built with [Paywall Builder](paywall-builder-getting-started) purcha
 
 To restore a purchase if you do not use the [Paywall Builder](paywall-builder-getting-started) to customize the paywall, call `.restorePurchases()` method:
 
-```swift
+```swift title="Swift"
 Adapty.restorePurchases { [weak self] result in
     switch result {
         case let .success(profile):
@@ -24,7 +24,7 @@ Adapty.restorePurchases { [weak self] result in
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.restorePurchases { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -41,7 +41,7 @@ Adapty.restorePurchases { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -59,7 +59,7 @@ Adapty.restorePurchases(result -> {
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().restorePurchases();
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
@@ -70,7 +70,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
@@ -83,7 +83,7 @@ Adapty.RestorePurchases((profile, error) => {
   }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	const profile = await adapty.restorePurchases();
   const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;

@@ -16,7 +16,7 @@ To control or monitor processes occurring on the paywall screen within your mobi
 
 If a user performs some action (`close`, `openURL(url:)` or `custom(id:)`), the method below will be invoked. Note that this is just an example and you can implement the response to actions differently:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
 
@@ -45,7 +45,7 @@ For example, if a user taps the close button, the action `close` will occur and 
 
 If a user selects a product for purchase, this method will be invoked:
 
-```swift
+```swift title="Swift"
     func paywallController(_ controller: AdaptyPaywallController,
                            didSelectProduct product: AdaptyPaywallProduct) {
     }
@@ -55,7 +55,7 @@ If a user selects a product for purchase, this method will be invoked:
 
 If a user initiates the purchase process, this method will be invoked:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didStartPurchase product: AdaptyPaywallProduct) {
 }
@@ -65,7 +65,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 If a user initiates the purchase process but manually interrupts it, the method below will be invoked. This event occurs when the `Adapty.makePurchase()` function completes with a `.paymentCancelled` error:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didCancelPurchase product: AdaptyPaywallProduct) {
 }
@@ -75,7 +75,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didFinishPurchase product: AdaptyPaywallProduct,
                        purchasedInfo: AdaptyPurchasedInfo) {      
@@ -89,7 +89,7 @@ We recommend dismissing the paywall screen in that case.
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didFailPurchase product: AdaptyPaywallProduct,
                        error: AdaptyError) {
@@ -100,7 +100,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```swift
+```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController, 
                        didFinishRestoreWith profile: AdaptyProfile) {
 }
@@ -112,7 +112,7 @@ We recommend dismissing the screen if a the has the required `accessLevel`. Refe
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```swift
+```swift title="Swift"
 public func paywallController(_ controller: AdaptyPaywallController, 
                               didFailRestoreWith error: AdaptyError) {
 }
@@ -124,7 +124,7 @@ public func paywallController(_ controller: AdaptyPaywallController,
 
 If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
 
-```swift
+```swift title="Swift"
 public func paywallController(_ controller: AdaptyPaywallController,
                               didFailLoadingProductsWith error: AdaptyError) -> Bool {
     return true
@@ -137,7 +137,7 @@ If you return `true`, AdaptyUI will repeat the request after 2 seconds.
 
 If an error occurs during the interface rendering, it will be reported by this method:
 
-```swift
+```swift title="Swift"
 public func paywallController(_ controller: AdaptyPaywallController,
                               didFailRenderingWith error: AdaptyError) {
 }
@@ -149,7 +149,7 @@ In a normal situation, such errors should not occur, so if you come across one, 
 
 To control or monitor processes occurring on the paywall screen within your mobile app, use the `.paywall` modifier in SwiftUI:
 
-```swift
+```swift title="Swift"
 @State var paywallPresented = false
 
 var body: some View {

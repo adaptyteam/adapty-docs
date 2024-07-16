@@ -12,19 +12,19 @@ Be sure to carefully read [Release Checklist](https://docs.adapty.io/docs/releas
 
 Add Adapty to your `pubspec.yaml` file:
 
-```yaml pubspec.yaml
+```yaml title="pubspec.yaml"
 dependencies:
   adapty_flutter: ^2.9.3
 ```
 
 And then run:
 
-```bash
+```bash title="Bash"
 flutter pub get
 ```
 
 After that, you can import Adapty SDK in your application like this:
 
-```dart
+```dart title="Dart"
 import 'package:adapty_flutter/adapty_flutter.dart';
 ```

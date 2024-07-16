@@ -12,7 +12,7 @@ If you work in [Observer mode](observer-vs-full-mode), refer to the [Android - P
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-```kotlin
+```kotlin title="Kotlin"
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -40,7 +40,7 @@ In order to display the visual paywall on the device screen, you must first conf
        )
    }
 ```
-```java
+```java title="Java"
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
         viewConfiguration,
@@ -59,7 +59,7 @@ AdaptyPaywallView paywallView =
 paywallView.setEventListener(eventListener);
 paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
 ```
-```xml
+```xml title="Xml"
 <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
@@ -83,7 +83,7 @@ Request parameters:
 
 For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-```kotlin Kotlin
+```kotlin title="Kotlin"
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -106,7 +106,7 @@ paywallView.onReceiveSystemBarsInsets { insets ->
 }
 
 ```
-```java
+```java title="Java"
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;

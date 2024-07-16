@@ -175,7 +175,7 @@ For access levels to be consistent across platforms (web or mobile), you have to
 
 Figure out which ID you would like to use to identify your users. Then, access the part of your code that's initiatilizing the payment through Stripe — and add this user ID to the `metadata` object of either [Stripe Subscription](https://stripe.com/docs/api/subscriptions/object#subscription_object-metadata) (`sub_...`) or [Checkout Session](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata) object (`ses_...`) as `customer_user_id` like so:
 
-```json Stripe Metadata contents
+```json title="Stripe Metadata contents"
 {'customer_user_id': "YOUR_USER_ID"}
 ```
 

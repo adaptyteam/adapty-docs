@@ -81,16 +81,16 @@ To add a custom tag to a line:
 
 To use custom tags in your mobile app, you need to create a `tagResolver` object. This is a dictionary/map containing custom tags and the string values to replace them with when rendering the paywall in your app. Here's an example:
 
-```swift
+```swift title="Swift"
 let tagResolver = [
     "USERNAME": "John",
 ]                           
 ```
-```kotlin
+```kotlin title="Kotlin"
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
-```java
+```java title="Java"
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;

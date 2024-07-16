@@ -24,7 +24,7 @@ Follow the instructions below to use the fallback paywalls in your mobile app co
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-```typescript Current (v2.11+)
+```typescript title="Current (v2.11+)"
 //after v2.11
 const paywallsLocation = {
   ios: {
@@ -37,7 +37,7 @@ const paywallsLocation = {
 }
 await adapty.setFallbackPaywalls(paywallsLocation);
 ```
-```typescript Legacy (before v2.11)
+```typescript title="Legacy (before v2.11)"
 //Legacy (before v2.11)
 const fallbackPaywalls = Platform.select({
   ios: require('./ios_fallback.json'),

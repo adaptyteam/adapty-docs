@@ -25,38 +25,38 @@ You can streamline your development process with Expo Application Services (EAS)
 
 1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
 
-```sh
+```sh title="Sh"
 npm install -g eas-cli
 ```
 
 2. In the root of your project, install the dev client to make a development build:
 
-```sh
+```sh title="Sh"
 expo install expo-dev-client
 ```
 
 3. Run the installation command:
 
-```sh
+```sh title="Sh"
 expo install react-native-adapty
 expo install @adapty/react-native-ui
 ```
 
 4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh
+```sh title="Sh"
 eas build --profile development --platform ios
 ```
 
 4. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh
+```sh title="Sh"
 eas build --profile development --platform android
 ```
 
 5. Start a development server with the following command:
 
-```sh
+```sh title="Sh"
 expo start --dev-client
 ```
 
@@ -75,28 +75,28 @@ If you opt for a purely native approach, please consult the following instructio
 
 1. In your project, run the installation command:
 
-```sh
+```sh title="Sh"
 yarn add react-native-adapty
 yarn add @adapty/react-native-ui
 ```
 
 2. For iOS: Install required pods:
 
-```sh
+```sh title="Sh"
 pod install --project-directory=ios
 pod install --project-directory=ios/
 ```
 
    The minimal supported iOS version is 13.0. If you encounter an error during pod installation, locate this line in your`ios/Podfile` and update the minimal target. Tand update the minimum target. Afterward, you should be able to successfully execute `pod install`.
 
-```diff Podfile
+```diff title="Podfile"
 -platform :ios, min_ios_version_supported
 +platform :ios, 13.0
 ```
 
 2. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
-```groovy /android/build.gradle
+```groovy title="/android/build.gradle"
 ...
 buildscript {
   ...
@@ -112,7 +112,7 @@ buildscript {
 
 To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
 
-```typescript /src/App.tsx
+```typescript title="/src/App.tsx"
 import { adapty } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY');
@@ -124,7 +124,7 @@ const App = () => {
 
 You can pass several optional parameters during activation:
 
-```typescript
+```typescript title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
@@ -136,7 +136,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
   },
 });
 ```
-```javascript JavaScript
+```javascript title="JavaScript"
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
@@ -180,10 +180,10 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-```typescript
+```typescript title="Typescript"
 adapty.setLogLevel('verbose');
 ```
-```javascript
+```javascript title="Javascript"
 import { LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.VERBOSE);
@@ -195,7 +195,7 @@ For both `activate` and `setLogLevel` methods TypeScript validates the string yo
 
 If you're storing your standard output logs, you might wish to distinguish Adapty logs from others. You can achieve this by appending a prefix to all  `AdaptyError` instances that are logged:
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.prefix = "[ADAPTY]";
@@ -203,7 +203,7 @@ AdaptyError.prefix = "[ADAPTY]";
 
 You can also handle all raised errors from any location you prefer using `onError`. Errors will be thrown where expected, but they will also be duplicated to your event listener.
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.onError = error => {
@@ -224,7 +224,7 @@ It's important to note that **this feature is intended for development use only*
 
 Here's the recommended approach for usage:
 
-```typescript
+```typescript title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
 });

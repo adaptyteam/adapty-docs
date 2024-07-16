@@ -105,7 +105,7 @@ To enable specific events, simply toggle on the ones you require. In case multip
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes)  method. It allows Facebook to handle events if IDFA is not available.
 :::
 
-```swift iOS (Swift)
+```swift title="iOS (Swift)"
 import FacebookCore
 
 let builder = AdaptyProfileParameters.Builder()
@@ -117,7 +117,7 @@ Adapty.updateProfile(params: builder.build()) { error in
     }
 }
 ```
-```kotlin Android (Kotlin)
+```kotlin title="Android (Kotlin)"
 val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
   
@@ -127,10 +127,10 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
-```Text Flutter (Dart)
+```Text title="Flutter (Dart)"
 There is no official SDK for Flutter
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 
@@ -144,7 +144,7 @@ try {
 	// handle `AdaptyError`
 }
 ```
-```csharp Unity (C#)
+```csharp title="Unity (C#)"
 anonymousID is not available in the official SDK
 https://github.com/facebook/facebook-sdk-for-unity/issues/676
 ```

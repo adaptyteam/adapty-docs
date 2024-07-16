@@ -143,7 +143,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-```swift iOS (Swift)
+```swift title="iOS (Swift)"
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
@@ -152,7 +152,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```kotlin Android (Kotlin)
+```kotlin title="Android (Kotlin)"
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
@@ -165,7 +165,7 @@ config.setOnAttributionChangedListener { attribution ->
 }
 Adjust.onCreate(config)
 ```
-```csharp Flutter (Dart)
+```csharp title="Flutter (Dart)"
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -191,7 +191,7 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
         } catch (e) {}
       };
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
 
@@ -207,7 +207,7 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 // ...
 Adjust.create(adjustConfig);
 ```
-```csharp Unity (C#)
+```csharp title="Unity (C#)"
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
 

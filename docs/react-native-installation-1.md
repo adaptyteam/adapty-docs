@@ -23,25 +23,25 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 
 1. Add the dependency to your project
 
-```shell yarn
+```shell title="yarn"
 yarn add @adapty/react-native-ui
 ```
-```shell pnpm
+```shell title="pnpm"
 pnpm add @adapty/react-native-ui
 ```
-```shell npm
+```shell title="npm"
 npm add @adapty/react-native-ui
 ```
 
 2. (iOS target) Install pods provided by new dependency
 
-```shell
+```shell title="Shell"
 pod install --project-directory=ios/
 ```
 
 3. (iOS target) Minimal supported iOS version is 13.0, if you see an error during pod installation, find this line in your `ios/Podfile` and update the minimal target. Then you should be able to perform `pod install` successfully
 
-```diff Podfile
+```diff title="Podfile"
 -platform :ios, min_ios_version_supported
 +platform :ios, 13.0
 ```

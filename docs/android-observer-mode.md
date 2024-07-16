@@ -12,7 +12,7 @@ If you have a functioning subscription system and want to give Adapty SDK a quic
 
 At any purchase or restore in your application, you need to call .`restorePurchases()` method to record the action in Adapty.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.restorePurchases { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -25,7 +25,7 @@ Adapty.restorePurchases { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
         // successful restore
@@ -44,14 +44,14 @@ When running in Observer mode, Adapty SDK won't consume or acknowledge any purch
 
 In Observer mode, Adapty SDK doesn't know, where the purchase was made from. If you display products using our [Paywalls](paywalls) or [A/B Tests](ab-test), you can manually assign variation to the purchase. After doing this, you'll be able to see metrics in Adapty Dashboard.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.setVariationId(transactionId, variationId) { error ->
     if (error == null) {
         // success
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.setVariationId(transactionId, variationId, error -> {
     if (error == null) {
         // success

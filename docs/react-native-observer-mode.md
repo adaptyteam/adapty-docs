@@ -20,7 +20,7 @@ When running in Observer mode, Adapty SDK won't close any transactions, so make 
 
 Adapty SDK will automatically collect all transactions and will be sending subscription events. To turn on Observer mode, just add the `AdaptyObserverMode` key to `Adapty-Info.plist` and `AndroidManifest.xml`
 
-```typescript Adapty-Info.plist
+```typescript title="Adapty-Info.plist"
 adapty.activate("PUBLIC_SDK_KEY", {
 	observerMode: true,
 	customerUserId: "YOUR_USER_ID",
@@ -43,7 +43,7 @@ At any purchase or restore in your application, you need to call .`restorePurcha
 
 In Observer mode, Adapty SDK doesn't know, where the purchase was made from. If you display products using our [Paywalls](paywalls) or [A/B Tests](ab-test), you can manually assign variation to the purchase. After doing this, you'll be able to see metrics in Adapty Dashboard.
 
-```typescript TypeScript
+```typescript title="TypeScript"
 const variationId = paywall.variationId;
 
 try {

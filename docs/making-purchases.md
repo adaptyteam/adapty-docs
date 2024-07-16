@@ -24,7 +24,7 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 In paywalls built with [Paywall Builder](paywall-builder-getting-started) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
 :::
 
-```swift
+```swift title="Swift"
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -36,7 +36,7 @@ Adapty.makePurchase(product: product) { result in
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -55,7 +55,7 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
@@ -75,7 +75,7 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
@@ -86,7 +86,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
@@ -99,7 +99,7 @@ Adapty.MakePurchase(product, (profile, error) => {
   }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	const profile = await adapty.makePurchase(product);
   const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
@@ -127,7 +127,7 @@ Response parameters:
 
 Below is a complete example of making the purchase of the access level `premium`. `Premium` is the default access level, so in most cases, your code will look this way:
 
-```swift
+```swift title="Swift"
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -139,7 +139,7 @@ Adapty.makePurchase(product: product) { result in
     }
 }
 ```
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -158,7 +158,7 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
@@ -178,7 +178,7 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['premium']?.isActive ?? false) {
@@ -189,7 +189,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp Unity
+```csharp title="Unity"
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
@@ -203,7 +203,7 @@ Adapty.MakePurchase(product, (profile, error) => {
   }
 });
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 try {
 	const profile = await adapty.makePurchase(product);
 	const isSubscribed = profile?.accessLevels['premium']?.isActive;
@@ -229,7 +229,7 @@ When a user opts for a new subscription instead of renewing the current one, the
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -246,7 +246,7 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     }
 }
 ```
-```java
+```java title="Java"
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
@@ -260,13 +260,13 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     }
 });
 ```
-```javascript Flutter
+```javascript title="Flutter"
 // TODO: add example
 ```
-```csharp Unity
+```csharp title="Unity"
 // TODO: add example
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 // TODO: add example
 ```
 
@@ -287,7 +287,7 @@ You can read more about subscriptions and proration modes in the Google Develope
 
 For deferred purchases on iOS, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store `makeDeferredPurchase` and call it later if you want to hold your purchase for now. Then show the paywall to your user. To continue purchase, call `makeDeferredPurchase`.
 
-```swift
+```swift title="Swift"
 extension AppDelegate: AdaptyDelegate {
     func paymentQueue(shouldAddStorePaymentFor product: AdaptyDeferredProduct, defermentCompletion makeDeferredPurchase: @escaping (ResultCompletion<AdaptyPurchasedInfo>?) -> Void) {
         // you can store makeDeferredPurchase callback and call it later
@@ -304,10 +304,10 @@ extension AppDelegate: AdaptyDelegate {
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
-```swift
+```swift title="Swift"
 Adapty.presentCodeRedemptionSheet()
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 adapty.presentCodeRedemptionSheet();
 ```
 

@@ -6,7 +6,7 @@ metadataTitle: ""
 
 Each event is wrapped into the following structure:
 
-```json
+```json title="Json"
 {
   "store": "play_store",
   "currency": "KZT",

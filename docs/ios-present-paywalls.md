@@ -14,7 +14,7 @@ If you work in [Observer mode](observer-vs-full-mode), refer to the [iOS - Prese
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, use the method `.paywallController(for:products:viewConfiguration:delegate:)`:
 
-```swift
+```swift title="Swift"
 import Adapty
 import AdaptyUI
 
@@ -44,7 +44,7 @@ Returns:
 
 After the object has been successfully created, you can display it on the screen of the device: 
 
-```swift
+```swift title="Swift"
 present(visualPaywall, animated: true)
 ```
 
@@ -52,7 +52,7 @@ present(visualPaywall, animated: true)
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift SwiftUI
+```swift title="SwiftUI"
 @State var paywallPresented = false
 
 var body: some View {

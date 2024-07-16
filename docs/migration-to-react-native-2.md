@@ -39,7 +39,7 @@ In SDK v2 there are several changes:
 - `v2.0.0 (New)` is an example of basic and precise activations for SDK v2
 - `v1.x.x (Previous)` is an example of basic and precise activations for a latest `v1.x.x` version
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 import { adapty, LogLevel } from 'react-native-adapty';
 
@@ -53,7 +53,7 @@ await adapty.activate('MY_API_KEY', {
 	logLevel: LogLevel.VERBOSE, // ← can be replaced with a string 'verbose' too
 });
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 import { activateAdapty } from 'react-native-adapty';
 
@@ -83,7 +83,7 @@ In SDK v2 there are several new features:
 **Error prefixes**  
 In SDK v2 you can now prepend a string to all Adapty error logs. It is ok to call this before initialization and wherever you want.
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.prefix = "[ADAPTY]";
@@ -101,7 +101,7 @@ This is an example: `[ADAPTY] #2002 (notActivated): The Adapty is not activated`
 **Error hooks**  
 You can now handle all the Adapty errors from any given place with `onError` hook. It will send to a callback all the registered AdaptyErrors right after they are created
 
-```typescript
+```typescript title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.onError = error => {
@@ -112,7 +112,7 @@ AdaptyError.onError = error => {
 **Changing `logLevel` in a runtime**  
 Now you can change your `logLevel` without reinitializing the SDK.
 
-```typescript
+```typescript title="Typescript"
 import { adapty, LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.WARN); // string 'warn' would also work
@@ -141,7 +141,7 @@ In SDK v2, methods are renamed:
 - `v2.0.0 (New)` is an example of getting user profile for SDK v2
 - `v1.x.x (Previous)` is an example of getting user profile for a latest `v1.x.x` SDK version
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 await adapty.identify();
 
@@ -151,7 +151,7 @@ await adapty.updateProfile({firstName: "John", lastName: "Doe" });
 
 await adapty.logout();
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 await adapty.profile.identify();
 
@@ -184,7 +184,7 @@ If you are using JavaScript, there are several new objects that may guarantee yo
 
 Below you may find an extensive diff for every _profile_ interface:
 
-```diff Profile interfaces diff
+```diff title="Profile interfaces diff"
 // Returned from `getProfile`, `makePurchase`, `restorePurchases`
 -interface AdaptyPurchaserInfo {
 +interface AdaptyProfile {
@@ -329,11 +329,11 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can get a paywall in a new SDK v2
 - `v1.x.x (Previous)` is how you you could get a paywall and its products in SDK v1
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
 // Find your preferred paywall. For example:
@@ -350,13 +350,13 @@ In SDK v2 there are two separate methods now:
 **Fallback paywalls**  
 Previously, in SDK v1 there was `adapty.paywalls.setFallback` method. In SDK v2 it is now called `adapty.setFallbackPaywalls`.
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 await adapty.logShowPaywall();
 
 await adapty.setFallbackPaywalls(jsonStr);
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 await adapty.paywalls.logShow();
 
@@ -370,7 +370,7 @@ Below you can find all the changes introduced in v2.0.0 to `AdaptyPaywall` inter
 - `v2.0.0 (New)` is an interface representation in a new SDK v2
 - `v1.x.x (Previous)` is an interface representation in a latest `v1.x.x` version
 
-```diff Changes
+```diff title="Changes"
 interface AdaptyPaywall {
 -	abTestName?: string; // it is now required
 +	abTestName: string;
@@ -388,7 +388,7 @@ interface AdaptyPaywall {
 -	visualPaywall?: string; // Visual paywalls are not currently supported
 }
 ```
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 export interface AdaptyPaywall {
 	readonly abTestName: string;
@@ -401,7 +401,7 @@ export interface AdaptyPaywall {
 	readonly vendorProductIds?: string[];
 }
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 export interface AdaptyPaywall {
 	abTestName?: string;
@@ -434,12 +434,12 @@ Note, that you can switch tabs:
 - \`v2.0.0 (New) is how you can query products in SDK v2
 - `v1.x.x (Previous)` is how you could query products in SDK v1
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
 const products = await adapty.getPaywallProducts(paywall);
 ```
-```typescript
+```typescript title="Typescript"
 // AdaptySDK 1.x.x
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
 // Find your preferred paywall. For example:
@@ -453,7 +453,7 @@ Interfaces renamed:
 
 1. `AdaptyProductSubscriptionPeriod` → `AdaptySubscriptionPeriod`
 
-```diff
+```diff title="Diff"
 interface AdaptyProduct {
 -	currencyCode: string;
 +	currencyCode?: string;
@@ -531,7 +531,7 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can handle `introductoryOfferEligibility` in SDK v2
 - `v1.x.x (Previous)` is how you handled `introductoryOfferEligibility` in SDK v1
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 import { OfferEligibility } from 'react-native-adapty';
 // ...
@@ -544,7 +544,7 @@ switch (product.introductoryOfferEligibility) {
 		// ...
 }
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 // ...
 if (product.introductoryOfferEligibility) {
@@ -565,7 +565,7 @@ In SDK v2 we will try to request a receipt in its unavailability in advance, and
 
 On JavaScript you can import `FetchPolicy` object to validate the passing values.
 
-```typescript
+```typescript title="Typescript"
 // AdaptySDK v2.0.0
 adapty.getPaywallProducts({ios: { fetchPolicy: 'waitForReceiptValidation' }});
 ```
@@ -587,11 +587,11 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can make a purchase in SDK v2
 - `v1.x.x (Previous)` is how you could make a purchase in SDK v1
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK v2.0.0
 await adapty.makePurchase(product);
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK v1.x.x
 await adapty.purchases.makePurchase(product, { ios: { offerId: offerId }});
 ```
@@ -618,13 +618,13 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can set a `variationId` in SDK v2
 - `v1.x.x (Previous)` is how you could set a `variationId` in SDK v1
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK v2.0.0
 await adapty.setVariationId(variationId, transactionId);
 
 await adapty.restorePurchases();
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK v1.x.x
 await adapty.purchases.setVariationId(variationId, transactionId);
 
@@ -648,7 +648,7 @@ In SDK v2, there are several changes:
 - `v2.0.0 (New)` is an example of updating attribution for SDK v2
 - `v1.x.x (Previous)` is an example of updating attribution for a latest `v1.x.x` SDK version
 
-```typescript v2.0.0 (New)
+```typescript title="v2.0.0 (New)"
 // AdaptySDK 2.0.0
 import { adapty, AttributionSource } from 'react-native-adapty';
 
@@ -663,7 +663,7 @@ appsFlyer.onInstallConversionData((installData) => {
 	);
 });
 ```
-```typescript v1.x.x (Previous)
+```typescript title="v1.x.x (Previous)"
 // AdaptySDK 1.x.x
 import { adapty } from 'react-native-adapty';
 

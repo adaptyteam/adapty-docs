@@ -19,21 +19,21 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install via Gradle
 
-```groovy module-level build.gradle
+```groovy title="module-level build.gradle"
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.1'
     implementation 'io.adapty:android-ui:2.11.0'
 }
 ```
-```kotlin module-level build.gradle.kts
+```kotlin title="module-level build.gradle.kts"
 dependencies {
     ...
     implementation("io.adapty:android-sdk:2.11.1")
     implementation("io.adapty:android-ui:2.11.0")
 }
 ```
-```toml version catalog
+```toml title="version catalog"
 //libs.versions.toml
 
 [versions]
@@ -64,7 +64,7 @@ If the dependency is not being resolved, please make sure that you have `mavenCe
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
-```groovy top-level build.gradle
+```groovy title="top-level build.gradle"
 allprojects {
     repositories {
         ...
@@ -75,7 +75,7 @@ allprojects {
 
 Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
 
-```groovy settings.gradle
+```groovy title="settings.gradle"
 dependencyResolutionManagement {
     ...
     repositories {
@@ -94,7 +94,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-```kotlin
+```kotlin title="Kotlin"
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -112,7 +112,7 @@ override fun onCreate() {
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
-```java
+```java title="Java"
 @Override
 public void onCreate() {
     super.onCreate();
@@ -160,10 +160,10 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
 ```
-```java
+```java title="Java"
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 ```
 
@@ -171,12 +171,12 @@ Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```kotlin
+```kotlin title="Kotlin"
 Adapty.setLogHandler { level, message ->
     //handle the log
 }
 ```
-```java
+```java title="Java"
 Adapty.setLogHandler((level, message) -> {
     //handle the log
 });

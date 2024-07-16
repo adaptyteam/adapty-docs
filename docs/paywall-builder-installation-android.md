@@ -12,19 +12,19 @@ You can easily install the AdaptyUI SDK via Gradle.
 
 Add Adapty to your `build.gradle`:
 
-```groovy module-level build.gradle
+```groovy title="module-level build.gradle"
 dependencies {
     ...
     implementation 'io.adapty:android-ui:2.11.0'
 }
 ```
-```kotlin module-level build.gradle.kts
+```kotlin title="module-level build.gradle.kts"
 dependencies {
     ...
     implementation("io.adapty:android-ui:2.11.0")
 }
 ```
-```toml version catalog
+```toml title="version catalog"
 //libs.versions.toml
 
 [versions]

@@ -115,7 +115,7 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the`firebase_app_instance_id` to Adapty. Here you can see an example of the code which can be used to integrate Firebase SDK and Adapty SDK.
 
-```swift iOS (Swift)
+```swift title="iOS (Swift)"
 import FirebaseCore
 import FirebaseAnalytics
 
@@ -130,7 +130,7 @@ if let appInstanceId = Analytics.appInstanceID() {
     }
 }
 ```
-```kotlin Android (Kotlin)
+```kotlin title="Android (Kotlin)"
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
@@ -143,7 +143,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
     }
 }
 ```
-```java
+```java title="Java"
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
@@ -158,7 +158,7 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
     });
 });
 ```
-```java Flutter (Dart)
+```java title="Flutter (Dart)"
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -172,7 +172,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript React Native (TS)
+```typescript title="React Native (TS)"
 import analytics from '@react-native-firebase/analytics';
 import { adapty } from 'react-native-adapty';
 
@@ -186,7 +186,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp Unity (C#)
+```csharp title="Unity (C#)"
 // We suppose FirebaseAnalytics Unity Plugin is already installed
 
 Firebase.Analytics
