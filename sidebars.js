@@ -715,6 +715,94 @@ const sidebars = {
       ],
     },
     {
+          type: 'category',
+          label: 'Test and release',
+          link: {
+            type: 'doc',
+            id: 'test-and-release',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+          type: 'category',
+          label: 'Handle errors',
+          link: {
+            type: 'doc',
+            id: 'error-handling',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'ios-sdk-error-handling',
+              label: 'iOS - Handle errors',
+            },
+            {
+              type: 'doc',
+              id: 'android-sdk-error-handling',
+              label: 'Android - Handle errors',
+            },
+            {
+              type: 'doc',
+              id: 'error-handling-on-flutter-react-native-unity',
+              label: 'Flutter, React Native, Unity - Handle errors',
+            },
+          ],
+            },
+            {
+          type: 'category',
+          label: 'Test purchases',
+          link: {
+            type: 'doc',
+            id: 'testing-purchases',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+          type: 'category',
+          label: 'Test in-app purchases in Apple App Store',
+          link: {
+            type: 'doc',
+            id: 'testing-purchases-ios',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'test-purchases-in-sandbox',
+              label: 'Test in-app purchases in App Store Sandbox',
+            },
+            {
+              type: 'doc',
+              id: 'test-purchases-with-testflight',
+              label: 'Test in-app purchases with TestFlight',
+            },
+          ],
+        },
+            {
+              type: 'doc',
+              id: 'testing-on-android',
+              label: 'Test in-app purchases in Google Play Store',
+            },
+            {
+              type: 'doc',
+              id: 'validate-test-purchases',
+              label: 'Validate test purchases',
+            },
+            {
+              type: 'doc',
+              id: 'troubleshooting-test-purchases',
+              label: 'Troubleshooting test purchases',
+            },
+          ],
+        },
+          ],
+        },
+    {
       type: 'category',
       label: 'Analytics',
       link: {
