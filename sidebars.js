@@ -675,6 +675,43 @@ const sidebars = {
               id: 'localizations-and-locale-codes',
               label: 'Use localizations and locale codes',
             },
+            {
+          type: 'category',
+          label: 'API reference',
+          link: {
+            type: 'doc',
+            id: 'api-reference',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+            type: 'link',
+            label: 'iOS SDK - Public API', // The link label
+            href: 'https://swift.adapty.io/documentation/adapty/', // The external URL
+            },
+            {
+            type: 'link',
+            label: 'Android SDK - Public API', // The link label
+            href: 'https://kotlin.adapty.io/', // The external URL
+            },
+            {
+            type: 'link',
+            label: 'Flutter SDK - Public API', // The link label
+            href: 'https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html', // The external URL
+            },
+            {
+            type: 'link',
+            label: 'React Native SDK - Public API', // The link label
+            href: 'https://react-native.adapty.io/classes/adapty', // The external URL
+            },
+            {
+              type: 'doc',
+              id: 'sdk-models',
+              label: 'SDK Models',
+            },
+          ],
+        },
       ],
     },
     {
