@@ -296,6 +296,53 @@ const sidebars = {
               id: 'customize-paywall-with-remote-config',
               label: 'Design paywall with remote config',
             },
+            {
+              type: 'category',
+              label: 'Paywall localization',
+              link: {
+                type: 'doc',
+                id: 'paywall-localization',
+              },
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'add-paywall-locale-in-adapty-paywall-builder',
+                  label: 'Add paywall locale in Adapty Paywall Builder',
+                },
+                {
+                  type: 'doc',
+                  id: 'add-remote-config-locale',
+                  label: 'Add paywall locale in remote config',
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              id: 'paywall-metrics',
+              label: 'Paywall metrics',
+            },
+            {
+              type: 'doc',
+              id: 'duplicate-paywalls',
+              label: 'Duplicate paywall',
+            },
+            {
+              type: 'doc',
+              id: 'local-fallback-paywalls',
+              label: 'Download fallback paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'archive-paywalls',
+              label: 'Archive paywall',
+            },
+            {
+              type: 'doc',
+              id: 'restore-paywall',
+              label: 'Return paywall from archive',
+            },
           ],
         },
       ],
