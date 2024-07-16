@@ -345,6 +345,65 @@ const sidebars = {
             },
           ],
         },
+        {
+          type: 'category',
+          label: 'Placements',
+          link: {
+            type: 'doc',
+            id: 'placements',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'choose-meaningful-placements',
+              label: 'Choose meaningful placements',
+            },
+            {
+              type: 'doc',
+              id: 'create-placement',
+              label: 'Create placement',
+            },
+            {
+              type: 'doc',
+              id: 'edit-placement',
+              label: 'Edit placement',
+            },
+            {
+              type: 'doc',
+              id: 'delete-placement',
+              label: 'Delete placement',
+            },
+            {
+          type: 'category',
+          label: 'Audiences',
+          link: {
+            type: 'doc',
+            id: 'audience',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'add-audience-paywall-ab-test',
+              label: 'Add audience and paywall or A/B test to placement',
+            },
+            {
+              type: 'doc',
+              id: 'change-audience-priority',
+              label: 'Change audience priority in placement',
+            },
+          ],
+        },
+            {
+              type: 'doc',
+              id: 'placement-metrics',
+              label: 'Placement metrics',
+            },
+          ],
+        },
       ],
     },
     {
