@@ -123,7 +123,8 @@ const sidebars = {
               type: 'doc',
               id: 'google-play-store-connection-configuration',
               label: 'Configure Google Play Store integration',
-            },{
+            },
+            {
               type: 'doc',
               id: 'enable-real-time-developer-notifications-rtdn',
               label: 'Enable Real-time developer notifications (RTDN) in Google Play Console',
@@ -164,6 +165,136 @@ const sidebars = {
               type: 'doc',
               id: 'sdk-installation-unity',
               label: 'Unity - Adapty SDK installation & configuration',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Paywalls and products',
+      link: {
+        type: 'doc',
+        id: 'paywalls-and-products',
+      },
+      collapsible: true,
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: 'Products',
+          link: {
+            type: 'doc',
+            id: 'product',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'create-product',
+              label: 'Create product',
+            },
+            {
+              type: 'doc',
+              id: 'edit-product',
+              label: 'Edit product',
+            },
+            {
+              type: 'doc',
+              id: 'delete-product',
+              label: 'Delete product',
+            },
+            {
+              type: 'doc',
+              id: 'add-product-to-paywall',
+              label: 'Add product to paywall',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Offers',
+          link: {
+            type: 'doc',
+            id: 'offers',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'create-offer',
+              label: 'Create offer',
+            },
+            {
+              type: 'doc',
+              id: 'add-offer-to-paywall',
+              label: 'Add offer to paywall',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Paywalls',
+          link: {
+            type: 'doc',
+            id: 'paywalls',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'create-paywall',
+              label: 'Create paywall',
+            },
+            {
+              type: 'category',
+              label: 'Design paywalls with legacy Paywall Builder',
+              link: {
+                type: 'doc',
+                id: 'adapty-paywall-builder-legacy',
+              },
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'paywall-builder-templates',
+                  label: 'Paywall builder templates',
+                },
+                {
+                  type: 'doc',
+                  id: 'paywall-layout-and-products',
+                  label: 'Paywall layout and products',
+                },
+                {
+                  type: 'doc',
+                  id: 'paywall-builder-tag-variables',
+                  label: 'Tag variables for product info in Paywall builder',
+                },
+                {
+                  type: 'doc',
+                  id: 'paywall-texts-and-buttons',
+                  label: 'Paywall texts and buttons',
+                },
+                {
+                  type: 'doc',
+                  id: 'using-custom-fonts-in-paywall-builder',
+                  label: 'Custom fonts in paywall builder',
+                },
+                {
+                  type: 'doc',
+                  id: 'custom-tags-in-paywall-builder',
+                  label: 'Custom tags in paywall builder',
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              id: 'customize-paywall-with-remote-config',
+              label: 'Design paywall with remote config',
             },
           ],
         },
