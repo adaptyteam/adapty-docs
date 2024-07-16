@@ -440,6 +440,151 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'SDK',
+      link: {
+        type: 'doc',
+        id: 'SDK',
+      },
+      collapsible: true,
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: 'Installation of Adapty SDKs',
+          link: {
+            type: 'doc',
+            id: 'installation-of-adapty-sdks',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'sdk-installation-ios',
+              label: 'iOS - Adapty SDK installation & configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-android',
+              label: 'Android - Adapty SDK Installation and configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-flutter',
+              label: 'Flutter - Adapty SDK Installation and configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-reactnative',
+              label: 'React Native - Adapty SDK installation & configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-unity',
+              label: 'Unity - Adapty SDK installation & configuration',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Display paywalls designed with Paywall Builder',
+          link: {
+            type: 'doc',
+            id: 'display-pb-paywalls',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'get-pb-paywalls',
+              label: 'Fetch Paywall Builder paywalls and their configuration',
+            },
+            {
+          type: 'category',
+          label: 'Present Paywall Builder paywalls',
+          link: {
+            type: 'doc',
+            id: 'present-pb-paywalls',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'ios-present-paywalls',
+              label: 'iOS - Present Paywall Builder paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'android-present-paywalls',
+              label: 'Android - Present Paywall Builder paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'flutter-present-paywalls',
+              label: 'Flutter - Present Paywall Builder paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'react-native-present-paywalls',
+              label: 'React Native - Present Paywall Builder paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'unity-present-paywalls',
+              label: 'Unity - Present Paywall Builder paywalls',
+            },
+          ],
+        },
+            {
+              type: 'doc',
+              id: 'hide-paywall-builder-paywalls',
+              label: 'Hide Paywall Builder paywalls (on cross-platform SDKs)',
+            },
+            {
+          type: 'category',
+          label: 'Handle paywall events',
+          link: {
+            type: 'doc',
+            id: 'handling-pb-paywall-events',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'ios-handling-events',
+              label: 'iOS - Handle paywall events',
+            },
+            {
+              type: 'doc',
+              id: 'android-handling-events',
+              label: 'Android - Handle paywall events',
+            },
+            {
+              type: 'doc',
+              id: 'flutter-handling-events',
+              label: 'Flutter - Handle paywall events',
+            },
+            {
+              type: 'doc',
+              id: 'react-native-handling-events-1',
+              label: 'React Native - Handle paywall events',
+            },
+            {
+              type: 'doc',
+              id: 'unity-handling-events',
+              label: 'Unity - Handle paywall events',
+            },
+          ],
+        },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: 'Analytics',
       link: {
         type: 'doc',
