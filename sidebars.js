@@ -839,10 +839,125 @@ const sidebars = {
             },
             {
               type: 'doc',
-              id: 'ltv',
-              label: 'Lifetime Value (LTV)',
+              id: 'mrr',
+              label: 'MRR',
+            },
+            {
+              type: 'doc',
+              id: 'arr',
+              label: 'ARR',
+            },
+            {
+              type: 'doc',
+              id: 'arpu',
+              label: 'ARPU',
+            },
+            {
+              type: 'doc',
+              id: 'arppu',
+              label: 'ARPPU',
+            },
+            {
+              type: 'doc',
+              id: 'installs',
+              label: 'Installs',
+            },
+            {
+              type: 'doc',
+              id: 'active-subscriptions',
+              label: 'Active subscriptions',
+            },
+            {
+              type: 'doc',
+              id: 'reactivated-subscriptions',
+              label: 'New subscriptions',
+            },
+            {
+              type: 'doc',
+              id: 'non-subscriptions',
+              label: 'Non-subscriptions',
+            },
+            {
+              type: 'doc',
+              id: 'cancelled-subscriptions',
+              label: 'Subscriptions renewal cancelled',
+            },
+            {
+              type: 'doc',
+              id: 'churned-expired-subscriptions',
+              label: 'Churned (expired) subscriptions',
+            },
+            {
+              type: 'doc',
+              id: 'active-trials',
+              label: 'Active trials',
+            },
+            {
+              type: 'doc',
+              id: 'new-trials',
+              label: 'New trials',
+            },
+            {
+              type: 'doc',
+              id: 'trials-renewal-cancelled',
+              label: 'Trials renewal cancelled',
+            },
+            {
+              type: 'doc',
+              id: 'expired-churned-trials',
+              label: 'Expired (churned) trials',
+            },
+            {
+              type: 'doc',
+              id: 'refund-events',
+              label: 'Refund events',
+            },
+            {
+              type: 'doc',
+              id: 'refund-money',
+              label: 'Refund money',
+            },
+            {
+              type: 'doc',
+              id: 'grace-period',
+              label: 'Grace period',
+            },
+            {
+              type: 'doc',
+              id: 'billing-issue',
+              label: 'Billing issue',
             },
           ],
+        },
+        {
+        type: 'doc',
+        id: 'ltv',
+        label: 'Lifetime Value (LTV)',
+        },
+        {
+        type: 'doc',
+        id: 'analytics-cohorts',
+        label: 'Cohort analysis',
+        },
+        {
+        type: 'doc',
+        id: 'analytics-funnels',
+        label: 'Funnel analysis',
+        },
+        {
+        type: 'doc',
+        id: 'analytics-retention',
+        label: 'Retention analysis',
+        },
+        {
+        type: 'doc',
+        id: 'analytics-conversion',
+        label: 'Conversion analysis',
+        },
+        {
+        type: 'doc',
+        id: 'reports',
+        label: 'Reports',
         },
       ],
     },
