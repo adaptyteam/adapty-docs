@@ -581,6 +581,100 @@ const sidebars = {
         },
           ],
         },
+        {
+          type: 'category',
+          label: 'Display paywalls designed with remote config',
+          link: {
+            type: 'doc',
+            id: 'display-remote-config-paywalls',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'fetch-paywalls-and-products',
+              label: 'Fetch paywalls and products for remote config paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'present-remote-config-paywalls',
+              label: 'Render paywall designed by remote config',
+            },
+            {
+              type: 'doc',
+              id: 'making-purchases',
+              label: 'Make purchases in mobile app',
+            },
+            {
+              type: 'doc',
+              id: 'restore-purchase',
+              label: 'Restore purchases in mobile app',
+            },
+          ],
+        },
+        {
+              type: 'doc',
+              id: 'subscription-status',
+              label: 'Check subscription status',
+            },
+            {
+              type: 'doc',
+              id: 'identifying-users',
+              label: 'Identify users',
+            },
+            {
+              type: 'doc',
+              id: 'setting-user-attributes',
+              label: 'Set user attributes',
+            },
+            {
+              type: 'doc',
+              id: 'onboarding-screens-tracking',
+              label: 'Track onboarding screens',
+            },
+            {
+          type: 'category',
+          label: 'Use fallback paywalls',
+          link: {
+            type: 'doc',
+            id: 'use-fallback-paywalls',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'ios-use-fallback-paywalls',
+              label: 'iOS - Use fallback paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'android-use-fallback-paywalls',
+              label: 'Android - Use fallback paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'flutter-use-fallback-paywalls',
+              label: 'Flutter - Use fallback paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'react-native-use-fallback-paywalls',
+              label: 'React Native - Use fallback paywalls',
+            },
+            {
+              type: 'doc',
+              id: 'unity-use-fallback-paywalls',
+              label: 'Unity - Use fallback paywalls',
+            },
+          ],
+        },
+        {
+              type: 'doc',
+              id: 'localizations-and-locale-codes',
+              label: 'Use localizations and locale codes',
+            },
       ],
     },
     {
