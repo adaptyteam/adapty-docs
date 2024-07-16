@@ -130,6 +130,43 @@ const sidebars = {
             },
           ],
         },
+        {
+          type: 'category',
+          label: 'Installation of Adapty SDKs',
+          link: {
+            type: 'doc',
+            id: 'installation-of-adapty-sdks',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'sdk-installation-ios',
+              label: 'iOS - Adapty SDK installation & configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-android',
+              label: 'Android - Adapty SDK Installation and configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-flutter',
+              label: 'Flutter - Adapty SDK Installation and configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-reactnative',
+              label: 'React Native - Adapty SDK installation & configuration',
+            },
+            {
+              type: 'doc',
+              id: 'sdk-installation-unity',
+              label: 'Unity - Adapty SDK installation & configuration',
+            },
+          ],
+        },
       ],
     },
     {
