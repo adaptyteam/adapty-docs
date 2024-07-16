@@ -320,6 +320,11 @@ const sidebars = {
             },
             {
               type: 'doc',
+              id: 'fallback-paywalls',
+              label: 'Fallback paywalls',
+            },
+            {
+              type: 'doc',
               id: 'paywall-metrics',
               label: 'Paywall metrics',
             },
@@ -401,6 +406,33 @@ const sidebars = {
               type: 'doc',
               id: 'placement-metrics',
               label: 'Placement metrics',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Access levels',
+          link: {
+            type: 'doc',
+            id: 'access-level',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'create-access-level',
+              label: 'Create access level',
+            },
+            {
+              type: 'doc',
+              id: 'assigning-access-level-to-a-product',
+              label: 'Assign access level to product',
+            },
+            {
+              type: 'doc',
+              id: 'give-access-level-to-specific-customer',
+              label: 'Give access level to specific customer',
             },
           ],
         },
