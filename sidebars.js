@@ -801,7 +801,7 @@ const sidebars = {
           ],
         },
           ],
-        },
+    },
     {
       type: 'category',
       label: 'Analytics',
@@ -959,8 +959,72 @@ const sidebars = {
         id: 'reports',
         label: 'Reports',
         },
+        {
+        type: 'doc',
+        id: 'predicted-ltv-and-revenue',
+        label: 'Prediction in cohorts',
+        },
+        {
+        type: 'doc',
+        id: 'predictions-in-ab-tests',
+        label: 'Predictions in A/B tests',
+        },
       ],
     },
+    {
+          type: 'category',
+          label: 'A/B test',
+          link: {
+            type: 'doc',
+            id: 'ab-tests',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'run_stop_ab_tests',
+              label: 'Run and stop A/B test',
+            },
+            {
+              type: 'doc',
+              id: 'results-and-metrics',
+              label: 'A/B test results and metrics',
+            },
+            {
+              type: 'doc',
+              id: 'maths-behind-it',
+              label: 'Maths behind the A/B tests',
+            },
+          ],
+    },
+    {
+          type: 'category',
+          label: 'Subscribers',
+          link: {
+            type: 'doc',
+            id: 'subscribers',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'profiles-crm',
+              label: 'Profiles/CRM',
+            },
+            {
+              type: 'doc',
+              id: 'segments',
+              label: 'Segments',
+            },
+            {
+              type: 'doc',
+              id: 'event-feed',
+              label: 'Event feed',
+            },
+          ],
+        },
   ],
 };
 
