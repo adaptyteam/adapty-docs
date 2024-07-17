@@ -19,7 +19,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
 
-   ```yaml pubspec.yaml
+   ```yaml title="title="pubspec.yaml""
    dependencies:
    adapty_flutter: ^2.10.1
    adapty_ui_flutter: ^2.1.1
@@ -27,14 +27,12 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 2. Run:
 
-   ```bash
-   flutter pub get
+   ```bash title="title="flutter pub get""
    ```
 
 3. Import Adapty SDKs in your application in the following way:
 
-   ```dart
-   import 'package:adapty_flutter/adapty_flutter.dart';
+   ```dart title="title="import 'package:adapty_flutter/adapty_flutter.dart';""
    import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
@@ -46,7 +44,7 @@ The configuration of the Adapty SDK for Flutter slightly differs depending on th
 
 Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
 
-```xml Adapty-Info.plist
+```xml title="title="Adapty-Info.plist""
 <dict>
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
@@ -68,7 +66,7 @@ Parameters:
 
 1. Add the `AdaptyPublicSdkKey` flag into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
 
-   ```xml AndroidManifest.xml
+   ```xml title="title="AndroidManifest.xml""
    <application ...>
        ...
        <meta-data
@@ -83,22 +81,22 @@ Parameters:
    Required parameters:
 
    | Parameter | Presence | Description |
-   |---------|--------|-----------|
-   | PUBLIC_SDK_KEY | required | <p>Contents of the **Public SDK key** field in the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one. </p><p> Make sure you use the **Public SDK key** for Adapty initialization, since the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.</p>|
-   | AdaptyObserverMode | optional | <p>A boolean value that is controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. </p><p> The default value is `false`. </p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p>|
-   | AdaptyIDFACollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your app. The default value is `false`. </p><p> For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p>|
+|---------|--------|-----------|
+| PUBLIC_SDK_KEY | required | <p>Contents of the **Public SDK key** field in the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.</p><p>Make sure you use the **Public SDK key** for Adapty initialization, since the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.</p> |
+| AdaptyObserverMode | optional | <p>A boolean value that is controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| AdaptyIDFACollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 
    
 
 2. In your application, add:
 
-   ```javascript Flutter
+   ```javascript title="title="Flutter""
    import 'package:adapty_flutter/adapty_flutter.dart';
    ```
 
 3. Activate Adapty SDK with the following code:
 
-   ```javascript Flutter
+   ```javascript title="title="Flutter""
    try {
    	Adapty().activate();
    } on AdaptyError catch (adaptyError) {}
@@ -120,7 +118,7 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` in your app before configuring Adapty.
 
-```javascript Flutter
+```javascript title="title="Flutter""
 try {
 	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 } on AdaptyError catch (adaptyError) {
