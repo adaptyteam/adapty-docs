@@ -1024,7 +1024,206 @@ const sidebars = {
               label: 'Event feed',
             },
           ],
+    },
+    {
+          type: 'category',
+          label: '3d-party integrations',
+          link: {
+            type: 'doc',
+            id: 'configuration',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'events',
+              label: 'Events to send to 3d-party integrations',
+            },
+            {
+          type: 'category',
+          label: 'Attribution integration',
+          link: {
+            type: 'doc',
+            id: 'attribution-integration',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'adjust',
+              label: 'Adjust',
+            },
+            {
+              type: 'doc',
+              id: 'airbridge',
+              label: 'Airbridge',
+            },
+            {
+              type: 'doc',
+              id: 'apple-search-ads',
+              label: 'Apple Search Ads',
+            },
+            {
+          type: 'category',
+          label: 'AppsFlyer',
+          link: {
+            type: 'doc',
+            id: 'appsflyer',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'switch-from-appsflyer-s2s-api-2-to-3',
+              label: 'Switch from AppsFlyer S2S API 2 to 3',
+            },
+          ],
         },
+            {
+              type: 'doc',
+              id: 'asapty',
+              label: 'Asapty',
+            },
+            {
+              type: 'doc',
+              id: 'branch',
+              label: 'Branch',
+            },
+            {
+              type: 'doc',
+              id: 'facebook-ads',
+              label: 'Facebook Ads',
+            },
+            {
+              type: 'doc',
+              id: 'singular',
+              label: 'Singular',
+            },
+          ],
+            },
+            {
+          type: 'category',
+          label: 'Analytics integrations',
+          link: {
+            type: 'doc',
+            id: 'analytics-integration',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'amplitude',
+              label: 'Amplitude',
+            },
+            {
+              type: 'doc',
+              id: 'appmetrica',
+              label: 'AppMetrica',
+            },
+            {
+              type: 'doc',
+              id: 'firebase-and-google-analytics',
+              label: 'Firebase and Google Analytics',
+            },
+            {
+              type: 'doc',
+              id: 'mixpanel',
+              label: 'Mixpanel',
+            },
+            {
+              type: 'doc',
+              id: 'splitmetrics',
+              label: 'SplitMetrics Acquire',
+            },
+            {
+              type: 'doc',
+              id: 'slack',
+              label: 'Slack',
+            },
+          ],
+            },
+            {
+          type: 'category',
+          label: 'Messaging service integrations',
+          link: {
+            type: 'doc',
+            id: 'messaging',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'braze',
+              label: 'Braze',
+            },
+            {
+              type: 'doc',
+              id: 'onesignal',
+              label: 'OneSignal',
+            },
+            {
+              type: 'doc',
+              id: 'pushwoosh',
+              label: 'Pushwoosh',
+            },
+          ],
+        },
+            {
+          type: 'category',
+          label: 'Webhook and ETL integrations',
+          link: {
+            type: 'doc',
+            id: 'webhook-and-etl',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 's3-exports',
+              label: 'Amazon S3',
+            },
+            {
+              type: 'doc',
+              id: 'google-cloud-storage',
+              label: 'Google Cloud Storage',
+            },
+            {
+          type: 'category',
+          label: 'Webhook integration',
+          link: {
+            type: 'doc',
+            id: 'webhook',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'set-up-webhook-integration',
+              label: 'Set up webhook integration',
+            },
+            {
+              type: 'doc',
+              id: 'test-webhook',
+              label: 'Test webhook integration',
+            },
+          ],
+        },
+          ],
+        },
+            {
+              type: 'doc',
+              id: 'stripe',
+              label: 'Stripe integration',
+            },
+          ],
+    },
   ],
 };
 
