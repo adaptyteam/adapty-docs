@@ -12,12 +12,14 @@ Don't forget to [check if a user is eligible for an introductory offer in iOS](f
 
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
-```swift title="title="Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in""
+```swift title="Swift"
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
     let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
 }
 ```
-```kotlin title="title="Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->""
+```kotlin title="Kotlin"
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
             val paywall = result.value
@@ -30,7 +32,8 @@ To get a remote config of a paywall, access the `remoteConfig` property and extr
     }
 }
 ```
-```java title="title="Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {""
+```java title="Java"
+Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
         
@@ -47,7 +50,7 @@ To get a remote config of a paywall, access the `remoteConfig` property and extr
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
   final String? headerText = paywall.remoteConfig?['header_text'];
@@ -73,13 +76,16 @@ Adapty assists you in measuring the performance of your paywalls. While we gathe
 
 To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
 
-```swift title="title="Adapty.logShowPaywall(paywall)""
+```swift title="Swift"
+Adapty.logShowPaywall(paywall)
 ```
-```kotlin title="title="Adapty.logShowPaywall(paywall)""
+```kotlin title="Kotlin"
+Adapty.logShowPaywall(paywall)
 ```
-```java title="title="Adapty.logShowPaywall(paywall);""
+```java title="Java"
+Adapty.logShowPaywall(paywall);
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final result = await Adapty().logShowPaywall(paywall: paywall);
 } on AdaptyError catch (adaptyError) {
@@ -87,12 +93,12 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.LogShowPaywall(paywall, (error) => {
     // handle the error
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 await adapty.logShowPaywall(paywall);
 ```
 

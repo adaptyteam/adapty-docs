@@ -12,7 +12,8 @@ However, if you process these events and want to keep doing it, make sure to for
 
 Here are examples for different programming languages:
 
-```python title="title="import requests""
+```python title="Python"
+import requests
 
 url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/" # don't forget to replace this URL
 
@@ -24,7 +25,8 @@ headers = {
 
 response = requests.request("POST", url, headers=headers, data=payload)
 ```
-```javascript title="title="const axios = require('axios');""
+```javascript title="Javascript"
+const axios = require('axios');
 
 const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/'; // don't forget to replace this URL
 
@@ -41,7 +43,8 @@ const config = {
 
 const response = await axios(config);
 ```
-```php title="title="<?php""
+```php title="Php"
+<?php
 require_once 'HTTP/Request2.php';
 
 $url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/'; // don't forget to replace this URL
@@ -60,7 +63,8 @@ $request->setHeader(array(
 $request->setBody($payload);
 $response = $request->send();
 ```
-```ruby title="title="require "uri"""
+```ruby title="Ruby"
+require "uri"
 require "net/http"
 
 url = URI("https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/") # don't forget to replace this URL
@@ -76,7 +80,8 @@ request.body = payload
 
 response = https.request(request)
 ```
-```java title="title="String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/"; // don't forget to replace this URL""
+```java title="Java"
+String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/"; // don't forget to replace this URL
 
 String payload = "{\"latest_receipt\":\"abc=\",\"notification_type\":\"INITIAL_BUY\",...}" // json encoded payload from Apple/Google
 
@@ -91,7 +96,8 @@ Request request = new Request.Builder()
   .build();
 Response response = client.newCall(request).execute();
 ```
-```go title="title="package main""
+```go title="Go"
+package main
 
 import (
 	"fmt"

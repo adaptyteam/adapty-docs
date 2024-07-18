@@ -102,10 +102,10 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link user profiles in Adapty and Braze you need to either configure Braze SDK with the same customer user ID as Adapty or use its `.changeUser()` method:
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 let braze = Braze(configuration: configuration)
 braze.changeUser(userId: "adapty_customer_user_id")
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 Braze.getInstance(context).changeUser("adapty_customer_user_id")
 ```

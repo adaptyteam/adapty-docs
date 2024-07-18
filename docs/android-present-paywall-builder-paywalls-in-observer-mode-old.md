@@ -8,7 +8,8 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-   ```kotlin title="title="val observerModeHandler =""
+   ```kotlin title="Kotlin"
+   val observerModeHandler =
     AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
         onStartPurchase()
         yourBillingClient.makePurchase(
@@ -28,7 +29,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
         )
     }
    ```
-   ```java title="title="Java""
+   ```java title="Java"
    AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
@@ -58,7 +59,8 @@ Also, remember to invoke these callbacks to AdaptyUI:
 
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-   ```kotlin title="title="val paywallView = AdaptyUI.getPaywallView(""
+   ```kotlin title="Kotlin"
+   val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
        products,
@@ -86,7 +88,8 @@ Also, remember to invoke these callbacks to AdaptyUI:
        )
    }
    ```
-   ```java title="title="AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(""
+   ```java title="Java"
+   AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
            activity,
            viewConfiguration,
            products,
@@ -106,7 +109,7 @@ Also, remember to invoke these callbacks to AdaptyUI:
    paywallView.setObserverModeHandler(observerModeHandler);
    paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
    ```
-   ```xml title="title="XML""
+   ```xml title="XML"
    <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
        android:layout_width="match_parent"
        android:layout_height="match_parent" />
@@ -130,7 +133,7 @@ Also, remember to invoke these callbacks to AdaptyUI:
 
    For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-   ```kotlin title="title="Kotlin""
+   ```kotlin title="Kotlin"
    import androidx.core.graphics.Insets
    import androidx.core.view.ViewCompat
    import androidx.core.view.WindowInsetsCompat
@@ -155,7 +158,8 @@ Also, remember to invoke these callbacks to AdaptyUI:
    }
 
    ```
-   ```java title="title="import androidx.core.graphics.Insets;""
+   ```java title="Java"
+   import androidx.core.graphics.Insets;
    import androidx.core.view.ViewCompat;
    import androidx.core.view.WindowInsetsCompat;
 

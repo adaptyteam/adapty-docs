@@ -30,14 +30,15 @@ Be sure to carefully read [Release Checklist](release-checklist) when releasing 
 
 Add Adapty to your `Podfile`:
 
-```shell title="title="Podfile""
+```shell title="Podfile"
 pod 'Adapty', '~> 2.10.2'
 pod 'AdaptyUI', '~> 2.1.3'
 ```
 
 And then run:
 
-```sh title="title="pod install""
+```sh title="Sh"
+pod install
 ```
 
 This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.

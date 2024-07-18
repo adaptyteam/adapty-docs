@@ -19,7 +19,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
 
-   ```yaml title="title="pubspec.yaml""
+   ```yaml title="pubspec.yaml"
    dependencies:
    adapty_flutter: ^2.10.1
    adapty_ui_flutter: ^2.1.1
@@ -27,12 +27,14 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 2. Run:
 
-   ```bash title="title="flutter pub get""
+   ```bash title="Bash"
+   flutter pub get
    ```
 
 3. Import Adapty SDKs in your application in the following way:
 
-   ```dart title="title="import 'package:adapty_flutter/adapty_flutter.dart';""
+   ```dart title="Dart"
+   import 'package:adapty_flutter/adapty_flutter.dart';
    import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
@@ -44,7 +46,7 @@ The configuration of the Adapty SDK for Flutter slightly differs depending on th
 
 Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
 
-```xml title="title="Adapty-Info.plist""
+```xml title="Adapty-Info.plist"
 <dict>
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
@@ -66,7 +68,7 @@ Parameters:
 
 1. Add the `AdaptyPublicSdkKey` flag into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
 
-   ```xml title="title="AndroidManifest.xml""
+   ```xml title="AndroidManifest.xml"
    <application ...>
        ...
        <meta-data
@@ -90,13 +92,13 @@ Parameters:
 
 2. In your application, add:
 
-   ```javascript title="title="Flutter""
+   ```javascript title="Flutter"
    import 'package:adapty_flutter/adapty_flutter.dart';
    ```
 
 3. Activate Adapty SDK with the following code:
 
-   ```javascript title="title="Flutter""
+   ```javascript title="Flutter"
    try {
    	Adapty().activate();
    } on AdaptyError catch (adaptyError) {}
@@ -118,7 +120,7 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` in your app before configuring Adapty.
 
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
 	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 } on AdaptyError catch (adaptyError) {

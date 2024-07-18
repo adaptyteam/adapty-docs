@@ -14,19 +14,19 @@ Be sure to carefully read [Release Checklist](release-checklist) when releasing 
 
 ### Install via Gradle
 
-```groovy title="title="module-level build.gradle""
+```groovy title="module-level build.gradle"
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.1'
 }
 ```
-```kotlin title="title="module-level build.gradle.kts""
+```kotlin title="module-level build.gradle.kts"
 dependencies {
     ...
     implementation("io.adapty:android-sdk:2.11.1")
 }
 ```
-```toml title="title="version catalog""
+```toml title="version catalog"
 //libs.versions.toml
 
 [versions]
@@ -54,7 +54,7 @@ If the dependency is not being resolved, please make sure that you have `mavenCe
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
-```groovy title="title="top-level build.gradle""
+```groovy title="top-level build.gradle"
 allprojects {
     repositories {
         ...
@@ -65,7 +65,7 @@ allprojects {
 
 Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
 
-```groovy title="title="settings.gradle""
+```groovy title="settings.gradle"
 dependencyResolutionManagement {
     ...
     repositories {

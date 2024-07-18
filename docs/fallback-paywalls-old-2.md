@@ -43,11 +43,13 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the exact
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-```swift title="title="if let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") {""
+```swift title="Swift"
+if let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") {
      Adapty.setFallbackPaywalls(fileURL: url)
 }
 ```
-```kotlin title="title="val fallbackUri: Uri = //get Uri for the file with fallback paywalls""
+```kotlin title="Kotlin"
+val fallbackUri: Uri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
 //
@@ -59,7 +61,8 @@ Here's an example of retrieving fallback paywall data from locally stored JSON f
 
 Adapty.setFallbackPaywalls(fallbackUri, callback)
 ```
-```java title="title="Uri fallbackUri = //get Uri for the file with fallback paywalls""
+```java title="Java"
+Uri fallbackUri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
 //
@@ -71,7 +74,7 @@ Adapty.setFallbackPaywalls(fallbackUri, callback)
 
 Adapty.setFallbackPaywalls(fallbackUri, callback);
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -86,14 +89,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.SetFallbackPaywalls("<FALLBACK_PAYWALL_DATA>", (error) => {
     if(error != null) {
         // handle error
     }
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 //after v2.11
 const fallbackLocation = {
   ios: {

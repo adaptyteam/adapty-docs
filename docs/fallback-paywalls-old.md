@@ -39,20 +39,23 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the exact
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `fallback_paywalls`.
 
-```swift title="title="if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),""
+```swift title="Swift"
+if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),
    let paywallsData = try? Data(contentsOf: urlPath) {
      Adapty.setFallbackPaywalls(paywallsData)
 }
 ```
-```kotlin title="title="val paywalls: String = //get paywalls JSON from where you stored it""
+```kotlin title="Kotlin"
+val paywalls: String = //get paywalls JSON from where you stored it
 
 Adapty.setFallbackPaywalls(paywalls)
 ```
-```java title="title="String paywalls = //get paywalls JSON from where you stored it""
+```java title="Java"
+String paywalls = //get paywalls JSON from where you stored it
 
 Adapty.setFallbackPaywalls(paywalls);
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -67,14 +70,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.SetFallbackPaywalls("<FALLBACK_PAYWALL_DATA>", (error) => {
     if(error != null) {
         // handle error
     }
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 const fallbackPaywalls = require('./fallback_paywalls.json');
 // React Native automatically parses JSON, but we do not need that
 const fallbackString = JSON.stringify(fallbackPaywalls);

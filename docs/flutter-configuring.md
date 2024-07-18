@@ -8,7 +8,7 @@ metadataTitle: ""
 
 Create `Adapty-Info.plist` and add it to you project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
 
-```xml title="title="Adapty-Info.plist""
+```xml title="Adapty-Info.plist"
 <dict>
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
@@ -19,7 +19,7 @@ Create `Adapty-Info.plist` and add it to you project. Add the flag `AdaptyPublic
 
 Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 2 API utilisation. Read more in the [Displaying Paywalls & Products](https://docs.adapty.io/docs/displaying-products#adapty-sdk-version-250-and-higher) section.
 
-```xml title="title="Adapty-Info.plist""
+```xml title="Adapty-Info.plist"
 <dict>
     <key>AdaptyStoreKit2Usage</key>
     <string>intro_eligibility_check</string>
@@ -30,7 +30,7 @@ Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 
 
 1. Add the flag `AdaptyPublicSdkKey` into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
 
-```xml title="title="AndroidManifest.xml""
+```xml title="AndroidManifest.xml"
 <application ...>
        ...
        <meta-data
@@ -47,13 +47,13 @@ Public SDK key can be found in your app settings in the [Adapty Dashboard](https
 
 2. In your application, add:
 
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 import 'package:adapty_flutter/adapty_flutter.dart';
 ```
 
 3. Activate Adapty SDK with the following code:
 
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
 	Adapty().activate();
 } on AdaptyError catch (adaptyError) {}
@@ -79,7 +79,7 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set `logLevel` in your app before configuring Adapty.
 
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
 	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 } on AdaptyError catch (adaptyError) {

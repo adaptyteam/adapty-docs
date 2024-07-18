@@ -6,7 +6,8 @@ metadataTitle: ""
 
 With Adapty you don't have to hardcode product ids to check subscription status. You just have to verify that the user has an active access level. To do this, you have to call `.GetProfile()` method:
 
-```csharp title="title="Adapty.GetProfile((profile, error) => {""
+```csharp title="C#"
+Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
     return;
@@ -26,7 +27,8 @@ The `.GetProfile` method provides the most up-to-date result as it always tries 
 
 Below is a complete example of checking the user's access level.
 
-```csharp title="title="Adapty.GetProfile((profile, error) => {""
+```csharp title="C#"
+Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
     return;
@@ -50,7 +52,8 @@ Read more about access levels in the [Access Level](access-level) section.
 
 Whenever the user's subscription changes, Adapty will fire an event. To receive subscription updates, extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method. This method will also be called at the start of the application, and the cached profile will get into it:
 
-```csharp title="title="public class AdaptyListener : MonoBehaviour, AdaptyEventListener {""
+```csharp title="C#"
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   public void OnLoadLatestProfile(Adapty.Profile profile) {
     // handle any changes to subscription state
   }

@@ -8,7 +8,7 @@ Find below samples of events that can be sent to webhook integration:
 
 ## Subscription events
 
-```json title="title="Subscripton started""
+```json title="Subscripton started"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -76,7 +76,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-15T13:53:51.265053+0000"
 } 
 ```
-```json title="title="Subscription renewed""
+```json title="Subscription renewed"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
   "idfv": "E9D48DA5-3930-4B41-8521-D953AECD2F33",
@@ -153,7 +153,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-05-03T21:24:40.841434+0000"
 }
 ```
-```json title="title="Subscription renewal cancelled""
+```json title="Subscription renewal cancelled"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -233,11 +233,11 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-15T13:39:10.936440+0000"
 }
 ```
-```json title="title="Subscription renewal reactivated""
+```json title="Subscription renewal reactivated"
 
 ```
 
-```json title="title="Subscription expired""
+```json title="Subscription expired"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "88C9A031-6196-4B0A-ADAD-E64C33BDBCA3",
@@ -318,7 +318,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-08T13:16:13.976088+0000"
 }
 ```
-```json title="title="Subscription paused""
+```json title="Subscription paused"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -388,7 +388,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-14T10:56:13.654795+0000"
 }
 ```
-```json title="title="Subscription deferred""
+```json title="Subscription deferred"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -470,7 +470,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-11T21:14:57.243523+0000"
 }
 ```
-```json title="title="Non-subscription purchase""
+```json title="Non-subscription purchase"
 {
   "idfa": "C95DD96D-BA79-48D6-B962-4974F283B846",
   "idfv": "08B2440B-B753-46F0-8426-5D2E4E5D195C",
@@ -551,7 +551,7 @@ Find below samples of events that can be sent to webhook integration:
 
 ## Trial events
 
-```json title="title="Trial started""
+```json title="Trial started"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -643,7 +643,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-06-19T14:55:13.309821+0000"
 }
 ```
-```json title="title="Trial converted""
+```json title="Trial converted"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -720,7 +720,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-12T21:55:42.948986+0000"
 }
 ```
-```json title="title="Trial renewal cancelled""
+```json title="Trial renewal cancelled"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "D46AB027-0FBE-4420-8C7A-33340CA74ACE",
@@ -779,7 +779,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-15T13:01:33.868270+0000"
 }
 ```
-```json title="title="Trial renewal reactivated""
+```json title="Trial renewal reactivated"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -847,7 +847,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-16T10:31:18.728173+0000"
 }
 ```
-```json title="title="Trial expired""
+```json title="Trial expired"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -932,7 +932,7 @@ Find below samples of events that can be sent to webhook integration:
 
 ## Events on issues
 
-```json title="title="Entered grace period""
+```json title="Entered grace period"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -1014,7 +1014,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-04T03:29:17.592901+0000"
 }
 ```
-```json title="title="Billing issue detected""
+```json title="Billing issue detected"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -1064,7 +1064,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2023-07-12T13:54:45.851333+0000"
 }
 ```
-```json title="title="Subscription refunded""
+```json title="Subscription refunded"
 {
   "idfa": "E9A7ACCE-C6AF-4284-93D1-30D1333D4CCD",
   "idfv": "82FBC47A-776E-424E-9692-438C2337C6C4",
@@ -1127,7 +1127,7 @@ Find below samples of events that can be sent to webhook integration:
   "profile_install_datetime": "2024-07-01T15:39:03.942124+0000"
 }
 ```
-```json title="title="Non-subscription purchase refunded""
+```json title="Non-subscription purchase refunded"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -1194,7 +1194,7 @@ Find below samples of events that can be sent to webhook integration:
 
 ## Access level updated
 
-```json title="title="Access level updated""
+```json title="Access level updated"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
   "idfv": "B7C68CA7-633B-4072-8FA1-E711D8783333",

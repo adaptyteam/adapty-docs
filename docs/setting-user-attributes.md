@@ -10,7 +10,8 @@ You can set optional attributes such as email, phone number, etc, to the user of
 
 To set user attributes, call `.updateProfile()` method:
 
-```swift title="title="let builder = AdaptyProfileParameters.Builder()""
+```swift title="Swift"
+let builder = AdaptyProfileParameters.Builder()
     .with(email: "email@email.com")
     .with(phoneNumber: "+18888888888")
     .with(facebookAnonymousId: "facebookAnonymousId")
@@ -30,7 +31,8 @@ Adapty.updateProfile(params: builder.build()) { error in
     }
 }
 ```
-```kotlin title="title="val builder = AdaptyProfileParameters.Builder()""
+```kotlin title="Kotlin"
+val builder = AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
     .withFacebookAnonymousId("facebookAnonymousId")
@@ -50,7 +52,8 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
-```java title="title="AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()""
+```java title="Java"
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
     .withFacebookAnonymousId("facebookAnonymousId")
@@ -70,7 +73,7 @@ Adapty.updateProfile(builder.build(), error -> {
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 final builder = AdaptyProfileParametersBuilder()
   ..setEmail("email@email.com")
   ..setPhoneNumber("+18888888888")
@@ -92,7 +95,7 @@ try {
 } catch (e) {
 }
 ```
-```typescript title="title="TypeScript (React Native)""
+```typescript title="TypeScript (React Native)"
 // Only for TypeScript validation
 import type { AdaptyProfileParameters } from 'react-native-adapty';
 
@@ -117,7 +120,7 @@ try {
 	// handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 var builder = new Adapty.ProfileParameters.Builder()
 		.SetFirstName("John")
     .SetLastName("Appleseed")
@@ -149,7 +152,8 @@ The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<V
 
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
-```swift title="title="if #available(iOS 14, macOS 11.0, *) {""
+```swift title="Swift"
+if #available(iOS 14, macOS 11.0, *) {
     let builder = AdaptyProfileParameters.Builder()
         .with(appTrackingTransparencyStatus: .authorized)
 
@@ -160,7 +164,7 @@ If your application uses AppTrackingTransparency framework and presents an app-t
     }
 }
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 final builder = AdaptyProfileParametersBuilder()
   ..setAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.authorized);
 
@@ -171,7 +175,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 var builder = new Adapty.ProfileParameters.Builder();
 		.SetAppTrackingTransparencyStatus(IOSAppTrackingTransparencyStatus.Authorized);
 
@@ -181,7 +185,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
     }
 });
 ```
-```typescript title="title="TypeScript (React Native)""
+```typescript title="TypeScript (React Native)"
 import {AppTrackingTransparencyStatus} from 'react-native-adapty';
 
 try {
@@ -202,17 +206,20 @@ We strongly recommend that you send this value as early as possible when it chan
 
 You can set your own custom attributes. These are usually related to your app usage. For example, for fitness applications, they might be the number of exercises per week, for language learning app user's knowledge level, and so on. You can use them in segments to create targeted paywalls and offers, and you can also use them in analytics to figure out which product metrics affect the revenue most.
 
-```swift title="title="do {""
+```swift title="Swift"
+do {
      builder = try builder.with(customAttribute: "value1", forKey: "key1")
 } catch {
      // handle key/value validation error
 }
 ```
-```kotlin title="title="builder.withCustomAttribute("key1", "value1")""
+```kotlin title="Kotlin"
+builder.withCustomAttribute("key1", "value1")
 ```
-```java title="title="builder.withCustomAttribute("key1", "value1");""
+```java title="Java"
+builder.withCustomAttribute("key1", "value1");
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final builder = AdaptyProfileParametersBuilder()
       ..setCustomStringAttribute('value1', 'key1')
@@ -224,7 +231,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 try {
     builder = builder.SetCustomStringAttribute("string_key", "string_value");
     builder = builder.SetCustomDoubleAttribute("double_key", 123.0f);
@@ -232,7 +239,7 @@ try {
     // handle the exception
 }
 ```
-```typescript title="title="TypeScript (React Native)""
+```typescript title="TypeScript (React Native)"
 try {
   await adapty.updateProfile({
     codableCustomAttributes: {
@@ -247,17 +254,20 @@ try {
 
 To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
 
-```swift title="title="do {""
+```swift title="Swift"
+do {
      builder = try builder.withRemoved(customAttributeForKey: "key2")
 } catch {
      // handle error
 }
 ```
-```kotlin title="title="builder.withRemovedCustomAttribute("key2")""
+```kotlin title="Kotlin"
+builder.withRemovedCustomAttribute("key2")
 ```
-```java title="title="builder.withRemovedCustomAttribute("key2");""
+```java title="Java"
+builder.withRemovedCustomAttribute("key2");
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final builder = AdaptyProfileParametersBuilder()
     ..removeCustomAttribute('key1')
@@ -269,14 +279,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 try {
     builder = builder.RemoveCustomAttribute("key_to_remove");
 } catch (Exception e) {
     // handle the exception
 }
 ```
-```typescript title="title="TypeScript (React Native)""
+```typescript title="TypeScript (React Native)"
 try {
   // to remove a key, pass null as its value
   await adapty.updateProfile({

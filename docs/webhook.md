@@ -38,7 +38,8 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure below. For sample of webhook events, refer to [Webhook sample events](webhook-sample-events).
 
-```json title="title="{""
+```json title="Json"
+{
   "profile_id": "772204ce-ebf6-4ed9-82b0-d8688ab62b01",
   "customer_user_id": "john.doe",
   "idfv": "00000000-0000-0000-0000-000000000000",

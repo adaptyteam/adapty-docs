@@ -15,7 +15,8 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
 
 To do this, call `.getProfile()` method:
 
-```swift title="title="Adapty.getProfile { result in""
+```swift title="Swift"
+Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
       	profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
@@ -24,7 +25,8 @@ To do this, call `.getProfile()` method:
     }
 }
 ```
-```kotlin title="title="Adapty.getProfile { result ->""
+```kotlin title="Kotlin"
+Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
             val profile = result.value
@@ -37,7 +39,8 @@ To do this, call `.getProfile()` method:
     }
 }
 ```
-```java title="title="Adapty.getProfile(result -> {""
+```java title="Java"
+Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
         // check the access
@@ -48,7 +51,7 @@ To do this, call `.getProfile()` method:
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final profile = await Adapty().getProfile();
   // check the access
@@ -57,7 +60,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -67,7 +70,7 @@ Adapty.GetProfile((profile, error) => {
   // check the access
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 try {
 	const profile = await adapty.getProfile();
 } catch (error) {
@@ -86,14 +89,16 @@ The `.getProfile()` method provides you with the user profile from which you can
 
 Here is an example for checking for the default "premium" access level:
 
-```swift title="title="Adapty.getProfile { result in""
+```swift title="Swift"
+Adapty.getProfile { result in
     if let profile = try? result.get(), 
        profile.accessLevels["premium"]?.isActive ?? false {
         // grant access to premium features
     }
 }
 ```
-```kotlin title="title="Adapty.getProfile { result ->""
+```kotlin title="Kotlin"
+Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
             val profile = result.value
@@ -109,7 +114,8 @@ Here is an example for checking for the default "premium" access level:
     }
 }
 ```
-```java title="title="Adapty.getProfile(result -> {""
+```java title="Java"
+Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
         
@@ -124,7 +130,7 @@ Here is an example for checking for the default "premium" access level:
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final profile = await Adapty().getProfile();
   if (profile?.accessLevels['premium']?.isActive ?? false) {
@@ -135,7 +141,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -149,7 +155,7 @@ Adapty.GetProfile((profile, error) => {
   }
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 try {
 	const profile = await adapty.getProfile();
 	
@@ -168,27 +174,30 @@ Whenever the user's subscription changes, Adapty fires an event.
 
 To receive messages from Adapty, you need to make some additional configuration:
 
-```swift title="title="Adapty.delegate = self""
+```swift title="Swift"
+Adapty.delegate = self
 
 // To receive subscription updates, extend `AdaptyDelegate` with this method:
 func didLoadLatestProfile(_ profile: AdaptyProfile) {
     // handle any changes to subscription state
 }
 ```
-```kotlin title="title="Adapty.setOnProfileUpdatedListener { profile ->""
+```kotlin title="Kotlin"
+Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to subscription state
 }
 ```
-```java title="title="Adapty.setOnProfileUpdatedListener(profile -> {""
+```java title="Java"
+Adapty.setOnProfileUpdatedListener(profile -> {
     // handle any changes to subscription state
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 Adapty().didUpdateProfileStream.listen((profile) {
   // handle any changes to subscription state
 });
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 // Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   public void OnLoadLatestProfile(Adapty.Profile profile) {
@@ -196,7 +205,7 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   }
 }
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 // Create an "onLatestProfileLoad" event listener
 adapty.addEventListener('onLatestProfileLoad', profile => {
 	// handle any changes to subscription state

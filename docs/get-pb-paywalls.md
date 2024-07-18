@@ -25,7 +25,8 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 
 To get a paywall, use the `getPaywall` method:
 
-```swift title="title="Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in""
+```swift title="Swift"
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
             // the requested paywall
@@ -34,7 +35,8 @@ To get a paywall, use the `getPaywall` method:
     }
 }
 ```
-```kotlin title="title="import com.adapty.utils.seconds""
+```kotlin title="Kotlin"
+import com.adapty.utils.seconds
 
 ...
 
@@ -51,7 +53,8 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
     }
 }
 ```
-```java title="title="import com.adapty.utils.TimeInterval;""
+```java title="Java"
+import com.adapty.utils.TimeInterval;
 
 ...
 
@@ -67,7 +70,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -76,7 +79,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -86,7 +89,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 try {
 	const id = 'YOUR_PLACEMENT_ID';
 	const locale = 'en';
@@ -121,7 +124,8 @@ Once you've fetched the paywall, check whether it includes a `ViewConfiguration`
 
 For paywalls with `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. For cross-platform SDKs, you can directly call the `createPaywallView` method, as there is no need to manually fetch the view configuration beforehand.
 
-```swift title="title="import Adapty""
+```swift title="Swift"
+import Adapty
 
 guard paywall.hasViewConfiguration else {
     //  use your custom logic
@@ -137,7 +141,8 @@ AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
     }
 }
 ```
-```kotlin title="title="if (!paywall.hasViewConfiguration) {""
+```kotlin title="Kotlin"
+if (!paywall.hasViewConfiguration) {
   	// use your custom logic
   	return
 }
@@ -155,7 +160,8 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
-```java title="title="if (!paywall.hasViewConfiguration()) {""
+```java title="Java"
+if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
 }
@@ -171,7 +177,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
 
 try {
@@ -182,7 +188,7 @@ try {
   // handle the error
 }
 ```
-```typescript title="title="React Native (TSX)""
+```typescript title="React Native (TSX)"
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -195,7 +201,7 @@ if (paywall.hasViewConfiguration) {
   	//use your custom logic
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
 });

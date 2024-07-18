@@ -6,7 +6,8 @@ metadataTitle: ""
 
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
 
-```swift title="title="// In your AppDelegate class:""
+```swift title="Swift"
+// In your AppDelegate class:
 
 let configurationBuilder =
 	Adapty.Configuration
@@ -20,7 +21,7 @@ Adapty.activate(with: configurationBuilder) { error in
   // handle the error
 }
 ```
-```swift title="title="SwiftUI""
+```swift title="SwiftUI"
 import Adapty
 
 @main
@@ -75,14 +76,16 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set `logLevel` at any time in the application's lifecycle, but we recommend that you do this before calling `.activate()`.
 
-```swift title="title="Adapty.logLevel = .verbose""
+```swift title="Swift"
+Adapty.logLevel = .verbose
 ```
 
 ### Overriding logger handler
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```swift title="title="Adapty.setLogHandler { level, message in""
+```swift title="Swift"
+Adapty.setLogHandler { level, message in
     writeToLocalFile("Adapty \(level): \(message)")
 }
 ```
@@ -91,7 +94,8 @@ If you for some reason need to send messages from Adapty to your system or save 
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```swift title="title="Adapty.setLogHandler { level, message in""
+```swift title="Swift"
+Adapty.setLogHandler { level, message in
     writeToLocalFile("Adapty \(level): \(message)")
 }
 ```

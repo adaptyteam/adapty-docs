@@ -56,7 +56,7 @@ Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaD
 - [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
 - [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 import YandexMobileMetrica
 
 YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceId, error in
@@ -69,7 +69,7 @@ YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceI
         Adapty.updateProfile(params: builder.build())
 }
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 val params = AdaptyProfileParameters.Builder()
     .withAppmetricaDeviceId(appmetricaDeviceId)
     .withAppmetricaProfileId(appmetricaProfileId)
@@ -80,7 +80,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="title="Flutter (Dart)""
+```Text title="Flutter (Dart)"
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -93,7 +93,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 
 // ...
@@ -106,7 +106,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 AppMetrica.Instance.RequestAppMetricaDeviceID((deviceId, error) => {
     if (error != null) {
         // handle error

@@ -24,7 +24,8 @@ However, if your `customer_user_id` contains [reserved URI characters](https://e
 
 You should only encode the `customer_user_id` if you pass it as a URL path. When sending `customer_user_id` inside the JSON payload (for example, when creating the profile), you should not encode it.
 
-```python title="title="# Don't encode""
+```python title="Python"
+## Don't encode
 customer_user_id = '123' # GET: /profiles/123/
 customer_user_id = 'abc' # GET: /profiles/abc/
 customer_user_id = '3c410419-9959-447a-84b5-be7cb6a308d9' # GET: /profiles/3c410419-9959-447a-84b5-be7cb6a308d9/
@@ -39,7 +40,8 @@ customer_user_id = '012?012' # GET: /profiles/MDEyPzAxMg/?is_user_id_base64url_e
 
 ### Prolong/grant a subscription for a user
 
-```text title="title="POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/grant/""
+```text title="Text"
+POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/grant/
 ```
 
 Path parameters:
@@ -85,7 +87,8 @@ Also, be aware that these transactions affect billing since they are counted tow
 
 Sample request:
 
-```json title="title="{""
+```json title="Json"
+{
     "starts_at": "2020-01-15T15:10:36.517975+0000",
     "expires_at": "2020-02-15T15:10:36.517975+0000",
     "vendor_product_id": "basic_subscription_1_month",
@@ -97,7 +100,8 @@ Sample request:
 
 Sample response:
 
-```json title="title="{""
+```json title="Json"
+{
   "data": {
     "app_id": "ff90dd2e-e7f2-454b-9d86-071036a284fe",
     "profile_id": "77112400-89f1-4465-b9c9-5437e58c6688",
@@ -201,7 +205,8 @@ Learn more about responses in the [API Objects](server-side-api-objects) section
 
 ### Revoke subscription from a user
 
-```text title="title="POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/revoke/""
+```text title="Text"
+POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/revoke/
 ```
 
 Path parameters:
@@ -238,7 +243,7 @@ Request parameters:
 
 Sample request:
 
-```json title="title="CURL""
+```json title="CURL"
 curl
 --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
 --header 'Content-Type: application/vnd.api+json' \
@@ -260,7 +265,8 @@ Profile events are generated along the way and imported transactions are counted
 
 ### Get info about a user
 
-```text title="title="GET: /profiles/{profile_id_or_customer_user_id}/""
+```text title="Text"
+GET: /profiles/{profile_id_or_customer_user_id}/
 ```
 
 Path parameters:
@@ -297,7 +303,8 @@ To get an extended response, add Key **"extended"** with any value to Query Para
 
 ### Create a user
 
-```text title="title="POST: /profiles/""
+```text title="Text"
+POST: /profiles/
 ```
 
 Request parameters:
@@ -308,7 +315,8 @@ Request parameters:
 
 Sample request:
 
-```json title="title="{""
+```json title="Json"
+{
     "customer_user_id": "123456"
 }
 ```
@@ -319,7 +327,8 @@ You can also set the user's attributes the same way as in the PATCH method.
 
 ### Set the user's attribute
 
-```text title="title="PATCH: /profiles/{profile_id_or_customer_user_id}/""
+```text title="Text"
+PATCH: /profiles/{profile_id_or_customer_user_id}/
 ```
 
 Path parameters:
@@ -350,7 +359,8 @@ If you'd like to set custom attributes, you can pass them in `custom_attributes`
 
 Sample request:
 
-```json title="title="{""
+```json title="Json"
+{
     "phone_number": "+18003330000",
     "custom_attributes": {
         "grade": 10,

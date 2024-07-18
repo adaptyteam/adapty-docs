@@ -6,7 +6,8 @@ metadataTitle: ""
 
 With Adapty you don't have to hardcode product ids to check subscription status. You just have to verify that the user has an active access level. To do this, you have to call `.getProfile()` method:
 
-```swift title="title="Adapty.getProfile { result in""
+```swift title="Swift"
+Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
     }
@@ -23,7 +24,8 @@ The `.getProfile` method provides the most up-to-date result as it always tries 
 
 Below is a complete example of checking the user's access level.
 
-```swift title="title="Adapty.getProfile { result in""
+```swift title="Swift"
+Adapty.getProfile { result in
     if let profile = try? result.get(), 
            profile.accessLevels["premium"]?.isActive ?? false {
         // grant access to premium features
@@ -41,12 +43,14 @@ Read more about access levels in the [Access Level](access-level) section.
 
 In order to receive messages from Adapty, you need to configure delegate:
 
-```swift title="title="Adapty.delegate = self""
+```swift title="Swift"
+Adapty.delegate = self
 ```
 
 Whenever the user's subscription changes, Adapty will fire an event. To receive subscription updates, extend `AdaptyDelegate` with `.didLoadLatestProfile` method. This method will also be called at the start of the application, and the cached profile will get into it:
 
-```swift title="title="func didLoadLatestProfile(_ profile: AdaptyProfile) {""
+```swift title="Swift"
+func didLoadLatestProfile(_ profile: AdaptyProfile) {
     // handle any changes to subscription state
 }
 ```

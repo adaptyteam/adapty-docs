@@ -88,7 +88,7 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 let params = AdaptyProfileParameters.Builder()
     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
     .build()
@@ -97,7 +97,7 @@ Adapty.updateProfile(params: params) { error in
     // handle the error
 }
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 val params = AdaptyProfileParameters.Builder()
     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
     .build()
@@ -108,7 +108,8 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```java title="title="AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()""
+```java title="Java"
+AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
     .build();
 
@@ -118,7 +119,7 @@ Adapty.updateProfile(params, error -> {
     }
 });
 ```
-```java title="title="Flutter (Dart)""
+```java title="Flutter (Dart)"
 import 'package:pushwoosh/pushwoosh.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -131,7 +132,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 import Pushwoosh from 'pushwoosh-react-native-plugin';
 
@@ -144,7 +145,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
 

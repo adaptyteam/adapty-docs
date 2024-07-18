@@ -44,7 +44,8 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event is wrapped into the following structure:
 
-```json title="title="{""
+```json title="Json"
+{
 "ip": "127.0.0.1",
 "os": "17.4.1",
 "att": "1",

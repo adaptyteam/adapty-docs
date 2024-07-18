@@ -128,7 +128,7 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It’s essential to send AppsFlyer attribution data from the device to Adapty using the`Adapty.updateAttribution()` SDK method. With this attribution, Adapty receives `appsflyer_id`, which is crucial for successful integration. Here's how you can do it:
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 // Find your implementation of AppsFlyerLibDelegate 
 // and update onConversionDataSuccess method:
 func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
@@ -136,7 +136,7 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
 }
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         // It's important to include the network user ID
@@ -152,7 +152,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
     }
 }
 ```
-```javascript title="title="Flutter (Dart)""
+```javascript title="Flutter (Dart)"
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
@@ -176,7 +176,7 @@ appsflyerSdk.initSdk(
     registerOnDeepLinkingCallback: true,
 );
 ```
-```typescript title="title="React Native (JS)""
+```typescript title="React Native (JS)"
 import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
 
@@ -193,7 +193,7 @@ appsFlyer.onInstallConversionData(installData => {
 // ...
 appsFlyer.initSdk(/*...*/);
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 using AppsFlyerSDK;
 
 // before SDK initialization

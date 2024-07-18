@@ -8,7 +8,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 To show a paywall, call `view.present()` method. You can use `view` from the previous step, we will introduce a new one for visibility reasons:
 
-```typescript title="title="Flutter""
+```typescript title="Flutter"
 try {
   await view.present();
 } on AdaptyError catch (e) {

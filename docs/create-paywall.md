@@ -22,15 +22,6 @@ To create a new paywall in the Adapty dashboard:
   src={require('./img/c661ee3-paywalls.png').default}
 />
 
-<img
-  src={require('./img/c661ee3-paywalls.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
 
 
 

@@ -72,7 +72,7 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 import AirBridge
 
 let builder = AdaptyProfileParameters.Builder()
@@ -80,7 +80,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
         val params = AdaptyProfileParameters.Builder()
@@ -96,7 +96,7 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
     }
 })
 ```
-```csharp title="title="Flutter (Dart)""
+```csharp title="Flutter (Dart)"
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -110,7 +110,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import Airbridge from 'airbridge-react-native-sdk';
 import { adapty } from 'react-native-adapty';
 

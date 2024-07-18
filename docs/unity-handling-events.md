@@ -8,7 +8,7 @@ Paywalls configured with the [Paywall Builder](https://docs.adapty.io/v3.0/docs/
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIEventListener` methods and register the observer before presenting any screen:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 AdaptyUI.SetEventListener(this);
 ```
 
@@ -18,7 +18,7 @@ AdaptyUI.SetEventListener(this);
 
 If a user has performed some action, this method will be invoked:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnPerformAction(AdaptyUI.View view, AdaptyUI.Action action) {
   switch (action.Type) {
     case AdaptyUI.ActionType.Close:
@@ -56,7 +56,7 @@ Note that `AdaptyUI.Action` has optional value property: look at this in the cas
 
 If a product was selected for purchase (by a user or by the system), this method will be invoked.
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnSelectProduct(AdaptyUI.View view, Adapty.PaywallProduct product) {
 }
 ```
@@ -65,7 +65,7 @@ public void OnSelectProduct(AdaptyUI.View view, Adapty.PaywallProduct product) {
 
 If a user initiates the purchase process, this method will be invoked.
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnStartPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) {
 }
 ```
@@ -74,7 +74,7 @@ public void OnStartPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) {
 
 If a user initiates the purchase process but manually interrupts it, this method will be invoked. This event occurs when the `Adapty.MakePurchase()` function completes with a `.paymentCancelled` error:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnCancelPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) {
 }
 ```
@@ -83,7 +83,7 @@ public void OnCancelPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) 
 
 If `Adapty.MakePurchase()` succeeds, this method will be invoked:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFinishPurchase(AdaptyUI.View view, 
                              Adapty.PaywallProduct product, 
                              Adapty.Profile profile) {
@@ -96,7 +96,7 @@ We recommend dismissing the screen in that case.
 
 If `Adapty.MakePurchase()` fails, this method will be invoked:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFailPurchase(AdaptyUI.View view, 
                            Adapty.PaywallProduct product, 
                            Adapty.Error error) {
@@ -107,7 +107,7 @@ public void OnFailPurchase(AdaptyUI.View view,
 
 If `Adapty.RestorePurchases()` succeeds, this method will be invoked:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFinishRestore(AdaptyUI.View view, Adapty.Profile profile) {
 }
 ```
@@ -118,7 +118,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 If `Adapty.RestorePurchases()` fails, this method will be invoked:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFailRestore(AdaptyUI.View view, Adapty.Error error) {
 }
 ```
@@ -129,7 +129,7 @@ public void OnFailRestore(AdaptyUI.View view, Adapty.Error error) {
 
 If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. In this case, this operation may fail, and AdaptyUI will report the error by invoking this method:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFailLoadingProducts(AdaptyUI.View view, Adapty.Error error) {
 }
 ```
@@ -138,7 +138,7 @@ public void OnFailLoadingProducts(AdaptyUI.View view, Adapty.Error error) {
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```csharp title="title="Unity""
+```csharp title="Unity"
 public void OnFailRendering(AdaptyUI.View view, Adapty.Error error) {
 }
 ```

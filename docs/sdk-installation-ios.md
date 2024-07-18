@@ -21,14 +21,15 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 1. Add Adapty to your `Podfile`:
 
-   ```shell title="title="Podfile""
+   ```shell title="Podfile"
    pod 'Adapty', '~> 2.11.0'
    pod 'AdaptyUI', '~> 2.11.0'
    ```
 
 2. Run:
 
-   ```sh title="title="pod install""
+   ```sh title="Sh"
+   pod install
    ```
 
 This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.
@@ -45,7 +46,8 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
 
-```swift title="title="// In your AppDelegate class:""
+```swift title="Swift"
+// In your AppDelegate class:
 
 let configurationBuilder =
 	Adapty.Configuration
@@ -59,7 +61,7 @@ Adapty.activate(with: configurationBuilder) { error in
   // handle the error
 }
 ```
-```swift title="SwiftUI""
+```swift title="SwiftUI"
 import Adapty
 
 @main
@@ -118,14 +120,16 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-```swift title="title="Adapty.logLevel = .verbose""
+```swift title="Swift"
+Adapty.logLevel = .verbose
 ```
 
 ## Redirect the logging system messages
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```swift title="title="Adapty.setLogHandler { level, message in""
+```swift title="Swift"
+Adapty.setLogHandler { level, message in
     writeToLocalFile("Adapty \(level): \(message)")
 }
 ```

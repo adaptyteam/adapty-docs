@@ -135,7 +135,8 @@ In addition, some events have additional properties. For the events `subscriptio
 
 Event example
 
-```json title="title="{""
+```json title="Json"
+{
     "price_usd": 9.99,
     "proceeds_usd": 6.99,
     "transaction_id": "1000000628581600",

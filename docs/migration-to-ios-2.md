@@ -25,7 +25,8 @@ We've also compiled a full list of changes, which can be found on the release pa
 **Before:**  
 Previously, all information that related to the user was in the `PurchaserInfo` model. This information was obtained by calling the `.getPurchaserInfo(forceUpdate:)` method:
 
-```swift title="title="// AdaptySDK 1.x.x""
+```swift title="Swift"
+// AdaptySDK 1.x.x
 Adapty.getPurchaserInfo(forceUpdate: Bool) { (purchaserInfo, error) in
     if error == nil {
         // check the accesss 
@@ -36,7 +37,8 @@ Adapty.getPurchaserInfo(forceUpdate: Bool) { (purchaserInfo, error) in
 **After:**  
 Now we have renamed the model to [`AdaptyProfile`](sdk-models#adaptyprofile). Also it affected the corresponding method:
 
-```swift title="title="// AdaptySDK 2.0.0""
+```swift title="Swift"
+// AdaptySDK 2.0.0
 Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
@@ -54,7 +56,8 @@ This change also affected the delegate method `.didReceiveUpdatedProfile` to `.d
 **Before:**  
 Previously, developers used to query an array of paywalls and then search that array for the desired element.
 
-```swift title="title="// AdaptySDK 1.x.x""
+```swift title="Swift"
+// AdaptySDK 1.x.x
 Adapty.getPaywalls(forceUpdate: Bool) { (paywalls, products, error) in
     if error == nil {
         // retrieve the products from paywalls
@@ -65,7 +68,8 @@ Adapty.getPaywalls(forceUpdate: Bool) { (paywalls, products, error) in
 **After:**  
 We have significantly simplified this use case, so now you can get only the requested object, without touching the rest. 
 
-```swift title="title="// AdaptySDK 2.0.0""
+```swift title="Swift"
+// AdaptySDK 2.0.0
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
     switch result {
         case let .success(paywall):
@@ -84,7 +88,8 @@ In addition to simplifying the most common usage scenario, we also significantly
 **Before:**  
 Previously the product entity was a part of the paywall, so you could use it right after `.getPaywalls` method was done. Also you could use products out of the paywalls context.
 
-```swift title="title="// AdaptySDK 1.x.x""
+```swift title="Swift"
+// AdaptySDK 1.x.x
 Adapty.getPaywalls(forceUpdate: Bool) { (paywalls, products, error) in
     if error == nil {
         // retrieve the products from paywalls
@@ -95,7 +100,8 @@ Adapty.getPaywalls(forceUpdate: Bool) { (paywalls, products, error) in
 **After:**  
 Once you have obtained the desired paywall, you can query the products array for it. Now the product entity is independent, although it can only exist in the context of the paywall.
 
-```swift title="title="// AdaptySDK 2.0.0""
+```swift title="Swift"
+// AdaptySDK 2.0.0
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -120,7 +126,8 @@ If you for some reason want to work with a product (or an array of products), pl
 **Before:**  
 We used to accept fallback paywalls in `String` format:
 
-```swift title="title="if let path = Bundle.main.path(forResource: "fallback_paywalls", ofType: "json"),""
+```swift title="Swift"
+if let path = Bundle.main.path(forResource: "fallback_paywalls", ofType: "json"), 
    let paywalls = try? String(contentsOfFile: path, encoding: .utf8) {
      Adapty.setFallbackPaywalls(paywalls)
 }
@@ -129,7 +136,8 @@ We used to accept fallback paywalls in `String` format:
 **After:**  
 We have now replaced this function with one that takes a parameter of type `Data`:
 
-```swift title="title="if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),""
+```swift title="Swift"
+if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),
    let paywallsData = try? Data(contentsOf: urlPath) {
      Adapty.setFallbackPaywalls(paywallsData)
 }
@@ -145,7 +153,8 @@ If your paywall has an active promotional offer for the product you are attempti
 **Before:**  
 The `makePurchase` function required the `offerId` parameter to be passed explicitly:
 
-```swift title="title="Adapty.makePurchase(product: <product>, offerId: <offerId>) { (purchaserInfo, receipt, appleValidationResult, product, error) in""
+```swift title="Swift"
+Adapty.makePurchase(product: <product>, offerId: <offerId>) { (purchaserInfo, receipt, appleValidationResult, product, error) in
     if error == nil {
         // successful purchase
     }
@@ -155,7 +164,8 @@ The `makePurchase` function required the `offerId` parameter to be passed explic
 **After:**  
 Starting with version 2.0 this parameter is no longer present. The Adapty SDK automatically uses the `promotionalOfferId` field to apply the discount, taking the value of the `promotionalOfferEligibility` field into account.
 
-```swift title="title="Adapty.makePurchase(paywall: paywall, product: product) { result in""
+```swift title="Swift"
+Adapty.makePurchase(paywall: paywall, product: product) { result in
     switch result {
     case let .success(response):
         // successful purchase
@@ -179,7 +189,8 @@ The `Product` entity has the `introductoryOfferEligibility` property, it determi
 **After:**  
 `introductoryOfferEligibility` is an enumeration
 
-```swift title="title="// AdaptySDK 2.0.0""
+```swift title="Swift"
+// AdaptySDK 2.0.0
 public enum AdaptyEligibility {
     case unknown
     case ineligible
@@ -197,7 +208,8 @@ As mentioned in the previous section, StoreKit version 1 does not allow you to r
 **Before:**  
 In previous versions, the `syncTransactionsHistory` function was added for such situations, which often conflicted with internal SDK calls, slowing it down.
 
-```swift title="title="Adapty.syncTransactionsHistory { params, products, error in""
+```swift title="Swift"
+Adapty.syncTransactionsHistory { params, products, error in
     Adapty.getPaywall("paywall_id") { paywall, error in
         // use paywall and products
     }
@@ -207,7 +219,8 @@ In previous versions, the `syncTransactionsHistory` function was added for such 
 **After:**  
 Now this mechanism is implemented much more reliably, we will try to request a receipt in its unavailability in advance, and there is a special parameter of `.getPaywallProducts` function to get products with a correct `introductoryOfferEligibility`:
 
-```swift title="title="Adapty.getPaywallProducts(paywall: paywall, fetchPolicy: .waitForReceiptValidation) { result in""
+```swift title="Swift"
+Adapty.getPaywallProducts(paywall: paywall, fetchPolicy: .waitForReceiptValidation) { result in
     if let products = try? result.get() {
         // update your UI
     }
@@ -223,7 +236,8 @@ Read more about handling such a scenario in the [_Displaying Paywalls & Products
 
 It is critical for a library such as ours to have an understandable and customizable logging system. Just as before, our SDK has several levels of logging, but now you can also override the stream the messages will be sent to. By default, messages will be sent to the console, but you can optionally write them to a file or send them to your favorite logging system.
 
-```swift title="title="Adapty.setLogHandler { level, message in""
+```swift title="Swift"
+Adapty.setLogHandler { level, message in
     logToSomeFancyLoggingSystem("Adapty \(level): \(message)")
 }
 ```
@@ -238,7 +252,8 @@ For example, we can now happily use the built-in Result type. This led to a slig
 **Before:**  
 The callback contains a lot of variables, including an error.
 
-```swift title="title="Adapty.makePurchase(product: <product>, offerId: <offerId>) { (purchaserInfo, receipt, appleValidationResult, product, error) in""
+```swift title="Swift"
+Adapty.makePurchase(product: <product>, offerId: <offerId>) { (purchaserInfo, receipt, appleValidationResult, product, error) in
     if error == nil {
         // successful purchase
     }
@@ -248,7 +263,8 @@ The callback contains a lot of variables, including an error.
 **After:**  
 A much more elegant and familiar way to handle the result
 
-```swift title="title="Adapty.makePurchase(paywall: paywall, product: product) { result in""
+```swift title="Swift"
+Adapty.makePurchase(paywall: paywall, product: product) { result in
     switch result {
     case let .success(response):
         // successful purchase

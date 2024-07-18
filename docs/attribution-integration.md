@@ -47,25 +47,28 @@ Attribution data is set for every profile one time, we won't override the data o
 
 To set attribution data for the profile, use `.updateAttribution()` method:
 
-```swift title="title="Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in""
+```swift title="Swift"
+Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
     if error == nil {
         // succesfull attribution update
     }
 }
 ```
-```kotlin title="title="Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->""
+```kotlin title="Kotlin"
+Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->
     if (error == null) {
         // succesfull attribution update
     }
 }
 ```
-```java title="title="Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {""
+```java title="Java"
+Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {
     if (error == null) {
         // succesfull attribution update
     }
 });
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 try {
   await Adapty().updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>");
 } on AdaptyError catch (adaptyError) {
@@ -73,7 +76,7 @@ try {
 } catch (e) {
 }
 ```
-```typescript title="title="React Native""
+```typescript title="React Native"
 // Optionally import enum to JavaScript
 import { AttributionSource } from 'react-native-adapty';
 
@@ -90,7 +93,7 @@ try {
 	// handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity""
+```csharp title="Unity"
 Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) => {
     if (error != null) {
         // handle the error
@@ -124,14 +127,16 @@ To set attribution from AppsFlyer, pass the attribution you receive from the del
 In this case, it is mandatory to pass the `networkUserId` parameter.
 :::
 
-```swift title="title="// Find your implementation of AppsFlyerLibDelegate""
+```swift title="Swift"
+// Find your implementation of AppsFlyerLibDelegate 
 // and update onConversionDataSuccess method:
 func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     // It's important to include the network user ID
     Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
 }
 ```
-```kotlin title="title="val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {""
+```kotlin title="Kotlin"
+val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         // It's important to include the network user ID
         Adapty.updateAttribution(
@@ -146,7 +151,8 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     }
 }
 ```
-```java title="title="AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {""
+```java title="Java"
+AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
     @Override
     public void onConversionDataSuccess(Map<String, Object> conversionData) {
         // It's important to include the network user ID
@@ -163,7 +169,7 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     }
 };
 ```
-```javascript title="title="Flutter""
+```javascript title="Flutter"
 @override
 Future<bool> initialize() async {
     appsflyerSdk.onInstallConversionData((data) {
@@ -195,7 +201,8 @@ iOS SDK
 To set attribution from Adjust, pass the attribution you receive from the delegate method of Adjust iOS SDK. You should also configure [Adjust integration](adjust) in Adapty Dashboard.
 :::
 
-```swift title="title="// Find your implementation of AdjustDelegate""
+```swift title="Swift"
+// Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     if let attribution = attribution?.dictionary() {
@@ -203,7 +210,8 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```kotlin title="title="adjustConfig.setOnAttributionChangedListener { attribution ->""
+```kotlin title="Kotlin"
+adjustConfig.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
             if (error != null) {
@@ -213,7 +221,8 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```java title="title="adjustConfig.setOnAttributionChangedListener(attribution -> {""
+```java title="Java"
+adjustConfig.setOnAttributionChangedListener(attribution -> {
     if (attribution != null) {
         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, error -> {
             if (error != null) {
@@ -232,14 +241,16 @@ iOS SDK
 To connect Branch user and Adapty user, make sure you set your `customerUserId` as Branch Identity Id. If you prefer to not use `customerUserId` in Branch, set `networkUserId` param in `.updateAttribution()` method to specify the Branch user Id.
 :::
 
-```swift title="title="// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.""
+```swift title="Swift"
+// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
     if let data = data {
         Adapty.updateAttribution(data, source: .branch)
     }
 }
 ```
-```kotlin title="title="object branchListener : Branch.BranchReferralInitListener {""
+```kotlin title="Kotlin"
+object branchListener : Branch.BranchReferralInitListener {
     override fun onInitFinished(referringParams: JSONObject?, error: BranchError?) {
         referringParams?.let { data ->
             Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
@@ -251,7 +262,8 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
     }
 }
 ```
-```java title="title="Branch.BranchReferralInitListener branchListener = (data, e) -> {""
+```java title="Java"
+Branch.BranchReferralInitListener branchListener = (data, e) -> {
     if (data != null) {
         Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH, error -> {
             if (error != null) {
@@ -274,7 +286,8 @@ Adapty can automatically collect Apple Search Ad attribution data. All you need 
 
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes) method. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
 
-```swift title="title="let builder = ProfileParameterBuilder()""
+```swift title="Swift"
+let builder = ProfileParameterBuilder()
     .with(facebookAnonymousId: FBSDKCoreKit.AppEvents.anonymousID)
 
 Adapty.updateProfile(parameters: builder.build()) { error in
@@ -283,7 +296,8 @@ Adapty.updateProfile(parameters: builder.build()) { error in
     }
 }
 ```
-```kotlin title="title="val builder = AdaptyProfileParameters.Builder()""
+```kotlin title="Kotlin"
+val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
   
 Adapty.updateProfile(builder.build()) { error ->
@@ -292,7 +306,8 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
-```java title="title="AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()""
+```java title="Java"
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
         .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context));
 
 Adapty.updateProfile(builder.build(), error -> {
@@ -307,7 +322,8 @@ Adapty.updateProfile(builder.build(), error -> {
 If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
 To set attributes, use only the keys from the example below (all keys are optional). The system supports max 30 available attributes, where the keys are limited to 30 characters. Every value in the map should be no longer than 50 characters. `status` can only be `organic`, `non-organic` or `unknown`. Any additional keys will be omitted. 
 
-```swift title="title="let attribution = [""
+```swift title="Swift"
+let attribution = [
     "status": "non_organic|organic|unknown",
     "channel": "Google Ads",
     "campaign": "Christmas Sale",

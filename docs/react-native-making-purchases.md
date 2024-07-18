@@ -6,7 +6,8 @@ metadataTitle: ""
 
 To make the purchase, you need to call `makePurchase` method:
 
-```typescript title="title="try {""
+```typescript title="Typescript"
+try {
 	const profile = await adapty.makePurchase(product);
 } catch (error) {
 	// handle the `AdaptyError`
@@ -27,7 +28,8 @@ Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Ada
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```typescript title="title="try {""
+```typescript title="Typescript"
+try {
 	const profile = await adapty.makePurchase(product);
 	const isSubscribed = profile.accessLevels['premium']?.isActive;
   
@@ -55,7 +57,8 @@ Adapty signs the request according to Apple guidelines, please make sure you've 
 
 To restore purchases, you need to call `restorePurchases` method:
 
-```typescript title="title="try {""
+```typescript title="Typescript"
+try {
 	const profile = await adapty.restorePurchases();
 	// check the access level
 } catch (error) {
@@ -71,7 +74,8 @@ Response parameters:
 
 For deferred purchases, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store `makeDeferredPurchase` and call it later if you want to hold your purchase for now. Then show the paywall to your user. To continue purchase, call `makeDeferredPurchase`.
 
-```swift title="title="extension AppDelegate: AdaptyDelegate {""
+```swift title="Swift"
+extension AppDelegate: AdaptyDelegate {
 
     func paymentQueue(shouldAddStorePaymentFor product: AdaptyDeferredProduct, defermentCompletion makeDeferredPurchase: @escaping (ResultCompletion<AdaptyProfile>?) -> Void) {
         // you can store makeDeferredPurchase callback and call it later
@@ -89,7 +93,8 @@ For deferred purchases, Adapty SDK has an optional delegate method, which is cal
 
 Since iOS 14.0 your users can redeem Offer Codes. To allow them to do so, you can present the Offer Code redemption sheet by calling the related SDK method.
 
-```typescript title="title="adapty.presentCodeRedemptionSheet();""
+```typescript title="Typescript"
+adapty.presentCodeRedemptionSheet();
 ```
 
 :::danger

@@ -53,7 +53,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `amplitudeDeviceId` or `amplitudeUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Amplitude from your app is the same one you send to Adapty.
 
-```Text title="title="iOS (Swift)""
+```Text title="iOS (Swift)"
 import Amplitude 
 
 let builder = AdaptyProfileParameters.Builder()
@@ -62,7 +62,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 //for Amplitude maintenance SDK (obsolete)
 val amplitude = Amplitude.getInstance()
 val amplitudeDeviceId = amplitude.deviceId
@@ -90,7 +90,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="title="Flutter (Dart)""
+```Text title="Flutter (Dart)"
 import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
@@ -105,7 +105,7 @@ try {
      // handle error
 } catch (e) {}
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 
 try {
@@ -117,7 +117,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
 builder.SetAmplitudeDeviceId(amplitude.getDeviceId());

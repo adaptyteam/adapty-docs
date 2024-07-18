@@ -6,7 +6,8 @@ metadataTitle: ""
 
 To make the purchase, you have to call `.MakePurchase()` method:
 
-```csharp title="title="Adapty.MakePurchase(product, (profile, error) => {""
+```csharp title="C#"
+Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
       return;
@@ -30,7 +31,8 @@ Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Ada
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```csharp title="title="Adapty.MakePurchase(product, (profile, error) => {""
+```csharp title="C#"
+Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
       return;
@@ -60,7 +62,8 @@ Adapty signs the request according to Apple guidelines, please make sure you've 
 
 To restore purchases, you have to call `.RestorePurchases()` method:
 
-```csharp title="title="Adapty.RestorePurchases((profile, error) => {""
+```csharp title="C#"
+Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
     } else {
@@ -77,7 +80,8 @@ Response parameters:
 
 Since iOS 14.0 your users can redeem Offer Codes. To allow them to do so, you can present the Offer Code redemption sheet by calling the related SDK method.
 
-```swift title="title="Adapty.PresentCodeRedemptionSheet()""
+```swift title="Swift"
+Adapty.PresentCodeRedemptionSheet()
 ```
 
 :::danger

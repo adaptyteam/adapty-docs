@@ -10,7 +10,8 @@ Adapty creates an internal profile id for every user. But if you have your authe
 
 You can set your user id at any time with `.Identify()` method. The most common cases are after registration/authorization when the user switches from being an anonymous user to an authenticated user.
 
-```swift title="title="Adapty.Identify("YOUR_USER_ID", (error) => {""
+```swift title="Swift"
+Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
     // successful identify
   }
@@ -33,7 +34,8 @@ it is also quite important to re-request all paywalls and products after identif
 
 You can logout the user anytime by calling `.Logout()` method:
 
-```swift title="title="Adapty.Logout((error) => {""
+```swift title="Swift"
+Adapty.Logout((error) => {
   if(error == null) {
     // successful logout
   }

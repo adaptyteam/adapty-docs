@@ -10,7 +10,8 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 1. Implement the `AdaptyObserverModeDelegate` object:
 
-   ```swift title="title="func paywallController(_ controller: AdaptyPaywallController,""
+   ```swift title="Swift"
+   func paywallController(_ controller: AdaptyPaywallController,
                           didInitiatePurchase product: AdaptyPaywallProduct,
                           onStartPurchase: @escaping () -> Void,
                           onFinishPurchase: @escaping () -> Void) {
@@ -28,7 +29,8 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 2. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-```swift title="title="import Adapty""
+```swift title="Swift"
+import Adapty
 import AdaptyUI
 
 let visualPaywall = AdaptyUI.paywallController(
@@ -59,14 +61,15 @@ Returns:
 
 After the object has been successfully created, you can display it like so: 
 
-```swift title="title="present(visualPaywall, animated: true)""
+```swift title="Swift"
+present(visualPaywall, animated: true)
 ```
 
 ## Present Paywall Builder paywalls in SwiftUI
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift title="title="SwiftUI""
+```swift title="SwiftUI"
 @State var paywallPresented = false
 
 var body: some View {

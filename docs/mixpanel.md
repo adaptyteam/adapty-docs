@@ -57,7 +57,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 import Mixpanel
 
 let builder = AdaptyProfileParameters.Builder()
@@ -65,7 +65,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 val params = AdaptyProfileParameters.Builder()
     .withMixpanelUserId(mixpanelAPI.distinctId)
     .build()
@@ -75,7 +75,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```csharp title="title="Flutter (Dart)""
+```csharp title="Flutter (Dart)"
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
@@ -91,7 +91,7 @@ final builder = AdaptyProfileParametersBuilder()
         // handle error
     } catch (e) {}
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 import { Mixpanel } from 'mixpanel-react-native';
 
@@ -104,7 +104,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetMixpanelUserId(Mixpanel.DistinctId);
 

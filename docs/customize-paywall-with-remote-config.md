@@ -47,21 +47,21 @@ You can switch between views by clicking on the **Table** or **JSON** tab whenev
 
 Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. Here are some examples of how you can use a remote config.
 
-```json title="title="Titles""
+```json title="Titles"
 {
     "screen_title": "Today only: Subscribe, and get 7 days for free!"
 }
 
 ## Test titles or others texts
 ```
-```json title="title="Images""
+```json title="Images"
 {
     "background_image": "https://adapty.io/media/paywalls/bg1.png"
 }
 
 ## Test images on your paywall
 ```
-```json title="title="Fonts""
+```json title="Fonts"
 {
     "font_family": "San Francisco",
     "font_size": 16
@@ -69,21 +69,21 @@ Whatever view you've chosen to customize your paywall, you can later access this
 
 ## Test fonts
 ```
-```json title="title="Color""
+```json title="Color"
 {
     "subscribe_button_color": "purple"
 }
 
 ## Test colors of buttons, texts etc.
 ```
-```json title="title="HTML""
+```json title="HTML"
 {
     "photo_gallery": "https://adapty.io/media/paywalls/link-to-html-snippet.html"
 }
 
 ## Any HTML code that can be displayed on the paywall
 ```
-```json title="title="Soft/Hard Paywall""
+```json title="Soft/Hard Paywall"
 {
     "hard_paywall": true
 }
@@ -91,7 +91,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ## By setting it to true, you disalow skipping paywall without subscribing
 ## You have to handle this logic in your app
 ```
-```json title="title="Translations""
+```json title="Translations"
 {
     "title": {
         "en": "Try for free!",

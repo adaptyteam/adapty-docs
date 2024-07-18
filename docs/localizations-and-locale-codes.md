@@ -29,7 +29,7 @@ This way an iOS device that sent `'pt_BR'`, an Android device that sent `pt-BR`,
 
 If you're wondering about localizations, chances are you're already dealing with the localized string files in your project. If that's the case, we recommend placing some key-value with the intended Adapty locale code in each of your files for the corresponding localizations. And then extract the value for this key when calling our SDK, like so:
 
-```swift title="title="iOS""
+```swift title="iOS"
 // 1. Modify your Localizable.strings files
 
 /*
@@ -47,7 +47,7 @@ adapty_paywalls_locale = "pt-br";
 let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
-```kotlin title="title="Android""
+```kotlin title="Android"
 // 1. Modify your strings.xml files
 
 /*
@@ -72,11 +72,11 @@ That way you can ensure you're in full control of what localization will be retr
 
 You can get similar (but not identical) results without explicitly defining locale codes for every localization. That would mean extracting a locale code from some other objects that your platform provides, like this:
 
-```swift title="title="iOS""
+```swift title="iOS"
 let locale = Locale.current.identifier
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
-```kotlin title="title="Android""
+```kotlin title="Android"
 val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
     context.resources.configuration.locales[0]
 else

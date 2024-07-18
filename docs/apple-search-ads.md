@@ -99,7 +99,8 @@ You can use your own public-private key pair if you are using other services or 
 
 Generate private key in Terminal
 
-```text title="title="openssl ecparam -genkey -name prime256v1 -noout -out private-key.pem""
+```text title="Text"
+openssl ecparam -genkey -name prime256v1 -noout -out private-key.pem
 ```
 
 Upload it in Adapty Settings -> Apple Search Ads (Upload private key button)
@@ -108,7 +109,8 @@ Upload it in Adapty Settings -> Apple Search Ads (Upload private key button)
 
 Generate public key in Terminal
 
-```text title="title="openssl ec -in private-key.pem -pubout -out public-key.pem""
+```text title="Text"
+openssl ec -in private-key.pem -pubout -out public-key.pem
 ```
 
 You can use this public key in your Apple Search Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.

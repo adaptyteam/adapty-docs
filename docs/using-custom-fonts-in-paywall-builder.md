@@ -78,7 +78,7 @@ There are two ways to get the correct ID for a font: first involves some basic c
 
 If you've already added a custom font to your app's bundle — chances are you're already referencing it by the font name. To make sure simply call `UIFont.familyNames()` to get the family name of the font and then plug it into `UIFont.fontNames(forFamilyName: familyName)`. You can do this in `viewDidLoad` and then remove this code snippet:
 
-```swift title="title="Swift""
+```swift title="Swift"
 override func viewDidLoad() {
     super.viewDidLoad()
   	...

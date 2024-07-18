@@ -196,7 +196,7 @@ Make sure to turn off sending subscription events from devices and your server t
 
 It’s essential to send Adjust attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method. With this attribution, Adapty receives `adjust_device_id`, which is crucial for successful integration. Here's how you can do it:
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
@@ -205,7 +205,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
@@ -218,7 +218,7 @@ config.setOnAttributionChangedListener { attribution ->
 }
 Adjust.onCreate(config)
 ```
-```csharp title="title="Flutter (Dart)""
+```csharp title="Flutter (Dart)"
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -244,7 +244,7 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
         } catch (e) {}
       };
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
 
@@ -260,7 +260,7 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 // ...
 Adjust.create(adjustConfig);
 ```
-```csharp title="title="Unity (C#)""
+```csharp title="Unity (C#)"
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
 

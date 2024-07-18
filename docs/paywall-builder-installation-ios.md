@@ -12,13 +12,14 @@ You can easily install the AdaptyUI SDK via CocoaPods or Swift Package Manager.
 
 Add Adapty to your `Podfile`:
 
-```shell title="title="Podfile""
+```shell title="Podfile"
 pod 'AdaptyUI', '~> 2.1.5'
 ```
 
 And then run:
 
-```sh title="title="pod install""
+```sh title="Sh"
+pod install
 ```
 
 This creates an `.xcworkspace` file for your app. Use this file for all future development of your application.

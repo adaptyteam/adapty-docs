@@ -72,7 +72,8 @@ The event name can be any string. You cannot leave the fields empty for enabled 
 
 After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a `isMount` POST verification request to your endpoint.
 
-```json title="title="{""
+```json title="Json"
+{
     adapty_check: {{check_string}}
 }
 ```
@@ -85,7 +86,8 @@ Be sure your endpoint supports **Content-Type**: `application/json` header
 
 Your server must reply with a 200 or 201 HTTP status code and send the response outlined below with the identical `check_string`. 
 
-```json title="title="{""
+```json title="Json"
+{
     adapty_check_response: {{check_string}}
 }
 ```

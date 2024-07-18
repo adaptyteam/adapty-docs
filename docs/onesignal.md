@@ -110,7 +110,7 @@ Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on 
 
 Here is how you can link Adapty with OneSignal with either `playerId` or `subscriptionId`:
 
-```swift title="title="iOS (Swift)""
+```swift title="iOS (Swift)"
 // PlayerID (pre-v5 OneSignal SDK)
 // in your OSSubscriptionObserver implementation
 func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -135,7 +135,7 @@ OneSignal.Notifications.requestPermission({ accepted in
     Adapty.updateProfile(params: builder.build())
 }, fallbackToSettings: true)
 ```
-```kotlin title="title="Android (Kotlin)""
+```kotlin title="Android (Kotlin)"
 // PlayerID (pre-v5 OneSignal SDK)
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
@@ -166,7 +166,8 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     }
 }
 ```
-```java title="title="// PlayerID (pre-v5 OneSignal SDK)""
+```java title="Java"
+// PlayerID (pre-v5 OneSignal SDK)
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
     String playerId = to != null ? to.getUserId() : null;
@@ -196,7 +197,7 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     });
 };
 ```
-```java title="title="Flutter (Dart)""
+```java title="Flutter (Dart)"
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
     if (playerId != null) {
@@ -213,7 +214,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
     }
 });
 ```
-```typescript title="title="React Native (TS)""
+```typescript title="React Native (TS)"
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 
@@ -225,7 +226,7 @@ OneSignal.addSubscriptionObserver(event => {
   });
 });
 ```
-```Text title="title="Unity (C#)""
+```Text title="Unity (C#)"
 using OneSignalSDK;
 
 var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
