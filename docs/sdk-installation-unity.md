@@ -24,6 +24,12 @@ To install the Adapty SDKs:
    
 <img
   src={require('./img/456bd98-adapty-unity-plugin.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +40,12 @@ To install the Adapty SDKs:
    
 <img
   src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -121,6 +133,12 @@ Configurational options:
 
 <img
   src={require('./img/2ccd564-create_adapty_listener.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

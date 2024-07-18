@@ -161,6 +161,12 @@ Adapty has a special event `access_level_updated`. It is sent only to [webhook](
 
 <img
   src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -215,6 +221,12 @@ You can see the status of certain integration events in the event list in the Ad
 
 <img
   src={require('./img/f69ea1a-Screenshot_2023-06-02_at_14.58.48.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

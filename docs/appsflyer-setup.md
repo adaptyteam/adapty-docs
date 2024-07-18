@@ -31,6 +31,12 @@ To set up the integration with AppsFlyer:
    
 <img
   src={require('./img/43a5cc6-apple_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -41,6 +47,12 @@ To set up the integration with AppsFlyer:
    
 <img
   src={require('./img/61bff5a-appsflyer_iOS_app_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -55,6 +67,12 @@ To set up the integration with AppsFlyer:
    
 <img
   src={require('./img/1c18c50-appsflyer_security_center.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -67,6 +85,12 @@ To set up the integration with AppsFlyer:
    
 <img
   src={require('./img/7934920-appsflyer_new_token.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -85,6 +109,12 @@ To set up the integration with AppsFlyer:
 
 <img
   src={require('./img/43cacb2-appsflyer_dev_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -114,6 +144,12 @@ In the [**Integrations** -> **AppsFlyer**](https://app.adapty.io/integrations/ap
 
 <img
   src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

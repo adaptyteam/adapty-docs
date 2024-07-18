@@ -11,6 +11,12 @@ After you set up an integration, there are 2 ways you can learn about issues wit
    
 <img
   src={require('./img/879070c-sending_failed.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -20,6 +26,12 @@ After you set up an integration, there are 2 ways you can learn about issues wit
    
 <img
   src={require('./img/863e36b-red_integrations.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +51,12 @@ To learn the exact issue, hover over the red text. The system will show the issu
 
 <img
   src={require('./img/54d5219-hover_sending_failed.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

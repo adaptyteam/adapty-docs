@@ -11,6 +11,12 @@ It's located right under Home in the left-side menu:
 
 <img
   src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -38,6 +44,12 @@ You can customize which charts to show as well as their order. To do that, press
 
 <img
   src={require('./img/d6220fa-CleanShot_2024-01-22_at_20.01.05.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -53,6 +65,12 @@ There is one important difference though: you can group and filter by country, s
 
 <img
   src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

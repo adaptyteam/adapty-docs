@@ -24,6 +24,12 @@ To start customizing a paywall using the remote config:
    
 <img
   src={require('./img/b7eb293-paywalls_edit.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +40,12 @@ To start customizing a paywall using the remote config:
    
 <img
   src={require('./img/d44fdb9-switch_to_remote_config.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -114,6 +126,12 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
 
 <img
   src={require('./img/3356ff5-remote_config_JSON.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -127,6 +145,12 @@ If it's not common for you to work with code and there is a need to correct some
 
 <img
   src={require('./img/4c27b2f-remote_config_table.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -140,6 +164,12 @@ To add a key, click the **Add raw** button. We automatically check the values an
 
 <img
   src={require('./img/ef682d8-add_raw.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -151,6 +181,12 @@ Additional raw options are mostly useful for [paywall localisations](add-remote-
 
 <img
   src={require('./img/17bcf80-remote_config_table_options.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

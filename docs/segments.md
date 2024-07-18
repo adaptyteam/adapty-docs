@@ -9,6 +9,12 @@ A Segment is a group of users with common properties.
 
 <img
   src={require('./img/3244407-Segments.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -29,6 +35,12 @@ To create a segment, write a segment name, and choose attributes.
 
 <img
   src={require('./img/image%20%2811%29.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -81,6 +93,12 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
 
 <img
   src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -15,6 +15,12 @@ In the example below, we showcase two distinct paywalls: Paywall A and Paywall B
 
 <img
   src={require('./img/14679a8-Placement-2audiences-paywalls.jpg').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -31,6 +37,12 @@ To begin working with placements in Adapty:
    
 <img
   src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -46,6 +58,12 @@ To create a new placement:
    
 <img
   src={require('./img/d0e41c3-CleanShot_2023-07-13_at_15.13.272x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -64,6 +82,12 @@ In the context of placement within Adapty, adding an audience to a placement all
 
 <img
   src={require('./img/d0d720f-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -95,6 +119,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -104,6 +134,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/3b8d8e3-edit_audience.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -113,6 +149,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/2babfc8-reorder_audiences.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -127,6 +169,12 @@ The **Run paywall** option allows you to display a specific paywall exclusively 
 
 <img
   src={require('./img/f23da25-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -140,6 +188,12 @@ To learn more about running paywalls in Adapty and optimizing their performance,
 
 <img
   src={require('./img/fddf85a-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -155,6 +209,12 @@ The **Run A/B test** option allows you to show different paywalls to app users w
 
 <img
   src={require('./img/5db0f05-CleanShot_2023-07-13_at_17.55.512x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -178,6 +238,12 @@ Adapty allows you to provide fallback paywalls that will be used when a user ope
 
 <img
   src={require('./img/5608de9-CleanShot_2023-08-09_at_18.02.05_22x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

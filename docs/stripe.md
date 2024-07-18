@@ -26,6 +26,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +42,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -46,6 +58,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -66,6 +84,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -76,6 +100,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -86,6 +116,12 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    
 <img
   src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -104,6 +140,12 @@ Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=tr
 
 <img
   src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -121,6 +163,12 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
 
 <img
   src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -132,6 +180,12 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 
 <img
   src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

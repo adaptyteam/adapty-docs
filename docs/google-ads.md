@@ -17,6 +17,12 @@ The next step is to connect your Google Ads account with your Firebase project. 
 
 <img
   src={require('./img/458e843-07c949af-d174-461d-b3d8-e9825b6b1896.jpg').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -20,6 +20,12 @@ Conversion is performed with the data we gather through SDK and store notificati
 
 <img
   src={require('./img/28ebb72-CleanShot_2022-08-01_at_12.35.38.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +40,12 @@ There is usually a number of marketing activities, technical updates, and extern
 
 <img
   src={require('./img/39c99b2-CleanShot_2022-08-01_at_14.30.14.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -79,6 +91,12 @@ Please see below each conversion explanation with an example for your reference.
 
 <img
   src={require('./img/289b193-CleanShot_2022-08-02_at_07.46.15.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -100,6 +118,12 @@ The following groupings are available:
 
 <img
   src={require('./img/2454c7f-CleanShot_2022-08-01_at_15.06.53.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -111,6 +135,12 @@ If a chosen date range is not enough to show any results, you may see a notifica
 
 <img
   src={require('./img/64a0769-CleanShot_2022-08-02_at_08.05.02.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -124,6 +154,12 @@ A comparison of the curves gives a bright picture, and to get more use the table
 
 <img
   src={require('./img/3fe5da8-CleanShot_2022-08-02_at_08.11.45.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -135,6 +171,12 @@ The grouping that was mentioned above changes both the charts and the table. Set
 
 <img
   src={require('./img/67c4ac4-CleanShot_2022-07-25_at_22.24.38.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -146,6 +188,12 @@ We know that it's important to have an option to work with numbers the way you l
 
 <img
   src={require('./img/85788c5-CleanShot_2022-07-25_at_22.39.30.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

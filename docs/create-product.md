@@ -16,6 +16,12 @@ After your products are set up in the stores, you are ready to add your products
 
 <img
   src={require('./img/7c9573a-products_tab.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -27,6 +33,12 @@ After your products are set up in the stores, you are ready to add your products
 
 <img
   src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -59,6 +71,12 @@ After your products are set up in the stores, you are ready to add your products
         
 <img
   src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -22,6 +22,12 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
 <img
   src={require('./img/7889edb-package_name.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -35,6 +41,12 @@ The Package name is the unique identifier of your app in the Google Play Store. 
    
 <img
   src={require('./img/b00066c-package_name.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -49,6 +61,12 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
 <img
   src={require('./img/20fdba1-service_key_file.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

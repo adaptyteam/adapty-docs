@@ -20,6 +20,12 @@ To create a new paywall in the Adapty dashboard:
 
 <img
   src={require('./img/c661ee3-paywalls.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -31,6 +37,12 @@ To create a new paywall in the Adapty dashboard:
 
 <img
   src={require('./img/4b200e5-create_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -45,6 +57,12 @@ To create a new paywall in the Adapty dashboard:
 
 <img
   src={require('./img/0479b51-ad_product_to_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -57,6 +75,12 @@ To create a new paywall in the Adapty dashboard:
 
 <img
   src={require('./img/f586eee-add_offer.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -21,6 +21,12 @@ Checklist to successfully use Google Play offers
 
 <img
   src={require('./img/04aca48-sub-offers.jpeg').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +42,12 @@ Now you can create multiple offers for every base plan (previously known as subs
 
 <img
   src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -49,6 +61,12 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 <img
   src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -59,6 +77,12 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 <img
   src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -73,6 +97,12 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 <img
   src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -88,6 +118,12 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 <img
   src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -98,6 +134,12 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 <img
   src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -108,6 +150,12 @@ After activating the offer, you should copy its ID to use in Adapty.
 
 <img
   src={require('./img/0800923-001938-November-03-ANtSI48t.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -123,6 +171,12 @@ Let's create a 1-month product in Adapty with all the offers. You can do it from
 
 <img
   src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -145,6 +199,12 @@ If you configure a paywall like this, a monthly subscription will not have a fre
 
 <img
   src={require('./img/3f2c59f-001942-November-03-9iARsVaa.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

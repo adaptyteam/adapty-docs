@@ -13,6 +13,12 @@ To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/
 
 <img
   src={require('./img/2500769-CleanShot_2023-08-18_at_14.57.352x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -24,6 +30,12 @@ Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choo
 
 <img
   src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +51,12 @@ Below the credentials, there are three groups of events you can send to AppMetri
 
 <img
   src={require('./img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

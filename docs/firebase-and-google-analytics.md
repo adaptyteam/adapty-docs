@@ -15,6 +15,12 @@ First of all, you have to enable integration between Firebase and Google Analyti
 
 <img
   src={require('./img/14b6d84-CleanShot_2023-08-18_at_20.37.462x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -28,6 +34,12 @@ Then Adapty needs your Firebase App ID and Google Analytics API Secret to send e
 
 <img
   src={require('./img/14d8224-CleanShot_2023-08-21_at_12.14.182x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +51,12 @@ Next, access the App's Stream details page within the Data Streams section of Ad
 
 <img
   src={require('./img/b26ae6a-CleanShot_2023-08-21_at_12.28.482x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -50,6 +68,12 @@ Under **Additional settings**, go to the **Measurement Protocol API secrets** pa
 
 <img
   src={require('./img/7404bde-CleanShot_2023-08-21_at_12.33.242x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -59,6 +83,12 @@ Under **Additional settings**, go to the **Measurement Protocol API secrets** pa
 
 <img
   src={require('./img/0266112-CleanShot_2023-08-21_at_12.34.442x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -70,6 +100,12 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 <img
   src={require('./img/4eaae3f-CleanShot_2023-08-21_at_12.35.312x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -181,6 +217,12 @@ And now it is time to decide which events you will receive in Firebase and Googl
 
 <img
   src={require('./img/7923397-set_up_events_names.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -193,6 +235,12 @@ Also, you can set up sending user properties in the Adapty dashboard.
 
 <img
   src={require('./img/e053006-CleanShot_2023-08-21_at_12.50.162x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -204,6 +252,12 @@ This means that your events will be enriched with `subscription_state` and `subs
 
 <img
   src={require('./img/1962ef1-CleanShot_2023-08-21_at_12.48.222x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -213,6 +267,12 @@ This means that your events will be enriched with `subscription_state` and `subs
 
 <img
   src={require('./img/2425cc0-CleanShot_2023-08-21_at_12.52.532x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -26,6 +26,12 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
 
 <img
   src={require('./img/14687cb-generate_in-app_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +45,12 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
    
 <img
   src={require('./img/258caae-integration_done_for_offers.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -56,6 +68,12 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
    
 <img
   src={require('./img/675b593-app_store_promotional_offers_in_adapty.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -15,6 +15,12 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
    
 <img
   src={require('./img/0a6100c-PB_localization.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -24,6 +30,12 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
    
 <img
   src={require('./img/4abdb84-add_locale.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +46,12 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
    
 <img
   src={require('./img/0e99ddb-copy_locale.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -50,6 +68,12 @@ You can learn more about it [here](get-pb-paywalls).
    
 <img
   src={require('./img/df4b331-locale_options.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -73,6 +97,12 @@ You can check your texts while editing by simply switching over back to the **Bu
 
 <img
   src={require('./img/2b31427-choose_localization.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

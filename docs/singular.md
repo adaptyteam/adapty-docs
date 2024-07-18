@@ -19,6 +19,12 @@ For this integration to work, the Singular SDK Key is required. It can be found 
 
 <img
   src={require('./img/4bc50d1-singular_sdk_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ Below the credentials, there are three groups of events you can send to Singular
 
 <img
   src={require('./img/e67de0c-singular_events.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

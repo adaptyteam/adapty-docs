@@ -20,6 +20,12 @@ With this information, you will be able to gain insights into how your subscript
 
 <img
   src={require('./img/fd6b0af-new.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -55,6 +61,12 @@ In addition, the LTV chart can be used to compare different customer segments, a
 
 <img
   src={require('./img/cf75633-Area2.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -15,6 +15,12 @@ To edit an existing placement:
    
 <img
   src={require('./img/e04a93a-edit_placement_list.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

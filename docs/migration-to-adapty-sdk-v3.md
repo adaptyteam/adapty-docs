@@ -33,7 +33,7 @@ Change your `Podfile` to fir the new Adapty SDK version:
 
 2. Run:
 
-   ```sh title="Sh"
+   ```sh title="Shell"
    pod install
    ```
 

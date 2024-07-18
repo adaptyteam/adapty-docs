@@ -9,6 +9,12 @@ To install the SDK, download`adapty-unity-plugin-*.unitypackage` from GitHub and
 
 <img
   src={require('./img/156ca86-add_adapty_plugin.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

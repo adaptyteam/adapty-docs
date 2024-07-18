@@ -13,6 +13,12 @@ To create a product that will be linked to Adapty:
    
 <img
   src={require('./img/148c3b5-subscriptions.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -27,6 +33,12 @@ To create a product that will be linked to Adapty:
 
 <img
   src={require('./img/3f93c44-create_subscription_group.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -40,6 +52,12 @@ To create a product that will be linked to Adapty:
    
 <img
   src={require('./img/22fc643-add_subscription.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -54,6 +72,12 @@ To create a product that will be linked to Adapty:
    
 <img
   src={require('./img/04aca55-create_subscription.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -66,6 +90,12 @@ To create a product that will be linked to Adapty:
    
 <img
   src={require('./img/f56cf0f-subscription_duration.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -78,6 +108,12 @@ To create a product that will be linked to Adapty:
     
 <img
   src={require('./img/de1cec8-subscription_price.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -88,6 +124,12 @@ To create a product that will be linked to Adapty:
     
 <img
   src={require('./img/2a047a6-price_by_country.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -100,6 +142,12 @@ To create a product that will be linked to Adapty:
 
 <img
   src={require('./img/d2b2031-confirm_prices.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -113,6 +161,12 @@ Please consider, that the steps provided so far focus on configuring an Auto-Ren
 
 <img
   src={require('./img/5663d85-in-app_purchases.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

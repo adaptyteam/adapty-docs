@@ -17,6 +17,12 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 
 <img
   src={require('./img/c38cb41-paywalls_archive.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -28,6 +34,12 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
    
 <img
   src={require('./img/3d70992-archive_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

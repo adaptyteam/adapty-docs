@@ -9,6 +9,12 @@ Install Adapty SDK and start analyzing real-time metrics of your iOS or Android 
 
 <img
   src={require('./img/888bf46-CleanShot_2023-01-05_at_07.29.48.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -40,6 +46,12 @@ We have 2 formats of date and time - American and European. You can set one of t
 
 <img
   src={require('./img/103a5fc-CleanShot_2023-01-05_at_14.16.10.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -60,6 +72,12 @@ How can one read the comparison insights?
 
 <img
   src={require('./img/ba05509-CleanShot_2023-01-05_at_21.12.00.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -105,6 +123,12 @@ ARPU chart displays the average revenue per user (ARPU) for your app. ARPU is ca
 
 <img
   src={require('./img/3a8a90a-small-CleanShot_2023-04-28_at_16.22.002x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -168,6 +192,12 @@ The Non-subscriptions chart displays the number of in-app purchases such as cons
 
 <img
   src={require('./img/35cf047-small-CleanShot_2023-04-28_at_16.26.272x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

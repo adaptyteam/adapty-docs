@@ -16,6 +16,12 @@ The integration between Adapty and AppsFlyer operates in two main ways.
    
 <img
   src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -37,6 +43,12 @@ To setup the integration with AppsFlyer:
    
 <img
   src={require('./img/43a5cc6-apple_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +59,12 @@ To setup the integration with AppsFlyer:
    
 <img
   src={require('./img/61bff5a-appsflyer_iOS_app_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +79,12 @@ To setup the integration with AppsFlyer:
    
 <img
   src={require('./img/1c18c50-appsflyer_security_center.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -73,6 +97,12 @@ To setup the integration with AppsFlyer:
    
 <img
   src={require('./img/7934920-appsflyer_new_token.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -91,6 +121,12 @@ To setup the integration with AppsFlyer:
     
 <img
   src={require('./img/a7d1c31-appsflyer_dev_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -110,6 +146,12 @@ Below the credentials, there are three groups of events you can send to AppsFlye
 
 <img
   src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -17,6 +17,12 @@ Every text you see in Paywall Builder can have its own font and style. You can a
 
 <img
   src={require('./img/2b67da0-CleanShot_2024-02-07_at_13.27.092x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -32,6 +38,12 @@ When you create a paywall in Builder, Adapty uses a system font by default. That
 
 <img
   src={require('./img/8812fab-CleanShot_2024-01-12_at_19.33.072x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -51,6 +63,12 @@ If you need more than what is offered by default, you will need to add a custom 
 
 <img
   src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -99,6 +117,12 @@ Second method is way simpler: you just need to install the font on your Mac comp
 
 <img
   src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

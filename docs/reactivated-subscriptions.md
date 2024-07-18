@@ -9,6 +9,12 @@ The New subscriptions chart displays the amount of new (first-time activated) su
 
 <img
   src={require('./img/bc458a4-small-CleanShot_2023-05-05_at_16.53.072x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

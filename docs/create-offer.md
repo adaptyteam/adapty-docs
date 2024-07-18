@@ -11,6 +11,12 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
    
 <img
   src={require('./img/6b9e928-edit_product.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -21,6 +27,12 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
    
 <img
   src={require('./img/b0e04fe-add_offer.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

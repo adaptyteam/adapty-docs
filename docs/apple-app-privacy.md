@@ -60,6 +60,12 @@ When using Adapty, you must disclose that your app collects ‘Purchases’ info
 
 <img
   src={require('./img/feb3b9f-CleanShot_2023-08-25_at_12.32.552x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -75,6 +81,12 @@ Adapty collects IDFA, so you'll need to select 'Device ID'.
 
 <img
   src={require('./img/93f3daa-CleanShot_2023-08-25_at_12.35.272x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -88,6 +100,12 @@ After making your privacy selections, Apple will show a preview of your app's pr
 
 <img
   src={require('./img/17e4ba7-CleanShot_2023-08-25_at_12.36.442x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

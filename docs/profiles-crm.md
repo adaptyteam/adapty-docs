@@ -14,6 +14,12 @@ Profiles is a CRM for your users. With Profiles, you can:
 
 <img
   src={require('./img/profiles.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -40,6 +46,12 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
 
 <img
   src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -70,6 +82,12 @@ You can see custom attributes that were set either from SDK or manually assign t
 
 <img
   src={require('./img/image%20%2870%29.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -83,6 +101,12 @@ In a profile, you can find an active subscription. At any time you can prolong t
 
 <img
   src={require('./img/image%20%2830%29.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -118,6 +142,12 @@ Here is an example of a non-original profile. Notice the absence of events in th
 
 <img
   src={require('./img/98d0dad-non-original_profile.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

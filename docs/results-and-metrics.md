@@ -13,6 +13,12 @@ Here are three metrics that Adapty provides for A/B test results:
 
 <img
   src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -50,6 +56,12 @@ The system displays the metrics based on the selected time period and organizes 
 
 <img
   src={require('./img/2bf4d9f-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -65,6 +77,12 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 <img
   src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -87,6 +105,12 @@ One of the key components of the paywall metrics page is the chart section, whic
 
 <img
   src={require('./img/e6b0674-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -104,6 +128,12 @@ Next to the single metrics chart, the A/B test details summary section is displa
 
 <img
   src={require('./img/90fa3f5-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -117,6 +147,12 @@ Here are the key metrics that are available for the A/B tests:
 
 <img
   src={require('./img/30c7b68-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

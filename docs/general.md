@@ -11,6 +11,12 @@ You can navigate to the General tab of the App Settings page to manage your app'
 
 <img
   src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -24,6 +30,12 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 
 <img
   src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -37,6 +49,12 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 
 <img
   src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -55,6 +73,12 @@ So you can choose the logic that will be applied to subscription price increases
 
 <img
   src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -22,6 +22,12 @@ This guide will help you create the necessary credentials in your AWS Console.
 
 <img
   src={require('./img/d8d42bb-s3_policies.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -33,6 +39,12 @@ This guide will help you create the necessary credentials in your AWS Console.
 
 <img
   src={require('./img/15ba00d-s3_specify_permissions.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -76,6 +88,12 @@ This guide will help you create the necessary credentials in your AWS Console.
 
 <img
   src={require('./img/2ebaf70-s3_review_and_create_policy.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -96,6 +114,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/6bd091d-s3_users.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -108,6 +132,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/45a9ebc-s3_set_permissions.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -120,6 +150,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/ea4e51f-s3_create_user_group.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -132,6 +168,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/e4dac19-s3_set_permissions_choose_group.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -144,6 +186,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/9975a47-s3_review_new_user.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -155,6 +203,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/e774c5a-s3_users_open_user_details.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -166,6 +220,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/2c717b7-s3_access_key_best_practices.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -178,6 +238,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/44d1b47-s3_set_description_tag.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -189,6 +255,12 @@ To get access key ID and secret access key:
 
 <img
   src={require('./img/e65fe45-s3_retrieve_access_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -217,6 +289,12 @@ To set up the Amazon S3 integration in the Adapty Dashboard:
    
 <img
   src={require('./img/133f9f5-s3_adapty_fields.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -245,6 +323,12 @@ To choose the events to export to the Amazon S3 storage:
 
 <img
   src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

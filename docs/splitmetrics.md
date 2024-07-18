@@ -16,6 +16,12 @@ To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](ht
 
 <img
   src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -27,6 +33,12 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
 
 <img
   src={require('./img/4d0b2b6-Adapty.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +48,12 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
 
 <img
   src={require('./img/4f8d0b8-AdaptyGuide.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +65,12 @@ You will also have to set Apple App ID to use the integration. To find App ID, o
 
 <img
   src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -60,6 +84,12 @@ Below the credentials, there are three groups of events you can send to SplitMet
 
 <img
   src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -15,6 +15,12 @@ To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/in
 
 <img
   src={require('./img/895de2b-CleanShot_2023-08-14_at_18.57.462x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ Below the credentials, there are three groups of events you can send to Asapty f
 
 <img
   src={require('./img/58ddf41-CleanShot_2023-08-15_at_15.11.072x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

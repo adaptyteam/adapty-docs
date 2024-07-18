@@ -17,6 +17,12 @@ For a more detailed analysis of each placements, you can navigate to the placeme
 
 <img
   src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +40,12 @@ The placement metrics page offers two view options for metrics data: paywall-bas
 
 <img
   src={require('./img/9d26b32-Export-1690376094858.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -49,6 +61,12 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 
 <img
   src={require('./img/b1e4155-Export-1690375904086.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -62,6 +80,12 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 <img
   src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -86,6 +110,12 @@ The chart section on the placements metrics page includes a horizontal bar chart
 
 <img
   src={require('./img/4623c5b-Export-1690375597411.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -101,6 +131,12 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 <img
   src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -114,6 +150,12 @@ Unlock the power of placement metrics with our comprehensive definitions. From r
 
 <img
   src={require('./img/771a0f0-Export-1690375049771.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -19,6 +19,12 @@ To use the Adapty Paywall Builder:
 
 <img
   src={require('./img/44766e1-switch_on_paywall_builder.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

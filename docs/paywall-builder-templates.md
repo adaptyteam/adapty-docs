@@ -17,6 +17,12 @@ The overlay templates offer a versatile and engaging design for your paywalls. I
 
 <img
   src={require('./img/4a115f4-CleanShot_2023-09-05_at_15.48.442x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ The transparent layout is ideal for scenarios where you have a concise selection
 
 <img
   src={require('./img/459e2c9-CleanShot_2023-09-05_at_15.49.422x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -45,6 +57,12 @@ The flat layout is reminiscent of a streamlined landing page, presenting all the
 
 <img
   src={require('./img/dbd9135-CleanShot_2023-09-05_at_15.52.312x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

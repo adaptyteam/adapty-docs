@@ -9,6 +9,12 @@ Begin configuring the Adapty paywall builder by installing the [Adapty Unity SDK
 
 <img
   src={require('./img/173671f-CleanShot_2023-11-01_at_14.34.05_22x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

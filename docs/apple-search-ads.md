@@ -11,6 +11,12 @@ Once you've set up the Apple Search Ads integration, Adapty will start receiving
 
 <img
   src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -35,6 +41,12 @@ Locate the pre-generated public key (Adapty provides a key pair for you) and cop
 
 <img
   src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -52,6 +64,12 @@ In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings 
 
 <img
   src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -69,6 +87,12 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads setting
 
 <img
   src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -9,6 +9,12 @@ The Non-subscriptions chart displays the number of in-app purchases such as cons
 
 <img
   src={require('./img/a700612-small-CleanShot_2023-05-12_at_12.41.002x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

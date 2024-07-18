@@ -45,6 +45,12 @@ Here is what the cohort table looks like:
 
 <img
   src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -109,6 +115,12 @@ Some cells have incomplete data — the time period they correspond to isn't ove
 
 <img
   src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -132,6 +144,12 @@ After your data is uploaded you will see the additional metrics as follows.
 
 <img
   src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -147,6 +165,12 @@ You can filter the Cohorts by product, attribution, country, segment, store, pro
 
 <img
   src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

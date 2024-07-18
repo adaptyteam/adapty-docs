@@ -24,7 +24,7 @@ pod 'Adapty', '~> 2.10.4'
 
 And then run:
 
-```sh title="Sh"
+```sh title="Shell"
 pod install
 ```
 

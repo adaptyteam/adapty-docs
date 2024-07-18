@@ -23,6 +23,12 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
    
 <img
   src={require('./img/afd5012-bundle_id_apple.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -33,6 +39,12 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
    
 <img
   src={require('./img/26f79d5-App_settings_top_menu.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -43,6 +55,12 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
    
 <img
   src={require('./img/2d64163-bundle_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -58,6 +76,12 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
    
 <img
   src={require('./img/19a2868-issuer_apple.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -67,6 +91,12 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
    
 <img
   src={require('./img/c2b42e7-issuer_id.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -80,6 +110,12 @@ Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-Ap
 
 <img
   src={require('./img/88cdfff-download_inapp_file.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -91,6 +127,12 @@ into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in th
 
 <img
   src={require('./img/253b840-in-app_file_upload.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -108,6 +150,12 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
    
 <img
   src={require('./img/2bd112a-shared_secret_apple.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -120,6 +168,12 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
    
 <img
   src={require('./img/2d8b4c0-shared_secret_apple_copy.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -132,6 +186,12 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
    
 <img
   src={require('./img/4f9624d-shared_secret.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

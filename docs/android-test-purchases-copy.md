@@ -33,6 +33,12 @@ In our example, we already have a list of testers:
 
 <img
   src={require('./img/7a11c96-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -46,6 +52,12 @@ In our example, we already have a list of testers:
 
 <img
   src={require('./img/5511dff-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -57,6 +69,12 @@ In our example, we already have a list of testers:
 
 <img
   src={require('./img/1badc43-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -70,6 +88,12 @@ In our example, we already have a list of testers:
 
 <img
   src={require('./img/6cce394-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -79,6 +103,12 @@ In our example, we already have a list of testers:
 
 <img
   src={require('./img/c1eb89d-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -118,6 +148,12 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
 
 <img
   src={require('./img/a8d2da9-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -129,6 +165,12 @@ If you run into any issues, refer to the documentation or contact Google Play De
 
 <img
   src={require('./img/605874f-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -151,6 +193,12 @@ Also, in case some of your users have Adapty SDK with version less than 2.6, ens
 
 <img
   src={require('./img/e2b2c07-image.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

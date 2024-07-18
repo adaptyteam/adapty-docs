@@ -11,6 +11,12 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 <img
   src={require('./img/17bbf45-google_cloud_create_service_account.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -22,6 +28,12 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 <img
   src={require('./img/b93eec1-service_account_details.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -37,6 +49,12 @@ For Adapty to automate data access, a service account is necessary in the Google
    
 <img
   src={require('./img/e69d713-grant_access_to_project.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +65,12 @@ For Adapty to automate data access, a service account is necessary in the Google
    
 <img
   src={require('./img/976299c-service_account_role.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +85,12 @@ For Adapty to automate data access, a service account is necessary in the Google
    
 <img
   src={require('./img/ffe8d82-grant_user_access.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

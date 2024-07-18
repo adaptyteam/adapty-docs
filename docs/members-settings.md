@@ -19,6 +19,12 @@ The following roles are available for members in the Adapty dashboard:
 
 <img
   src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -40,6 +46,12 @@ To access the members section and add new members, please navigate to the [Accou
 
 <img
   src={require('./img/f72acc9-Area_2023-06-08_181614_Jun_08_2023_0619_PM.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

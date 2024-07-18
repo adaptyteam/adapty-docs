@@ -13,6 +13,12 @@ In order to make your A/B test live for the selected audience and placement, you
 
 <img
   src={require('./img/641fe6d-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -31,6 +37,12 @@ It's important to note that each audience has a **priority** displayed in number
 
 <img
   src={require('./img/fddf85a-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -44,6 +56,12 @@ The **Run A/B test** option allows you to show different paywalls to app users w
 
 <img
   src={require('./img/ce4946f-small-CleanShot_2023-04-25_at_20.46.282x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +79,12 @@ There are two options available to stop an A/B test: you can do so either from t
 
 <img
   src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -74,6 +98,12 @@ When stopping an A/B test, you have two options:
 
 <img
   src={require('./img/56385bf-CleanShot_2023-07-19_at_18.09.452x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -98,6 +128,12 @@ Choosing this option allows you to create a new A/B test using the existing A/B 
 
 <img
   src={require('./img/f9f166d-CleanShot_2023-07-19_at_18.14.412x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -17,6 +17,12 @@ You can adjust the participation dates for your mobile app in the [Google's Redu
 
 <img
   src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +42,12 @@ If you do not participate in the Google's Reduced Service Fee, skip the step.
    
 <img
   src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

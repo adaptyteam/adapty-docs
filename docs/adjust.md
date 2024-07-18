@@ -16,6 +16,12 @@ The integration between Adapty and Adjust works in two main ways.
 
 <img
   src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +40,12 @@ The next step of the integration is to set credentials.
 
 <img
   src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -46,6 +58,12 @@ The next step of the integration is to set credentials.
 
 <img
   src={require('./img/e9ee52e-image_52.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +79,12 @@ You will need to copy **App Token** and paste it to Adapty.
 
 <img
   src={require('./img/4b1601c-image_36.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -78,6 +102,12 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 <img
   src={require('./img/6c6b9a0-image_83.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -87,6 +117,12 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 <img
   src={require('./img/4d4f40d-image_9.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -96,6 +132,12 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 <img
   src={require('./img/815515f-image_16.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -107,6 +149,12 @@ Copy the event token and paste it to Adapty. Below the credentials, there are th
 
 <img
   src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

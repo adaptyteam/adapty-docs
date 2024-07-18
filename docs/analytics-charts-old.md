@@ -9,6 +9,12 @@ Install Adapty SDK and start analyzing real-time metrics of your iOS or Android 
 
 <img
   src={require('./img/a3f96d8-analytics.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

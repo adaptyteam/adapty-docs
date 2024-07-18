@@ -25,38 +25,38 @@ You can streamline your development process with Expo Application Services (EAS)
 
 1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
 
-```sh title="Sh"
+```sh title="Shell"
 npm install -g eas-cli
 ```
 
 2. In the root of your project, install the dev client to make a development build:
 
-```sh title="Sh"
+```sh title="Shell"
 expo install expo-dev-client
 ```
 
 3. Run the installation command:
 
-```sh title="Sh"
+```sh title="Shell"
 expo install react-native-adapty
 expo install @adapty/react-native-ui
 ```
 
 4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh title="Sh"
+```sh title="Shell"
 eas build --profile development --platform ios
 ```
 
 4. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh title="Sh"
+```sh title="Shell"
 eas build --profile development --platform android
 ```
 
 5. Start a development server with the following command:
 
-```sh title="Sh"
+```sh title="Shell"
 expo start --dev-client
 ```
 
@@ -75,14 +75,14 @@ If you opt for a purely native approach, please consult the following instructio
 
 1. In your project, run the installation command:
 
-```sh title="Sh"
+```sh title="Shell"
 yarn add react-native-adapty
 yarn add @adapty/react-native-ui
 ```
 
 2. For iOS: Install required pods:
 
-```sh title="Sh"
+```sh title="Shell"
 pod install --project-directory=ios
 pod install --project-directory=ios/
 ```

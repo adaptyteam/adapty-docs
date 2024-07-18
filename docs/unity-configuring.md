@@ -69,6 +69,12 @@ First of all you need to create a script which will be responsible for listening
 
 <img
   src={require('./img/2ccd564-create_adapty_listener.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

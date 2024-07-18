@@ -18,6 +18,12 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 
 <img
   src={require('./img/14687cb-generate_in-app_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ To generate API keys for the App Store Server API, you need to have either an Ad
    
 <img
   src={require('./img/3190ad5-integration_done.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -49,6 +61,12 @@ After completing the necessary setup steps in App Store Connect, the next step i
    
 <img
   src={require('./img/8b6c5b3-iOS.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

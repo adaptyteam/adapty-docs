@@ -15,6 +15,12 @@ To create a new placement:
    
 <img
   src={require('./img/0561bf8-placements_create_new.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -24,6 +30,12 @@ To create a new placement:
    
 <img
   src={require('./img/3dc0e8c-new_placement.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

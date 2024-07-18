@@ -17,6 +17,12 @@ To generate API keys for the App Store Server API, you you must hold either an A
    
 <img
   src={require('./img/6d737db-generate_in-app_key.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -29,6 +35,12 @@ To generate API keys for the App Store Server API, you you must hold either an A
    
 <img
   src={require('./img/fac066b-download_inapp_file.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +51,12 @@ To generate API keys for the App Store Server API, you you must hold either an A
    
 <img
   src={require('./img/d59faff-download_in-app_purchase_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

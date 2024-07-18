@@ -15,6 +15,12 @@ To use promotional offers, you have to [upload subscription key](app-store-promo
 
 <img
   src={require('./img/646799a-CleanShot_2023-07-25_at_15.14.112x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

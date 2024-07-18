@@ -43,6 +43,12 @@ To add a custom tag to a line:
 
 <img
   src={require('./img/7ec0e4f-custom_tag.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -52,6 +58,12 @@ To add a custom tag to a line:
 
 <img
   src={require('./img/6f97bd0-custom_tag.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -63,6 +75,12 @@ To add a custom tag to a line:
    
 <img
   src={require('./img/36b8480-fallback_for_custom_tag.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -22,6 +22,12 @@ The integration between Adapty and Adjust works in two main ways.
 
 <img
   src={require('./img/d2f019d-adjust_adapty_attributionsection.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

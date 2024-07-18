@@ -55,6 +55,12 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 <img
   src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -66,6 +72,12 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 <img
   src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

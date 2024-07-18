@@ -22,6 +22,12 @@ In case of successful integration, an event will appear in the **Last sent event
 
 <img
   src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -35,6 +41,12 @@ In case of unsuccessful integration, the event will either not appear at all or 
 
 <img
   src={require('./img/995b3bb-sending_failed.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +73,12 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
    
 <img
   src={require('./img/7aef747-view_profile.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -71,6 +89,12 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
    
 <img
   src={require('./img/943148a-profile_attribution.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

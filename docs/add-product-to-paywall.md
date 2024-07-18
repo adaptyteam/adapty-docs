@@ -12,6 +12,12 @@ To make a product visible and selectable within a [paywall](https://docs.adapty.
 
 <img
   src={require('./img/0479b51-ad_product_to_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

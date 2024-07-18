@@ -9,6 +9,12 @@ The Monthly recurring revenue (MRR) chart displays the normalized revenue genera
 
 <img
   src={require('./img/17cbed0-small-CleanShot_2023-05-11_at_17.32.242x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -25,6 +25,12 @@ Please note that we only support Service Account HMAC key authorization, means i
 
 <img
   src={require('./img/764db95-google_cloud_create_service_account.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +42,12 @@ Please note that we only support Service Account HMAC key authorization, means i
 
 <img
   src={require('./img/fb865ad-google_cloud_service_account_details.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -53,6 +65,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/c3c03cb-google_cloud_manage_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -63,6 +81,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/59991da-google_cloud_create_new_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -73,6 +97,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/c91dea6-google_cloud_create_private_key.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -83,6 +113,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/bdb056f-google_cloud_private_key_saved.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -96,6 +132,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/ee1e453-google_cloud_grant_access.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -106,6 +148,12 @@ Please note that we only support Service Account HMAC key authorization, means i
    
 <img
   src={require('./img/ecea397-google_cloud_grant_access_details.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -116,6 +164,12 @@ Please note that we only support Service Account HMAC key authorization, means i
       
 <img
   src={require('./img/d3c6643-google_cloud_role.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -142,6 +196,12 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
    
 <img
   src={require('./img/9d9707e-google_cloud_adapty_creds.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -152,6 +212,12 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
    
 <img
   src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -179,6 +245,12 @@ Below the credentials, there are three groups of events you can export, send, an
 
 <img
   src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

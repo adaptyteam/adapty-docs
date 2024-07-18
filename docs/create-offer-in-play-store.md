@@ -15,6 +15,12 @@ It's important to note that in the case of Google’s new billing system, trials
 
 <img
   src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

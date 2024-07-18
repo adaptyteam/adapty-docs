@@ -13,6 +13,12 @@ For a more granular analysis of each paywall, you can navigate to the paywall de
 
 <img
   src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ For Live paywall, the metrics cover the period from the paywall's start date unt
 
 <img
   src={require('./img/15df73d-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +59,12 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 
 <img
   src={require('./img/6c9639d-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -60,6 +78,12 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 
 <img
   src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -86,6 +110,12 @@ The chart section on the paywall metrics page includes a horizontal bar chart th
 
 <img
   src={require('./img/10a9b9c-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -101,6 +131,12 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 <img
   src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -112,6 +148,12 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 <img
   src={require('./img/1b07fd8-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

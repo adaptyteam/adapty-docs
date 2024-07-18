@@ -26,6 +26,12 @@ The **main image** is the centerpiece of your paywall's design, influencing the 
 
 <img
   src={require('./img/449450a-Export-1693233428253.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -46,6 +52,12 @@ The mask type determines the shape of the main image, allowing you to apply crea
 
 <img
   src={require('./img/ce6499d-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -61,6 +73,12 @@ The background color of the paywall sets the tone for the entire experience. You
 
 <img
   src={require('./img/cc48986-Export-1693233802152.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -74,6 +92,12 @@ It's important to keep your paywall visually consistent with the rest of your ap
 
 <img
   src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -104,6 +128,12 @@ For soft paywalls, you can define the view of the closing paywall button and how
    
 <img
   src={require('./img/423fc40-close_button_definition.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -118,6 +148,12 @@ For soft paywalls, you can define the view of the closing paywall button and how
 
 <img
   src={require('./img/466fb18-show_after_delay.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -129,6 +165,12 @@ For soft paywalls, you can define the view of the closing paywall button and how
    
 <img
   src={require('./img/c967c2b-fading_button.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -139,6 +181,12 @@ Here is a video to show the whole process:
 
 <img
   src={require('./img/fd9c0b8-Soft_paywall.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -152,6 +200,12 @@ Use the drop-down menu above the asset to select different devices, providing a 
 
 <img
   src={require('./img/a6ccf83-Export-1693241907397.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -165,6 +219,12 @@ In the products tab of Adapty's paywall builder, you have the ability to create 
 
 <img
   src={require('./img/32256b5-adapty_products_section.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

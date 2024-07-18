@@ -50,6 +50,12 @@ We have 2 formats of date and time - American and European. You can set one of t
 
 <img
   src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -73,6 +79,12 @@ Here's how you can interpret the insights provided by the comparison feature:
 
 <img
   src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -106,6 +118,12 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 
 <img
   src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -121,6 +139,12 @@ To change the view of a chart, simply locate and select the view dropdown menu, 
 
 <img
   src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -138,6 +162,12 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
 
 <img
   src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -153,6 +183,12 @@ In the charts tab of the Analytics section, Adapty introduces a dropdown field w
 
 <img
   src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

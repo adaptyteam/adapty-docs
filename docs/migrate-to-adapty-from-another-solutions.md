@@ -44,6 +44,12 @@ When switching from a legacy system, sometimes you want two systems to work simu
 
 <img
   src={require('./img/c7d4fd0-Seamless_migrat_a.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

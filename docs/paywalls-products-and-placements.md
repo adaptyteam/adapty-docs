@@ -13,6 +13,12 @@ A **Placement ** is a specific location within your mobile app where a paywall c
 
 <img
   src={require('./img/3a291e9-1_1.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

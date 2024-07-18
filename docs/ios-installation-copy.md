@@ -37,7 +37,7 @@ pod 'AdaptyUI', '~> 2.1.3'
 
 And then run:
 
-```sh title="Sh"
+```sh title="Shell"
 pod install
 ```
 

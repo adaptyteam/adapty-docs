@@ -13,6 +13,12 @@ To make an offer visible and selectable within a [paywall](https://docs.adapty.i
    
 <img
   src={require('./img/3a727c2-add_offer_to_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -22,6 +28,12 @@ To make an offer visible and selectable within a [paywall](https://docs.adapty.i
 
 <img
   src={require('./img/8eab55a-add_offer_to_paywall_2.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

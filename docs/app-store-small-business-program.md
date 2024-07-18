@@ -37,6 +37,12 @@ You can add additional membership periods by clicking on the "Add Period" button
 
 <img
   src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

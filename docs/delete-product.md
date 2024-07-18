@@ -14,6 +14,12 @@ To delete the product:
 
 <img
   src={require('./img/4218c22-edit_product.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -25,6 +31,12 @@ To delete the product:
 
 <img
   src={require('./img/b945add-delete_product.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

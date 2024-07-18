@@ -9,6 +9,12 @@ The Annual recurring revenue chart shows revenue from all active auto-renewable 
 
 <img
   src={require('./img/eb3389b-small-CleanShot_2023-05-08_at_17.57.252x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

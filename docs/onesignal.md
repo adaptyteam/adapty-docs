@@ -22,6 +22,12 @@ You'll need to provide your **OneSignal App ID** and **Auth Token**. You can fin
 
 <img
   src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +42,12 @@ Your **App ID** can be found under the **Keys & IDs **section in the Settings ta
 
 <img
   src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +59,12 @@ The Auth token can be found in the **Account & API Keys** section of your OneSig
 
 <img
   src={require('./img/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -62,6 +80,12 @@ Below the credentials, there are three groups of events you can send to OneSigna
 
 <img
   src={require('./img/30c7f2e-oneSignal.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

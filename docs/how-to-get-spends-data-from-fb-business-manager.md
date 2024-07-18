@@ -14,6 +14,12 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 
 <img
   src={require('./img/1734111-edit_tools.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -23,6 +29,12 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 
 <img
   src={require('./img/01e2f0f-setup_ads_manager.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -36,6 +48,12 @@ In the Ads Manager tab, you should select the project you are creating the repor
 
 <img
   src={require('./img/80e4cd5-general_report_view.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -45,6 +63,12 @@ In the Ads Manager tab, you should select the project you are creating the repor
 
 <img
   src={require('./img/6bd82d8-create_custom_report.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -58,6 +82,12 @@ The next step is to adjust breakdowns. Adapty needs your data granulated by day,
 
 <img
   src={require('./img/5281d00-breakdowns.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -77,6 +107,12 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 <img
   src={require('./img/a8df062-performance_metrics.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -86,6 +122,12 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 <img
   src={require('./img/6df97d7-engagement_metrics.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -95,6 +137,12 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 <img
   src={require('./img/e9547ad-settings_metrics.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -111,6 +159,12 @@ Then, we have to download the report. Please select CSV file format and don\`t a
 
 <img
   src={require('./img/7f42174-select_download.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -120,6 +174,12 @@ Then, we have to download the report. Please select CSV file format and don\`t a
 
 <img
   src={require('./img/b0e2ad2-finish_export.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

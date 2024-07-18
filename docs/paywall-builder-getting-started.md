@@ -26,6 +26,12 @@ Adapty paywall builder works as an optional supplement to [the main flow of hand
 
 <img
   src={require('./img/677a04c-CleanShot_2023-08-28_at_16.23.122x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

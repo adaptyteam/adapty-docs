@@ -41,6 +41,12 @@ To use the Adapty Paywall Builder:
    
 <img
   src={require('./img/cdca1ee-builder_templates.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -51,6 +57,12 @@ To use the Adapty Paywall Builder:
    
 <img
   src={require('./img/795b91b-builder_main_window.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -80,6 +92,12 @@ To migrate a paywall to new Paywall Builder:
    
 <img
   src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -92,6 +110,12 @@ To migrate a paywall to new Paywall Builder:
    
 <img
   src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -110,6 +134,12 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 <img
   src={require('./img/210c8e2-simple_elements.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -126,6 +156,12 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 <img
   src={require('./img/8a23be4-compound_elements.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

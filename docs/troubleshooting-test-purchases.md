@@ -20,6 +20,12 @@ Here is an example of a non-original profile. Notice the absence of events in th
 
 <img
   src={require('./img/98d0dad-non-original_profile.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

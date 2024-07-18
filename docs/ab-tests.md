@@ -33,6 +33,12 @@ To create a new A/B test from the **A/B tests** section:
    
 <img
   src={require('./img/3ca9b3c-AB_tests.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -42,6 +48,12 @@ To create a new A/B test from the **A/B tests** section:
 
 <img
   src={require('./img/72af454-create_AB_test.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -55,6 +67,12 @@ To create a new A/B test from the **A/B tests** section:
    
 <img
   src={require('./img/2d25ae6-create_AB_test_with_data.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -67,6 +85,12 @@ To create a new A/B test from the **A/B tests** section:
 
 <img
   src={require('./img/870cfda-AB_test_with_Paywalls.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -93,6 +117,12 @@ Once you've added your paywalls, you can assign weights to each option to contro
 
 <img
   src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

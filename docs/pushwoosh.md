@@ -16,6 +16,12 @@ Pushwoosh app ID and auth token are required.
 
 <img
   src={require('./img/64e48a1-CleanShot_2023-08-18_at_11.13.212x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -27,6 +33,12 @@ Pushwoosh app ID and auth token are required.
 
 <img
   src={require('./img/ee27687-CleanShot_2023-08-18_at_14.37.442x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -38,6 +50,12 @@ Pushwoosh app ID and auth token are required.
 
 <img
   src={require('./img/50e634b-CleanShot_2023-08-18_at_14.35.022x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -51,6 +69,12 @@ Below the credentials, there are three groups of events you can send to Pushwoos
 
 <img
   src={require('./img/392dc31-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

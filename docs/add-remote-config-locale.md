@@ -15,6 +15,12 @@ How to set up a localization for a paywall customized using remote config:
    
 <img
   src={require('./img/deaa5f0-paywalls_edit.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -25,6 +31,12 @@ How to set up a localization for a paywall customized using remote config:
    
 <img
   src={require('./img/68e80c5-switch_to_remote_config.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -35,6 +47,12 @@ How to set up a localization for a paywall customized using remote config:
    
 <img
   src={require('./img/eea8027-add_locale.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -45,6 +63,12 @@ How to set up a localization for a paywall customized using remote config:
    
 <img
   src={require('./img/032b429-remote_config_localization.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -58,6 +82,12 @@ Feel free to use the context menu of the English locale to fix localization issu
   
 <img
   src={require('./img/d7e70f1-remote_confi_loc_table_options.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -13,6 +13,12 @@ Here is a short guide on data that Adapty collects to help you provide the requi
 
 <img
   src={require('./img/3508c24-image4.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -64,6 +70,12 @@ Here is a list of the data types that Google requires for reporting, and we have
 
 <img
   src={require('./img/2c60161-image5.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -76,6 +88,12 @@ Here is a list of the data types that Google requires for reporting, and we have
 
 <img
   src={require('./img/07a3c9e-image2.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -89,6 +107,12 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 <img
   src={require('./img/1057870-image7.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -100,6 +124,12 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 <img
   src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -109,6 +139,12 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 <img
   src={require('./img/ccb1a2a-image5.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -122,6 +158,12 @@ Once you have made your data safety selections, Google will display a preview of
 
 <img
   src={require('./img/e8d9b73-image3.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

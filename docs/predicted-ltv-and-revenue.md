@@ -57,6 +57,12 @@ To access predicted revenue and predicted LTV values for your subscribers, you c
 
 <img
   src={require('./img/4d808b4-Export-1691486610612.gif').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -74,6 +80,12 @@ To provide even more valuable insights, Adapty allows you to filter predicted re
 
 <img
   src={require('./img/66a9c61-Export-1691486288948.gif').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

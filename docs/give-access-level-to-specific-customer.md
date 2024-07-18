@@ -13,6 +13,12 @@ You can manually adjust the access level for a particular customer right in the 
    
 <img
   src={require('./img/444f659-profiles_list.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -23,6 +29,12 @@ You can manually adjust the access level for a particular customer right in the 
    
 <img
   src={require('./img/96d0abf-add_access_level_to_customer.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -33,6 +45,12 @@ You can manually adjust the access level for a particular customer right in the 
    
 <img
   src={require('./img/2379036-add_access_level_to_customer1.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

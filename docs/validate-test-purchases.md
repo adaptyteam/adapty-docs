@@ -15,6 +15,12 @@ If the test purchase is successful, its transaction event will be dsplayed in th
 
 <img
   src={require('./img/9ade2d5-event_feed_sandbox.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -30,6 +36,12 @@ If you observe no transaction event within 10 minutes or encounter an error in t
 
 <img
   src={require('./img/31a79b2-no_events.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

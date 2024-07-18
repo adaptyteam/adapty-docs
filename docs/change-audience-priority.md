@@ -9,6 +9,12 @@ When you have different user audiences in one [placement](placements), a user ca
 
 <img
   src={require('./img/afee54f-2.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -25,6 +31,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -34,6 +46,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/3b8d8e3-edit_audience.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -43,6 +61,12 @@ To adjust audience priorities for a placement:
    
 <img
   src={require('./img/2babfc8-reorder_audiences.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -28,7 +28,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 2. Run:
 
-   ```sh title="Sh"
+   ```sh title="Shell"
    pod install
    ```
 

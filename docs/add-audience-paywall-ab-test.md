@@ -13,6 +13,12 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    
 <img
   src={require('./img/df6f87b-placements.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -23,6 +29,12 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    
 <img
   src={require('./img/fe7154d-new_placement.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -33,6 +45,12 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    
 <img
   src={require('./img/d0d720f-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -47,6 +65,12 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    
 <img
   src={require('./img/f23da25-Area.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -11,6 +11,12 @@ There are several important things you can set on your account page so let's go 
 
 <img
   src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -24,6 +30,12 @@ Here you fill in your name and the name of your company. It's useful to have thi
 
 <img
   src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

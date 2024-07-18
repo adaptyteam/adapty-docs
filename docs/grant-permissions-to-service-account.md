@@ -11,6 +11,12 @@ Grant the required permissions to the service account that Adapty will use to ma
    
 <img
   src={require('./img/7b0e614-users_and_permissions.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -20,6 +26,12 @@ Grant the required permissions to the service account that Adapty will use to ma
    
 <img
   src={require('./img/3afd002-invite_user.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -29,6 +41,12 @@ Grant the required permissions to the service account that Adapty will use to ma
    
 <img
   src={require('./img/4e2717b-account_permissions.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

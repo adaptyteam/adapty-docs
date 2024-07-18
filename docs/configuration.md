@@ -13,6 +13,12 @@ Adapty effortlessly tracks in-app purchases and subscription events such as tria
 
 <img
   src={require('./img/20bf659-CleanShot_2023-08-22_at_13.26.562x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +45,12 @@ It's important to note that event name customization is available for certain in
 
 <img
   src={require('./img/c79f5cd-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

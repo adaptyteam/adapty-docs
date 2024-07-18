@@ -17,6 +17,12 @@ To run your A/B test for the chosen audience and placement:
    
 <img
   src={require('./img/ebd94b2-run_ab_test.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
@@ -39,6 +45,12 @@ There are two options available to stop an A/B test: you can do so either from t
 
 <img
   src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

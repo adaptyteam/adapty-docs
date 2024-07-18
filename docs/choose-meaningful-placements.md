@@ -9,6 +9,12 @@ When [creating placements](create-placement), it's essential to consider the log
 
 <img
   src={require('./img/5b47c03-user-flow-placements_1.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 

@@ -16,6 +16,12 @@ Also, please consider that, only non-consumables and subscriptions can be shared
 
 <img
   src={require('./img/6db165a-CleanShot_2023-03-28_at_17.15.342x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 
 
