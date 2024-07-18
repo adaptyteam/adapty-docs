@@ -7,12 +7,9 @@ metadataTitle: ""
 The revenue chart displays the total revenue earned from both subscriptions and one-time purchases, minus the revenue that was refunded later. The Revenue chart is an essential tool to monitor the financial performance of the app.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png').default}
+/>
 
 
 

@@ -10,16 +10,14 @@ Adapty creates an internal profile id for every user. But if you have your authe
 
 If you have a user id during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-```swift title="Swift"
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
+```swift title="title="Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")""
 ```
 
 ### Setting Customer User Id after configuration
 
 If you don't have a user id on SDK configuration, you can set it later at any time with `.identify()` method. The most common cases are after registration/authorization when the user switches from being an anonymous user to an authenticated user.
 
-```swift title="Swift"
-Adapty.identify("YOUR_USER_ID") { error in
+```swift title="title="Adapty.identify("YOUR_USER_ID") { error in""
     if error == nil {
         // successful identify
     }
@@ -42,8 +40,7 @@ it is also quite important to re-request all paywalls and products after identif
 
 You can logout the user anytime by calling `.logout()` method:
 
-```swift title="Swift"
-Adapty.logout { error in
+```swift title="title="Adapty.logout { error in""
     if error == nil {
         // successful logout
     }

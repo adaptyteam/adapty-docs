@@ -9,12 +9,9 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/26f79d5-App_settings_top_menu.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+/>
 
 
 
@@ -22,12 +19,9 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a72ff2d-copy_topic.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a72ff2d-copy_topic.png').default}
+/>
 
 
 
@@ -40,12 +34,9 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
 4. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e55ba0e-paste_topic_name.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e55ba0e-paste_topic_name.png').default}
+/>
 
 
 

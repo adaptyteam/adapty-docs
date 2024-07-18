@@ -18,12 +18,9 @@ The integration between Adapty and AppsFlyer operates in two main ways.
    Once you've set up the AppsFlyer integration, Adapty will start receiving attribution data from AppsFlyer. You can easily access and view this data on the user's profile page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b764bdd-appsflyer_attribution.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b764bdd-appsflyer_attribution.png').default}
+/>
 
 
 
@@ -47,8 +44,7 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event is wrapped into the following structure:
 
-```json title="Json"
-{
+```json title="title="{""
 "ip": "127.0.0.1",
 "os": "17.4.1",
 "att": "1",

@@ -14,12 +14,9 @@ First of all set credentials to build a connection between your Pushwoosh and Ad
 Pushwoosh app ID and auth token are required. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/64e48a1-CleanShot_2023-08-18_at_11.13.212x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/64e48a1-CleanShot_2023-08-18_at_11.13.212x.png').default}
+/>
 
 
 
@@ -28,12 +25,9 @@ Pushwoosh app ID and auth token are required.
 1. **App ID** can be found in your Pushwoosh dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ee27687-CleanShot_2023-08-18_at_14.37.442x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ee27687-CleanShot_2023-08-18_at_14.37.442x.png').default}
+/>
 
 
 
@@ -42,12 +36,9 @@ Pushwoosh app ID and auth token are required.
 2. **Auth token **can be found in the API Access section in Pushwoosh Settings.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/50e634b-CleanShot_2023-08-18_at_14.35.022x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/50e634b-CleanShot_2023-08-18_at_14.35.022x.png').default}
+/>
 
 
 
@@ -58,12 +49,9 @@ Pushwoosh app ID and auth token are required.
 Below the credentials, there are three groups of events you can send to Pushwoosh from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Pushwoosh. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/392dc31-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/392dc31-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
+/>
 
 
 
@@ -100,7 +88,7 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 let params = AdaptyProfileParameters.Builder()
     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
     .build()
@@ -109,7 +97,7 @@ Adapty.updateProfile(params: params) { error in
     // handle the error
 }
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val params = AdaptyProfileParameters.Builder()
     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
     .build()
@@ -120,8 +108,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```java title="Java"
-AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+```java title="title="AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()""
     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
     .build();
 
@@ -131,7 +118,7 @@ Adapty.updateProfile(params, error -> {
     }
 });
 ```
-```java title="Flutter (Dart)"
+```java title="title="Flutter (Dart)""
 import 'package:pushwoosh/pushwoosh.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -144,7 +131,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 import Pushwoosh from 'pushwoosh-react-native-plugin';
 
@@ -157,7 +144,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
 

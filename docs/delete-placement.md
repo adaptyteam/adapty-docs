@@ -17,12 +17,9 @@ To delete an existing placement:
 2. In the **Placements** window, click the **3-dot** button next to the placement and select the **Delete** option.  
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6b971ea-delete_placement_list.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6b971ea-delete_placement_list.png').default}
+/>
 
 
 
@@ -30,12 +27,9 @@ To delete an existing placement:
 3. In the opened **Delete placement** window, enter the product name you're about to delete.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8177c51-delete_placement.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8177c51-delete_placement.png').default}
+/>
 
 
 

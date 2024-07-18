@@ -7,12 +7,9 @@ metadataTitle: ""
 The new trial chart displays the number of activated trials during the selected time period.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/47820b3-small-CleanShot_2023-05-05_at_15.30.492x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/47820b3-small-CleanShot_2023-05-05_at_15.30.492x.png').default}
+/>
 
 
 

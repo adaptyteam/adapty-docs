@@ -11,12 +11,9 @@ Discover important data and insights from our [A/B tests](https://docs.adapty.io
 Here are three metrics that Adapty provides for A/B test results:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png').default}
+/>
 
 
 
@@ -51,12 +48,9 @@ The system displays the metrics based on the selected time period and organizes 
 ### Profile install date filtration
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2bf4d9f-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2bf4d9f-Area.gif').default}
+/>
 
 
 
@@ -69,12 +63,9 @@ The system displays the metrics based on the selected time period and organizes 
 You can choose from a range of time periods to analyze metrics data, allowing you to focus on specific durations such as days, weeks, months, or custom date ranges.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7878542-CleanShot_2023-07-19_at_17.39.052x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.png').default}
+/>
 
 
 
@@ -94,12 +85,9 @@ You can find more information about the available controls, filters, grouping op
 One of the key components of the paywall metrics page is the chart section, which visually represents the selected metrics and facilitates easy analysis.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e6b0674-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e6b0674-Area.gif').default}
+/>
 
 
 
@@ -114,12 +102,9 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the A/B test details summary section is displayed, which includes information about the state, duration, placements, and other related details about the  A/B test.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/90fa3f5-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/90fa3f5-Area.gif').default}
+/>
 
 
 
@@ -130,12 +115,9 @@ Next to the single metrics chart, the A/B test details summary section is displa
 Here are the key metrics that are available for the A/B tests:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/30c7b68-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/30c7b68-Area.gif').default}
+/>
 
 
 

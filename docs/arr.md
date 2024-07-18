@@ -7,12 +7,9 @@ metadataTitle: ""
 The Annual recurring revenue chart shows revenue from all active auto-renewable subscriptions normalized to one year.   The chart considers any paid, unexpired subscription as active. ARR is a crucial metric for tracking your subscription business's growth and predicting future revenue.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/eb3389b-small-CleanShot_2023-05-08_at_17.57.252x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/eb3389b-small-CleanShot_2023-05-08_at_17.57.252x.png').default}
+/>
 
 
 

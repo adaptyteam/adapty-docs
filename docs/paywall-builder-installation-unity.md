@@ -7,12 +7,9 @@ metadataTitle: ""
 Begin configuring the Adapty paywall builder by installing the [Adapty Unity SDK](unity-installation). Note that the AdaptyUI SDK is necessary only if you intend to use the paywalls created with the Paywall Builder.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/173671f-CleanShot_2023-11-01_at_14.34.05_22x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/173671f-CleanShot_2023-11-01_at_14.34.05_22x.png').default}
+/>
 
 
 

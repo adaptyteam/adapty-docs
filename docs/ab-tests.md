@@ -31,24 +31,18 @@ To create a new A/B test from the **A/B tests** section:
 1. Open the [**A/B tests**](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3ca9b3c-AB_tests.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3ca9b3c-AB_tests.png').default}
+/>
 
 
 
 2. In the **A/B tests** window, click the **Create A/B test** button located at the top right side of the page. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/72af454-create_AB_test.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/72af454-create_AB_test.png').default}
+/>
 
 
 
@@ -59,12 +53,9 @@ To create a new A/B test from the **A/B tests** section:
 5. Click the **Add paywall** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2d25ae6-create_AB_test_with_data.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2d25ae6-create_AB_test_with_data.png').default}
+/>
 
 
 
@@ -74,12 +65,9 @@ To create a new A/B test from the **A/B tests** section:
 3. Choose the paywalls you want to test and they will show in the **Create the A/B test** window.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/870cfda-AB_test_with_Paywalls.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/870cfda-AB_test_with_Paywalls.png').default}
+/>
 
 
 
@@ -103,12 +91,9 @@ You'll be prompted to choose whether you want to select an existing paywall grou
 Once you've added your paywalls, you can assign weights to each option to control how often they appear during the test. You can also set a test goal to track your progress and determine which paywall performs best with your audience.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png').default}
+/>
 
 
 

@@ -6,8 +6,7 @@ metadataTitle: ""
 
 To make the purchase, you have to call `.makePurchase()` method:
 
-```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
+```swift title="title="Adapty.makePurchase(product: product) { result in""
     switch result {
     case let .success(profile):
         // successful purchase
@@ -31,8 +30,7 @@ Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Ada
 
 Below is a complete example of making the purchase and checking the user's access level.
 
-```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
+```swift title="title="Adapty.makePurchase(product: product) { result in""
     switch result {
     case let .success(profile):
         if profile.accessLevels["premium"]?.isActive ?? false {
@@ -60,8 +58,7 @@ Adapty signs the request according to Apple guidelines, please make sure you've 
 
 To restore purchases, you have to call `.restorePurchases()` method:
 
-```swift title="Swift"
-Adapty.restorePurchases { [weak self] result in
+```swift title="title="Adapty.restorePurchases { [weak self] result in""
     switch result {
         case let .success(profile):
             // check the access level
@@ -79,8 +76,7 @@ Response parameters:
 
 For deferred purchases, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store `makeDeferredPurchase` and call it later if you want to hold your purchase for now. Then show the paywall to your user. To continue purchase, call `makeDeferredPurchase`.
 
-```swift title="Swift"
-extension AppDelegate: AdaptyDelegate {
+```swift title="title="extension AppDelegate: AdaptyDelegate {""
 
     func paymentQueue(shouldAddStorePaymentFor product: AdaptyDeferredProduct, defermentCompletion makeDeferredPurchase: @escaping (ResultCompletion<AdaptyProfile>?) -> Void) {
         // you can store makeDeferredPurchase callback and call it later
@@ -98,8 +94,7 @@ extension AppDelegate: AdaptyDelegate {
 
 Since iOS 14.0 your users can redeem Offer Codes. To allow them to do so, you can present the Offer Code redemption sheet by calling the related SDK method.
 
-```swift title="Swift"
-Adapty.presentCodeRedemptionSheet()
+```swift title="title="Adapty.presentCodeRedemptionSheet()""
 ```
 
 :::danger

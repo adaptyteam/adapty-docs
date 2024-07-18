@@ -6,7 +6,7 @@ metadataTitle: "Fluter, React Native, and Unity Error Handling: AdaptyError Over
 
 Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
     try {
       final result = await adapty.makePurchase(product: product);
     } on AdaptyError catch (adaptyError) {
@@ -16,7 +16,7 @@ Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
     } catch (e) {
     }
 ```
-```typescript title="React Native"
+```typescript title="title="React Native""
 try {
   const params: MakePurchaseParamsInput = {};
   await adapty.makePurchase(product, params);
@@ -29,7 +29,7 @@ try {
   }
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.MakePurchase(product, (profile, error) => {
   if (error != null && error.Code == Adapty.ErrorCode.PaymentCancelled) {
       // payment cancelled

@@ -17,12 +17,9 @@ The Adapty dashboard members system allows you to grant different levels of acce
 The following roles are available for members in the Adapty dashboard:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png').default}
+/>
 
 
 
@@ -41,12 +38,9 @@ The following roles are available for members in the Adapty dashboard:
 To access the members section and add new members, please navigate to the [Account section](https://app.adapty.io/account) in the Adapty dashboard.  Within this section, you have the ability to select roles and specify apps for the new members, provided you have sufficient rights.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f72acc9-Area_2023-06-08_181614_Jun_08_2023_0619_PM.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f72acc9-Area_2023-06-08_181614_Jun_08_2023_0619_PM.gif').default}
+/>
 
 
 

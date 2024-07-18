@@ -14,12 +14,9 @@ It doesn't add any attribution data to Adapty, as we already have everything we 
 To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](https://app.adapty.io/integrations/splitmetrics) and set credentials.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8255349-CleanShot_2023-08-14_at_17.39.422x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.png').default}
+/>
 
 
 
@@ -28,24 +25,18 @@ To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](ht
 Open your SplitMetrics Acquire account, hover over one of the MMP logos and click the appeared **Settings** button. Find your Client ID in the dialog under item 5, copy it, and then paste it to Adapty as Client ID.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4d0b2b6-Adapty.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4d0b2b6-Adapty.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4f8d0b8-AdaptyGuide.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4f8d0b8-AdaptyGuide.png').default}
+/>
 
 
 
@@ -54,12 +45,9 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
 You will also have to set Apple App ID to use the integration. To find App ID, open your app page in App Store Connect, go to the App Information page in section General and find Apple ID in the left bottom part of the screen.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/61578ee-CleanShot_2022-04-20_at_17.55.03.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.png').default}
+/>
 
 
 
@@ -70,12 +58,9 @@ You will also have to set Apple App ID to use the integration. To find App ID, o
 Below the credentials, there are three groups of events you can send to SplitMetrics Acquire from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+/>
 
 
 

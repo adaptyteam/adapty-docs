@@ -20,12 +20,9 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 2. Select the app whose ID you need. The **Dashboard** window opens.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7889edb-package_name.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7889edb-package_name.png').default}
+/>
 
 
 
@@ -36,12 +33,9 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 4. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b00066c-package_name.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b00066c-package_name.png').default}
+/>
 
 
 
@@ -53,12 +47,9 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 1. Upload the service account private key file in JSON format that you have created at the [Create service account key file](create-service-account) step into the **Service account key file** area.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/20fdba1-service_key_file.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/20fdba1-service_key_file.png').default}
+/>
 
 
 

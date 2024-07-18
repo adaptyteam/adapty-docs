@@ -7,12 +7,9 @@ metadataTitle: ""
 To install the SDK, download`adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. Please also download and import the [External Dependency Manager plugin](https://github.com/googlesamples/unity-jar-resolver).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/156ca86-add_adapty_plugin.png" 
-    style={{ width: '80px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/156ca86-add_adapty_plugin.png').default}
+/>
 
 
 

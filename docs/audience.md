@@ -11,12 +11,9 @@ In Adapty, a **Placement** is where you can show paywalls or A/B tests. When you
 In the example below, we have a placement with the identifier `Onboarding`. In your app code, you will access the placement using this identifier. If the user belongs to the "Yoga beginners" audience, they will see the first paywall Those who do not fit the "Yoga beginners" audience will see the second paywall.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6bf7797-1_1.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6bf7797-1_1.png').default}
+/>
 
 
 

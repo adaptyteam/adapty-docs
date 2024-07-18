@@ -7,12 +7,9 @@ metadataTitle: ""
 To configure the App Store credentials and ensure optimal functionality of the Adapty iOS SDK, navigate to the [iOS SDK](https://app.adapty.io/settings/ios-sdk) tab within the App Settings page of the Adapty Dashboard. Then, configure the following parameters:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3d4087e-CleanShot_2023-06-26_at_13.27.042x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3d4087e-CleanShot_2023-06-26_at_13.27.042x.png').default}
+/>
 
 
 

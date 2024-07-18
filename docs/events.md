@@ -135,8 +135,7 @@ In addition, some events have additional properties. For the events `subscriptio
 
 Event example
 
-```json title="Json"
-{
+```json title="title="{""
     "price_usd": 9.99,
     "proceeds_usd": 6.99,
     "transaction_id": "1000000628581600",
@@ -159,12 +158,9 @@ Adapty sends events to your server and 3rd party analytical systems.
 Adapty has a special event `access_level_updated`. It is sent only to [webhook](webhook) integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. Before you had to keep track of several events to sync subscription state and some cases were not covered, like setting access level manually from Adapty CRM. Now, no matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6375cb2-CleanShot_2022-05-03_at_14.22.56.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+/>
 
 
 
@@ -216,12 +212,9 @@ We determine the deliverability based on HTTP status and consider everything **o
 You can see the status of certain integration events in the event list in the Adapty Dashboard. The system displays the statuses of integrations that are enabled for the app, regardless of whether the event type is enabled or disabled for a specific integration. If the event type is disabled for a particular integration, it will be color-coded as gray in the event feed. If there are any issues with integration, the integration name will be highlighted in red, indicating that attention is required to resolve the problem. In addition, the system provides tooltips when you hover over the integration name. These tooltips offer more detailed information about the reasons for the non-delivery of an event. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f69ea1a-Screenshot_2023-06-02_at_14.58.48.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f69ea1a-Screenshot_2023-06-02_at_14.58.48.png').default}
+/>
 
 
 

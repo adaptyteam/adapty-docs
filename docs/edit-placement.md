@@ -13,12 +13,9 @@ To edit an existing placement:
 2. In the **Placements** window, click the **3-dot** button next to the placement and select the **Edit** option.  
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e04a93a-edit_placement_list.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e04a93a-edit_placement_list.png').default}
+/>
 
 
 

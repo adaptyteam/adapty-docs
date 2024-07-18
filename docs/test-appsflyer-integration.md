@@ -20,12 +20,9 @@ We recommend testing the AppsFlyer integration end-to-end before going live. Sin
 In case of successful integration, an event will appear in the **Last sent events** section of the integration and will have the **Success** status. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6ccc3bb-webhook_integration_success.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+/>
 
 
 
@@ -36,12 +33,9 @@ In case of successful integration, an event will appear in the **Last sent event
 In case of unsuccessful integration, the event will either not appear at all or will have the **Sending failed** status in the **Last sent events** section of the integration.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/995b3bb-sending_failed.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/995b3bb-sending_failed.png').default}
+/>
 
 
 
@@ -65,12 +59,9 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 1. Expand a successful event in the **Last sent events** section of the integration.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7aef747-view_profile.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7aef747-view_profile.png').default}
+/>
 
 
 
@@ -78,12 +69,9 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 3. In the **Profile** window, make sure the **Attribution -> AppsFlyer** section is presented.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/943148a-profile_attribution.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/943148a-profile_attribution.png').default}
+/>
 
 
 

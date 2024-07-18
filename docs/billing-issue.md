@@ -7,12 +7,9 @@ metadataTitle: ""
 The Billing issue chart displays the number of subscriptions that have entered the Billing Issue state. This state is typically triggered when the store, such as Apple or Google, is unable to receive payment from the subscriber for some reason. This could happen due to reasons such as an expired credit card or insufficient funds.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8749d28-CleanShot_2023-07-11_at_15.21.262x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8749d28-CleanShot_2023-07-11_at_15.21.262x.png').default}
+/>
 
 
 

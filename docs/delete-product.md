@@ -12,12 +12,9 @@ To delete the product:
 2. Click the **3-dot** button next to the product and select the **Delete** option.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4218c22-edit_product.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4218c22-edit_product.png').default}
+/>
 
 
 
@@ -26,12 +23,9 @@ To delete the product:
 2. In the **Delete product** window, enter the product name you're about to delete.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b945add-delete_product.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b945add-delete_product.png').default}
+/>
 
 
 

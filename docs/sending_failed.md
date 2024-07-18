@@ -9,24 +9,18 @@ After you set up an integration, there are 2 ways you can learn about issues wit
 1. The **Sending failed** status in the **Last sent events** table on the integration page.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/879070c-sending_failed.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/879070c-sending_failed.png').default}
+/>
 
 
 
 2. The red name of the integration in the [**Event Feed**](https://app.adapty.io/event-feed).
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/863e36b-red_integrations.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/863e36b-red_integrations.png').default}
+/>
 
 
 
@@ -43,12 +37,9 @@ In both cases, the system displays the statuses of integrations that are enabled
 To learn the exact issue, hover over the red text. The system will show the issue that caused the integration event sending failure. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/54d5219-hover_sending_failed.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/54d5219-hover_sending_failed.png').default}
+/>
 
 
 

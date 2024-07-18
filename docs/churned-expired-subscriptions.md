@@ -7,12 +7,9 @@ metadataTitle: ""
 The churned (expired) subscriptions chart displays the number of subscriptions that have expired, meaning that the user no longer has access to the premium features of the app. Typically, this occurs when the user decides to stop paying at the end of the subscription period for the app or encounters a billing issue.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.png').default}
+/>
 
 
 

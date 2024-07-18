@@ -7,12 +7,9 @@ metadataTitle: ""
 The Non-subscriptions chart displays the number of in-app purchases such as consumables, non-consumables, and non-renewing subscriptions. The chart doesn't include renewable payments. The chart shows the total count of these types of in-app purchases and can help you track user behavior and engagement over time.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a700612-small-CleanShot_2023-05-12_at_12.41.002x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a700612-small-CleanShot_2023-05-12_at_12.41.002x.png').default}
+/>
 
 
 

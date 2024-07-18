@@ -11,12 +11,9 @@ Here is a short guide on data that Adapty collects to help you provide the requi
 ## Data Collection and Security
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3508c24-image4.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3508c24-image4.png').default}
+/>
 
 
 
@@ -65,12 +62,9 @@ Here is a list of the data types that Google requires for reporting, and we have
 **This data collection is required and cannot be turned off.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2c60161-image5.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2c60161-image5.png').default}
+/>
 
 
 
@@ -80,12 +74,9 @@ Here is a list of the data types that Google requires for reporting, and we have
 **Select the 'App functionality' and 'Analytics' checkboxes.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/07a3c9e-image2.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/07a3c9e-image2.png').default}
+/>
 
 
 
@@ -96,12 +87,9 @@ Here is a list of the data types that Google requires for reporting, and we have
 If you are using Adapty, you must disclose that your app collects 'Purchase history' information from the Data types section in Google Play Console. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1057870-image7.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1057870-image7.png').default}
+/>
 
 
 
@@ -110,24 +98,18 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 ### Device or other IDs
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d10f132-CleanShot_2023-03-01_at_17.55.312x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ccb1a2a-image5.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ccb1a2a-image5.png').default}
+/>
 
 
 
@@ -138,12 +120,9 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 Once you have made your data safety selections, Google will display a preview of your app's privacy section. If you have opted for "Financial Info" and "Device or other IDs" as mentioned earlier, your privacy information should appear similar to the following example
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e8d9b73-image3.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e8d9b73-image3.png').default}
+/>
 
 
 

@@ -9,8 +9,7 @@ metadataTitle: ""
 The Adapty Unity Plugin on iOS is initialized automatically. To make it work properly, you need to manually create the Adapty-Info.plist file and add it to the `/Assets` folder of your Unity project (it will be automatically copied to the Xcode project during the build phase).  
 This is how this file should look like:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="UTF-8"?>
+```xml title="title="<?xml version="1.0" encoding="UTF-8"?>""
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -22,15 +21,13 @@ This is how this file should look like:
 
 For iOS, you can optionally set the AdaptyObserverMode flag to `TRUE`, if you want Adapty to run in Observer mode. Usually, it means, that you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
 
-```xml title="Xml"
-<key>AdaptyObserverMode</key>
+```xml title="title="<key>AdaptyObserverMode</key>""
 <true/>
 ```
 
 Also, you can disable IDFA collection by adding the specific key to the Adapty-Info.plist file:
 
-```xml title="Xml"
-<key>AdaptyIDFACollectionDisabled</key>
+```xml title="title="<key>AdaptyIDFACollectionDisabled</key>""
 <false/>
 ```
 
@@ -38,7 +35,7 @@ Also, you can disable IDFA collection by adding the specific key to the Adapty-I
 
 Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 2 API utilisation. Read more in the [Displaying Paywalls & Products](display-pb-paywalls) section.
 
-```xml title="Adapty-Info.plist"
+```xml title="title="Adapty-Info.plist""
 <dict>
     <key>AdaptyStoreKit2Usage</key>
     <string>intro_eligibility_check</string>
@@ -49,8 +46,7 @@ Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 
 
 The Adapty Unity Plugin on Android is initialized automatically. To make it work properly, you need to add `<meta-data` section with "AdaptyPublicSdkKey" as a direct child of the `<application` section to your project's AndroidManifest.xml file (if you don't have one, it can be easily created in Project Settings -> Player -> Settings for Android -> Publishing settings -> Custom Main Manifest checkbox). Basically it will look like this:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="utf-8"?>
+```xml title="title="<?xml version="1.0" encoding="utf-8"?>""
 <manifest ...>
     <application ...>
         ...
@@ -67,12 +63,9 @@ The Adapty Unity Plugin on Android is initialized automatically. To make it work
 First of all you need to create a script which will be responsible for listening of Adapty events. Let's call it `AdaptyListener` and place on any object of your scene. We recommed to call `DontDestroyOnLoad` method for this object to make it live forever.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2ccd564-create_adapty_listener.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/2ccd564-create_adapty_listener.png').default}
+/>
 
 
 
@@ -80,14 +73,12 @@ First of all you need to create a script which will be responsible for listening
 
 Adapty uses `AdaptySDK` namespace. You may add at the top of your script files that would use Adapty SDK:
 
-```csharp title="Csharp"
-using AdaptySDK;
+```csharp title="title="using AdaptySDK;""
 ```
 
 Next you need to subscribe for Adapty events:
 
-```csharp title="Csharp"
-using UnityEngine;
+```csharp title="title="using UnityEngine;""
 using AdaptySDK;
 
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {

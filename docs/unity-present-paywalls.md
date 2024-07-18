@@ -8,7 +8,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 To display a paywall view, simply call the `view.present()` method. If you've already defined a `view` object in a previous step, feel free to use it. In the following snippet, we'll introduce a new `view` for better visibility.
 
-```csharp title="Unity"
+```csharp title="title="Unity""
 view.Present((error) => {
   // handle the error
 });

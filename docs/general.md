@@ -9,12 +9,9 @@ You can navigate to the General tab of the App Settings page to manage your app'
 ## App details
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
+/>
 
 
 
@@ -25,12 +22,9 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 ## 2\. Member of Small Business Program and Reduced Service Fee
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/825e2be-CleanShot_2023-04-19_at_13.43.292x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
+/>
 
 
 
@@ -41,12 +35,9 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 ### 3\. Reporting timezone
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/47227f9-CleanShot_2023-04-19_at_13.45.302x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
+/>
 
 
 
@@ -62,12 +53,9 @@ To maintain accurate data and avoid discrepancies between Adapty analytics and A
 So you can choose the logic that will be applied to subscription price increases in Adapty:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
+/>
 
 
 

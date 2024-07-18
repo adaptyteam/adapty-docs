@@ -42,12 +42,9 @@ Adapty can work without this URL, but you'll get a limited feature set. For exam
 When switching from a legacy system, sometimes you want two systems to work simultaneously for some time. In that case, you can use our [raw events forwarding](app-store-server-notifications#raw-events-forwarding), where Adapty is a proxy server for your legacy system.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c7d4fd0-Seamless_migrat_a.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c7d4fd0-Seamless_migrat_a.png').default}
+/>
 
 
 

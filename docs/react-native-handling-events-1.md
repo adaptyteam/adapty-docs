@@ -4,11 +4,11 @@ description: ""
 metadataTitle: ""
 ---
 
-Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
+Paywalls configured with the [Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the`view.registerEventHandlers` method:
 
-```typescript title="React Native (TSX)"
+```typescript title="title="React Native (TSX)""
 import {createPaywallView} from '@adapty/react-native-ui';
 
 const view = await createPaywallView(paywall);
@@ -55,4 +55,3 @@ Note, that `onCloseButtonPress`, `onPurchaseCompleted` and `onRestoreCompleted` 
 | **onProductSelected**       | When any product in the paywall view is selected, this method will be invoked, so that you can monitor what the user selects before the purchase.                                                                                                                                              |
 | **onRenderingFailed**       | If an error occurs during view rendering, this method will be invoked and provide `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                  |
 | **onLoadingProductsFailed** | If you  haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, this method will be invoked and provide `AdaptyError`.                                                                         |
-

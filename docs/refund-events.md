@@ -7,12 +7,9 @@ metadataTitle: ""
 The Refund events chart displays the number of refunded purchases and subscriptions. Adapty attributes refund events to the moment when the refund occured, meaning that any refunds related to a subscription will be counted on an actual date of the refund and not on the start date of the subscription.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.png').default}
+/>
 
 
 

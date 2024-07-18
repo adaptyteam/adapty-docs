@@ -18,12 +18,9 @@ The LTV chart works with the app data we gather through our SDK and in-app event
 With this information, you will be able to gain insights into how your subscriptions are performing and how much revenue is generated from your subscribers during a given period of time. You can use this information to make informed decisions about your subscription offerings, ad spending, and customer acquisition strategies. Additionally, the filters will allow you to segment the data by country, attribution, and other variables, giving you a more granular understanding of your customer base.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fd6b0af-new.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fd6b0af-new.gif').default}
+/>
 
 
 
@@ -56,12 +53,9 @@ In addition, the LTV chart can be used to compare different customer segments, a
 ### Available grouping and filtering
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cf75633-Area2.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cf75633-Area2.gif').default}
+/>
 
 
 

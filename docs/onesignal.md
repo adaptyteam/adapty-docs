@@ -20,12 +20,9 @@ The initial step of the integration process is to provide the necessary credenti
 You'll need to provide your **OneSignal App ID** and **Auth Token**. You can find more information about OneSignal Keys and IDs in [following documentation.](https://documentation.onesignal.com/docs/keys-and-ids) 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/44c5f25-CleanShot_2023-08-17_at_15.07.162x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.png').default}
+/>
 
 
 
@@ -37,12 +34,9 @@ To find your OneSignal app ID and authentication key, simply navigate to your [O
 Your **App ID** can be found under the **Keys & IDs **section in the Settings tab. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7181f82-CleanShot_2023-08-17_at_15.10.262x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.png').default}
+/>
 
 
 
@@ -51,12 +45,9 @@ Your **App ID** can be found under the **Keys & IDs **section in the Settings ta
 The Auth token can be found in the **Account & API Keys** section of your OneSignal dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.png').default}
+/>
 
 
 
@@ -69,12 +60,9 @@ After retrieving your OneSignal App ID and authentication key from the OneSignal
 Below the credentials, there are three groups of events you can send to OneSignal from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/30c7f2e-oneSignal.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/30c7f2e-oneSignal.png').default}
+/>
 
 
 
@@ -122,7 +110,7 @@ Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on 
 
 Here is how you can link Adapty with OneSignal with either `playerId` or `subscriptionId`:
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 // PlayerID (pre-v5 OneSignal SDK)
 // in your OSSubscriptionObserver implementation
 func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -147,7 +135,7 @@ OneSignal.Notifications.requestPermission({ accepted in
     Adapty.updateProfile(params: builder.build())
 }, fallbackToSettings: true)
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 // PlayerID (pre-v5 OneSignal SDK)
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
@@ -178,8 +166,7 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     }
 }
 ```
-```java title="Java"
-// PlayerID (pre-v5 OneSignal SDK)
+```java title="title="// PlayerID (pre-v5 OneSignal SDK)""
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
     String playerId = to != null ? to.getUserId() : null;
@@ -209,7 +196,7 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     });
 };
 ```
-```java title="Flutter (Dart)"
+```java title="title="Flutter (Dart)""
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
     if (playerId != null) {
@@ -226,7 +213,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
     }
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 
@@ -238,7 +225,7 @@ OneSignal.addSubscriptionObserver(event => {
   });
 });
 ```
-```Text title="Unity (C#)"
+```Text title="title="Unity (C#)""
 using OneSignalSDK;
 
 var pushUserId = OneSignal.Default.PushSubscriptionState.userId;

@@ -24,12 +24,9 @@ When everything is set on the SDK side you can use just the Adapty dashboard to 
 Adapty paywall builder works as an optional supplement to [the main flow of handling paywalls](https://docs.adapty.io/docs/paywall) so you may switch it off/on when needed with a toggle. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/677a04c-CleanShot_2023-08-28_at_16.23.122x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/677a04c-CleanShot_2023-08-28_at_16.23.122x.png').default}
+/>
 
 
 

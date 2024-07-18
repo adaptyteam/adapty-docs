@@ -17,12 +17,9 @@ To set up the integration with AppsFlyer, go to [Integrations > Singular](https:
 For this integration to work, the Singular SDK Key is required. It can be found in Singular dashboard: Developer tools -> SDK Keys -> SDK Key (**not** SDK Secret):
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4bc50d1-singular_sdk_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4bc50d1-singular_sdk_key.png').default}
+/>
 
 
 
@@ -31,12 +28,9 @@ For this integration to work, the Singular SDK Key is required. It can be found 
 Below the credentials, there are three groups of events you can send to Singular from Adapty. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e67de0c-singular_events.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e67de0c-singular_events.png').default}
+/>
 
 
 

@@ -11,12 +11,9 @@ To link an access level to a product:
 1. While [configuring a product](create-product), select the access level from the **Access Level ID** list.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e71651e-add_access_level_to_product.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e71651e-add_access_level_to_product.png').default}
+/>
 
 
 

@@ -9,12 +9,9 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
 1. Open the **[Paywalls and Products](https://app.adapty.io/products) **section from the Adapty main menu, then select the **Products** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6b9e928-edit_product.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6b9e928-edit_product.png').default}
+/>
 
 
 
@@ -22,12 +19,9 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
 3. In the opened **Edit product** window, click the **Add Offer** button below the **Offers** title.  
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b0e04fe-add_offer.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b0e04fe-add_offer.png').default}
+/>
 
 
 

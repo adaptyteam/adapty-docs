@@ -19,12 +19,9 @@ Checklist to successfully use Google Play offers
 ## Overview
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/04aca48-sub-offers.jpeg" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/04aca48-sub-offers.jpeg').default}
+/>
 
 
 
@@ -37,12 +34,9 @@ Now you can create multiple offers for every base plan (previously known as subs
 ## Configuring offers in Google Play
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c0b1dfa-001930-November-03-XYnbieeu.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.png').default}
+/>
 
 
 
@@ -53,12 +47,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 1. To create an offer, click **Add offer** and choose the base plan from the list.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
+/>
 
 
 
@@ -66,12 +57,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 2. Enter the offer ID. It will be later used in the analytics and Adapty dashboard, so give it a meaningful name.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
+/>
 
 
 
@@ -83,12 +71,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    3. **Developer determined**: you can control who can use this offer from the app code. Be cautious using it in production to avoid possible fraud: customers can activate a free or discounted subscription over and over again. A good use case for this offer type is winning back churned subscribers.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
+/>
 
 
 
@@ -101,12 +86,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
       An offer can have two phases. In this case, the first phase must be a Free trial, and the second one is either a Single payment or a Discounted recurring payment. They would be applied in this order.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d6267f3-a48f79e-001936-November-03-A13wutRh.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
+/>
 
 
 
@@ -114,12 +96,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 5. Activate the offer to use it in the app.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
+/>
 
 
 
@@ -127,12 +106,9 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 After activating the offer, you should copy its ID to use in Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0800923-001938-November-03-ANtSI48t.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0800923-001938-November-03-ANtSI48t.png').default}
+/>
 
 
 
@@ -145,12 +121,9 @@ The `1-month` plan has three offers: `free-trial-1-week` (1), `free-trial-3-days
 Let's create a 1-month product in Adapty with all the offers. You can do it from a single screen.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e5a37f4-001940-November-03-S8fDVXyR.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.png').default}
+/>
 
 
 
@@ -170,12 +143,9 @@ When creating a paywall or editing a draft of the paywall, choose the offer from
 If you configure a paywall like this, a monthly subscription will not have a free trial. A yearly subscription will have a 1-week trial if the customer is eligible.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3f2c59f-001942-November-03-9iARsVaa.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3f2c59f-001942-November-03-9iARsVaa.png').default}
+/>
 
 
 

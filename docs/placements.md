@@ -15,12 +15,9 @@ To see the list of placements in Adapty, open the **Placements** section in the 
 The **Placements** list offers a comprehensive view of various locations in the user journey where paywalls or A/B tests can appear. Each item in the list corresponds to a specific placement, allowing easy management and modification. You can edit placement details, associate them with the desired paywall or A/B test for a specified audience, or remove unnecessary placements. The numbers in the table reflect the analytics for placements since their activation.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
+/>
 
 
 

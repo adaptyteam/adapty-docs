@@ -8,7 +8,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 To display a paywall view, simply call the `view.present()` method. If you've already defined a `view` object in a previous step, feel free to use it. In the following snippet, we'll introduce a new `view` for better visibility.
 
-```typescript title="React Native (TSX)"
+```typescript title="title="React Native (TSX)""
 import {createPaywallView} from '@adapty/react-native-ui';
 
 const view = await createPaywallView(paywall);

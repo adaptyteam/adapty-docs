@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-[Adapty paywall builder](https://docs.adapty.io/docs/paywall-builder-getting-started) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty paywall builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](https://docs.adapty.io/docs/ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
@@ -15,12 +15,9 @@ In this section, we will discuss the customization of buttons and text elements 
 In the buttons tab, you have the ability to define and customize various buttons that play a crucial role in guiding user interactions and enhancing the overall user experience of your paywall. This tab empowers you to configure primary Call to action (CTA) buttons as well as secondary buttons that can direct users to essential legal information. You can enable or disable the appearance of the secondary buttons. Let's deep dive into the options available for customization in the buttons tab:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.png').default}
+/>
 
 
 
@@ -48,12 +45,9 @@ Apart from the traditional button configurations, the Restore and Login buttons 
 ### Texts
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/457e7da-Export-1693572302021.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/457e7da-Export-1693572302021.gif').default}
+/>
 
 
 

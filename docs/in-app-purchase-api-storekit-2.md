@@ -16,12 +16,9 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 2. Then click the **Plus (+)** button next to the **Active** title. The **Generate in-App Purchase Key** window will open.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/14687cb-generate_in-app_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/14687cb-generate_in-app_key.png').default}
+/>
 
 
 
@@ -31,12 +28,9 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 4. Click the **Generate** button. Once the **Generate in-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3190ad5-integration_done.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3190ad5-integration_done.png').default}
+/>
 
 
 
@@ -53,12 +47,9 @@ After completing the necessary setup steps in App Store Connect, the next step i
 3. Fill out the **Issuer ID** and the  **Key ID ** with the corresponding field values copied from your [App Store Connect](https://docs.adapty.io/docs/in-app-purchase-api-storekit-2#1-generate-the-api-key). Please note that the fields will only be active after the app's **Bundle ID** is provided, as the in-app purchase key is specific to each app bundle.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8b6c5b3-iOS.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8b6c5b3-iOS.png').default}
+/>
 
 
 

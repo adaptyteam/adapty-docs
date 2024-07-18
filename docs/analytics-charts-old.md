@@ -7,12 +7,9 @@ metadataTitle: ""
 Install Adapty SDK and start analyzing real-time metrics of your iOS or Android app with advanced filters, such as ad network, ad campaign, country, A/B test, and more.
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/a3f96d8-analytics.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/a3f96d8-analytics.png').default}
+/>
 
 
 

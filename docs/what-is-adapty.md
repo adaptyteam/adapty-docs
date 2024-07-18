@@ -6,6 +6,16 @@ metadataTitle: "Discover Adapty: Your Ultimate In-App Purchase Platform"
 
 Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.
 
+<img
+  src={require('./img/c661ee3-paywalls.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
 ### Marketing automation and testing
 
 - Subscriptions/in-app purchases SDK for [iOS](ios-installation), [Android](android-installation), [Flutter](flutter-installation), [React Native](react-native-installation) and [Unity](unity-installation). Adapty performs server-side receipt validation for you and syncs your customers across all platforms, including [web](getting-started-with-server-side-api). It also works in [observer](observer-vs-full-mode) mode, so you can use SDK without changing your existing purchase infrastructure.

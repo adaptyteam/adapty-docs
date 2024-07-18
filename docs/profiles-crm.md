@@ -12,12 +12,9 @@ Profiles is a CRM for your users. With Profiles, you can:
 4. Grant the user a subscription.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://adapty-docs-assets.s3.amazonaws.com/gitbook/profiles.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/profiles.png').default}
+/>
 
 
 
@@ -41,12 +38,9 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
 ## User properties
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
+/>
 
 
 
@@ -74,12 +68,9 @@ After installing SDK, Adapty automatically collects user events from the payment
 You can see custom attributes that were set either from SDK or manually assign them to the user using the Add attribute button in the Attributes section on the profile page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://adapty-docs-assets.s3.amazonaws.com/gitbook/image%20%2870%29.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/image%20%2870%29.png').default}
+/>
 
 
 
@@ -90,12 +81,9 @@ You can see custom attributes that were set either from SDK or manually assign t
 In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://adapty-docs-assets.s3.amazonaws.com/gitbook/image%20%2830%29.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/image%20%2830%29.png').default}
+/>
 
 
 
@@ -128,11 +116,8 @@ A new profile record that generates a subsequent transaction, called a "non-orig
 Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/98d0dad-non-original_profile.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/98d0dad-non-original_profile.png').default}
+/>
 
 

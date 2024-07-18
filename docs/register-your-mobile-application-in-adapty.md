@@ -17,12 +17,9 @@ To add the second or any subsequent app:
 1. Click the name of your existing app at the top of the Adapty Dashboard.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cbca917-add_new_app.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cbca917-add_new_app.png').default}
+/>
 
 
 
@@ -30,12 +27,9 @@ To add the second or any subsequent app:
 3. In the new window, enter your app's name, and category and upload a file with an icon.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8a64858-name_category.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/8a64858-name_category.png').default}
+/>
 
 
 
@@ -48,12 +42,9 @@ Although you initially configured the name and category of your application, you
 1. Open the [**App settings**](https://app.adapty.io/settings/general) from the Adapty top menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/26f79d5-App_settings_top_menu.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+/>
 
 
 
@@ -64,11 +55,8 @@ Although you initially configured the name and category of your application, you
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e5437a6-app_settings.png" 
-    style={{ width: '7px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e5437a6-app_settings.png').default}
+/>
 
 

@@ -12,23 +12,23 @@ Install Adapty SDK in your app and be sure you have replaced the** "PUBLIC_SDK_K
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-```swift title="iOS"
+```swift title="title="iOS""
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
-```kotlin title="Android"
+```kotlin title="title="Android""
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 }
 ```
-```xml title="Flutter - info.plist"
+```xml title="title="Flutter - info.plist""
 <dict>
     ...
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
 </dict>
 ```
-```xml title="Flutter - AndroidManifest.xml"
+```xml title="title="Flutter - AndroidManifest.xml""
 <application ...>
        ...
        <meta-data
@@ -36,7 +36,7 @@ override fun onCreate() {
               android:value="PUBLIC_SDK_KEY" />
 </application>
 ```
-```typescript title="React Native - /src/App.tsx"
+```typescript title="title="React Native - /src/App.tsx""
 import { activateAdapty } from 'react-native-adapty';
 
 const App: React.FC = () => {

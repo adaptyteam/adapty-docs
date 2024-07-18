@@ -11,12 +11,9 @@ You can manually adjust the access level for a particular customer right in the 
 1. Open the **[Profiles and Segments](https://app.adapty.io/placements)** section from the Adapty main menu, then select the **Profiles** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/444f659-profiles_list.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/444f659-profiles_list.png').default}
+/>
 
 
 
@@ -24,12 +21,9 @@ You can manually adjust the access level for a particular customer right in the 
 2. In the **Profiles** window, click on the customer you want to grant access to. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/96d0abf-add_access_level_to_customer.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/96d0abf-add_access_level_to_customer.png').default}
+/>
 
 
 
@@ -37,12 +31,9 @@ You can manually adjust the access level for a particular customer right in the 
 3. In the opened window, click the **Add access level** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2379036-add_access_level_to_customer1.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2379036-add_access_level_to_customer1.png').default}
+/>
 
 
 

@@ -7,12 +7,9 @@ metadataTitle: ""
 The Active subscriptions chart displays the amount of unique paid subscriptions that have not yet expired at the end of each selected period. It includes regular (unexpired) in-app subscriptions that started and are currently active and excludes both free trials and subscriptions with canceled renewals. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a4895aa-small-CleanShot_2023-05-04_at_15.13.262x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a4895aa-small-CleanShot_2023-05-04_at_15.13.262x.png').default}
+/>
 
 
 

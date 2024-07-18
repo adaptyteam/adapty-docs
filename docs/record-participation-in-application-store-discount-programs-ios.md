@@ -15,12 +15,9 @@ You can adjust the participation dates for your mobile app in the [App Store Sma
 1. Open the [**App settings**](https://app.adapty.io/settings/general) from the Adapty top menu.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/10ad0df-participation_reduced-fee_program.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+/>
 
 
 
@@ -39,12 +36,9 @@ If your mobile app isn't enrolled in the App Store Small Business Program, you c
 1. On the **Is Your_mobile_app enrolled in Small Business Programs?** page, click the **Add period** option below the discount program your mobile application is enrolled in.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+/>
 
 
 

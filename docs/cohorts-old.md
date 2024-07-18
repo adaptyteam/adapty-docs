@@ -43,12 +43,9 @@ The reasons may be:
 Here is what the cohort table looks like:
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/b00fac2-CleanShot_2022-12-21_at_07.14.45.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.png').default}
+/>
 
 
 
@@ -110,12 +107,9 @@ Total row shows the total revenue/subscribers/average ARPPU for each column. Thi
 Some cells have incomplete data — the time period they correspond to isn't over for some users of the cohorts. Such cells are shaded and have a special notification in their pop-up.
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/d531c66-CleanShot_2022-12-21_at_16.27.00.png" 
-    style={{ width: 'smart', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.png').default}
+/>
 
 
 
@@ -136,12 +130,9 @@ After your data is uploaded you will see the additional metrics as follows.
 3. **ROAS** - (revenue) is a return on ad spend as a percentage. It’s calculated as (total revenue / ad spend) _ 100. ($60000 revenue / $20000 ad spend) _ 100 = 300% ROAS. ROAS=100% means that you earned the same amount you spent. ROAS=200% means that you earn twice more as spend.
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png').default}
+/>
 
 
 
@@ -154,12 +145,9 @@ After your data is uploaded you will see the additional metrics as follows.
 You can filter the Cohorts by product, attribution, country, segment, store, product duration, or product type - with trials or without them. For example, if you filter by products with trials, only revenue from those products will be taken into account.
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/602c3db-CleanShot_2022-12-21_at_16.53.50.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.png').default}
+/>
 
 
 

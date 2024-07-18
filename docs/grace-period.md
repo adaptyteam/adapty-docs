@@ -7,12 +7,9 @@ metadataTitle: ""
 The Grace period chart displays the number of subscriptions that have entered the grace period state due to a billing issue. During this period, the subscription remains active while the store tries to receive payment from the subscriber. If payment is not successfully received before the grace period ends, the subscription enters the billing issue state.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/06bb222-CleanShot_2023-07-11_at_15.20.452x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/06bb222-CleanShot_2023-07-11_at_15.20.452x.png').default}
+/>
 
 
 

@@ -37,12 +37,9 @@ To set up the integration with Adjust:
 6. Scroll down to the **S2S security** section and click the **Open S2S security** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/500cac0-adjust_open_s2s_security.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/500cac0-adjust_open_s2s_security.png').default}
+/>
 
 
 
@@ -50,12 +47,9 @@ To set up the integration with Adjust:
 7. In the **S2S security** window, copy the S2S token.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d3cb288-adjust_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d3cb288-adjust_token.png').default}
+/>
 
 
 
@@ -64,12 +58,9 @@ To set up the integration with Adjust:
 8. Open the Adapty Dashboard and paste the copied token to the **iOS OAuth token** and **Android OAuth token** fields. If you have both iOS and Android apps added as the same app in Adjust, paste the same value to both fields. If the apps are added as separate apps, those values will be different.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/84ec347-adjust_adapty_oath_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/84ec347-adjust_adapty_oath_token.png').default}
+/>
 
 
 
@@ -78,12 +69,9 @@ To set up the integration with Adjust:
 7. Next, you need to provide the **app token** for your iOS and Android apps. Open your Adjust dashboard again and switch to the **App information** tab.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8da6bc3-adjust_app_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8da6bc3-adjust_app_token.png').default}
+/>
 
 
 
@@ -94,12 +82,9 @@ To set up the integration with Adjust:
    Please note that the section has 2 field sets: **Production** and **Sandbox**. Use the sandbox set for [Adjust integration testing](test-adjust-integration), events created in the sandbox environment will be sent with this token.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d6d0831-adjust_adapty_app_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d6d0831-adjust_adapty_app_token.png').default}
+/>
 
 
 
@@ -128,12 +113,9 @@ To create an event in the Adjust dashboard:
 4. Click the **Add event** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2db6d69-adjust_add_event.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2db6d69-adjust_add_event.png').default}
+/>
 
 
 
@@ -142,12 +124,9 @@ To create an event in the Adjust dashboard:
 5. In the **Add event** window, enter the name of the event. This name is not used in Adapty, so use any name convenient for you.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0f35698-adjust_add_new_event.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/0f35698-adjust_add_new_event.png').default}
+/>
 
 
 
@@ -168,12 +147,9 @@ Now, when you have all required events created in Adjust, it's time to link them
 3. Open the **Events** tab.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/931df25-adjust_copy_event.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/931df25-adjust_copy_event.png').default}
+/>
 
 
 
@@ -184,12 +160,9 @@ Now, when you have all required events created in Adjust, it's time to link them
 6. In the **iOS event names** and **Android event names** sections, enable the events you want to share to Adjust. Refer to the [Events to send to 3d-party integrations](events) topic for the complete list of events that can be sent with detailed descriptions of them. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/af8bc56-adjust_adapty_event_on.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/af8bc56-adjust_adapty_event_on.png').default}
+/>
 
 
 
@@ -198,12 +171,9 @@ Now, when you have all required events created in Adjust, it's time to link them
 3. Paste the copied token next to the corresponding event. If you have both iOS and Android apps added as the same app in Adjust, paste the same value to both iOS and Android section fields. If the apps are added as separate apps, those values will be different.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ab92bf9-adjust_adapty_event_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ab92bf9-adjust_adapty_event_token.png').default}
+/>
 
 
 

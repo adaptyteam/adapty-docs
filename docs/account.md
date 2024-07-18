@@ -9,12 +9,9 @@ Your account page can be accessed through the link in the top right corner after
 There are several important things you can set on your account page so let's go through them. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/27b3508-CleanShot_2022-12-21_at_20.47.10.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.png').default}
+/>
 
 
 
@@ -25,12 +22,9 @@ There are several important things you can set on your account page so let's go 
 Here you fill in your name and the name of your company. It's useful to have this info when you contact support so they can work with the correctly filled profile.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png').default}
+/>
 
 
 

@@ -11,12 +11,9 @@ Adapty effortlessly tracks in-app purchases and subscription events such as tria
 ## Integration settings
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/20bf659-CleanShot_2023-08-22_at_13.26.562x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/20bf659-CleanShot_2023-08-22_at_13.26.562x.png').default}
+/>
 
 
 
@@ -40,12 +37,9 @@ Below the credentials, there are three groups of events you can send to the sele
 It's important to note that event name customization is available for certain integrations, while for others, the event names are set and cannot be modified. Additionally, with certain integrations such as [Airbridge](https://docs.adapty.io/docs/airbridge#events-and-tags) for example, you have the flexibility to associate multiple event names with a single Adapty event. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c79f5cd-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c79f5cd-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
+/>
 
 
 

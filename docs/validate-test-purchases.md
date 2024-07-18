@@ -13,12 +13,9 @@ Every time you make a test purchase on your mobile device, view the correspondin
 If the test purchase is successful, its transaction event will be dsplayed in the **Event Feed**:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9ade2d5-event_feed_sandbox.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9ade2d5-event_feed_sandbox.png').default}
+/>
 
 
 
@@ -31,11 +28,8 @@ If transactions work as expected, proceed to the [Release checklist](release-che
 If you observe no transaction event within 10 minutes or encounter an error in the mobile app, refer to the [ Troubleshooting](troubleshooting-test-purchases) and articles on error handling [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter, React Native, and Unity](error-handling-on-flutter-react-native-unity) for potential solutions.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/31a79b2-no_events.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/31a79b2-no_events.png').default}
+/>
 
 

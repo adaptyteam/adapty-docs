@@ -10,26 +10,22 @@ Adapty creates an internal profile id for every user. But if you have your authe
 
 If you have a user id during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-```kotlin title="Kotlin"
-Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
+```kotlin title="title="Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")""
 ```
-```java title="Java"
-Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
+```java title="title="Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");""
 ```
 
 ### Setting Customer User Id after configuration
 
 If you don't have a user id on SDK configuration, you can set it later at any time with `.identify()` method. The most common cases are after registration/authorization when the user switches from being an anonymous user to an authenticated user.
 
-```kotlin title="Kotlin"
-Adapty.identify("YOUR_USER_ID") { error ->
+```kotlin title="title="Adapty.identify("YOUR_USER_ID") { error ->""
     if (error == null) {
         // successful identify
     }
 }
 ```
-```java title="Java"
-Adapty.identify("YOUR_USER_ID", error -> {
+```java title="title="Adapty.identify("YOUR_USER_ID", error -> {""
     if (error == null) {
         // successful identify
     }
@@ -52,15 +48,13 @@ it is also quite important to re-request all paywalls and products after identif
 
 You can logout the user anytime by calling `.logout()` method:
 
-```kotlin title="Kotlin"
-Adapty.logout { error ->
+```kotlin title="title="Adapty.logout { error ->""
     if (error == null) {
         // successful logout
     }
 }
 ```
-```java title="Java"
-Adapty.logout(error -> {
+```java title="title="Adapty.logout(error -> {""
     if (error == null) {
         // successful logout
     }

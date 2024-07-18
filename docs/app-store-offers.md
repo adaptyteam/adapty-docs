@@ -13,12 +13,9 @@ To use promotional offers, you have to [upload subscription key](app-store-promo
 :::
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/646799a-CleanShot_2023-07-25_at_15.14.112x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/646799a-CleanShot_2023-07-25_at_15.14.112x.png').default}
+/>
 
 
 

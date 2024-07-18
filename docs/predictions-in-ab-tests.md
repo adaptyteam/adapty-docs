@@ -40,12 +40,9 @@ This is where our predictive model comes into play. Having the current revenue d
 Note that sometimes predicted P2BB can contradict the current P2BB. When that's the case, we highlight the variation rows with yellow like so:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/74577c6-CleanShot_2024-02-15_at_13.08.452x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/74577c6-CleanShot_2024-02-15_at_13.08.452x.png').default}
+/>
 
 
 

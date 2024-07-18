@@ -41,24 +41,18 @@ To add a custom tag to a line:
    - Custom tags can't overlap with any of the [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7ec0e4f-custom_tag.png" 
-    style={{ width: '60%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7ec0e4f-custom_tag.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6f97bd0-custom_tag.png" 
-    style={{ width: '6px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/6f97bd0-custom_tag.png').default}
+/>
 
 
 
@@ -67,12 +61,9 @@ To add a custom tag to a line:
 2. After entering the custom tag, make sure to enter the fallback line. The fallback is the text displayed in your app if it does not know about a particular custom tag. This ensures that users won't see the custom tag as code; instead, they'll see the designated fallback text. Please note that the fallback replaces the entire line containing the custom tag
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/36b8480-fallback_for_custom_tag.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/36b8480-fallback_for_custom_tag.png').default}
+/>
 
 
 
@@ -81,17 +72,14 @@ To add a custom tag to a line:
 
 To use custom tags in your mobile app, you need to create a `tagResolver` object. This is a dictionary/map containing custom tags and the string values to replace them with when rendering the paywall in your app. Here's an example:
 
-```swift title="Swift"
-let tagResolver = [
+```swift title="title="let tagResolver = [""
     "USERNAME": "John",
 ]                           
 ```
-```kotlin title="Kotlin"
-val customTags = mapOf("USERNAME" to "John")
+```kotlin title="title="val customTags = mapOf("USERNAME" to "John")""
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
-```java title="Java"
-Map<String, String> customTags = new HashMap<>();
+```java title="title="Map<String, String> customTags = new HashMap<>();""
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
 ```

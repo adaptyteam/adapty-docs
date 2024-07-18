@@ -43,24 +43,18 @@ To create a Sandbox Apple ID:
 1. Open **App Store Connect**. Proceed to [**Users and Access** → **Sandbox**  → **Test Accounts**](https://appstoreconnect.apple.com/access/users/sandbox) section.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7c1fdd0-apple_test_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7c1fdd0-apple_test_account.png').default}
+/>
 
 
 
 2. Click the add button  **(+)** button next to the **Test Accounts** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/57c3a7c-apple_new_test_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/57c3a7c-apple_new_test_account.png').default}
+/>
 
 
 

@@ -13,12 +13,9 @@ This integration enables you to bring all the Adapty events into Mixpanel. As a 
 To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**](https://app.adapty.io/integrations/mixpanel) in the Adapty Dashboard, turn on a toggle, and fill out fields.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.png').default}
+/>
 
 
 
@@ -27,12 +24,9 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
 You need only one variable such as **Mixpanel token**. You can find the token in your Mixpanel project. If you need help, [here's](https://help.mixpanel.com/hc/en-us/articles/115004502806-Find-Project-Token-) the official docs.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3178322-CleanShot_2023-08-16_at_18.09.382x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.png').default}
+/>
 
 
 
@@ -49,12 +43,9 @@ Another thing worth mentioning is updating [User Profile Properties](https://doc
 Below the credentials, there are three groups of events you can send to Mixpanel from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+/>
 
 
 
@@ -66,7 +57,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 import Mixpanel
 
 let builder = AdaptyProfileParameters.Builder()
@@ -74,7 +65,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val params = AdaptyProfileParameters.Builder()
     .withMixpanelUserId(mixpanelAPI.distinctId)
     .build()
@@ -84,7 +75,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```csharp title="Flutter (Dart)"
+```csharp title="title="Flutter (Dart)""
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
@@ -100,7 +91,7 @@ final builder = AdaptyProfileParametersBuilder()
         // handle error
     } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 import { Mixpanel } from 'mixpanel-react-native';
 
@@ -113,7 +104,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetMixpanelUserId(Mixpanel.DistinctId);
 

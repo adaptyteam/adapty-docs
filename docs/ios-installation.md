@@ -18,14 +18,13 @@ Make sure to **set Swift 5.0+ for Adapty pod in case your app is using the older
 
 Add Adapty to your `Podfile`:
 
-```shell title="Podfile"
+```shell title="title="Podfile""
 pod 'Adapty', '~> 2.10.4'
 ```
 
 And then run:
 
-```sh title="Sh"
-pod install
+```sh title="title="pod install""
 ```
 
 This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.

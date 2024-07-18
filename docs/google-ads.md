@@ -15,12 +15,9 @@ The integration of Adapty with [Firebase](https://docs.adapty.io/docs/firebase-a
 The next step is to connect your Google Ads account with your Firebase project. For that you'll need to follow these four steps:
 
 
-<div style={{ textAlign: 'left' }}>
-  <img 
-    src="https://files.readme.io/458e843-07c949af-d174-461d-b3d8-e9825b6b1896.jpg" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/458e843-07c949af-d174-461d-b3d8-e9825b6b1896.jpg').default}
+/>
 
 
 

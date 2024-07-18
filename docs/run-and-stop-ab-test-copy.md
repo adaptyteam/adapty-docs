@@ -11,12 +11,9 @@ Running A/B test in Adapty means adding it to a placement. In Adapty, you have t
 In order to make your A/B test live for the selected audience and placement, you need to navigate to the A/B test list page and locate the A/B test you want to run. The **Run** button will only be displayed for A/B tests that are not in a live or completed state. Click on the Run button to make the test live for the selected audience and placement.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/641fe6d-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/641fe6d-Area.gif').default}
+/>
 
 
 
@@ -32,12 +29,9 @@ It's important to note that each audience has a **priority** displayed in number
 ## Run A/B test from a placement
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fddf85a-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fddf85a-Area.gif').default}
+/>
 
 
 
@@ -48,12 +42,9 @@ The **Run A/B test** option allows you to show different paywalls to app users w
  You can refer to the [documentation](https://docs.adapty.io/docs/ab-tests#how-to-create-an-ab-test) on creating and running A/B tests for more detailed instructions. This documentation will provide step-by-step information on setting up A/B tests and leveraging them effectively within the Adapty dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ce4946f-small-CleanShot_2023-04-25_at_20.46.282x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ce4946f-small-CleanShot_2023-04-25_at_20.46.282x.png').default}
+/>
 
 
 
@@ -68,12 +59,9 @@ When you choose to stop an A/B test, it means you have finished observing and an
 There are two options available to stop an A/B test: you can do so either from the A/B test list page or the placement detail page. Regardless of whether you are on the A/B test list page or the placement detail page, both paths lead to the same flow.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5906809-CleanShot_2023-07-19_at_18.03.482x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+/>
 
 
 
@@ -84,12 +72,9 @@ Navigate to the A/B test list page and locate the A/B test you want to stop. Onl
 When stopping an A/B test, you have two options:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/56385bf-CleanShot_2023-07-19_at_18.09.452x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/56385bf-CleanShot_2023-07-19_at_18.09.452x.png').default}
+/>
 
 
 
@@ -111,12 +96,9 @@ By carefully considering the performance metrics and your overall objectives, yo
 Choosing this option allows you to create a new A/B test using the existing A/B test data. This option is useful if you want to continue testing with the collected data or make iterations based on the insights gained from the previous test. The existing data will be used as a starting point for the new A/B test. With this you have several options to consider, allowing you to leverage the existing data and optimize your testing strategies:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f9f166d-CleanShot_2023-07-19_at_18.14.412x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f9f166d-CleanShot_2023-07-19_at_18.14.412x.png').default}
+/>
 
 
 

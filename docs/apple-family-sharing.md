@@ -14,12 +14,9 @@ Keep in mind that once you enable Family Sharing for a product, **it cannot be t
 Also, please consider that, only non-consumables and subscriptions can be shared.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6db165a-CleanShot_2023-03-28_at_17.15.342x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6db165a-CleanShot_2023-03-28_at_17.15.342x.png').default}
+/>
 
 
 

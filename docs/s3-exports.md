@@ -35,12 +35,9 @@ To integrate Amazon S3 go to [**Integrations** -> **Amazon S3**](https://app.ada
 First of all set credentials to build a connection between Amazon S3 and Adapty profiles. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.png').default}
+/>
 
 
 
@@ -64,12 +61,9 @@ This guide will help you create the necessary credentials in your AWS Console.
 First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) in your AWS Console and select the option to **Create Policy**.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7af075c-CleanShot_2023-03-21_at_10.52.002x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7af075c-CleanShot_2023-03-21_at_10.52.002x.png').default}
+/>
 
 
 
@@ -77,8 +71,7 @@ First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amaz
 
 In the Policy editor, paste the following JSON and change `adapty-s3-integration-test` to your bucket name: 
 
-```json title="Json"
-``````json title="title="{"
+```json title="title="{""
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -103,16 +96,13 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
             "Resource": "arn:aws:s3:::adapty-s3-integration-test"
         }
     ]
-}"
-``````
+}
+```
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d4e474a-CleanShot_2023-03-21_at_10.56.212x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.png').default}
+/>
 
 
 
@@ -121,12 +111,9 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
 After completing the policy configuration, you may choose to add tags (optional) and then click **Next** to proceed to the final step. In this step, you will name your policy and simply click on the **Create policy** button to finalize the creation process.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.png').default}
+/>
 
 
 
@@ -139,12 +126,9 @@ To enable Adapty to upload raw data reports to your bucket, you will need to pro
 To proceed with that, navigate to the IAM Console and select the [Users section](https://console.aws.amazon.com/iamv2/home#/users). From there, click on the **Add users** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/bb612c8-CleanShot_2023-03-21_at_11.12.392x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.png').default}
+/>
 
 
 
@@ -153,12 +137,9 @@ To proceed with that, navigate to the IAM Console and select the [Users section]
 Give the user a name, choose **Access key – Programmatic access**, and proceed to permissions.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/467ee4d-j6aoX.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/467ee4d-j6aoX.png').default}
+/>
 
 
 
@@ -167,12 +148,9 @@ Give the user a name, choose **Access key – Programmatic access**, and proceed
 For the next step, please select the **Add user to group** option and then click the **Create group** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.png').default}
+/>
 
 
 
@@ -181,12 +159,9 @@ For the next step, please select the **Add user to group** option and then click
 Next, you need to assign a name to your User Group and select the policy that was previously created by you. Once you have selected the policy, click on the **Create group** button to complete the process.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/df29c12-CleanShot_2023-03-21_at_11.28.052x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/df29c12-CleanShot_2023-03-21_at_11.28.052x.png').default}
+/>
 
 
 
@@ -195,23 +170,20 @@ Next, you need to assign a name to your User Group and select the policy that wa
 After successfully creating the group, please **select it** and proceed to the next step.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1f3722e-CleanShot_2023-03-21_at_11.36.192x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.png').default}
+/>
+
+
+
 
 
 Since this is the final step for this section, you may proceed by simply clicking on the **Create User** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ea43722-CleanShot_2023-03-21_at_11.40.462x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ea43722-CleanShot_2023-03-21_at_11.40.462x.png').default}
+/>
 
 
 
@@ -220,12 +192,12 @@ Since this is the final step for this section, you may proceed by simply clickin
 Lastly, you can either **download the credentials in .csv** format or alternatively, copy and paste the credentials directly from the dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/bcf35e1-S3created.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/bcf35e1-S3created.png').default}
+/>
+
+
+
 
 
 ## Manual data export
@@ -235,12 +207,9 @@ In addition to the automatic event data export to Amazon S3, Adapty also provide
 The specified date range will be used to export the events created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/466bd29-CleanShot_2023-03-21_at_12.35.252x.png" 
-    style={{ width: '600px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/466bd29-CleanShot_2023-03-21_at_12.35.252x.png').default}
+/>
 
 
 
@@ -325,9 +294,8 @@ Here is the table structure for the paywall visits:
 Below the credentials, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+/>
+
+

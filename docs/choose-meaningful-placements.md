@@ -7,12 +7,9 @@ metadataTitle: ""
 When [creating placements](create-placement), it's essential to consider the logical flow of your app and the user experience you want to create. Most apps should have no more than 5 [placements](placements) without sacrificing the ability to run experiments. Here's an example of how you can structure your placements:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5b47c03-user-flow-placements_1.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5b47c03-user-flow-placements_1.png').default}
+/>
 
 
 

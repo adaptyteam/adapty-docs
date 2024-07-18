@@ -24,12 +24,9 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
 2. Then click the **Plus (+)** button next to the **Active** title. The **Generate in-App Purchase Key** window will open.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/14687cb-generate_in-app_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/14687cb-generate_in-app_key.png').default}
+/>
 
 
 
@@ -40,12 +37,9 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
 4. Click the **Generate** button. Once the **Generate In-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/258caae-integration_done_for_offers.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/258caae-integration_done_for_offers.png').default}
+/>
 
 
 
@@ -60,12 +54,9 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
 8. Enter the value of the copied **Key ID** field to the **Subscription key ID** field next to the **App Store promotional offers** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/675b593-app_store_promotional_offers_in_adapty.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/675b593-app_store_promotional_offers_in_adapty.png').default}
+/>
 
 
 

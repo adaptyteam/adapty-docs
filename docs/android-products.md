@@ -29,12 +29,9 @@ To set up a product for Android devices:
 1. Open [**Monetize** -> **Subscriptions**](https://console.cloud.google.com/iam-admin/serviceaccounts) or  [**Monetize** -> **In-app products**](https://console.cloud.google.com/iam-admin/serviceaccounts) section in the left menu of the Google Play Console.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6eff1d1-subscription_GP.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6eff1d1-subscription_GP.png').default}
+/>
 
 
 
@@ -42,12 +39,9 @@ To set up a product for Android devices:
 2. Click the **Create subscription** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/af7fe02-create_subscription_GP.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/af7fe02-create_subscription_GP.png').default}
+/>
 
 
 
@@ -79,12 +73,9 @@ To create a base plan:
 2. Click the **View subscription** button next to the subscription.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4072a2a-subscriptions_GP.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4072a2a-subscriptions_GP.png').default}
+/>
 
 
 
@@ -92,12 +83,9 @@ To create a base plan:
 3. After the subscription details open. click on the **Add base plan** button under the **Base plans and offers** title. You may need to scroll down to find it.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b493b60-add_base_plan.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b493b60-add_base_plan.png').default}
+/>
 
 
 
@@ -105,12 +93,9 @@ To create a base plan:
 4. In the opened **Add base plan** window, enter a unique identifier for the base plan in the Base **Plan ID** field. It must start with a number or lowercase letter, and can contain numbers (0-9), lowercase letters (a-z) and hyphens (-). and complete the required fields. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8146763-CleanShot_2023-07-20_at_16.51.412x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.png').default}
+/>
 
 
 
@@ -118,12 +103,9 @@ To create a base plan:
 5. Specify the prices per region.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8b26e1d-prices.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8b26e1d-prices.png').default}
+/>
 
 
 
@@ -143,12 +125,9 @@ Older versions of Adapty SDKs do not support Google Billing Library v5+ features
 :::
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.png').default}
+/>
 
 
 

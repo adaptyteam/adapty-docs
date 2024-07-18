@@ -23,25 +23,22 @@ You may want to stop sending analytics events for a specific customer. This is u
 To disable external analytics for a customer, use `updateProfile()` method. Create `AdaptyProfileParameters.Builder` object and set corresponding value to it.  
 When external analytics is blocked, Adapty won't be sending any events to any integrations for the specific user. If you want to disable an integration for all users of your app, just turn it off in Adapty Dashboard.
 
-```swift title="Swift"
-let builder = AdaptyProfileParameters.Builder()
+```swift title="title="let builder = AdaptyProfileParameters.Builder()""
     .with(analyticsDisabled: true)
 
 Adapty.updateProfile(parameters: builder.build())
 ```
-```kotlin title="Kotlin"
-val builder = AdaptyProfileParameters.Builder()
+```kotlin title="title="val builder = AdaptyProfileParameters.Builder()""
     .withExternalAnalyticsDisabled(true)
   
 Adapty.updateProfile(builder.build())
 ```
-```java title="Java"
-AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
+```java title="title="AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()""
     .withExternalAnalyticsDisabled(true);
 
 Adapty.updateProfile(builder.build());
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 final builder = AdaptyProfileParametersBuilder()
 	..setAnalyticsDisabled(true);
 
@@ -52,10 +49,10 @@ try {
 } catch (e) {
 }
 ```
-```typescript title="React Native"
+```typescript title="title="React Native""
 adapty.updateProfile({ analyticsDisabled: true });
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 var builder = new Adapty.ProfileParameters.Builder()
 		.SetAnalyticsDisabled(true);
 
@@ -72,8 +69,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 
 You can disable IDFA collecting by using property `idfaCollectionDisabled`. Make sure you call it before `.activate()` method.
 
-```swift title="Swift"
-Adapty.idfaCollectionDisabled = true
+```swift title="title="Adapty.idfaCollectionDisabled = true""
 Adapty.activate("YOUR_ADAPTY_APP_TOKEN")
 ```
 
@@ -81,7 +77,7 @@ Adapty.activate("YOUR_ADAPTY_APP_TOKEN")
 
 You can disable IDFA collecting by adding specific key to the Adapty-Info.plist file:
 
-```xml title="Adapty-Info.plist"
+```xml title="title="Adapty-Info.plist""
 <key>AdaptyIDFACollectionDisabled</key>
 <true/>
 ```
@@ -90,8 +86,7 @@ You can disable IDFA collecting by adding specific key to the Adapty-Info.plist 
 
 You also can disable IDFA collecting by setting `idfaCollectionDisabled` flag in your activation flow:
 
-```typescript title="Typescript"
-adapty.activate('PUBLIC_SDK_KEY', {
+```typescript title="title="adapty.activate('PUBLIC_SDK_KEY', {""
   ios: {
     idfaCollectionDisabled: false,
   },

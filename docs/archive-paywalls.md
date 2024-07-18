@@ -15,12 +15,9 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c38cb41-paywalls_archive.png" 
-    style={{ width: '70000px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c38cb41-paywalls_archive.png').default}
+/>
 
 
 
@@ -29,12 +26,9 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 2. Click the **3-dot** button next to the paywall and select the **Archive** option.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3d70992-archive_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3d70992-archive_paywall.png').default}
+/>
 
 
 

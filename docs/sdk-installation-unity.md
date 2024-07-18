@@ -22,12 +22,9 @@ To install the Adapty SDKs:
 1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/456bd98-adapty-unity-plugin.png" 
-    style={{ width: '500em', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/456bd98-adapty-unity-plugin.png').default}
+/>
 
 
 
@@ -35,12 +32,9 @@ To install the Adapty SDKs:
 2. Download the `adapty-ui-unity-plugin-*.unitypackage` from GitHub and import it into your project.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2ab0b4a-adapty-ui-unity-plugin.png" 
-    style={{ width: '500px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
+/>
 
 
 
@@ -67,8 +61,7 @@ The Adapty Unity Plugin on iOS is initialized automatically. To make it work pro
 
 1. Manually create the `Adapty-Info.plist` file and add it to the `/Assets` folder of your Unity project. It will be automatically copied to the Xcode project during the build phase. Below is an example of how this file should be structured:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="UTF-8"?>
+```xml title="title="<?xml version="1.0" encoding="UTF-8"?>""
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -95,8 +88,7 @@ The Adapty Unity Plugin on Android is automatically initialized. To ensure it wo
 
 1. Add `<meta-data` section with "AdaptyPublicSdkKey" as a direct child of the `<application` section to your project's AndroidManifest.xml file. If you don't have one, it can be easily created in **Project Settings** -> **Player** -> **Settings for Android** -> **Publishing settings** -> **Custom Main Manifest** checkbox). Here is an example:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="utf-8"?>
+```xml title="title="<?xml version="1.0" encoding="utf-8"?>""
 <manifest ...>
     <application ...>
         ...
@@ -125,12 +117,9 @@ Configurational options:
 1. Create a script to listen to Adapty events. Name it `AdaptyListener` in your scene. We suggest using the `DontDestroyOnLoad` method for this object to ensure it persists throughout the application's lifespan.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2ccd564-create_adapty_listener.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/2ccd564-create_adapty_listener.png').default}
+/>
 
 
 
@@ -138,14 +127,12 @@ Configurational options:
 
 Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
 
-```csharp title="C#"
-using AdaptySDK;
+```csharp title="title="using AdaptySDK;""
 ```
 
 2. Subscribe to Adapty events:
 
-```csharp title="C#"
-using UnityEngine;
+```csharp title="title="using UnityEngine;""
 using AdaptySDK;
 
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {

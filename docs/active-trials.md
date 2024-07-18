@@ -7,12 +7,9 @@ metadataTitle: ""
 The active trials chart in Adapty displays the number of unexpired free trials that are currently active at the end of a given period. Active means subscriptions that have not yet expired, and therefore, users still have access to the paid features of the app.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.png').default}
+/>
 
 
 

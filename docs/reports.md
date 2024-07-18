@@ -20,12 +20,9 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Under the **Email reports** section, choose the types of reports you wish to receive – daily, weekly, and/or monthly.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/bf5cdab-email_reports.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/bf5cdab-email_reports.png').default}
+/>
 
 
 
@@ -34,12 +31,9 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Customize each report type by selecting the relevant apps. For this, click the **Edit** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ebe22ac-email_reports_apps.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ebe22ac-email_reports_apps.png').default}
+/>
 
 
 
@@ -52,12 +46,9 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Click the **Edit** button and choose your time zone.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/59ad3d8-time_zone.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/59ad3d8-time_zone.png').default}
+/>
 
 
 

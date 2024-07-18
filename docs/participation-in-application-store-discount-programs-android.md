@@ -15,12 +15,9 @@ You can adjust the participation dates for your mobile app in the [Google's Redu
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/10ad0df-participation_reduced-fee_program.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+/>
 
 
 
@@ -37,12 +34,9 @@ If you do not participate in the Google's Reduced Service Fee, skip the step.
 1. In the **Is Your_mobile_app_name enrolled in Small Business Programs?** page, click the **Add period** phrase below the discount program in which your mobile application participates.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+/>
 
 
 

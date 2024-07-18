@@ -11,12 +11,9 @@ To create a product that will be linked to Adapty:
 1. Open **App Store Connect**. Proceed to [**Monetization** → **Subscriptions**](https://appstoreconnect.apple.com/apps/6477523342/distribution/subscriptions) section in the left-side menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/148c3b5-subscriptions.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/148c3b5-subscriptions.png').default}
+/>
 
 
 
@@ -28,12 +25,9 @@ To create a product that will be linked to Adapty:
    The reference name is not visible to users; it's primarily for your internal use and organization. It allows you to easily identify and refer to specific subscription groups when managing them within the App Store Connect interface. This can be particularly useful if you have multiple subscription offerings or want to categorize them in a way that makes sense for your app's structure.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3f93c44-create_subscription_group.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3f93c44-create_subscription_group.png').default}
+/>
 
 
 
@@ -44,12 +38,9 @@ To create a product that will be linked to Adapty:
 5. The subscription group is created and opened. Now you can create subscriptions in the group. Click the **Create** button under the **Subscriptions** title. If you add a  new subscription to an existing group, then click a **Plus** button next to the **Subscriptions** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/22fc643-add_subscription.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/22fc643-add_subscription.png').default}
+/>
 
 
 
@@ -61,12 +52,9 @@ To create a product that will be linked to Adapty:
    The Product ID is a unique alphanumeric identifier essential for accessing your product during the development phase and synchronizing it with Adapty, a service designed to manage in-app subscriptions. Only alphanumeric characters, periods, and underscores are allowed in the Product ID.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/04aca55-create_subscription.png" 
-    style={{ width: '70%', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/04aca55-create_subscription.png').default}
+/>
 
 
 
@@ -76,12 +64,9 @@ To create a product that will be linked to Adapty:
 8. The subscription is created and opened. Now select the duration of the subscription in the **Subscription Duration** list. Even if the subscription duration is already indicated in the subscription name, remember to complete the **Subscription Duration** field.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f56cf0f-subscription_duration.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f56cf0f-subscription_duration.png').default}
+/>
 
 
 
@@ -91,12 +76,9 @@ To create a product that will be linked to Adapty:
 10. In the opened **Subscription Price** window, select the basic country in the **Country or Region** list and and basic currency in the **Price** list.  Later Apple will automatically calculate the prices for all 175 countries or regions based on this basic price and the most recent foreign exchange rates.
 
     
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/de1cec8-subscription_price.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/de1cec8-subscription_price.png').default}
+/>
 
 
 
@@ -104,12 +86,9 @@ To create a product that will be linked to Adapty:
 11. Click the **Next** button. In the opened **Price by Country or Region** window, you see the automatically recalculated prices for all countries. You can change them if you want.
 
     
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2a047a6-price_by_country.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2a047a6-price_by_country.png').default}
+/>
 
 
 
@@ -119,12 +98,9 @@ To create a product that will be linked to Adapty:
 13. In the opened **Confirm Subscription Price?** window, carefully review the final prices. To correct the prices, you can click the **Back** button to return to the **Price by Country or Region** window and update them. When you are ok with the prices, click the **Confirm** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d2b2031-confirm_prices.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d2b2031-confirm_prices.png').default}
+/>
 
 
 
@@ -135,12 +111,9 @@ To create a product that will be linked to Adapty:
 Please consider, that the steps provided so far focus on configuring an Auto-Renewable Subscription. However, if you intend to set up other types of in-app purchases, you can click on the **In-App Purchases** tab in the sidebar, instead of "Subscriptions." This will lead you to the section where you can manage and create various types of in-app purchases.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5663d85-in-app_purchases.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5663d85-in-app_purchases.png').default}
+/>
 
 
 

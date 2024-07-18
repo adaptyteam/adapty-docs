@@ -15,12 +15,9 @@ Placement metrics are available on the placements list, where you can get an ove
 For a more detailed analysis of each placements, you can navigate to the placements detail metrics. On this page, you will find comprehensive metrics specific to the selected placements. These metrics provide deeper insights into how a particular placements is performing, allowing you to assess its effectiveness and make data-driven decisions.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png').default}
+/>
 
 
 
@@ -35,12 +32,9 @@ The system displays the metrics based on the selected time period and organizes 
 The placement metrics page offers two view options for metrics data: paywall-based and audience-based.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9d26b32-Export-1690376094858.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9d26b32-Export-1690376094858.gif').default}
+/>
 
 
 
@@ -53,12 +47,9 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Profile install date filtration
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b1e4155-Export-1690375904086.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b1e4155-Export-1690375904086.gif').default}
+/>
 
 
 
@@ -69,12 +60,9 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 You can choose from a range of time periods to analyze metrics data, allowing you to focus on specific durations such as days, weeks, months, or custom date ranges.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png').default}
+/>
 
 
 
@@ -96,12 +84,9 @@ One of the key components of the placement metrics page is the chart section, wh
 The chart section on the placements metrics page includes a horizontal bar chart that visually represents the chosen metric values. Each bar in the chart corresponds to a metric value and is proportional in size, making it easy to understand the data at a glance. The horizontal line indicates the timeframe being analyzed, and the vertical column displays the numeric values of the metrics. The total value of all the metric values is displayed next to the chart.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4623c5b-Export-1690375597411.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4623c5b-Export-1690375597411.gif').default}
+/>
 
 
 
@@ -114,12 +99,9 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the total metrics summary section is shown, which displays the cumulative values for the selected metrics at a specific point in time, with the ability for you to change the displayed metric using a dropdown menu.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png').default}
+/>
 
 
 
@@ -130,12 +112,9 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 Unlock the power of placement metrics with our comprehensive definitions. From revenue to conversion rates, gain valuable insights that will supercharge your monetization strategies and drive success for your app.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/771a0f0-Export-1690375049771.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/771a0f0-Export-1690375049771.gif').default}
+/>
 
 
 

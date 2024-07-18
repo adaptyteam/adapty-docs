@@ -19,21 +19,21 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install via Gradle
 
-```groovy title="module-level build.gradle"
+```groovy title="title="module-level build.gradle""
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.1'
     implementation 'io.adapty:android-ui:2.11.0'
 }
 ```
-```kotlin title="module-level build.gradle.kts"
+```kotlin title="title="module-level build.gradle.kts""
 dependencies {
     ...
     implementation("io.adapty:android-sdk:2.11.1")
     implementation("io.adapty:android-ui:2.11.0")
 }
 ```
-```toml title="version catalog"
+```toml title="title="version catalog""
 //libs.versions.toml
 
 [versions]
@@ -64,7 +64,7 @@ If the dependency is not being resolved, please make sure that you have `mavenCe
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
-```groovy title="top-level build.gradle"
+```groovy title="title="top-level build.gradle""
 allprojects {
     repositories {
         ...
@@ -75,7 +75,7 @@ allprojects {
 
 Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
 
-```groovy title="settings.gradle"
+```groovy title="title="settings.gradle""
 dependencyResolutionManagement {
     ...
     repositories {
@@ -94,8 +94,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-```kotlin title="Kotlin"
-override fun onCreate() {
+```kotlin title="title="override fun onCreate() {""
     super.onCreate()
     Adapty.activate(
       applicationContext,
@@ -112,8 +111,7 @@ override fun onCreate() {
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
-```java title="Java"
-@Override
+```java title="title="@Override""
 public void onCreate() {
     super.onCreate();
     Adapty.activate(
@@ -160,24 +158,20 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-```kotlin title="Kotlin"
-Adapty.logLevel = AdaptyLogLevel.VERBOSE
+```kotlin title="title="Adapty.logLevel = AdaptyLogLevel.VERBOSE""
 ```
-```java title="Java"
-Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+```java title="title="Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);""
 ```
 
 ## Redirect the logging system messages
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```kotlin title="Kotlin"
-Adapty.setLogHandler { level, message ->
+```kotlin title="title="Adapty.setLogHandler { level, message ->""
     //handle the log
 }
 ```
-```java title="Java"
-Adapty.setLogHandler((level, message) -> {
+```java title="title="Adapty.setLogHandler((level, message) -> {""
     //handle the log
 });
 ```
@@ -219,12 +213,9 @@ To use the Adapty Paywall Builder:
 4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as as well as templates with a minimal design that give full scope for your creativityю Choose the template that fits your design the most. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cdca1ee-builder_templates.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cdca1ee-builder_templates.png').default}
+/>
 
 
 
@@ -232,12 +223,9 @@ To use the Adapty Paywall Builder:
 5. Click the **Choose** button to confirm your choice.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/795b91b-builder_main_window.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/795b91b-builder_main_window.png').default}
+/>
 
 
 
@@ -264,12 +252,9 @@ To migrate a paywall to new Paywall Builder:
 2. Open the **Builder** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3f4d4c2-PB_migrate_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+/>
 
 
 
@@ -279,12 +264,9 @@ To migrate a paywall to new Paywall Builder:
 6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/78f63f0-PB_hughlighted_issues.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+/>
 
 
 
@@ -300,12 +282,9 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 - **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/210c8e2-simple_elements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/210c8e2-simple_elements.png').default}
+/>
 
 
 
@@ -319,12 +298,9 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
   - Link blocks with links inside
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8a23be4-compound_elements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8a23be4-compound_elements.png').default}
+/>
 
 
 
@@ -393,24 +369,18 @@ To create a Sandbox Apple ID:
 1. Open **App Store Connect**. Proceed to [**Users and Access** → **Sandbox**  → **Test Accounts**](https://appstoreconnect.apple.com/access/users/sandbox) section.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7c1fdd0-apple_test_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7c1fdd0-apple_test_account.png').default}
+/>
 
 
 
 2. Click the add button  **(+)** button next to the **Test Accounts** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/57c3a7c-apple_new_test_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/57c3a7c-apple_new_test_account.png').default}
+/>
 
 
 
@@ -498,8 +468,7 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the following structure:
 
-```json title="Json"
-{
+```json title="title="{""
   "profile_id": "772204ce-ebf6-4ed9-82b0-d8688ab62b01",
   "customer_user_id": "john.doe",
   "idfv": "00000000-0000-0000-0000-000000000000",
@@ -552,12 +521,9 @@ Webhook integration enables the control of sending attribution and user attribut
 Adapty has a special event `access_level_updated`. It is sent only to webhook integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. No matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6375cb2-CleanShot_2022-05-03_at_14.22.56.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+/>
 
 
 

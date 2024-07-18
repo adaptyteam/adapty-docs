@@ -25,12 +25,9 @@ To download the JSON file with the fallback paywalls:
 1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab or just the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9c63367-placements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9c63367-placements.png').default}
+/>
 
 
 
@@ -42,23 +39,20 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the exact
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `fallback_paywalls`.
 
-```swift title="Swift"
-if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),
+```swift title="title="if let urlPath = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json"),""
    let paywallsData = try? Data(contentsOf: urlPath) {
      Adapty.setFallbackPaywalls(paywallsData)
 }
 ```
-```kotlin title="Kotlin"
-val paywalls: String = //get paywalls JSON from where you stored it
+```kotlin title="title="val paywalls: String = //get paywalls JSON from where you stored it""
 
 Adapty.setFallbackPaywalls(paywalls)
 ```
-```java title="Java"
-String paywalls = //get paywalls JSON from where you stored it
+```java title="title="String paywalls = //get paywalls JSON from where you stored it""
 
 Adapty.setFallbackPaywalls(paywalls);
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -73,14 +67,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.SetFallbackPaywalls("<FALLBACK_PAYWALL_DATA>", (error) => {
     if(error != null) {
         // handle error
     }
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 const fallbackPaywalls = require('./fallback_paywalls.json');
 // React Native automatically parses JSON, but we do not need that
 const fallbackString = JSON.stringify(fallbackPaywalls);

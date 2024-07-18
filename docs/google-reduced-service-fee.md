@@ -28,12 +28,9 @@ You can select your entry date according to your preference. However, it's impor
 To manage your Reduced Service Fee membership status for Google Play, go to the **App Settings > General tab** in your Adapty account. Click the **Add period** button to specify your membership status for a specific period range. In the "Period" field, select a date range that indicates your business's membership start and end dates. This range can include any date in the past or the future. You can add additional membership periods by clicking on the "Add Period" button again.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/65d9968-CleanShot_2023-04-11_at_15.00.482x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+/>
 
 
 

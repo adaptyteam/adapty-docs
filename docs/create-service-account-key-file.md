@@ -9,12 +9,9 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 1. Open the [**Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Play Console. Make sure you've chosen the correct project.  
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c3156cb-action_manage_keys.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c3156cb-action_manage_keys.png').default}
+/>
 
 
 
@@ -23,12 +20,9 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 2. Locate the newly created service account in the list. Click the ellipsis button in the **Actions** column next to it, then select the **Manage keys** action.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/44b30ee-create_new_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/44b30ee-create_new_key.png').default}
+/>
 
 
 
@@ -36,12 +30,9 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 3. In the opened window named after your project, click the **Add key** button, and in the opened drop-down list, select the **Create new key** option. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e7b8101-cretae_private_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e7b8101-cretae_private_key.png').default}
+/>
 
 
 
@@ -49,12 +40,9 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 4. In the **Create private key for Your_project_name** window, click the **Create **button. This action will save your private key on your computer as a JSON file. You can use the name of the file provided in the opened **Private key saved to your computer** window to locate it if needed. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/187ddc6-Private_key_saved.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/187ddc6-Private_key_saved.png').default}
+/>
 
 
 

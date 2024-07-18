@@ -7,12 +7,9 @@ metadataTitle: ""
 The Expired (churned) trials chart displays the number of trials that have expired, leaving users without access to the app's premium features. In most cases, this occurs when users decide not to pay for the app or experience billing issues. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5523eb3-small-CleanShot_2023-05-05_at_16.31.132x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5523eb3-small-CleanShot_2023-05-05_at_16.31.132x.png').default}
+/>
 
 
 

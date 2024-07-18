@@ -23,12 +23,9 @@ You can also generate one Primary Shared Secret, and use one key for all your ap
 Select your app on the [App Store Connect apps page](https://appstoreconnect.apple.com/apps). Go to **App Information** in section **General**. On the page, you can see the App-Specific Shared Secret description with  **Manage** link below, click it, and you'll be able to see or create a new shared secret.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4185892-CleanShot_2023-08-25_at_12.14.41_22x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4185892-CleanShot_2023-08-25_at_12.14.41_22x.png').default}
+/>
 
 
 
@@ -37,12 +34,9 @@ Select your app on the [App Store Connect apps page](https://appstoreconnect.app
 Generate a Shared Secret, copy it, and don't forget to paste it in Adapty Dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2b25bba-CleanShot_2023-08-25_at_12.15.562x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2b25bba-CleanShot_2023-08-25_at_12.15.562x.png').default}
+/>
 
 
 
@@ -53,11 +47,8 @@ Generate a Shared Secret, copy it, and don't forget to paste it in Adapty Dashbo
 Select [App settings -> iOS SDK](https://app.adapty.io/settings/ios-sdk) in Adapty. Scroll down to App Store Connect shared secret section, and enter your shared secret. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5e00c24-CleanShot_2022-12-29_at_07.53.55.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5e00c24-CleanShot_2022-12-29_at_07.53.55.png').default}
+/>
 
 

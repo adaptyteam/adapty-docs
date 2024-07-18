@@ -13,12 +13,9 @@ To create a new access level:
 1. Open the **[Paywalls and Products](https://app.adapty.io/access-levels) ** section from the Adapty main menu, then select the **Access levels** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5b2bc83-access_levels.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5b2bc83-access_levels.png').default}
+/>
 
 
 
@@ -26,12 +23,9 @@ To create a new access level:
 2. Click the **Create access level** button. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b8646ca-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b8646ca-image.png').default}
+/>
 
 
 

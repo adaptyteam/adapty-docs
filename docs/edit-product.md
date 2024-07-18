@@ -22,11 +22,8 @@ To edit the product:
 4. Click the **Save** button to confirm the changes.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4218c22-edit_product.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4218c22-edit_product.png').default}
+/>
 
 

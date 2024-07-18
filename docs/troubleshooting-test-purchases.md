@@ -18,11 +18,8 @@ If you encounter transaction issues, please first make sure you have completed a
 Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/98d0dad-non-original_profile.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/98d0dad-non-original_profile.png').default}
+/>
 
 

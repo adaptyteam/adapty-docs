@@ -58,12 +58,9 @@ In the [**App Privacy**](https://appstoreconnect.apple.com/apps/6477523342/distr
 When using Adapty, you must disclose that your app collects ‘Purchases’ information.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/feb3b9f-CleanShot_2023-08-25_at_12.32.552x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/feb3b9f-CleanShot_2023-08-25_at_12.32.552x.png').default}
+/>
 
 
 
@@ -76,12 +73,9 @@ If you are identifying users with **`customerUserId`**, you'll need to select 'U
 Adapty collects IDFA, so you'll need to select 'Device ID'.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/93f3daa-CleanShot_2023-08-25_at_12.35.272x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/93f3daa-CleanShot_2023-08-25_at_12.35.272x.png').default}
+/>
 
 
 
@@ -92,11 +86,8 @@ After making your selections, you'll need to indicate how the data is used simil
 After making your privacy selections, Apple will show a preview of your app's privacy section. If you have chosen Purchases and Identifiers as described above, your app's privacy details should look something like this:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/17e4ba7-CleanShot_2023-08-25_at_12.36.442x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/17e4ba7-CleanShot_2023-08-25_at_12.36.442x.png').default}
+/>
 
 

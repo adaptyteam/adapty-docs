@@ -17,12 +17,9 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 :::
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.png').default}
+/>
 
 
 
@@ -32,12 +29,9 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 2. You need an application on [Facebook Developers](https://developers.facebook.com/) platform. Log in to your app and then find advanced settings. You can find the **App ID** in the header.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4b326c4-001563-August-23-4tO3JVso.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4b326c4-001563-August-23-4tO3JVso.png').default}
+/>
 
 
 
@@ -50,12 +44,9 @@ Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-Ap
 :::
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c4eb8eb-001565-August-23-483KKBbC.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c4eb8eb-001565-August-23-483KKBbC.png').default}
+/>
 
 
 
@@ -86,12 +77,9 @@ Please note that the Facebook Ads integration specifically caters to companies u
 StartTrial, Subscribe, CancelSubscription are standard events.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.png').default}
+/>
 
 
 
@@ -105,7 +93,7 @@ To enable specific events, simply toggle on the ones you require. In case multip
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes)  method. It allows Facebook to handle events if IDFA is not available.
 :::
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 import FacebookCore
 
 let builder = AdaptyProfileParameters.Builder()
@@ -117,7 +105,7 @@ Adapty.updateProfile(params: builder.build()) { error in
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
   
@@ -127,10 +115,10 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+```Text title="title="Flutter (Dart)""
 There is no official SDK for Flutter
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 
@@ -144,7 +132,7 @@ try {
 	// handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 anonymousID is not available in the official SDK
 https://github.com/facebook/facebook-sdk-for-unity/issues/676
 ```

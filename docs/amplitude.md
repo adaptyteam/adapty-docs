@@ -13,12 +13,9 @@ Adapty provides a complete set of data that lets you track [subscription events]
 To set up the integration with [Amplitude](https://amplitude.com/), go to [Integrations > Amplitude](https://app.adapty.io/integrations/amplitude) in the Adapty Dashboard, turn on a toggle from off to on, and fill out fields.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3b50552-CleanShot_2023-08-15_at_16.47.102x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3b50552-CleanShot_2023-08-15_at_16.47.102x.png').default}
+/>
 
 
 
@@ -27,12 +24,9 @@ To set up the integration with [Amplitude](https://amplitude.com/), go to [Integ
 You need to enter the **API Key** into Adapty. To find a token, go to your **Project settings** in Amplitude. In case you need help, refer to [official docs](https://amplitude.com/docs/apis/authentication). 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2297782-CleanShot_2023-08-15_at_16.53.512x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.png').default}
+/>
 
 
 
@@ -45,12 +39,9 @@ Along with events, Adapty also sends the[ subscription status](https://docs.adap
 Below the credentials, there are three groups of events you can send to Amplitude from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/da67694-CleanShot_2023-08-15_at_16.52.352x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/da67694-CleanShot_2023-08-15_at_16.52.352x.png').default}
+/>
 
 
 
@@ -62,7 +53,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `amplitudeDeviceId` or `amplitudeUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Amplitude from your app is the same one you send to Adapty.
 
-```Text title="iOS (Swift)"
+```Text title="title="iOS (Swift)""
 import Amplitude 
 
 let builder = AdaptyProfileParameters.Builder()
@@ -71,7 +62,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 //for Amplitude maintenance SDK (obsolete)
 val amplitude = Amplitude.getInstance()
 val amplitudeDeviceId = amplitude.deviceId
@@ -99,7 +90,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+```Text title="title="Flutter (Dart)""
 import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
@@ -114,7 +105,7 @@ try {
      // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 
 try {
@@ -126,7 +117,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 var builder = new Adapty.ProfileParameters.Builder();
 builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
 builder.SetAmplitudeDeviceId(amplitude.getDeviceId());

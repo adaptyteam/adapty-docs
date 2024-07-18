@@ -15,12 +15,9 @@ There are some expected limitations where an element can or cannot be moved and 
 When you drag an element through the list, you always see if you can drop it in the place it's above. The purple line shows the available position. Red - inaccessible.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a6ff1e6-drag_n_drop_elements.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a6ff1e6-drag_n_drop_elements.gif').default}
+/>
 
 
 

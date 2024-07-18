@@ -14,24 +14,18 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 2. Make sure that archived paywalls are displayed in the list. If not, change the **State** filter.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1e80bd1-filter_paywalls.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/1e80bd1-filter_paywalls.png').default}
+/>
 
 
 
 3. Click the **3-dot** button next to the archived paywall and select the **Back to active** option.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d090e08-paywalls_back_to_active.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d090e08-paywalls_back_to_active.png').default}
+/>
 
 
 

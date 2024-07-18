@@ -30,8 +30,7 @@ Info about customer’s [access level](access-level).
 
 Configure which products unlock premium \(paid\) features in your app using the Adapty Dashboard. Then, check in the app for the access level available for a user, for example  in the way below \(in Swift \)
 
-```swift title="Swift"
-if (profile.paidAccessLevels["premium"]?.isActive == true) {
+```swift title="title="if (profile.paidAccessLevels["premium"]?.isActive == true) {""
     /* Grant user access to paid functions of the app */
 }
 ```

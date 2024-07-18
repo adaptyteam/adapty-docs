@@ -14,12 +14,9 @@ The integration between Adapty and Adjust works in two main ways.
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/98769d9-CleanShot_2023-08-11_at_14.39.182x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
+/>
 
 
 
@@ -35,12 +32,9 @@ To setup the integration with Adjust go to [Integrations > Adjust](https://app.a
 The next step of the integration is to set credentials.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5064125-CleanShot_2023-08-11_at_14.43.382x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.png').default}
+/>
 
 
 
@@ -50,12 +44,9 @@ The next step of the integration is to set credentials.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e9ee52e-image_52.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e9ee52e-image_52.png').default}
+/>
 
 
 
@@ -68,12 +59,9 @@ You may have different Adjust applications for iOS and Android, so in Adapty you
 You will need to copy **App Token** and paste it to Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4b1601c-image_36.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4b1601c-image_36.png').default}
+/>
 
 
 
@@ -88,36 +76,27 @@ Adjust works a bit differently from other platforms. You need to manually create
 So first step here is to find event tokens for all events that you want Adapty to send. To do that go to All Settings in your Adjust dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6c6b9a0-image_83.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6c6b9a0-image_83.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4d4f40d-image_9.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4d4f40d-image_9.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/815515f-image_16.png" 
-    style={{ width: '689px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/815515f-image_16.png').default}
+/>
 
 
 
@@ -126,12 +105,9 @@ So first step here is to find event tokens for all events that you want Adapty t
 Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjsut from Adapty. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8940282-CleanShot_2023-08-11_at_14.55.222x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.png').default}
+/>
 
 
 
@@ -143,7 +119,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
@@ -152,7 +128,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
@@ -165,7 +141,7 @@ config.setOnAttributionChangedListener { attribution ->
 }
 Adjust.onCreate(config)
 ```
-```csharp title="Flutter (Dart)"
+```csharp title="title="Flutter (Dart)""
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -191,7 +167,7 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
         } catch (e) {}
       };
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
 
@@ -207,7 +183,7 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 // ...
 Adjust.create(adjustConfig);
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
 

@@ -7,12 +7,9 @@ metadataTitle: ""
 A Segment is a group of users with common properties.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3244407-Segments.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/3244407-Segments.png').default}
+/>
 
 
 
@@ -30,12 +27,9 @@ Segments are mainly used in [Placements](placements-old) and in [A/B tests](ab-t
 To create a segment, write a segment name, and choose attributes.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://adapty-docs-assets.s3.amazonaws.com/gitbook/image%20%2811%29.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/image%20%2811%29.png').default}
+/>
 
 
 
@@ -85,12 +79,9 @@ Adapty collects the **country of the store** for iOS devices with version 13 or 
 To create custom attributes from the Adapty Dashboard, select the ** Create Custom Attributes** from the Select Attribute Dropdown options.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png').default}
+/>
 
 
 

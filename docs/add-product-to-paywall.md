@@ -10,12 +10,9 @@ To make a product visible and selectable within a [paywall](https://docs.adapty.
 2. From the opened drop-down list, select the products that will be shown to your customers. The list contains only previously created products. The order of the products is preserved on the SDK side, so it's important to consider the desired order when configuring the paywall. Additionally, you can specify an offer for a product if desired.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0479b51-ad_product_to_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0479b51-ad_product_to_paywall.png').default}
+/>
 
 
 

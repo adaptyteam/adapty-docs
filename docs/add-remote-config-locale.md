@@ -13,12 +13,9 @@ How to set up a localization for a paywall customized using remote config:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it and click the **3-dot** button next to the product and select the **Edit** option.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/deaa5f0-paywalls_edit.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/deaa5f0-paywalls_edit.png').default}
+/>
 
 
 
@@ -26,12 +23,9 @@ How to set up a localization for a paywall customized using remote config:
 2. In the **Paywalls / Your paywall** window, switch to the **Remote config** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/68e80c5-switch_to_remote_config.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/68e80c5-switch_to_remote_config.png').default}
+/>
 
 
 
@@ -39,12 +33,9 @@ How to set up a localization for a paywall customized using remote config:
 3. In the **Remote config** tab, click the **Add locale** button and select all languages you want to have in your app.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/eea8027-add_locale.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/eea8027-add_locale.png').default}
+/>
 
 
 
@@ -52,12 +43,9 @@ How to set up a localization for a paywall customized using remote config:
 4. Click on the element you want to translate and enter a new value. You can both translate **String** and **List** values and replace pictures with those more appropriate for the locale. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/032b429-remote_config_localization.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/032b429-remote_config_localization.png').default}
+/>
 
 
 
@@ -68,12 +56,9 @@ Feel free to use the context menu of the English locale to fix localization issu
 - Use the **Revert all row changes to original values** menu to cancel all changes made in the current session, reverting them to the last saved values.
 
   
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d7e70f1-remote_confi_loc_table_options.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d7e70f1-remote_confi_loc_table_options.png').default}
+/>
 
 
 

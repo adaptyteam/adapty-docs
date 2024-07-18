@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products) topic.
 
@@ -19,14 +19,13 @@ Please be aware that this topic refers to Paywall Builder-customized paywalls. F
 
 ## Fetch paywall designed with Paywall Builder
 
-If you've [designed a paywall using the Paywall Builder](paywall-builder-getting-started), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+If you've [designed a paywall using the Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
 To ensure optimal performance, it's crucial to retrieve the paywall and its [view configuration](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) as early as possible, allowing sufficient time for images to download before presenting them to the user.
 
 To get a paywall, use the `getPaywall` method:
 
-```swift title="Swift"
-Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+```swift title="title="Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in""
     switch result {
         case let .success(paywall):
             // the requested paywall
@@ -35,8 +34,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-```kotlin title="Kotlin"
-import com.adapty.utils.seconds
+```kotlin title="title="import com.adapty.utils.seconds""
 
 ...
 
@@ -53,8 +51,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
     }
 }
 ```
-```java title="Java"
-import com.adapty.utils.TimeInterval;
+```java title="title="import com.adapty.utils.TimeInterval;""
 
 ...
 
@@ -70,7 +67,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
     }
 });
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -79,7 +76,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -89,7 +86,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 try {
 	const id = 'YOUR_PLACEMENT_ID';
 	const locale = 'en';
@@ -124,8 +121,7 @@ Once you've fetched the paywall, check whether it includes a `ViewConfiguration`
 
 For paywalls with `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. For cross-platform SDKs, you can directly call the `createPaywallView` method, as there is no need to manually fetch the view configuration beforehand.
 
-```swift title="Swift"
-import Adapty
+```swift title="title="import Adapty""
 
 guard paywall.hasViewConfiguration else {
     //  use your custom logic
@@ -141,8 +137,7 @@ AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
-if (!paywall.hasViewConfiguration) {
+```kotlin title="title="if (!paywall.hasViewConfiguration) {""
   	// use your custom logic
   	return
 }
@@ -160,8 +155,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
-```java title="Java"
-if (!paywall.hasViewConfiguration()) {
+```java title="title="if (!paywall.hasViewConfiguration()) {""
     // use your custom logic
     return;
 }
@@ -177,7 +171,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
 
 try {
@@ -188,7 +182,7 @@ try {
   // handle the error
 }
 ```
-```typescript title="React Native (TSX)"
+```typescript title="title="React Native (TSX)""
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -201,7 +195,7 @@ if (paywall.hasViewConfiguration) {
   	//use your custom logic
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
 });

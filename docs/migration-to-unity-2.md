@@ -22,8 +22,7 @@ We've also compiled a full list of changes, which can be found on the release pa
 **Before:**  
 Previously, all information that related to the user was in the `PurchaserInfo` model. This information was obtained by calling the `.getPurchaserInfo(forceUpdate:)` method:
 
-```csharp title="Csharp"
-// AdaptySDK 1.x.x
+```csharp title="title="// AdaptySDK 1.x.x""
 Adapty.GetPurchaserInfo(forceUpdate, (purchaserInfo, error) => {
     if (error == null) {
         // check the access
@@ -34,8 +33,7 @@ Adapty.GetPurchaserInfo(forceUpdate, (purchaserInfo, error) => {
 **After:**  
 Now we have renamed the model to [`Adapty.Profile`](sdk-models#adaptyprofile). Also it affected the corresponding method:
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 Adapty.GetProfile((profile, error) => {
     if (error == null) {
         // check the access
@@ -53,8 +51,7 @@ This change also affected the `AdaptyEventListener` method: `.OnReceiveUpdatedPu
 **Before:**  
 Previously, developers used to query an array of paywalls and then search that array for the desired element.
 
-```csharp title="Csharp"
-// AdaptySDK 1.x.x
+```csharp title="title="// AdaptySDK 1.x.x""
 Adapty.GetPaywalls(forceUpdate, (result, error) => {
   if(error != null) {
     // handle the error
@@ -69,8 +66,7 @@ Adapty.GetPaywalls(forceUpdate, (result, error) => {
 **After:**  
 We have significantly simplified this use case, so now you can get only the requested object, without touching the rest. 
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -89,8 +85,7 @@ In addition to simplifying the most common usage scenario, we also significantly
 **Before:**  
 Previously the product entity was a part of the paywall, so you could use it right after `.getPaywalls` method was done. Also you could use products out of the paywalls context.
 
-```csharp title="Csharp"
-// AdaptySDK 1.x.x
+```csharp title="title="// AdaptySDK 1.x.x""
 Adapty.GetPaywalls(forceUpdate, (result, error) => {
   if(error != null) {
     // handle the error
@@ -105,8 +100,7 @@ Adapty.GetPaywalls(forceUpdate, (result, error) => {
 **After:**  
 Once you have obtained the desired paywall, you can query the products array for it. Now the product entity is independent, although it can only exist in the context of the paywall.
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   if(error != null) {
     // handle the error
@@ -133,8 +127,7 @@ In the previous version of sdk, you had to pass `productId`, `variationId` and `
 **Before:**  
 The `.MakePurchase` function required the`productId`, `variationId` and `offerId` parameters to be passed explicitly:
 
-```csharp title="Csharp"
-// AdaptySDK 1.x.x
+```csharp title="title="// AdaptySDK 1.x.x""
 Adapty.MakePurchase(productId, variationId, offerId, (result, error) => {
   if(error != null) {
     // handle the error
@@ -151,8 +144,7 @@ Adapty.MakePurchase(productId, variationId, offerId, (result, error) => {
 Starting with version 2.0 you only need to pass the `product` parameter (and `subscriptionUpdate` for Android if needed).  
 The Adapty SDK automatically reads `variationId` parameter and uses the `promotionalOfferId` field to apply the discount, taking the value of the `promotionalOfferEligibility` field into account.
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
     // handle the error
@@ -177,8 +169,7 @@ The `PaywallProduct` entity has the `IntroductoryOfferEligibility` property, it 
 **After:**  
 `introductoryOfferEligibility` is an enumeration
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 public enum Eligibility {
     Unknown,
     Ineligible,
@@ -195,8 +186,7 @@ As mentioned in the previous section, StoreKit version 1 does not allow you to r
 
 This mechanism is implemented in this way: we will try to request a receipt in its unavailability in advance, and there is a special parameter of `.GetPaywallProducts` function to get products with a correct `IntroductoryOfferEligibility `:
 
-```csharp title="Csharp"
-// AdaptySDK 2.0.0
+```csharp title="title="// AdaptySDK 2.0.0""
 Adapty.GetPaywallProducts(paywall, IOSProductsFetchPolicy.WaitForReceiptValidation, (products, error) => {
   if(error != null) {
     // handle the error

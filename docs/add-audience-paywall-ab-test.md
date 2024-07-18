@@ -11,12 +11,9 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 1. Open the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/df6f87b-placements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/df6f87b-placements.png').default}
+/>
 
 
 
@@ -24,12 +21,9 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 2. In the **Placements** window, click the **Edit** button next to the placement where you wish to add an audience.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fe7154d-new_placement.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fe7154d-new_placement.png').default}
+/>
 
 
 
@@ -37,12 +31,9 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 3. In the **Placements/ Your placement** window, click the **Add audience** button and choose the desired user segment from the list. Please note that only [segments you have previously created](segments#creation) are accessible in the list. These segments signify different audience groups defined and created within Adapty.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d0d720f-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d0d720f-Area.gif').default}
+/>
 
 
 
@@ -54,12 +45,9 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    If you're uncertain about the effectiveness of the created paywall, consider comparing it with another one in an A/B test. Adapty provides the flexibility to enhance your monetization strategy further by introducing A/B tests. These tests involve presenting users with multiple paywalls to evaluate and determine the most effective one. Explore further insights on A/B tests in our [A/B test](ab-tests) documentation.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f23da25-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f23da25-Area.gif').default}
+/>
 
 
 

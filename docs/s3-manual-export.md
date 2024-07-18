@@ -17,12 +17,9 @@ To export subscription events or paywall views to Amazon S3 on-demand:
 2. In the **Manual file export** section, click the date interval below the section name and choose the period you need events or paywall views for. The specified date range will be used to export the events or paywall views created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7c76736-s3_adapty_manual_export.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7c76736-s3_adapty_manual_export.png').default}
+/>
 
 
 

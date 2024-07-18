@@ -20,12 +20,9 @@ The integration between Adapty and Adjust works in two main ways.
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d2f019d-adjust_adapty_attributionsection.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d2f019d-adjust_adapty_attributionsection.png').default}
+/>
 
 
 
@@ -40,8 +37,7 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event is wrapped into the following structure:
 
-```json title="Json"
-{
+```json title="title="{""
   "s2s": 1,
   "adid": "1c4188b31930bc7778f7cd7dc5fe093d",
   "idfv": "2F1C248B-93CF-4443-949A-87B0C109842D",

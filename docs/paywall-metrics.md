@@ -11,12 +11,9 @@ Paywall metrics are available on the paywall list, providing you with an overvie
 For a more granular analysis of each paywall, you can navigate to the paywall detail metrics. In this section, you will find comprehensive metrics specific to the selected paywall, offering deeper insights into its performance.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png').default}
+/>
 
 
 
@@ -31,12 +28,9 @@ For Live paywall, the metrics cover the period from the paywall's start date unt
 #### View options for metrics data
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/15df73d-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/15df73d-Area.gif').default}
+/>
 
 
 
@@ -51,12 +45,9 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Profile install date filtration
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6c9639d-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6c9639d-Area.gif').default}
+/>
 
 
 
@@ -67,12 +58,9 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Time ranges
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png').default}
+/>
 
 
 
@@ -96,12 +84,9 @@ One of the key components of the paywall metrics page is the chart section, whic
 The chart section on the paywall metrics page includes a horizontal bar chart that visually represents the chosen metric values. Each bar in the chart corresponds to a metric value and is proportional in size, making it easy to understand the data at a glance. The horizontal line indicates the timeframe being analyzed, and the vertical column displays the numeric values of the metrics. The total value of all the metric values is displayed next to the chart.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/10a9b9c-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/10a9b9c-Area.gif').default}
+/>
 
 
 
@@ -114,12 +99,9 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the total metrics summary section is shown, which displays the cumulative values for the selected metrics at a specific point in time, with the ability for you to change the displayed metric using a dropdown menu.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png').default}
+/>
 
 
 
@@ -128,12 +110,9 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 ### Metrics definitions
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1b07fd8-Area.gif" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1b07fd8-Area.gif').default}
+/>
 
 
 

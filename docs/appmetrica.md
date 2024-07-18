@@ -11,12 +11,9 @@ metadataTitle: ""
 To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica) and set credentials.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2500769-CleanShot_2023-08-18_at_14.57.352x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2500769-CleanShot_2023-08-18_at_14.57.352x.png').default}
+/>
 
 
 
@@ -25,12 +22,9 @@ To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/
 Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choose the app you want to send events to and go to **Settings**. Copy **Application ID** and **Post API key** and use them to set up the integration in Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.png').default}
+/>
 
 
 
@@ -43,12 +37,9 @@ AppMetrica syncs events every 4 hours, so it may take some time for events to ap
 Below the credentials, there are three groups of events you can send to AppMetrics from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.png').default}
+/>
 
 
 
@@ -65,7 +56,7 @@ Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaD
 - [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
 - [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 import YandexMobileMetrica
 
 YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceId, error in
@@ -78,7 +69,7 @@ YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceI
         Adapty.updateProfile(params: builder.build())
 }
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val params = AdaptyProfileParameters.Builder()
     .withAppmetricaDeviceId(appmetricaDeviceId)
     .withAppmetricaProfileId(appmetricaProfileId)
@@ -89,7 +80,7 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+```Text title="title="Flutter (Dart)""
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -102,7 +93,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import { adapty } from 'react-native-adapty';
 
 // ...
@@ -115,7 +106,7 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 AppMetrica.Instance.RequestAppMetricaDeviceID((deviceId, error) => {
     if (error != null) {
         // handle error

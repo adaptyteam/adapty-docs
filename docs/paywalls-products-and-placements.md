@@ -11,12 +11,9 @@ A **Paywall **is a screen within your mobile app dedicated to selling products. 
 A **Placement ** is a specific location within your mobile app where a paywall can be displayed. For example, a subscription choice might appear in a Start-wizard, while golden coins could be presented when a user runs out of coins in a game. You have the flexibility to showcase the same paywall across multiple placements or different paywalls in one placement for different user segments, called audiences in Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3a291e9-1_1.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/3a291e9-1_1.png').default}
+/>
 
 
 

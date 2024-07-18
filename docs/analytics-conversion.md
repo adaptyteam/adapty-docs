@@ -18,12 +18,9 @@ You could find valuable insights about user behavior setting filters and groups.
 Conversion is performed with the data we gather through SDK and store notifications and doesn't require any additional configuration from your side.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/28ebb72-CleanShot_2022-08-01_at_12.35.38.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/28ebb72-CleanShot_2022-08-01_at_12.35.38.png').default}
+/>
 
 
 
@@ -35,12 +32,9 @@ It's a common practice to measure success in money, e.g. tracking revenue. But s
 There is usually a number of marketing activities, technical updates, and external events that may impact the changes in user behavior. To validate this inspect how conversions change over days, months and years. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/39c99b2-CleanShot_2022-08-01_at_14.30.14.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/39c99b2-CleanShot_2022-08-01_at_14.30.14.png').default}
+/>
 
 
 
@@ -83,12 +77,9 @@ Please see below each conversion explanation with an example for your reference.
     If Х - the number of the 1st payments taken during the selected date, and Y - the amount of the renewals that happened after the 24 months since the selected date from those 1st payments, then Conversion = (Y / X) _ 100%. For example, we had 100 1st subscriptions of various products on the 1st of January 2020 and among them 20 renewed on the 1st week of January 2022. On the 8th of January 2022, we open the chart and see the conversion of the 1st of January 2021 = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February 2022. We open the chart on the 1st of February 2022 and see that the conversion of the 1st of January 2020 = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 1st payment on the 1st of January 2020 converted to the period > 24 months with any number of payments by the current moment. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/289b193-CleanShot_2022-08-02_at_07.46.15.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/289b193-CleanShot_2022-08-02_at_07.46.15.png').default}
+/>
 
 
 
@@ -107,12 +98,9 @@ The following groupings are available:
 - Marketing attribution
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2454c7f-CleanShot_2022-08-01_at_15.06.53.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2454c7f-CleanShot_2022-08-01_at_15.06.53.png').default}
+/>
 
 
 
@@ -121,12 +109,9 @@ The following groupings are available:
 If a chosen date range is not enough to show any results, you may see a notification that offers a relevant date and an option to adjust the date range automatically so you may do it with one click.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/64a0769-CleanShot_2022-08-02_at_08.05.02.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/64a0769-CleanShot_2022-08-02_at_08.05.02.png').default}
+/>
 
 
 
@@ -137,12 +122,9 @@ If a chosen date range is not enough to show any results, you may see a notifica
 A comparison of the curves gives a bright picture, and to get more use the table view below the chart. The table is synchronized with the chart so hovering over a column you see the associated pop-up over the curves.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3fe5da8-CleanShot_2022-08-02_at_08.11.45.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3fe5da8-CleanShot_2022-08-02_at_08.11.45.png').default}
+/>
 
 
 
@@ -151,12 +133,9 @@ A comparison of the curves gives a bright picture, and to get more use the table
 The grouping that was mentioned above changes both the charts and the table. Set quick filter by product or use other advanced ones, including Product, Country, Store, Duration, Attribution. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/67c4ac4-CleanShot_2022-07-25_at_22.24.38.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/67c4ac4-CleanShot_2022-07-25_at_22.24.38.png').default}
+/>
 
 
 
@@ -165,12 +144,9 @@ The grouping that was mentioned above changes both the charts and the table. Set
 We know that it's important to have an option to work with numbers the way you like. So on the right of the control panel, there's a button to export funnel data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system to continue analysis and forecasting in your preferred environment.  
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/85788c5-CleanShot_2022-07-25_at_22.39.30.png" 
-    style={{ width: '7000px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/85788c5-CleanShot_2022-07-25_at_22.39.30.png').default}
+/>
 
 
 

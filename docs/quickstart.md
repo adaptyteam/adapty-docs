@@ -53,12 +53,9 @@ To find Package Name Open the Google Play Developer Console and select the app w
 **Create a [paywall](paywalls) with this product** 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png').default}
+/>
 
 
 
@@ -67,12 +64,9 @@ To find Package Name Open the Google Play Developer Console and select the app w
 **Create a [placement](placements) and add your paywall to it**
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a404841-CleanShot_2023-12-01_at_17.21.382x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.png').default}
+/>
 
 
 
@@ -84,23 +78,23 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-```swift title="iOS"
+```swift title="title="iOS""
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
-```kotlin title="Android"
+```kotlin title="title="Android""
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 }
 ```
-```xml title="Flutter - info.plist"
+```xml title="title="Flutter - info.plist""
 <dict>
     ...
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
 </dict>
 ```
-```xml title="Flutter - AndroidManifest.xml"
+```xml title="title="Flutter - AndroidManifest.xml""
 <application ...>
        ...
        <meta-data
@@ -108,7 +102,7 @@ override fun onCreate() {
               android:value="PUBLIC_SDK_KEY" />
 </application>
 ```
-```typescript title="React Native - /src/App.tsx"
+```typescript title="title="React Native - /src/App.tsx""
 import { activateAdapty } from 'react-native-adapty';
 
 const App: React.FC = () => {

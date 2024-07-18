@@ -20,12 +20,9 @@ This guide will help you create the necessary credentials in your AWS Console.
 2. Click the **Create Policy** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d8d42bb-s3_policies.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d8d42bb-s3_policies.png').default}
+/>
 
 
 
@@ -34,12 +31,9 @@ This guide will help you create the necessary credentials in your AWS Console.
 3. In the **Specify permissions** window, switch to the **JSON** tab.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/15ba00d-s3_specify_permissions.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/15ba00d-s3_specify_permissions.png').default}
+/>
 
 
 
@@ -47,8 +41,7 @@ This guide will help you create the necessary credentials in your AWS Console.
 
 4. In the **JSON** tab, paste the following JSON and replace `adapty-s3-integration-test` with your S3 bucket name: 
 
-```json title="Json"
-{
+```json title="title="{""
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -80,12 +73,9 @@ This guide will help you create the necessary credentials in your AWS Console.
 6. In the **Review and create** window, define the policy name.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2ebaf70-s3_review_and_create_policy.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2ebaf70-s3_review_and_create_policy.png').default}
+/>
 
 
 
@@ -103,12 +93,9 @@ To get access key ID and secret access key:
 2. Click the **Create user** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6bd091d-s3_users.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6bd091d-s3_users.png').default}
+/>
 
 
 
@@ -118,12 +105,9 @@ To get access key ID and secret access key:
 4. Click the **Create group** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/45a9ebc-s3_set_permissions.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/45a9ebc-s3_set_permissions.png').default}
+/>
 
 
 
@@ -133,12 +117,9 @@ To get access key ID and secret access key:
 6. Find and select the policy you've created in the [Step 1. Create access policy](set-up-amazon-s3#step-1-create-access-policy) section.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ea4e51f-s3_create_user_group.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ea4e51f-s3_create_user_group.png').default}
+/>
 
 
 
@@ -148,12 +129,9 @@ To get access key ID and secret access key:
 8. Select the group you've created.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e4dac19-s3_set_permissions_choose_group.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e4dac19-s3_set_permissions_choose_group.png').default}
+/>
 
 
 
@@ -163,12 +141,9 @@ To get access key ID and secret access key:
 10. In the **Review and create** window, click the **Create user** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9975a47-s3_review_new_user.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9975a47-s3_review_new_user.png').default}
+/>
 
 
 
@@ -177,12 +152,9 @@ To get access key ID and secret access key:
 11. In the **Users** window, click the new user you've created to open the user's details.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e774c5a-s3_users_open_user_details.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e774c5a-s3_users_open_user_details.png').default}
+/>
 
 
 
@@ -191,12 +163,9 @@ To get access key ID and secret access key:
 12. In the **Access key best practices & alternatives** window, select the **Third-party service** radio-button and the **Confirmation** check-box.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2c717b7-s3_access_key_best_practices.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2c717b7-s3_access_key_best_practices.png').default}
+/>
 
 
 
@@ -206,12 +175,9 @@ To get access key ID and secret access key:
 14. In the **Set description tag** window, click the **Create access key** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/44d1b47-s3_set_description_tag.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/44d1b47-s3_set_description_tag.png').default}
+/>
 
 
 
@@ -220,12 +186,9 @@ To get access key ID and secret access key:
 15. In the **Retrieve access keys** window, click the **Download .csv file** button. This file contains the Access key and Secret access key you will need when [setting up Amazon S3 integration in the Adapty Dashboard](set-up-amazon-s3#set-up-amazon-s3-integration-in-the-adapty-dashboard).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e65fe45-s3_retrieve_access_keys.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e65fe45-s3_retrieve_access_keys.png').default}
+/>
 
 
 
@@ -251,12 +214,9 @@ To set up the Amazon S3 integration in the Adapty Dashboard:
 3. Turn on the **Export subscription events to Amazon S3** toggle to initiate the integration.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/133f9f5-s3_adapty_fields.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/133f9f5-s3_adapty_fields.png').default}
+/>
 
 
 
@@ -282,12 +242,9 @@ To choose the events to export to the Amazon S3 storage:
 3. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+/>
 
 
 

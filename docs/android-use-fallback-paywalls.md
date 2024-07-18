@@ -11,8 +11,7 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from locally stored JSON file named `android_fallback.json`.
 
-```kotlin title="Kotlin"
-//if you put the 'android_fallback.json' file to the 'assets' directory
+```kotlin title="title="//if you put the 'android_fallback.json' file to the 'assets' directory""
 val location = FileLocation.fromAsset("android_fallback.json")
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json")` if you placed it in a child folder of 'assets')
 
@@ -22,8 +21,7 @@ val location = FileLocation.fromResId(context, R.raw.android_fallback)
 //pass the file location
 Adapty.setFallbackPaywalls(location, callback)
 ```
-```java title="Java"
-//if you put the 'android_fallback.json' file to the 'assets' directory
+```java title="title="//if you put the 'android_fallback.json' file to the 'assets' directory""
 FileLocation location = FileLocation.fromAsset("android_fallback.json");
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json");` if you placed it in a child folder of 'assets')
 
@@ -42,8 +40,7 @@ Parameters:
 
 Alternatively, you can use a URI instead of the file location. here is an example of how to do so:
 
-```kotlin title="Kotlin"
-val fileUri: Uri = //get Uri for the file with fallback paywalls
+```kotlin title="title="val fileUri: Uri = //get Uri for the file with fallback paywalls""
 // for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
 // you can obtain the Uri as follows:
 //
@@ -55,8 +52,7 @@ val fileUri: Uri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fileUri, callback)
 ```
-```java title="Java"
-Uri fileUri = //get Uri for the file with fallback paywalls
+```java title="title="Uri fileUri = //get Uri for the file with fallback paywalls""
 // for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
 // you can obtain the Uri as follows:
 //

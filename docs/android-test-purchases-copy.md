@@ -31,12 +31,9 @@ This will allow you to configure licensing testing for your app and ensure that 
 In our example, we already have a list of testers:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7a11c96-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7a11c96-image.png').default}
+/>
 
 
 
@@ -47,12 +44,9 @@ In our example, we already have a list of testers:
 1. Publish a signed version of your app to a closed track. If you haven't created a closed track yet, you can create one in the **Closed testing** section of the **Testing** menu.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5511dff-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5511dff-image.png').default}
+/>
 
 
 
@@ -61,12 +55,9 @@ In our example, we already have a list of testers:
    Just as previously, you can use one of the existing lists or create a new one:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1badc43-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1badc43-image.png').default}
+/>
 
 
 
@@ -77,24 +68,18 @@ In our example, we already have a list of testers:
 3. Open the Opt-in URL in your testing device to make the user a tester. You can send the URL to your device via email, for example.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6cce394-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6cce394-image.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c1eb89d-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c1eb89d-image.png').default}
+/>
 
 
 
@@ -131,12 +116,9 @@ Generate a signed APK or use Android App Bundle to upload a signed APK to the cl
 After you've uploaded the APK, wait a few minutes for the release to process. Then, open your testing device and sign in with the email account you added to the Testers list. You can then test in-app purchases as you would on a production app.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a8d2da9-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a8d2da9-image.png').default}
+/>
 
 
 
@@ -145,12 +127,9 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
 If you run into any issues, refer to the documentation or contact Google Play Developer support. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/605874f-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/605874f-image.png').default}
+/>
 
 
 
@@ -170,12 +149,9 @@ If you are encountering this error, please follow the steps below to resolve it:
 Also, in case some of your users have Adapty SDK with version less than 2.6, ensure that the products they use are **backwards compatible**. Starting with SDK v2.6 this is no longer needed, so consider upgrading.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e2b2c07-image.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e2b2c07-image.png').default}
+/>
 
 
 

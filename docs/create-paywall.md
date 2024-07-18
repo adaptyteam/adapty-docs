@@ -18,13 +18,19 @@ To create a new paywall in the Adapty dashboard:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. The paywall list page in the Adapy dashboard provides an overview of all the paywalls that have been set up in your account along with their metrics.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c661ee3-paywalls.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c661ee3-paywalls.png').default}
+/>
 
+<img
+  src={require('./img/c661ee3-paywalls.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -32,12 +38,9 @@ To create a new paywall in the Adapty dashboard:
 2. Click the **Create paywall** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4b200e5-create_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4b200e5-create_paywall.png').default}
+/>
 
 
 
@@ -49,12 +52,9 @@ To create a new paywall in the Adapty dashboard:
    Please note that after your paywall will get shown on the production at least once it will be impossible to change the products on the paywall as this may affect the paywall metrics. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0479b51-ad_product_to_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0479b51-ad_product_to_paywall.png').default}
+/>
 
 
 
@@ -64,12 +64,9 @@ To create a new paywall in the Adapty dashboard:
    Apple's intro offers get sorted out automatically, so you don't have to add them separately in Adapty. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f586eee-add_offer.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f586eee-add_offer.png').default}
+/>
 
 
 

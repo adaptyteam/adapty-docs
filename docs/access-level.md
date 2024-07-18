@@ -19,11 +19,8 @@ To begin working with access levels in Adapty, open the **[Paywalls and Products
 The **Access levels** list displays all access levels, including  the `premium` one that is added automatically and those added by you in Adapty.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/22b4a1e-access_level_list.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/22b4a1e-access_level_list.png').default}
+/>
 
 

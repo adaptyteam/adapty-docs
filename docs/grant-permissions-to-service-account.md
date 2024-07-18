@@ -9,36 +9,27 @@ Grant the required permissions to the service account that Adapty will use to ma
 1. Open the [**Users and permissions**](https://play.google.com/console/u/0/developers/8970033217728091060/users-and-permissions) page in the Google Play Console and click the **Invite new users** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7b0e614-users_and_permissions.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7b0e614-users_and_permissions.png').default}
+/>
 
 
 
 2. In the **Invite user** page, enter the email of the service users you've created.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3afd002-invite_user.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3afd002-invite_user.png').default}
+/>
 
 
 
 3. Switch to the  **Account permissions** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4e2717b-account_permissions.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4e2717b-account_permissions.png').default}
+/>
 
 
 

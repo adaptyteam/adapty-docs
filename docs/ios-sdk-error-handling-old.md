@@ -23,8 +23,7 @@ This one can be used to handle common issues, like:
 
 It's pretty easy to check the error for specific codes and react to them accordingly.
 
-```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
+```swift title="title="Adapty.makePurchase(product: product) { result in""
     if result.error?.adaptyErrorCode == .paymentCancelled {
         // purchase was cancelled
         // you can offer discount to your user or remind them later

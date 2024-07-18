@@ -15,12 +15,9 @@ To run your A/B test for the chosen audience and placement:
 1. Open the [**A/B tests**](ab-tests) section from the Adapty main menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ebd94b2-run_ab_test.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ebd94b2-run_ab_test.gif').default}
+/>
 
 
 
@@ -40,12 +37,9 @@ When you choose to stop an A/B test, it means you have finished observing and an
 There are two options available to stop an A/B test: you can do so either from the **A/B tests** list page or the placement detail page. Regardless of whether you are on the A/B test list page or the placement detail page, both paths lead to the same flow.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5906809-CleanShot_2023-07-19_at_18.03.482x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+/>
 
 
 

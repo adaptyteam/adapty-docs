@@ -24,8 +24,7 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-```swift title="Swift"
-Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+```swift title="title="Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in""
     switch result {
         case let .success(paywall):
             // the requested paywall
@@ -34,8 +33,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-```kotlin title="Kotlin"
-Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
+```kotlin title="title="Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->""
     when (result) {
         is AdaptyResult.Success -> {
             val paywall = result.value
@@ -48,8 +46,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     }
 }
 ```
-```java title="Java"
-Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
+```java title="title="Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {""
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
         // the requested paywall
@@ -61,7 +58,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     }
 });
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -70,7 +67,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -80,7 +77,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 try {
 	const id = 'YOUR_PLACEMENT_ID';
 	const locale = 'en';
@@ -113,8 +110,7 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-```swift title="Swift"
-Adapty.getPaywallProducts(paywall: paywall) { result in    
+```swift title="title="Adapty.getPaywallProducts(paywall: paywall) { result in""
     switch result {
     case let .success(products):
         // the requested products array
@@ -123,8 +119,7 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
-Adapty.getPaywallProducts(paywall) { result ->
+```kotlin title="title="Adapty.getPaywallProducts(paywall) { result ->""
     when (result) {
         is AdaptyResult.Success -> {
             val products = result.value
@@ -137,8 +132,7 @@ Adapty.getPaywallProducts(paywall) { result ->
     }
 }
 ```
-```java title="Java"
-Adapty.getPaywallProducts(paywall, result -> {
+```java title="title="Adapty.getPaywallProducts(paywall, result -> {""
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
         // the requested products
@@ -150,7 +144,7 @@ Adapty.getPaywallProducts(paywall, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -159,7 +153,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   if(error != null) {
     // handle the error
@@ -169,7 +163,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   // products - the requested products array
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 try {
 	// ...paywall
 	const products = await adapty.getPaywallProducts(paywall);
@@ -191,8 +185,7 @@ After getting products and before [presenting the paywall](present-remote-config
 
 You don't have to manually check these factors on iOS. Moreover, if you use the Paywall Builder, you can skip the eligibility check as it will be done automatically. However, if you do not use the Paywall Builder, use the `getProductsIntroductoryOfferEligibility(products:)` method. It automatically checks the eligibility status for each product in the array:
 
-```swift title="Swift"
-Adapty.getProductsIntroductoryOfferEligibility(products: products) { result in
+```swift title="title="Adapty.getProductsIntroductoryOfferEligibility(products: products) { result in""
 	switch result {
 		case .success(let eligibilities):
 			// update your UI
@@ -201,7 +194,7 @@ Adapty.getProductsIntroductoryOfferEligibility(products: products) { result in
 	}
 }
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   final eligibilities = await Adapty().getProductsIntroductoryOfferEligibility(products: products);
 	// update your UI
@@ -211,7 +204,7 @@ try {
   // handle the error
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.GetProductsIntroductoryOfferEligibility(products, (eligibilities, error) => {
   if (eligibilities != null) {
     // update your UI

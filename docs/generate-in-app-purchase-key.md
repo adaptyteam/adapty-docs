@@ -15,12 +15,9 @@ To generate API keys for the App Store Server API, you you must hold either an A
 2. Then click the add button **(+)** next to the **Active** title.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6d737db-generate_in-app_key.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/6d737db-generate_in-app_key.png').default}
+/>
 
 
 
@@ -30,12 +27,9 @@ To generate API keys for the App Store Server API, you you must hold either an A
 4. Click the **Generate** button. Once the **Generate in-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fac066b-download_inapp_file.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fac066b-download_inapp_file.png').default}
+/>
 
 
 
@@ -43,12 +37,9 @@ To generate API keys for the App Store Server API, you you must hold either an A
 5. Once you've generated your API key, click the **Download In-App Purchase Key** button to obtain the key as a file.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d59faff-download_in-app_purchase_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d59faff-download_in-app_purchase_key.png').default}
+/>
 
 
 

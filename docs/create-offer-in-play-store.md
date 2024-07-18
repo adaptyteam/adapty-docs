@@ -13,12 +13,9 @@ You have the ability to create one or several offers for your base plans, and ea
 It's important to note that in the case of Google’s new billing system, trials won't be automatically assigned to users. To enable this functionality, you must create an offer and specify it during the payment configuration setup.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png').default}
+/>
 
 
 

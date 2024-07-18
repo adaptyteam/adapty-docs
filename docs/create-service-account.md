@@ -9,12 +9,9 @@ For Adapty to automate data access, a service account is necessary in the Google
 1. Open [**IAM & Admin** - > **Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Cloud Console. Make sure you use the correct project.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/17bbf45-google_cloud_create_service_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/17bbf45-google_cloud_create_service_account.png').default}
+/>
 
 
 
@@ -23,12 +20,9 @@ For Adapty to automate data access, a service account is necessary in the Google
 2. In the Click the **Create service account** button. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b93eec1-service_account_details.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b93eec1-service_account_details.png').default}
+/>
 
 
 
@@ -41,12 +35,9 @@ For Adapty to automate data access, a service account is necessary in the Google
 5. Click the **Create and continue** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e69d713-grant_access_to_project.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e69d713-grant_access_to_project.png').default}
+/>
 
 
 
@@ -54,12 +45,9 @@ For Adapty to automate data access, a service account is necessary in the Google
 6. In the **Select a role** drop-down list of the **Grant this service account access to project** sub-section, select **Pub/Sub -> Pub/Sub Admin**. This role is required to enable real-time developer notifications.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/976299c-service_account_role.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/976299c-service_account_role.png').default}
+/>
 
 
 
@@ -71,12 +59,9 @@ For Adapty to automate data access, a service account is necessary in the Google
 9. Click the **Continue** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ffe8d82-grant_user_access.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ffe8d82-grant_user_access.png').default}
+/>
 
 
 

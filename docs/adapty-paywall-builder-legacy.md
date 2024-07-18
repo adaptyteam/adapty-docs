@@ -17,12 +17,9 @@ To use the Adapty Paywall Builder:
 3. You'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. From there, you can make minor adjustments to tailor it exactly to your preferences.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/44766e1-switch_on_paywall_builder.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/44766e1-switch_on_paywall_builder.png').default}
+/>
 
 
 

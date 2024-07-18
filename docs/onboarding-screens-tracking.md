@@ -10,16 +10,13 @@ In order for you to be able to analyze user behavior at this critical stage with
 
 To do this, simply call the `.logShowOnboarding` function:
 
-```swift title="Swift"
-Adapty.logShowOnboarding(name: "onboarding_name", screenName: "first_screen", screenOrder: 1)
+```swift title="title="Adapty.logShowOnboarding(name: "onboarding_name", screenName: "first_screen", screenOrder: 1)""
 ```
-```kotlin title="Kotlin"
-Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", screenOrder = 1)
+```kotlin title="title="Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", screenOrder = 1)""
 ```
-```java title="Java"
-Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);
+```java title="title="Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);""
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   await Adapty().logShowOnboarding(name: 'onboarding_name', 
                                    screenName: 'first_screen', 
@@ -29,14 +26,14 @@ try {
 } catch (e) {
 }
 ```
-```typescript title="React Native"
+```typescript title="title="React Native""
 await adapty.logShowOnboarding(
 	1, /* screenOrder */
 	'onboarding_name', /* name */
 	'first_screen' /* screenName */
 );
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
     if(error != null) {
       // handle the error

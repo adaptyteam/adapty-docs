@@ -12,24 +12,18 @@ First of all, you have to enter your <a href="https://business.facebook.com/"> F
 The next step is to open Ads Manager. Usually, it is present in the left panel of your Facebook Business Manager. If you don\`t see the Ads Manager tab there, you can manually add it.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1734111-edit_tools.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/1734111-edit_tools.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/01e2f0f-setup_ads_manager.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/01e2f0f-setup_ads_manager.png').default}
+/>
 
 
 
@@ -40,24 +34,18 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 In the Ads Manager tab, you should select the project you are creating the report for and create Custom Report.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/80e4cd5-general_report_view.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/80e4cd5-general_report_view.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6bd82d8-create_custom_report.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/6bd82d8-create_custom_report.png').default}
+/>
 
 
 
@@ -68,12 +56,9 @@ In the Ads Manager tab, you should select the project you are creating the repor
 The next step is to adjust breakdowns. Adapty needs your data granulated by day, AdID, AdSetId, CampaignID. Please see the required breakdowns on a picture below.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5281d00-breakdowns.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/5281d00-breakdowns.png').default}
+/>
 
 
 
@@ -90,36 +75,27 @@ Engagement: Link clicks, Unique link clicks, Outbound clicks, Unique outbound cl
 Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Name, Campaign ID, Campaign name.  
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a8df062-performance_metrics.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/a8df062-performance_metrics.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6df97d7-engagement_metrics.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/6df97d7-engagement_metrics.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e9547ad-settings_metrics.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/e9547ad-settings_metrics.png').default}
+/>
 
 
 
@@ -133,24 +109,18 @@ The same metrics are needed for all other languages. Currently supported languag
 Then, we have to download the report. Please select CSV file format and don\`t add any summary rows to the file.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7f42174-select_download.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/7f42174-select_download.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b0e2ad2-finish_export.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/b0e2ad2-finish_export.png').default}
+/>
 
 
 

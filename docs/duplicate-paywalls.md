@@ -13,12 +13,9 @@ To duplicate a paywall in the Adapty dashboard:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. The paywall list page in the Adapy dashboard provides an overview of all the paywalls present in your account.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/07f592d-duplicate_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/07f592d-duplicate_paywall.png').default}
+/>
 
 
 

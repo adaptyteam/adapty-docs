@@ -21,12 +21,9 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 2. Copy the **Bundle ID** in the **General Information** sub-section.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/afd5012-bundle_id_apple.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/afd5012-bundle_id_apple.png').default}
+/>
 
 
 
@@ -34,12 +31,9 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/26f79d5-App_settings_top_menu.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+/>
 
 
 
@@ -47,12 +41,9 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 4. Paste the copied value to the **Bundle ID** field.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2d64163-bundle_id.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2d64163-bundle_id.png').default}
+/>
 
 
 
@@ -65,24 +56,18 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 2. In the **Active **list, find the key you've created in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/19a2868-issuer_apple.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/19a2868-issuer_apple.png').default}
+/>
 
 
 
 3. Copy **Issuer ID** and paste it to the **In-app purchase Issuer ID** field in the Adapty Dashboard.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c2b42e7-issuer_id.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c2b42e7-issuer_id.png').default}
+/>
 
 
 
@@ -93,12 +78,9 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/88cdfff-download_inapp_file.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/88cdfff-download_inapp_file.png').default}
+/>
 
 
 
@@ -107,12 +89,9 @@ Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-Ap
 into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in the Adapty Dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/253b840-in-app_file_upload.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/253b840-in-app_file_upload.png').default}
+/>
 
 
 
@@ -127,12 +106,9 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 2. Scroll down to the **App-Specific Shared Secret** sub-section.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2bd112a-shared_secret_apple.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2bd112a-shared_secret_apple.png').default}
+/>
 
 
 
@@ -142,12 +118,9 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 3. Click the **Manage** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2d8b4c0-shared_secret_apple_copy.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2d8b4c0-shared_secret_apple_copy.png').default}
+/>
 
 
 
@@ -157,12 +130,9 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 5. Paste the copied **Shared Secret** to the **App Store shared secret** field in the Adapty Dashboard. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4f9624d-shared_secret.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4f9624d-shared_secret.png').default}
+/>
 
 
 

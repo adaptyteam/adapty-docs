@@ -8,21 +8,19 @@ Begin configuring the Adapty paywall builder by installing the AdaptyUI SDK. Not
 
 Add AdaptyUI to your `pubspec.yaml` file:
 
-```yaml title="pubspec.yaml"
+```yaml title="title="pubspec.yaml""
 dependencies:
   adapty_ui_flutter: ^2.1.1
 ```
 
 And then run:
 
-```bash title="Bash"
-flutter pub get
+```bash title="title="flutter pub get""
 ```
 
 After that, you can import Adapty SDK in your application like this:
 
-```dart title="Dart"
-import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+```dart title="title="import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';""
 ```
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.

@@ -17,12 +17,9 @@ To integrate Braze go to [**Integrations** -> **Braze**](https://app.adapty.io/i
 The initial step of the integration process is to provide the necessary credentials to establish a connection between your Braze and Adapty profiles. You will need the **REST API Key**, your **Braze Instance ID**, and **App IDs** for iOS and Android for the integration to work properly:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5f1e62c-adapty_braze.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5f1e62c-adapty_braze.png').default}
+/>
 
 
 
@@ -31,24 +28,18 @@ The initial step of the integration process is to provide the necessary credenti
 1. **REST API Key** can be created in **Braze Dashboard** → **Settings** → **API Keys**. Make sure your key has a `users.track` permission when creating it:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b5fdf16-adapty_braze_create_api_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b5fdf16-adapty_braze_create_api_key.png').default}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1e5b4b8-adapty_braze_api_key_users_track.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1e5b4b8-adapty_braze_api_key_users_track.png').default}
+/>
 
 
 
@@ -58,12 +49,9 @@ The initial step of the integration process is to provide the necessary credenti
 3. iOS and Android App IDs can be found in Braze Dashboard → Settings → API Keys as well. Copy them from here:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1e6d21b-adapty_braze_app_ids.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1e6d21b-adapty_braze_app_ids.png').default}
+/>
 
 
 
@@ -74,12 +62,9 @@ The initial step of the integration process is to provide the necessary credenti
 Below the credentials, there are three groups of events you can send to Braze from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Braze. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events):
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/702e628-adapty_braze_events_names.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/702e628-adapty_braze_events_names.png').default}
+/>
 
 
 
@@ -117,10 +102,10 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link user profiles in Adapty and Braze you need to either configure Braze SDK with the same customer user ID as Adapty or use its `.changeUser()` method:
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 let braze = Braze(configuration: configuration)
 braze.changeUser(userId: "adapty_customer_user_id")
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 Braze.getInstance(context).changeUser("adapty_customer_user_id")
 ```

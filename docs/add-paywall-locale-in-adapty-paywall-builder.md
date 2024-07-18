@@ -13,24 +13,18 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 1. Switch over to the **Localizations** tab below the **Builder** title. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0a6100c-PB_localization.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0a6100c-PB_localization.png').default}
+/>
 
 
 
 2. Click the **Add locale** button, and select all languages you want to have in your app.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4abdb84-add_locale.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/4abdb84-add_locale.png').default}
+/>
 
 
 
@@ -38,12 +32,9 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
       Once added, the new locale will be pre-filled with values from the default.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0e99ddb-copy_locale.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0e99ddb-copy_locale.png').default}
+/>
 
 
 
@@ -57,12 +48,9 @@ You can learn more about it [here](get-pb-paywalls).
 3. Now you can fill in the translated values for the new locale. There are a few controls in this table that can make it easier (especially if you have many locales).
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/df4b331-locale_options.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/df4b331-locale_options.png').default}
+/>
 
 
 
@@ -83,12 +71,9 @@ We strongly recommend using tag variables (such as `<PROD_TITLE/>`) to speed up 
 You can check your texts while editing by simply switching over back to the **Builder** tab and selecting another locale:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2b31427-choose_localization.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2b31427-choose_localization.png').default}
+/>
 
 
 

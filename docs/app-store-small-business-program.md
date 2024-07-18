@@ -35,12 +35,9 @@ To manage your Small Business Program membership status for the App Store, go to
 You can add additional membership periods by clicking on the "Add Period" button again.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/65d9968-CleanShot_2023-04-11_at_15.00.482x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+/>
 
 
 

@@ -7,12 +7,9 @@ metadataTitle: ""
 Install Adapty SDK and start analyzing real-time metrics of your iOS or Android app with advanced filters and grouping, such as ad network, ad campaign, country, paywall, product, and more.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/888bf46-CleanShot_2023-01-05_at_07.29.48.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/888bf46-CleanShot_2023-01-05_at_07.29.48.png').default}
+/>
 
 
 
@@ -41,12 +38,9 @@ Also, you can select the Custom option to set any period you need.
 We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](https://docs.adapty.io/docs/account)
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/103a5fc-CleanShot_2023-01-05_at_14.16.10.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/103a5fc-CleanShot_2023-01-05_at_14.16.10.png').default}
+/>
 
 
 
@@ -64,12 +58,9 @@ How can one read the comparison insights?
 5. You can see both multiple grouping and comparison at the same time on one chart for a specific type of chart - columns. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ba05509-CleanShot_2023-01-05_at_21.12.00.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/ba05509-CleanShot_2023-01-05_at_21.12.00.png').default}
+/>
 
 
 
@@ -112,12 +103,9 @@ MMR = 240 _ 2 / 12 + 30 _ 10 / 1 = $340
 ARPU chart displays the average revenue per user (ARPU) for your app. ARPU is calculated as revenue for a given period / users (non-unique installs) for the same period. For example, if your app generates $10,000 in revenue in a day and has 1,000 new users on that day, the ARPU for that day would be $10 ($10,000/1,000).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3a8a90a-small-CleanShot_2023-04-28_at_16.22.002x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/3a8a90a-small-CleanShot_2023-04-28_at_16.22.002x.png').default}
+/>
 
 
 
@@ -178,12 +166,9 @@ The number of subscriptions auto-renew status of which was switched on (reactiva
 The Non-subscriptions chart displays the number of in-app purchases such as consumables, non-consumables, and non-renewing subscriptions. The chart doesn't include renewable payments. The chart shows the total count of these types of in-app purchases and can help you track user behavior and engagement over time.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/35cf047-small-CleanShot_2023-04-28_at_16.26.272x.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/35cf047-small-CleanShot_2023-04-28_at_16.26.272x.png').default}
+/>
 
 
 

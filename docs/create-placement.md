@@ -13,24 +13,18 @@ To create a new placement:
 1. Open the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0561bf8-placements_create_new.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0561bf8-placements_create_new.png').default}
+/>
 
 
 
 2. In the **Placements** window, click the **Create placement** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3dc0e8c-new_placement.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3dc0e8c-new_placement.png').default}
+/>
 
 
 

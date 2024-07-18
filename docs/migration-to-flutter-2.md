@@ -22,7 +22,7 @@ We've also compiled a full list of changes, which can be found on the release pa
 **Before:**  
 Previously, all information that related to the user was in the `PurchaserInfo` model. This information was obtained by calling the `.getPurchaserInfo(forceUpdate:)` method:
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 1.x.x
 try {
 	AdaptyPurchaserInfo purchaserInfo = await Adapty().getPurchaserInfo({bool forceUpdate = false});
@@ -39,7 +39,7 @@ try {
 **After:**  
 Now we have renamed the model to [`AdaptyProfile`](sdk-models#adaptyprofile). Also, it affected the corresponding method:
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 try {
 	AdaptyProfile profile = await Adapty().getProfile();
@@ -63,7 +63,7 @@ This change also affected the corresponding stream: `didReceivePurchaserInfoStre
 **Before:**  
 Previously, developers used to query an array of paywalls and then search that array for the desired element.
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 1.x.x
 try {
 	final GetPaywallsResult getPaywallsResult = await Adapty().getPaywalls(forceUpdate: Bool);
@@ -77,7 +77,7 @@ try {
 **After:**  
 We have significantly simplified this use case, so now you can get only the requested object, without touching the rest. 
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 try {
 	final AdaptyPaywall paywall = await Adapty().getPaywall(id: 'YOUR_PLACEMENT_ID');
@@ -95,7 +95,7 @@ In addition to simplifying the most common usage scenario, we also significantly
 **Before:**  
 Previously the product entity was a part of the paywall so that you could use it right after `.getPaywalls` method was done. Also, you could use products out of the paywall context.
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 1.x.x
 try {
 	final GetPaywallsResult getPaywallsResult = await Adapty().getPaywalls(forceUpdate: Bool);
@@ -110,7 +110,7 @@ try {
 **After:**  
 Once you have obtained the desired paywall, you can query the products array for it. Now the product entity is independent, although it can only exist in the context of the paywall.
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall, fetchPolicy: fetchPolicy);
@@ -137,7 +137,7 @@ If your paywall has an active promotional offer for the product you are attempti
 **Before:**  
 The `makePurchase` function required the `offerId` parameter to be passed explicitly:
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 1.x.x
 try {
   final MakePurchaseResult makePurchaseResult = await Adapty().makePurchase(<product>, offerId: <offer_id>);
@@ -150,7 +150,7 @@ try {
 **After:**  
 Starting with version 2.0 this parameter is no longer present. The Adapty SDK automatically uses the `promotionalOfferId` field to apply the discount, taking the value of the `promotionalOfferEligibility` field into account.
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 try {
   final profile = await Adapty().makePurchase(product: product);
@@ -175,7 +175,7 @@ The `Product` entity has the `introductoryOfferEligibility` property, it determi
 **After:**  
 `introductoryOfferEligibility` is an enumeration
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 enum AdaptyEligibility {
   unknown,
@@ -193,7 +193,7 @@ As mentioned in the previous section, StoreKit version 1 does not allow you to r
 
 This mechanism is implemented in this way: we will try to request a receipt in its unavailability in advance, and there is a special parameter of `.getPaywallProducts` function to get products with a correct `introductoryOfferEligibility`:
 
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 // AdaptySDK 2.0.0
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall, fetchPolicy: AdaptyIOSProductsFetchPolicy.waitForReceiptValidation);

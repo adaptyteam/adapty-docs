@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-[Adapty paywall builder](https://docs.adapty.io/docs/paywall-builder-getting-started) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty paywall builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
@@ -24,12 +24,9 @@ The **main image** is the centerpiece of your paywall's design, influencing the 
 - Graphic works but use it without claims as there is a separate place for texts in the asset.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/449450a-Export-1693233428253.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/449450a-Export-1693233428253.gif').default}
+/>
 
 
 
@@ -47,12 +44,9 @@ The mask type determines the shape of the main image, allowing you to apply crea
 - Leaf
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ce6499d-Area.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ce6499d-Area.gif').default}
+/>
 
 
 
@@ -65,12 +59,9 @@ You can adjust the roundness of the image mask using numerical values (not avail
 The background color of the paywall sets the tone for the entire experience. You can choose a background color that aligns with your brand's identity or complements the image. The background color acts as a canvas that enhances the visual appeal of the paywall. You have the option to select either a solid color or a gradient color for the background.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cc48986-Export-1693233802152.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cc48986-Export-1693233802152.gif').default}
+/>
 
 
 
@@ -81,12 +72,9 @@ The background color of the paywall sets the tone for the entire experience. You
 It's important to keep your paywall visually consistent with the rest of your app — and one of the biggest visual factors is the font that you're using. You can choose to simply have a system font for your paywall (SF Pro for iOS, Roboto for Android), use one of the available common fonts or upload your own custom font:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png').default}
+/>
 
 
 
@@ -114,12 +102,9 @@ For soft paywalls, you can define the view of the closing paywall button and how
 2. In the expanded section, pick how the button should look and where it should be. The preview on the right will instantly change to reflect your choice.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/423fc40-close_button_definition.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/423fc40-close_button_definition.png').default}
+/>
 
 
 
@@ -131,12 +116,9 @@ For soft paywalls, you can define the view of the closing paywall button and how
 3. To add a delay before showing this Close button, switch on the **Show after delay** toggle.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/466fb18-show_after_delay.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/466fb18-show_after_delay.png').default}
+/>
 
 
 
@@ -145,12 +127,9 @@ For soft paywalls, you can define the view of the closing paywall button and how
 4. In the expanded section, specify the delay duration (in milliseconds) before the Close button starts fading in and indicate how long the button's fade-in animation should last.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c967c2b-fading_button.png" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c967c2b-fading_button.png').default}
+/>
 
 
 
@@ -158,12 +137,9 @@ For soft paywalls, you can define the view of the closing paywall button and how
 Here is a video to show the whole process:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fd9c0b8-Soft_paywall.gif" 
-    style={{ width: '70%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fd9c0b8-Soft_paywall.gif').default}
+/>
 
 
 
@@ -174,12 +150,9 @@ Here is a video to show the whole process:
 Use the drop-down menu above the asset to select different devices, providing a preview of how your layout will appear on various screens. This feature enables you to ensure that your paywall looks optimal across different devices and screen sizes.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a6ccf83-Export-1693241907397.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a6ccf83-Export-1693241907397.gif').default}
+/>
 
 
 
@@ -190,12 +163,9 @@ Use the drop-down menu above the asset to select different devices, providing a 
 In the products tab of Adapty's paywall builder, you have the ability to create and customize a visually appealing product section that showcases your offerings to users. This tab enables you to configure various aspects of the product's appearance and textual content. Let's delve into the options available for customization in the products tab:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/32256b5-adapty_products_section.png" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/32256b5-adapty_products_section.png').default}
+/>
 
 
 

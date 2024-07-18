@@ -7,12 +7,9 @@ metadataTitle: ""
 The refund money chart displays the amount of money that was refunded for the selected period of time. Adapty attributes refund money to the moment when the refund was issued and the revenue decreases in the period when the refund occured.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.png').default}
+/>
 
 
 

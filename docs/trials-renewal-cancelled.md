@@ -7,12 +7,9 @@ metadataTitle: ""
 The Trials renewal cancelled chart displays the number of trials with canceled renewal (cancelled by user). When the renewal for the trial is disabled, this means that this trial won't be automatically converted to a paid subscription, yet the user still has premium features of the app until the end of the current period.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fcb6948-small-CleanShot_2023-05-05_at_16.13.012x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fcb6948-small-CleanShot_2023-05-05_at_16.13.012x.png').default}
+/>
 
 
 

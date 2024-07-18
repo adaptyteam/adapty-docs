@@ -28,12 +28,9 @@ Make a purchase/start a trial/make a refund that will raise an event you've chos
 In case of successful integration, an event will appear in the **Last sent events** section of the integration and will have the **Success** status. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6ccc3bb-webhook_integration_success.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+/>
 
 
 
@@ -48,11 +45,8 @@ In case of successful integration, an event will appear in the **Last sent event
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/12ff189-hover_sending_failed.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/12ff189-hover_sending_failed.png').default}
+/>
 
 

@@ -56,8 +56,7 @@ Please be sure that you choose Certificate category! Otherwise you can't export 
 
 The last thing, convert your p12 file to a plain text. Open terminal and enter a command
 
-```text title="Text"
-openssl pkcs12 -in cert.p12 -nodes > open_cert.p12
+```text title="title="openssl pkcs12 -in cert.p12 -nodes > open_cert.p12""
 ```
 
 change _cert.p12_ to your file name.

@@ -7,12 +7,9 @@ metadataTitle: "Understanding Webhooks: Real-Time Notifications for Subscription
 A webhook is a convenient and fast way to get notifications about [events](events). For example, if a new trial is started, a subscription is renewed, or a billing issue happens. The webhook mechanism works through a callback function. You set up a URL (called Endpoint URL) to which an HTTP request is sent when an event occurs. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e5dce30-image_3.png" 
-    style={{ width: '500px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/e5dce30-image_3.png').default}
+/>
 
 
 
@@ -39,10 +36,9 @@ With webhooks integrated, you can:
 
 Adapty will send you those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the following structure:
+Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure below. For sample of webhook events, refer to [Webhook sample events](webhook-sample-events).
 
-```json title="Json"
-{
+```json title="title="{""
   "profile_id": "772204ce-ebf6-4ed9-82b0-d8688ab62b01",
   "customer_user_id": "john.doe",
   "idfv": "00000000-0000-0000-0000-000000000000",
@@ -95,12 +91,9 @@ Webhook integration enables the control of sending attribution and user attribut
 Adapty has a special event `access_level_updated`. It is sent only to webhook integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. No matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/6375cb2-CleanShot_2022-05-03_at_14.22.56.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+/>
 
 
 

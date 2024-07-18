@@ -13,12 +13,9 @@ Adapty's placements feature allows you to show paywalls at various stages of the
 In the example below, we showcase two distinct paywalls: Paywall A and Paywall B. Paywall A targets audiences identified as "Yoga beginners," while Paywall B is intended for the broader "Other users" audience. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/14679a8-Placement-2audiences-paywalls.jpg" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/14679a8-Placement-2audiences-paywalls.jpg').default}
+/>
 
 
 
@@ -32,12 +29,9 @@ To begin working with placements in Adapty:
       The **Placements** list provides a clear overview of all the different locations within the user journey where paywalls or A/B tests can be displayed. Each item in the list represents a specific placement, and you can easily manage and modify them as needed. You can edit the details of each placement, associate it with the desired paywall or A/B test for a specified audience, or remove unnecessary placements. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
+/>
 
 
 
@@ -50,12 +44,9 @@ To create a new placement:
 2. In the **Placements** window, click the **Create placement** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d0e41c3-CleanShot_2023-07-13_at_15.13.272x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d0e41c3-CleanShot_2023-07-13_at_15.13.272x.png').default}
+/>
 
 
 
@@ -71,12 +62,9 @@ In the **Placements / New placement** window, enter the following information fo
 In the context of placement within Adapty, adding an audience to a placement allows you to target specific user segments with tailored content, such as paywalls or A/B tests. By associating an audience with a placement, you can ensure that the right content is displayed to the right users at the appropriate stages of their user journey.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d0d720f-Area.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d0d720f-Area.gif').default}
+/>
 
 
 
@@ -105,36 +93,27 @@ To adjust audience priorities for a placement:
 2. Click the placement for which you want to change the audience priority.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cd0f0e1-2024-02-13_16-36-33.png" 
-    style={{ width: '80%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
+/>
 
 
 
 3. Click the **Edit placement** button.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3b8d8e3-edit_audience.png" 
-    style={{ width: '80%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3b8d8e3-edit_audience.png').default}
+/>
 
 
 
 4. After the chosen placement opens with the list of its audiences, hover over any audience and click the **Edit** button once it shows.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2babfc8-reorder_audiences.png" 
-    style={{ width: '60%', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2babfc8-reorder_audiences.png').default}
+/>
 
 
 
@@ -146,12 +125,9 @@ To adjust audience priorities for a placement:
 The **Run paywall** option allows you to display a specific paywall exclusively for a certain placement, ensuring that all users within the associated audience segment see the same paywall. This option is particularly useful when you have already identified the best-performing paywall and want to consistently deliver it to your targeted audience.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f23da25-Area.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f23da25-Area.gif').default}
+/>
 
 
 
@@ -162,12 +138,9 @@ To learn more about running paywalls in Adapty and optimizing their performance,
 ### Run A/B test
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fddf85a-Area.gif" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fddf85a-Area.gif').default}
+/>
 
 
 
@@ -180,12 +153,9 @@ The **Run A/B test** option allows you to show different paywalls to app users w
 ### Placement metrics
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5db0f05-CleanShot_2023-07-13_at_17.55.512x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5db0f05-CleanShot_2023-07-13_at_17.55.512x.png').default}
+/>
 
 
 
@@ -206,12 +176,9 @@ However, it's important to note that if you add another placement for the paywal
 Adapty allows you to provide fallback paywalls that will be used when a user opens the app and there's no connection with Adapty backend (e.g. no internet connection or in the rare case when the backend is down) and there's no cache on the device.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5608de9-CleanShot_2023-08-09_at_18.02.05_22x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5608de9-CleanShot_2023-08-09_at_18.02.05_22x.png').default}
+/>
 
 
 

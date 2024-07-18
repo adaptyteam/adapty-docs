@@ -23,12 +23,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 1. Open [**IAM & Admin** - > **Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Cloud Console. Choose the relevant project or create a new one. You can create the same project you used for the initial configuration of Adapty with Google Play Store or another one, it does not matter.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/764db95-google_cloud_create_service_account.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/764db95-google_cloud_create_service_account.png').default}
+/>
 
 
 
@@ -37,12 +34,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Click the **Create service account** button.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/fb865ad-google_cloud_service_account_details.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/fb865ad-google_cloud_service_account_details.png').default}
+/>
 
 
 
@@ -57,12 +51,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 6. After the **Create service account** window closes and the new service account shows up in the **Service accounts** list, click the ellipsis button in the **Actions** column next to it, then select the **Manage keys** action.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c3c03cb-google_cloud_manage_keys.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c3c03cb-google_cloud_manage_keys.png').default}
+/>
 
 
 
@@ -70,12 +61,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 7. In the opened window named after your project, click the **Add key** button, and in the opened drop-down list, select the **Create new key** option. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/59991da-google_cloud_create_new_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/59991da-google_cloud_create_new_key.png').default}
+/>
 
 
 
@@ -83,12 +71,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 8. In the **Create private key for Your_project_name** window, click the **Create **button. This action will save your private key on your computer as a JSON file. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c91dea6-google_cloud_create_private_key.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c91dea6-google_cloud_create_private_key.png').default}
+/>
 
 
 
@@ -96,12 +81,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 9. The file created will be needed during the [initial integration of Adapty with Google Play](google-play-store-connection-configuration) step. You can use the name of the file provided in the opened **Private key saved to your computer** window to locate it if needed.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/bdb056f-google_cloud_private_key_saved.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/bdb056f-google_cloud_private_key_saved.png').default}
+/>
 
 
 
@@ -112,12 +94,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Open the **Permissions** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ee1e453-google_cloud_grant_access.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ee1e453-google_cloud_grant_access.png').default}
+/>
 
 
 
@@ -125,12 +104,9 @@ Please note that we only support Service Account HMAC key authorization, means i
 4. In the **Grant access** pane, enter the email of the service account obtained in step 4 of the [Create Google Cloud Storage credentials](google-cloud-setup#create-google-cloud-storage-credentials) section into the **New principals** field. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ecea397-google_cloud_grant_access_details.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ecea397-google_cloud_grant_access_details.png').default}
+/>
 
 
 
@@ -138,12 +114,9 @@ Please note that we only support Service Account HMAC key authorization, means i
    5. In the **Select role** list, choose the **Storage Legacy Bucket owner** role. 
 
       
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d3c6643-google_cloud_role.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d3c6643-google_cloud_role.png').default}
+/>
 
 
 
@@ -167,12 +140,9 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 3. Turn on the **Export subscription events to Google Cloud Storage** toggle to initiate the integration.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9d9707e-google_cloud_adapty_creds.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9d9707e-google_cloud_adapty_creds.png').default}
+/>
 
 
 
@@ -180,12 +150,9 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 4. Fill out the integration credentials. You can take them from the JSON file in step 8 of the [Create Google Cloud Storage service account](google-cloud-setup#create-google-cloud-storage-service-account) section above.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c967e16-CleanShot_2023-03-17_at_16.23.332x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
+/>
 
 
 
@@ -210,11 +177,8 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
+/>
 
 

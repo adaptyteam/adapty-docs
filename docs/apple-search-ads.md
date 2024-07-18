@@ -9,12 +9,9 @@ Adapty can help you get attribution data from Apple Search Ads and analyze your 
 Once you've set up the Apple Search Ads integration, Adapty will start receiving attribution data from Apple Search Ads. You can easily access and view this data on the profiles page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png').default}
+/>
 
 
 
@@ -36,12 +33,9 @@ In the Adapty Dashboard, navigate to [Settings -> Apple Search Ads.](https://app
 Locate the pre-generated public key (Adapty provides a key pair for you) and copy it.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/baa5998-CleanShot_2023-08-21_at_14.55.542x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.png').default}
+/>
 
 
 
@@ -56,12 +50,9 @@ Note: If you're using an alternative service or your own solution for Apple Sear
 In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings > User Management page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ec183b2-kdjsfldsfjkdsfdfd.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.png').default}
+/>
 
 
 
@@ -76,12 +67,9 @@ As a next step, log in to the newly added account in Apple Search Ads. Navigate 
 Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7356113-CleanShot_2023-08-21_at_15.08.512x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.png').default}
+/>
 
 
 
@@ -111,8 +99,7 @@ You can use your own public-private key pair if you are using other services or 
 
 Generate private key in Terminal
 
-```text title="Text"
-openssl ecparam -genkey -name prime256v1 -noout -out private-key.pem
+```text title="title="openssl ecparam -genkey -name prime256v1 -noout -out private-key.pem""
 ```
 
 Upload it in Adapty Settings -> Apple Search Ads (Upload private key button)
@@ -121,8 +108,7 @@ Upload it in Adapty Settings -> Apple Search Ads (Upload private key button)
 
 Generate public key in Terminal
 
-```text title="Text"
-openssl ec -in private-key.pem -pubout -out public-key.pem
+```text title="title="openssl ec -in private-key.pem -pubout -out public-key.pem""
 ```
 
 You can use this public key in your Apple Search Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.

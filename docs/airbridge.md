@@ -22,12 +22,9 @@ To integrate Airbridge go to [Integrations > Airbridge](https://app.adapty.io/in
 First of all set credentials to build a connection between your Airbridge and Adapty profiles. Airbridge app name and Airbridge API token are required. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2b31d90-Untitled-1_1.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2b31d90-Untitled-1_1.png').default}
+/>
 
 
 
@@ -36,12 +33,9 @@ First of all set credentials to build a connection between your Airbridge and Ad
 They both can be found in your Airbridge dashboard in the [Third-party Integrations > Adapty](https://app.airbridge.io/app/testad/integrations/third-party/adapty) section. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.png').default}
+/>
 
 
 
@@ -50,12 +44,9 @@ They both can be found in your Airbridge dashboard in the [Third-party Integrati
 Adapty API token field is pre-generated on the Adapty backend. You will need to copy the value of Adapty API token and paste it into the Airbridge Dashboard in the Adapty Authorization Token field.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ff422d1-CleanShot_2023-03-01_at_17.11.412x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ff422d1-CleanShot_2023-03-01_at_17.11.412x.png').default}
+/>
 
 
 
@@ -66,12 +57,9 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
 Below the credentials, there are three groups of events you can send to Airbridge from Adapty
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.png').default}
+/>
 
 
 
@@ -84,7 +72,7 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 import AirBridge
 
 let builder = AdaptyProfileParameters.Builder()
@@ -92,7 +80,7 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
         val params = AdaptyProfileParameters.Builder()
@@ -108,7 +96,7 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
     }
 })
 ```
-```csharp title="Flutter (Dart)"
+```csharp title="title="Flutter (Dart)""
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -122,7 +110,7 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 import Airbridge from 'airbridge-react-native-sdk';
 import { adapty } from 'react-native-adapty';
 

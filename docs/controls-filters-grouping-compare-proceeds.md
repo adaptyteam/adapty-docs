@@ -48,12 +48,9 @@ In LTV (lifetime value) analysis, the cohort length is chosen in the grouping se
 We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](https://docs.adapty.io/docs/account)
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
+/>
 
 
 
@@ -74,12 +71,9 @@ Here's how you can interpret the insights provided by the comparison feature:
 - **Multiple Grouping and Comparison:** If you have multiple grouping options enabled, you can view multiple comparisons simultaneously on a single chart. This feature is available specifically for column charts.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c07addf-CleanShot_2023-07-10_at_20.59.372x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
+/>
 
 
 
@@ -110,12 +104,9 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 | Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
+/>
 
 
 
@@ -128,12 +119,9 @@ The Analytics section provides you with the flexibility to view each chart in di
 To change the view of a chart, simply locate and select the view dropdown menu, and then choose the desired representation option
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
+/>
 
 
 
@@ -148,12 +136,9 @@ In addition to the chart view, Adapty also provides a table view for each chart.
 If you want to analyze the underlying data used to generate a chart, cohorts analysis, funnels, retentions, or conversion analytics, you can easily export it in CSV format by clicking the **Export** button. This feature allows you to access the raw data used to create the respective analysis. You can manipulate this data in spreadsheet applications or other tools to perform further analysis.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png').default}
+/>
 
 
 
@@ -166,12 +151,9 @@ One crucial aspect of revenue calculation is the inclusion of taxes (which can v
 In the charts tab of the Analytics section, Adapty introduces a dropdown field with three display options.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png').default}
+/>
 
 
 

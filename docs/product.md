@@ -21,11 +21,8 @@ Checklist to successfully display products in your mobile app
 After you create products in the Adapty Dashboard, they are visible in the  **Products** tab of the **[Paywalls and Products](https://app.adapty.io/products)** section.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/a26de79-Products_list.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/a26de79-Products_list.png').default}
+/>
 
 

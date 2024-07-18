@@ -40,12 +40,9 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 - General (you show it in settings or inside the app after the onboarding).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2406d97-image.png" 
-    style={{ width: '600px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2406d97-image.png').default}
+/>
 
 
 
@@ -141,12 +138,9 @@ You should wait for at least a week after the release with the SDK before doing 
 Ask RevenueCat about the historical data on their [support page](https://app.revenuecat.com/settings/support). For the file format reference, check this page: [Importing Historical Data to Adapty](importing-historical-data-to-adapty). Also, you can use this [Google Sheets file](https://docs.google.com/spreadsheets/d/162LMI9D7-BP63Jkllj2AtpaD7FQFa0-V-Yht1U65Ojs/edit#gid=70701724).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png" 
-    style={{ width: 'auto', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png').default}
+/>
 
 
 

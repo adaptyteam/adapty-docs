@@ -7,12 +7,9 @@ metadataTitle: ""
 The Installs chart shows the total number of users who have installed the app for the first time, as well as any reinstalls by existing users. This includes multiple installations by the same user on different devices. Please note that incomplete downloads or installations that are canceled before completion are not counted toward the install count.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.png').default}
+/>
 
 
 

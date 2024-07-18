@@ -10,10 +10,9 @@ Restoring Purchases in both iOS and Android is a feature that allows users to re
 In paywalls built with [Paywall Builder](paywall-builder-getting-started) purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
 :::
 
-To restore a purchase if you do not use the [Paywall Builder](paywall-builder-getting-started) to customize the paywall, call `.restorePurchases()` method:
+To restore a purchase if you do not use the [Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
-```swift title="Swift"
-Adapty.restorePurchases { [weak self] result in
+```swift title="title="Adapty.restorePurchases { [weak self] result in""
     switch result {
         case let .success(profile):
             if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
@@ -24,8 +23,7 @@ Adapty.restorePurchases { [weak self] result in
     }
 }
 ```
-```kotlin title="Kotlin"
-Adapty.restorePurchases { result ->
+```kotlin title="title="Adapty.restorePurchases { result ->""
     when (result) {
         is AdaptyResult.Success -> {
             val profile = result.value
@@ -41,8 +39,7 @@ Adapty.restorePurchases { result ->
     }
 }
 ```
-```java title="Java"
-Adapty.restorePurchases(result -> {
+```java title="title="Adapty.restorePurchases(result -> {""
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
         
@@ -59,7 +56,7 @@ Adapty.restorePurchases(result -> {
     }
 });
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 try {
   final profile = await Adapty().restorePurchases();
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
@@ -70,7 +67,7 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
@@ -83,7 +80,7 @@ Adapty.RestorePurchases((profile, error) => {
   }
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 try {
 	const profile = await adapty.restorePurchases();
   const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;

@@ -10,7 +10,7 @@ There are two ways to design the view of a paywall: using the  [Paywall Builder]
 
 The way you show these paywalls in your mobile app depends on the tool you decide to pick:
 
-1. Paywalls designed with the Paywall Builder include both what to display and how to display it. They can also process most user actions such as making purchases, opening links, or clicking buttons with no development required. Refer to the [Design paywalls with Paywall Builder](adapty-paywall-builder) for details on designing paywalls with the Paywall Builder and [Display paywalls created by Paywall Builder](display-pb-paywalls) topic for details on presenting them in your mobile app.
+1. Paywalls designed with the Paywall Builder include both what to display and how to display it. They can also process most user actions such as making purchases, opening links, or clicking buttons with no development required. Refer to the [Design paywalls with Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) for details on designing paywalls with the Paywall Builder and [Display paywalls created by Paywall Builder](display-pb-paywalls) topic for details on presenting them in your mobile app.
 2. On the other hand, paywalls customized using remote config can be tailored to your specific requirements, granting you complete freedom to design and process them as needed. Refer to the [Design paywall with remote config](customize-paywall-with-remote-config) topic for details on designing paywalls with the remote config and to the   [Display paywalls created by remote config](display-remote-config-paywalls) topic for details on presenting them in your mobile app.
 
 ## Paywall states

@@ -20,12 +20,9 @@ We recommend testing the Adjust integration end-to-end before going live. Since 
 In case of successful integration, an event will appear in the **Last sent events** section of the integration and will have the **Success** status. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/0a79033-adjust_adapty_success.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/0a79033-adjust_adapty_success.png').default}
+/>
 
 
 
@@ -36,12 +33,9 @@ In case of successful integration, an event will appear in the **Last sent event
 In case of unsuccessful integration, the event will either not appear at all or will have the **Sending failed** status in the **Last sent events** section of the integration.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/67df7e0-adjust_adapty_sending_failed.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/67df7e0-adjust_adapty_sending_failed.png').default}
+/>
 
 
 
@@ -65,12 +59,9 @@ In case of successful Adjust attribution receiving, you will see these attribute
 1. Expand a successful event in the **Last sent events** section of the integration.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/743211b-adjust_adapty_view_profile.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/743211b-adjust_adapty_view_profile.png').default}
+/>
 
 
 
@@ -78,12 +69,9 @@ In case of successful Adjust attribution receiving, you will see these attribute
 3. In the **Profile** window, make sure the **Attributes -> Adjust** section is presented.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/dfbb1ca-adjust_adapty_attribution.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/dfbb1ca-adjust_adapty_attribution.png').default}
+/>
 
 
 

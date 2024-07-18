@@ -55,12 +55,9 @@ The ML model used to predict revenue and LTV has certain limitations that should
 To access predicted revenue and predicted LTV values for your subscribers, you can navigate to the Cohort Analyses page in your Adapty dashboard. Also, if you want to learn more about the Adapty cohort, please reference our [documentation](https://docs.adapty.io/docs/analytics-cohorts) about it. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/4d808b4-Export-1691486610612.gif" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/4d808b4-Export-1691486610612.gif').default}
+/>
 
 
 
@@ -75,12 +72,9 @@ To define the time period for which the predicted revenue and predicted LTV valu
 To provide even more valuable insights, Adapty allows you to filter predicted revenue and LTV by product. By default, Adapty builds predictions based on all purchase data, but filtering by product can help you better understand how each product is performing and how it contributes to your overall predicted revenue and LTV. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/66a9c61-Export-1691486288948.gif" 
-    style={{ width: 'auto', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/66a9c61-Export-1691486288948.gif').default}
+/>
 
 
 

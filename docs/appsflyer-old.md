@@ -14,12 +14,9 @@ The integration between Adapty and AppsFlyer operates in two main ways.
    Once you've set up the AppsFlyer integration, Adapty will start receiving attribution data from AppsFlyer. You can easily access and view this data on the user's profile page.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png').default}
+/>
 
 
 
@@ -35,12 +32,9 @@ To setup the integration with AppsFlyer go to [Integrations > AppsFlyer](https:/
 The next step of the integration is to set credentials.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/be269e5-CleanShot_2023-08-04_at_23.51.322x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/be269e5-CleanShot_2023-08-04_at_23.51.322x.png').default}
+/>
 
 
 
@@ -49,12 +43,9 @@ The next step of the integration is to set credentials.
 1. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in section **General**, and find **Apple ID** in the left bottom part of the screen.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/50d327d-CleanShot_2023-08-05_at_00.09.072x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/50d327d-CleanShot_2023-08-05_at_00.09.072x.png').default}
+/>
 
 
 
@@ -63,12 +54,9 @@ The next step of the integration is to set credentials.
 2. Open [AppsFlyer](https://hq1.appsflyer.com/auth/login) and navigate to your app page. Scroll the left menu bar, find App Settings, and copy the **Dev Key.** Then you need to use the value Dev Key for your iOS and Android apps in the Adapty Dashboard.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b1777fa-CleanShot_2023-08-07_at_13.15.452x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/b1777fa-CleanShot_2023-08-07_at_13.15.452x.png').default}
+/>
 
 
 
@@ -87,12 +75,9 @@ Another important thing is that AppsFlyer doesn't support events older than 24 h
 Below the credentials, there are three groups of events you can send to AppsFlyer from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+/>
 
 
 
@@ -106,7 +91,7 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It's very important to send AppsFlyer attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-```swift title="iOS (Swift)"
+```swift title="title="iOS (Swift)""
 // Find your implementation of AppsFlyerLibDelegate 
 // and update onConversionDataSuccess method:
 func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
@@ -114,7 +99,7 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
 }
 ```
-```kotlin title="Android (Kotlin)"
+```kotlin title="title="Android (Kotlin)""
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         // It's important to include the network user ID
@@ -130,7 +115,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
     }
 }
 ```
-```javascript title="Flutter (Dart)"
+```javascript title="title="Flutter (Dart)""
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
@@ -154,7 +139,7 @@ appsflyerSdk.initSdk(
     registerOnDeepLinkingCallback: true,
 );
 ```
-```typescript title="React Native (JS)"
+```typescript title="title="React Native (JS)""
 import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
 
@@ -171,7 +156,7 @@ appsFlyer.onInstallConversionData(installData => {
 // ...
 appsFlyer.initSdk(/*...*/);
 ```
-```csharp title="Unity (C#)"
+```csharp title="title="Unity (C#)""
 using AppsFlyerSDK;
 
 // before SDK initialization

@@ -25,12 +25,9 @@ To download the JSON file with the fallback paywalls:
 1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab or just the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9c63367-placements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/9c63367-placements.png').default}
+/>
 
 
 
@@ -46,13 +43,11 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the exact
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-```swift title="Swift"
-if let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") {
+```swift title="title="if let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") {""
      Adapty.setFallbackPaywalls(fileURL: url)
 }
 ```
-```kotlin title="Kotlin"
-val fallbackUri: Uri = //get Uri for the file with fallback paywalls
+```kotlin title="title="val fallbackUri: Uri = //get Uri for the file with fallback paywalls""
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
 //
@@ -64,8 +59,7 @@ val fallbackUri: Uri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fallbackUri, callback)
 ```
-```java title="Java"
-Uri fallbackUri = //get Uri for the file with fallback paywalls
+```java title="title="Uri fallbackUri = //get Uri for the file with fallback paywalls""
 // for example, if you put the 'fallback_android' file to res/raw directory,
 // you can obtain the Uri as follows:
 //
@@ -77,7 +71,7 @@ Uri fallbackUri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fallbackUri, callback);
 ```
-```javascript title="Flutter"
+```javascript title="title="Flutter""
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart' show rootBundle;
@@ -92,14 +86,14 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+```csharp title="title="Unity""
 Adapty.SetFallbackPaywalls("<FALLBACK_PAYWALL_DATA>", (error) => {
     if(error != null) {
         // handle error
     }
 });
 ```
-```typescript title="React Native (TS)"
+```typescript title="title="React Native (TS)""
 //after v2.11
 const fallbackLocation = {
   ios: {

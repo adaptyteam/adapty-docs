@@ -39,12 +39,9 @@ To use the Adapty Paywall Builder:
 4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as as well as templates with a minimal design that give full scope for your creativityю Choose the template that fits your design the most. 
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cdca1ee-builder_templates.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cdca1ee-builder_templates.png').default}
+/>
 
 
 
@@ -52,12 +49,9 @@ To use the Adapty Paywall Builder:
 5. Click the **Choose** button to confirm your choice.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/795b91b-builder_main_window.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/795b91b-builder_main_window.png').default}
+/>
 
 
 
@@ -84,12 +78,9 @@ To migrate a paywall to new Paywall Builder:
 2. Open the **Builder** tab.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/3f4d4c2-PB_migrate_paywall.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+/>
 
 
 
@@ -99,12 +90,9 @@ To migrate a paywall to new Paywall Builder:
 6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/78f63f0-PB_hughlighted_issues.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+/>
 
 
 
@@ -120,12 +108,9 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 - **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/210c8e2-simple_elements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/210c8e2-simple_elements.png').default}
+/>
 
 
 
@@ -139,12 +124,9 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
   - Link blocks with links inside
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/8a23be4-compound_elements.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/8a23be4-compound_elements.png').default}
+/>
 
 
 
