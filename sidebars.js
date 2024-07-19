@@ -1409,6 +1409,61 @@ const sidebars = {
               label: 'API objects',
             },
           ],
+    },
+    {
+          type: 'category',
+          label: 'SDK MIGRATION GUIDES',
+          collapsible: false,
+          collapsed: false,
+          items: [
+            {
+              type: 'doc',
+              id: 'migration-to-adapty-sdk-v3',
+              label: 'Migration guide to Adapty SDK v.3.x or later',
+            },
+            {
+              type: 'doc',
+              id: 'whats-new-in-adapty-sdk-26',
+              label: 'What\'s new in Adapty SDK 2.6',
+            },
+            {
+          type: 'category',
+          label: 'What\'s new in Adapty SDK 2.0',
+          link: {
+            type: 'doc',
+            id: 'whats-new-in-adapty-sdk-20',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'migration-to-ios-2',
+              label: 'iOS – What\'s new in Adapty SDK 2.0',
+            },
+            {
+              type: 'doc',
+              id: 'migration-to-android-2',
+              label: 'Android – What\'s new in Adapty SDK 2.0',
+            },
+            {
+              type: 'doc',
+              id: 'migration-to-flutter-2',
+              label: 'Flutter – What\'s new in Adapty SDK 2.0',
+            },
+            {
+              type: 'doc',
+              id: 'migration-to-react-native-2',
+              label: 'React Native – What\'s new in Adapty SDK 2.0',
+            },
+            {
+              type: 'doc',
+              id: 'migration-to-unity-2',
+              label: 'Unity – What\'s new in Adapty SDK 2.0',
+            },
+          ],
+        },
+          ],
         },
   ],
 };
