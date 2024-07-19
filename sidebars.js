@@ -1258,6 +1258,50 @@ const sidebars = {
             },
           ],
         },
+        {
+          type: 'category',
+          label: 'Google Play Store credentials',
+          link: {
+            type: 'doc',
+            id: 'android-settings',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'service-account-key-file',
+              label: 'Google Play Store credentials',
+            },
+            {
+              type: 'doc',
+              id: 'real-time-developer-notifications-rtdn',
+              label: 'Google Real-time developer notifications (RTDN)',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Account',
+          link: {
+            type: 'doc',
+            id: 'account-1',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'account',
+              label: 'Account details',
+            },
+            {
+              type: 'doc',
+              id: 'members-settings',
+              label: 'Members',
+            },
+          ],
+        },
           ],
         },
   ],
