@@ -17,7 +17,7 @@ const sidebars = {
   tutorialSidebar: [
     {
       type: 'category',
-      label: ' WELCOME TO ADAPTY',
+      label: '🌟 WELCOME TO ADAPTY',
       collapsible: false,
       collapsed: false,
       items: [
@@ -994,7 +994,7 @@ const sidebars = {
     },
     {
           type: 'category',
-          label: 'SUBSCRIBERS',
+          label: '👥 SUBSCRIBERS',
           collapsible: false,
           collapsed: false,
           items: [
