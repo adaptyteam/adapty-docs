@@ -1377,13 +1377,36 @@ const sidebars = {
               id: 'google-reduced-service-fee',
               label: 'Google Reduced Service Fee',
             },
-            
+
           ],
         },
             {
               type: 'doc',
               id: 'firebase-apps',
               label: 'Firebase apps',
+            },
+          ],
+    },
+    {
+          type: 'category',
+          label: 'SERVER-SIDE API',
+          collapsible: false,
+          collapsed: false,
+          items: [
+            {
+              type: 'doc',
+              id: 'getting-started-with-server-side-api',
+              label: 'Getting started with server-side API',
+            },
+            {
+              type: 'doc',
+              id: 'server-side-api-specs',
+              label: 'API specs',
+            },
+            {
+              type: 'doc',
+              id: 'server-side-api-objects',
+              label: 'API objects',
             },
           ],
         },
