@@ -16,6 +16,12 @@ const sidebars = {
   // Manually defined sidebar
   tutorialSidebar: [
     {
+      type: 'category',
+      label: ' WELCOME TO ADAPTY',
+      collapsible: false,
+      collapsed: false,
+      items: [
+    {
       type: 'doc',
       id: 'what-is-adapty',
       label: 'What is Adapty?',
@@ -52,15 +58,13 @@ const sidebars = {
         },
       ],
     },
+    ],
+    },
     {
       type: 'category',
-      label: 'Getting started',
-      link: {
-        type: 'doc',
-        id: 'getting-started',
-      },
-      collapsible: true,
-      collapsed: true,
+      label: '🚀 GETTING STARTED',
+      collapsible: false,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -172,13 +176,9 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Paywalls and products',
-      link: {
-        type: 'doc',
-        id: 'paywalls-and-products',
-      },
-      collapsible: true,
-      collapsed: true,
+      label: 'PAYWALLS AND PRODUCTS',
+      collapsible: false,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -440,13 +440,9 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'SDK',
-      link: {
-        type: 'doc',
-        id: 'SDK',
-      },
-      collapsible: true,
-      collapsed: true,
+      label: '💾 SDK',
+      collapsible: false,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -716,13 +712,9 @@ const sidebars = {
     },
     {
           type: 'category',
-          label: 'Test and release',
-          link: {
-            type: 'doc',
-            id: 'test-and-release',
-          },
-          collapsible: true,
-          collapsed: true,
+          label: 'TEST AND RELEASE',
+          collapsible: false,
+          collapsed: false,
           items: [
             {
           type: 'category',
@@ -804,14 +796,15 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Analytics',
-      link: {
-        type: 'doc',
-        id: 'how-adapty-analytics-works',
-      },
-      collapsible: true,
-      collapsed: true,
+      label: 'ANALYTICS',
+      collapsible: false,
+      collapsed: false,
       items: [
+        {
+          type: 'doc',
+          id: 'how-adapty-analytics-works',
+          label: 'How Adapty analytics works',
+        },
         {
           type: 'doc',
           id: 'overview',
@@ -973,14 +966,15 @@ const sidebars = {
     },
     {
           type: 'category',
-          label: 'A/B test',
-          link: {
-            type: 'doc',
-            id: 'ab-tests',
-          },
-          collapsible: true,
-          collapsed: true,
+          label: 'A/B TESTS',
+          collapsible: false,
+          collapsed: false,
           items: [
+            {
+              type: 'doc',
+              id: 'ab-tests',
+              label: 'A/B test',
+            },
             {
               type: 'doc',
               id: 'run_stop_ab_tests',
@@ -1000,13 +994,9 @@ const sidebars = {
     },
     {
           type: 'category',
-          label: 'Subscribers',
-          link: {
-            type: 'doc',
-            id: 'subscribers',
-          },
-          collapsible: true,
-          collapsed: true,
+          label: 'SUBSCRIBERS',
+          collapsible: false,
+          collapsed: false,
           items: [
             {
               type: 'doc',
@@ -1027,14 +1017,15 @@ const sidebars = {
     },
     {
           type: 'category',
-          label: '3d-party integrations',
-          link: {
-            type: 'doc',
-            id: 'configuration',
-          },
-          collapsible: true,
-          collapsed: true,
+          label: '3d-PARTY INTEGRATIONS',
+          collapsible: false,
+          collapsed: false,
           items: [
+            {
+              type: 'doc',
+              id: 'configuration',
+              label: 'Configure 3d-party integration',
+            },
             {
               type: 'doc',
               id: 'events',
@@ -1224,6 +1215,51 @@ const sidebars = {
             },
           ],
     },
+    {
+          type: 'category',
+          label: 'SETTINGS',
+          collapsible: false,
+          collapsed: false,
+          items: [
+            {
+              type: 'doc',
+              id: 'general',
+              label: 'App settings',
+            },
+            {
+          type: 'category',
+          label: 'Apple App Store credentials',
+          link: {
+            type: 'doc',
+            id: 'ios-settings',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'in-app-purchase-api-storekit-2',
+              label: 'Apple In-App Purchase API (StoreKit 2)',
+            },
+            {
+              type: 'doc',
+              id: 'app-store-server-notifications',
+              label: 'Apple App Store server notifications',
+            },
+            {
+              type: 'doc',
+              id: 'app-store-promotional-offers',
+              label: 'Apple App Store Promotional Offers',
+            },
+            {
+              type: 'doc',
+              id: 'app-store-shared-secret',
+              label: 'Apple App Store shared secret',
+            },
+          ],
+        },
+          ],
+        },
   ],
 };
 
