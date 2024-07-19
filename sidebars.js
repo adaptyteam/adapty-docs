@@ -1303,6 +1303,89 @@ const sidebars = {
           ],
         },
           ],
+    },
+    {
+          type: 'category',
+          label: 'PLATFORM RESOURCES',
+          collapsible: false,
+          collapsed: false,
+          items: [
+            {
+          type: 'category',
+          label: 'Apple Platform resources',
+          link: {
+            type: 'doc',
+            id: 'apple-platform-resources',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'app-store-products',
+              label: 'Product in App Store',
+            },
+            {
+              type: 'doc',
+              id: 'app-store-offers',
+              label: 'Offers in App Store',
+            },
+            {
+              type: 'doc',
+              id: 'apple-app-privacy',
+              label: 'Apple app privacy',
+            },
+            {
+              type: 'doc',
+              id: 'apple-family-sharing',
+              label: 'Apple family sharing',
+            },
+            {
+              type: 'doc',
+              id: 'app-store-small-business-program',
+              label: 'App Store Small Business Program',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Google Platform resources',
+          link: {
+            type: 'doc',
+            id: 'google-platform-resources',
+          },
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'android-products',
+              label: 'Product in Play Store',
+            },
+            {
+              type: 'doc',
+              id: 'google-play-offers',
+              label: 'Offers in Google Play',
+            },
+            {
+              type: 'doc',
+              id: 'google-play-data-safety',
+              label: 'Google Play Data Safety',
+            },
+            {
+              type: 'doc',
+              id: 'google-reduced-service-fee',
+              label: 'Google Reduced Service Fee',
+            },
+            
+          ],
+        },
+            {
+              type: 'doc',
+              id: 'firebase-apps',
+              label: 'Firebase apps',
+            },
+          ],
         },
   ],
 };
