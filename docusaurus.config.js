@@ -119,6 +119,7 @@ const config = {
               },
             ],
           },
+
           {
             title: 'More',
             items: [
@@ -135,6 +136,17 @@ const config = {
         ],
         copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
       },
+      /*
+      algolia: {
+      // The application ID provided by Algolia
+      appId: 'YOUR_APP_ID',
+
+      // Public API key: it is safe to commit it
+      apiKey: 'YOUR_SEARCH_API_KEY',
+
+      indexName: 'YOUR_INDEX_NAME',
+      },
+      */
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
