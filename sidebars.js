@@ -1,19 +1,5 @@
-/**
- * Creating a sidebar enables you to:
- - create an ordered group of docs
- - render a sidebar for each doc of that group
- - provide next/previous navigation
 
- The sidebars can be generated from the filesystem, or explicitly defined here.
-
- Create as many sidebars as you want.
- */
-
-// @ts-check
-
-/** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  // Manually defined sidebar
   tutorialSidebar: [
     {
       type: 'category',
@@ -683,23 +669,23 @@ const sidebars = {
           items: [
             {
             type: 'link',
-            label: 'iOS SDK - Public API', // The link label
-            href: 'https://swift.adapty.io/documentation/adapty/', // The external URL
+            label: 'iOS SDK - Public API',
+            href: 'https://swift.adapty.io/documentation/adapty/',
             },
             {
             type: 'link',
-            label: 'Android SDK - Public API', // The link label
-            href: 'https://kotlin.adapty.io/', // The external URL
+            label: 'Android SDK - Public API',
+            href: 'https://kotlin.adapty.io/',
             },
             {
             type: 'link',
-            label: 'Flutter SDK - Public API', // The link label
-            href: 'https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html', // The external URL
+            label: 'Flutter SDK - Public API',
+            href: 'https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html',
             },
             {
             type: 'link',
-            label: 'React Native SDK - Public API', // The link label
-            href: 'https://react-native.adapty.io/classes/adapty', // The external URL
+            label: 'React Native SDK - Public API',
+            href: 'https://react-native.adapty.io/classes/adapty',
             },
             {
               type: 'doc',
@@ -1467,5 +1453,3 @@ const sidebars = {
         },
   ],
 };
-
-export default sidebars;
