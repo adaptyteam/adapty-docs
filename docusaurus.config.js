@@ -81,6 +81,12 @@ const config = {
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownItemsAfter: [{to: '/versions'}],
+          dropdownActiveClassDisabled: true,
+        },
+          {
             href: 'https://app.adapty.io/login',
             label: 'Sign In',
             position: 'right',
