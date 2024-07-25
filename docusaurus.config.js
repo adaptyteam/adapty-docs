@@ -75,6 +75,7 @@ const config = {
         logo: {
           alt: 'Adapty Docs',
           src: 'img/Logo_black.svg',
+          href: 'https://app.adapty.io',
         },
         items: [
           {
@@ -104,11 +105,59 @@ const config = {
             label: 'Sign Up for Free',
             position: 'right',
           },
+          {
+            href: 'https://docs.adapty.io/discuss',
+            label: 'Share feedback',
+            position: 'right',
+          },
         ],
       },
       footer: {
         style: 'dark',
         links: [
+          {
+            title: 'Mobile SDK',
+            items: [
+              {
+                label: 'iOS',
+                href: 'https://adapty.io/sdk/ios/',
+              },
+              {
+                label: 'Android',
+                href: 'https://adapty.io/sdk/android/',
+              },
+              {
+                label: 'React Native',
+                href: 'https://adapty.io/sdk/react-native/',
+              },
+              {
+                label: 'Flutter',
+                href: 'https://adapty.io/sdk/flutter/',
+              },
+              {
+                label: 'Unity',
+                href: 'https://adapty.io/sdk/unity/',
+              },
+            ],
+          },
+          {
+            title: 'Web SDK',
+            items: [
+              {
+                label: 'Stripe',
+                href: 'https://adapty.io/integrations/stripe/',
+              },
+            ],
+          },
+          {
+            title: 'API',
+            items: [
+              {
+                label: 'Web API',
+                href: 'https://adapty.io/sdk/web/',
+              },
+            ],
+          },
           {
             title: 'Follow Us',
             items: [
@@ -131,39 +180,6 @@ const config = {
               {
                 label: 'YouTube',
                 href: 'https://www.youtube.com/@SubhubEn',
-              },
-            ],
-          },
-          {
-            title: 'SDK',
-            items: [
-              {
-                label: 'iOS',
-                href: 'https://adapty.io/sdk/ios/',
-              },
-              {
-                label: 'Android',
-                href: 'https://adapty.io/sdk/android/',
-              },
-              {
-                label: 'React Native',
-                href: 'https://adapty.io/sdk/react-native/',
-              },
-              {
-                label: 'Flutter',
-                href: 'https://adapty.io/sdk/flutter/',
-              },
-              {
-                label: 'Unity',
-                href: 'https://adapty.io/sdk/unity/',
-              },
-              {
-                label: 'Web',
-                href: 'https://adapty.io/sdk/web/',
-              },
-              {
-                label: 'Stripe',
-                href: 'https://adapty.io/integrations/stripe/',
               },
             ],
           },
