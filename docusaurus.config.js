@@ -10,7 +10,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const config = {
   title: 'Adapty',
   tagline: 'Learn how to start with Adapty and get maximum out of your app',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon_black.svg',
 
   // Set the production url of your site here
   url: 'https://adapty.io',
@@ -41,20 +41,15 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          lastVersion: 'current',
+          lastVersion: '2.0',
           versions: {
-            'current': {
+            '3.0': {
               label: '3.0',
               path: '3.0',
               banner: 'none',
             },
-            '2.0': {
-              label: '2.0',
-              path: '2.0',
-              banner: 'none',
-            },
           },
-          includeCurrentVersion: true,
+          includeCurrentVersion: false,
         },
         blog: {
           showReadingTime: false,
