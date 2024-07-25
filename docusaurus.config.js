@@ -1,3 +1,4 @@
+//docusaurus.config.js
 // @ts-check
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
@@ -41,6 +42,8 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
+          path: 'docs',
+          routeBasePath: '/',
           lastVersion: '2.0',
           versions: {
             '3.0': {
@@ -116,45 +119,45 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Mobile SDK',
+            title: 'API Reference',
             items: [
               {
                 label: 'iOS',
-                href: 'https://adapty.io/sdk/ios/',
+                href: 'https://swift.adapty.io/documentation/adapty/',
               },
               {
                 label: 'Android',
-                href: 'https://adapty.io/sdk/android/',
-              },
-              {
-                label: 'React Native',
-                href: 'https://adapty.io/sdk/react-native/',
+                href: 'https://kotlin.adapty.io/',
               },
               {
                 label: 'Flutter',
-                href: 'https://adapty.io/sdk/flutter/',
+                href: 'https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html',
               },
               {
-                label: 'Unity',
-                href: 'https://adapty.io/sdk/unity/',
+                label: 'React Native',
+                href: 'https://react-native.adapty.io/classes/adapty',
+              },
+              {
+                label: 'SDK Models',
+                href: 'https://docs.adapty.io/docs/sdk-models',
               },
             ],
           },
           {
-            title: 'Web SDK',
-            items: [
-              {
-                label: 'Stripe',
-                href: 'https://adapty.io/integrations/stripe/',
-              },
-            ],
-          },
-          {
-            title: 'API',
+            title: 'SDK Reference',
             items: [
               {
                 label: 'Web API',
                 href: 'https://adapty.io/sdk/web/',
+              },
+            ],
+          },
+          {
+            title: 'Sample Apps',
+            items: [
+              {
+                label: 'Stripe',
+                href: 'https://adapty.io/integrations/stripe/',
               },
             ],
           },
