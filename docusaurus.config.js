@@ -8,7 +8,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Adapty Docs',
+  title: 'Adapty',
   tagline: 'Learn how to start with Adapty and get maximum out of your app',
   favicon: 'img/favicon.ico',
 
@@ -31,7 +31,7 @@ const config = {
   // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'fr'],
+    locales: ['en'],
   },
 
   presets: [
@@ -62,16 +62,17 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'Adapty Docs',
+        title: '',
         logo: {
           alt: 'Adapty Docs',
-          src: 'img/favicon.png',
+          src: 'img/Logo_black.svg',
         },
         items: [
           {
           type: 'localeDropdown',
           position: 'right',
           },
+
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
@@ -95,47 +96,65 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Follow Us',
             items: [
               {
-                label: 'Docs',
-                to: '/docs/what-is-adapty',
+                label: 'Twitter',
+                href: 'https://twitter.com/AdaptyTeam',
               },
-            ],
-          },
-          {
-            title: 'Community',
-            items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                label: 'LinkedIn',
+                href: 'https://www.linkedin.com/company/adaptyio',
               },
               {
                 label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'Twitter',
-                href: 'https://twitter.com/docusaurus',
-              },
-            ],
-          },
-
-          {
-            title: 'More',
-            items: [
-              {
-                label: 'Blog',
-                to: '/blog',
+                href: 'https://discord.gg/subscriptions-hub',
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/adaptyteam',
+              },
+              {
+                label: 'Youtube',
+                href: 'https://www.youtube.com/@SubhubEn',
+              },
+            ],
+          },
+          {
+            title: 'SDK',
+            items: [
+              {
+                label: 'iOS',
+                href: 'https://adapty.io/sdk/ios/',
+              },
+              {
+                label: 'Android',
+                href: 'https://adapty.io/sdk/android/',
+              },
+              {
+                label: 'React Native',
+                href: 'https://adapty.io/sdk/react-native/',
+              },
+              {
+                label: 'Flutter',
+                href: 'https://adapty.io/sdk/flutter/',
+              },
+              {
+                label: 'Unity',
+                href: 'https://adapty.io/sdk/flutter/',
+              },
+              {
+                label: 'Web',
+                href: 'https://adapty.io/sdk/web/',
+              },
+              {
+                label: 'Stripe',
+                href: 'https://adapty.io/integrations/stripe/',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Adapty Tech Inc.`,
       },
       /*
       algolia: {
