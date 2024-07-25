@@ -41,6 +41,20 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
+          lastVersion: 'current',
+          versions: {
+            'current': {
+              label: '3.0',
+              path: '3.0',
+              banner: 'none',
+            },
+            '2.0': {
+              label: '2.0',
+              path: '2.0',
+              banner: 'none',
+            },
+          },
+          includeCurrentVersion: true,
         },
         blog: {
           showReadingTime: false,
@@ -69,23 +83,22 @@ const config = {
         },
         items: [
           {
-          type: 'localeDropdown',
-          position: 'right',
+            type: 'localeDropdown',
+            position: 'right',
           },
-
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          { to: '/blog', label: 'Blog', position: 'left' },
           {
-          type: 'docsVersionDropdown',
-          position: 'right',
-          dropdownItemsAfter: [{to: '/versions'}],
-          dropdownActiveClassDisabled: true,
-        },
+            type: 'docsVersionDropdown',
+            position: 'right',
+            dropdownItemsAfter: [{ to: '/versions' }],
+            dropdownActiveClassDisabled: true,
+          },
           {
             href: 'https://app.adapty.io/login',
             label: 'Sign In',
@@ -121,7 +134,7 @@ const config = {
                 href: 'https://github.com/adaptyteam',
               },
               {
-                label: 'Youtube',
+                label: 'YouTube',
                 href: 'https://www.youtube.com/@SubhubEn',
               },
             ],
@@ -147,7 +160,7 @@ const config = {
               },
               {
                 label: 'Unity',
-                href: 'https://adapty.io/sdk/flutter/',
+                href: 'https://adapty.io/sdk/unity/',
               },
               {
                 label: 'Web',
@@ -186,9 +199,9 @@ const config = {
         ],
       },
       sidebar: {
-          autoCollapseCategories: true,
-          hideable: false,
-      }
+        autoCollapseCategories: true,
+        hideable: false,
+      },
     }),
 };
 
