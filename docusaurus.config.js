@@ -78,7 +78,7 @@ const config = {
         logo: {
           alt: 'Adapty Docs',
           src: 'img/Logo_black.svg',
-          href: 'https://app.adapty.io',
+          href: 'https://adapty.io',
         },
         items: [
           {
