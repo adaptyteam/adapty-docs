@@ -1,4 +1,4 @@
-//docusaurus.config.js
+// docusaurus.config.js
 // @ts-check
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
@@ -187,30 +187,28 @@ const config = {
             ],
           },
           {
-            title: 'Sample Apps',
-            items: [
-              {
-                label: 'iOS',
-                href: 'https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples',
-              },
-              {
-                label: 'Android',
-                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
-              },
-              {
-                label: 'Flutter',
-                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
-              },
-              {
-                label: 'React Native',
-                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
-              },
-              {
-                label: 'Unity',
-                href: 'https://github.com/adaptyteam/AdaptySDK-Unity/tree/main',
-              },
-            ],
-          },
+  title: 'Sample Apps',
+  items: [
+    {
+      html: `iOS: <a href="https://github.com/adaptyteam/AdaptyUI-iOS">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples">No Builder</a>`,
+    },
+    {
+      html: `Android: <a href="https://github.com/adaptyteam/AdaptyUI-Android">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Android">No Builder</a>`,
+    },
+    {
+      html: `Flutter: <a href="https://github.com/adaptyteam/AdaptyUI-Flutter">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example">No Builder</a>`,
+    },
+    {
+      html: `React Native: <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-React-Native">No Builder</a>`,
+    },
+    {
+      html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">No Builder</a>`,
+    },
+  ],
+},
+
+
+
           {
             title: 'Follow Us',
             items: [
