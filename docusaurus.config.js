@@ -91,7 +91,33 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          { to: '/blog', label: 'Blog', position: 'left' },
+          {
+            label: 'SDK Reference',
+            position: 'left',
+            items: [
+              {
+                label: 'iOS',
+                href: 'https://swift.adapty.io/documentation/adapty/',
+              },
+              {
+                label: 'Android',
+                href: 'https://kotlin.adapty.io/',
+              },
+              {
+                label: 'Flutter',
+                href: 'https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html',
+              },
+              {
+                label: 'React Native',
+                href: 'https://react-native.adapty.io/classes/adapty',
+              },
+            ],
+          },
+          {
+            label: 'API Reference',
+            position: 'left',
+            href: '/getting-started-with-server-side-api',
+          },
           {
             type: 'docsVersionDropdown',
             position: 'right',
@@ -119,7 +145,7 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'API Reference',
+            title: 'SDK Reference',
             items: [
               {
                 label: 'iOS',
@@ -144,11 +170,19 @@ const config = {
             ],
           },
           {
-            title: 'SDK Reference',
+            title: 'API Reference',
             items: [
               {
-                label: 'Web API',
-                href: 'https://adapty.io/sdk/web/',
+                label: 'Getting started with server-side API',
+                href: '/getting-started-with-server-side-api',
+              },
+              {
+                label: 'API specs',
+                href: '/server-side-api-specs',
+              },
+              {
+                label: 'API objects',
+                href: '/server-side-api-objects',
               },
             ],
           },
@@ -156,8 +190,24 @@ const config = {
             title: 'Sample Apps',
             items: [
               {
-                label: 'Stripe',
-                href: 'https://adapty.io/integrations/stripe/',
+                label: 'iOS',
+                href: 'https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples',
+              },
+              {
+                label: 'Android',
+                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
+              },
+              {
+                label: 'Flutter',
+                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
+              },
+              {
+                label: 'React Native',
+                href: 'https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example',
+              },
+              {
+                label: 'Unity',
+                href: 'https://github.com/adaptyteam/AdaptySDK-Unity/tree/main',
               },
             ],
           },
