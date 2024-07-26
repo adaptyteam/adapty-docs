@@ -187,26 +187,42 @@ const config = {
             ],
           },
           {
-  title: 'Sample Apps',
-  items: [
-    {
-      html: `iOS: <a href="https://github.com/adaptyteam/AdaptyUI-iOS">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples">No Builder</a>`,
-    },
-    {
-      html: `Android: <a href="https://github.com/adaptyteam/AdaptyUI-Android">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Android">No Builder</a>`,
-    },
-    {
-      html: `Flutter: <a href="https://github.com/adaptyteam/AdaptyUI-Flutter">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example">No Builder</a>`,
-    },
-    {
-      html: `React Native: <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-React-Native">No Builder</a>`,
-    },
-    {
-      html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">No Builder</a>`,
-    },
-  ],
-},
-
+            title: 'Sample Apps',
+            items: [
+             {
+                html: `iOS: <a href="https://github.com/adaptyteam/AdaptyUI-iOS">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples">No Builder</a>`,
+             },
+             {
+               html: `Android: <a href="https://github.com/adaptyteam/AdaptyUI-Android">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Android">No Builder</a>`,
+             },
+             {
+               html: `Flutter: <a href="https://github.com/adaptyteam/AdaptyUI-Flutter">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example">No Builder</a>`,
+             },
+             {
+               html: `React Native: <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-React-Native">No Builder</a>`,
+             },
+             {
+               html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">No Builder</a>`,
+             },
+            ],
+          },
+          {
+            title: 'Resouresed',
+            items: [
+              {
+                label: 'Adapty Dashboard',
+                href: 'https://app.adapty.io/',
+              },
+              {
+                label: 'Blog',
+                href: 'https://adapty.io/blog/',
+              },
+              {
+                label: 'Support',
+                href: 'mailto:support@adapty.io',
+              },
+            ],
+          },
 
 
           {
