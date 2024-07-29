@@ -2,6 +2,12 @@
 title: "What is Adapty?"
 description: "Unlock the potential of your app's monetization strategy with Adapty – a versatile in-app purchase platform designed to fuel subscriber growth. From startups to established giants, Adapty simplifies the process of optimizing subscription prices and testing various approaches to ensure your app's success. Discover how Adapty empowers you to maximize revenue and enhance user engagement effortlessly"
 metadataTitle: "Discover Adapty: Your Ultimate In-App Purchase Platform"
+
+what's_new:
+  - label: "Quickstart guide"
+    to: "/docs/quickstart"
+  - label: "Migrate to Adapty"
+    to: "migrate-to-adapty-from-another-solutions"
 ---
 
 Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.
@@ -13,9 +19,7 @@ Adapty is a powerful and adaptable in-app purchase platform that helps you grow 
 - [Analytics](analytics-charts) for the app economy. Detailed metrics related to your app monetization.
 - Adapty can send [subscription events](events) to 3rd party analytics: [Amplitude](amplitude), [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Mixpanel](mixpanel), [Facebook Ads](facebook-ads), [AppMetrica](appmetrica), and custom [Webhook](webhook).
 
-| Parameter | Description |
-| --------- | ___________ |
-|Paremeter1 | :::note Some **content** with _Markdown_ `syntax`. Check [this `api`](#).:::|
+
 
 ### Adapty works for developers, marketers, and executives
 
