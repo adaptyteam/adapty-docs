@@ -94,4 +94,6 @@ struct SampleApp: App {
 
 ## Migrate your paywalls to new Paywall Builder
 
-Starting with Adapty SDK v3.x, only the new Paywall Builder's paywalls are supported. [Migrate your existing paywalls](https://docs.adapty.io/v3.0/docs/migration-to-new-paywall-builder) to the new Paywall Builder one at a time. When you start this migration, Adapty will create a new version of each paywall that is compatible with the updated Paywall Builder. The old version compatible with the legacy Paywall Builder will remain unchanged, so users with app versions using Adapty SDK v2.x or earlier will still see their paywalls as before.
+Starting with Adapty SDK v3.x, legacy Paywall Builder paywalls are no longer supported. [Migrate your existing legacy Paywall Builder paywalls](migration-to-new-paywall-builder) to the new Paywall Builder, one at a time. During this migration, Adapty will create a new version of each paywall that is compatible with the updated Paywall Builder. The old version, compatible with the legacy Paywall Builder, will remain unchanged, so users with app versions using Adapty SDK v2.x or earlier will still see their paywalls as before.
+
+Paywalls designed without using a Paywall Builder are not affected.

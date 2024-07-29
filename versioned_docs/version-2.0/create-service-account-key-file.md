@@ -72,3 +72,7 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 
 
 The created file will be needed during the [initial integration of Adapty with Google Play](google-play-store-connection-configuration) step.
+
+:::note
+It takes at least 24 hours for changes to take effect but there's a [hack](https://stackoverflow.com/a/60691844). In [Google Play Console](https://play.google.com/apps/publish/), open any application and in the **Monetize** section go to **Products** -> **Subscriptions**/**In-app products**. Change the description of any product and save the changes. Everything should be working now, you can revert in-app changes.
+:::

@@ -42,7 +42,7 @@ With webhooks integrated, you can:
 
 Adapty will send you those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure below. For sample of webhook events, refer to [Webhook sample events](webhook-sample-events).
+Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure below. Empty fields are not sent. For example, the line `"ad_group": null` will not be included into the package. 
 
 ```json title="Json"
 {

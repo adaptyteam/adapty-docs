@@ -20,8 +20,8 @@ const unsubscribe = view.registerEventHandlers({
   onPurchaseCompleted(profile) {
     return true;
   },
-  onPurchaseStarted() { /***/},
-  onPurchaseCancelled() { /***/ },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseCancelled(product) { /***/ },
   onPurchaseFailed(error) { /***/ },
   onRestoreCompleted(profile) { /***/ },
   onRestoreFailed(error) { /***/ },
@@ -47,8 +47,8 @@ Note, that `onCloseButtonPress`, `onPurchaseCompleted` and `onRestoreCompleted` 
 | :-------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **onCloseButtonPress**      | If the close button is visible and a user taps it, this method will be invoked. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                               |
 | **onPurchaseCompleted**     | If a user's purchase succeeds, this method will be invoked and will provide updated `AdaptyProfile`. It is recommended to dismiss the paywall view in this handler.                                                                                                                            |
-| **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked.                                                                                                                                                                                        |
-| **onPurchaseCancelled**     | If a user initiates the purchase process and manually interrupts it, this method will be invoked.                                                                                                                                                                                              |
+| **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked and will provide `AdaptyPaywallProduct`.                                                                                                                                                |
+| **onPurchaseCancelled**     | If a user initiates the purchase process and manually interrupts it, this method will be invoked and will provide `AdaptyPaywallProduct`.                                                                                                                                                      |
 | **onPurchaseFailed**        | If the purchase process fails, this method will be invoked and provide `AdaptyError`.                                                                                                                                                                                                          |
 | **onRestoreCompleted**      | If a user's purchase restoration succeeds, this method will be invoked and provide updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has  the required `accessLevel`. Refer to the [Subscription status](subscription-status)   topic to learn how to check it. |
 | **onRestoreFailed**         | If the restoring process fails, this method will be invoked and will provide `AdaptyError`.                                                                                                                                                                                                    |

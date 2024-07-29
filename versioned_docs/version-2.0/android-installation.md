@@ -17,13 +17,13 @@ Be sure to carefully read [Release Checklist](release-checklist) when releasing 
 ```groovy title="module-level build.gradle"
 dependencies {
     ...
-    implementation 'io.adapty:android-sdk:2.11.1'
+    implementation 'io.adapty:android-sdk:2.11.3'
 }
 ```
 ```kotlin title="module-level build.gradle.kts"
 dependencies {
     ...
-    implementation("io.adapty:android-sdk:2.11.1")
+    implementation("io.adapty:android-sdk:2.11.3")
 }
 ```
 ```toml title="version catalog"
@@ -31,7 +31,7 @@ dependencies {
 
 [versions]
 ..
-adapty = "2.11.1"
+adapty = "2.11.3"
 
 [libraries]
 ..
