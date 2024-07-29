@@ -4,19 +4,23 @@ description: ""
 metadataTitle: ""
 ---
 
-We’re thrilled to introduce the **Beta version of our new Paywall Builder**! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
+We’re excited to introduce the **Beta version of our new Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
-- **Expanded Template Selection**: Choose from a vast array of professionally designed templates to kickstart your paywall creation. These templates offer various styles and layouts to suit different needs and preferences.
-- **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements such as carousels, cards, product list, and footer. These enhancements give you the creative freedom to build any type of paywall you envision.
-- **Revamped Existing Elements**: Existing elements have been significantly improved, providing more options and capabilities to bring your paywall ideas to life.
+- **Expanded Template Selection**: Choose from a wide array of professionally designed templates to kickstart your paywall creation. These templates offer various styles and layouts to meet different needs and preferences.
+- **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements like carousels, cards, product lists, and footers. These enhancements give you the creative freedom to build any type of paywall you envision.
+- **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
+
+:::note
+This section describes the new Paywall Builder (Beta). For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
+:::
 
 ## Structure of a paywall
 
 In the new Adapty Paywall Builder, a paywall is composed of the following:
 
-- [**Layout**](paywall-layout): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
+- [**Layout**](https://docs.adapty.io/v3.0/docs/paywall-layout-and-products): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
 - [**Hero Image**](paywall-head-picture): The main picture of the paywall.
 - **Main Area**: Here, you can place various elements like a product block, carousels, images, cards, texts, buttons, and lists.
 - **Footer**: Similar to the main area but it's a container that's always sticking to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to to bottom inside a footer in the same order shown in the left pane.
@@ -25,7 +29,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 ## How to start designing a paywall with new Paywall Builder
 
 :::warning
-The new Paywall Builder requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-guide-to-adapty-sdk-v3x-or-later) for your new paywalls to function properly!
+The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-guide-to-adapty-sdk-v3x-or-later) for your new paywalls to function properly!
 :::
 
 To use the Adapty Paywall Builder:

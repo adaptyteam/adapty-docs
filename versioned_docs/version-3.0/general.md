@@ -125,11 +125,7 @@ We advise you only consider disabling sharing if your users **are required to lo
 
 Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
 
-## 7. Test devices
-
-Specify which devices will be used for testing so they can receive immediate updates for paywall or placement changes without delays caused by caching.
-
-## 8. Delete the app
+## 7\. Delete the app
 
 If you no longer need an app, you can delete it from Adapty. 
 

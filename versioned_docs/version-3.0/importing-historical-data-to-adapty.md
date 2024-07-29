@@ -17,7 +17,7 @@ To import data to Adapty:
 1. Export your transactions to a CSV file (separate files should be provided for iOS, Android, and Stripe). Please refer to the [Import file format section](importing-historical-data-to-adapty#import-file-format) below for detailed requirements.
 2. If any file exceeds 1 GB, prepare a data sample with approximately 100 lines.
 3. Upload all the files to Google Drive (you can compress them, but keep them separate).
-4. For iOS transactions, ensure the **In-app purchase API** section in the [**App settings**](https://app.adapty.io/settings/ios-sdk) is filled out with the **Issuer ID**, **Key ID**, and the **Private key** (.P8 file) even if you use the StoreKit 1. See the [Provide Issuer ID and Key ID](app-store-connection-configuration#step-2-provide-issuer-id-and-key-id) and [Upload In-App Purchase Key file](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) sections for detailed instructions.
+4. For iOS transactions, ensure the **In-app purchase API** section in the [**App settings**](https://app.adapty.io/settings/ios-sdk)is filled out with the **Issuer ID**, **Key ID**, and the **Private key** (.P8 file) even if you use the StoreKit 1. See the [Provide Issuer ID and Key ID](app-store-connection-configuration#step-2-provide-issuer-id-and-key-id) and [Upload In-App Purchase Key file](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) sections for detailed instructions.
 5. Share the links with our team via  [email](mailto:support@adapty.io) or through the online chat in the Adapty Dashboard.
 
 Do not worry, importing historical data will not create duplicates, even if that data overlaps with existing entries in Adapty.

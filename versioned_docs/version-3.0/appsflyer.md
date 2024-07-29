@@ -74,7 +74,7 @@ To setup the integration with AppsFlyer:
 
 5. Open the [AppsFlyer site](https://appsflyer.com/home) and log in. 
 
-6. Click **Your account name** -> **Security Center** in the top-right corner of the dashboard.
+6. Click **Your account name** -> **Security Center** in the top-left corner of the dashboard.
 
    
 <img
@@ -120,7 +120,7 @@ To setup the integration with AppsFlyer:
 
     
 <img
-  src={require('./img/a7d1c31-appsflyer_dev_keys.png').default}
+  src={require('./img/01f24b4-appsflyer_dev_keys.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

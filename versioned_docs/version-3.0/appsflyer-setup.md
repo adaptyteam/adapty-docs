@@ -108,7 +108,7 @@ To set up the integration with AppsFlyer:
 
 
 <img
-  src={require('./img/43cacb2-appsflyer_dev_keys.png').default}
+  src={require('./img/01f24b4-appsflyer_dev_keys.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

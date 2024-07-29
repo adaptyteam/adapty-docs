@@ -4,12 +4,12 @@ description: ""
 metadataTitle: ""
 ---
 
-Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
+Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
 
 Upgrade to new Paywall Builder consists of:
 
 1. Upgrade to Adapty SDK v3.x via Swift Package Manager or via CocoaPods.
-2. Migrate your paywalls to new Paywall Builder.
+2. Migrate your Paywall Builder paywalls to new Paywall Builder.
 
 ## Reinstall Adapty SDK v3.x via Swift Package Manager
 
@@ -19,7 +19,7 @@ Upgrade to new Paywall Builder consists of:
 4. Choose the version, and click the **Add package** button. 
 5. Choose the modules you need:
    1. **Adapty** is the mandatory module
-   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder).
+   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 6. Xcode will add the package dependency to your project, and you can import it. For this, in the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list.
 
 ## Reinstall Adapty SDK v3.x via CocoaPods
@@ -94,4 +94,6 @@ struct SampleApp: App {
 
 ## Migrate your paywalls to new Paywall Builder
 
-Starting with Adapty SDK v3.x, only the new Paywall Builder's paywalls are supported. [Migrate your existing paywalls](https://docs.adapty.io/v3.0/docs/migration-to-new-paywall-builder) to the new Paywall Builder one at a time. When you start this migration, Adapty will create a new version of each paywall that is compatible with the updated Paywall Builder. The old version compatible with the legacy Paywall Builder will remain unchanged, so users with app versions using Adapty SDK v2.x or earlier will still see their paywalls as before.
+Starting with Adapty SDK v3.x, legacy Paywall Builder paywalls are no longer supported. [Migrate your existing legacy Paywall Builder paywalls](migration-to-new-paywall-builder) to the new Paywall Builder, one at a time. During this migration, Adapty will create a new version of each paywall that is compatible with the updated Paywall Builder. The old version, compatible with the legacy Paywall Builder, will remain unchanged, so users with app versions using Adapty SDK v2.x or earlier will still see their paywalls as before.
+
+Paywalls designed without using a Paywall Builder are not affected.

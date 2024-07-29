@@ -12,7 +12,7 @@ It's located right under Home in the left-side menu:
 <img
   src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.png').default}
   style={{
-    border: 'none', /* border width and color */
+    border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */

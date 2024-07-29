@@ -53,7 +53,7 @@ When you create a paywall in Builder, Adapty uses a system font by default. That
 :::note
 Note that these fonts are not supplied as part of Adapty SDK and are only used in preview purposes. We can not guarantee they will work perfectly well on all of the devices.
 
-However in our testing we observed that those fonts are typically recognised by most devices without additional effort from your side. You can also checkout which fonts are available by default on iOS here: [In Apple official documentation](https://developer.apple.com/fonts/)
+However in our testing we observed that those fonts are typically recognised by most devices without additional effort from your side. You can also checkout which fonts are available by default on iOS here:  [In Apple official documentation](https://developer.apple.com/fonts/)
 :::
 
 ## How to add a custom font to the Adapty Dashboard

@@ -92,8 +92,9 @@ Sample request:
     "starts_at": "2020-01-15T15:10:36.517975+0000",
     "expires_at": "2020-02-15T15:10:36.517975+0000",
     "vendor_product_id": "basic_subscription_1_month",
-    "vendor_transaction_id": "123456789",
-    "store": "app_store"
+    "vendor_transaction_id": "1000000630116569",
+    "store": "app_store",
+    "introductory_offer_type": null
 }
 ```
 
@@ -115,6 +116,8 @@ Sample response:
         "will_renew": false,
         "vendor_product_id": "adapty_promotion",
         "base_plan_id": "premium_autorenewing",
+        "vendor_transaction_id": "1000000630116569",
+        "vendor_original_transaction_id": "1000000625263604",
         "store": "adapty",
         "activated_at": "2020-03-26T16:24:19.497674+0000",
         "renewed_at": "2020-03-26T16:24:19.497674+0000",

@@ -13,10 +13,6 @@ Adapty is a powerful and adaptable in-app purchase platform that helps you grow 
 - [Analytics](analytics-charts) for the app economy. Detailed metrics related to your app monetization.
 - Adapty can send [subscription events](events) to 3rd party analytics: [Amplitude](amplitude), [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Mixpanel](mixpanel), [Facebook Ads](facebook-ads), [AppMetrica](appmetrica), and custom [Webhook](webhook).
 
-| Parameter | Description |
-| --------- | ___________ |
-|Paremeter1 | :::note Some **content** with _Markdown_ `syntax`. Check [this `api`](#).:::|
-
 ### Adapty works for developers, marketers, and executives
 
 Marketers can directly engage users with promotional offers to return them to the service or upsell new products. With Adapty there is no need for programmers and analysts to manually extract segments.

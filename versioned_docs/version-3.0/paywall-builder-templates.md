@@ -1,22 +1,39 @@
 ---
-title: "Paywall builder templates"
+title: "Paywall template"
 description: ""
 metadataTitle: ""
 ---
 
-[Adapty paywall builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
-
-Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](https://docs.adapty.io/docs/ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
-
-When creating or editing paywalls using Adapty's paywall builder, you have the flexibility to choose from three distinct layout options, each with its own corresponding templates. The template layout you select will dictate the visual appearance and user experience of the paywall in your iOS or Android app. Let's explore the three available template layout options:
-
-### Overlay
-
-The overlay templates offer a versatile and engaging design for your paywalls. It consists of two layers, combining an image at the bottom and a layer showcasing your products or content on top. This approach ensures a visually appealing presentation that captures users' attention. On smaller screens, the layer containing products or content will overlay the image while scrolling, emphasizing the key elements of your paywall. This layered arrangement enhances user interaction and allows you to present multiple offers seamlessly.
+Ready-made paywall templates are professionally designed and tailored to streamline your paywall creation process. These templates are crafted by expert designers to help you present your products attractively with minimal effort. Simply add your logo, infuse your brand personality, and you’re all set to captivate your audience and drive sales!
 
 
 <img
-  src={require('./img/4a115f4-CleanShot_2023-09-05_at_15.48.442x.png').default}
+  src={require('./img/501b43c-PB-templates_listing.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
+
+## Using Paywall Templates
+
+Templates serve as a fantastic starting point, offering beautifully structured layouts and visual appeal. You can either use them as they are or make slight modifications to align them with your brand's aesthetics. Here’s why ready-made templates are a smart choice:
+
+- **Time-Saving**: Quickly set up a professional-looking paywall without the need for extensive design work.
+- **Consistency**: Ensure a cohesive look that aligns with proven design standards.
+- **Customizability**: Personalize each template with your brand elements to make it uniquely yours.
+
+For those who prefer a hands-on approach, templates with a minimal design offer a blank canvas. These templates come with basic placements, making it easier for you to unleash your creativity and build a paywall from scratch using Adapty's versatile, feature-rich, and user-friendly paywall builder.
+
+
+<img
+  src={require('./img/eba907e-PB_templates_minimal_design.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -29,15 +46,17 @@ The overlay templates offer a versatile and engaging design for your paywalls. I
 
 
 
-### Transparent
+## Choose paywall template
 
-The transparent layout is ideal for scenarios where you have a concise selection of products or content to present. This layout type offers a captivating visual experience by featuring a full-screen image that immediately grabs users' attention. With no scrolling involved, the image takes up the entire screen space, allowing you to make a bold statement and showcase your offerings in a straightforward manner.
+When creating a new paywall, Adapty offers a selection of templates. You can easily switch between templates at any moment after that; however, it’s important to note that replacing a template will discard any changes made to your paywall design. To avoid losing your work, we recommend duplicating the paywall before changing templates so that you could return to the saved paywall if needed.
 
+1. In the **Layout settings** of the paywall, click the **Change template** button.
 
+   
 <img
-  src={require('./img/459e2c9-CleanShot_2023-09-05_at_15.49.422x.png').default}
+  src={require('./img/24a8f3b-PB_change_template.png').default}
   style={{
-    border: 'none', /* border width and color */
+    border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
@@ -46,19 +65,13 @@ The transparent layout is ideal for scenarios where you have a concise selection
 
 
 
+2. In the opened **Choose paywall** window, browse and select a new template.
 
-
-Note: Since there is no scrolling in the Transparent Layout, it is best suited for situations where you have a limited amount of content to display.
-
-### Flat
-
-The flat layout is reminiscent of a streamlined landing page, presenting all the essential elements in a single continuous layer. Users can scroll through the content seamlessly, experiencing a fluid narrative as they engage with your paywall. This layout type offers a cohesive storytelling approach, enabling you to present your products, services, or content in a compelling and unified manner.
-
-
+   
 <img
-  src={require('./img/dbd9135-CleanShot_2023-09-05_at_15.52.312x.png').default}
+  src={require('./img/984a1e9-PB_select_template.png').default}
   style={{
-    border: 'none', /* border width and color */
+    border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
@@ -67,12 +80,4 @@ The flat layout is reminiscent of a streamlined landing page, presenting all the
 
 
 
-
-
-Tip: The flat layout is particularly effective when you have a narrative or sequence of offerings to present to your users.
-
-### Device compatibility preview
-
-Use the drop-down menu above the asset to select different devices, providing a preview of how your layout will appear on various screens. This feature enables you to ensure that your paywall looks optimal across different devices and screen sizes.
-
-![](https://files.readme.io/a6ccf83-Export-1693241907397.gif)
+3. Click the **Choose** button to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.

@@ -21,7 +21,7 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 ## Make purchase
 
 :::note
-In paywalls built with [Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
+In paywalls built with [Paywall Builder](paywall-builder-getting-started) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
 :::
 
 ```swift title="Swift"

@@ -16,10 +16,11 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 - [ ] [Enable App Store server notifications](enable-app-store-server-notifications)  in the App Store Connect
 - [ ] Install AdaptySDKs for the frameworks you're using: 
   - [ ] [Install Adapty SDKs for native iOS](sdk-installation-ios)
-  - [ ] [Install Adapty SDKs for Flutter](sdk-installation-flutter)
-  - [ ] [Install Adapty SDKs for React Native](sdk-installation-reactnative)
-  - [ ] [Install Adapty SDKs for Unity](sdk-installation-unity)
 - [ ] Build your application and run it in sandbox mode.
+
+:::warning
+Adapty SDK v3.0 is now available for iOS only. For installation guidance on Flutter, React Native, and Unity, see [Installation of Adapty SDKs v.2](installation-of-adapty-sdks).
+:::
 
 After the initial integration is complete, you [can begin using Adapty's features](paywalls-products-and-placements). 
 

@@ -42,7 +42,7 @@ With webhooks integrated, you can:
 
 Adapty will send you those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure below. For sample of webhook events, refer to [Webhook sample events](webhook-sample-events).
+Each event is wrapped into the following structure:
 
 ```json title="Json"
 {
@@ -64,7 +64,7 @@ Each event except for the [access_level_update](webhook#event-access-level-updat
 }
 ```
 
-Where
+### Event parameters
 
 | Property                     | Type                 | Description                                                                                                                                                                                                                                                                                                 |
 | :--------------------------- | :------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -93,66 +93,7 @@ Webhook integration enables the control of sending attribution and user attribut
 - Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
 - Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
 
-## Event Access level updated
-
-Adapty has a special event `access_level_updated`. It is sent only to webhook integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. No matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
-
-
-<img
-  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-
-
-
-
-
-| Property | Type | Description |
-|--------|----|-----------|
-| **store** | str | Could be app_store, play_store, or stripe. |
-| **currency** | str | The 3-letter currency code (ISO-4217) of the transaction. |
-| **is_active** | bool | Boolean indicating whether paid access level is active for the profile. |
-| **is_refund** | bool | Boolean indicating whether transaction is refunded. |
-| **expires_at** | ISO 8601 date | Date and time when paid access will expire. |
-| **starts at** | ISO 8601 date | Date and time when paid access level starts for the user. |
-| **profile_id** | str | Adapty user ID. |
-| **renewed_at** | ISO 8601 date | Date and time when paid access will be renewed. |
-| **will_renew** | bool | Boolean indicating whether paid access level will be renewed. |
-| **environment** | str | <p>Indicates whether the user is operating in a sandbox or production environment.</p><p></p><p>Values are either Sandbox or Production.</p> |
-| **is_lifetime** | bool | Boolean indicating whether paid access level is lifetime. |
-| **activated_at** | ISO 8601 date | Date and time when paid access was activated. |
-| **purchase_date** | ISO 8601 date | <p>Contains the date of the last transaction (original purchase or renewal).</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| **store_country** | str | The country sent to Adapty by the store. |
-| **event_datetime** | ISO 8601 date | The date and time of the event. |
-| **transaction_id** | str | A unique identifier for a transaction such as a purchase or renewal. |
-| **access_level_id** | str | Paid access level ID |
-| **profile_country** | str | Profile Country determined by Apple/Google store. |
-| **profile_event_id** | str | Unique event ID that can be used for deduplication. |
-| **vendor_product_id** | str | <p>Contains the value of Product Id in Apple/Google store.</p><p></p><p>e.g., org.locals.12345</p> |
-| **is_in_grace_period** | bool | Boolean indicating whether profile is in grace period. |
-| **original_purchase_date** | ISO 8601 date | The date and time of the original purchase. |
-| **original_transaction_id** | str | The transaction identifier of the original purchase. |
-| **subscription_expires_at** | ISO 8601 date | <p>Contains the expiration date of the latest subscription.</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| **profile_total_revenue_usd** | float | Total revenue for the profile, refunds included. |
-| **billing_issue_detected_at** | ISO 8601 date | Date and time of billing issue. |
-| **cancellation_reason** | str | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>**iOS & Android**:</p><p></p><p>- voluntarily_cancelled</p><p>- billing_error</p><p>- refund</p><p>**iOS**:</p><p>- price_increase</p><p>- product_was_not_available</p><p>- unknown</p><p>**Android**:</p><p>- new_subscription_replace</p><p>- cancelled_by_developer</p> |
-| **active_introductory_offer_type** | str | Type of the active introductory offer. |
-| **active_promotional_offer_type** | str | Type of the active promotional offer. |
-| **active_promotional_offer_id** | str | ID of the active promotional offer as indicated in the Product section of the Adapty Dashboard |
-
-
-Adapty doesn't send `access_level_updated` upon subscription expiration - please, refer to **expires_at** value to end the subscriptions on your side. 
-
-Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](https://docs.adapty.io/docs/server-side-api-specs#prolonggrant-a-subscription-for-a-user)
-
-For detailed descriptions of the mentioned properties, you can refer to the[ API objects documentation](https://docs.adapty.io/docs/server-side-api-objects).
-
-## Attribution data
+### Attribution data
 
 If you've chosen to send attribution data, the following data will be sent with the event:
 

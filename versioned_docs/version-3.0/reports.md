@@ -36,7 +36,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 
 2. Customize each report type by selecting the relevant apps. For this, click the **Edit** button.
 
-   
+
 <img
   src={require('./img/ebe22ac-email_reports_apps.png').default}
   style={{
@@ -49,6 +49,8 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 
 
 
+
+
 3. In the report window, choose the apps you want to include.
 4. Finally, click the **Save changes** button to apply your selections.
 
@@ -57,7 +59,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 1. Open the [**Overview**](https://app.adapty.io/overview) section in the Adapty main menu.
 2. Click the **Edit** button and choose your time zone.
 
-   
+
 <img
   src={require('./img/59ad3d8-time_zone.png').default}
   style={{
@@ -67,6 +69,8 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
     margin: '0 auto' /* center alignment */
   }}
 />
+
+
 
 
 
