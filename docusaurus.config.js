@@ -207,7 +207,7 @@ const config = {
             ],
           },
           {
-            title: 'Resouresed',
+            title: 'Resources',
             items: [
               {
                 label: 'Adapty Dashboard',
