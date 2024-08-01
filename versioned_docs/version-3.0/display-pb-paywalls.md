@@ -31,6 +31,6 @@ However, some coding still remains necessary. For instance, you'll need to retri
 
 ## How to display and process paywalls created in the Paywall Builder
 
-1. [Fetch the paywall to show in the specific placement](https://docs.adapty.io/docs/get-pb-paywalls).
+1. [Fetch the paywall to show in the specific placement](get-pb-paywalls).
 2. [Show the paywall](present-pb-paywalls).
 3. [Handle the events produced by the paywall](handling-visual-paywall-events-copy).

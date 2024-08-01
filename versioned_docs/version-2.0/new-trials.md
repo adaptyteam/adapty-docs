@@ -32,7 +32,7 @@ For example, if you select a monthly period and 50 users start a trial during th
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by:  Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in[ this documentation](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds).
+You can find more information about the available controls, filters, grouping options, and how to use them in[ this documentation](controls-filters-grouping-compare-proceeds).
 
 ### New trials chart usage
 
@@ -42,6 +42,6 @@ The New trials chart is a powerful tool for tracking the effectiveness of your a
 
 In addition to New Trials, Adapty also provides metrics for other trial-related events, such as Active trials, Trial renewal cancelled, and Expired trials. To learn more about these trial-related metrics, please refer to the following documentation:
 
-- [Active trials](https://docs.adapty.io/docs/active-trials)
-- [Trial renewal cancelled](https://docs.adapty.io/docs/trials-renewal-cancelled)
-- [Expired trials](https://docs.adapty.io/docs/expired-churned-trials)
+- [Active trials](active-trials)
+- [Trial renewal cancelled](trials-renewal-cancelled)
+- [Expired trials](expired-churned-trials)

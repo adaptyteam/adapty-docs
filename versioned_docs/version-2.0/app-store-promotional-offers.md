@@ -57,7 +57,7 @@ The instructions on how to upload a special In-App Purchase Key from App Store C
 
 
 5. After generating your API key, click the **Download In-App Purchase Key** button to get the key as a file.  
-   Keep this file safe to later upload it to Adapty. Please keep in mind that the generated file can be downloaded only once, so store it safely until you upload it to Adapty. The generated .p8 key from the **In-App Purchase** section can be used for both  [In-app purchase API](https://docs.adapty.io/docs/in-app-purchase-api-storekit-2) and [promotional offers](https://docs.adapty.io/docs/app-store-promotional-offers).
+   Keep this file safe to later upload it to Adapty. Please keep in mind that the generated file can be downloaded only once, so store it safely until you upload it to Adapty. The generated .p8 key from the **In-App Purchase** section can be used for both  [In-app purchase API](in-app-purchase-api-storekit-2) and [promotional offers](app-store-promotional-offers).
 
 6. Copy the value of the **Key ID** field from this screen as well.
 

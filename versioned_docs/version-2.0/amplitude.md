@@ -6,7 +6,7 @@ metadataTitle: ""
 
 [Amplitude](https://amplitude.com/) is a powerful mobile analytics service. With Adapty, you can easily send events to Amplitude, see how users behave, and then make smart decisions.
 
-Adapty provides a complete set of data that lets you track [subscription events](https://docs.adapty.io/docs/events) from stores in one place and sends it to your Amplitude account. This allows you to match your user behavior with their payment history in Amplitude, and inform your product decisions.
+Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place and sends it to your Amplitude account. This allows you to match your user behavior with their payment history in Amplitude, and inform your product decisions.
 
 ### How to set up Amplitude integration
 
@@ -44,11 +44,11 @@ You need to enter the **API Key** into Adapty. To find a token, go to your **Pro
 
 
 
-Along with events, Adapty also sends the[ subscription status](https://docs.adapty.io/docs/subscription-status) and subscription product ID to the [Amplitude user properties.](https://help.amplitude.com/hc/en-us/articles/115002380567#h_39e46c92-7b7f-4358-a96f-c82cc3342e3e)
+Along with events, Adapty also sends the[ subscription status](subscription-status) and subscription product ID to the [Amplitude user properties.](https://help.amplitude.com/hc/en-us/articles/115002380567#h_39e46c92-7b7f-4358-a96f-c82cc3342e3e)
 
 ### Events and tags
 
-Below the credentials, there are three groups of events you can send to Amplitude from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can send to Amplitude from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img

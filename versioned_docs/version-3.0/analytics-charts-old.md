@@ -124,8 +124,7 @@ Filter metrics by platform (iOS/Android).
 
 #### A/B tests
 
-Filter metrics by A/B tests that are associated with purchases.  
-In case your A/B tests have multiple [versions](ab-test#versioning), they are marked as "Rev. X" so you can choose the specific one.
+Filter metrics by A/B tests that are associated with purchases.
 
 #### Attribution
 

@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-To make a product visible and selectable within a [paywall](https://docs.adapty.io/docs/paywalls) for your app's users, follow these steps:
+To make a product visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
 
 1. While [configuring a paywall](paywalls#create-a-paywall), click the **Add product** button under the **Products** title.
 2. From the opened drop-down list, select the products that will be shown to your customers. The list contains only previously created products. The order of the products is preserved on the SDK side, so it's important to consider the desired order when configuring the paywall. Additionally, you can specify an offer for a product if desired.

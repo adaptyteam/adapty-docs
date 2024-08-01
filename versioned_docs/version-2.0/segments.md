@@ -81,7 +81,7 @@ Please note that these attributes are predefined and cannot be modified, except 
 To create even more targeted segments, you can also create custom attributes. Custom attributes allow you to create user groups based on properties that are specific to your app or business.
 
 :::note
-To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](https://docs.adapty.io/docs/setting-user-attributes#limit) to learn how to set them up.
+To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#limit) to learn how to set them up.
 :::
 
 :::warning
@@ -105,11 +105,11 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
 
 
 
-Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](https://docs.adapty.io/docs/setting-user-attributes#limits). 
+Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](setting-user-attributes#limits).
 
 1. **Name **represents the name of the custom attribute and will be used in the Adapty dashboard only.
 2. **Key **is the unique identifier for the custom attribute. This key value should match the key value used in the SDK. 
 3. **Type** field has two options. If you select "String", you have to enter a list of possible values for the attribute. If you select "Number", the attribute will accept only numeric values.
 4. If you selected "String" as the type, enter a list of possible **values** for the attribute. If you selected "Number", the attribute will accept only numeric values.
 
-Complete all the required fields first, and then you can begin utilizing the custom attribute in your segment definition. Once you've created your segments, you can use them to target [A/B testing](https://docs.adapty.io/docs/ab-test), among other things!
+Complete all the required fields first, and then you can begin utilizing the custom attribute in your segment definition. Once you've created your segments, you can use them to target [A/B testing](ab-test), among other things!

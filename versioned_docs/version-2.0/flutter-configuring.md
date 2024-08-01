@@ -17,7 +17,7 @@ Create `Adapty-Info.plist` and add it to you project. Add the flag `AdaptyPublic
 
 ##### StoreKit 2 Usage
 
-Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 2 API utilisation. Read more in the [Displaying Paywalls & Products](https://docs.adapty.io/docs/displaying-products#adapty-sdk-version-250-and-higher) section.
+Also you can add `AdaptyStoreKit2Usage` key. This value controls StoreKit 1 and 2 API utilisation. Read more in the [Displaying Paywalls & Products](displaying-products#adapty-sdk-version-250-and-higher) section.
 
 ```xml title="Adapty-Info.plist"
 <dict>

@@ -17,12 +17,15 @@ You'll find valuable insights about user behavior setting filters and groups.
 Retention is performed with the data that we gather through SDK and store notifications and don't require any additional configuration from your side.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/86dc5ac-CleanShot_2023-01-09_at_18.56.15.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/86dc5ac-CleanShot_2023-01-09_at_18.56.15.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -47,12 +50,15 @@ Having not only a pure passion for numbers but more willingly seeing real busine
 So let's keep in a glance together WHY and HOW. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e501382-CleanShot_2022-07-11_at_21.09.20.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e501382-CleanShot_2022-07-11_at_21.09.20.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -63,12 +69,15 @@ First of all, retention is about the target audience, its preferences, and wheth
 Such a measurement benefits because it's usually cheaper to sell to your customer than to a stranger. And this cost is low for two reasons: less effort to sell and higher average check. So it might be a good idea to invest in your subscribers' loyalty when retention goes down. 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e10de4a-CleanShot_2022-07-11_at_21.06.45.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e10de4a-CleanShot_2022-07-11_at_21.06.45.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -78,12 +87,15 @@ Such a measurement benefits because it's usually cheaper to sell to your custome
 The second reason WHY is that retention charts show the actual consuming lifetime of your product and let you forecast in long term. And if you want to improve, correct the job that delivers the product to change its lifetime, and then forecast again to become closer to your business targets. Such updates may be a part of a strategic vision working together with a forecasting routine. And yes, this process never ends because we all run fast to be at the same place in a constantly changing environment.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/26a7026-CleanShot_2022-07-11_at_21.36.36.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/26a7026-CleanShot_2022-07-11_at_21.36.36.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -93,12 +105,15 @@ The second reason WHY is that retention charts show the actual consuming lifetim
 Moving faster than the main competitors is good but sometimes jumping out of the ordinary race may bring more benefits. When you analyze the behavior of users in different countries and stores, some local peculiarities can open outstanding insights and new opportunities for the business. Cultural and market context can be analyzed from the perspective of retention to be later used for segmentation and further development. For example, you may find blue water in some regions and grow there faster.  
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/cee8bd6-CleanShot_2022-07-11_at_22.02.39.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/cee8bd6-CleanShot_2022-07-11_at_22.02.39.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -115,12 +130,15 @@ Please mind that the axis starts with the Trial step only when the checkbox "Sho
 For data calculation, this checkbox works as follows. When "Show trials" is selected and the axis starts with the Trial step, you see only scenarios that contain trials, no transactions directly from installs are shown and the step Paid contains only transactions that come from trials. When "Show trials" is not selected, and the axis starts with a Paid step, this first step contains all first transactions including both from trials and directly from installs.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d849428-CleanShot_2022-07-12_at_11.24.57.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d849428-CleanShot_2022-07-12_at_11.24.57.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -130,12 +148,15 @@ When you hover over the chart, a pop-up with a data summary is displayed. And if
 The table contains the same grouping and filters chosen for the chart.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/e8803c2-CleanShot_2022-07-12_at_11.50.48.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/e8803c2-CleanShot_2022-07-12_at_11.50.48.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -154,12 +175,15 @@ Variate:
 Use #Absolute and %Relative control to view the necessary data.
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d891f77-CleanShot_2022-07-12_at_12.43.11.png" 
-    style={{ width: '7000px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d891f77-CleanShot_2022-07-12_at_12.43.11.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -168,12 +192,17 @@ Use #Absolute and %Relative control to view the necessary data.
 Finally, on the right of the control panel, there's a button to export funnel data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system to continue analysis and forecasting in your preferred environment.  
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f351197-CleanShot_2022-07-12_at_13.26.49.png" 
-    style={{ width: '7000px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/f351197-CleanShot_2022-07-12_at_13.26.49.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
 
 
 

@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
+Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](/3.0/adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
 
 Upgrade to new Paywall Builder consists of:
 
@@ -19,7 +19,7 @@ Upgrade to new Paywall Builder consists of:
 4. Choose the version, and click the **Add package** button. 
 5. Choose the modules you need:
    1. **Adapty** is the mandatory module
-   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder).
+   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](/3.0/adapty-paywall-builder).
 6. Xcode will add the package dependency to your project, and you can import it. For this, in the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list.
 
 ## Reinstall Adapty SDK v3.x via CocoaPods

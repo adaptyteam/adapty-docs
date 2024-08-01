@@ -20,7 +20,7 @@ If you look at the total revenue for June it will contain:
 But the story doesn't end in June when subscribers are attracted. Then month by month your June cohort will have the 2nd payment in July, the 3rd in August, etc. And the total amount of money earned from this cohort will grow. While the number of subscribers in the cohort will tend to zero or to some baseline which depends on the app. Understanding the behavior of your cohorts will helps to plan the app's economy. 
 
 **Step 3 - balance unit economy. **  
-You can [upload your spending data to Adapty](https://docs.adapty.io/docs/how-to-get-spends-data-from-fb-business-manager) to see profit and loss on the same page in cohorts.  
+You can [upload your spending data to Adapty](how-to-get-spends-data-from-fb-business-manager) to see profit and loss on the same page in cohorts.  
 
 Overall this tool lets you analyze your revenue or proceeds dynamics for different cohorts to:
 
@@ -131,7 +131,7 @@ Some cells have incomplete data — the time period they correspond to isn't ove
 
 Turn on a toggle to show user acquisition metrics. When you enable it three additional columns appear in the cohort table: Ad spend, Paying CAC, and ROAS. 
 
-Please mind that the spending analytics has a beta status, for now, works with Facebook spending and you should upload data manually. Please follow our [step-by-step guide](https://docs.adapty.io/docs/how-to-get-spends-data-from-fb-business-manager) to do it easily. 
+Please mind that the spending analytics has a beta status, for now, works with Facebook spending and you should upload data manually. Please follow our [step-by-step guide](how-to-get-spends-data-from-fb-business-manager) to do it easily. 
 
 After your data is uploaded you will see the additional metrics as follows.
 

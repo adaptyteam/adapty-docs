@@ -14,7 +14,7 @@ You can install AdaptySDK via CocoaPods, or Swift Package Manager.
 :::danger
 Go through release checklist before releasing your app
 
-Before releasing your application, make sure to carefully review the [Release Checklist](https://docs.adapty.io/docs/release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
 ## Install Adapty SDK via Swift Package Manager
@@ -113,7 +113,7 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 
 ## Configure AdaptyUI
 
-You need to configure the AdaptyUI only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI](sdk-installation-ios#install-sdks-via-swift-package-manager):
+You need to configure the AdaptyUI only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager):
 
 ```swift title="Swift"
 import AdaptyUI // Only if you are going to use AdaptyUI

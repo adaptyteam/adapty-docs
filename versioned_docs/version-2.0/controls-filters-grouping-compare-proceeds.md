@@ -45,7 +45,7 @@ When analyzing cohorts in Adapty, you choose the cohort length, which determines
 
 In LTV (lifetime value) analysis, the cohort length is chosen in the grouping settings and determines the time period over which you want to calculate the lifetime value of users. Similar to cohorts analysis, the cohort length in LTV analysis is independent of the time frame displayed on the x-axis of the charts.
 
-We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](https://docs.adapty.io/docs/account)
+We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](account)
 
 
 <img
@@ -109,10 +109,10 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 | Country              | ✅         | ✅        | Filter or group metrics by user's store country (if available, otherwise country is inferred using currency code or device's IP).    |
 | Paywall (Deprecated) | ✅         | ✅        | Filter or group metrics by paywalls that are associated with purchases. ( Deprecated legacy option)                                  |
 | Paywall              | ✅         | ✅        | Filter or group metrics by [paywalls ](paywalls)that are associated with purchases.                                              |
-| A/B Test             | ✅         | ❌        | Filter or group metrics by [A/B tests](https://docs.adapty.io/docs/ab-tests)that are associated with purchases.                      |
-| Placement            | ✅         | ✅        | Filter or group metrics by [placement](https://docs.adapty.io/docs/placements)that are associated with purchases.                    |
+| A/B Test             | ✅         | ❌        | Filter or group metrics by [A/B tests](ab-tests)that are associated with purchases.                      |
+| Placement            | ✅         | ✅        | Filter or group metrics by [placement](placements)that are associated with purchases.                    |
 | Store                | ✅         | ✅        | Filter or group metrics by store (iOS/Android).                                                                                      |
-| Product              | ✅         | ✅        | Filter or group metrics by [product](https://docs.adapty.io/docs/product) (both subscriptions and one-time purchases are available). |
+| Product              | ✅         | ✅        | Filter or group metrics by [product](product) (both subscriptions and one-time purchases are available). |
 | Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
 
 
@@ -206,11 +206,11 @@ This option displays the total revenue, including taxes and commission fees from
 This option displays the revenue amount after deducting the store commission fee.  
 It represents the revenue that remains after the App Store / Play Store cuts its commission fees from the gross revenue. Taxes are not deducted in this display option. 
 
-Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. For detailed information on how Adapty calculates store commission fees, please refer to the corresponding documentation for [App Store](https://docs.adapty.io/docs/app-store-small-business-program) and [Play Store.](https://docs.adapty.io/docs/google-reduced-service-fee)
+Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. For detailed information on how Adapty calculates store commission fees, please refer to the corresponding documentation for [App Store](app-store-small-business-program) and [Play Store.](google-reduced-service-fee)
 
 #### **Proceeds after store commission and taxes**
 
 This option displays the revenue amount after deducting both the store commission fee and taxes.  
 It represents the net revenue received by the app after accounting for both store's commission and applicable taxes.  We consider the VAT rate of the user's store account country when calculating taxes. Please consider that Adapty follows the logic that for Apple taxes are applied to the post-commission revenue from a transaction, while  Google applies taxes to the full amount (before store commissions are reduced from the revenue).
 
-It's important to note that this revenue dropdown applies to various revenue-related charts, such as [Revenue](https://docs.adapty.io/docs/revenue), [MRR](https://docs.adapty.io/docs/mrr) (Monthly recurring revenue), [ARR](https://docs.adapty.io/docs/arr) (Annual recurring revenue), [ARPU](https://docs.adapty.io/docs/arpu) (Average revenue per user), and [ARPPU](https://docs.adapty.io/docs/arppu) (Average revenue per paying user). These charts provide valuable insights into revenue-related information for your app.
+It's important to note that this revenue dropdown applies to various revenue-related charts, such as [Revenue](revenue), [MRR](mrr) (Monthly recurring revenue), [ARR](arr) (Annual recurring revenue), [ARPU](arpu) (Average revenue per user), and [ARPPU](arppu) (Average revenue per paying user). These charts provide valuable insights into revenue-related information for your app.

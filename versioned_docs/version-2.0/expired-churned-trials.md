@@ -32,7 +32,7 @@ In addition, Adapty allows you to group the chart by expiration reason, such as 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Expiration reason, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Expired (churned) trials chart usage
 
@@ -42,6 +42,6 @@ The Expired (churned) trials chart is a valuable tool that provides insights int
 
 In addition to the Trials renewal canceled chart, Adapty also provides metrics for other trial-related events, such as New Trials, Active Trials, and Expired Trials. To learn more about these trial-related metrics, please refer to the following documentation:
 
-- [New trials](https://docs.adapty.io/docs/new-trials)
-- [Active trials](https://docs.adapty.io/docs/active-trials)
-- [Trials renewal canceled](https://docs.adapty.io/docs/trials-renewal-cancelled)
+- [New trials](new-trials)
+- [Active trials](active-trials)
+- [Trials renewal canceled](trials-renewal-cancelled)

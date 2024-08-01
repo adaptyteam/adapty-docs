@@ -119,7 +119,7 @@ Configurational options:
 | **Public SDK key** | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
 | **Observer mode** | optional | A boolean value controlling [Observer mode](observer-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. |
 | **Customer user ID** | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying Users](android-identifying-users) section. |
-| **StoreKit 2 Usage** | required | <p>A value that controls StoreKit 1 or 2 API utilization. Read more in the [Displaying Paywalls & Products](https://docs.adapty.io/docs/displaying-products#adapty-sdk-version-250-and-higher) section.</p><p>The default value is `.forIntroEligibilityCheck`.</p> |
+| **StoreKit 2 Usage** | required | <p>A value that controls StoreKit 1 or 2 API utilization. Read more in the [Displaying Paywalls & Products](displaying-products#adapty-sdk-version-250-and-higher) section.</p><p>The default value is `.forIntroEligibilityCheck`.</p> |
 
 
 :::warning

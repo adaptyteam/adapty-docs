@@ -12,7 +12,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 ### Profile
 
-Info about the [customer and his subscription.  ](https://docs.adapty.io/docs/server-side-api-objects#profile)
+Info about the [customer and his subscription.  ](server-side-api-objects#profile)
 
 | Param                    | Type  | Required | Nullable | Description                                                                                                                                                                                                                                         |
 | :----------------------- | :---- | :------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

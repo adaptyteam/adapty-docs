@@ -13,7 +13,7 @@ We’re excited to introduce the **Beta version of our new Paywall Builder**, co
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
 :::note
-This section describes the new Paywall Builder (Beta). For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
+This section describes the new Paywall Builder (Beta). For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](../adapty-paywall-builder-legacy).
 :::
 
 ## Structure of a paywall
@@ -29,7 +29,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 ## How to start designing a paywall with new Paywall Builder
 
 :::warning
-The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-guide-to-adapty-sdk-v3x-or-later) for your new paywalls to function properly!
+The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-to-adapty-sdk-v3) for your new paywalls to function properly!
 :::
 
 To use the Adapty Paywall Builder:

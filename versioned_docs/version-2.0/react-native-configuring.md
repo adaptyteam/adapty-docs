@@ -57,7 +57,7 @@ ios: {
 | **Log level** | optional | A string parameter that makes Adapty record errors and other important information to help you understand what's happening. |
 | **Deferred activation** | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**. |
 | **Disabling IP address collection** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
-| **Disabling IDFA collection** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. For more details, refer to the [Analytics integration](https://docs.adapty.io/docs/analytics-integration#react-native) section. |
+| **Disabling IDFA collection** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. For more details, refer to the [Analytics integration](analytics-integration#react-native) section. |
 
 
 :::note

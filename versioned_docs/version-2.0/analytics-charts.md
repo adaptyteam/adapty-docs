@@ -41,7 +41,7 @@ When you set a time range for a chart in the Adapty calendar, you have several q
 - This year - from the 1st day of the current year till today
 
 Also, you can select the Custom option to set any period you need.  
-We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](https://docs.adapty.io/docs/account)
+We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](account)
 
 
 <img
@@ -151,7 +151,7 @@ The Installs chart shows the total number of users who have installed the app fo
 
 ![](https://files.readme.io/62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.png)
 
-Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](https://docs.adapty.io/docs/identifying-users) for identifying users.
+Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](identifying-users) for identifying users.
 
 ### Subscriptions
 
@@ -264,8 +264,7 @@ Filter metrics by platform (iOS/Android).
 
 #### A/B tests
 
-Filter metrics by A/B tests that are associated with purchases.  
-In case your A/B tests have multiple [versions](ab-test#versioning), they are marked as "Rev. X" so you can choose the specific one.
+Filter metrics by A/B tests that are associated with purchases.
 
 #### Attribution
 

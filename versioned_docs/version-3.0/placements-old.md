@@ -181,7 +181,7 @@ The **Run paywall** option allows you to display a specific paywall exclusively 
 
 
 
-To learn more about running paywalls in Adapty and optimizing their performance, you can refer to our documentation on [paywall functionality](https://docs.adapty.io/docs/paywalls).
+To learn more about running paywalls in Adapty and optimizing their performance, you can refer to our documentation on [paywall functionality](paywalls).
 
 ### Run A/B test
 
@@ -202,7 +202,7 @@ To learn more about running paywalls in Adapty and optimizing their performance,
 
 The **Run A/B test** option allows you to show different paywalls to app users within a specific audience. By running an A/B test, you can compare different options and determine the most effective paywall for that audience segment. You can select an existing paywall bundle or create a new A/B test from scratch. The selected paywalls will be displayed on the placement detail page, with significant results highlighted in green. Running an A/B test helps you optimize conversions and find the best paywall option for your audience.
 
- You can refer to the [documentation](https://docs.adapty.io/docs/ab-tests#how-to-create-an-ab-test) on creating and running A/B tests for more detailed instructions. This documentation will provide step-by-step information on setting up A/B tests and leveraging them effectively within the Adapty dashboard.
+ You can refer to the [documentation](ab-tests#how-to-create-an-ab-test) on creating and running A/B tests for more detailed instructions. This documentation will provide step-by-step information on setting up A/B tests and leveraging them effectively within the Adapty dashboard.
 
 ### Placement metrics
 
@@ -221,7 +221,7 @@ The **Run A/B test** option allows you to show different paywalls to app users w
 
 
 
-Adapty provides robust metrics and tracking capabilities for placement, allowing you to gain valuable insights into the performance of your paywalls and A/B tests. These metrics enable you to measure the effectiveness of your monetization strategy. To learn more about the placement metrics and how to interpret them, you can refer to the [documentation](https://docs.adapty.io/docs/placement-metrics).
+Adapty provides robust metrics and tracking capabilities for placement, allowing you to gain valuable insights into the performance of your paywalls and A/B tests. These metrics enable you to measure the effectiveness of your monetization strategy. To learn more about the placement metrics and how to interpret them, you can refer to the [documentation](placement-metrics).
 
 ### Simplifying changes without App Store releases
 
@@ -250,4 +250,4 @@ Adapty allows you to provide fallback paywalls that will be used when a user ope
 
 
 
-The fallbacks are available in the JSON representation of your paywalls/products list, following the exact same format as provided by the Adapty backend. To learn how to set up fallback paywalls using Adapty, please consult our detailed [documentation](https://docs.adapty.io/docs/displaying-products#fallback-paywalls).
+The fallbacks are available in the JSON representation of your paywalls/products list, following the exact same format as provided by the Adapty backend. To learn how to set up fallback paywalls using Adapty, please consult our detailed [documentation](displaying-products#fallback-paywalls).

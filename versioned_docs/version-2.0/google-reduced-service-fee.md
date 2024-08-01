@@ -5,7 +5,7 @@ metadataTitle: ""
 ---
 
 Learn how Adapty can help you manage your proceeds on Google Play Store, including the reduced service fee program for developers earning less than $1,000,000 USD annually. By following the necessary steps to join the program and updating your membership status in the Adapty Sashboard, you can ensure that your sales commission is accurately calculated, and you receive reliable information on your transactions.  
-Adapty also supports the Small Business Program for App Store. You can reference [this document](https://docs.adapty.io/docs/app-store-small-business-program) for more details.
+Adapty also supports the Small Business Program for App Store. You can reference [this document](app-store-small-business-program) for more details.
 
 ## Google's 15% Reduced Service Fee
 

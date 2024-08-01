@@ -29,7 +29,7 @@ Every text you see in Paywall Builder can have its own font and style. You can a
 
 
 
-But in some cases, it'd be more convenient to change the font on the entire paywall. This can be done in the Layout section of Paywall Builder [by adjusting the Paywall Font](https://docs.adapty.io/docs/paywall-layout-and-products#font-settings-of-your-paywall).
+But in some cases, it'd be more convenient to change the font on the entire paywall. This can be done in the Layout section of Paywall Builder [by adjusting the Paywall Font](paywall-layout-and-products#font-settings-of-your-paywall).
 
 ## Fonts available by default
 

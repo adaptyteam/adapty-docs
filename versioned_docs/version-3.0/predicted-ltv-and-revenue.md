@@ -52,7 +52,7 @@ The ML model used to predict revenue and LTV has certain limitations that should
 
 #### Prediction in Adapty cohorts
 
-To access predicted revenue and predicted LTV values for your subscribers, you can navigate to the Cohort Analyses page in your Adapty dashboard. Also, if you want to learn more about the Adapty cohort, please reference our [documentation](https://docs.adapty.io/docs/analytics-cohorts) about it. 
+To access predicted revenue and predicted LTV values for your subscribers, you can navigate to the Cohort Analyses page in your Adapty dashboard. Also, if you want to learn more about the Adapty cohort, please reference our [documentation](analytics-cohorts) about it. 
 
 
 <img

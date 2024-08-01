@@ -30,7 +30,7 @@ Adapty's calculation logic for the New subscriptions chart counts the number of 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### New subscriptions chart usage
 
@@ -40,7 +40,7 @@ The new subscriptions chart provides valuable insights into the number of newly 
 
 In addition to New subscriptions, Adapty also provides metrics for other subscription-related events, such as active subscriptions, subscriptions renewal canceled, expired subscriptions, and non-subscriptions. To learn more about these subscriptions-related metrics, please refer to the following documentation guides:
 
-- [Active subscriptions](https://docs.adapty.io/docs/active-subscriptions)
-- [Churned (expired) subscriptions](https://docs.adapty.io/docs/churned-expired-subscriptions)
-- [Cancelled subscriptions](https://docs.adapty.io/docs/cancelled-subscriptions)
-- [Non-subscriptions](https://docs.adapty.io/docs/non-subscriptions)
+- [Active subscriptions](active-subscriptions)
+- [Churned (expired) subscriptions](churned-expired-subscriptions)
+- [Cancelled subscriptions](cancelled-subscriptions)
+- [Non-subscriptions](non-subscriptions)

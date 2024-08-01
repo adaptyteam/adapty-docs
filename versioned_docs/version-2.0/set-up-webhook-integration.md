@@ -7,7 +7,7 @@ metadataTitle: "Set Up Webhook Integration for Real-Time Subscription Notificati
 Adapty [webhook integration](webhook) consists of the following steps:
 
 1. You set up your endpoint to have the **Content-Type** header as `application/json`. 
-2. [You configure the integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard) in the Adapty Dashboard. Within this step, you can optionally [map Adapty events with your event names](set-up-webhook-integration#map-event-names).
+2. [You configure the integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard) in the Adapty Dashboard. Within this step, you can optionally [map Adapty events with your event names](set-up-webhook-integration#choose-events-to-send-and-map-event-names).
 3. [Adapty sends a verification request to your server](set-up-webhook-integration#adaptys-verification-request).
 4. [Your server sends a verification response to Adapty](set-up-webhook-integration#your-servers-verification-response)
 5. [Test your webhook integration](test-webhook).

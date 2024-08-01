@@ -30,7 +30,7 @@ Adapty's calculation logic for the subscriptions renewal cancelled chart involve
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Subscriptions renewal canceled chart usage
 
@@ -40,7 +40,7 @@ The Active subscriptions chart is useful to get valuable insights into the numbe
 
 In addition to Subscription renewal canceled chart, Adapty also provides metrics for other subscription-related events, such as active subscriptions, new subscriptions, expired subscriptions, and non-subscriptions. To learn more about these subscriptions-related metrics, please refer to the following documentation guides:
 
-- [Active subscriptions](https://docs.adapty.io/docs/active-subscriptions)
-- [Churned (expired) subscriptions](https://docs.adapty.io/docs/churned-expired-subscriptions)
+- [Active subscriptions](active-subscriptions)
+- [Churned (expired) subscriptions](churned-expired-subscriptions)
 - [New subscriptions](reactivated-subscriptions)
-- [Non-subscriptions](https://docs.adapty.io/docs/non-subscriptions)
+- [Non-subscriptions](non-subscriptions)

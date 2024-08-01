@@ -67,7 +67,10 @@ If you prefer a pure workflow. refer to following instructions:
 
 1. In your project run the installation command:
 
-```sh title="Shell"
+```shell title="Shell (with npm)"
+npm add react-native-adapty
+```
+```shell title="Shell (with yarn)"
 yarn add react-native-adapty
 ```
 

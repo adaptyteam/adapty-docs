@@ -10,7 +10,7 @@ Restoring Purchases in both iOS and Android is a feature that allows users to re
 In paywalls built with [Paywall Builder](paywall-builder-getting-started) purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
 :::
 
-To restore a purchase if you do not use the [Paywall Builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
+To restore a purchase if you do not use the [Paywall Builder](/3.0/adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
 ```swift title="Swift"
 Adapty.restorePurchases { [weak self] result in

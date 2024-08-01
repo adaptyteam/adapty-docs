@@ -28,7 +28,7 @@ You can only use tag variables when describing products and offers in the "Produ
 
 ![](https://files.readme.io/0a69e8f-tag_variables_select_product.png)
 
-3. Use variables from [the table below](https://docs.adapty.io/docs/paywall-builder-tag-variables#full-list-of-variables) in any of the text fields to describe the product and its offers:
+3. Use variables from [the table below](paywall-builder-tag-variables#full-list-of-variables) in any of the text fields to describe the product and its offers:
 
 ![](https://files.readme.io/8c77550-tag_variables_usage.png)
 

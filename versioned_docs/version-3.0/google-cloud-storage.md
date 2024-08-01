@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Adapty's integration with Google Cloud Storage allows you to store event and paywall visit data securely in one central location.  You will be able to save your [subscription events](https://docs.adapty.io/docs/events) to your Google Cloud Storage bucket as .csv files.  
+Adapty's integration with Google Cloud Storage allows you to store event and paywall visit data securely in one central location.  You will be able to save your [subscription events](events) to your Google Cloud Storage bucket as .csv files.  
 To set up this integration, you will need to follow a few simple steps in the Google Cloud Console and Adapty Dashboard.
 
 :::note
@@ -40,7 +40,7 @@ In the Adapty Dashboard, the following fields are needed to set up the connectio
 
 | Field                                           | Description                                                                                                                                                                                                                                                                                        |
 | :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Google Cloud Client ID**                      | A unique identifier assigned to your Google Cloud project when you create a new client in the Google Cloud Console. Find this ID in the downloaded private [JSON key file](https://docs.adapty.io/docs/google-cloud-storage#create-google-cloud-storage-credentials)  under the `client_id` field. |
+| **Google Cloud Client ID**                      | A unique identifier assigned to your Google Cloud project when you create a new client in the Google Cloud Console. Find this ID in the downloaded private [JSON key file](google-cloud-storage#create-google-cloud-storage-credentials)  under the `client_id` field. |
 | **Google Cloud Project ID**                     | A user-assigned identifier for your Google Cloud project. Find this ID in the downloaded private JSON key file under the `project_id` field.                                                                                                                                                       |
 | **Google Cloud Service Account Private Key ID** | A unique identifier assigned to your private key when you create a new service account in the Google Cloud Console.  Find this ID in the downloaded private JSON key file under the `private_key_id` field.                                                                                        |
 | **Google Cloud Bucket Name**                    | The name of the bucket in Google Cloud Storage where you want to store your data. It should be unique within the Google Cloud Storage environment and should not contain any spaces.                                                                                                               |
@@ -285,7 +285,7 @@ Here is the table structure for the paywall visits:
 
 ## Events and tags
 
-Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img

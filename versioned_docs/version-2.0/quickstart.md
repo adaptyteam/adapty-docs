@@ -27,7 +27,7 @@ In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/setti
 
 To find App Bundle ID open App Store Connect, go to My Apps, and select the app whose ID you need. On the app page, in the drop-down More menu, select About this App. The app ID is displayed in the Bundle ID field.  
 – [How to connect to In-App Purchase API?](in-app-purchase-api-storekit-2)  
-– [How to set URL for App Store Server Notifications? **→**](https://docs.adapty.io/docs/app-store-server-notifications)
+– [How to set URL for App Store Server Notifications? **→**](app-store-server-notifications)
 
 **Play Store configuration**  
 Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_ and fill in the fields.
@@ -35,16 +35,16 @@ Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_
 ![Play Store configuration](https://files.readme.io/fa64f4d-99608fc-Android_store_configuration.png "99608fc-Android_store_configuration.png")
 
 To find Package Name Open the Google Play Developer Console and select the app whose ID you need. The ID is specified next to the app's name and logo.  
-– [Where to find Service account key file? **→** ](https://docs.adapty.io/docs/service-account-key-file)  
-– [Where to find Real-time Developer Notifications (RTDN)? **→**](https://docs.adapty.io/docs/real-time-developer-notifications-rtdn) 
+– [Where to find Service account key file? **→** ](service-account-key-file)  
+– [Where to find Real-time Developer Notifications (RTDN)? **→**](real-time-developer-notifications-rtdn) 
 
 ### Creating a product
 
-**[Add Access Level](https://docs.adapty.io/docs/access-level) (optional)** 
+**[Add Access Level](access-level) (optional)** 
 
 ![Creating a product](https://files.readme.io/1574ebf-5c59a11-Access_Levels.png "5c59a11-Access_Levels.png")
 
-**Add [product](https://docs.adapty.io/docs/product)** 
+**Add [product](product)** 
 
 ![Add product](https://files.readme.io/0f9ffd0-807efd2-Product.png "807efd2-Product.png")
 
@@ -86,7 +86,7 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 ### Installing Adapty SDK
 
-[Install Adapty SDK](https://docs.adapty.io/docs/installation) in your app and be sure you have replaced the** "PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
+[Install Adapty SDK](installation) in your app and be sure you have replaced the** "PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 

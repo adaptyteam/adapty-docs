@@ -6,7 +6,7 @@ metadataTitle: ""
 
 You can navigate to the General tab of the App Settings page to manage your app's behavior, appearance, and revenue sharing. Here, you can customize your app's name and icon, manage your Adapty SDK and API keys, set your Small Business Program status, and choose the timezone for your app's analytics and charts.
 
-## App details
+## 1. App details
 
 
 <img
@@ -42,7 +42,7 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 
 
 
-If you're a member of the Apple Small Business Program and/or Google's Reduced Service Fee program, you can let Adapty know by specifying the period that you are a member. Adapty will adjust the commission rate accordingly, so you can keep more of your revenue. Please note that this setting applies only to future transactions, and you need to update it if your Small Business Program status changes. You can learn more about the [App Store Small Business Program](https://docs.adapty.io/docs/app-store-small-business-program) and [Google's Reduced Service Fee](https://docs.adapty.io/docs/google-reduced-service-fee).
+If you're a member of the Apple Small Business Program and/or Google's Reduced Service Fee program, you can let Adapty know by specifying the period that you are a member. Adapty will adjust the commission rate accordingly, so you can keep more of your revenue. Please note that this setting applies only to future transactions, and you need to update it if your Small Business Program status changes. You can learn more about the [App Store Small Business Program](app-store-small-business-program) and [Google's Reduced Service Fee](google-reduced-service-fee).
 
 ### 3\. Reporting timezone
 
@@ -96,7 +96,7 @@ Please ensure that you select the designated option that aligns with your desire
 
 ## 5\. Sharing purchases between user accounts
 
-This setting determines what happens when Adapty receives a purchase from a [Customer User ID](https://docs.adapty.io/docs/identifying-users#setting-customer-user-id-on-configuration) that is currently associated with another Customer User ID.
+This setting determines what happens when Adapty receives a purchase from a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) that is currently associated with another Customer User ID.
 
 Sharing is enabled by default — meaning that anonymous and identified users can share the same [access level](access-level) provided by Adapty if the app store on their device is under the same Apple/Google ID. This can be helpful for example when your user re-installs the app and chooses to log in under a different email — in that case, they will still get access to their previous purchase.
 
@@ -106,10 +106,10 @@ However, you might want to disable sharing between different user accounts in ca
 
 Here is what happens when this option is disabled:
 
-- Access level is still shared between anonymous users (that is if a user never gets identified and assigned a [customer user ID](https://docs.adapty.io/docs/identifying-users#setting-customer-user-id-on-configuration))
+- Access level is still shared between anonymous users (that is if a user never gets identified and assigned a [customer user ID](identifying-users#setting-customer-user-id-on-configuration))
 - When Adapty first sees a customer user ID connected to the original purchase (for example, when a user logs in or signs up), this purchase becomes "owned" by this customer user ID.
 - After that, this purchase is only available to the original user. If another user (anonymous or identified) comes along with the same Apple/Google ID after a reinstall — Adapty will not provide access to them.
-- You can "untie" the purchase only by [deleting the owner's user profile](https://docs.adapty.io/docs/server-side-api-specs#delete-users-data). After deletion, this access level becomes available to the first user profile to claim it (anonymous or identified).
+- You can "untie" the purchase only by [deleting the owner's user profile](server-side-api-specs#delete-users-data). After deletion, this access level becomes available to the first user profile to claim it (anonymous or identified).
 
 That way you can make sure there is only one user profile for every subscription.
 
@@ -127,7 +127,7 @@ Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to
 
 ## 7. Test devices
 
-Specify which devices will be used for testing so they can receive immediate updates for paywall or placement changes without delays caused by caching.
+Specify the devices to be used for testing to ensure they get instant updates for paywall or placement changes, bypassing any caching delays. For more information, see [Testing devices](test-devices).
 
 ## 8. Delete the app
 

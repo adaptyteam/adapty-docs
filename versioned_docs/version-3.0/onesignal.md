@@ -6,7 +6,7 @@ metadataTitle: ""
 
 As one of the top customer engagement solutions, [OneSignal ](https://onesignal.com/)provides a wide range of tools for push notifications, email, SMS, and in-app messaging. By integrating Adapty with OneSignal, you can easily access all of your subscription events in one place, giving you the ability to trigger automated communication based on those events. 
 
-Adapty provides a complete set of data that lets you track [subscription events](https://docs.adapty.io/docs/events) from all stores in one place and can be used to update your OneSignal users. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in your OneSignal dashboard and map them with your [acquisition campaigns.](https://documentation.onesignal.com/docs/automated-messages#example-automated-message-campaigns) 
+Adapty provides a complete set of data that lets you track [subscription events](events) from all stores in one place and can be used to update your OneSignal users. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in your OneSignal dashboard and map them with your [acquisition campaigns.](https://documentation.onesignal.com/docs/automated-messages#example-automated-message-campaigns) 
 
 Adapty uses subscription events to update OneSignal tags, so you can build target communication with customers using OneSignal push notifications after a short and easy integration setting as described below. 
 
@@ -75,7 +75,7 @@ After retrieving your OneSignal App ID and authentication key from the OneSignal
 
 ### Events and tags
 
-Below the credentials, there are three groups of events you can send to OneSignal from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can send to OneSignal from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img
@@ -109,12 +109,12 @@ This integration can update and set various properties in your Adapty users as t
 | Tag | Type | Description |
 |---|----|-----------|
 | `adapty_customer_user_id` | String | Contains the value of the unique identifier of the user, which can be found from OneSignal side. |
-| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in your Adapty [dashboard](https://docs.adapty.io/docs/profiles-crm). |
+| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in your Adapty [dashboard](profiles-crm). |
 | `environment` | String | <p>Indicates whether the user is operating in a sandbox or production environment.</p><p></p><p>Values are either `Sandbox` or `Production`</p> |
 | `store` | String | <p>Contains the name of the Store that used to make the purchase.</p><p></p><p>Possible values:</p><p>`app_store` or `play_store`.</p> |
 | `vendor_product_id` | String | <p>Contains the value of Product Id in Apple/Google store.</p><p></p><p>e.g., org.locals.12345</p> |
 | `subscription_expires_at` | String | <p>Contains the expiration date of the latest subscription.</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| `last_event_type` | String | Indicates the type of the last received event from the list of the standard [Adapty events](https://docs.adapty.io/docs/events) that you have enabled for the integration. |
+| `last_event_type` | String | Indicates the type of the last received event from the list of the standard [Adapty events](events) that you have enabled for the integration. |
 | `purchase_date` | String | <p>Contains the date of the last transaction (original purchase or renewal).</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
 | `active_subscription` | String | The value will be set to `true` on any purchase/renewal event, or `false` if the subscription is expired. |
 | `period_type` | String | <p>Indicates the latest period type for the purchase or renewal.</p><p></p><p>Possible values are</p><p>`trial` for trial period or `normal` for the rest.</p> |
@@ -122,7 +122,7 @@ This integration can update and set various properties in your Adapty users as t
 
 Please consider that all float values will be rounded to int. Strings stay the same. 
 
-In addition to the pre-defined list of tags available, it is possible to send [custom attributes](https://docs.adapty.io/docs/segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to OneSignal if the user marks the ** Send User Attributes** checkbox from[ the integration page.](https://app.adapty.io/integrations/onesignal) When unchecked, Adapty sends exactly 10 tags. If the checkbox is checked, we can send more than 10 tags for greater flexibility in capturing relevant data.
+In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to OneSignal if the user marks the ** Send User Attributes** checkbox from[ the integration page.](https://app.adapty.io/integrations/onesignal) When unchecked, Adapty sends exactly 10 tags. If the checkbox is checked, we can send more than 10 tags for greater flexibility in capturing relevant data.
 
 ## SDK configuration
 

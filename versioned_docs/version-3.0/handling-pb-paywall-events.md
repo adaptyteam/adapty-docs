@@ -11,5 +11,5 @@ In the framework-specific sections, we'll dive into details of effective managem
 - [iOS - Handling events](ios-handling-events)
 
 :::warning
-The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](https://docs.adapty.io/docs/handling-pb-paywall-events).
+The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](handling-pb-paywall-events).
 :::

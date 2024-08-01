@@ -32,7 +32,7 @@ For example, if there were 500 active subscriptions at the end of last month, 50
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Active subscriptions chart usage
 
@@ -42,6 +42,6 @@ The Active subscriptions chart is useful to get valuable insights into the numbe
 
 In addition to Active subscriptions, Adapty also provides metrics for other subscription-related events, such as new subscriptions, subscriptions renewal canceled, expired subscriptions, and non-subscriptions. To learn more about these subscriptions-related metrics, please refer to the following documentation:
 
-- [Churned (expired) subscriptions](https://docs.adapty.io/docs/churned-expired-subscriptions)
-- [Cancelled subscriptions](https://docs.adapty.io/docs/cancelled-subscriptions)
-- [Non-subscriptions](https://docs.adapty.io/docs/non-subscriptions)
+- [Churned (expired) subscriptions](churned-expired-subscriptions)
+- [Cancelled subscriptions](cancelled-subscriptions)
+- [Non-subscriptions](non-subscriptions)

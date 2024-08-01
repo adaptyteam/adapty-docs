@@ -19,11 +19,11 @@ Your subscribers will migrate automatically
 All users who have ever activated a subscription will instantly move to Adapty as soon as they open a new version of your app with Adapty SDK. The subscription status validation and premium access will be restored automatically.
 :::
 
-Before you push a new version of your app with Adapty SDK, make sure to check our [release сhecklist](https://docs.adapty.io/docs/release-checklist).
+Before you push a new version of your app with Adapty SDK, make sure to check our [release сhecklist](release-checklist).
 
 ### Learn the core differences; create and prepare an Adapty account
 
-Adapty and RevenueCat SDKs are similarly designed. The biggest difference is the network usage and the speed: Adapty SDK is designed to provide you with information on demand as fast as possible when you ask for it. For example, when requesting a paywall, you get the [remote config](paywalls#remote-config-table-view) first to pre-build your onboarding or paywall and then request products in a dedicated request.
+Adapty and RevenueCat SDKs are similarly designed. The biggest difference is the network usage and the speed: Adapty SDK is designed to provide you with information on demand as fast as possible when you ask for it. For example, when requesting a paywall, you get the [remote config](customize-paywall-with-remote-config) first to pre-build your onboarding or paywall and then request products in a dedicated request.
 
 Naming is slightly different:
 
@@ -78,7 +78,7 @@ Replace `Purchases.shared.getCustomerInfo` with `Adapty.getProfile`.
 
 In RevenueCat, you use the following structure:`Purchases.shared.getOfferings` and then `self.offering?.availablePackages`.
 
-In Adapty, you first request a paywall (read above) to get immediate access to Adapty's [remote config](paywalls#paywall-remote-config) and then call for products with `Adapty.getPaywallProducts`.
+In Adapty, you first request a paywall (read above) to get immediate access to Adapty's [remote config](customize-paywall-with-remote-config) and then call for products with `Adapty.getPaywallProducts`.
 
 #### Making a purchase
 

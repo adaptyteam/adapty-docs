@@ -30,7 +30,7 @@ Adapty calculates the billing issue chart by tracking the number of subscription
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Billing issue chart usage
 
@@ -40,6 +40,6 @@ The Billing Issue chart can provide valuable insights into your app's subscripti
 
 In addition to the Billing Issue chart, Adapty also provides metrics for other issues-related events, such as Refund events, Refund money, and Grace period. To learn more about these issue-related metrics, please refer to the following documentation:
 
-- [Refund money](https://docs.adapty.io/docs/new-trials)
-- [Refund events](https://docs.adapty.io/docs/active-trials)
-- [Grace period](https://docs.adapty.io/docs/trials-renewal-cancelled)
+- [Refund money](new-trials)
+- [Refund events](active-trials)
+- [Grace period](trials-renewal-cancelled)

@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](https://docs.adapty.io/docs/ab-test-copy): from the **Placement** page or the **A/B test** page.
+Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-test-copy): from the **Placement** page or the **A/B test** page.
 
 ## Run an A/B test from the list of A/B tests
 
@@ -51,7 +51,7 @@ It's important to note that each audience has a **priority** displayed in number
 
 The **Run A/B test** option allows you to show different paywalls to app users within a specific audience. By running an A/B test, you can compare different options and determine the most effective paywall for that audience segment. You can select an existing paywall bundle or create a new A/B test from scratch. The selected paywalls will be displayed on the placement detail page, with significant results highlighted in green. Running an A/B test helps you optimize conversions and find the best paywall option for your audience.
 
- You can refer to the [documentation](https://docs.adapty.io/docs/ab-tests#how-to-create-an-ab-test) on creating and running A/B tests for more detailed instructions. This documentation will provide step-by-step information on setting up A/B tests and leveraging them effectively within the Adapty dashboard.
+ You can refer to the [documentation](ab-tests#how-to-create-an-ab-test) on creating and running A/B tests for more detailed instructions. This documentation will provide step-by-step information on setting up A/B tests and leveraging them effectively within the Adapty dashboard.
 
 
 <img

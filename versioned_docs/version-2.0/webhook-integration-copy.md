@@ -70,7 +70,7 @@ With webhooks integrated, you can:
 
 Adapty will send you those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the following structure:
+Each event except for the [access_level_update](webhook#event-access-level-updated) is wrapped into the structure before. Please pay attention that some properties can be absent, if a property field is blank, Adapty does not sent it to webhook.
 
 ```json title="Json"
 {
@@ -120,6 +120,105 @@ Webhook integration enables the control of sending attribution and user attribut
 
 - Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
 - Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
+
+### Event data for all events except for Access level updated
+
+Here is the full list od event properties that can be sent with an event to webhook. Please pay attention that some properties can be absent.
+
+| Property | Type | Description |
+|--------|----|-----------|
+| **profile_id** | uuid | Adapty user ID. |
+| **currency** | str | Local currency (defaults to USD). |
+| **price_usd** | float | Product price before Apple/Google cut. Revenue. |
+| **proceeds_usd** | float | Product price after Apple/Google cut. Net revenue. |
+| **net_revenue_usd** | float | Net revenue (income after Apple/Google cut and taxes) in USD. Can be empty. |
+| **price_local** | float | Product price before Apple/Google cut in local currency. Revenue. |
+| **proceeds_local** | float | Product price after Apple/Google cut in local currency. Net revenue. |
+| **transaction_id** | str | A unique identifier for a transaction such as a purchase or renewal. |
+| **original_transaction_id** | str | The transaction identifier of the original purchase. |
+| **purchase_date** | ISO 8601 date | The date and time of product purchase. |
+| **original_purchase_date** | ISO 8601 date | The date and time of the original purchase. |
+| **environment** | str | Can be _Sandbox_ or _Production_. |
+| **vendor_product_id** | str | Product ID in the Apple App Store, Google Play Store, or Stripe. |
+| **base_plan_id** | str | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe. |
+| **event_datetime** | ISO 8601 date | The date and time of the event. |
+| **store** | str | Can be _app_store_ or _play_store_. |
+| **trial_duration** | str | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". |
+| **cancellation_reason** | str | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at** | ISO 8601 date | The Expiration date of subscription. Usually in the future. |
+| **consecutive_payments** | int | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
+| **rate_after_first_year** | bool | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
+| **promotional_offer_id** | str | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
+| **store_offer_category** | str | Can be _introductory_ or _promotional_. |
+| **store_offer_discount_type** | str | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_. |
+| **paywall_name** | str | Name of the paywall where the transaction originated. |
+| **paywall_revision** | int | Revision of the paywall where the transaction originated. The value is set to 1. |
+| **developer_id** | str | Developer (SDK) ID of the placement where the transaction originated. |
+| **ab_test_name** | str | Name of the A/B test where the transaction originated. |
+| **ab_test_revision** | int | Revision of the A/B test where the transaction originated. The value is set to 1. |
+| **cohort_name** | str | Name of the audience to which the profile belongs to. |
+| **profile_event_id** | uuid | Unique event ID that can be used for deduplication. |
+| **store_country** | str | The country sent to us by the store. |
+| **profile_ip_address** | str | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
+| **profile_country** | str | Determined by Adapty, based on profile IP. |
+| **profile_total_revenue_usd** | float | Total revenue for the profile, refunds included. |
+| **variation_id** | uuid | Unique ID of the paywall where the purchase was made. |
+
+
+### Event data for event Access level updated
+
+Access level updated event has a wider list of event properties:
+
+| Property | Type | Description |
+|--------|----|-----------|
+| **profile_id** | uuid | Adapty user ID. |
+| **currency** | str | Local currency (defaults to USD). |
+| **price_usd** | float | Product price before Apple/Google cut. Revenue. |
+| **proceeds_usd** | float | Product price after Apple/Google cut. Net revenue. |
+| **net_revenue_usd** | float | Net revenue (income after Apple/Google cut and taxes) in USD. Can be empty. |
+| **price_local** | float | Product price before Apple/Google cut in local currency. Revenue. |
+| **proceeds_local** | float | Product price after Apple/Google cut in local currency. Net revenue. |
+| **transaction_id** | str | A unique identifier for a transaction such as a purchase or renewal. |
+| **original_transaction_id** | str | The transaction identifier of the original purchase. |
+| **purchase_date** | ISO 8601 date | The date and time of product purchase. |
+| **original_purchase_date** | ISO 8601 date | The date and time of the original purchase. |
+| **environment** | str | Can be _Sandbox_ or _Production_. |
+| **vendor_product_id** | str | Product ID in the Apple App Store, Google Play Store, or Stripe. |
+| **base_plan_id** | str | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe. |
+| **event_datetime** | ISO 8601 date | The date and time of the event. |
+| **store** | str | Can be _app_store_ or _play_store_. |
+| **trial_duration** | str | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". |
+| **cancellation_reason** | str | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at** | ISO 8601 date | The Expiration date of subscription. Usually in the future. |
+| **consecutive_payments** | int | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
+| **rate_after_first_year** | bool | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
+| **promotional_offer_id** | str | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
+| **store_offer_category** | str | Can be _introductory_ or _promotional_. |
+| **store_offer_discount_type** | str | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_. |
+| **paywall_name** | str | Name of the paywall where the transaction originated. |
+| **paywall_revision** | int | Revision of the paywall where the transaction originated. The value is set to 1. |
+| **developer_id** | str | Developer (SDK) ID of the placement where the transaction originated. |
+| **ab_test_name** | str | Name of the A/B test where the transaction originated. |
+| **ab_test_revision** | int | Revision of the A/B test where the transaction originated. The value is set to 1. |
+| **cohort_name** | str | Name of the audience to which the profile belongs to. |
+| **profile_event_id** | uuid | Unique event ID that can be used for deduplication. |
+| **store_country** | str | The country sent to us by the store. |
+| **profile_ip_address** | str | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
+| **profile_country** | str | Determined by Adapty, based on profile IP. |
+| **profile_total_revenue_usd** | float | Total revenue for the profile, refunds included. |
+| **variation_id** | uuid | Unique ID of the paywall where the purchase was made. |
+| **access_level_id** | str | Paid access level ID |
+| **is_active** | bool | Boolean indicating whether paid access level is active for the profile. |
+| **will_renew** | bool | Boolean indicating whether paid access level will be renewed. |
+| **is_refund** | bool | Boolean indicating whether transaction is refunded. |
+| **is_lifetime** | bool | Boolean indicating whether paid access level is lifetime. |
+| **is_in_grace_period** | bool | Boolean indicating whether profile is in grace period. |
+| **starts_at** | ISO 8601 date | Date and time when paid access level starts for the user. |
+| **renewed_at** | ISO 8601 date | Date and time when paid access will be renewed. |
+| **expires_at** | ISO 8601 date | Date and time when paid access will expire. |
+| **activated_at** | ISO 8601 date | Date and time when paid access was activated. |
+| **billing_issue_detected_at** | ISO 8601 date | Date and time of billing issue. |
+
 
 ### Attribution data
 
@@ -191,6 +290,6 @@ Adapty has a special event `access_level_updated`. It is sent only to webhook in
 
 Adapty doesn't send `access_level_updated` upon subscription expiration - please, refer to **expires_at** value to end the subscriptions on your side. 
 
-Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](https://docs.adapty.io/docs/server-side-api-specs#prolonggrant-a-subscription-for-a-user)
+Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](server-side-api-specs#prolonggrant-a-subscription-for-a-user)
 
-For detailed descriptions of the mentioned properties, you can refer to the[ API objects documentation](https://docs.adapty.io/docs/server-side-api-objects).
+For detailed descriptions of the mentioned properties, you can refer to the[ API objects documentation](server-side-api-objects).

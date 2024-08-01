@@ -53,8 +53,8 @@ In the Adapty Dashboard, the following fields are needed to set up the connectio
 
 | Field                        | Description                                                                                                                                                                                                                                                  |
 | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Access Key ID**            | A unique identifier that is used to authenticate a user or application's access to an AWS service.  Find this ID in the downloaded [csv file](https://docs.adapty.io/docs/s3-exports#how-to-create-amazon-s3-credentials) .                                  |
-| **Secret Access Key**        | A private key that is used in conjunction with the Access Key ID to authenticate a user or application's access to an AWS service. Find this Key in the downloaded  [csv file](https://docs.adapty.io/docs/s3-exports#how-to-create-amazon-s3-credentials) . |
+| **Access Key ID**            | A unique identifier that is used to authenticate a user or application's access to an AWS service.  Find this ID in the downloaded [csv file](s3-exports#how-to-create-amazon-s3-credentials) .                                  |
+| **Secret Access Key**        | A private key that is used in conjunction with the Access Key ID to authenticate a user or application's access to an AWS service. Find this Key in the downloaded  [csv file](s3-exports#how-to-create-amazon-s3-credentials) . |
 | **S3 Bucket Name **          | A globally unique name that identifies a specific S3 bucket within the AWS cloud. S3 buckets are a simple storage service that allows users to store and retrieve data objects, such as files and images, in the cloud.                                      |
 | **Folder Inside the Bucker** | The  name of the folder that you want to have inside the selected S3 bucket. Please note that S3 simulates folders using object key prefixes, which are essentially folder names.                                                                            |
 
@@ -364,7 +364,7 @@ Here is the table structure for the paywall visits:
 
 ## Events and tags
 
-Below the credentials, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img

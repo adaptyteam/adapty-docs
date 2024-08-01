@@ -212,5 +212,5 @@ If you configure a paywall like this, a monthly subscription will not have a fre
 
 
 :::note
-If you can't edit the products on the paywall, it means that the paywall is not in the draft state. You can duplicate it or create a new paywall, and then select the new paywall in the [placement](placements#run-paywall).
+If you can't edit the products on the paywall, it means that the paywall is not in the draft state. You can duplicate it or create a new paywall, and then [select the new paywall in the placement](add-audience-paywall-ab-test) .
 :::

@@ -6,7 +6,7 @@ metadataTitle: ""
 
 As one of the top customer engagement solutions, [Braze](https://braze.com/) provides a wide range of tools for push notifications, email, SMS, and in-app messaging. By integrating Adapty with Braze, you can easily access all of your subscription events in one place, giving you the ability to trigger automated communication based on those events. 
 
-Adapty provides a complete set of data that lets you track [subscription events](https://docs.adapty.io/docs/events) from all stores in one place and can be used to update your users' profiles in Braze. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in your Braze dashboard and map them with your [acquisition campaigns.](https://www.braze.com/product/braze-canvas-flow) 
+Adapty provides a complete set of data that lets you track [subscription events](events) from all stores in one place and can be used to update your users' profiles in Braze. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in your Braze dashboard and map them with your [acquisition campaigns.](https://www.braze.com/product/braze-canvas-flow) 
 
 Adapty sends subscription events, user properties and purchases over to Braze, so you can build target communication with customers using Braze push notifications after a short and easy integration as described below.
 
@@ -83,7 +83,7 @@ The initial step of the integration process is to provide the necessary credenti
 
 ## Events, user attributes and purchases
 
-Below the credentials, there are three groups of events you can send to Braze from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Braze. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events):
+Below the credentials, there are three groups of events you can send to Braze from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Braze. Check the full list of the Events offered by Adapty [here](events):
 
 
 <img
@@ -104,7 +104,7 @@ Adapty will send subscription events and user attributes to Braze using a server
 
 For events that have revenue, such as trial conversions and renewals, Adapty will send this info to Braze as purchases.
 
-[Here](https://docs.adapty.io/docs/events#properties) you can find the complete specifications for the event properties sent to Braze.
+[Here](events#properties) you can find the complete specifications for the event properties sent to Braze.
 
 :::note
 Helpful user attributes
@@ -114,8 +114,8 @@ Adapty sends some user attributes for Braze integration by default. You can refe
 
 | User attribute | Type | Value |
 |--------------|----|-----|
-| `adapty_customer_user_id` | String | Contains the value of the unique identifier of the user defined by the customer. Can be found both in the Adapty [Dashboard](https://docs.adapty.io/docs/profiles-crm) and in Braze. |
-| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in the Adapty [Dashboard](https://docs.adapty.io/docs/profiles-crm). |
+| `adapty_customer_user_id` | String | Contains the value of the unique identifier of the user defined by the customer. Can be found both in the Adapty [Dashboard](profiles-crm) and in Braze. |
+| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in the Adapty [Dashboard](profiles-crm). |
 | `environment` | String | <p>Indicates whether the user is operating in a sandbox or production environment.</p><p></p><p>Values are either `Sandbox` or `Production`</p> |
 | `store` | String | <p>Contains the name of the Store that used to make the purchase.</p><p></p><p>Possible values:</p><p>`app_store` or `play_store`.</p> |
 | `vendor_product_id` | String | <p>Contains the value of Product Id in Apple/Google store.</p><p></p><p>e.g., org.locals.12345</p> |
@@ -126,7 +126,7 @@ Adapty sends some user attributes for Braze integration by default. You can refe
 
 All float values will be rounded to int. Strings stay the same.
 
-In addition to the pre-defined list of tags available, it is possible to send [custom attributes](https://docs.adapty.io/docs/segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Braze if the user marks the ** Send user attributes** checkbox from [the integration page](https://app.adapty.io/integrations/braze)
+In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Braze if the user marks the ** Send user attributes** checkbox from [the integration page](https://app.adapty.io/integrations/braze)
 
 ## SDK Configuration
 

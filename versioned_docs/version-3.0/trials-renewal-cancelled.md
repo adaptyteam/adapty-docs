@@ -30,7 +30,7 @@ Adapty calculates the number of Trials renewal cancelled during a specific perio
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Trials renewal canceled chart usage
 
@@ -40,6 +40,6 @@ The Trials renewal canceled chart is a useful tool that provides insights into t
 
 In addition to the Trials renewal canceled chart, Adapty also provides metrics for other trial-related events, such as New trials, Active trials, and Expired trials. To learn more about these trial-related metrics, please refer to the following documentation:
 
-- [New trials](https://docs.adapty.io/docs/new-trials)
-- [Active trials](https://docs.adapty.io/docs/active-trials)
-- [Expired trials](https://docs.adapty.io/docs/expired-churned-trials)
+- [New trials](new-trials)
+- [Active trials](active-trials)
+- [Expired trials](expired-churned-trials)

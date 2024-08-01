@@ -8,7 +8,7 @@ metadataTitle: ""
 
 Integrating Adapty with Adjust allows app developers and marketers to close the gap between user acquisition data and revenue analytics. This integration is essential for accurately attributing app installs and user actions to various marketing campaigns and channels.
 
-By forwarding [subscription events](https://docs.adapty.io/docs/events) to Adjust, you can see exactly where conversions come from and which campaigns bring in the most value across all channels, platforms, and devices. Essentially, Adjust dashboards offer advanced analytics for marketing campaigns.
+By forwarding [subscription events](events) to Adjust, you can see exactly where conversions come from and which campaigns bring in the most value across all channels, platforms, and devices. Essentially, Adjust dashboards offer advanced analytics for marketing campaigns.
 
 By forwarding Adjust attribution to Adapty, you enrich the Adapty analytics with additional filtration criteria you can use in cohort and conversion analysis.
 

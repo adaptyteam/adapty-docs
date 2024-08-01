@@ -32,14 +32,14 @@ Revenue = Total amount billed to customers - Revenue from refunded purchases/sub
 For example, there were 5 monthly $10 subs, 1 yearly $100 sub, and 10 one-time $50 purchases today,  
 revenue = 5_$10 + 1_$100 + 10\*$50 = $650
 
-After calculating the total revenue earned from in-app purchases, Adapty's Revenue chart provides an estimate of the expected proceeds by deducting the store's commission fee and taxes. The commission fee is calculated based on the gross revenue, while taxes are deducted before the commission fee is applied. This ensures that the displayed proceeds reflect the net revenue received by the app after accounting for both the store's commission and applicable taxes. To learn more about how Adapty calculates commission fees, taxes, and estimates the expected proceeds, refer to the relevant [documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds#store-commission-and-taxes)
+After calculating the total revenue earned from in-app purchases, Adapty's Revenue chart provides an estimate of the expected proceeds by deducting the store's commission fee and taxes. The commission fee is calculated based on the gross revenue, while taxes are deducted before the commission fee is applied. This ensures that the displayed proceeds reflect the net revenue received by the app after accounting for both the store's commission and applicable taxes. To learn more about how Adapty calculates commission fees, taxes, and estimates the expected proceeds, refer to the relevant [documentation.](controls-filters-grouping-compare-proceeds#store-commission-and-taxes)
 
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative. 
 
-You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Revenue chart usage
 
@@ -49,7 +49,7 @@ The Revenue chart is a valuable tool to track the financial performance of the a
 
 In addition to Revenue, Adapty also provides metrics for other revenue-related events, such as MRR, ARR, ARPU, and ARPPU. To learn more about these revenue-related metrics, please refer to the following documentation guides:
 
-- [MRR](https://docs.adapty.io/docs/mrr)
-- [ARR](https://docs.adapty.io/docs/arr)
-- [ARPU](https://docs.adapty.io/docs/arpu)
-- [ARPPU](https://docs.adapty.io/docs/arppu)
+- [MRR](mrr)
+- [ARR](arr)
+- [ARPU](arpu)
+- [ARPPU](arppu)

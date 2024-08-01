@@ -30,7 +30,7 @@ The churned (expired) subscriptions chart calculation logic for Adapty involves 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Expiration reason, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Churned subscriptions chart usage
 
@@ -40,7 +40,7 @@ The Churned (expired) subscriptions chart is a useful metric to gain insights in
 
 In addition to Churned subscriptions, Adapty also provides metrics for other subscription-related events, such as active subscriptions, new subscriptions, subscriptions renewal canceled, and non-subscriptions. To learn more about these subscriptions-related metrics, please refer to the following documentation guides:
 
-- [Active subscriptions](https://docs.adapty.io/docs/active-subscriptions)
+- [Active subscriptions](active-subscriptions)
 - [New subscriptions](reactivated-subscriptions)
-- [Cancelled subscriptions](https://docs.adapty.io/docs/cancelled-subscriptions)
-- [Non-subscriptions](https://docs.adapty.io/docs/non-subscriptions)
+- [Cancelled subscriptions](cancelled-subscriptions)
+- [Non-subscriptions](non-subscriptions)

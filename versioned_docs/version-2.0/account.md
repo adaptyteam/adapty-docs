@@ -54,7 +54,7 @@ And vice versa if it's common for you to use 31 January, 2022 date format and se
 
 ## Members
 
-You can manage your team members in your account settings. Please [read more about it](https://docs.adapty.io/docs/members-settings).
+You can manage your team members in your account settings. Please [read more about it](members-settings).
 
 ## Billing info
 

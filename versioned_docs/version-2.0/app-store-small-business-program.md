@@ -6,7 +6,7 @@ metadataTitle: ""
 
 Learn about how Adapty calculates proceeds for both the App Store and Google Play Store, taking into account the reduced commission rate offered by the Small Business Program. Also, you can check the instructions on how to manage your Small Business Program membership status for the App Store in the Adapty Dashboard. By keeping your membership status up to date, you can ensure that Adapty accurately calculates your sales commission and provides reliable information on your transactions. 
 
-Adapty also supports the reduced service fee program for Google Play. You can reference [this document](https://docs.adapty.io/docs/google-reduced-service-fee) for more details.
+Adapty also supports the reduced service fee program for Google Play. You can reference [this document](google-reduced-service-fee) for more details.
 
 ## App Store Small Business Program
 

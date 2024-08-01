@@ -78,6 +78,6 @@ Both filters and groupings can be applied to both the renewals and days views of
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration.
 - ✅ Group by: Product, country, store, duration, and by cohort day, week, month, and year.
 
-You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 The Realized LTV chart in Adapty helps to gain valuable insights into customer behavior, optimize marketing strategies, track revenue performance, and make data-driven decisions to maximize the long-term value of their customers.

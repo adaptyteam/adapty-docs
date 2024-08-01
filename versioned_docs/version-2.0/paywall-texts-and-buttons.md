@@ -4,9 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
-[Adapty paywall builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty paywall builder](/3.0/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
-Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](https://docs.adapty.io/docs/ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
+Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
 In this section, we will discuss the customization of buttons and text elements within your paywalls.
 
@@ -67,7 +67,7 @@ Apart from the traditional button configurations, the Restore and Login buttons 
 
 In the texts tab, you can make your paywall sound attractive and clear. This tab helps you tell users why your paywall is awesome. Just choose your words, make them look nice, and guide users through the cool stuff they'll get.
 
-Feel free to use [custom tags](https://dash.readme.com/go/adaptyteam?redirect=%2Fv2.0%2Fdocs%2Fcustom-tags-in-paywall-builder) to personalize your UI text and [custom fonts](https://docs.adapty.io/docs/paywall-builder-tag-variables) to make your paywall blend in more with the rest of your app's design.
+Feel free to use [custom tags](https://dash.readme.com/go/adaptyteam?redirect=%2Fv2.0%2Fdocs%2Fcustom-tags-in-paywall-builder) to personalize your UI text and [custom fonts](paywall-builder-tag-variables) to make your paywall blend in more with the rest of your app's design.
 
 Here are the main elements of the tab:
 

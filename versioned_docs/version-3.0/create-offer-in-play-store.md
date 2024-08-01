@@ -29,4 +29,4 @@ It's important to note that in the case of Google’s new billing system, trials
 
 Previous versions of the Adapty SDK do not support Google's latest subscription features, such as multiple offers per base plan. Only offers marked as **Backwards compatible** in the Google Play Console can be utilized with these SDK versions. It's important to note that only one offer per base plan can be marked as backwards compatible.
 
-You can also learn how to configure products in the Google Play Console by checking our [documentation](https://docs.adapty.io/docs/android-products).
+You can also learn how to configure products in the Google Play Console by checking our [documentation](android-products).

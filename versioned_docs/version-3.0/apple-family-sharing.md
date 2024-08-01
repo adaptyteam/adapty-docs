@@ -30,7 +30,7 @@ Also, please consider that, only non-consumables and subscriptions can be shared
 
 On the displayed modal simply click on the **Confirm** button to finalize the setup process. After doing so, the Family Sharing section should update to display the message, "This subscription can be shared by everyone in a family group." This confirms that the subscription is now enabled for Family Sharing and can be shared among up to five family members.
 
-Adapty makes it easy to support Family Sharing without any additional effort required. You just need to simply [configure your products](https://docs.adapty.io/docs/product#how-to-find-an-ios-product-id) from the App Store, and once you **enable** it from App Store Connect **Family Sharing** will be automatically available in **Adapty**, that will be received as an event on the webhook.
+Adapty makes it easy to support Family Sharing without any additional effort required. You just need to simply [configure your products](app-store-products) from the App Store, and once you **enable** it from App Store Connect **Family Sharing** will be automatically available in **Adapty**, that will be received as an event on the webhook.
 
 :::note
 Please note that Family Sharing is not supported in the sandbox environment.

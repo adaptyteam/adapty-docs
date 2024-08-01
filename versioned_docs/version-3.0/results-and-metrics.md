@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Discover important data and insights from our [A/B tests](https://docs.adapty.io/docs/ab-test-copy), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
+Discover important data and insights from our [A/B tests](ab-test-copy), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
 
 ### A/B test results
 
@@ -27,7 +27,7 @@ Here are three metrics that Adapty provides for A/B test results:
 
 **Revenue**: The revenue metric represents the total amount of money generated in USD from purchases and renewals. It includes both the initial purchase and subsequent subscription renewals. This metric helps you evaluate the financial performance of each A/B test variant and determine which option generates the highest revenue.
 
-**Probability to be best**: Adapty utilizes a robust mathematical analysis framework to analyze A/B test results and provides a metric called Probability to be best. This metric assesses the likelihood that a particular variant is the best-performing option (in terms of its long-term revenue) among all the variants tested. The metric is expressed as a percentage value ranging from 1% to 100%. For detailed information on how Adapty calculates this metric, please refer to the [documentation.](https://docs.adapty.io/docs/maths-behind-it)The best performing option, determined by Revenue per 1K user, is highlighted in green and automatically selected as the default choice.
+**Probability to be best**: Adapty utilizes a robust mathematical analysis framework to analyze A/B test results and provides a metric called Probability to be best. This metric assesses the likelihood that a particular variant is the best-performing option (in terms of its long-term revenue) among all the variants tested. The metric is expressed as a percentage value ranging from 1% to 100%. For detailed information on how Adapty calculates this metric, please refer to the [documentation.](maths-behind-it)The best performing option, determined by Revenue per 1K user, is highlighted in green and automatically selected as the default choice.
 
 **Revenue per 1K users:** The revenue per 1K users metric calculates the average revenue generated per 1,000 users for each A/B test variant. This metric helps you understand the revenue efficiency of your variants, regardless of the total number of users. It allows you to compare the performance of different variants on a standardized scale and make informed decisions based on revenue generation efficiency.
 
@@ -96,7 +96,7 @@ Adapty offers powerful tools for filtering and customizing metrics analysis to s
 - ✅ Filter by: Audience, country, paywall, paywall state, paywall group, placement, country, store, product, and product store. 
 - ✅ Group by: Product and store.
 
-You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ## Single metrics chart
 
@@ -216,7 +216,7 @@ ARPAS is a metric that allows you to measure the average revenue generated per a
 
 ### Proceeds
 
-The proceeds metric for the A/B test represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue specifically associated with the paywall variations tested in the A/B test, contributing directly to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](https://docs.adapty.io/docs/analytics-cohorts#revenue-vs-proceeds)
+The proceeds metric for the A/B test represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue specifically associated with the paywall variations tested in the A/B test, contributing directly to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](analytics-cohorts#revenue-vs-proceeds)
 
 ### Unique subscribers
 

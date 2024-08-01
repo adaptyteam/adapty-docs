@@ -6,9 +6,9 @@ metadataTitle: "How to use App Store and Google Play offers to empower your payw
 
 Offers in the App Store and Google Play are special deals or discounts provided by these platforms for in-app purchases.
 
-To make an offer visible and selectable within a [paywall](https://docs.adapty.io/docs/paywalls) for your app's users, follow these steps:
+To make an offer visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
 
-1. While [configuring the products on a paywall](paywalls#create-a-paywall), click the **Add offer** button next to the product the offer belongs to. The button is available only for the products that have offers.
+1. While [configuring the products on a paywall](create-paywall), click the **Add offer** button next to the product the offer belongs to. The button is available only for the products that have offers.
 
    
 <img

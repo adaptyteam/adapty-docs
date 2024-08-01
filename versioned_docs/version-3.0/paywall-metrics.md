@@ -99,7 +99,7 @@ Adapty offers powerful tools for filtering and customizing metrics analysis to s
 - ✅ Filter by: Audience, country, paywall, paywall state, paywall group, placement, country, store, product, and product store. 
 - ✅ Group by: Product and store.
 
-You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 #### Single metrics chart
 
@@ -166,7 +166,7 @@ This metric represents the total amount of money generated in USD from purchases
 
 #### Proceeds
 
- This metric represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue that directly contributes to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](https://docs.adapty.io/docs/analytics-cohorts#revenue-vs-proceeds)
+ This metric represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue that directly contributes to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](analytics-cohorts#revenue-vs-proceeds)
 
 #### ARPPU
 

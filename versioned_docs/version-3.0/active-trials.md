@@ -34,7 +34,7 @@ However, at a monthly resolution, the count of Active Trials represents the numb
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Active trials chart usage
 
@@ -44,6 +44,6 @@ This chart provides valuable insights into the effectiveness of your app's trial
 
 In addition to Active Trials, Adapty also provides metrics for other trial-related events, such as New trials, Trial Renewal cancelled, and Expired trials. To learn more about these trial-related metrics, please refer to the following documentation:
 
-- [New trials](https://docs.adapty.io/docs/new-trials)
-- [Trial renewal cancelled](https://docs.adapty.io/docs/trials-renewal-cancelled)
-- [Expired trials](https://docs.adapty.io/docs/expired-churned-trials)
+- [New trials](new-trials)
+- [Trial renewal cancelled](trials-renewal-cancelled)
+- [Expired trials](expired-churned-trials)

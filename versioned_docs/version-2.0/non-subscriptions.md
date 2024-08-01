@@ -34,7 +34,7 @@ Adapty's calculation logic for the Non-subscriptions chart involves counting the
 - ✅ Filter by: Attribution, country, paywall, and store.
 - ✅ Group by: Product, country, store, paywall, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Non-subscriptions chart usage
 
@@ -44,7 +44,7 @@ The Non-subscriptions chart is an important tool for app developers to gain insi
 
 In addition to non-subscriptions, Adapty also provides metrics for other subscription-related events, such as active subscriptions, new subscriptions, subscriptions renewal canceled, and expired subscriptions. To learn more about these subscriptions-related metrics, please refer to the following documentation guides:
 
-- [Active subscriptions](https://docs.adapty.io/docs/active-subscriptions)
+- [Active subscriptions](active-subscriptions)
 - [New subscriptions](reactivated-subscriptions)
-- [Churned (expired) subscriptions](https://docs.adapty.io/docs/churned-expired-subscriptions)
-- [Cancelled subscriptions](https://docs.adapty.io/docs/cancelled-subscriptions)
+- [Churned (expired) subscriptions](churned-expired-subscriptions)
+- [Cancelled subscriptions](cancelled-subscriptions)

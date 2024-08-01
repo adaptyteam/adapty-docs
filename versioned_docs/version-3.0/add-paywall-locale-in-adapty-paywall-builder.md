@@ -87,7 +87,7 @@ You can learn more about it [here](get-pb-paywalls).
 :::note
 Using tag variables
 
-We strongly recommend using tag variables (such as `<PROD_TITLE/>`) to speed up your localization process and ensure that the text is always correct. Learn more about them [here](https://docs.adapty.io/docs/paywall-builder-tag-variables).
+We strongly recommend using tag variables (such as `<PROD_TITLE/>`) to speed up your localization process and ensure that the text is always correct. Learn more about them [here](paywall-builder-tag-variables).
 :::
 
 ### Preview the localization result

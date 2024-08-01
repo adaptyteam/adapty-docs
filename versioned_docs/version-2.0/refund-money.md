@@ -32,7 +32,7 @@ It's important to note that Adapty calculates the refund amount before the store
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Refund Money chart usage
 
@@ -42,6 +42,6 @@ The Refund money chart in Adapty helps businesses track the financial impact of 
 
 In addition to the Refund money chart, Adapty also provides metrics for other issues-related events, such as  Billing events, Billing issue, and Grace period. To learn more about these issue-related metrics, please refer to the following documentation:
 
-- [Refund events](https://docs.adapty.io/docs/refund-events)
-- [Billing issue](https://docs.adapty.io/docs/billing-issue)
-- [Grace period](https://docs.adapty.io/docs/grace-period)
+- [Refund events](refund-events)
+- [Billing issue](billing-issue)
+- [Grace period](grace-period)

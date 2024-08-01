@@ -5,5 +5,5 @@ metadataTitle: "Adapty Initial Integration with Google Play Store: A Quick Guide
 ---
 
 :::warning
-Adapty SDK v3.0 is now available for iOS only. See [Initial integration with Google Play for Adapty SDK v2](https://docs.adapty.io/docs/initial-android) to integrate Adapty with the Google Play Store.
+Adapty SDK v3.0 is now available for iOS only. See [Initial integration with Google Play for Adapty SDK v2](initial-android) to integrate Adapty with the Google Play Store.
 :::

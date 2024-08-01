@@ -6,7 +6,7 @@ metadataTitle: ""
 
 With Adapty integrations, you can seamlessly transmit subscription events and purchase data to your preferred platform or workflow. Whether you're seeking user behavior insights, customer engagement strategies, or enhanced product analytics for your marketing team, Adapty can effortlessly forward in-app purchase events to your chosen integration.
 
-Adapty effortlessly tracks in-app purchases and subscription events such as trials, conversions, renewals, and cancellations. These [events](https://docs.adapty.io/docs/events) are automatically communicated to your chosen integrations. This allows you to engage with customers based on their current stage and analyze revenue-related activities within your app. 
+Adapty effortlessly tracks in-app purchases and subscription events such as trials, conversions, renewals, and cancellations. These [events](events) are automatically communicated to your chosen integrations. This allows you to engage with customers based on their current stage and analyze revenue-related activities within your app. 
 
 ## Integration settings
 
@@ -40,7 +40,7 @@ Each integration offers the following configuration options that impact all even
 
 Below the credentials, there are three groups of events you can send to the selected integration platform from Adapty. You should turn on the ones you need. 
 
-It's important to note that event name customization is available for certain integrations, while for others, the event names are set and cannot be modified. Additionally, with certain integrations such as [Airbridge](https://docs.adapty.io/docs/airbridge#events-and-tags) for example, you have the flexibility to associate multiple event names with a single Adapty event. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events).
+It's important to note that event name customization is available for certain integrations, while for others, the event names are set and cannot be modified. Additionally, with certain integrations such as [Airbridge](airbridge#events-and-tags) for example, you have the flexibility to associate multiple event names with a single Adapty event. Check the full list of the Events offered by Adapty [here](events).
 
 
 <img

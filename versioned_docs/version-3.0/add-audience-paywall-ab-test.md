@@ -56,7 +56,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 
 
 
-4. Associate a paywall or A/B test to display for this audience. To do this, click either the **Run paywall** or **Run A/B test** button, then select the desired paywall or A/B test from the dropdown list. Please note that only [previously created paywalls](paywalls#create-a-paywall) and [previously created A/B tests](ab-tests#creating-ab-test-from-ab-test-section) are available in the lists.
+4. Associate a paywall or A/B test to display for this audience. To do this, click either the **Run paywall** or **Run A/B test** button, then select the desired paywall or A/B test from the dropdown list. Please note that only [previously created paywalls](create-paywall) and [previously created A/B tests](ab-tests#creating-ab-test-from-ab-test-section) are available in the lists.
 
    In Adapty, a [paywall](paywalls) serves as a screen showcasing purchasable products within your mobile app, offering users the opportunity to make in-app purchases. To tailor the paywall experience, you can designate specific audiences to view particular paywalls. It's important to note that each audience is associated with only one paywall, ensuring a personalized approach. However, the same paywall can be presented to multiple audiences. For a broader reach, the default "All users" audience is available to display the paywall to everyone. This nuanced approach allows you to optimize your paywall strategies based on audience preferences and maximize user engagement.
 

@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-[Adapty paywall builder](https://docs.adapty.io/v3.0/docs/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty paywall builder](/3.0/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
@@ -256,7 +256,7 @@ Let's take a look at how you can customize each product on your paywall:
 :::note
 Using tag variables
 
-Every text field in the product block supports [tag variables](https://docs.adapty.io/docs/paywall-builder-tag-variables) such as `<PROD_TITLE/>` for the title of the product. We strongly recommend using them for easier localization.
+Every text field in the product block supports [tag variables](paywall-builder-tag-variables) such as `<PROD_TITLE/>` for the title of the product. We strongly recommend using them for easier localization.
 :::
 
 (5) If you intend to use this paywall in cases where a user might be eligible for an offer, you should configure the offer text for every expected type. And of course you can adjust its color and size as well. If a user is found eligible — the corresponding offer text will be shown as a subtitle on the product card.
@@ -266,7 +266,7 @@ Default text for offers
 
 **Note**: eligibility for an offer is determined on a device by SDK. In case you haven't provided a custom text for it and the user was found eligible — our SDK will show a default text corresponding to the offer type.
 
-Learn more about offers [here](https://docs.adapty.io/docs/offers).
+Learn more about offers [here](offers).
 :::
 
 #### Product styles: synced or separate

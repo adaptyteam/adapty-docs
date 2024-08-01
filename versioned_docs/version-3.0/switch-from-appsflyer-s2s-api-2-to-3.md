@@ -15,12 +15,15 @@ To switch from AppsFlyer S2S API 2 to 3:
 2. Click **Your account name** -> **Security Center** in the top-left corner of the dashboard.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/be299ea-appsflyer_security_center.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/be299ea-appsflyer_security_center.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -30,12 +33,15 @@ To switch from AppsFlyer S2S API 2 to 3:
 4. If you do not have an S2S token, click the **New token** button. If you have it, please proceed with step 8.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/7934920-appsflyer_new_token.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/7934920-appsflyer_new_token.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -49,12 +55,15 @@ To switch from AppsFlyer S2S API 2 to 3:
 8. In the **Tokens** window, copy the S2S token.
 
    
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d014c25-appsflyer_tokens.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/d014c25-appsflyer_tokens.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -64,12 +73,15 @@ To switch from AppsFlyer S2S API 2 to 3:
 10. In the **AppsFlyer S2S API** field, select **API 3**.
 
     
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/c0b3e72-appsflyer_switch_API.png" 
-    style={{ width: '700px', border: '1px solid grey' }}
-  />
-</div>
+<img
+  src={require('./img/c0b3e72-appsflyer_switch_API.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -78,4 +90,4 @@ To switch from AppsFlyer S2S API 2 to 3:
 
 12. Click the **Save** button to confirm the switch.
 
-At this moment, your integration instantly switches to AppsFlyer S2S API 3 and your new events will be sent to the new URL https://api3.appsflyer.com/inappevent.
+At this moment, your integration instantly switches to AppsFlyer S2S API 3 and your new events will be sent to the [new URL](https://api3.appsflyer.com/inappevent).

@@ -17,7 +17,7 @@ In the [Google’s billing system](https://developer.android.com/google/play/bil
 :::note
 Adapty SDK 2.6.0 already supports Google Billing Library v5 and v6 as well as the modern Google Play subscriptions structure such as multiple base plans per subscription, multiple offers per base plan, and multiple phases per offer.
 
-Please refer to our [documentation](https://docs.adapty.io/docs/whats-new-in-adapty-sdk-20) for more details about how to migrate to Adapty SDK 2.6.0.
+Please refer to our [documentation](whats-new-in-adapty-sdk-20) for more details about how to migrate to Adapty SDK 2.6.0.
 :::
 
 ## How to create a product in Play Store?

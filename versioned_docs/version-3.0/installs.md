@@ -25,14 +25,14 @@ The Installs chart shows the total number of users who have installed the app fo
 
 The calculation logic for the Installs chart provided by Adapty involves counting the total number of times the app has been installed by both new and existing users, including any reinstalls on different devices. However, incomplete installations or downloads that were canceled before completion are not included in the total count.
 
-Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](https://docs.adapty.io/docs/identifying-users) for identifying users
+Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](identifying-users) for identifying users
 
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, and store.
 - ✅ Group by: Country, store, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Installs chart usage
 

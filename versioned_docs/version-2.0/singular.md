@@ -6,7 +6,7 @@ metadataTitle: "Singular"
 
 [Singular](https://www.singular.net/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies track their campaign performance. 
 
-Adapty provides a complete set of data that lets you track [subscription events](https://docs.adapty.io/docs/events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in Singular and analyze precisely how much revenue your campaigns generate.
+Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in Singular and analyze precisely how much revenue your campaigns generate.
 
 Adapty can send all subscription events which are configured in your integration to Singular. As a result, you'll be able to track these events within the Singular dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
@@ -31,7 +31,7 @@ For this integration to work, the Singular SDK Key is required. It can be found 
 
 
 
-Below the credentials, there are three groups of events you can send to Singular from Adapty. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can send to Singular from Adapty. Check the full list of the events offered by Adapty [here](events).
 
 
 <img

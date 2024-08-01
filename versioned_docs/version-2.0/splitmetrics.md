@@ -6,7 +6,7 @@ metadataTitle: ""
 
 With [SplitMetrics Acquire ](https://splitmetrics.com/acquire/)integration, you can see exactly how much money your Apple Search Ads make from subscriptions. And you can track your users for months to know how much money your ads make over time.
 
-In addition, Adapty sends [subscription events](https://docs.adapty.io/docs/events) to SplitMetrics Acquire so that you can build custom dashboards and automation there, based on Apple Search Ads attribution.  
+In addition, Adapty sends [subscription events](events) to SplitMetrics Acquire so that you can build custom dashboards and automation there, based on Apple Search Ads attribution.  
 It doesn't add any attribution data to Adapty, as we already have everything we need from ASA directly.
 
 ## How to set up SplitMetrics Acquire integration
@@ -79,7 +79,7 @@ You will also have to set Apple App ID to use the integration. To find App ID, o
 
 ## Events and tags
 
-Below the credentials, there are three groups of events you can send to SplitMetrics Acquire from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can send to SplitMetrics Acquire from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img
@@ -103,5 +103,5 @@ We recommend using the default event names provided by Adapty. But you can chang
 You don't have to configure anything on the SDK side, but we recommend sending `customerUserId` to Adapty for better accuracy.
 
 :::warning
-Make sure you've configured [Apple Search Ads](https://docs.adapty.io/docs/apple-search-ads) in Adapty and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, SplitMetrics Acquire won't work.
+Make sure you've configured [Apple Search Ads](apple-search-ads) in Adapty and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, SplitMetrics Acquire won't work.
 :::

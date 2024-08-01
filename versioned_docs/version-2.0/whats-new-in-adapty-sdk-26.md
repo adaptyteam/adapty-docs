@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-> 💡 If you are migrating from Adapty SDK 1.x.x, we recommend you to read [What's new in Adapty SDK 2.0](https://docs.adapty.io/docs/whats-new-in-adapty-sdk-20) article first.
+> 💡 If you are migrating from Adapty SDK 1.x.x, we recommend you to read [What's new in Adapty SDK 2.0](whats-new-in-adapty-sdk-20) article first.
 
 ### Android SDK
 
@@ -14,7 +14,7 @@ Don't forget to configure offers in Google Play Console in Adapty
 Google Billing Library v5 and v6 changed the way offers work. Be sure to follow [Google Play offers](google-play-offers) guide to configure them properly.
 :::
 
-With the release of Adapty SDK version 2.6.2, we are excited to announce support for [Google Billing Library v5 and v6](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](https://docs.adapty.io/docs/android-installation), [Flutter](https://docs.adapty.io/docs/flutter-installation), [React Native](https://docs.adapty.io/docs/react-native-installation). [Unity](unity-installation) SDK also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
+With the release of Adapty SDK version 2.6.2, we are excited to announce support for [Google Billing Library v5 and v6](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](android-installation), [Flutter](flutter-installation), [React Native](react-native-installation). [Unity](unity-installation) SDK also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
 
 Here are the key changes and enhancements:
 
@@ -43,7 +43,7 @@ Here are the key changes and enhancements:
 
 9. **Replacement mode:** We have renamed `ProrationMode` to `ReplacementMode`, and the [constants](https://kotlin.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/-replacement-mode/) have been adjusted to align with Google's standards.
 
-For more detailed information and step-by-step guides on adding products and base plans to the Google Play Store, refer to our [documentation](https://docs.adapty.io/docs/android-products).
+For more detailed information and step-by-step guides on adding products and base plans to the Google Play Store, refer to our [documentation](android-products).
 
 We hope these updates enhance your experience with Adapty SDK and the integration with Google's new billing system.
 

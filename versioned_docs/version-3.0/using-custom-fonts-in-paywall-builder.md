@@ -29,7 +29,7 @@ Every text you see in Paywall Builder can have its own font and style. You can a
 
 
 
-But in some cases, it'd be more convenient to change the font on the entire paywall. This can be done in the Layout section of Paywall Builder [by adjusting the Paywall Font](https://docs.adapty.io/docs/paywall-layout-and-products#font-settings-of-your-paywall).
+But in some cases, it'd be more convenient to change the font on the entire paywall. This can be done in the Layout section of Paywall Builder [by adjusting the Paywall Font](paywall-layout-and-products#font-settings-of-your-paywall).
 
 ## Fonts available by default
 
@@ -53,7 +53,7 @@ When you create a paywall in Builder, Adapty uses a system font by default. That
 :::note
 Note that these fonts are not supplied as part of Adapty SDK and are only used in preview purposes. We can not guarantee they will work perfectly well on all of the devices.
 
-However in our testing we observed that those fonts are typically recognised by most devices without additional effort from your side. You can also checkout which fonts are available by default on iOS here:  [In Apple official documentation](https://developer.apple.com/fonts/)
+However in our testing we observed that those fonts are typically recognised by most devices without additional effort from your side. You can also [checkout which fonts are available by default on iOS](https://developer.apple.com/fonts/system-fonts/).
 :::
 
 ## How to add a custom font to the Adapty Dashboard

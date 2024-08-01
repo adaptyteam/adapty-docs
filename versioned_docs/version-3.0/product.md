@@ -14,7 +14,7 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 Checklist to successfully display products in your mobile app
 
 1. [Create products in the Adapty Dashboard](create-product).
-2. [Create a paywall in the Adapty Dashboard and add products to it](paywalls#create-a-paywall)
+2. [Create a paywall in the Adapty Dashboard and add products to it](create-paywall)
 3. [Show paywalls using the placements they belong to in your mobile app](displaying-products).
 :::
 

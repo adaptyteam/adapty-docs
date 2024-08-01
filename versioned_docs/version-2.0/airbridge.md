@@ -6,7 +6,7 @@ metadataTitle: ""
 
 [Airbridge](https://www.airbridge.io/) offers an integrated marketing performance analysis for websites and mobile apps by consolidating data collected from multiple devices, platforms, and channels. Using Airbridge's Identity Resolution Engine, you can combine scattered customer identity data from web and app interactions into a unified people-based identity, resulting in more accurate attribution.
 
-Adapty provides a complete set of data that lets you track [subscription events](https://docs.adapty.io/docs/events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. 
+Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. 
 
 The integration between Adapty and Airbridge operates in two main ways.
 

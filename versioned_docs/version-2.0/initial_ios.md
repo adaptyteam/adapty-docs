@@ -28,5 +28,5 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 :::danger
 Go through release checklist before releasing your app
 
-Before releasing your application, make sure to carefully review the [Release Checklist](https://docs.adapty.io/docs/release-checklist) . This will ensure that you've completed all the necessary steps  before your app goes live with Adapty SDK onboard.
+Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) . This will ensure that you've completed all the necessary steps  before your app goes live with Adapty SDK onboard.
 :::

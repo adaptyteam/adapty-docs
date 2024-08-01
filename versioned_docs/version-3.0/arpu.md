@@ -36,7 +36,7 @@ The calculation is done before the store's fee and the refund amount is excluded
 - ✅ Filter by: Attribution, country, and store.
 - ✅ Group by: Country, store, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative. 
 
-You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### ARPU chart usage
 
@@ -46,7 +46,7 @@ ARPU chart usage is beneficial for businesses to track their overall revenue gen
 
 In addition to the ARPU chart, Adapty also provides metrics for other revenue-related events, such as Revenue, MRR, ARR, and ARPU. To learn more about these revenue-related metrics, please refer to the following documentation guides:
 
-- [Revenue](https://docs.adapty.io/docs/revenue)
-- [MRR](https://docs.adapty.io/docs/mrr)
-- [ARPPU](https://docs.adapty.io/docs/arppu)
-- [ARR](https://docs.adapty.io/docs/arr)
+- [Revenue](revenue)
+- [MRR](mrr)
+- [ARPPU](arppu)
+- [ARR](arr)

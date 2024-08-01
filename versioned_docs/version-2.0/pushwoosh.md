@@ -64,7 +64,7 @@ Pushwoosh app ID and auth token are required.
 
 ## Events and tags
 
-Below the credentials, there are three groups of events you can send to Pushwoosh from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Pushwoosh. Check the full list of the Events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can send to Pushwoosh from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Pushwoosh. Check the full list of the Events offered by Adapty [here](events).
 
 
 <img
@@ -92,12 +92,12 @@ With Adapty you can also use your custom tags for Pushwoosh integration.  You ca
 | Tag | Type | Value |
 |---|----|-----|
 | `adapty_customer_user_id` | String | Contains the value of the unique identifier of the user, which can be found on the Pushwoosh side. |
-| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in your Adapty [dashboard](https://docs.adapty.io/docs/profiles-crm). |
+| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in your Adapty [dashboard](profiles-crm). |
 | `environment` | String | <p>Indicates whether the user is operating in a sandbox or production environment.</p><p></p><p>Values are either `Sandbox` or `Production`</p> |
 | `store` | String | <p>Contains the name of the Store that used to make the purchase.</p><p></p><p>Possible values:</p><p>`app_store` or `play_store`.</p> |
 | `vendor_product_id` | String | <p>Contains the value of Product ID in the Apple/Google store.</p><p></p><p>e.g., org.locals.12345</p> |
 | `subscription_expires_at` | String | <p>Contains the expiration date of the latest subscription.</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| `last_event_type` | String | Indicates the type of the last received event from the list of the standard [Adapty events](https://docs.adapty.io/docs/events) that you have enabled for the integration. |
+| `last_event_type` | String | Indicates the type of the last received event from the list of the standard [Adapty events](events) that you have enabled for the integration. |
 | `purchase_date` | String | <p>Contains the date of the last transaction (original purchase or renewal).</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
 | `original_purchase_date` | String | <p>Contains the date of the first purchase according to the transaction.</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
 | `active_subscription` | String | The value will be set to `true` on any purchase/renewal event, or `false` if the subscription is expired. |
@@ -106,7 +106,7 @@ With Adapty you can also use your custom tags for Pushwoosh integration.  You ca
 
 All float values will be rounded to int. Strings stay the same. 
 
-In addition to the pre-defined list of tags available, it is possible to send [custom attributes](https://docs.adapty.io/docs/segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Pushwoosh if the user marks the ** Send user custom attributes** checkbox from[ the integration page](https://app.adapty.io/integrations/pushwoosh)
+In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Pushwoosh if the user marks the ** Send user custom attributes** checkbox from[ the integration page](https://app.adapty.io/integrations/pushwoosh)
 
 ## SDK configuration
 

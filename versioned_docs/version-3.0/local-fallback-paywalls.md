@@ -35,4 +35,4 @@ To download the JSON file with the fallback paywalls:
 
 
 
-2. In the **Products** or **Placements** window, click the **Fallbacks** button. In both cases, you will get the same file. [Use its contents in the `fallback_paywalls` method in your mobile app code](fallback-paywalls#use-fallback-paywalls-in-your-mobile-app-code).
+2. In the **Products** or **Placements** window, click the **Fallbacks** button. In both cases, you will get the same file. [Use its contents in the `fallback_paywalls` method in your mobile app code](use-fallback-paywalls).

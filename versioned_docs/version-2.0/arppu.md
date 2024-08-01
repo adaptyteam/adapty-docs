@@ -38,7 +38,7 @@ For example, if your app generated $10,000 in revenue over a given period and ha
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative. 
 
-You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### ARPPU chart usage
 
@@ -48,7 +48,7 @@ The ARPPU chart in Adapty is a powerful tool that can help businesses understand
 
 In addition to the ARPPU chart, Adapty also provides metrics for other revenue-related events, such as Revenue, MRR, ARR, and ARPU. To learn more about these revenue-related metrics, please refer to the following documentation guides:
 
-- [Revenue](https://docs.adapty.io/docs/revenue)
-- [MRR](https://docs.adapty.io/docs/mrr)
-- [ARPU](https://docs.adapty.io/docs/arpu)
-- [ARR](https://docs.adapty.io/docs/arr)
+- [Revenue](revenue)
+- [MRR](mrr)
+- [ARPU](arpu)
+- [ARR](arr)

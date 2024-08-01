@@ -143,7 +143,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
 
 3. Click the **Grant access** button. 
-4. In the **Grant access** pane, enter the email of the service account obtained in step 4 of the [Create Google Cloud Storage credentials](google-cloud-setup#create-google-cloud-storage-credentials) section into the **New principals** field. 
+4. In the **Grant access** pane, enter the email of the service account obtained in step 4 of the [Create Google Cloud Storage credentials](google-cloud-storage#create-google-cloud-storage-credentials) section into the **New principals** field. 
 
    
 <img
@@ -240,7 +240,7 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 
 ## Choose events to send and map event names
 
-Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](https://docs.adapty.io/docs/events).
+Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <img

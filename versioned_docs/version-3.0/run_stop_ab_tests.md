@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](https://docs.adapty.io/docs/ab-test-copy): from the **Placement** page or the **A/B test** page.
+Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-test-copy): from the **Placement** page or the **A/B test** page.
 
 ### How to run the A/B test
 
@@ -31,7 +31,7 @@ To run your A/B test for the chosen audience and placement:
 3. In the opened **Running A/B test** window, select a **Placement** from the drop-down list. This indicates where in your app the A/B test will display for the chosen audience. This list includes all [placements](placements)  you have in Adapty for your app.
 4. From the **Audience** drop-down list, choose user segment for your A/B test. This list includes all [segments](segments) you have in Adapty for your app.  
    If you choose an audience that is a part of some other placement, it will automatically become a part of the chosen placement as well after you run the A/B test.  
-   Please note that every audience has a numerical **Priority** (starting from 1). If you add an audience with a priority lower than #1 to an A/B test, potential users for this A/B test may be directed to an audience with a higher priority instead, bypassing their participation in this A/B test. You can [adjust audience priority](placements#change-audience-priority) in the placement itself.
+   Please note that every audience has a numerical **Priority** (starting from 1). If you add an audience with a priority lower than #1 to an A/B test, potential users for this A/B test may be directed to an audience with a higher priority instead, bypassing their participation in this A/B test. You can [adjust audience priority](change-audience-priority) in the placement itself.
 5. After you've chosen the audience and placement for the A/B test, click the **Run** button to launch it. 
 
 After launching, you can then track its progress and view metrics on the [A/B test metrics](results-and-metrics) page. This will help you identify the better-performing variation and make informed decisions to enhance your app's performance. For more details on Adapty A/B test metrics, refer to [Maths behind the A/B tests](maths-behind-it) section.

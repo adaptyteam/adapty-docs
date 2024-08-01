@@ -210,7 +210,7 @@ Adapty.GetPaywallProducts(paywall, IOSProductsFetchPolicy.WaitForReceiptValidati
 **Motivation:**  
 The call sequence for the correct functioning of the system was unobvious and less reliable.  
 We recommend first requesting products without overriding `fetchPolicy`, and then immediately rendering the UI. If you get back objects with an unknown `IntroductoryOfferEligibility` value, you can re-request products with `.WaitForReceiptValidation` policy and update the UI afterward.  
-Read more about handling such a scenario in the [_Displaying Paywalls & Products_](https://docs.adapty.io/docs/unity-displaying-products#products-fetch-policy-and-intro-offer-eligibility) section.
+Read more about handling such a scenario in the [_Displaying Paywalls & Products_](unity-displaying-products#products-fetch-policy-and-intro-offer-eligibility) section.
 
 ### In lieu of a conclusion
 

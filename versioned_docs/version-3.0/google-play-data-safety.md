@@ -170,4 +170,4 @@ Once you have made your data safety selections, Google will display a preview of
 
 
 
-If you are prepared to submit your app for App Review, please refer to our [Release Checklist](https://docs.adapty.io/docs/release-checklist) document for further guidance on preparing your app for submission.
+If you are prepared to submit your app for App Review, please refer to our [Release Checklist](release-checklist) document for further guidance on preparing your app for submission.

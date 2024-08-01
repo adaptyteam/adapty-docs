@@ -44,7 +44,7 @@ MRR = (2 \* $240 / 12) + (10 \* $30 / 1) + (20 \* $10 / 0.25) = $1140
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution Ad group, attribution Ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](https://docs.adapty.io/docs/controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, tax and commission controls, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### MRR chart usage
 
@@ -56,7 +56,7 @@ To leverage MRR effectively, segment your subscriber cohorts by their first purc
 
 In addition to MRR, Adapty also provides metrics for other revenue-related events, such as Revenue, ARR, ARPU, and ARPPU. To learn more about these revenue-related metrics, please refer to the following documentation guides:
 
-- [Revenue](https://docs.adapty.io/docs/revenue)
-- [ARR](https://docs.adapty.io/docs/arr)
-- [ARPU](https://docs.adapty.io/docs/arpu)
-- [ARPPU](https://docs.adapty.io/docs/arppu)
+- [Revenue](revenue)
+- [ARR](arr)
+- [ARPU](arpu)
+- [ARPPU](arppu)

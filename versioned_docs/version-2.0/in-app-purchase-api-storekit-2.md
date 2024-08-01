@@ -47,7 +47,7 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 
 
 5. After generating your API key, click the **Download In-App Purchase Key** button to get the key as a file.  
-   Keep this file safe to later upload it to Adapty. Please keep in mind that the generated file can be downloaded only once, so store it safely until you upload it to Adapty. The generated .p8 key from the **In-App Purchase** section can be used for both  [In-app purchase API](https://docs.adapty.io/docs/in-app-purchase-api-storekit-2) and [promotional offers](https://docs.adapty.io/docs/app-store-promotional-offers).
+   Keep this file safe to later upload it to Adapty. Please keep in mind that the generated file can be downloaded only once, so store it safely until you upload it to Adapty. The generated .p8 key from the **In-App Purchase** section can be used for both  [In-app purchase API](in-app-purchase-api-storekit-2) and [promotional offers](app-store-promotional-offers).
 6. Copy the values of **Issuer ID** and **Key ID** fields from this screen as well. Later you will use them in Adapty.
 
 ## 2\. Add the generated API key to Adapty
@@ -56,7 +56,7 @@ After completing the necessary setup steps in App Store Connect, the next step i
 
 1. Open [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) in your Adapty dashboard. 
 2. Scroll down to the **In-App Purchase API (StoreKit 2**) section. 
-3. Fill out the **Issuer ID** and the  **Key ID ** with the corresponding field values copied from your [App Store Connect](https://docs.adapty.io/docs/in-app-purchase-api-storekit-2#1-generate-the-api-key). Please note that the fields will only be active after the app's **Bundle ID** is provided, as the in-app purchase key is specific to each app bundle.
+3. Fill out the **Issuer ID** and the  **Key ID ** with the corresponding field values copied from your [App Store Connect](in-app-purchase-api-storekit-2#1-generate-the-api-key). Please note that the fields will only be active after the app's **Bundle ID** is provided, as the in-app purchase key is specific to each app bundle.
 
    
 <img
@@ -75,4 +75,4 @@ After completing the necessary setup steps in App Store Connect, the next step i
 
 After completing these steps, you're all set! 
 
-If you are currently using StoreKit 1 notifications and you are now configuring StoreKit 2, it is recommended that you switch to V2 notifications on the App Store Connect side as well. You can read more about it in [App Store server notifications](https://docs.adapty.io/docs/app-store-server-notifications).
+If you are currently using StoreKit 1 notifications and you are now configuring StoreKit 2, it is recommended that you switch to V2 notifications on the App Store Connect side as well. You can read more about it in [App Store server notifications](app-store-server-notifications).

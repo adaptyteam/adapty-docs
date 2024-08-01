@@ -31,8 +31,8 @@ In your mobile app, you get Paywalls with their Products by calling the SDK's `g
 
 Here's a quick breakdown of how to work with paywalls:
 
-1. In Adapty, [create products](product#create-product) that match those in the App Store and Play Store and specify their corresponding product IDs from the app stores.
-2. [Create a paywall](docs:paywalls) that you want to display within your mobile app.
+1. In Adapty, [create products](create-product) that match those in the App Store and Play Store and specify their corresponding product IDs from the app stores.
+2. [Create a paywall](docs:create-paywall) that you want to display within your mobile app.
 3. [Create a placement](docs:placements#create-a-new-placement) and set up the audiences you want to target. Assign the paywall to the audiences of the placement.
 4. [Call the placement by its placement ID from the mobile app code](displaying-products) to display the paywalls in the mobile app.
 5. Create more paywalls to run experiments.

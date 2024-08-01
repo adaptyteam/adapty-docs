@@ -18,27 +18,33 @@ You'll need to:
 
 ### 1\. Create an app in Slack
 
-Go to https://api.slack.com/apps and create an app like so:
+Go to [Slack API dashboard](https://api.slack.com/apps) and create an app like so:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/f43aedc-CleanShot_2024-01-04_at_18.27.412x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/f43aedc-CleanShot_2024-01-04_at_18.27.412x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
 
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/08fa9e6-CleanShot_2024-01-04_at_18.28.142x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/08fa9e6-CleanShot_2024-01-04_at_18.28.142x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -47,12 +53,15 @@ Go to https://api.slack.com/apps and create an app like so:
 Give it any name ("Adapty" for example) and add it to your workspace:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/5002bb1-CleanShot_2024-01-04_at_18.29.132x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/5002bb1-CleanShot_2024-01-04_at_18.29.132x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -63,12 +72,15 @@ Give it any name ("Adapty" for example) and add it to your workspace:
 You'll be redirected to your app's page in Slack. Scroll down and press Permissions:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/9750451-CleanShot_2024-01-04_at_18.48.072x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/9750451-CleanShot_2024-01-04_at_18.48.072x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -77,12 +89,15 @@ You'll be redirected to your app's page in Slack. Scroll down and press Permissi
 After the redirect, scroll down to Scopes and press "Add an OAuth Scope":
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/db5b5f4-CleanShot_2024-01-04_at_18.50.262x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/db5b5f4-CleanShot_2024-01-04_at_18.50.262x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -91,12 +106,15 @@ After the redirect, scroll down to Scopes and press "Add an OAuth Scope":
 Give `chat:write`, `chat:write.public` and `chat:write.customize` permissions. Those are needed to post in your channels and customize the messages:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/d97ccb9-CleanShot_2024-01-04_at_18.51.572x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/d97ccb9-CleanShot_2024-01-04_at_18.51.572x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -105,12 +123,15 @@ Give `chat:write`, `chat:write.public` and `chat:write.customize` permissions. T
 Scroll back to the top of the page and press "Install to Workspace":
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/14608e3-CleanShot_2024-01-04_at_19.17.58.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/14608e3-CleanShot_2024-01-04_at_19.17.58.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -119,12 +140,15 @@ Scroll back to the top of the page and press "Install to Workspace":
 Press "Allow" here:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/143967e-CleanShot_2024-01-04_at_18.53.292x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/143967e-CleanShot_2024-01-04_at_18.53.292x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -133,12 +157,15 @@ Press "Allow" here:
 After this, you'll be redirected to the same page, but you'll have an OAuth Token available (`xoxb-...`). This is exactly what's needed to complete the setup:
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/59b33ee-CleanShot_2024-01-04_at_18.55.222x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/59b33ee-CleanShot_2024-01-04_at_18.55.222x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -149,12 +176,15 @@ After this, you'll be redirected to the same page, but you'll have an OAuth Toke
 Go to [**Integrations** → **Slack**](https://app.adapty.io/integrations/slack):
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/b4ffd71-CleanShot_2024-01-04_at_19.05.222x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/b4ffd71-CleanShot_2024-01-04_at_19.05.222x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -169,12 +199,15 @@ Note that if you'd like to post messages from Adapty in a private channel, you'l
  Finally, you can choose which events you'd like to receive under "Events":
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/970a7bb-CleanShot_2024-01-04_at_19.09.472x.png" 
-    style={{ width: '700px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/970a7bb-CleanShot_2024-01-04_at_19.09.472x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
 
 
 
@@ -187,10 +220,14 @@ The events will be sent to the channels you've specified. You'll be able to see 
 :::
 
 
-<div style={{ textAlign: 'center' }}>
-  <img 
-    src="https://files.readme.io/852b8c8-CleanShot_2024-01-04_at_19.11.332x.png" 
-    style={{ width: '7px', border: 'none' }}
-  />
-</div>
+<img
+  src={require('./img/852b8c8-CleanShot_2024-01-04_at_19.11.332x.png').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
 
