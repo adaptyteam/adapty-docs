@@ -34,14 +34,14 @@ const config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
-  
+
   presets: [
     [
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          sidebarPath: './sidebars.js',
+          sidebarPath: require.resolve('./sidebars.js'),
           path: 'docs',
           routeBasePath: '/',
           lastVersion: '2.0',
@@ -62,7 +62,7 @@ const config = {
           anonymizeIP: true, // Optional, anonymize IP addresses
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: require.resolve('./src/css/custom.css'),
         },
       }),
     ],
@@ -76,7 +76,19 @@ const config = {
         redirects: [
           {
             to: '/what-is-adapty',
-            from: ['/docs-test/versions', '/docs-test/docs/intro', '/3.0/what-is-adapty', '/docs-test/promo-campaigns'],
+            from: [
+              '/docs-test/versions', 
+              '/docs-test/docs/intro', 
+              '/3.0/what-is-adapty', 
+              '/docs-test/promo-campaigns', 
+              '/paywall-builder-getting-started', 
+              '/get-and-show-paywall-builder-paywalls', 
+              '/promo-campaigns'
+            ],
+          },
+          {
+            to: '/ab-tests',
+            from: ['/ab-test-copy'],
           },
         ],
         createRedirects(existingPath) {
@@ -226,7 +238,7 @@ const config = {
                html: `React Native: <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-React-Native">No Builder</a>`,
              },
              {
-               html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">No Builder</a>`,
+               html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Unity">No Builder</a>`,
              },
             ],
           },
@@ -247,8 +259,6 @@ const config = {
               },
             ],
           },
-
-
           {
             title: 'Follow Us',
             items: [
@@ -308,3 +318,4 @@ const config = {
 };
 
 export default config;
+               
