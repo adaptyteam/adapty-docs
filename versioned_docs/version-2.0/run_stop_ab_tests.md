@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-test-copy): from the **Placement** page or the **A/B test** page.
+Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-tests): from the **Placement** page or the **A/B test** page.
 
 ### How to run the A/B test
 

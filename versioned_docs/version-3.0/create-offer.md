@@ -6,7 +6,7 @@ metadataTitle: "How to create offers in Adapty"
 
 Adapty allows you to offer discounted pricing to existing or churned subscribers. To use this feature, you need to first [create the offer in App Store Connect](app-store-offers) and/or [create the offer in Play Console](google-play-offers). Once you have the offer ready in the app stores, you can easily add it to Adapty:
 
-1. Open the **[Paywalls and Products](https://app.adapty.io/products) **section from the Adapty main menu, then select the **Products** tab.
+1. Open the [**Paywalls and Products**](https://app.adapty.io/products) section from the Adapty main menu, then select the **Products** tab.
 
    
 <img

@@ -56,10 +56,10 @@ Adding  **App Store shared secret** for [iOS](app-store-shared-secret) and both 
 
 Here is what you can do to set up tracking of subscription events.
 
-|                  |                                                                                                    |
-| :--------------- | :------------------------------------------------------------------------------------------------- |
-| **For iOS**      | **Update the App Store Server Notifications with our [link](app-store-server-notifications)**  |
-| **For Android**  | **Set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)**  |
+|                 |                                                                                               |
+| :-------------- | :-------------------------------------------------------------------------------------------- |
+| **For iOS**     | Update the App Store Server Notifications with our [link](app-store-server-notifications) |
+| **For Android** | Set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn) |
 
 ### Integrations
 
@@ -83,7 +83,7 @@ Don't forget about Privacy Labels
 :::
 
 :::danger
-Make sure to [send paywall views](displaying-products#paywall-analytics) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
+Make sure to [send paywall views](present-remote-config-paywalls#track-paywall-view-events) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
 :::
 
 If you have any questions about integrating Adapty SDK, feel free to contact us using [the website](https://adapty.io) (we use Intercom in the bottom right corner) or just email us at [support@adapty.io](mailto:support@adapty.io).

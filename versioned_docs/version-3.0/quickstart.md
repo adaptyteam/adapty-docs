@@ -10,7 +10,7 @@ We’re thrilled you’ve decided to use Adapty! We want you to get the best res
 
 Create a new application in Adapty that will represent the real application you want to manage in Adapty. To do so:
 
-1. In the **App Settings** menu in the right-top corner of Adapty, open the [General](https://app.adapty.io/settings/general) tab. 
+1. In the **App Settings** menu in the right-top corner of Adapty, open the [General](general) tab. 
 2. After the **General** tab opens, enter the name of the application, its category, and the reporting time zone.
 3. You can configure other application settings. Mandatory settings are marked as **Required**.
 
@@ -86,12 +86,12 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 ### Installing Adapty SDK
 
-[Install Adapty SDK](installation) in your app and be sure you have replaced the** "PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
+[Install and configure Adapty SDK](installation-of-adapty-sdks) in your app and be sure you have replaced the** "PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
 ```swift title="iOS"
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
+Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER
 ```
 ```kotlin title="Android"
 override fun onCreate() {
@@ -126,9 +126,10 @@ const App: React.FC = () => {
 }
 ```
 
-Follow these guides for more info on:  
-— [Configuring Adapty SDK](configuring-adapty-sdk)  
-— [Displaying paywalls & products](displaying-products)
+Follow these guides for more info on:
+
+- [Displaying paywalls & products](display-pb-paywalls)
+- [Setting up fallback paywalls](use-fallback-paywalls)
 
 ### Configuring processing of purchases
 
@@ -165,7 +166,7 @@ Don't forget about Privacy Labels
 :::
 
 :::danger
-Make sure to [send paywall views](displaying-products#paywall-analytics) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
+If you are using paywalls that were not built with [Adapty Paywall Builder](adapty-paywall-builder), make sure to [send paywall views](present-remote-config-paywalls#track-paywall-view-events) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
 :::
 
 If you have any questions about integrating Adapty SDK, feel free to contact us using [the website](https://adapty.io) (we use Intercom in the bottom right corner) or just email us at [support@adapty.io](mailto:support@adapty.io).

@@ -18,7 +18,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 3. [Create products](create-product) in the Adapty Dashboard.
 4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
 5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
-6. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) in your mobile app code.
+6. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) in your mobile app code.
 </details>
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:

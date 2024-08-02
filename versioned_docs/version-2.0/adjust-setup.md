@@ -8,10 +8,10 @@ We consider that you have already set up your Adjust system and installed Adjust
 
 Adapty integration with Adjust is done in the following steps:
 
-1. [Enable and configure the integration in the Adapty Dashboard](set-up-adjust-integration#enable-and-configure-the-integration-in-the-adapty-dashboard).
-2. [Create events and tags in Adjust](set-up-adjust-integration#create-events-and-tags-in-adjust)
-3. [Select events to send to Adjust and rename them](set-up-adjust-integration#select-events-to-send-to-adjust-and-rename-them)
-4. [Enable integration on the Adapty SDK level](appsflyer-setup#enable-integration-on-the-adapty-sdk-level).
+1. [Enable and configure the integration in the Adapty Dashboard](adjust-setup#enable-and-configure-the-integration-in-the-adapty-dashboard).
+2. [Create events and tags in Adjust](adjust-setup#create-events-and-tags-in-adjust)
+3. [Select events to send to Adjust and rename them](adjust-setup#select-events-to-send-to-adjust-and-add-tokens-for-them)
+4. [Enable integration on the Adapty SDK level](adjust-setup#sdk-configuration).
 
 :::warning
 Avoiding events duplication

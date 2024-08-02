@@ -230,7 +230,7 @@ Adapty.getPaywallProducts(paywall: paywall, fetchPolicy: .waitForReceiptValidati
 **Motivation:**  
 The call sequence for the correct functioning of the system was unobvious and less reliable.  
 We recommend first requesting products without overriding `fetchPolicy`, and then immediately rendering the UI. If you get back objects with an unknown `introductoryOfferEligibility` value, you can re-request products with `.waitForReceiptValidation` policy and update the UI afterward.  
-Read more about handling such a scenario in the [_Displaying Paywalls & Products_](ios-displaying-products) section.
+Read more about handling such a scenario in the [_Displaying Paywalls & Products_](display-remote-config-paywalls) section.
 
 ### Logging
 

@@ -6,6 +6,21 @@ metadataTitle: ""
 
 _Glassfy services will be ending in December 2024_. We worked with them to make the transition as easy as possible for you. This guide will help you migrate your subscribers to Adapty in less than a day. Most importantly, the migration will be 100% seamless for your customers; they will continue using the app without interruptions.
 
+
+<img
+  src={require('./img/526afff-glassfy-banner.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
+
 :::info
 Moving from Glassfy? Get 6 months free of Pro+ plan
 

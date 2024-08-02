@@ -30,4 +30,4 @@ To display a paywall or A/B test to a specific audience, do the following:
 1. [Create a user segment](segments#creation). You can skip this step if you want to show the paywall or A/B test to all users. In such a case, use the "All users" audience created by default.
 2. [Add this segment as an audience to placement and define which paywall or A/B test should be shown to it](add-audience-paywall-ab-test). The "All users" audience is automatically added to every placement; you only need to specify which paywall or A/B test should be displayed.
 3. [Set the right priorities](change-audience-priority) if you have more than one audience in a placement. This ensures that users who belong to more than one audience will see the most relevant content. When a user is part of several audiences, the paywall for the highest-priority audience will be displayed.
-4. [In your mobile app code, show the paywall associated with this placement in the mobile app code](displaying-products).
+4. [In your mobile app code, show the paywall associated with this placement in the mobile app code](display-pb-paywalls).

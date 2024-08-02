@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-After [you designed the visual part for your paywall](/3.0/adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products) topic.
 
@@ -14,12 +14,12 @@ Please be aware that this topic refers to Paywall Builder-customized paywalls. F
    1. [Create your products](create-product) in the Adapty Dashboard.
 2. [Create a paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
 3. [Create placements and incorporate your paywall into it](create-placement) in the Adapty Dashboard.
-4. Install [Adapty SDK](installation) and [AdaptyUI DSK](paywall-builder-installation) in your mobile app.
+4. [Install Adapty SDK and AdaptyUI DSK](installation-of-adapty-sdks) in your mobile app.
 </details>
 
 ## Fetch paywall designed with Paywall Builder
 
-If you've [designed a paywall using the Paywall Builder](/3.0/adapty-paywall-builder), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
 To ensure optimal performance, it's crucial to retrieve the paywall and its [view configuration](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) as early as possible, allowing sufficient time for images to download before presenting them to the user.
 

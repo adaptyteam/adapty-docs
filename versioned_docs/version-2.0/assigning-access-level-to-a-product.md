@@ -4,7 +4,7 @@ description: "Simplify user access control in your mobile app with Adapty's Acce
 metadataTitle: "Streamlined Access Management: Assigning Access Levels to Products in Adapty"
 ---
 
-Every [Product](products) requires an associated access level to ensure that users receive the corresponding gated content upon purchase. Adapty seamlessly determines the subscription duration, which then serves as the expiration date for the access level. In the case of a lifetime product, if a customer purchases it, the access level remains perpetually active without any expiration date.
+Every [Product](product) requires an associated access level to ensure that users receive the corresponding gated content upon purchase. Adapty seamlessly determines the subscription duration, which then serves as the expiration date for the access level. In the case of a lifetime product, if a customer purchases it, the access level remains perpetually active without any expiration date.
 
 To link an access level to a product:
 

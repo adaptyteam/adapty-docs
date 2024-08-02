@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Discover important data and insights from our [A/B tests](ab-test-copy), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
+Discover important data and insights from our [A/B tests](ab-tests), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
 
 ### A/B test results
 

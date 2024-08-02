@@ -70,7 +70,7 @@ A grey area nearby stands for transition parameters between steps. A conversion 
 The 2nd column (5) shows the number of users of the app who saw a paywall at least one time (6). They are taken only from those installs that happened in a selected period. If a user sees a paywall in the selected period but his install date is out of range his view is not counted.  
 There is also a percentage of such views taken from the 1st step (7). You may notice that this percent is equal to the grey flag (3) of the 1st step. This equality takes place only for these first steps.
 
-We collect data for this step from all your paywalls that use the `logShowPaywall()` method. So please be sure to send every paywall view to Adapty using this method as described in the [docs](ios-displaying-products#paywall-analytics).  
+We collect data for this step from all your paywalls that use the `logShowPaywall()` method. So please be sure to send every paywall view to Adapty using this method as described in the [docs](present-remote-config-paywalls#track-paywall-view-events).
 
 A grey area next to the 2nd column stands for transition. A conversion percent to the next step (Trial) is shown on a flag (8). Drop-off percent and the absolute value of churned customers after the paywall are shown below (9). 
 

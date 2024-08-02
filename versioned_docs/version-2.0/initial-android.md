@@ -18,8 +18,8 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 - [ ] [Configure Google Play integration](google-play-store-connection-configuration) itself in the Adapty Dashboard
 - [ ] [Enable Real-time developer notifications (RTDN)](enable-real-time-developer-notifications-rtdn) in the Google Play Console
 - [ ] Install and configure AdaptySDKs (you may install SDKs for one or more frameworks, whatever are needed)
-  - [ ] [Install Adapty SDKs for Android](adapty-sdk-installation-android)
-  - [ ] [Install Adapty SDKs for Flutter](flutter-adapty-sdk-installation-and-configuration)
+  - [ ] [Install Adapty SDKs for Android](sdk-installation-android)
+  - [ ] [Install Adapty SDKs for Flutter](sdk-installation-flutter)
   - [ ] [Install Adapty SDKs for React Native](sdk-installation-reactnative)
   - [ ] [Install Adapty SDKs for Unity](sdk-installation-unity)
 - [ ] Build your application and run it. Running as a snapshot or in a sandbox environment is sufficient.

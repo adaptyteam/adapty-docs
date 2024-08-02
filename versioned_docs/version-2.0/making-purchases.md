@@ -4,7 +4,7 @@ description: "Learn how to seamlessly integrate paywalls into your mobile app an
 metadataTitle: "How to Make Purchases in Code for Paywalls in Adapty"
 ---
 
-Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](paywall-builder-getting-started) to customize your paywalls.
+Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
 
 If you don't use the Paywall Builder, you must use a separate method called `.makePurchase()` to complete a purchase and unlock the desired content. This method serves as the gateway for users to engage with the paywalls and proceed with their desired transactions.
 
@@ -21,7 +21,7 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 ## Make purchase
 
 :::note
-In paywalls built with [Paywall Builder](/3.0/adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
+In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
 :::
 
 ```swift title="Swift"

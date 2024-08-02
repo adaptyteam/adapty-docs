@@ -26,11 +26,11 @@ However, some coding still remains necessary. For instance, you'll need to retri
 
 3. [Create a placement and incorporate your paywall into it](create-placement)
 
-4. Install [AdaptySDK](installation) and [AdaptyUI SDK](paywall-builder-installation).
+4. [Install AdaptySDK and AdaptyUI SDK](installation-of-adapty-sdks).
 </details>
 
 ## How to display and process paywalls created in the Paywall Builder
 
-1. [Fetch the paywall to show in the specific placement](get-and-show-paywall-builder-paywalls).
+1. [Fetch the paywall to show in the specific placement](get-pb-paywalls).
 2. [Show the paywall](present-pb-paywalls).
-3. [Handle the events produced by the paywall](handling-visual-paywall-events-copy).
+3. [Handle the events produced by the paywall](handling-pb-paywall-events).

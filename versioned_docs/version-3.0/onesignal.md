@@ -36,7 +36,7 @@ You'll need to provide your **OneSignal App ID** and **Auth Token**. You can fin
 
 ### Retrieving credentials from OneSignal dashboard
 
-To find your OneSignal app ID and authentication key, simply navigate to your [OneSignal dashboard]((https://dashboard.onesignal.com/login)).  
+To find your OneSignal app ID and authentication key, simply navigate to your [OneSignal dashboard](https://dashboard.onesignal.com/login).  
 Your **App ID** can be found under the **Keys & IDs **section in the Settings tab. 
 
 

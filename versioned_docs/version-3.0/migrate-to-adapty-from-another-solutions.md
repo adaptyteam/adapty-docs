@@ -20,7 +20,7 @@ All users who have ever activated subscription will move as soon as they open a 
 
 ### Installing Adapty SDK
 
-Install Adapty SDK for your platform ([iOS](ios-installation), [Android](android-installation), [React Native](react-native-installation), [Flutter](flutter-installation), [Unity](unity-installation)) in your app and replace your legacy logic with appropriate methods from Adapty SDK. Core things you need to replace:
+Install Adapty SDK for your platform ([iOS](ios-installation), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app and replace your legacy logic with appropriate methods from Adapty SDK. Core things you need to replace:
 
 - Checking an [Access level](access-level) to open a gated content;
 - Making a purchase;
@@ -37,7 +37,7 @@ Install Adapty SDK for your platform ([iOS](ios-installation), [Android](android
 
 Apple and Google send us events that happen with users' subscriptions outside of the application (renewal, cancellation, pausing, refund, etc.) via [App Store server notifications](app-store-server-notifications). 
 
-Adapty can work without this URL, but you'll get a limited feature set. For example, [Integrations](integrations) to 3rd party services will be delayed, subscription analytics won't be in real-time, and paywall A/B testing metrics won't be accurate. 
+Adapty can work without this URL, but you'll get a limited feature set. For example, [Integrations](events) to 3rd party services will be delayed, subscription analytics won't be in real-time, and paywall A/B testing metrics won't be accurate. 
 
 When switching from a legacy system, sometimes you want two systems to work simultaneously for some time. In that case, you can use our [raw events forwarding](app-store-server-notifications#raw-events-forwarding), where Adapty is a proxy server for your legacy system.
 

@@ -24,7 +24,7 @@ When it comes to creating A/B tests in Adapty, you have several options to choos
 
 ### Creating A/B test from A/B test section
 
-This way of creating A/B tests would require some adjustments on the SDK side. Before stepping to the further steps, check out our doc on [displaying products](displaying-products). 
+This way of creating A/B tests would require some adjustments on the SDK side. Before stepping to the further steps, check out our doc on [displaying products](display-pb-paywalls). 
 
 To create a new A/B test from the **A/B tests** section:
 

@@ -14,7 +14,7 @@ Don't forget to configure offers in Google Play Console in Adapty
 Google Billing Library v5 and v6 changed the way offers work. Be sure to follow [Google Play offers](google-play-offers) guide to configure them properly.
 :::
 
-With the release of Adapty SDK version 2.6.2, we are excited to announce support for [Google Billing Library v5 and v6](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](android-installation), [Flutter](flutter-installation), [React Native](react-native-installation). [Unity](unity-installation) SDK also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
+With the release of Adapty SDK version 2.6.1, we are excited to announce support for [Google Billing Library v5 and v6](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative). [Unity SDK](sdk-installation-unity) also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
 
 Here are the key changes and enhancements:
 

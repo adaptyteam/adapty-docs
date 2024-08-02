@@ -27,7 +27,7 @@ In Observer mode, the Adapty SDK simply listens for new transactions from Apple/
 ## How to set up Observer mode
 
 1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](adapty-sdk-installation-android#configure-adapty-sdk), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter), [for React Native](sdk-installation-reactnative), and [for Unity](sdk-installation-unity).
 3. (optional) If you want to use 3d-party integrations, set them up as described in the [Configure 3d-party integration](configuration) topic.
 
 :::warning
@@ -40,5 +40,5 @@ In Observer mode, Adapty SDK cannot determine the source of purchases as you mak
 
 Additionally, paywalls designed with Paywall Builder should be displayed in a special way when using the Observer mode:
 
-- [Display paywalls in Observer mode](display-paywalls-in-observer-mode)
-- [Associate paywalls to purchase transactions in Observer mode](associate-paywalls-to-transactions)
+- Display paywalls in Observer mode for [iOS](implement-observer-mode) or [Android](android-present-paywall-builder-paywalls-in-observer-mode).
+- [Associate paywalls to purchase transactions in Observer mode](associate-paywalls-to-transactions).

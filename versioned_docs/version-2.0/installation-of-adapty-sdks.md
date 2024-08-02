@@ -12,7 +12,7 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 The Adapty SDK installation and configuration depend on your framework, so refer to the following doc topics for detailed guidance:
 
 - [Install and configure Adapty SDKs on iOS](sdk-installation-ios)
-- [Install and configure Adapty SDKs on Android](adapty-sdk-installation-android)
+- [Install and configure Adapty SDKs on Android](sdk-installation-android)
 - [Install and configure Adapty SDKs on Flutter](sdk-installation-flutter)
 - [Install and configure Adapty SDKs on React Native](sdk-installation-reactnative) 
 - [Install and configure Adapty SDKs on Unity](sdk-installation-unity)
