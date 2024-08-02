@@ -78,17 +78,16 @@ const config = {
             to: '/what-is-adapty',
             from: [
               '/docs-test/versions', 
-              '/docs-test/docs/intro', 
-              '/3.0/what-is-adapty', 
-              '/docs-test/promo-campaigns', 
-              '/paywall-builder-getting-started', 
-              '/get-and-show-paywall-builder-paywalls', 
-              '/promo-campaigns'
+              '/docs-test/docs/intro',  
             ],
           },
           {
             to: '/ab-tests',
             from: ['/ab-test-copy'],
+          },
+          {
+            to: '/3.0/adapty-paywall-builder',
+            from: ['/paywall-builder-getting-started'],
           },
         ],
         createRedirects(existingPath) {
@@ -154,12 +153,12 @@ const config = {
             position: 'left',
             href: '/getting-started-with-server-side-api',
           },
-          {
+          /*{
             type: 'docsVersionDropdown',
             position: 'right',
             dropdownItemsAfter: [{ to: '/versions' }],
             dropdownActiveClassDisabled: true,
-          },
+          },*/
           {
             href: 'https://app.adapty.io/login',
             label: 'Sign In',
