@@ -21,7 +21,7 @@ A Segment is a group of users with common properties.
 
 
 
-Segments are mainly used in [Placements](placements-old) and in [A/B tests](ab-test) to create an Audience and target it with a paywall (or multiple paywalls). Here are some example scenarios where that can be useful:
+Segments are mainly used in [Placements](placements) and in [A/B tests](ab-tests) to create an Audience and target it with a paywall (or multiple paywalls). Here are some example scenarios where that can be useful:
 
 - targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
 - having different paywalls for different countries
@@ -105,11 +105,11 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
 
 
 
-Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](setting-user-attributes#limits). 
+Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](profiles-crm#custom-attributes).
 
 1. **Name **represents the name of the custom attribute and will be used in the Adapty dashboard only.
 2. **Key **is the unique identifier for the custom attribute. This key value should match the key value used in the SDK. 
 3. **Type** field has two options. If you select "String", you have to enter a list of possible values for the attribute. If you select "Number", the attribute will accept only numeric values.
 4. If you selected "String" as the type, enter a list of possible **values** for the attribute. If you selected "Number", the attribute will accept only numeric values.
 
-Complete all the required fields first, and then you can begin utilizing the custom attribute in your segment definition. Once you've created your segments, you can use them to target [A/B testing](ab-test), among other things!
+Complete all the required fields first, and then you can begin utilizing the custom attribute in your segment definition. Once you've created your segments, you can use them to target [A/B testing](ab-tests), among other things!

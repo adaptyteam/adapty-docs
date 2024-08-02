@@ -75,7 +75,7 @@ const config = {
         toExtensions: ['exe', 'zip'], // /myAsset -> /myAsset.zip (if latter exists)
         redirects: [
           {
-            to: '/what-is-adapty',
+            to: 'https://adapty.io/docs-test/what-is-adapty',
             from: [
               '/docs-test/versions', 
               '/docs-test/docs/intro',  

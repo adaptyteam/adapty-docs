@@ -7,7 +7,7 @@ metadataTitle: ""
 Your migration plan will have 5 logical steps and take an average of 2 hours. 90% of all migrations take less than one working day.
 
 1. Learn the core differences; create and prepare an Adapty account _(5 minutes)_;
-2. Install Adapty SDK for your platform ([iOS](ios-installation), [Android](android-installation), [React Native](react-native-installation), [Flutter](flutter-installation), [Unity](unity-installation)) instead of RevenueCat SDK _(1 hour)_;
+2. Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) instead of RevenueCat SDK _(1 hour)_;
 3. Set up [Apple App Store server notifications](app-store-server-notifications) to Adapty and (optionally) [raw events forwarding](app-store-server-notifications#raw-events-forwarding) _(5 minutes)_;
 4. Test and release updates of your app _(30 minutes);_
 5. (Optional) Ask RevenueCat support for historical data in CSV format  _(5 minutes);_

@@ -4,7 +4,7 @@ description: "Verify the success of test purchases by checking their tracking in
 metadataTitle: "Validating Test Purchases: Ensure Success with Adapty"
 ---
 
-Before releasing your mobile app to production, it's crucial to test in-app purchases thoroughly. Please refer to our [Test in-app purchases in Apple App Store](ios-test-purchases-copy) and [Test in-app purchases in Google Play Store](testing-on-android) topics for detailed guidance on testing. Once you begin testing, you need to verify the success of test purchases.
+Before releasing your mobile app to production, it's crucial to test in-app purchases thoroughly. Please refer to our [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) topics for detailed guidance on testing. Once you begin testing, you need to verify the success of test purchases.
 
 Every time you make a test purchase on your mobile device, view the corresponding transaction in the [**Event Feed**](https://app.adapty.io/event-feed) in the Adapty Dashboard. If the purchase does not appear in the **Event Feed**, it's not being tracked by Adapty. 
 
