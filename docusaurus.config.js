@@ -67,7 +67,7 @@ const config = {
       }),
     ],
   ],
-  plugins: [
+  /*plugins: [
     [
       '@docusaurus/plugin-client-redirects',
       {
@@ -77,7 +77,7 @@ const config = {
           {
             to: 'https://adapty.io/docs-test/what-is-adapty',
             from: [
-              '/docs-test/versions', 
+              //'/docs-test/versions', 
               '/docs-test/docs/intro',  
             ],
           },
@@ -102,7 +102,7 @@ const config = {
         },
       },
     ],
-  ],
+  ],*/
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
