@@ -10,7 +10,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 
 ## Checklist for the initial integration
 
-- [ ] Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform. If you need to set up an additional app, you can easily [add your mobile app to Adapty](register-your-mobile-application-in-adapty) yourself.
+- [ ] Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform.
 - [ ] [Enable Developer APIs](enabling-of-devepoler-api) in Google Cloud Console
 - [ ] [Create a service account](create-service-account) in the Google Cloud Console
 - [ ] [Grant permissions to the service account](grant-permissions-to-service-account) in the Google Play Console
@@ -28,7 +28,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 It takes at least 24 hours for changes to take effect but there's a [hack](https://stackoverflow.com/a/60691844). In [Google Play Console](https://play.google.com/apps/publish/), open any application and in the **Monetize** section go to **Products** -> **Subscriptions**/**In-app products**. Change the description of any product and save the changes. Everything should be working now, you can revert in-app changes.
 :::
 
-After the initial integration is complete, you [can begin using Adapty's features](paywalls-products-and-placements). 
+After the initial integration is complete, you [can begin using Adapty's features](product). 
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](display-pb-paywalls) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 

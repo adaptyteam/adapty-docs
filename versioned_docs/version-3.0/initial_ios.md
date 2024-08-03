@@ -10,7 +10,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 
 ## Guide for the initial integration
 
-- [ ] Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform. If you need to set up an additional app, you can easily [add your mobile app to Adapty](register-your-mobile-application-in-adapty) yourself.
+- [ ] Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform.
 - [ ] [Generate In-App Purchase Key](generate-in-app-purchase-key) in the App Store Connect
 - [ ] [Configure App Store integration](app-store-connection-configuration) itself in the Adapty dashboard and App Store Connect
 - [ ] [Enable App Store server notifications](enable-app-store-server-notifications)  in the App Store Connect
