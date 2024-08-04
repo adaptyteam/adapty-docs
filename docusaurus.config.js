@@ -42,8 +42,8 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          path: 'docs',
-          routeBasePath: '/',
+          path: '/',
+          routeBasePath: '',
           lastVersion: '2.0',
           versions: {
             '3.0': {
@@ -67,39 +67,16 @@ const config = {
       }),
     ],
   ],
-  /*plugins: [
+/*plugins: [
     [
       '@docusaurus/plugin-client-redirects',
       {
-        fromExtensions: ['html', 'htm'], // /myPage.html -> /myPage
-        toExtensions: ['exe', 'zip'], // /myAsset -> /myAsset.zip (if latter exists)
         redirects: [
           {
             to: 'https://adapty.io/docs-test/what-is-adapty',
-            from: [
-              //'/docs-test/versions', 
-              '/docs-test/docs/intro',  
-            ],
-          },
-          {
-            to: '/ab-tests',
-            from: ['/ab-test-copy'],
-          },
-          {
-            to: '/3.0/adapty-paywall-builder',
-            from: ['/paywall-builder-getting-started'],
+            from: ['/docs-test/'],
           },
         ],
-        createRedirects(existingPath) {
-          if (existingPath.includes('/community')) {
-            // Redirect from /docs/team/X to /community/X and /docs/support/X to /community/X
-            return [
-              existingPath.replace('/community', '/docs/team'),
-              existingPath.replace('/community', '/docs/support'),
-            ];
-          }
-          return undefined; // Return a falsy value: no redirect created
-        },
       },
     ],
   ],*/
@@ -153,12 +130,12 @@ const config = {
             position: 'left',
             href: '/getting-started-with-server-side-api',
           },
-          /*{
+          {
             type: 'docsVersionDropdown',
             position: 'right',
-            dropdownItemsAfter: [{ to: 'https://adapty.io/docs-test/versions' }],
+            //dropdownItemsAfter: [{ to: 'https://adapty.io/docs-test/versions' }],
             dropdownActiveClassDisabled: true,
-          },*/
+          },
           {
             href: 'https://app.adapty.io/login',
             label: 'Sign In',
