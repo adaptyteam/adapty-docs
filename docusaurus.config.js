@@ -43,7 +43,7 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           path: 'docs',
-          routeBasePath: '/',
+          routeBasePath: '/docs-test/',
           lastVersion: '2.0',
           versions: {
             '3.0': {
