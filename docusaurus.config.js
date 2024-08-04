@@ -43,7 +43,7 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           path: 'docs',
-          routeBasePath: '/docs-test/',
+          routeBasePath: '/',
           lastVersion: '2.0',
           versions: {
             '3.0': {
@@ -153,12 +153,12 @@ const config = {
             position: 'left',
             href: '/getting-started-with-server-side-api',
           },
-          {
+          /*{
             type: 'docsVersionDropdown',
             position: 'right',
             dropdownItemsAfter: [{ to: 'https://adapty.io/docs-test/versions' }],
             dropdownActiveClassDisabled: true,
-          },
+          },*/
           {
             href: 'https://app.adapty.io/login',
             label: 'Sign In',
