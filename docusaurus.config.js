@@ -53,6 +53,7 @@ const config = {
             },
             '2.0': {
               banner: 'none',
+              path: '',
             },
           },
           includeCurrentVersion: false,
