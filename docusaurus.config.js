@@ -51,6 +51,9 @@ const config = {
               path: '3.0',
               banner: 'none',
             },
+            '2.0': {
+              banner: 'none',
+            },
           },
           includeCurrentVersion: false,
         },
