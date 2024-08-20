@@ -17,7 +17,7 @@ Decide how users will complete purchases. There are two options:
   src={require('./img/a816501-PB_products_list.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -32,7 +32,7 @@ Decide how users will complete purchases. There are two options:
   src={require('./img/4114858-PB_products_buttons.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
