@@ -66,7 +66,7 @@ const config = {
           anonymizeIP: true, // Optional, anonymize IP addresses
         },
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: require.resolve('./src/css/custom.css')
         },
       }),
     ],
