@@ -152,7 +152,6 @@ const config = {
             label: "Sign Up for Free",
             position: "right",
             class: "navbar__item navbar__link navbar__link--sign-up",
-
           },
           // {
           //   href: "https://docs.adapty.io/discuss",
@@ -163,9 +162,95 @@ const config = {
           // },
         ],
       },
+
       footer: {
         style: "dark",
         links: [
+          {
+            title: null,
+            items: [
+              {
+                html: `
+              
+              <div class="footer__header">  
+                 <a href="https://adapty.io" target="_blank" rel="noopener noreferrer" class="footer__logo-icon">
+                    <img src="/docs-test/img/Logo_white.svg" alt="Adapty Docs" class="footer__logo-svg">
+                </a>
+                <div class="footer__social">
+                  <a href="https://twitter.com/AdaptyTeam" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
+                      <img class="footer__social-svg" src="/docs-test/img/logo_Twitter_white.svg" alt="Twitter"> 
+                  </a>
+                  <a href="https://www.linkedin.com/company/adaptyio" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
+                      <img class="footer__social-svg" src="/docs-test/img/logo_In_white.svg" alt="LinkedIn"> 
+                  </a>
+                  <a href="https://discord.gg/subscriptions-hub" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
+                      <img class="footer__social-svg" src="/docs-test/img/logo_discord_white.svg" alt="Discord"> 
+                  </a>
+                  <a href="https://github.com/adaptyteam" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
+                      <img class="footer__social-svg" src="/docs-test/img/logo_github_white.svg" alt="GitHub"> 
+                  </a>
+                  <a href="https://www.youtube.com/@SubhubEn" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
+                      <img class="footer__social-svg" src="/docs-test/img/logo_youtube_white.svg" alt="YouTube"> 
+                  </a>
+                </div>
+       
+                </div>
+                `,
+              },
+            ],
+          },
+         
+         
+          {
+            title: "Adapty UI Sample Apps ",
+            items: [
+              {
+                label: "iOS",
+                href: "https://github.com/adaptyteam/AdaptyUI-iOS",
+              },
+              {
+                label: "Android",
+                href: "https://github.com/adaptyteam/AdaptyUI-Android",
+              },
+              {
+                label: "Flutter",
+                href: "https://github.com/adaptyteam/AdaptyUI-Flutter",
+              },
+              {
+                label: "React Native",
+                href: "https://github.com/adaptyteam/AdaptyUI-React-Native",
+              },
+              {
+                label: "Unity",
+                href: "https://github.com/adaptyteam/AdaptyUI-Unity",
+              },
+            ],
+          },
+          {
+            title: "Adapty SDK Sample Apps",
+            items: [
+              {
+                label: "iOS",
+                href: "https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples",
+              },
+              {
+                label: "Android",
+                href: "https://github.com/adaptyteam/AdaptySDK-Android",
+              },
+              {
+                label: "Flutter",
+                href: "https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example",
+              },
+              {
+                label: "React Native",
+                href: "https://github.com/adaptyteam/AdaptySDK-React-Native",
+              },
+              {
+                label: "Unity",
+                href: "https://github.com/adaptyteam/AdaptySDK-Unity",
+              },
+            ],
+          },
           {
             title: "SDK Reference",
             items: [
@@ -209,26 +294,6 @@ const config = {
             ],
           },
           {
-            title: "Sample Apps",
-            items: [
-              {
-                html: `iOS: <a href="https://github.com/adaptyteam/AdaptyUI-iOS">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples">No Builder</a>`,
-              },
-              {
-                html: `Android: <a href="https://github.com/adaptyteam/AdaptyUI-Android">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Android">No Builder</a>`,
-              },
-              {
-                html: `Flutter: <a href="https://github.com/adaptyteam/AdaptyUI-Flutter">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example">No Builder</a>`,
-              },
-              {
-                html: `React Native: <a href="https://github.com/adaptyteam/AdaptyUI-React-Native">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-React-Native">No Builder</a>`,
-              },
-              {
-                html: `Unity: <a href="https://github.com/adaptyteam/AdaptyUI-Unity">Builder</a> / <a href="https://github.com/adaptyteam/AdaptySDK-Unity">No Builder</a>`,
-              },
-            ],
-          },
-          {
             title: "Resources",
             items: [
               {
@@ -245,34 +310,10 @@ const config = {
               },
             ],
           },
-          {
-            title: "Follow Us",
-            items: [
-              {
-                label: "Twitter",
-                href: "https://twitter.com/AdaptyTeam",
-              },
-              {
-                label: "LinkedIn",
-                href: "https://www.linkedin.com/company/adaptyio",
-              },
-              {
-                label: "Discord",
-                href: "https://discord.gg/subscriptions-hub",
-              },
-              {
-                label: "GitHub",
-                href: "https://github.com/adaptyteam",
-              },
-              {
-                label: "YouTube",
-                href: "https://www.youtube.com/@SubhubEn",
-              },
-            ],
-          },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Adapty Tech Inc.`,
+        copyright: `© ${new Date().getFullYear()} Adapty Tech Inc.`,
       },
+
       /*
       algolia: {
       // The application ID provided by Algolia
