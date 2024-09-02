@@ -3,6 +3,8 @@ title: "React Native - Adapty SDK installation & configuration"
 description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on React Native, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided."
 metadataTitle: "React Native -  - Adapty SDK Installation and Configuration Guide"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
@@ -136,7 +138,9 @@ const App = () => {
 
 You can pass several optional parameters during activation:
 
-```typescript title="Typescript"
+<Tabs>
+  <TabItem value="Typescript" label="Typescript" default>
+```typescript 
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
@@ -148,7 +152,9 @@ adapty.activate('PUBLIC_SDK_KEY', {
   },
 });
 ```
-```javascript title="JavaScript"
+</TabItem>
+<TabItem value="JavaScript" label="JavaScript" default>
+```javascript 
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
@@ -161,8 +167,11 @@ adapty.activate('PUBLIC_SDK_KEY', {
     idfaCollectionDisabled: false,
   },
 });
-
 ```
+</TabItem>
+</Tabs>
+
+
 
 Activation parameters:
 
@@ -192,14 +201,20 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-```typescript title="Typescript"
+<Tabs>
+  <TabItem value="Typescript" label="Typescript" default>
+```typescript 
 adapty.setLogLevel('verbose');
 ```
-```javascript title="Javascript"
+</TabItem>
+<TabItem value="Javascript" label="Javascript" default>
+```javascript 
 import { LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.VERBOSE);
 ```
+</TabItem>
+</Tabs>
 
 For both `activate` and `setLogLevel` methods TypeScript validates the string you pass as an argument. However, if you're using JavaScript, you may prefer to use the  `LogLevel` enum, that would guarantee to provide you a safe value:
 

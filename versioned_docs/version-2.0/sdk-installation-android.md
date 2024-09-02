@@ -3,6 +3,9 @@ title: "Android - Adapty SDK Installation and configuration"
 description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on Android, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided"
 metadataTitle: "Android - Adapty SDK Installation and Configuration Guide"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
@@ -28,21 +31,27 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install via Gradle
 
-```groovy title="module-level build.gradle"
+<Tabs>
+  <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+```groovy 
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.3'
     implementation 'io.adapty:android-ui:2.11.2'
 }
 ```
-```kotlin title="module-level build.gradle.kts"
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+```kotlin 
 dependencies {
     ...
     implementation("io.adapty:android-sdk:2.11.3")
     implementation("io.adapty:android-ui:2.11.1")
 }
 ```
-```toml title="version catalog"
+</TabItem>
+<TabItem value="version catalog" label="version catalog" default>
+```toml 
 //libs.versions.toml
 
 [versions]
@@ -65,6 +74,9 @@ dependencies {
     implementation(libs.adapty.ui)
 }
 ```
+</TabItem>
+</Tabs>
+
 
 If the dependency is not being resolved, please make sure that you have `mavenCentral()` in your Gradle scripts. 
 
@@ -103,16 +115,18 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-```kotlin title="Kotlin"
+<Tabs>
+  <TabItem value="Kotlin" label="Kotlin" default>
+```kotlin 
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
       applicationContext,
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    	  .withObserverMode(false) //default false
-    	  .withCustomerUserId(customerUserId) //default null
-    	  .withIpAddressCollectionDisabled(false) //default false
-    	  .build()
+          .withObserverMode(false) //default false
+          .withCustomerUserId(customerUserId) //default null
+          .withIpAddressCollectionDisabled(false) //default false
+          .build()
     )  
       
     //OR 
@@ -121,17 +135,20 @@ override fun onCreate() {
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="Java" label="Java" default>
+
+```java 
 @Override
 public void onCreate() {
     super.onCreate();
     Adapty.activate(
       applicationContext,
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    	  .withObserverMode(false) //default false
-    	  .withCustomerUserId(customerUserId) //default null
-    	  .withIpAddressCollectionDisabled(false) //default false
-    	  .build()
+          .withObserverMode(false) //default false
+          .withCustomerUserId(customerUserId) //default null
+          .withIpAddressCollectionDisabled(false) //default false
+          .build()
     );
   
     //OR
@@ -140,6 +157,8 @@ public void onCreate() {
     Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", false, "YOUR_USER_ID");
 }
 ```
+</TabItem>
+</Tabs>
 
 Configurational options:
 
@@ -169,24 +188,36 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-```kotlin title="Kotlin"
+<Tabs>
+  <TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 ```
+</TabItem>
+</Tabs>
 
 ## Redirect the logging system messages
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-```kotlin title="Kotlin"
+<Tabs>
+  <TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.setLogHandler { level, message ->
     //handle the log
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.setLogHandler((level, message) -> {
     //handle the log
 });
 ```
+</TabItem>
+</Tabs>
