@@ -3,6 +3,8 @@ title: "Make purchases in mobile app"
 description: "Learn how to seamlessly integrate paywalls into your mobile app and enable purchases using Adapty. Discover the .makePurchase() method for making purchases. Explore how Adapty automatically applies promotional offers to enhance user transactions."
 metadataTitle: "How to Make Purchases in Code for Paywalls in Adapty"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
 
@@ -24,7 +26,9 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
 :::
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -36,7 +40,9 @@ Adapty.makePurchase(product: product) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -55,17 +61,19 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
         //NOTE: info is null in case of cross-grade with DEFERRED proration mode
         AdaptyProfile profile = info != null ? info.getProfile() : null;
         
-      	if (profile != null) {
+        if (profile != null) {
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
             
-          	if (premium != null && premium.isActive()) {
+            if (premium != null && premium.isActive()) {
                 // successful purchase
             }
         }
@@ -75,18 +83,22 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
-		// successful purchase      
+        // successful purchase      
   }
 } on AdaptyError catch (adaptyError) {
-	// handle the error
+    // handle the error
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
@@ -99,18 +111,23 @@ Adapty.MakePurchase(product, (profile, error) => {
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const profile = await adapty.makePurchase(product);
+    const profile = await adapty.makePurchase(product);
   const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
-	if (isSubscribed) {
-		// grant access to features in accordance with access level
-	}
+    if (isSubscribed) {
+        // grant access to features in accordance with access level
+    }
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
 
 Request parameters:
 
@@ -127,7 +144,9 @@ Response parameters:
 
 Below is a complete example of making the purchase of the access level `premium`. `Premium` is the default access level, so in most cases, your code will look this way:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -139,7 +158,9 @@ Adapty.makePurchase(product: product) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -158,17 +179,19 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
         //NOTE: info is null in case of cross-grade with DEFERRED proration mode
         AdaptyProfile profile = info != null ? info.getProfile() : null;
         
-      	if (profile != null) {
+        if (profile != null) {
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
             
-          	if (premium != null && premium.isActive()) {
+            if (premium != null && premium.isActive()) {
                 // grant access to premium features
             }
         }
@@ -178,18 +201,22 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['premium']?.isActive ?? false) {
-		// grant access to premium features      
+        // grant access to premium features      
   }
 } on AdaptyError catch (adaptyError) {
-	// handle the error
+    // handle the error
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
       // handle error
@@ -203,18 +230,22 @@ Adapty.MakePurchase(product, (profile, error) => {
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const profile = await adapty.makePurchase(product);
-	const isSubscribed = profile?.accessLevels['premium']?.isActive;
+    const profile = await adapty.makePurchase(product);
+    const isSubscribed = profile?.accessLevels['premium']?.isActive;
   
-	if (isSubscribed) {
-		// grant access to premium features
-	}
+    if (isSubscribed) {
+        // grant access to premium features
+    }
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-shared-secret) instead. This method is currently deprecated by Apple.
@@ -229,7 +260,9 @@ When a user opts for a new subscription instead of renewing the current one, the
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
-```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -246,21 +279,25 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
         //NOTE: info is null in case of cross-grade with DEFERRED proration mode
         AdaptyProfile profile = info != null ? info.getProfile() : null;
         
-      	// successful cross-grade
+        // successful cross-grade
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         // handle the error
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final result = await adapty.makePurchase(
     product: product,
@@ -274,7 +311,9 @@ try {
   // handle the error
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
       // handle error
@@ -284,9 +323,14 @@ Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   // successful cross-grade
 });
 ```
-```typescript title="React Native (TS)"
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 // TODO: add example
 ```
+</TabItem>
+</Tabs>
 
 Additional request parameter:
 
@@ -322,12 +366,18 @@ extension AppDelegate: AdaptyDelegate {
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.presentCodeRedemptionSheet()
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 adapty.presentCodeRedemptionSheet();
 ```
+</TabItem>
+</Tabs>
 
 :::danger
 Based on our observations, the Offer Code Redemption sheet in some apps may not work reliably. We recommend redirecting the user directly to the App Store.
