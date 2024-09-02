@@ -1,25 +1,51 @@
 // src/components/SupportLink.js
-import React from 'react';
+import React from "react";
 
 export default function SupportLink() {
   return (
-    <div style={{ marginTop: '2rem', padding: '1rem', background: '#f4f4f4', textAlign: 'left' }}>
-      <p>
-        <button 
-          onClick={() => window.location.href = 'https://docs.adapty.io/discuss'} 
-          style={{ marginLeft: '0.5rem', padding: '0.5rem 1rem', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+    <div className="support">
+      <button
+        className="support__button support__button--feedback"
+        onClick={() =>
+          (window.location.href = "https://docs.adapty.io/discuss")
+        }
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
         >
-          Feedback? Let Us Know
-        </button>
-      </p>
-      <p>
-        <button 
-          onClick={() => window.location.href = 'mailto:support@adapty.io'} 
-          style={{ marginLeft: '0.5rem', padding: '0.5rem 1rem', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M12.4144 1.91879C11.6333 1.13774 10.367 1.13775 9.58595 1.91879L1.3335 10.1712V14.1141H5.27631L13.5288 5.8616C14.3098 5.08055 14.3098 3.81423 13.5288 3.03318L12.4144 1.91879ZM10.5288 2.8616C10.7891 2.60125 11.2112 2.60125 11.4716 2.8616L12.586 3.97599C12.8463 4.23633 12.8463 4.65844 12.5859 4.91879L11.4999 6.00484L9.44271 3.94765L10.5288 2.8616ZM8.4999 4.89046L2.66683 10.7235V12.7807H4.72402L10.5571 6.94765L8.4999 4.89046Z"
+            fill="currentColor"
+          />
+        </svg>
+        Leave Feedback
+      </button>
+      <button
+        className="support__button support__button--contact"
+        onClick={() => (window.location.href = "mailto:support@adapty.io")}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
         >
-          Support: We're Here to Help
-        </button>
-      </p>
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M8 2.4C4.9072 2.4 2.4 4.9072 2.4 8C2.4 11.0928 4.9072 13.6 8 13.6C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.9072 11.0928 2.4 8 2.4ZM1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8ZM7.5615 3.8346C8.0715 3.75369 8.59375 3.8153 9.07096 4.01284C9.54824 4.21042 9.96143 4.53625 10.265 4.95388C10.5687 5.37183 10.7505 5.86532 10.7911 6.3799C10.8317 6.89479 10.729 7.4109 10.4946 7.87101C10.2603 8.33107 9.9035 8.71726 9.4631 8.98716C9.22509 9.13303 8.96777 9.24179 8.7 9.31092V9.40016C8.7 9.78676 8.3866 10.1002 8 10.1002C7.6134 10.1002 7.3 9.78676 7.3 9.40016V8.69984C7.3 8.31324 7.6134 7.99984 8 7.99984C8.25821 7.99984 8.51139 7.92842 8.73155 7.7935C8.95162 7.65863 9.12989 7.4657 9.24715 7.23553C9.36438 7.0054 9.41571 6.74728 9.39542 6.48992C9.37511 6.23226 9.28415 5.98565 9.13249 5.77698C8.9806 5.568 8.77394 5.4051 8.53549 5.30639C8.29695 5.20765 8.03595 5.17684 7.78088 5.21731C7.52573 5.25779 7.28652 5.36811 7.09032 5.53578C6.89395 5.70361 6.74803 5.9221 6.66835 6.16761C6.54902 6.53533 6.15418 6.73668 5.78646 6.61735C5.41874 6.49801 5.21739 6.10317 5.33672 5.73545C5.49617 5.24415 5.78826 4.80694 6.18077 4.4715C6.57346 4.1359 7.05159 3.9155 7.5615 3.8346ZM7.26514 11.5C7.26514 11.1134 7.57854 10.8 7.96514 10.8H8.03486C8.42146 10.8 8.73486 11.1134 8.73486 11.5V11.57C8.73486 11.9561 8.42229 12.2692 8.03623 12.27L7.9665 12.2701C7.78061 12.2705 7.60222 12.1969 7.47064 12.0656C7.33907 11.9343 7.26514 11.756 7.26514 11.5701V11.5Z"
+            fill="currentColor"
+          />
+        </svg>
+        Contact Support
+      </button>
     </div>
   );
 }
