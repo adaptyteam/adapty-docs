@@ -3,6 +3,8 @@ title: "iOS - Adapty SDK installation & configuration"
 description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on iOS, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided."
 metadataTitle: "iOS - Adapty SDK Installation and Configuration Guide"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
@@ -59,22 +61,26 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 // In your AppDelegate class:
 
 let configurationBuilder =
-	Adapty.Configuration
-		.Builder(withAPIKey: "PUBLIC_SDK_KEY")
-		.with(observerMode: false) // optional
-		.with(customerUserId: "YOUR_USER_ID") // optional
-		.with(idfaCollectionDisabled: false) // optional
-		.with(ipAddressCollectionDisabled: false) // optional
+    Adapty.Configuration
+        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(observerMode: false) // optional
+        .with(customerUserId: "YOUR_USER_ID") // optional
+        .with(idfaCollectionDisabled: false) // optional
+        .with(ipAddressCollectionDisabled: false) // optional
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
 }
 ```
-```swift title="SwiftUI"
+</TabItem>
+<TabItem value="SwiftUI" label="SwiftUI" default>
+```swift 
 import Adapty
 
 @main
@@ -100,6 +106,10 @@ struct SampleApp: App {
     }
 }
 ```
+</TabItem>
+</Tabs>
+
+
 
 Parameters:
 

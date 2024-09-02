@@ -3,10 +3,14 @@ title: "Flutter, React Native, Unity - Handle errors"
 description: "Discover how to streamline error management in Fluter, React Native, and Unity development with Adapty SDK's AdaptyError, providing detailed troubleshooting capabilities for comprehensive error handling"
 metadataTitle: "Fluter, React Native, and Unity Error Handling: AdaptyError Overview"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
-```javascript title="Flutter"
+<Tabs>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
     try {
       final result = await adapty.makePurchase(product: product);
     } on AdaptyError catch (adaptyError) {
@@ -16,7 +20,19 @@ Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
     } catch (e) {
     }
 ```
-```typescript title="React Native"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
+Adapty.MakePurchase(product, (profile, error) => {
+  if (error != null && error.Code == Adapty.ErrorCode.PaymentCancelled) {
+      // payment cancelled
+  }
+});
+```
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
   const params: MakePurchaseParamsInput = {};
   await adapty.makePurchase(product, params);
@@ -29,13 +45,8 @@ try {
   }
 }
 ```
-```csharp title="Unity"
-Adapty.MakePurchase(product, (profile, error) => {
-  if (error != null && error.Code == Adapty.ErrorCode.PaymentCancelled) {
-      // payment cancelled
-  }
-});
-```
+</TabItem>
+</Tabs>
 
 ##  System StoreKit codes
 
