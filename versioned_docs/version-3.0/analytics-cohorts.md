@@ -197,6 +197,14 @@ You can set the date range for cohorts and choose the segment. The segment deter
 One important aspect of revenue calculation in cohorts is the inclusion of store commission fees and taxes (which can vary based on the user's store account country) and store commission fees. Adapty currently supports commission fee and taxes calculation for both App Store and Play Store in cohort analytics.  
 For more details on how Adapty calculates taxes and commissions in its analytics, please refer to our [documentation](controls-filters-grouping-compare-proceeds#store-commission-and-taxes).
 
+## Revenue vs Proceeds
+
+Both Revenue and Proceeds are money metrics. You can think of Revenue as gross revenue and Proceeds as net revenue. Revenue doesn't account for App Store / Play Store fees, while Proceeds do. Therefore Proceeds are always less than Revenue (15%-30% less to be exact).
+
+Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. This means 53+ renewals for weekly subscriptions, 13+ renewals for monthly subscriptions, and 2+ renewals for annual subscriptions.
+
+Adapty automatically determines the fee for every transaction your customers make and calculates Proceeds based on it.
+
 ### Prediction: Revenue and LTV
 
 **Predicted revenue** is an estimated total revenue a cohort of paying subscribers is expected to generate within the selected period after cohort creation. It is calculated by multiplying the predicted LTV of the cohort by the predicted number of paying users within the cohort. For example, if the predicted LTV is $50 and there are 100 paying users in a cohort, the Predicted Revenue would be $5,000. 
