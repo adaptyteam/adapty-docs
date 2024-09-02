@@ -3,6 +3,8 @@ title: "Identify users"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty creates an internal profile ID for every user. However, if you have your own authentication system, you should set your own Customer User ID. You can find users by their Customer User ID in the [Profiles](profiles-crm) section and use it in the [server-side API](getting-started-with-server-side-api), which will be sent to all integrations.
 
@@ -10,20 +12,30 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
 adapty.activate("PUBLIC_SDK_KEY", {
-	customerUserId: "YOUR_USER_ID"
+    customerUserId: "YOUR_USER_ID"
 });
 ```
+</TabItem>
+</Tabs>
 
 You may notice that there are no snippets for Flutter and Unity. Unfortunately, there are technical limitations that won't allow passing the ID upon activation. 
 
@@ -31,28 +43,36 @@ You may notice that there are no snippets for Flutter and Unity. Unfortunately, 
 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.identify("YOUR_USER_ID") { error in
     if error == nil {
         // successful identify
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 Adapty.identify("YOUR_USER_ID") { error ->
     if (error == null) {
         // successful identify
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 Adapty.identify("YOUR_USER_ID", error -> {
     if (error == null) {
         // successful identify
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 try {
   await Adapty().identify(customerUserId);
 } on AdaptyError catch (adaptyError) {
@@ -60,21 +80,27 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp
 Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
     // successful identify
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
 try {
-	await adapty.identify("YOUR_USER_ID");
-	// successfully identified
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 Request parameters:
 
@@ -92,28 +118,36 @@ It's also important to note that you should re-request all paywalls and products
 
 You can logout the user anytime by calling `.logout()` method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.logout { error in
     if error == nil {
         // successful logout
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 Adapty.logout { error ->
     if (error == null) {
         // successful logout
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 Adapty.logout(error -> {
     if (error == null) {
         // successful logout
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 try {
   await Adapty().logout();
 } on AdaptyError catch (adaptyError) {
@@ -121,20 +155,26 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp
 Adapty.Logout((error) => {
   if(error == null) {
     // successful logout
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
 try {
-	await adapty.logout();
-	// successful logout
+    await adapty.logout();
+    // successful logout
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 You can then login the user using `.identify()` method.

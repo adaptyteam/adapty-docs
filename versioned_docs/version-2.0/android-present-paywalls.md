@@ -3,6 +3,8 @@ title: "Android - Present Paywall Builder paywalls"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -12,7 +14,9 @@ If you work in [Observer mode](observer-vs-full-mode), refer to the [Android - P
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-```kotlin title="Kotlin"
+<Tabs>
+  <TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -26,7 +30,7 @@ In order to display the visual paywall on the device screen, you must first conf
    //======= OR =======
 
    val paywallView =
-     	AdaptyPaywallView(activity) // or retrieve it from xml
+        AdaptyPaywallView(activity) // or retrieve it from xml
    ...
    with(paywallView) {
        setEventListener(eventListener)
@@ -40,7 +44,10 @@ In order to display the visual paywall on the device screen, you must first conf
        )
    }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
         viewConfiguration,
@@ -59,11 +66,15 @@ AdaptyPaywallView paywallView =
 paywallView.setEventListener(eventListener);
 paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
 ```
-```xml title="Xml"
+</TabItem>
+<TabItem value="XML" label="XML" default>
+```xml 
 <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
 ```
+</TabItem>
+</Tabs>
 
    After the view has been successfully created, you can add it to the view hierarchy and display it on the screen of the device.
 
@@ -83,7 +94,9 @@ Request parameters:
 
 For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-```kotlin title="Kotlin"
+<Tabs>
+  <TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -92,21 +105,20 @@ import androidx.core.view.WindowInsetsCompat
 fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
     ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
         val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
         ViewCompat.setOnApplyWindowInsetsListener(this, null)
         action(systemBarInsets)
         insets
     }
 }
-
 //and then use it with the view
 paywallView.onReceiveSystemBarsInsets { insets ->
     val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
     paywallView.showPaywall(paywall, products, viewConfig, paywallInsets, productTitleResolver)
 }
-
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -118,12 +130,16 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
     ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
   
     AdaptyPaywallInsets paywallInsets =
-      			AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
+                AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
     paywallView.showPaywall(paywall, products, viewConfiguration, paywallInsets, productTitleResolver);
             
     return insets;
 });
 ```
+</TabItem>
+</Tabs>
+
+
 
 Returns:
 

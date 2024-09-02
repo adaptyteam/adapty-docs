@@ -3,6 +3,8 @@ title: "Design paywall with remote config"
 description: "Leverage the Paywall Remote Config tool to fine-tune your paywalls effortlessly. Utilize custom JSON payloads to personalize titles, images, fonts, and colors with precision. Ensure optimal performance with size restrictions per language, all without hassle"
 metadataTitle: "Optimize Paywalls with Flexible Configuration using Paywall Remote Config"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
 
@@ -59,51 +61,65 @@ You can switch between views by clicking on the **Table** or **JSON** tab whenev
 
 Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. Here are some examples of how you can use a remote config.
 
-```json title="Titles"
+<Tabs>
+  <TabItem value="Titles" label="Titles" default>
+```json
 {
     "screen_title": "Today only: Subscribe, and get 7 days for free!"
 }
 
-## Test titles or others texts
+# Test titles or others texts
 ```
-```json title="Images"
+</TabItem>
+<TabItem value="Images" label="Images" default>
+```json 
 {
     "background_image": "https://adapty.io/media/paywalls/bg1.png"
 }
 
-## Test images on your paywall
+# Test images on your paywall
 ```
-```json title="Fonts"
+</TabItem>
+<TabItem value="Fonts" label="Fonts" default>
+```json
 {
     "font_family": "San Francisco",
     "font_size": 16
 }
 
-## Test fonts
+# Test fonts
 ```
-```json title="Color"
+</TabItem>
+<TabItem value="Color" label="Color" default>
+```json 
 {
     "subscribe_button_color": "purple"
 }
 
-## Test colors of buttons, texts etc.
+# Test colors of buttons, texts etc.
 ```
-```json title="HTML"
+</TabItem>
+<TabItem value="HTML" label="HTML" default>
+```json
 {
     "photo_gallery": "https://adapty.io/media/paywalls/link-to-html-snippet.html"
 }
 
-## Any HTML code that can be displayed on the paywall
+# Any HTML code that can be displayed on the paywall
 ```
-```json title="Soft/Hard Paywall"
+</TabItem>
+<TabItem value="Soft/Hard Paywall" label="Soft/Hard Paywall" default>
+```json
 {
     "hard_paywall": true
 }
 
-## By setting it to true, you disalow skipping paywall without subscribing
-## You have to handle this logic in your app
+# By setting it to true, you disalow skipping paywall without subscribing
+# You have to handle this logic in your app
 ```
-```json title="Translations"
+</TabItem>
+<TabItem value="Translations" label="Translations" default>
+```json
 {
     "title": {
         "en": "Try for free!",
@@ -112,6 +128,8 @@ Whatever view you've chosen to customize your paywall, you can later access this
     }
 }
 ```
+</TabItem>
+</Tabs>
 
 You can combine different options, and make up your own. This way you can test different titles, texts, images, fonts, colors, and so on.
 
