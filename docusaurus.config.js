@@ -138,7 +138,6 @@ const config = {
           {
             type: "docsVersionDropdown",
             position: "right",
-            //dropdownItemsAfter: [{ to: 'https://adapty.io/docs-test/versions' }],
             dropdownActiveClassDisabled: true,
           },
           {
