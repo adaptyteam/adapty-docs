@@ -36,20 +36,17 @@ To set up the webhook integration:
 />
 
 
-
-
-
 2. Turn on the toggle to initiate the integration.
 3. Fill out the integration fields:
 
-   | Field | Description |
+| Field | Description |
 |-----|-----------|
 | **Production endpoint URL** | URL that is used by Adapty to send HTTP POST requests to this URL when events occur. |
 | **Authorization header value for production endpoint** | <p>The header that your server will use to authenticate requests from Adapty in production. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
 
    Additionally, for your testing needs in the staging environment, two other fields are available:
 
-   | Testing field | Description |
+| Testing field | Description |
 |-------------|-----------|
 | **Sandbox endpoint URL** | Adapty will use this URL to send HTTP POST requests when events occur in the staging environment. |
 | **Authorization header value for sandbox endpoint** | <p>The header that your server will use to authenticate requests from Adapty during testing in the sandbox environment. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
@@ -73,9 +70,6 @@ Choose the events you want to receive in your server by enabling the toggle next
     margin: '0 auto' /* center alignment */
   }}
 />
-
-
-
 
 
 The event name can be any string. You cannot leave the fields empty for enabled events. If you accidentally removed Adapty event name, you can always copy the name from the [Events to send to 3d-party integrations](events) topic.

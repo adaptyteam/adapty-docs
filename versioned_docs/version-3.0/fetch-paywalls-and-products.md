@@ -1,8 +1,10 @@
 ---
 title: "Fetch paywalls and products for remote config paywalls"
-description: ""
-metadataTitle: ""
+description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
+metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
 
@@ -24,7 +26,9 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -34,7 +38,9 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -48,7 +54,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -61,7 +69,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -70,7 +80,9 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -80,17 +92,21 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const id = 'YOUR_PLACEMENT_ID';
-	const locale = 'en';
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-	const paywall = await adapty.getPaywall(id, locale);
+    const paywall = await adapty.getPaywall(id, locale);
   // the requested paywall
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
@@ -113,7 +129,9 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -123,7 +141,9 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -137,7 +157,9 @@ Adapty.getPaywallProducts(paywall) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywallProducts(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
@@ -150,7 +172,9 @@ Adapty.getPaywallProducts(paywall, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -159,7 +183,9 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   if(error != null) {
     // handle the error
@@ -169,15 +195,19 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   // products - the requested products array
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	// ...paywall
-	const products = await adapty.getPaywallProducts(paywall);
+    // ...paywall
+    const products = await adapty.getPaywallProducts(paywall);
   // the requested products list
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 Response parameters:
 
@@ -191,27 +221,33 @@ After getting products and before [presenting the paywall](present-remote-config
 
 You don't have to manually check these factors on iOS. Moreover, if you use the Paywall Builder, you can skip the eligibility check as it will be done automatically. However, if you do not use the Paywall Builder, use the `getProductsIntroductoryOfferEligibility(products:)` method. It automatically checks the eligibility status for each product in the array:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getProductsIntroductoryOfferEligibility(products: products) { result in
-	switch result {
-		case .success(let eligibilities):
-			// update your UI
-		case let .failure(error):
-			// handle the error
-	}
+    switch result {
+        case .success(let eligibilities):
+            // update your UI
+        case let .failure(error):
+            // handle the error
+    }
 }
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```javascript 
 try {
   final eligibilities = await Adapty().getProductsIntroductoryOfferEligibility(products: products);
-	// update your UI
+    // update your UI
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {
   // handle the error
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetProductsIntroductoryOfferEligibility(products, (eligibilities, error) => {
   if (eligibilities != null) {
     // update your UI
@@ -221,6 +257,11 @@ Adapty.GetProductsIntroductoryOfferEligibility(products, (eligibilities, error) 
   }
 });
 ```
+</TabItem>
+</Tabs>
+
+
+
 
 Next, you can see all the possible values of `AdaptyEligibility`
 
@@ -248,10 +289,12 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 - **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You’ll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
 - **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
 
-If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information).
+If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information)
 :::
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -261,7 +304,9 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -275,7 +320,9 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -288,20 +335,30 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const id = 'YOUR_PLACEMENT_ID';
-	const locale = 'en';
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-	const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
   // the requested paywall
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 :::note
-The `getPaywallForDefaultAudience` method is not yet supported in Flutter and Unity, but support will be added soon.
+The `getPaywallForDefaultAudience` method is available starting from these versions:
+
+- iOS: 2.11.2
+- Android: 2.11.3
+- React Native: 2.11.2
+
+The method is not yet supported in Flutter and Unity, but support will be added soon.
 :::
 
 | Parameter | Presence | Description |

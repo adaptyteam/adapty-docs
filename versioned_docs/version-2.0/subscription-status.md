@@ -3,6 +3,8 @@ title: "Check subscription status"
 description: "Easily check subscription status by retrieving active access levels from the AdaptyProfile object in Adapty. Stay updated on changes made in it"
 metadataTitle: "Check Subscription Status with AdaptyProfile Access Levels"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty makes it easy to track subscription status without needing to manually input product IDs into your code. Instead, you can simply check for an active [access level](access-level) to confirm a user's subscription status.
 
@@ -27,17 +29,21 @@ To be notified of profile updates, listen for profile changes as described in th
 
 To get the access level from the server, use the `.getProfile()` method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
-      	profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        	// grant access to premium features
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
         }
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -51,7 +57,9 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -63,7 +71,9 @@ Adapty.getProfile(result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().getProfile();
   // check the access
@@ -72,7 +82,9 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -82,13 +94,17 @@ Adapty.GetProfile((profile, error) => {
   // check the access
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const profile = await adapty.getProfile();
+    const profile = await adapty.getProfile();
 } catch (error) {
   // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 Response parameters:
 
@@ -98,7 +114,9 @@ Response parameters:
 
 ## Example: Checking the default "premium" access level
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get(), 
        profile.accessLevels["premium"]?.isActive ?? false {
@@ -106,7 +124,9 @@ Adapty.getProfile { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -123,14 +143,16 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
         
-      	AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
         
-      	if (premium != null && premium.isActive()) {
+        if (premium != null && premium.isActive()) {
             // grant access to premium features
         }
     } else if (result instanceof AdaptyResult.Error) {
@@ -139,18 +161,22 @@ Adapty.getProfile(result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().getProfile();
   if (profile?.accessLevels['premium']?.isActive ?? false) {
-		// grant access to premium features
-	}
+        // grant access to premium features
+    }
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -164,18 +190,22 @@ Adapty.GetProfile((profile, error) => {
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const profile = await adapty.getProfile();
-	
+    const profile = await adapty.getProfile();
+    
   const isActive = profile.accessLevels["premium"]?.isActive;
-	if (isActive) {
-		// grant access to premium features
-	}
+    if (isActive) {
+        // grant access to premium features
+    }
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 ## Listening for profile updates, including access levels
 
@@ -183,7 +213,9 @@ Adapty fires an event whenever the user’s profile is updated.
 
 To receive profile updates, including changes to subscription status (access levels), follow these steps:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.delegate = self
 
 // To receive user profile updates, extend `AdaptyDelegate` with this method:
@@ -191,22 +223,30 @@ func didLoadLatestProfile(_ profile: AdaptyProfile) {
     // handle any changes to user profile
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to user profile
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.setOnProfileUpdatedListener(profile -> {
     // handle any changes to user profile
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 Adapty().didUpdateProfileStream.listen((profile) {
   // handle any changes to user profile
 });
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 // Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   public void OnLoadLatestProfile(Adapty.Profile profile) {
@@ -214,12 +254,16 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   }
 }
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 // Create an "onLatestProfileLoad" event listener
 adapty.addEventListener('onLatestProfileLoad', profile => {
-	// handle any changes to user profile
+    // handle any changes to user profile
 });
 ```
+</TabItem>
+</Tabs>
 
 Adapty also triggers an event when the application starts. In this case, the cached profile will be returned.
 

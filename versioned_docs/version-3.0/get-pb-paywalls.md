@@ -1,8 +1,10 @@
 ---
 title: "Fetch Paywall Builder paywalls and their configuration"
-description: ""
-metadataTitle: ""
+description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
+metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
@@ -25,7 +27,9 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 
 To get a paywall, use the `getPaywall` method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -35,7 +39,9 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 import com.adapty.utils.seconds
 
 ...
@@ -53,7 +59,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 import com.adapty.utils.TimeInterval;
 
 ...
@@ -70,7 +78,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -79,7 +89,9 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -89,17 +101,21 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   // paywall - the resulting object
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const id = 'YOUR_PLACEMENT_ID';
-	const locale = 'en';
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-	const paywall = await adapty.getPaywall(id, locale);
+    const paywall = await adapty.getPaywall(id, locale);
   // the requested paywall
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
@@ -128,12 +144,14 @@ For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method t
 The result of the `createPaywallView` method can be used only once. If you need to reuse it, call the `createPaywallView` method again.
 :::
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 import Adapty
 
 guard paywall.hasViewConfiguration else {
     //  use your custom logic
-  	return
+    return
 }
 
 AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
@@ -145,10 +163,12 @@ AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 if (!paywall.hasViewConfiguration) {
-  	// use your custom logic
-  	return
+    // use your custom logic
+    return
 }
 
 AdaptyUI.getViewConfiguration(paywall) { result ->
@@ -164,7 +184,9 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
@@ -181,7 +203,9 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
 
 try {
@@ -192,7 +216,9 @@ try {
   // handle the error
 }
 ```
-```typescript title="React Native (TSX)"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -202,14 +228,18 @@ if (paywall.hasViewConfiguration) {
     // handle the error
   }
 } else {
-  	//use your custom logic
+    //use your custom logic
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```csharp 
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
 });
 ```
+</TabItem>
+</Tabs>
 
 :::note
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
@@ -234,7 +264,9 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
 :::
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -244,7 +276,9 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -258,7 +292,9 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -271,20 +307,30 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```typescript
 try {
-	const id = 'YOUR_PLACEMENT_ID';
-	const locale = 'en';
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-	const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
   // the requested paywall
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 :::note
-The `getPaywallForDefaultAudience` method is not yet supported in Flutter and Unity, but support will be added soon.
+The `getPaywallForDefaultAudience` method is available starting from these versions:
+
+- iOS: 2.11.2
+- Android: 2.11.3
+- React Native: 2.11.2
+
+The method is not yet supported in Flutter and Unity, but support will be added soon.
 :::
 
 | Parameter | Presence | Description |

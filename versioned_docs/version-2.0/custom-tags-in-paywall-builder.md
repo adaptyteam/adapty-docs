@@ -3,6 +3,8 @@ title: "Custom tags in paywall builder"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 :::note
 Custom tags are only available on AdaptyUI SDK v.2.1.0 and higher
@@ -52,24 +54,6 @@ To add a custom tag to a line:
 />
 
 
-
-
-
-
-<img
-  src={require('./img/6f97bd0-custom_tag.png').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-
-
-
-
-
 2. After entering the custom tag, make sure to enter the fallback line. The fallback is the text displayed in your app if it does not know about a particular custom tag. This ensures that users won't see the custom tag as code; instead, they'll see the designated fallback text. Please note that the fallback replaces the entire line containing the custom tag
 
    
@@ -90,20 +74,31 @@ To add a custom tag to a line:
 
 To use custom tags in your mobile app, you need to create a `tagResolver` object. This is a dictionary/map containing custom tags and the string values to replace them with when rendering the paywall in your app. Here's an example:
 
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
 ```swift title="Swift"
 let tagResolver = [
     "USERNAME": "John",
 ]                           
 ```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
 ```kotlin title="Kotlin"
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
+</TabItem>
+<TabItem value="java" label="Java" default>
 ```java title="Java"
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
 ```
+</TabItem>
+</Tabs>
+
+
+
 
 In this example, `USERNAME` is a custom tag that you entered in the Adapty dashboard while designing a paywall as `<USERNAME/>`. The `tagResolver` ensures that when your app encounters this custom tag, it dynamically replaces it with the specified value, in this case, `John`.
 

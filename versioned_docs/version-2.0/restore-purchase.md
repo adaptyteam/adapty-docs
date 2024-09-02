@@ -3,28 +3,34 @@ title: "Restore purchases in mobile app"
 description: "Learn how to implement the restore purchases feature in your iOS and Android apps using Adapty. Discover the importance of enabling users to regain access to their previously purchased content without additional charges, and explore the simple process of restoring purchases using the .restorePurchases() method."
 metadataTitle: "Adapty: How to Restore Purchases on iOS and Android Apps"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Restoring Purchases in both iOS and Android is a feature that allows users to regain access to previously purchased content, such as subscriptions or in-app purchases, without being charged again. This feature is especially useful for users who may have uninstalled and reinstalled the app or switched to a new device and want to access their previously purchased content without paying again.
 
 :::note
-In paywalls built with [Paywall Builder](/3.0/what-is-adapty), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
+In paywalls built with [Paywall Builder](/3.0/adapty-paywall-builder), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
 :::
 
-To restore a purchase if you do not use the [Paywall Builder](/3.0/what-is-adapty) to customize the paywall, call `.restorePurchases()` method:
+To restore a purchase if you do not use the [Paywall Builder](/3.0/adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.restorePurchases { [weak self] result in
     switch result {
         case let .success(profile):
             if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-	            // successful access restore
+                // successful access restore
             }
         case let .failure(error):
             // handle the error
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.restorePurchases { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -41,15 +47,17 @@ Adapty.restorePurchases { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
         
-      	if (profile != null) {
+        if (profile != null) {
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
             
-          	if (premium != null && premium.isActive()) {
+            if (premium != null && premium.isActive()) {
                 // successful access restore
             }
         }
@@ -59,18 +67,22 @@ Adapty.restorePurchases(result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().restorePurchases();
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
-		// successful access restore      
+        // successful access restore      
   }
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
@@ -83,18 +95,22 @@ Adapty.RestorePurchases((profile, error) => {
   }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
-	const profile = await adapty.restorePurchases();
+    const profile = await adapty.restorePurchases();
   const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
-	if (isSubscribed) {
-		// restore access
-	}
+    if (isSubscribed) {
+        // restore access
+    }
 } catch (error) {
-	// handle the error
+    // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 Response parameters:
 
