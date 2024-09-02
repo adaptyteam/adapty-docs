@@ -35,7 +35,7 @@ The following roles are available for members in the Adapty dashboard:
 
 **Admin:** Members with the Admin role have full access to the chosen applications.  They can perform various management tasks, including creating and modifying paywalls, conducting A/B tests, analyzing analytics, and managing members within those applications.
 
-**Viewer: **Members with the Viewer role have read-only access to the chosen applications. They can view information but cannot create or modify paywalls, A/B tests, and other features, invite new users, create new apps, and change the app settings.
+**Viewer:** Members with the Viewer role have read-only access to the chosen applications. They can view information but cannot create or modify paywalls, A/B tests, and other features, invite new users, create new apps, and change the app settings.
 
 **Support:** Members with the Support role have access only to user profiles in chosen applications. However, they cannot perform actions like adding new members or accessing any other sections of Adapty. This role is particularly suitable for support teams or individuals who need to assist customers with subscription-related inquiries or troubleshooting.
 

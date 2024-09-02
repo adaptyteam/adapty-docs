@@ -45,7 +45,7 @@ adapty_paywalls_locale = "pt-br";
 // 2. Extract and use the locale code
 
 let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
-// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+// pass locale code Adapty.getPaywall method
 ```
 ```kotlin title="Android"
 // 1. Modify your strings.xml files
@@ -74,7 +74,7 @@ You can get similar (but not identical) results without explicitly defining loca
 
 ```swift title="iOS"
 let locale = Locale.current.identifier
-// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+// pass locale code to Adapty.getPaywall method
 ```
 ```kotlin title="Android"
 val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)

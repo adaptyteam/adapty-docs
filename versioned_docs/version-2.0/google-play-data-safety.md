@@ -25,14 +25,14 @@ Here is a short guide on data that Adapty collects to help you provide the requi
 
 
 
-**Does your app collect or share any of the required user data types?  
-** Select 'Yes' as Adapty collects a customer's purchase history.
+**Does your app collect or share any of the required user data types?**  
+Select 'Yes' as Adapty collects a customer's purchase history.
 
-**Is all of the user data collected by your app encrypted in transit?  
-**Select 'Yes' as  Adapty encrypts data in transit.
+**Is all of the user data collected by your app encrypted in transit?**  
+Select 'Yes' as  Adapty encrypts data in transit.
 
-**Do you provide a way for users to request that their data is deleted?  
-**If selecting 'Yes', ensure your customers have a way to contact your support team to request a data deletion. You will be able to delete the customer directly from the Adapty dashboard or via REST API.
+**Do you provide a way for users to request that their data is deleted?**  
+If selecting 'Yes', ensure your customers have a way to contact your support team to request a data deletion. You will be able to delete the customer directly from the Adapty dashboard or via REST API.
 
 ## Data Types
 
@@ -60,12 +60,12 @@ Here is a list of the data types that Google requires for reporting, and we have
 
 ### User IDs
 
-**1. Is this data collected, shared, or both?  
-**This data is collected by Adapty. If you are using integrations set up between Adapty and third parties that are not considered service providers, you may need to disclose "Shared" here as well.  
-**2. Is this data processed ephemerally?  
-**Select 'No'.  
-**3. Is this data required for your app, or can users choose whether it's collected?  
-**This data collection is required and cannot be turned off.
+**1. Is this data collected, shared, or both?**  
+This data is collected by Adapty. If you are using integrations set up between Adapty and third parties that are not considered service providers, you may need to disclose "Shared" here as well.  
+**2. Is this data processed ephemerally?**  
+Select 'No'.  
+**3. Is this data required for your app, or can users choose whether it's collected?**  
+This data collection is required and cannot be turned off.
 
 
 <img
@@ -82,8 +82,8 @@ Here is a list of the data types that Google requires for reporting, and we have
 
 
 
-**4. Why is this user data collected? / Why is this user data shared?  
-**Select the 'App functionality' and 'Analytics' checkboxes.
+**4. Why is this user data collected? / Why is this user data shared?**  
+Select the 'App functionality' and 'Analytics' checkboxes.
 
 
 <img

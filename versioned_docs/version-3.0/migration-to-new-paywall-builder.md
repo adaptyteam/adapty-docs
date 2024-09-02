@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-We’re thrilled to introduce the [**Beta version of our new Paywall Builder**](adapty-paywall-builder)! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
+We’re thrilled to introduce our [**New Paywall Builder**](adapty-paywall-builder) ! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -70,7 +70,7 @@ Please note that paywalls created in the new Paywall Builder will only appear in
 
 ## We Value Your Feedback
 
-As we’re in the Beta phase, your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We’re here to support you and enhance your experience with the new Paywall Builder.
+Your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We’re here to support you and enhance your experience with the new Paywall Builder.
 
 📧 **Contact Us**: [Adapty Support](mailto:support@adapty.io)
 

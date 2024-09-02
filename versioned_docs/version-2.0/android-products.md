@@ -11,7 +11,7 @@ Product refers to a digital item or service that you offer within your app in Pl
 In the [Google’s billing system](https://developer.android.com/google/play/billing/compatibility), subscriptions can incorporate multiple base plans, each providing various discounts or offers. This structure is comprised of three main components:
 
 - **Subscriptions:** These represent sets of benefits that users can enjoy for a specific period (the items being sold). For instance, a "Gold tier" providing premium features for subscribers.
-- **Base plans: ** These represent specific configurations of billing periods, renewal types, and prices (how the items are sold). Examples include "annual with auto-renewal" or "prepaid monthly."
+- **Base plans:** These represent specific configurations of billing periods, renewal types, and prices (how the items are sold). Examples include "annual with auto-renewal" or "prepaid monthly."
 - **Offers:** These entail discounts available to eligible users, modifying the base plan's price. For instance, a "free 14-day trial for new users."
 
 :::note

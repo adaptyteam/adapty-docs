@@ -17,7 +17,7 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 <img
   src={require('./img/1e80bd1-filter_paywalls.png').default}
   style={{
-    border: 'none', /* border width and color */
+    border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
@@ -38,7 +38,5 @@ Archived paywalls may be filtered out of the default view. To see them, select *
     margin: '0 auto' /* center alignment */
   }}
 />
-
-
 
 

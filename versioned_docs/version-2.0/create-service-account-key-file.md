@@ -4,9 +4,13 @@ description: "Enhance app security and establish a secure link between your Play
 metadataTitle: "Google Play Console: Generating Service Account Key Files for Adapty"
 ---
 
-To link your mobile application, sold via the Play Store, with Adapty, you'll need to generate special service account key files in the Google Play Console and then upload them to Adapty. These files ensure the security of your app, preventing unauthorized access.
+To link your mobile app on the Play Store with Adapty, you'll need to generate special service account key files in the Google Play Console and upload them to Adapty. These files help secure your app and prevent unauthorized access.
 
-1. Open the [**Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Play Console. Make sure you've chosen the correct project.  
+:::warning
+It usually takes at least 24 hours for your new service account to become active. However, there's a [hack](https://stackoverflow.com/a/60691844). After creating the service account in the [Google Play Console](https://play.google.com/apps/publish/), open any application and navigate to **Monetize** -> **Products** -> **Subscriptions/In-app products**. Edit the description of any product and save the changes. This should activate the service account immediately, and you can revert the changes afterward.
+:::
+
+1. Open the [**Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section in the Google Play Console. Ensure you’ve selected the correct project.  
 
 
 <img
@@ -23,7 +27,7 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 
 
 
-2. Locate the newly created service account in the list. Click the ellipsis button in the **Actions** column next to it, then select the **Manage keys** action.
+2. In the window that opens, click **Add key** and choose **Create new key** from the dropdown menu.
 
    
 <img
@@ -39,7 +43,7 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 
 
 
-3. In the opened window named after your project, click the **Add key** button, and in the opened drop-down list, select the **Create new key** option. 
+3. In the **Create private key for [Your_project_name]** window, click **Create**. Your private key will be saved to your computer as a JSON file. You can find it using the file name provided in the **Private key saved to your computer** window. 
 
    
 <img
@@ -71,8 +75,10 @@ To link your mobile application, sold via the Play Store, with Adapty, you'll ne
 
 
 
-The created file will be needed during the [initial integration of Adapty with Google Play](google-play-store-connection-configuration) step.
+You’ll need this file when you [initially integrate Adapty with Google Play](google-play-store-connection-configuration).
 
-:::note
-It takes at least 24 hours for changes to take effect but there's a [hack](https://stackoverflow.com/a/60691844). In [Google Play Console](https://play.google.com/apps/publish/), open any application and in the **Monetize** section go to **Products** -> **Subscriptions**/**In-app products**. Change the description of any product and save the changes. Everything should be working now, you can revert in-app changes.
+:::warning
+It usually takes at least 24 hours for your new service account to become active. However, there's a [hack](https://stackoverflow.com/a/60691844). After creating the service account in the [Google Play Console](https://play.google.com/apps/publish/), open any application and navigate to **Monetize** -> **Products** -> **Subscriptions/In-app products**. Edit the description of any product and save the changes. This should activate the service account immediately, and you can revert the changes afterward.
+
+.
 :::

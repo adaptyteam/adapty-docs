@@ -284,14 +284,14 @@ To get an extended response, add Key **"extended"** with any value to Query Para
 | Property                  | Type          | Required | Nullable | Description                                                                                                                                       |
 | :------------------------ | :------------ | :------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **created_at**            | ISO 8601 date | ✅        | ❌        | The date when the profile was created, usually equals the installation date                                                                       |
-| **email**                 | str           | ✅        | ✅        | User email                                                                                                                                        |
-| **phone_number**          | str           | ✅        | ✅        | User phone number                                                                                                                                 |
+| **email**                 | str           | ✅        | ✅        | User's email                                                                                                                                      |
+| **phone_number**          | str           | ✅        | ✅        | User's phone number                                                                                                                               |
 | **att_status**            | str           | ✅        | ✅        |                                                                                                                                                   |
-| **first_name**            | str           | ✅        | ✅        | User first name                                                                                                                                   |
-| **last_name**             | str           | ✅        | ✅        | User last name                                                                                                                                    |
+| **first_name**            | str           | ✅        | ✅        | User's first name                                                                                                                                 |
+| **last_name**             | str           | ✅        | ✅        | User's last name                                                                                                                                  |
 | **username**              | str           | ✅        | ✅        | Username                                                                                                                                          |
-| **gender**                | str           | ✅        | ✅        | User gender                                                                                                                                       |
-| **birthday**              | ISO 8601 date | ✅        | ✅        | User birthday                                                                                                                                     |
+| **gender**                | str           | ✅        | ✅        | User's gender                                                                                                                                     |
+| **birthday**              | ISO 8601 date | ✅        | ✅        | User's birthday                                                                                                                                   |
 | **idfa**                  | str           | ✅        | ✅        | The Identifier for Advertisers, assigned by Apple to a user's device.                                                                             |
 | **idfv**                  | str           | ✅        | ✅        | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
 | **advertising_id**        | str           | ✅        | ✅        | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you.            |
@@ -341,16 +341,15 @@ Path parameters:
 
 Request parameters:
 
-| Param | Type | Required | Nullable | Description |
-|-----|----|--------|--------|-----------|
-| ip_country | str | ❌ | ✅ | Country code in the [two-letter](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format, eg. US. |
-| email | str | ❌ | ✅ |  |
-| phone_number | str | ❌ | ✅ |  |
-| first_name | str | ❌ | ✅ |  |
-| last_name | str | ❌ | ✅ |  |
-| gender | str | ❌ | ✅ | <p>Available values are **f**,**m**,**o**.</p><p></p><p>f - female</p><p>m - male</p><p>o - other</p> |
-| birthday | date | ❌ | ✅ | Date in YYYY-MM-DD format, eg. 1990-10-31. |
-
+| Param        | Type | Required | Nullable | Description                                                                                        |
+| :----------- | :--- | :------- | :------- | :------------------------------------------------------------------------------------------------- |
+| ip_country   | str  | ❌        | ✅        | Country code in the [two-letter](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format, eg. US. |
+| email        | str  | ❌        | ✅        |                                                                                                    |
+| phone_number | str  | ❌        | ✅        |                                                                                                    |
+| first_name   | str  | ❌        | ✅        |                                                                                                    |
+| last_name    | str  | ❌        | ✅        |                                                                                                    |
+| gender       | str  | ❌        | ✅        | User's gender                                                                                      |
+| birthday     | date | ❌        | ✅        | Date in YYYY-MM-DD format, eg. 1990-10-31.                                                         |
 
 If you'd like to set custom attributes, you can pass them in `custom_attributes` dictionary. A maximum of 10 custom attributes for the profile are allowed to be set. Only strings and floats are allowed as values, booleans will be converted to floats.
 

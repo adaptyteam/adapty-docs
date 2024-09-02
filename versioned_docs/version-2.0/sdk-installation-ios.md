@@ -9,6 +9,19 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
 - **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
+Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
+
+| Adapty SDK version                   | AdaptyUI SDK version                                                                                                                                                                 |
+| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.7.x, 2.8.x                         | 2.0.x                                                                                                                                                                                |
+| 2.9.x - 2.10.0                       | 2.1.2                                                                                                                                                                                |
+| 2.10.1                               | 2.1.3                                                                                                                                                                                |
+| 2.10.3 and all later 2.10.x versions | 2.1.5                                                                                                                                                                                |
+| 2.11.1                               | 2.11.1                                                                                                                                                                               |
+| 2.11.2                               | 2.11.2                                                                                                                                                                               |
+| 2.11.3                               | 2.11.3                                                                                                                                                                               |
+| 3.x                                  | Included as a module within the Adapty SDK. For more information, see [iOS - Adapty SDK v. 3.x installation & configuration](/3.0/sdk-installation-ios). |
+
 You can install AdaptySDK and AdaptyUI SDK via CocoaPods, or Swift Package Manager.
 
 :::danger
@@ -22,8 +35,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
 1. Add Adapty to your `Podfile`:
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 2.11.0'
-   pod 'AdaptyUI', '~> 2.11.0'
+   pod 'Adapty', '~> 2.11.3'
+   pod 'AdaptyUI', '~> 2.11.3'
    ```
 
 2. Run:

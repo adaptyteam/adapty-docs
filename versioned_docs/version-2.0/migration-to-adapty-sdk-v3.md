@@ -8,12 +8,12 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](/3
 
 Upgrade to new Paywall Builder consists of:
 
-1. Upgrade to Adapty SDK v3.x via Swift Package Manager or via CocoaPods.
-2. Migrate your paywalls to new Paywall Builder.
+1. Upgrade to Adapty SDK v3.x via Swift Package Manager or via CocoaPods. Please note that the AdaptyUI library is deprecated and is now included as part of AdaptySDK.
+2. Migration of your paywalls to new Paywall Builder.
 
 ## Reinstall Adapty SDK v3.x via Swift Package Manager
 
-1. Delete AdaptyUI SDK package dependency from your project, you won't need it anymore.
+1. The AdaptyUI library is deprecated; it is now part of AdaptySDK. Delete AdaptyUI SDK package dependency from your project, you won't need it anymore.
 2. Even though you have it already, you'll need to re-add the Adapty SDK dependency. For this, in Xcode, open **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
 3. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
 4. Choose the version, and click the **Add package** button. 
@@ -24,11 +24,15 @@ Upgrade to new Paywall Builder consists of:
 
 ## Reinstall Adapty SDK v3.x via CocoaPods
 
-Change your `Podfile` to fir the new Adapty SDK version:
+1. Add Adapty to your `Podfile`. Choose the modules you need:
+   1. **Adapty** is the mandatory module.
+   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
+
+<!----->
 
 1. ```shell title="Podfile"
-   pod 'Adapty', '~> 3.0.0-beta.1'
-   pod 'AdaptyUI', '~> 3.0.0-beta.1'
+   pod 'Adapty', '~> 3.0.1'
+   pod 'AdaptyUI', '~> 3.0.1' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -39,7 +43,7 @@ Change your `Podfile` to fir the new Adapty SDK version:
 
 This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.
 
-Activate Adapty and AdaptyUI SDK. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
+Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
 ```swift title="Swift"
 // In your AppDelegate class:
