@@ -3,6 +3,8 @@ title: "Android - Use fallback paywalls"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 To use fallback paywalls:
 
@@ -11,7 +13,9 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from locally stored JSON file named `android_fallback.json`.
 
-```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 //if you put the 'android_fallback.json' file to the 'assets' directory
 val location = FileLocation.fromAsset("android_fallback.json")
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json")` if you placed it in a child folder of 'assets')
@@ -22,7 +26,9 @@ val location = FileLocation.fromResId(context, R.raw.android_fallback)
 //pass the file location
 Adapty.setFallbackPaywalls(location, callback)
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 //if you put the 'android_fallback.json' file to the 'assets' directory
 FileLocation location = FileLocation.fromAsset("android_fallback.json");
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json");` if you placed it in a child folder of 'assets')
@@ -33,6 +39,8 @@ FileLocation location = FileLocation.fromResId(context, R.raw.android_fallback);
 //pass the file location
 Adapty.setFallbackPaywalls(location, callback);
 ```
+</TabItem>
+</Tabs>
 
 Parameters:
 
@@ -42,7 +50,9 @@ Parameters:
 
 Alternatively, you can use a URI instead of the file location. here is an example of how to do so:
 
-```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 val fileUri: Uri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
 // you can obtain the Uri as follows:
@@ -55,7 +65,9 @@ val fileUri: Uri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fileUri, callback)
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Uri fileUri = //get Uri for the file with fallback paywalls
 // for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
 // you can obtain the Uri as follows:
@@ -68,6 +80,10 @@ Uri fileUri = //get Uri for the file with fallback paywalls
 
 Adapty.setFallbackPaywalls(fileUri, callback);
 ```
+</TabItem>
+</Tabs>
+
+
 
 Parameters:
 

@@ -3,6 +3,8 @@ title: "Android - Present Paywall Builder paywalls in Observer mode"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -23,7 +25,9 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-   ```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin 
    val observerModeHandler =
    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
@@ -44,7 +48,9 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        )
    }
    ```
-   ```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java 
    AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
@@ -64,6 +70,10 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        );
    };
    ```
+</TabItem>
+</Tabs>
+
+
 
    Also, remember to invoke these callbacks to AdaptyUI. This is necessary for proper paywall behavior, such as showing the loader, among other things:
 
@@ -74,7 +84,9 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-   ```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -89,7 +101,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    //======= OR =======
 
    val paywallView =
-     	AdaptyPaywallView(activity) // or retrieve it from xml
+        AdaptyPaywallView(activity) // or retrieve it from xml
    ...
    with(paywallView) {
        setEventListener(eventListener)
@@ -103,7 +115,9 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        )
    }
    ```
-   ```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java 
    AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
            activity,
            viewConfiguration,
@@ -124,11 +138,15 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    paywallView.setObserverModeHandler(observerModeHandler);
    paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
    ```
-   ```xml title="XML"
+</TabItem>
+<TabItem value="XML" label="XML" default>
+   ```xml 
    <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
        android:layout_width="match_parent"
        android:layout_height="match_parent" />
    ```
+</TabItem>
+</Tabs>
 
    After the view has been successfully created, you can add it to the view hierarchy and display it.
 
@@ -148,7 +166,9 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
    For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-   ```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin 
    import androidx.core.graphics.Insets
    import androidx.core.view.ViewCompat
    import androidx.core.view.WindowInsetsCompat
@@ -157,13 +177,11 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
        ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
            val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
            ViewCompat.setOnApplyWindowInsetsListener(this, null)
            action(systemBarInsets)
            insets
        }
    }
-
    //and then use it with the view
    paywallView.onReceiveSystemBarsInsets { insets ->
        val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
@@ -171,9 +189,10 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        paywallView.setObserverModeHandler(observerModeHandler)
        paywallView.showPaywall(viewConfig, products, paywallInsets, personalizedOfferResolver, tagResolver)
    }
-
    ```
-   ```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java 
    import androidx.core.graphics.Insets;
    import androidx.core.view.ViewCompat;
    import androidx.core.view.WindowInsetsCompat;
@@ -185,7 +204,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
      
        AdaptyPaywallInsets paywallInsets =
-         			AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
+                    AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
        paywallView.setEventListener(eventListener);
        paywallView.setObserverModeHandler(observerModeHandler);
        paywallView.showPaywall(viewConfiguration, products, paywallInsets, personalizedOfferResolver, tagResolver);
@@ -193,6 +212,10 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        return insets;
    });
    ```
+</TabItem>
+</Tabs>
+
+
 
    Returns:
 
