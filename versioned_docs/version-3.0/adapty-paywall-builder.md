@@ -1,10 +1,10 @@
 ---
-title: "Design paywalls with new Paywall Builder (Beta)"
+title: "Design paywalls with new Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
 
-We’re excited to introduce the **Beta version of our new Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
+We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -12,8 +12,8 @@ We’re excited to introduce the **Beta version of our new Paywall Builder**, co
 - **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements like carousels, cards, product lists, and footers. These enhancements give you the creative freedom to build any type of paywall you envision.
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
-:::note
-This section describes the new Paywall Builder (Beta). For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](../adapty-paywall-builder-legacy).
+:::warning
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](../adapty-paywall-builder-legacy).
 :::
 
 ## Structure of a paywall
@@ -40,7 +40,7 @@ To use the Adapty Paywall Builder:
 
 3. Depending on whether you've added the products to the paywall in the **General** tab or not, Adapty will offer you to add products or build your paywall with the new Paywall Builder. We continue with the case when products are already added. Click the **Build no-code paywall** button to start designing your paywall.
 
-4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as as well as templates with a minimal design that give full scope for your creativityю Choose the template that fits your design the most. 
+4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most. 
 
    
 <img
@@ -82,13 +82,13 @@ Currently, in Adapty two versions of the Paywall Builder work in parallel:
   The paywalls designed with this Paywall Builder version require Adapty SDK v3.0 or later.
 - The legacy version is located in the **Legacy Builder** tab of the Paywall functionality in the Adapty Dashboard. This version is outdated and should be used only to support app versions with installed SDK below v.3.х.х. We do not recommend using it for new paywalls as it will be deprecated soon.
 
-The migration of a paywall from the lagacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder** tab of the paywall. This version can be edited with the new Paywall Builder and will be displayed in the apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3) for detailed reference for upgrading to Adapty SDK v3.0.
+The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder** tab of the paywall. This version can be edited with the new Paywall Builder and will be displayed in the apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3) for detailed reference for upgrading to Adapty SDK v3.0.
 
-The existing version of your paywall will stay in the Legacy Builder tab, you will be able to continue adjust it with legacy Paywall Builder and it will be displayed in the apps with the installed Adapty SDK version 2.x or earlier.
+The existing version of your paywall will stay in the Legacy Builder tab, you will be able to continue adjusting it with the legacy Paywall Builder and it will be displayed in the apps with the installed Adapty SDK version 2.x or earlier.
 
 Therefore, you will have paywalls in both Paywall Builder formats in parallel and separately until you need them. Changes made with the paywall configuration made for one version will not affect the configuration build for another one.
 
-To migrate a paywall to new Paywall Builder:
+To migrate a paywall to the new Paywall Builder:
 
 1. Open the paywall you want to migrate.
 2. Open the **Builder** tab.
@@ -107,9 +107,9 @@ To migrate a paywall to new Paywall Builder:
 
 
 3. Click the **Migrate paywall** button.
-4. After the migration is done, review the result, make sure the paywall looks as it should. If not, correct it.
+4. After the migration is done, review the result and i make sure the paywall looks as it should. If not, correct it.
 5. Click the **Save** button. 
-6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
+6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
 
    
 <img
@@ -125,7 +125,7 @@ To migrate a paywall to new Paywall Builder:
 
 
 
-You can migrate your paywalls one by one so that you could review and fix if necessary.
+You can migrate your paywalls one by one so that you could review and fix them if necessary.
 
 ## Paywall elements
 
@@ -133,7 +133,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 **Paywall elements** in Adapty are categorized as simple or compound:
 
-- **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.. 
+- **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.
 
 
 <img
@@ -191,7 +191,7 @@ You can set up each element flexibly:
 
 ## We Value Your Feedback
 
-As we’re in the Beta phase, your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We’re here to support you and enhance your experience with the new Paywall Builder.
+Your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We’re here to support you and enhance your experience with the new Paywall Builder.
 
 📧 **Contact Us**: [Adapty Support](mailto:support@adapty.io)
 

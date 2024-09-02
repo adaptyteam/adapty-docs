@@ -8,7 +8,7 @@ Below are samples of events that can be sent to the webhook integration. Keep in
 
 ## Subscription events
 
-```json title="Subscripton started"
+```json title="Subscription started"
 {
   "idfa": "",
   "idfv": "",
@@ -165,7 +165,7 @@ Below are samples of events that can be sent to the webhook integration. Keep in
   "profile_install_datetime": "2024-05-03T21:24:40.841434+0000"
 }
 ```
-```json title="Subscription renewal cancelled"
+```json title="Subscription renewal canceled"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "6BD226AC-B356-49CF-83F0-E5A0EE3D03B3",
@@ -798,7 +798,7 @@ Below are samples of events that can be sent to the webhook integration. Keep in
   "profile_install_datetime": "2024-07-12T21:55:42.948986+0000"
 }
 ```
-```json title="Trial renewal cancelled"
+```json title="Trial renewal canceled"
 {
   "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48606",
   "idfv": "D46AB027-0FBE-4420-8C7A-33340CA74ACE",

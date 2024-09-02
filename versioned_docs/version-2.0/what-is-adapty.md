@@ -4,8 +4,6 @@ description: "Unlock the potential of your app's monetization strategy with Adap
 metadataTitle: "Discover Adapty: Your Ultimate In-App Purchase Platform"
 slug: /
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
 
 Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.
 
@@ -18,14 +16,6 @@ Adapty is a powerful and adaptable in-app purchase platform that helps you grow 
 
 ### Adapty works for developers, marketers, and executives
 
-<Tabs>
-  <TabItem value="1" label="Tab 1" default>
-Marketers can directly engage users with promotional offers to return them to the service or upsell new products. With Adapty there is no need for programmers and analysts to manually extract segments.
-</TabItem>
-<TabItem value="2" label="Tab 2" default>
-For product managers and executives, Adapty has a dashboard with viable subscription metrics with daily/weekly/monthly reports to Slack and Emails.
-</TabItem>
-</Tabs>
 Marketers can directly engage users with promotional offers to return them to the service or upsell new products. With Adapty there is no need for programmers and analysts to manually extract segments.
 
 For product managers and executives, Adapty has a dashboard with viable subscription metrics with daily/weekly/monthly reports to Slack and Emails.

@@ -4,36 +4,44 @@ description: "Discover step-by-step instructions for installing and configuring 
 metadataTitle: "iOS - Adapty SDK Installation and Configuration Guide"
 ---
 
-Adapty SDK comprises two crucial modules for seamless integration into your mobile app:
+Adapty SDK includes two key modules for seamless integration into your mobile app:
 
-- Core **Adapty**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI**: This optional module becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
+- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
+- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
-You can install AdaptySDK via CocoaPods, or Swift Package Manager.
+:::info
+If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
+:::
+
+You can install Adapty SDK via CocoaPods or Swift Package Manager.
 
 :::danger
-Go through release checklist before releasing your app
+Review the release checklist before launching your app
 
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
 ## Install Adapty SDK via Swift Package Manager
 
-1. In Xcode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
-2. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
-3. Choose the version, and click the **Add package** button. 
-4. Choose the modules you need:
-   1. **Adapty** is the mandatory module
-   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
-5. Xcode will add the package dependency to your project, and you can import it. For this, in the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list.
+In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
+
+1. Enter the repository URL: [https://github.com/adaptyteam/AdaptySDK-iOS.git(https://github.com/adaptyteam/AdaptySDK-iOS.git).
+2. Select the version and click Add Package.
+3. Choose the modules you need:
+   1. **Adapty** is the mandatory module.
+   2. **AdaptyUI** is optional and needed if you plan to use the Adapty Paywall Builder.
+4. Xcode will add the package dependency to your project. To import it, in the **Choose Package Products** window, click the **Add package** button once again. The package will then appear in the **Packages** list.
 
 ## Install SDKs via CocoaPods
 
-1. Add Adapty to your `Podfile`:
+1. Add Adapty to your `Podfile`. Choose the modules you need:
+
+   1. **Adapty** is the mandatory module.
+   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.0.0-beta.1'
-   pod 'AdaptyUI', '~> 3.0.0-beta.1' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.0.3'
+   pod 'AdaptyUI', '~> 3.0.3' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -42,11 +50,13 @@ Before releasing your application, make sure to carefully review the [Release Ch
    pod install
    ```
 
-This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.
+This will create a `.xcworkspace` file for your app. Use this file for all future development.
 
 ## Configure Adapty SDK
 
-You only need to configure the Adapty SDK once, typically early in your application lifecycle:
+You only need to configure the Adapty SDK once, typically early in your app's lifecycle. 
+
+### Activate Adapty module of Adapty SDK
 
 ```swift title="Swift"
 // In your AppDelegate class:
@@ -63,7 +73,6 @@ let configurationBuilder =
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
 }
-
 ```
 ```swift title="SwiftUI"
 import Adapty
@@ -109,11 +118,11 @@ Parameters:
 - **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
 :::
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
-## Configure AdaptyUI
+### Activate AdaptyUI module of Adapty SDK
 
-You need to configure the AdaptyUI only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager):
+You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
 
 ```swift title="Swift"
 import AdaptyUI // Only if you are going to use AdaptyUI
@@ -131,7 +140,7 @@ import AdaptyUI // Only if you are going to use AdaptyUI
         )
 ```
 
-Please note that AdaptyUI configuration is optional, you can activate AdaptyUI without its config. However, if you use the config, all parameters are required in it.
+Please note that AdaptyUI configuration is optional, you can activate AdaptyUI module without its config. However, if you use the config, all parameters are required in it.
 
 Parameters:
 
@@ -143,16 +152,16 @@ Parameters:
 
 ## Set up the logging system
 
-Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
+Adapty logs errors and other crucial information to provide insight into your app's functionality. Available levels:
 
-| Level   | Description                                                                                                                 |
-| :------ | :-------------------------------------------------------------------------------------------------------------------------- |
-| error   | Only errors will be logged.                                                                                                 |
-| warn    | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.       |
-| info    | Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged. |
-| verbose | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.   |
+| Level   | Description                                                                                            |
+| :------ | :----------------------------------------------------------------------------------------------------- |
+| error   | Only errors will be logged.                                                                            |
+| warn    | Logs errors and non-critical messages that warrant attention.                                          |
+| info    | Logs errors, warnings, and significant informational messages, such as module lifecycle events.        |
+| verbose | Logs detailed information that may be useful during debugging, such as function calls and API queries. |
 
-You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
+You can set `logLevel` at any time, but it's recommended to do so before configuring Adapty.
 
 ```swift title="Swift"
 Adapty.logLevel = .verbose
@@ -160,7 +169,7 @@ Adapty.logLevel = .verbose
 
 ## Redirect the logging system messages
 
-If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
+If you need to send Adapty's log messages to your system or save them to a file, you can override the default behavior:
 
 ```swift title="Swift"
 Adapty.setLogHandler { level, message in

@@ -220,7 +220,7 @@ In the products tab of Adapty's paywall builder, you have the ability to create 
 <img
   src={require('./img/32256b5-adapty_products_section.png').default}
   style={{
-    border: 'none', /* border width and color */
+    border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
@@ -243,13 +243,39 @@ Highlighting a specific product can draw user attention. In the main product con
 
 Let's take a look at how you can customize each product on your paywall:
 
-![](https://files.readme.io/26d435d-CleanShot_2024-01-12_at_19.14.092x.png)
+
+<img
+  src={require('./img/26d435d-CleanShot_2024-01-12_at_19.14.092x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
 
 (1, 2) You can adjust the color and the corner radius of the product containers for a unique visual touch. And you can also have a badge for every product on a paywall to provide additional context such as the savings for the user or highlight its uniqueness.
 
 (3) You can also control the font for each of the text labels — bold, italic or regular as well as upload your own custom fonts (learn more about it [here](using-custom-fonts-in-paywall-builder)):
 
-![](https://files.readme.io/06a0a51-CleanShot_2024-01-12_at_19.19.102x.png)
+
+<img
+  src={require('./img/06a0a51-CleanShot_2024-01-12_at_19.19.102x.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
 
 (4) But what's probably more important is that you can describe your products in text and fine-tune text attributes such as size, color and style. You can also use optional second title and subtitle to provide more details — for example, to let people compare the pricing between products more easily. This level of control allows you to craft a visually appealing and informative product display within your paywall, optimizing the user experience.
 
@@ -275,7 +301,20 @@ By default changing each of the style components above (such as any color, font 
 
 You can disable Style sync for a product in the upper right corner. After that, any changes you make to the visuals will only be applied to this product:
 
-![](https://files.readme.io/25d3961-adapty_chain_products.png)
+
+<img
+  src={require('./img/25d3961-adapty_chain_products.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
 
 You can use this control to style any one of your products separately from the rest. But remember: when you turn style sync back on after making changes — this will revert them, so be careful.
 
@@ -285,7 +324,20 @@ Style sync also doesn't affect texts as those are always separate for every prod
 
 Once you've finished customizing how your products look, it makes sense to double-check the result using preview before testing it on a device. You can find some useful settings for it in the "eye" icon in the top-right corner:
 
-![](https://files.readme.io/a902a51-paywall_builder_products_preview.png)
+
+<img
+  src={require('./img/a902a51-paywall_builder_products_preview.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+
+
+
 
 There you can toggle whether you'd like to see our placeholders for the tag variables or the actual values of the tags. Or you can simulate what the paywall will look like if a user is found eligible for a certain offer type.
 

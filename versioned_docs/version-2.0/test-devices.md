@@ -8,6 +8,16 @@ Due to caching, changes made to paywalls or placements may take up to 20 minutes
 
 For testing purposes, you can assign your device as test, which will disable caching and ensure that your changes are immediately displayed.
 
+:::note
+Testing devices are supported starting from specific SDK versions:
+
+- iOS: 2.11.1
+- Android: 2.11.3
+- React Native: 2.11.1
+
+Flutter and Unity support will be added later.
+:::
+
 ## Mark your device as test
 
 1. Open the [**App settings**](https://app.adapty.io/settings/general) in the Adapty Dashboard.

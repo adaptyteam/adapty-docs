@@ -261,10 +261,28 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
 });
 ```
 ```javascript title="Flutter"
-// TODO: add example
+try {
+  final result = await adapty.makePurchase(
+    product: product,
+    subscriptionUpdateParams: subscriptionUpdateParams,
+  );
+  
+  // successful cross-grade
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
 ```
 ```csharp title="Unity"
-// TODO: add example
+Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
+  if(error != null) {
+      // handle error
+      return;
+  }
+  
+  // successful cross-grade
+});
 ```
 ```typescript title="React Native (TS)"
 // TODO: add example

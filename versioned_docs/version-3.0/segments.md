@@ -34,7 +34,7 @@ To create a segment, write a segment name, and choose attributes.
 
 
 <img
-  src={require('./img/image%20%2811%29.png').default}
+  src={require('./img/1af9744-new_cohort.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

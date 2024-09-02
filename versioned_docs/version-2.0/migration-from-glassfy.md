@@ -474,6 +474,13 @@ try {
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
+  for (var product in products!) {
+      // product.localizedTitle
+      // product.localizedDescription
+      // product.price.amount
+      // product.price.localizedString
+      // product.subscriptionDetails.localizedSubscriptionPeriod
+   }
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {

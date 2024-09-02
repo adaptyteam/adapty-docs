@@ -81,7 +81,7 @@ You can see custom attributes that were set either from SDK or manually assign t
 
 
 <img
-  src={require('./img/image%20%2870%29.png').default}
+  src={require('./img/378c1fb-add_attribute.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -100,7 +100,7 @@ In a profile, you can find an active subscription. At any time you can prolong t
 
 
 <img
-  src={require('./img/image%20%2830%29.png').default}
+  src={require('./img/b1d74fd-edit_paid_access_level.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

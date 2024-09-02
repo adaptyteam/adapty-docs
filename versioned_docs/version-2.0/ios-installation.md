@@ -19,7 +19,7 @@ Make sure to **set Swift 5.0+ for Adapty pod in case your app is using the older
 Add Adapty to your `Podfile`:
 
 ```shell title="Podfile"
-pod 'Adapty', '~> 2.10.4'
+pod 'Adapty', '~> 2.11.3'
 ```
 
 And then run:

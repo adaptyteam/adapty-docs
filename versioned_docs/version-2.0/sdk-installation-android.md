@@ -9,6 +9,15 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
 - **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
+Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
+
+| Adapty SDK version | AdaptyUI version |
+| :----------------- | :--------------- |
+| 2.7.x–2.9.x        | 2.0.x            |
+| 2.10.0             | 2.1.2            |
+| 2.10.2             | 2.1.3            |
+| 2.11.x             | 2.11.x           |
+
 You can install Adapty SDK via Gradle.
 
 :::danger
@@ -23,7 +32,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.3'
-    implementation 'io.adapty:android-ui:2.11.1'
+    implementation 'io.adapty:android-ui:2.11.2'
 }
 ```
 ```kotlin title="module-level build.gradle.kts"

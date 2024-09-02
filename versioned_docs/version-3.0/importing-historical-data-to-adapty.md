@@ -99,8 +99,6 @@ There are 2 groups of required fields for each platform: **user_id** and data id
 
 Without these fields, Adapty won't be able to fetch transactions.
 
-We highly recommend providing the country. If not provided, we will use `USD` as the currency and `United States` as the country.
-
 For precise cohort analytics, please specify `created_at`. If not provided, we will assume the install date to be the same as the first purchase date.
 
 ### Import data to Adapty

@@ -81,7 +81,7 @@ You can see custom attributes that were set either from SDK or manually assign t
 
 
 <img
-  src={require('./img/image%20%2870%29.png').default}
+  src={require('./img/c8b3db7-add_attribute.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

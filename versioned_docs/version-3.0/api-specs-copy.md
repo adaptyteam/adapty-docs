@@ -1,5 +1,5 @@
 ---
-title: "API specs"
+title: "API"
 description: ""
 metadataTitle: ""
 ---
