@@ -178,8 +178,6 @@ You can set the date range for cohorts and choose the segment. The segment deter
 
 
 
-
-
 ### Subscriptions, payers, total revenue, ARPU, ARPPU and ARPAS
 
 **Subscriptions** are the total count of active subscriptions, lifetime purchases, and non-subscription purchases made by a cohort within a selected timeframe. Monitoring this metric helps you understand customer behavior and the effectiveness of your offerings. This insight allows you to refine your product strategy, tailor marketing efforts, and optimize revenue streams. 

@@ -26,7 +26,7 @@ Upgrade to new Paywall Builder consists of:
 
 1. Add Adapty to your `Podfile`. Choose the modules you need:
    1. **Adapty** is the mandatory module.
-   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
+   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](/3.0/adapty-paywall-builder).
 
 <!----->
 

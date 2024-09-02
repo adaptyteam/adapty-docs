@@ -10,10 +10,18 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
    <summary>Before you start checking subscription status (Click to Expand)</summary>
 
    - For iOS, set up [App Store Server Notifications](app-store-server-notifications)
-- For Android, set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)
+   - For Android, set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)
 </details>
 
-To do this, call `.getProfile()` method:
+## Access level and the AdaptyProfile object
+
+Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
+
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-profile-updates-including-access-levels) section below.
+
+## Retrieving the access level from the server
+
+To get the access level from the server, use the `.getProfile()` method:
 
 ```swift title="Swift"
 Adapty.getProfile { result in

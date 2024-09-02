@@ -178,9 +178,11 @@ You can set the date range for cohorts and choose the segment. The segment deter
 
 
 
+### Subscriptions, payers, total revenue, ARPU, ARPPU and ARPAS
 
+**Subscriptions** are the total count of active subscriptions, lifetime purchases, and non-subscription purchases made by a cohort within a selected timeframe. Monitoring this metric helps you understand customer behavior and the effectiveness of your offerings. This insight allows you to refine your product strategy, tailor marketing efforts, and optimize revenue streams. 
 
-### Total revenue, ARPU, ARPPU and ARPAS
+**Payers** are the total number of users who made a purchase within a cohort. It helps you understand how many unique users contribute to your revenue. For apps with a significant amount of non-subscription purchases, this metric can highlight the true reach of your product offerings, showing whether a broad user base is making purchases or if revenue is driven by a smaller group of repeat buyers. Understanding the number of payers helps in assessing customer engagement, planning targeted marketing, and optimizing revenue strategies.
 
 **Total revenue** is accumulated for a cohort within a selected timeframe (Nov 25, 2022 — May 24, 2023). It helps you to understand how much money you collected from users from a specific cohort and calculate ROAS. For example, if the ad spend for September 2022 was $10000, and the total proceeds for September 2022 cohort are $30000, ROAS=3:1.
 

@@ -14,14 +14,14 @@ Once you determine the user's subscription status (access level), you can grant 
    <summary>Before you start checking subscription status (Click to Expand)</summary>
 
    - For iOS, set up [App Store Server Notifications](app-store-server-notifications)
-- For Android, set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)
+   - For Android, set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)
 </details>
 
 ## Access level and the AdaptyProfile object
 
 Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
-To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](check-subscription-status-copy#listening-for-profile-updates-including-access-levels) section below.
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-profile-updates-including-access-levels) section below.
 
 ## Retrieving the access level from the server
 
