@@ -77,8 +77,8 @@ const config = {
       {
         redirects: [
           {
-            to: 'https://adapty.io/docs-test/what-is-adapty',
-            from: ['/docs-test/'],
+            to: 'https://adapty.io/docs/what-is-adapty',
+            from: ['/docs/'],
           },
         ],
       },
@@ -174,23 +174,23 @@ const config = {
               
               <div class="footer__header">  
                  <a href="https://adapty.io" target="_blank" rel="noopener noreferrer" class="footer__logo-icon">
-                    <img src="/docs-test/img/Logo_white.svg" alt="Adapty Docs" class="footer__logo-svg">
+                    <img src="/docs/img/Logo_white.svg" alt="Adapty Docs" class="footer__logo-svg">
                 </a>
                 <div class="footer__social">
                   <a href="https://twitter.com/AdaptyTeam" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs-test/img/logo_Twitter_white.svg" alt="Twitter"> 
+                      <img class="footer__social-svg" src="/docs/img/logo_Twitter_white.svg" alt="Twitter"> 
                   </a>
                   <a href="https://www.linkedin.com/company/adaptyio" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs-test/img/logo_In_white.svg" alt="LinkedIn"> 
+                      <img class="footer__social-svg" src="/docs/img/logo_In_white.svg" alt="LinkedIn"> 
                   </a>
                   <a href="https://discord.gg/subscriptions-hub" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs-test/img/logo_discord_white.svg" alt="Discord"> 
+                      <img class="footer__social-svg" src="/docs/img/logo_discord_white.svg" alt="Discord"> 
                   </a>
                   <a href="https://github.com/adaptyteam" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs-test/img/logo_github_white.svg" alt="GitHub"> 
+                      <img class="footer__social-svg" src="/docs/img/logo_github_white.svg" alt="GitHub"> 
                   </a>
                   <a href="https://www.youtube.com/@SubhubEn" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs-test/img/logo_youtube_white.svg" alt="YouTube"> 
+                      <img class="footer__social-svg" src="/docs/img/logo_youtube_white.svg" alt="YouTube"> 
                   </a>
                 </div>
        
