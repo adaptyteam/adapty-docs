@@ -333,6 +333,8 @@ const config = {
           "swift",
           "typescript",
           "csharp",
+          "diff",
+          "javascript",
           "dart", // For Flutter, Dart is the primary language
         ],
       },
