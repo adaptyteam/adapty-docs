@@ -339,6 +339,13 @@ const config = {
           "dart", // For Flutter, Dart is the primary language
         ],
       },
+
+      // Configure the color mode to default to light and disable the dark mode switch
+      colorMode: {
+        defaultMode: 'light', // Set default theme to light mode
+        disableSwitch: true,  // Disable the toggle for switching themes
+        respectPrefersColorScheme: false, // Ignore system preference for dark mode
+      },
       sidebar: {
         autoCollapseCategories: true,
         hideable: false,
