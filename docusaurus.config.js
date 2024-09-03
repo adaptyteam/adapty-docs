@@ -89,6 +89,7 @@ const config = {
     ({
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
+      metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
       navbar: {
         title: "",
         logo: {
