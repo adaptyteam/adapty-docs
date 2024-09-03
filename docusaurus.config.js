@@ -183,9 +183,6 @@ const config = {
                   <a href="https://www.linkedin.com/company/adaptyio" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
                       <img class="footer__social-svg" src="/docs/img/logo_In_white.svg" alt="LinkedIn"> 
                   </a>
-                  <a href="https://discord.gg/subscriptions-hub" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
-                      <img class="footer__social-svg" src="/docs/img/logo_discord_white.svg" alt="Discord"> 
-                  </a>
                   <a href="https://github.com/adaptyteam" target="_blank" rel="noopener noreferrer" class="footer__social-icon">
                       <img class="footer__social-svg" src="/docs/img/logo_github_white.svg" alt="GitHub"> 
                   </a>
