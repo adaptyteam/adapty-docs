@@ -3,6 +3,8 @@ title: "What's new in Adapty SDK 2.6"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 > 💡 If you are migrating from Adapty SDK 1.x.x, we recommend you to read [What's new in Adapty SDK 2.0](whats-new-in-adapty-sdk-20) article first.
 
@@ -14,7 +16,7 @@ Don't forget to configure offers in Google Play Console in Adapty
 Google Billing Library v5 and v6 changed the way offers work. Be sure to follow [Google Play offers](google-play-offers) guide to configure them properly.
 :::
 
-With the release of Adapty SDK version 2.6.1, we are excited to announce support for [Google Billing Library v5 and v6](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative). [Unity SDK](sdk-installation-unity) also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
+With the release of Adapty SDK version 2.6.1, we are excited to announce support for [](https://developer.android.com/google/play/billing/compatibility). This update includes several improvements and additions to the public API for the native [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative). [Unity SDK](sdk-installation-unity) also supports the new versions of billing library but starting with [2.7.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.7.0).
 
 Here are the key changes and enhancements:
 
@@ -53,7 +55,9 @@ We hope these updates enhance your experience with Adapty SDK and the integratio
 
 ##### Adapty SDK 2.4.x and older:
 
-```javascript title="Flutter"
+<Tabs>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 // Adapty 2.4.x and older
 
 try {
@@ -80,25 +84,11 @@ try {
   // handle the error
 }
 ```
-```typescript title="React Native (TypeScript)"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 // Adapty 2.4.x and older
-import {adapty,OfferEligibility} from 'react-native-adapty';
 
-const products = await adapty.getPaywallProducts(paywall);
-const product = products[0]; // or any other product
-
-switch (product.introductoryOfferEligibility) {
-  case OfferEligibility.Eligible:
-    // display offer
-  case OfferEligibility.Ineligible:
-    // user is not eligible for this offer
-  case OfferEligibility.Unknown:
-    // Adapty SDK wasn't able to determine eligibility at this step
-    // Refetch products with 'waitForReceiptValidation' policy:   
-}
-```
-```csharp title="Unity"
-// Adapty 2.4.x and older
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   var product = products[0]; // don't forget to check products count and error before accessing
 
@@ -115,10 +105,34 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   }
 });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+// Adapty 2.4.x and older
+
+import {adapty,OfferEligibility} from 'react-native-adapty';
+
+const products = await adapty.getPaywallProducts(paywall);
+const product = products[0]; // or any other product
+
+switch (product.introductoryOfferEligibility) {
+  case OfferEligibility.Eligible:
+    // display offer
+  case OfferEligibility.Ineligible:
+    // user is not eligible for this offer
+  case OfferEligibility.Unknown:
+    // Adapty SDK wasn't able to determine eligibility at this step
+    // Refetch products with 'waitForReceiptValidation' policy:   
+}
+```
+</TabItem>
+</Tabs>
 
 ##### Adapty SDK 2.6.0 and newer:
 
-```javascript title="Flutter"
+<Tabs>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 // Adapty 2.6.0+
 
 try {
@@ -143,22 +157,9 @@ try {
   // handle the error
 }
 ```
-```typescript title="React Native (TypeScript)"
-// Adapty 2.6.0+
-import {adapty,OfferEligibility} from 'react-native-adapty';
-
-const products = await adapty.getPaywallProducts(paywall);
-const eligibilityMap = await adapty.getProductsIntroductoryOfferEligibility(products);
-
-const introEligibility = eligibilityMap["your_product_id"];
-
-if (intoEligibility === OfferEligibility.Eligible) {
-  // display offer
-  return;
-}
-// user is not eligible
-```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp
 // Adapty 2.6.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -178,12 +179,36 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   });
 });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+// Adapty 2.6.0+
+
+import {adapty,OfferEligibility} from 'react-native-adapty';
+
+const products = await adapty.getPaywallProducts(paywall);
+const eligibilityMap = await adapty.getProductsIntroductoryOfferEligibility(products);
+
+const introEligibility = eligibilityMap["your_product_id"];
+
+if (intoEligibility === OfferEligibility.Eligible) {
+  // display offer
+  return;
+}
+// user is not eligible
+```
+</TabItem>
+</Tabs>
+
+
 
 #### Displaying product and offers
 
 ##### Adapty SDK 2.4.x and older:
 
-```javascript title="Flutter"
+<Tabs>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 // Adapty 2.4.x and older
 
 try {
@@ -221,8 +246,10 @@ try {
     // handle the error
 }
 ```
-```csharp title="Unity"
-// Adapty 2.6.0+
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
+// Adapty 2.4.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   // Do not forget to check arrays lenghts and nullable properties!
@@ -263,8 +290,11 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   }
 });
 ```
-```typescript title="React Native (TypeScript)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 // Adapty 2.4.x and older
+
 import {adapty} from 'adapty';
 
 const paywall = await adapty.getPaywall('MY_PAYWALL');
@@ -298,10 +328,14 @@ if (promoDiscount) {
 }
 
 ```
+</TabItem>
+</Tabs>
 
 ##### Adapty SDK 2.6.0 and newer:
 
-```javascript title="Flutter"
+<Tabs>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 // Adapty 2.6.0+
 
 try {
@@ -335,7 +369,9 @@ try {
     // handle the error
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 // Adapty 2.6.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -366,8 +402,11 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
   }
 });
 ```
-```typescript title="React. Native (TypeScript)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 // Adapty 2.6.0+
+
 import {adapty} from 'react-native-adapty';
 
 const paywall = await adapty.getPaywall('MY_PAYWALL');
@@ -398,3 +437,5 @@ if (promotionalOffer) {
 }
 
 ```
+</TabItem>
+</Tabs>
