@@ -3,6 +3,8 @@ title: "Firebase apps"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 This page is about integration of Adapty in you app, if it works on Firebase.
 
@@ -16,7 +18,9 @@ This is not all steps required for Adapty to work, just some useful tips for int
 
 If you're using Firebase auth, this snippet may help you keep your users in sync between Firebase and Adapty. Note that it's just an example, and you should consider your app auth specifics.
 
-```swift title="iOS with Firebase"
+<Tabs>
+<TabItem value="Swift" label="iOS with Firebase" default>
+```swift
 import Adapty
 import Firebase
  
@@ -66,7 +70,9 @@ extension AppDelegate: AdaptyDelegate {
  
 }
 ```
-```kotlin title="Android with Firebase"
+</TabItem>
+<TabItem value="kotlin" label="Android with Firebase" default>
+```kotlin 
 class App : Application() {
 
     override fun onCreate() {
@@ -98,3 +104,6 @@ class App : Application() {
     }
 }
 ```
+</TabItem>
+</Tabs>
+

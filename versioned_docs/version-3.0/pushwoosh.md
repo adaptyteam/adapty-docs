@@ -3,6 +3,8 @@ title: "Pushwoosh"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty uses subscription events to update [Pushwoosh](https://www.pushwoosh.com/) profile tags, so you can build target communication with customers using push notifications after a short and easy integration setting as described below. 
 
@@ -112,7 +114,9 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 let params = AdaptyProfileParameters.Builder()
     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
     .build()
@@ -121,7 +125,9 @@ Adapty.updateProfile(params: params) { error in
     // handle the error
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 val params = AdaptyProfileParameters.Builder()
     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
     .build()
@@ -132,7 +138,9 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
     .build();
@@ -143,7 +151,9 @@ Adapty.updateProfile(params, error -> {
     }
 });
 ```
-```java title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 import 'package:pushwoosh/pushwoosh.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -156,7 +166,19 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
+var builder = new Adapty.ProfileParameters.Builder();
+builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    // handle error
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 import { adapty } from 'react-native-adapty';
 import Pushwoosh from 'pushwoosh-react-native-plugin';
 
@@ -169,11 +191,5 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
-});
-```
+</TabItem>
+</Tabs>
