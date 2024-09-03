@@ -11,7 +11,7 @@ A card is a paywall element that combines several other elements into a single b
   src={require('./img/16fd800-PB_card_example.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}

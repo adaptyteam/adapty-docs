@@ -11,7 +11,7 @@ A carousel is a dynamic set of swipeable cards that can be moved left or right, 
   src={require('./img/81eaa26-PB_carousel.gif').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}

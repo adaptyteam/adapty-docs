@@ -107,8 +107,8 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
 
 Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](profiles-crm#custom-attributes).
 
-1. **Name **represents the name of the custom attribute and will be used in the Adapty dashboard only.
-2. **Key **is the unique identifier for the custom attribute. This key value should match the key value used in the SDK. 
+1. **Name** represents the name of the custom attribute and will be used in the Adapty dashboard only.
+2. **Key** is the unique identifier for the custom attribute. This key value should match the key value used in the SDK. 
 3. **Type** field has two options. If you select "String", you have to enter a list of possible values for the attribute. If you select "Number", the attribute will accept only numeric values.
 4. If you selected "String" as the type, enter a list of possible **values** for the attribute. If you selected "Number", the attribute will accept only numeric values.
 

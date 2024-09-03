@@ -27,7 +27,7 @@ A product badge is a small label that can be added to a product. This badge can 
   src={require('./img/eedb135-PB_product_badge.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -67,7 +67,7 @@ For the **Products as list + purchase button** purchase flow, you can **preselec
   src={require('./img/3f37969-PB_preselected_product.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -123,7 +123,7 @@ For the **Products as purchase buttons** purchase flow, you can **highlight** a 
   src={require('./img/afc2882-PB_highlighted_product.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}

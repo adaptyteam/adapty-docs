@@ -42,7 +42,7 @@ The **overlay hero image** adds a layer of depth and dynamism to your paywall. P
   src={require('./img/01c702a-overlay_head_picture.gif').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -59,7 +59,7 @@ The **transparent layout** delivers a bold, full-screen hero image that instantl
   src={require('./img/0401532-transparent_hero_picture.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -80,7 +80,7 @@ The **flat layout** mimics a seamless landing page, presenting all elements in a
   src={require('./img/7c13a16-flat_hero_picture.gif').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '200px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}

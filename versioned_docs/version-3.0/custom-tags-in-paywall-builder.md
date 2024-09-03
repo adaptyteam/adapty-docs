@@ -3,6 +3,8 @@ title: "Custom tags in paywall builder"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 :::note
 Custom tags are only available on AdaptyUI SDK v.2.1.0 and higher
@@ -90,20 +92,28 @@ To add a custom tag:
 
 To use custom tags in your mobile app, create a tagResolver object—a dictionary or map that pairs custom tags with the string values that will replace them when the paywall is rendered. Here's an example:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 let tagResolver = [
     "USERNAME": "John",
 ]                           
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
 ```
+</TabItem>
+</Tabs>
 
 In this example, `USERNAME` is a custom tag you entered in the Adapty dashboard as `<USERNAME/>`. The `tagResolver` ensures that your app dynamically replaces this custom tag with the specified value—like `John`.
 
