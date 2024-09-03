@@ -100,7 +100,7 @@ In a profile, you can find an active subscription. At any time you can prolong t
 
 
 <img
-  src={require('./img/image%20%2830%29.png').default}
+  src={require('./img/image20283029.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
