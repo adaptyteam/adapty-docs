@@ -90,7 +90,7 @@ The **flat layout** mimics a seamless landing page, presenting all elements in a
 
 
 
-:::info
+:::note
 Ideal for storytelling or presenting a series of offerings, the flat layout lets you create a compelling sequence that captivates users.
 :::
 

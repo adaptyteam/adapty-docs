@@ -45,18 +45,18 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 2. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-```swift title="Swift"
-import Adapty
-import AdaptyUI
+   ```swift title="Swift"
+   import Adapty
+   import AdaptyUI
 
-let visualPaywall = AdaptyUI.paywallController(
-    for: <paywall object>,
-    products: <paywall products array>,
-    viewConfiguration: <LocalizedViewConfiguration>,
-    delegate: <AdaptyPaywallControllerDelegate>
-    observerModeResolver: <AdaptyObserverModeResolver>
-)
-```
+   let visualPaywall = AdaptyUI.paywallController(
+       for: <paywall object>,
+       products: <paywall products array>,
+       viewConfiguration: <LocalizedViewConfiguration>,
+       delegate: <AdaptyPaywallControllerDelegate>
+       observerModeResolver: <AdaptyObserverModeResolver>
+   )
+   ```
 
 Request parameters:
 

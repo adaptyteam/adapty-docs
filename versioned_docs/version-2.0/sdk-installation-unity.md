@@ -33,7 +33,7 @@ To install the Adapty SDKs:
   src={require('./img/456bd98-adapty-unity-plugin.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '400px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -49,7 +49,7 @@ To install the Adapty SDKs:
   src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
   style={{
     border: 'none', /* border width and color */
-    width: '700px', /* image width */
+    width: '400px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -80,18 +80,18 @@ The Adapty Unity Plugin on iOS is initialized automatically. To make it work pro
 
 1. Manually create the `Adapty-Info.plist` file and add it to the `/Assets` folder of your Unity project. It will be automatically copied to the Xcode project during the build phase. Below is an example of how this file should be structured:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>AdaptyPublicSdkKey</key>
-    <string>insert_here_your_Adapty_public_key#</string>
-    <key>AdaptyObserverMode</key>
-	  <false/>
-</dict>
-</plist>
-```
+   ```xml title="Xml"
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+       <key>AdaptyPublicSdkKey</key>
+       <string>insert_here_your_Adapty_public_key#</string>
+       <key>AdaptyObserverMode</key>
+   	  <false/>
+   </dict>
+   </plist>
+   ```
 
 Parameters:
 
@@ -108,29 +108,29 @@ The Adapty Unity Plugin on Android is automatically initialized. To ensure it wo
 
 1. Add `<meta-data` section with "AdaptyPublicSdkKey" as a direct child of the `<application` section to your project's AndroidManifest.xml file. If you don't have one, it can be easily created in **Project Settings** -> **Player** -> **Settings for Android** -> **Publishing settings** -> **Custom Main Manifest** checkbox). Here is an example:
 
-```xml title="Xml"
-<?xml version="1.0" encoding="utf-8"?>
-<manifest ...>
-    <application ...>
-        ...
+   ```xml title="Xml"
+   <?xml version="1.0" encoding="utf-8"?>
+   <manifest ...>
+       <application ...>
+            ...
 
-        <meta-data
-            android:name="AdaptyPublicSdkKey"
-            android:value="PUBLIC_SDK_KEY" />
+           <meta-data
+               android:name="AdaptyPublicSdkKey"
+               android:value="PUBLIC_SDK_KEY" />
       
-      	<meta-data
-           	android:name="AdaptyObserverMode"
-           	android:value="false" />
-    </application>
-</manifest>
-```
+          	<meta-data
+              	android:name="AdaptyObserverMode"
+              	android:value="false" />
+       </application>
+   </manifest>
+   ```
 
 Configurational options:
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **AdaptyPublicSDKkey** | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.</p> |
-| **AdaptyObservermode** | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. Default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| **AdaptyObservermode** | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. Default value is `false`.</p><p> **Note**: When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 
 
 ### Use Adapty Unity Plugin
@@ -152,28 +152,28 @@ Configurational options:
 
 
 
-Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
+   Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
 
-```csharp title="C#"
-using AdaptySDK;
-```
+   ```csharp title="C#"
+   using AdaptySDK;
+  ```
 
 2. Subscribe to Adapty events:
 
 ```csharp title="C#"
-using UnityEngine;
-using AdaptySDK;
+   using UnityEngine;
+   using AdaptySDK;
 
-public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-	void Start() {
-		DontDestroyOnLoad(this.gameObject);
-		Adapty.SetEventListener(this);
-	}
+   public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+   	void Start() {
+	   	DontDestroyOnLoad(this.gameObject);
+		  Adapty.SetEventListener(this);
+	   }
 
-  public void OnLoadLatestProfile(Adapty.Profile profile) {
-    // handle updated profile data
-  }
-}
+     public void OnLoadLatestProfile(Adapty.Profile profile) {
+       // handle updated profile data
+     }
+   }
 ```
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.

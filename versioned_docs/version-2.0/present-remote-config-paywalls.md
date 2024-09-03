@@ -3,6 +3,8 @@ title: "Render paywall designed by remote config"
 description: "Discover how to implement and display a custom paywall and remote config paywall in your mobile app, ensuring flexibility and control over its content and appearance, while checking user eligibility for introductory offers."
 metadataTitle: "How to Render a Custom Paywall and Remore Config Paywall"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 If you've customized a paywall using remote config, you'll need to implement rendering in your mobile app's code to display it to users. Since remote config offers flexibility tailored to your needs, you're in control of what's included and how your paywall view appears. We provide a method for fetching the remote configuration, giving you the autonomy to showcase your custom paywall configured via remote config.
 
@@ -12,13 +14,17 @@ Don't forget to [check if a user is eligible for an introductory offer in iOS](f
 
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
     let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -32,7 +38,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -50,7 +58,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
     }
 });
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
   final String? headerText = paywall.remoteConfig?['header_text'];
@@ -59,6 +69,8 @@ try {
 } catch (e) {
 }
 ```
+</TabItem>
+</Tabs>
 
 At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
 
@@ -76,16 +88,24 @@ Adapty assists you in measuring the performance of your paywalls. While we gathe
 
 To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.logShowPaywall(paywall)
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.logShowPaywall(paywall)
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.logShowPaywall(paywall);
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 try {
   final result = await Adapty().logShowPaywall(paywall: paywall);
 } on AdaptyError catch (adaptyError) {
@@ -93,14 +113,20 @@ try {
 } catch (e) {
 }
 ```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
 Adapty.LogShowPaywall(paywall, (error) => {
     // handle the error
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
 await adapty.logShowPaywall(paywall);
 ```
+</TabItem>
+</Tabs>
 
 Request parameters:
 

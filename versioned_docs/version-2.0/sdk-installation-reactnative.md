@@ -39,40 +39,40 @@ You can streamline your development process with Expo Application Services (EAS)
 
 1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
 
-```sh title="Shell"
-npm install -g eas-cli
-```
+   ```sh title="Shell"
+   npm install -g eas-cli
+   ```
 
 2. In the root of your project, install the dev client to make a development build:
 
-```sh title="Shell"
-expo install expo-dev-client
-```
+   ```sh title="Shell"
+   expo install expo-dev-client
+   ```
 
 3. Run the installation command:
 
-```sh title="Shell"
-expo install react-native-adapty
-expo install @adapty/react-native-ui
-```
+   ```sh title="Shell"
+   expo install react-native-adapty
+   expo install @adapty/react-native-ui
+   ```
 
 4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh title="Shell"
-eas build --profile development --platform ios
-```
+   ```sh title="Shell"
+   eas build --profile development --platform ios
+   ```
 
 4. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-```sh title="Shell"
-eas build --profile development --platform android
-```
+   ```sh title="Shell"
+   eas build --profile development --platform android
+   ```
 
 5. Start a development server with the following command:
 
-```sh title="Shell"
-expo start --dev-client
-```
+   ```sh title="Shell"
+   expo start --dev-client
+   ```
 
 This should result in the working app with react-native-adapty.
 
@@ -89,52 +89,52 @@ If you opt for a purely native approach, please consult the following instructio
 
 1. In your project, run the installation command:
 
-```sh title="Shell"
-yarn add react-native-adapty
-yarn add @adapty/react-native-ui
-```
+   ```sh title="Shell"
+   yarn add react-native-adapty
+   yarn add @adapty/react-native-ui
+   ```
 
 2. For iOS: Install required pods:
 
-```sh title="Shell"
-pod install --project-directory=ios
-pod install --project-directory=ios/
-```
+   ```sh title="Shell"
+   pod install --project-directory=ios
+   pod install --project-directory=ios/
+   ```
 
    The minimal supported iOS version is 13.0. If you encounter an error during pod installation, locate this line in your`ios/Podfile` and update the minimal target. Tand update the minimum target. Afterward, you should be able to successfully execute `pod install`.
 
-```diff title="Podfile"
--platform :ios, min_ios_version_supported
-+platform :ios, 13.0
-```
+   ```diff title="Podfile"
+   -platform :ios, min_ios_version_supported
+   +platform :ios, 13.0
+   ```
 
 2. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
-```groovy title="/android/build.gradle"
-...
-buildscript {
-  ...
-  dependencies {
-    ...
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
-  }
-}
-...
-```
+   ```groovy title="/android/build.gradle"
+   ...
+   buildscript {
+     ...
+     dependencies {
+       ...
+       classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
+     }
+   }
+   ...
+   ```
 
 ## Configure Adapty SDKs
 
 To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
 
-```typescript title="/src/App.tsx"
-import { adapty } from 'react-native-adapty';
+  ```typescript title="/src/App.tsx"
+  import { adapty } from 'react-native-adapty';
 
-adapty.activate('PUBLIC_SDK_KEY');
+  adapty.activate('PUBLIC_SDK_KEY');
 
-const App = () => {
-	// ...
-}
-```
+  const App = () => {
+  	// ...
+  }
+  ```
 
 You can pass several optional parameters during activation:
 
@@ -170,8 +170,6 @@ adapty.activate('PUBLIC_SDK_KEY', {
 ```
 </TabItem>
 </Tabs>
-
-
 
 Activation parameters:
 

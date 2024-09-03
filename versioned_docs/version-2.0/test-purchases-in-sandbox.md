@@ -72,8 +72,10 @@ To create a Sandbox Apple ID:
 
 3. In the **New Tester** window, enter the data of the test user.
 
-   > 🚧 - Make sure to provide a valid email you can verify.
-   > - Make sure to define the **Country or Region** which you plan to test.
+   :::warning
+   - Make sure to provide a valid email you can verify.
+   - Make sure to define the **Country or Region** which you plan to test.
+   :::
 4. Click the **Create** button to confirm the creation
 
 ### Step 3. Add the Sandbox test account to your device

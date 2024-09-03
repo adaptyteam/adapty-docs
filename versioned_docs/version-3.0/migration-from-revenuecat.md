@@ -44,7 +44,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
   src={require('./img/2406d97-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
+    width: '300px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}

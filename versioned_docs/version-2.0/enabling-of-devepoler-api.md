@@ -48,7 +48,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
 
 
-4. Click the **Enable **button and wait for the status **Enabled** to show. This means the Google Android Developer API is enabled.
+4. Click the **Enable** button and wait for the status **Enabled** to show. This means the Google Android Developer API is enabled.
 
    
 <img
@@ -80,7 +80,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
 
 
-6. Click the **Enable **button and wait for the status **Enabled** to show.
+6. Click the **Enable** button and wait for the status **Enabled** to show.
 
    
 <img

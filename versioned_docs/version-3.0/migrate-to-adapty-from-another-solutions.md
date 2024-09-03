@@ -27,11 +27,11 @@ Install Adapty SDK for your platform ([iOS](ios-installation), [Android](sdk-ins
 - Restoring purchase;
 - Getting/setting information about your user.
 
-> 🙀 Switching from another susbcription provider?
-> 
-> Follow our guide for a detailed walk though giude:
-> 
-> - [Migration from RevenueCat](migration-from-revenuecat) (20 minutes)
+:::tip
+Switching from another susbcription provider?
+Follow our guide for a detailed walk though giude:
+ - [Migration from RevenueCat](migration-from-revenuecat) (20 minutes)
+ :::
 
 ### Changing Apple server notifications
 

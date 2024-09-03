@@ -161,7 +161,9 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 
 
 
-   > 📘 If the **App-Specific Shared Secret** sub-section is absent, make sure you have an Account Holder or Admin role. If you have an Admin role and yet cannot see the **App-Specific Shared Secret** sub-section, ask the Account Holder of the app (the person who has created the application in the App Store Connect) to generate the App Store shared secret for the app. After that, the sub-section will be shown to Admins as well.
+   :::info
+   If the **App-Specific Shared Secret** sub-section is absent, make sure you have an Account Holder or Admin role. If you have an Admin role and yet cannot see the **App-Specific Shared Secret** sub-section, ask the Account Holder of the app (the person who has created the application in the App Store Connect) to generate the App Store shared secret for the app. After that, the sub-section will be shown to Admins as well.
+   :::
 
 3. Click the **Manage** button.
 
