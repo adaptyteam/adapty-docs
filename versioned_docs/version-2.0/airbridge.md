@@ -3,6 +3,8 @@ title: "Airbridge"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 [Airbridge](https://www.airbridge.io/) offers an integrated marketing performance analysis for websites and mobile apps by consolidating data collected from multiple devices, platforms, and channels. Using Airbridge's Identity Resolution Engine, you can combine scattered customer identity data from web and app interactions into a unified people-based identity, resulting in more accurate attribution.
 
@@ -96,7 +98,9 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 import AirBridge
 
 let builder = AdaptyProfileParameters.Builder()
@@ -104,7 +108,9 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
         val params = AdaptyProfileParameters.Builder()
@@ -120,7 +126,9 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
     }
 })
 ```
-```csharp title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -134,7 +142,9 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 import Airbridge from 'airbridge-react-native-sdk';
 import { adapty } from 'react-native-adapty';
 
@@ -148,5 +158,7 @@ try {
   // handle `AdaptyError`
 }
 ```
+</TabItem>
+</Tabs>
 
 Read more about airbridgeDeviceId in [Airbridge documentation.](https://developers.airbridge.io/v1.1-en/docs/airbridge-device-id)

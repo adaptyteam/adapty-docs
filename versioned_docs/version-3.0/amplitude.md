@@ -3,6 +3,8 @@ title: "Amplitude"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 [Amplitude](https://amplitude.com/) is a powerful mobile analytics service. With Adapty, you can easily send events to Amplitude, see how users behave, and then make smart decisions.
 
@@ -71,7 +73,9 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `amplitudeDeviceId` or `amplitudeUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Amplitude from your app is the same one you send to Adapty.
 
-```Text title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```Text 
 import Amplitude 
 
 let builder = AdaptyProfileParameters.Builder()
@@ -80,7 +84,9 @@ let builder = AdaptyProfileParameters.Builder()
 
 Adapty.updateProfile(params: builder.build())
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 //for Amplitude maintenance SDK (obsolete)
 val amplitude = Amplitude.getInstance()
 val amplitudeDeviceId = amplitude.deviceId
@@ -108,7 +114,9 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript 
 import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
@@ -123,7 +131,20 @@ try {
      // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
+var builder = new Adapty.ProfileParameters.Builder();
+builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
+builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    // handle error
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 import { adapty } from 'react-native-adapty';
 
 try {
@@ -135,12 +156,5 @@ try {
   // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
-builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
-});
-```
+</TabItem>
+</Tabs>

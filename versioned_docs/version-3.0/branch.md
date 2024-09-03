@@ -3,6 +3,8 @@ title: "Branch"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 [Branch](https://www.branch.io/) enables customers to reach, interact, and assess results across diverse devices, channels, and platforms. It's a user-friendly platform designed to enhance mobile revenue through specialized links that work seamlessly on all devices, channels, and platforms.
 
@@ -98,43 +100,57 @@ It's very important to send Branch attribution data from the device to Adapty us
 
 To connect the Branch and Adapty user, make sure you provide your `customerUserId` as Branch Identity id. If you prefer not to use `customerUserId` in Branch, use `networkUserId` param in attribution method to specify the Branch user ID to attach to.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 // login
 Branch.getInstance().setIdentity("YOUR_USER_ID")
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 // login and update attribution
 Branch.getAutoInstance(this)
     .setIdentity("YOUR_USER_ID") { referringParams, error ->
         referringParams?.let { params ->
             Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
-    						if (error != null) {
-        						//handle error
-    						}
-						}
+                            if (error != null) {
+                                //handle error
+                            }
+                        }
         }
     }
 
 // logout
 Branch.getAutoInstance(context).logout()
 ```
-```csharp title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.setIdentity('YOUR_USER_ID');
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
+Branch.setIdentity("your user id");
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 import branch from 'react-native-branch';
 
 branch.setIdentity('YOUR_USER_ID');
 ```
-```csharp title="Unity (C#)"
-Branch.setIdentity("your user id");
-```
+</TabItem>
+</Tabs>
 
 Next, pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
     if let data = data {
@@ -142,10 +158,14 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 //everything is in the above snippet for Android
 ```
-```Text title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.initSession().listen((data) async {
@@ -156,7 +176,19 @@ FlutterBranchSdk.initSession().listen((data) async {
     } catch (e) {}
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
+Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
+    string attributionString = JsonUtility.ToJson(parameters);
+    Adapty.UpdateAttribution(attributionString, AttributionSource.Branch, (error) => {
+        // handle the error
+    });
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 import { adapty, AttributionSource } from 'react-native-adapty';
 import branch from 'react-native-branch';
 
@@ -168,11 +200,5 @@ branch.subscribe({
   },
 });
 ```
-```csharp title="Unity (C#)"
-Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
-    string attributionString = JsonUtility.ToJson(parameters);
-    Adapty.UpdateAttribution(attributionString, AttributionSource.Branch, (error) => {
-        // handle the error
-    });
-});
-```
+</TabItem>
+</Tabs>

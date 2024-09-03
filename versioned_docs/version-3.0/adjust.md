@@ -3,6 +3,8 @@ title: "Adjust"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 [Adjust](https://www.adjust.com/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies see track their campaign performance. 
 
@@ -167,7 +169,9 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
@@ -176,7 +180,9 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
@@ -189,7 +195,9 @@ config.setOnAttributionChangedListener { attribution ->
 }
 Adjust.onCreate(config)
 ```
-```csharp title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -215,23 +223,9 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
         } catch (e) {}
       };
 ```
-```typescript title="React Native (TS)"
-import { Adjust, AdjustConfig } from "react-native-adjust";
-import { adapty } from "react-native-adapty";
-
-var adjustConfig = new AdjustConfig(appToken, environment);
-
-// Before submiting Adjust config...
-adjustConfig.setAttributionCallbackListener(attribution => {
-  // Make sure Adapty SDK is activated at this point
-  // You may want to lock this thread awaiting of `activate`
-  adapty.updateAttribution(attribution, "adjust");
-});
-
-// ...
-Adjust.create(adjustConfig);
-```
-```csharp title="Unity (C#)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
 
@@ -250,3 +244,27 @@ public void attributionChangedDelegate(AdjustAttribution attribution) {
     });
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+import { Adjust, AdjustConfig } from "react-native-adjust";
+import { adapty } from "react-native-adapty";
+
+var adjustConfig = new AdjustConfig(appToken, environment);
+
+// Before submiting Adjust config...
+adjustConfig.setAttributionCallbackListener(attribution => {
+  // Make sure Adapty SDK is activated at this point
+  // You may want to lock this thread awaiting of `activate`
+  adapty.updateAttribution(attribution, "adjust");
+});
+
+// ...
+Adjust.create(adjustConfig);
+```
+</TabItem>
+</Tabs>
+
+
+
+

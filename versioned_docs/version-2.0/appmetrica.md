@@ -3,6 +3,8 @@ title: "AppMetrica"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 [AppMetrica](https://appmetrica.yandex.ru/en/about) is a no-cost tool that helps you track advertisements and analyze how your mobile app is doing. It works in real-time, so you see things right away.
 
@@ -74,7 +76,9 @@ Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaD
 - [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
 - [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 import YandexMobileMetrica
 
 YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceId, error in
@@ -87,7 +91,9 @@ YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceI
         Adapty.updateProfile(params: builder.build())
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 val params = AdaptyProfileParameters.Builder()
     .withAppmetricaDeviceId(appmetricaDeviceId)
     .withAppmetricaProfileId(appmetricaProfileId)
@@ -98,7 +104,9 @@ Adapty.updateProfile(params) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -111,20 +119,9 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
-import { adapty } from 'react-native-adapty';
-
-// ...
-try {
-  await adapty.updateProfile({
-    appmetricaProfileId: appmetricaProfileId,
-    appmetricaDeviceId: appmetricaDeviceId,
-  });
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
-```csharp title="Unity (C#)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
 AppMetrica.Instance.RequestAppMetricaDeviceID((deviceId, error) => {
     if (error != null) {
         // handle error
@@ -141,3 +138,20 @@ AppMetrica.Instance.RequestAppMetricaDeviceID((deviceId, error) => {
     });
 });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+import { adapty } from 'react-native-adapty';
+
+// ...
+try {
+  await adapty.updateProfile({
+    appmetricaProfileId: appmetricaProfileId,
+    appmetricaDeviceId: appmetricaDeviceId,
+  });
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
+</TabItem>
+</Tabs>

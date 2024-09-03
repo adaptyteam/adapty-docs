@@ -3,6 +3,8 @@ title: "Facebook Ads"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 With the Facebook Ads integration, you can easily check your app stats on Facebook Analytics. Adapty sends events to Facebook Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
 
@@ -117,7 +119,9 @@ To enable specific events, simply toggle on the ones you require. In case multip
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes)  method. It allows Facebook to handle events if IDFA is not available.
 :::
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 import FacebookCore
 
 let builder = AdaptyProfileParameters.Builder()
@@ -129,7 +133,9 @@ Adapty.updateProfile(params: builder.build()) { error in
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin
 val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
   
@@ -139,10 +145,20 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
-```Text title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```text
 There is no official SDK for Flutter
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
+anonymousID is not available in the official SDK
+https://github.com/facebook/facebook-sdk-for-unity/issues/676
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
 import { adapty } from 'react-native-adapty';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 
@@ -153,10 +169,13 @@ try {
     facebookAnonymousId: anonymousId,
   });
 } catch (error) {
-	// handle `AdaptyError`
+  // handle `AdaptyError`
 }
 ```
-```csharp title="Unity (C#)"
-anonymousID is not available in the official SDK
-https://github.com/facebook/facebook-sdk-for-unity/issues/676
-```
+</TabItem>
+</Tabs>
+
+
+
+
+

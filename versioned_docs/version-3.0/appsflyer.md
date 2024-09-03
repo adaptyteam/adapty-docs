@@ -3,6 +3,8 @@ title: "AppsFlyer"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 [AppsFlyer](https://www.appsflyer.com/) is a leading platform for mobile attribution and marketing analytics. It stands as a third-party service that gathers and organizes data from marketing campaigns. This helps companies see how well their campaigns are performing in one place.
 
@@ -166,7 +168,9 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It's very important to send AppsFlyer attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift
 // Find your implementation of AppsFlyerLibDelegate 
 // and update onConversionDataSuccess method:
 func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
@@ -174,7 +178,9 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         // It's important to include the network user ID
@@ -190,7 +196,9 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
     }
 }
 ```
-```javascript title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript 
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
@@ -214,24 +222,9 @@ appsflyerSdk.initSdk(
     registerOnDeepLinkingCallback: true,
 );
 ```
-```typescript title="React Native (JS)"
-import { adapty, AttributionSource } from 'react-native-adapty';
-import appsFlyer from 'react-native-appsflyer';
-
-appsFlyer.onInstallConversionData(installData => {
-	try {
-		// It's important to include the network user ID
-		const networkUserId = appsFlyer.getAppsFlyerUID();
-		adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
-	} catch (error) {
-		// handle error
-	}
-});
-
-// ...
-appsFlyer.initSdk(/*...*/);
-```
-```csharp title="Unity (C#)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
 using AppsFlyerSDK;
 
 // before SDK initialization
@@ -246,3 +239,24 @@ void onConversionDataSuccess(string conversionData) {
     });
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+import { adapty, AttributionSource } from 'react-native-adapty';
+import appsFlyer from 'react-native-appsflyer';
+
+appsFlyer.onInstallConversionData(installData => {
+    try {
+        // It's important to include the network user ID
+        const networkUserId = appsFlyer.getAppsFlyerUID();
+        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
+    } catch (error) {
+        // handle error
+    }
+});
+
+// ...
+appsFlyer.initSdk(/*...*/);
+```
+</TabItem>
+</Tabs>
