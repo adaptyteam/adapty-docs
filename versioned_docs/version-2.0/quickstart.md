@@ -3,6 +3,8 @@ title: "Quickstart guide"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty
 
@@ -90,23 +92,31 @@ To find Package Name Open the Google Play Developer Console and select the app w
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-```swift title="iOS"
+<Tabs>
+<TabItem value="Swift" label="iOS" default>
+```swift 
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER
 ```
-```kotlin title="Android"
+</TabItem>
+<TabItem value="kotlin" label="Android" default>
+```kotlin 
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 }
 ```
-```xml title="Flutter - info.plist"
+</TabItem>
+<TabItem value="Flutter" label="Flutter - info.plist" default>
+```xml 
 <dict>
     ...
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
 </dict>
 ```
-```xml title="Flutter - AndroidManifest.xml"
+</TabItem>
+<TabItem value="Unity" label="Flutter - AndroidManifest.xml" default>
+```xml 
 <application ...>
        ...
        <meta-data
@@ -114,7 +124,9 @@ override fun onCreate() {
               android:value="PUBLIC_SDK_KEY" />
 </application>
 ```
-```typescript title="React Native - /src/App.tsx"
+</TabItem>
+<TabItem value="RN" label="React Native - /src/App.tsx" default>
+```typescript 
 import { activateAdapty } from 'react-native-adapty';
 
 const App: React.FC = () => {
@@ -125,6 +137,8 @@ const App: React.FC = () => {
   // ...
 }
 ```
+</TabItem>
+</Tabs>
 
 Follow these guides for more info on:
 
