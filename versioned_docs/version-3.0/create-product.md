@@ -60,7 +60,7 @@ After your products are set up in the stores, you are ready to add your products
 
    1. **App Store:**
 
-      - **App Store Product ID: **This unique identifier is used to access your product on devices. To obtain the product ID for the App Store, please follow the steps outlined in the [Product in App Store](app-store-products) page, where you'll find detailed instructions on how to create and retrieve the product ID.
+      - **App Store Product ID:** This unique identifier is used to access your product on devices. To obtain the product ID for the App Store, please follow the steps outlined in the [Product in App Store](app-store-products) page, where you'll find detailed instructions on how to create and retrieve the product ID.
 
    2. **Play Store:** 
 

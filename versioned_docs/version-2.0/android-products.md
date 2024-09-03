@@ -58,7 +58,7 @@ To set up a product for Android devices:
 
 
 
-3. In the opened **Create subscription** window, enter the subscription ID in the **Product ID** field and the subscription name in the **Name **field.
+3. In the opened **Create subscription** window, enter the subscription ID in the **Product ID** field and the subscription name in the **Name** field.
 
    Product ID has to be unique and must start with a number or lowercase letter, and can also contain underscores (\_), and periods (.). It is used to access your product during development and synchronize it with Adapty. Once a Product ID is assigned to a product in the Google Play Console, it cannot be reused for any other apps, even if the product is deleted.
 
