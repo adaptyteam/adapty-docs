@@ -3,6 +3,8 @@ title: "Firebase and Google Analytics"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 If you use such Google products as Google Analytics, Firebase, and BigQuery you may enrich your analytical data with events from Adapty using the integration described in this article. Events are sent through Google Analytics to Firebase and may be used in any of these services.
 
@@ -116,7 +118,9 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the`firebase_app_instance_id` to Adapty. Here you can see an example of the code which can be used to integrate Firebase SDK and Adapty SDK.
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 import FirebaseCore
 import FirebaseAnalytics
 
@@ -131,7 +135,9 @@ if let appInstanceId = Analytics.appInstanceID() {
     }
 }
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
@@ -144,7 +150,9 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
@@ -159,7 +167,9 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
     });
 });
 ```
-```java title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 final builder = AdaptyProfileParametersBuilder()
@@ -173,21 +183,9 @@ try {
     // handle error
 } catch (e) {}
 ```
-```typescript title="React Native (TS)"
-import analytics from '@react-native-firebase/analytics';
-import { adapty } from 'react-native-adapty';
-
-try {
-  const appInstanceId = await analytics().getAppInstanceId();
-
-  await adapty.updateProfile({
-    firebaseAppInstanceId: appInstanceId,
-  });
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
-```csharp title="Unity (C#)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp 
 // We suppose FirebaseAnalytics Unity Plugin is already installed
 
 Firebase.Analytics
@@ -209,6 +207,30 @@ Firebase.Analytics
                 });
             });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+import analytics from '@react-native-firebase/analytics';
+import { adapty } from 'react-native-adapty';
+
+try {
+  const appInstanceId = await analytics().getAppInstanceId();
+
+  await adapty.updateProfile({
+    firebaseAppInstanceId: appInstanceId,
+  });
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
+</TabItem>
+</Tabs>
+
+
+
+
+
+
 
 ## Sending events and user properties
 

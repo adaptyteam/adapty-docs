@@ -3,6 +3,8 @@ title: "OneSignal"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 As one of the top customer engagement solutions, [OneSignal ](https://onesignal.com/)provides a wide range of tools for push notifications, email, SMS, and in-app messaging. By integrating Adapty with OneSignal, you can easily access all of your subscription events in one place, giving you the ability to trigger automated communication based on those events. 
 
@@ -134,7 +136,9 @@ Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on 
 
 Here is how you can link Adapty with OneSignal with either `playerId` or `subscriptionId`:
 
-```swift title="iOS (Swift)"
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+```swift 
 // PlayerID (pre-v5 OneSignal SDK)
 // in your OSSubscriptionObserver implementation
 func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -159,7 +163,9 @@ OneSignal.Notifications.requestPermission({ accepted in
     Adapty.updateProfile(params: builder.build())
 }, fallbackToSettings: true)
 ```
-```kotlin title="Android (Kotlin)"
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+```kotlin 
 // PlayerID (pre-v5 OneSignal SDK)
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
@@ -190,7 +196,9 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 // PlayerID (pre-v5 OneSignal SDK)
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
@@ -221,7 +229,9 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     });
 };
 ```
-```java title="Flutter (Dart)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+```javascript
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
     if (playerId != null) {
@@ -238,19 +248,9 @@ OneSignal.shared.setSubscriptionObserver((changes) {
     }
 });
 ```
-```typescript title="React Native (TS)"
-import { adapty } from 'react-native-adapty';
-import OneSignal from 'react-native-onesignal';
-
-OneSignal.addSubscriptionObserver(event => {
-  const playerId = event.to.userId;
-  
-  adapty.updateProfile({
-    oneSignalPlayerId: playerId,
-  });
-});
-```
-```Text title="Unity (C#)"
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+```csharp
 using OneSignalSDK;
 
 var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
@@ -262,6 +262,22 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
     // handle error
 });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+import { adapty } from 'react-native-adapty';
+import OneSignal from 'react-native-onesignal';
+
+OneSignal.addSubscriptionObserver(event => {
+  const playerId = event.to.userId;
+  
+  adapty.updateProfile({
+    oneSignalPlayerId: playerId,
+  });
+});
+```
+</TabItem>
+</Tabs>
 
 Read more about `OSSubscriptionObserver` in [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
 
