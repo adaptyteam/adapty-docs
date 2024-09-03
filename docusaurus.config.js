@@ -98,11 +98,11 @@ const config = {
           href: "https://adapty.io",
         },
         items: [
-          {
+          /*{
             type: "localeDropdown",
             position: "right",
             class: "navbar__link navbar__locale-link",
-          },
+          },*/
           {
             type: "docSidebar",
             sidebarId: "tutorialSidebar",
