@@ -3,6 +3,8 @@ title: "React Native — What's new"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 In the new version of the Adapty SDK, we've made quite a lot of changes to the internal implementation of our SDK, applying all of our accumulated experience. We also redesigned our public API and relationships between some entities so that it causes as little misunderstanding as possible and reduces the number of errors made by developers.
 
@@ -39,8 +41,11 @@ In SDK v2 there are several changes:
 - `v2.0.0 (New)` is an example of basic and precise activations for SDK v2
 - `v1.x.x (Previous)` is an example of basic and precise activations for a latest `v1.x.x` version
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript
 // AdaptySDK 2.0.0
+
 import { adapty, LogLevel } from 'react-native-adapty';
 
 // Basic setup:
@@ -53,8 +58,11 @@ await adapty.activate('MY_API_KEY', {
 	logLevel: LogLevel.VERBOSE, // ← can be replaced with a string 'verbose' too
 });
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 import { activateAdapty } from 'react-native-adapty';
 
 // Basic setup:
@@ -70,6 +78,8 @@ await activateAdapty({
 	logLevel: 'verbose',
 });
 ```
+</TabItem>
+</Tabs>
 
 **Motivation**
 
@@ -141,8 +151,11 @@ In SDK v2, methods are renamed:
 - `v2.0.0 (New)` is an example of getting user profile for SDK v2
 - `v1.x.x (Previous)` is an example of getting user profile for a latest `v1.x.x` SDK version
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 await adapty.identify();
 
 const profile = await adapty.getProfile();
@@ -151,8 +164,11 @@ await adapty.updateProfile({firstName: "John", lastName: "Doe" });
 
 await adapty.logout();
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 await adapty.profile.identify();
 
 const profile = await adapty.purchases.getInfo({ forceUpdate: true });
@@ -161,6 +177,8 @@ await adapty.profile.update({firstName: "John", lastName: "Doe" });
 
 await adapty.profile.logout();
 ```
+</TabItem>
+</Tabs>
 
 **Interfaces**
 
@@ -329,16 +347,24 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can get a paywall in a new SDK v2
 - `v1.x.x (Previous)` is how you you could get a paywall and its products in SDK v1
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
 // Find your preferred paywall. For example:
 const paywall = paywalls.find(paywall => paywall.developerId === 'MY_PAYWALL');
 ```
+</TabItem>
+</Tabs>
 
 **Logging**  
 Previously, in SDK v1 there was a `adapty.paywalls.logShow` method to log, that user has opened a paywall.  
@@ -350,18 +376,26 @@ In SDK v2 there are two separate methods now:
 **Fallback paywalls**  
 Previously, in SDK v1 there was `adapty.paywalls.setFallback` method. In SDK v2 it is now called `adapty.setFallbackPaywalls`.
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 await adapty.logShowPaywall();
 
 await adapty.setFallbackPaywalls(jsonStr);
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 await adapty.paywalls.logShow();
 
 await adapty.paywalls.setFallback(jsonStr);
 ```
+</TabItem>
+</Tabs>
 
 **Interfaces**  
 Below you can find all the changes introduced in v2.0.0 to `AdaptyPaywall` interface. Note, that you can switch tabs:
@@ -370,7 +404,9 @@ Below you can find all the changes introduced in v2.0.0 to `AdaptyPaywall` inter
 - `v2.0.0 (New)` is an interface representation in a new SDK v2
 - `v1.x.x (Previous)` is an interface representation in a latest `v1.x.x` version
 
-```diff title="Changes"
+<Tabs>
+<TabItem value="Swift" label="Changes" default>
+```diff
 interface AdaptyPaywall {
 -	abTestName?: string; // it is now required
 +	abTestName: string;
@@ -388,8 +424,11 @@ interface AdaptyPaywall {
 -	visualPaywall?: string; // Visual paywalls are not currently supported
 }
 ```
-```typescript title="v2.0.0 (New)"
+</TabItem>
+<TabItem value="kotlin" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 export interface AdaptyPaywall {
 	readonly abTestName: string;
 	readonly id: string;
@@ -401,8 +440,11 @@ export interface AdaptyPaywall {
 	readonly vendorProductIds?: string[];
 }
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="java" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 export interface AdaptyPaywall {
 	abTestName?: string;
 	customPayloadString?: string;
@@ -415,6 +457,8 @@ export interface AdaptyPaywall {
 	visualPaywall?: string;
 }
 ```
+</TabItem>
+</Tabs>
 
 **Motivation**
 
@@ -434,18 +478,28 @@ Note, that you can switch tabs:
 - \`v2.0.0 (New) is how you can query products in SDK v2
 - `v1.x.x (Previous)` is how you could query products in SDK v1
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
 const products = await adapty.getPaywallProducts(paywall);
 ```
-```typescript title="Typescript"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
 // Find your preferred paywall. For example:
 const paywall = paywalls.find(paywall => paywall.developerId === 'MY_PAYWALL');
 const products = paywall.products;
 ```
+</TabItem>
+</Tabs>
+
+
 
 **Interface**  
 Two interfaces slightly changed: `AdaptyProduct` and `AdaptyProductDiscount`. You may find diff below  
@@ -531,8 +585,11 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can handle `introductoryOfferEligibility` in SDK v2
 - `v1.x.x (Previous)` is how you handled `introductoryOfferEligibility` in SDK v1
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 import { OfferEligibility } from 'react-native-adapty';
 // ...
 switch (product.introductoryOfferEligibility) {
@@ -544,8 +601,11 @@ switch (product.introductoryOfferEligibility) {
 		// ...
 }
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 // ...
 if (product.introductoryOfferEligibility) {
 	// ...
@@ -553,6 +613,9 @@ if (product.introductoryOfferEligibility) {
 	// ...
 }
 ```
+</TabItem>
+</Tabs>
+
 
 **Motivation**  
 **StoreKit** does not provide a convenient and reliable way to determine this value, so we have to do it by analyzing the receipt from the system. Since there are cases when this receipt is missing, we decided to inform you about these situations using the value `unknown`. We recommend working with `unknown` in the same way as `ineligible`. 
@@ -587,14 +650,22 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can make a purchase in SDK v2
 - `v1.x.x (Previous)` is how you could make a purchase in SDK v1
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK v2.0.0
+
 await adapty.makePurchase(product);
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript
 // AdaptySDK v1.x.x
+
 await adapty.purchases.makePurchase(product, { ios: { offerId: offerId }});
 ```
+</TabItem>
+</Tabs>
 
 :::warning
 Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-promotional-offers) in Adapty Dashboard when using promotional offers.
@@ -618,18 +689,27 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can set a `variationId` in SDK v2
 - `v1.x.x (Previous)` is how you could set a `variationId` in SDK v1
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK v2.0.0
+
 await adapty.setVariationId(variationId, transactionId);
 
 await adapty.restorePurchases();
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK v1.x.x
+
 await adapty.purchases.setVariationId(variationId, transactionId);
 
 await adapty.purchases.restore();
 ```
+</TabItem>
+</Tabs>
+
 
 ### Updating attribution
 
@@ -648,8 +728,11 @@ In SDK v2, there are several changes:
 - `v2.0.0 (New)` is an example of updating attribution for SDK v2
 - `v1.x.x (Previous)` is an example of updating attribution for a latest `v1.x.x` SDK version
 
-```typescript title="v2.0.0 (New)"
+<Tabs>
+<TabItem value="Swift" label="v2.0.0 (New)" default>
+```typescript 
 // AdaptySDK 2.0.0
+
 import { adapty, AttributionSource } from 'react-native-adapty';
 
 // AppsFlyer example
@@ -663,8 +746,11 @@ appsFlyer.onInstallConversionData((installData) => {
 	);
 });
 ```
-```typescript title="v1.x.x (Previous)"
+</TabItem>
+<TabItem value="kotlin" label="v1.x.x (Previous)" default>
+```typescript 
 // AdaptySDK 1.x.x
+
 import { adapty } from 'react-native-adapty';
 
 // AppsFlyer example
@@ -678,6 +764,10 @@ appsFlyer.onInstallConversionData((installData) => {
 	);
 });
 ```
+</TabItem>
+</Tabs>
+
+
 
 **Motivation**  
 As stated, with introduction of new sources, `networkUserId` became optional. Major library update allows to change order of arguments to avoid passing something like`""`

@@ -3,6 +3,8 @@ title: "Migration guide to Adapty SDK v.3.x or later"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
 
@@ -28,14 +30,13 @@ Upgrade to new Paywall Builder consists of:
    1. **Adapty** is the mandatory module.
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
-<!----->
 
-1. ```shell title="Podfile"
+2. ```shell title="Podfile"
    pod 'Adapty', '~> 3.0.1'
    pod 'AdaptyUI', '~> 3.0.1' # optional module needed only for Paywall Builder
    ```
 
-2. Run:
+3. Run:
 
    ```sh title="Shell"
    pod install
@@ -45,18 +46,20 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 // In your AppDelegate class:
 import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 let configurationBuilder =
-	Adapty.Configuration
-		.Builder(withAPIKey: "PUBLIC_SDK_KEY")
-		.with(observerMode: false)
-		.with(customerUserId: "YOUR_USER_ID")
-		.with(idfaCollectionDisabled: false)
-		.with(ipAddressCollectionDisabled: false)
+    Adapty.Configuration
+        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(observerMode: false)
+        .with(customerUserId: "YOUR_USER_ID")
+        .with(idfaCollectionDisabled: false)
+        .with(ipAddressCollectionDisabled: false)
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
@@ -65,7 +68,9 @@ Adapty.activate(with: configurationBuilder) { error in
 // Only if you are going to use AdaptyUI
 AdaptyUI.activate()
 ```
-```swift title="SwiftUI"
+</TabItem>
+<TabItem value="kotlin" label="SwiftUI" default>
+```swift title=""
 import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
 
@@ -83,9 +88,9 @@ struct SampleApp: App {
         Adapty.activate(with: configurationBuilder) { error in
           // handle the error
         }
-			  
-  			// Only if you are going to use AdaptyUI
-				AdaptyUI.activate()
+              
+            // Only if you are going to use AdaptyUI
+                AdaptyUI.activate()
     }
 
     var body: some Scene {
@@ -95,6 +100,8 @@ struct SampleApp: App {
     }
 }
 ```
+</TabItem>
+</Tabs>
 
 ## Migrate your paywalls to new Paywall Builder
 
