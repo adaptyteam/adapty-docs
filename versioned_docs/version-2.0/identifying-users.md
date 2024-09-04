@@ -24,11 +24,12 @@ Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USE
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```javaAdapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
+```java
+Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
 ```
 </TabItem>
 <TabItem value="ReactNative" label="React Native (TS)" default>
-```typescript title="React Native (TS)"
+```typescript 
 adapty.activate("PUBLIC_SDK_KEY", {
     customerUserId: "YOUR_USER_ID"
 });
@@ -62,7 +63,7 @@ Adapty.identify("YOUR_USER_ID") { error ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java title="Java"
+```java 
 Adapty.identify("YOUR_USER_ID", error -> {
     if (error == null) {
         // successful identify
@@ -90,7 +91,7 @@ Adapty.Identify("YOUR_USER_ID", (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript title="React Native (TS)"
+```typescript 
 try {
     await adapty.identify("YOUR_USER_ID");
     // successfully identified

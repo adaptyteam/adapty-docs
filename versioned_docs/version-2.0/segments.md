@@ -81,7 +81,7 @@ Please note that these attributes are predefined and cannot be modified, except 
 To create even more targeted segments, you can also create custom attributes. Custom attributes allow you to create user groups based on properties that are specific to your app or business.
 
 :::note
-To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#limit) to learn how to set them up.
+To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#limits) to learn how to set them up.
 :::
 
 :::warning
