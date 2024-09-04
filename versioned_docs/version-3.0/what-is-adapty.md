@@ -10,7 +10,7 @@ Adapty is a powerful and adaptable in-app purchase platform that helps you grow 
 ### Marketing automation and testing
 
 - Subscriptions/in-app purchases SDK for [iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative) and [Unity](sdk-installation-unity). Adapty performs server-side receipt validation for you and syncs your customers across all platforms, including [web](getting-started-with-server-side-api). It also works in [Observer mode](observer-vs-full-mode), so you can use SDK without changing your existing purchase infrastructure.
-- [A/B testing](ab-test) for subscription plans. Test different prices, durations, trial periods for your subscriptions as well as different visual elements.
+- [A/B testing](ab-tests) for subscription plans. Test different prices, durations, trial periods for your subscriptions as well as different visual elements.
 - [Analytics](analytics-charts) for the app economy. Detailed metrics related to your app monetization.
 - Adapty can send [subscription events](events) to 3rd party analytics: [Amplitude](amplitude), [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Mixpanel](mixpanel), [Facebook Ads](facebook-ads), [AppMetrica](appmetrica), and custom [Webhook](webhook).
 

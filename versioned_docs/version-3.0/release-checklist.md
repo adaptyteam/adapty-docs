@@ -10,7 +10,7 @@ We’re thrilled you’ve decided to use Adapty! We want you to get the best res
 
 ### Installing Adapty SDK
 
-Install Adapty SDK in your app and be sure you have replaced the** "PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
+Install Adapty SDK in your app and be sure you have replaced the **"PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 

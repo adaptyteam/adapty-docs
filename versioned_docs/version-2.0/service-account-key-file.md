@@ -275,8 +275,7 @@ Google Play Store credentials are used for server-side purchase verification, wi
 
 
 
-3. Grant **View app information and download bulk reports (read-only)**, **  
-   View financial data, orders, and cancellation survey responses**, **Manage orders and subscriptions** and **Manage store presence** permissions and create the user by clicking **Invite user**. You can grant permissions to the whole account or to one/several applications.
+3. Grant **View app information and download bulk reports (read-only)**, **View financial data, orders, and cancellation survey responses**, **Manage orders and subscriptions** and **Manage store presence** permissions and create the user by clicking **Invite user**. You can grant permissions to the whole account or to one/several applications.
 
 
 <img

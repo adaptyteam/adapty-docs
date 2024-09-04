@@ -67,7 +67,7 @@ Adapty supports both **Version 1** and **Version 2** Notifications. You can choo
 
 
 
-Please note that to use **Version 2 **Notifications, it is necessary to configure the In-App Purchase API details as described in [the documentation.](in-app-purchase-api-storekit-2) This step is essential for ensuring that Version 2 Notifications work correctly.
+Please note that to use **Version 2** Notifications, it is necessary to configure the In-App Purchase API details as described in [the documentation.](in-app-purchase-api-storekit-2) This step is essential for ensuring that Version 2 Notifications work correctly.
 
 ## Raw events forwarding
 
