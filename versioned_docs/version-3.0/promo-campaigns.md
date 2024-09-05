@@ -7,7 +7,7 @@ metadataTitle: ""
 Promo Campaigns designed for upselling in your app. Send promo offers with automated campaigns in push notifications. To start:
 
 - Create a [segment](segments) or use predefined one
-- Target a deal with an [A/B Test](ab-test) 
+- Target a deal with an [A/B Test](ab-tests) 
 - Set a trigger for sending a push
 
 :::note

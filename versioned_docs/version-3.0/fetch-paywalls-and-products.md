@@ -17,7 +17,7 @@ Before showcasing remote config and custom paywalls, you need to fetch the infor
 
 3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
 
-4. [Install Adapty SDK](installation) in your mobile app.
+4. [Install Adapty SDK](installation-of-adapty-sdks) in your mobile app.
 </details>
 
 ## Fetch paywall information

@@ -3,6 +3,8 @@ title: "Migration from Glassfy"
 description: ""
 metadataTitle: ""
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 _Glassfy services will be ending in December 2024_. We worked with them to make the transition as easy as possible for you. This guide will help you migrate your subscribers to Adapty in less than a day. Most importantly, the migration will be 100% seamless for your customers; they will continue using the app without interruptions.
 
@@ -30,7 +32,7 @@ When you migrate from Glassfy to Adapty, you can use all our features, including
 Here are the 3 easy steps to migrate your app from Glassfy to Adapty:
 
 1. Learn the core differences (very few of them) and set up an Adapty account _(15 minutes)_;
-2. Install Adapty SDK for your platform ([iOS](ios-installation), [Android](android-installation), [React Native](react-native-installation), [Flutter](flutter-installation), [Unity](unity-installation))  _(1 hour)_;
+2. Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity))  _(1 hour)_;
 3. Test and release the new version of your app _(30 minutes)._
 
 :::info
@@ -147,13 +149,14 @@ Well done, now you can integrate Adapty SDK into your app!
 
 ### Install Adapty SDK to replace Glassfy SDK
 
-Install Adapty SDK for your platform ([iOS](ios-installation), [Android](android-installation), [React Native](react-native-installation), [Flutter](flutter-installation), [Unity](unity-installation)).
+Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)).
 
 #### SDK activation
 
 **Glassfy**
-
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
   Glassfy.initialize(apiKey: "YOUR_API_KEY", watcherMode: false)
@@ -165,7 +168,9 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
@@ -174,7 +179,9 @@ class App : Application() {
   }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 public class App extends Application {
   @Override
   public void onCreate() {
@@ -183,16 +190,9 @@ public class App extends Application {
   }
 }
 ```
-```typescript title="React Native (TS)"
-try {
-
-  await Glassfy.initialize('YOU_API_KEY', false);
-
-} catch (e) {
-  // initialization error
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
 
   await Glassfy.initialize('YOU_API_KEY',watcherMode: false);
@@ -202,10 +202,25 @@ try {
   [...]
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+
+  await Glassfy.initialize('YOU_API_KEY', false);
+
+} catch (e) {
+  // initialization error
+}
+```
+</TabItem>
+</Tabs>
 
 **Adapty**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
   
   let configurationBuilder =
@@ -213,51 +228,63 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
       .Builder(withAPIKey: "PUBLIC_SDK_KEY")
       .with(customerUserId: "YOUR_USER_ID") // optionally add your internal user id
 
-	Adapty.activate(with: configurationBuilder) { error in
-  	// handle the error
-	}
+    Adapty.activate(with: configurationBuilder) { error in
+    // handle the error
+    }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
       applicationContext,
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    	  .withCustomerUserId(customerUserId) // optionally add your internal user id
-    	  .build()
+          .withCustomerUserId(customerUserId) // optionally add your internal user id
+          .build()
     ) 
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 @Override
 public void onCreate() {
     super.onCreate();
     Adapty.activate(
       applicationContext,
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    	  .withCustomerUserId(customerUserId) // optionally add your internal user id
-    	  .build()
+          .withCustomerUserId(customerUserId) // optionally add your internal user id
+          .build()
     );
 }
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
+try {
+    Adapty().activate();
+} on AdaptyError catch (adaptyError) {}
+} catch (e) {}
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 adapty.activate('PUBLIC_SDK_KEY', {
   customerUserId: 'YOUR_USER_ID', // optionally add your internal user id
 });
 ```
-```javascript title="Flutter"
-try {
-	Adapty().activate();
-} on AdaptyError catch (adaptyError) {}
-} catch (e) {}
-```
+</TabItem>
+</Tabs>
 
 #### Fetch offerings (paywalls)
 
 **Glassfy**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Glassfy.offerings { (offerings, err) in
     if let offering = offerings?["premium"] {
         // display your offering's skus
@@ -270,7 +297,9 @@ Glassfy.offerings { (offerings, err) in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Glassfy.offerings() { offers, err ->
     offers?.all
         ?.firstOrNull { it.offeringId == "premium" }
@@ -285,7 +314,9 @@ Glassfy.offerings() { offers, err ->
         }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Glassfy.offerings(new OfferingsCallback() {
     @Override
     public void onResult(@Nullable Offerings offers, @Nullable GlassfyError err) {
@@ -309,20 +340,9 @@ Glassfy.offerings(new OfferingsCallback() {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-    let offering = Glassfy.offerings().all.find((o) => o.offeringId === 'premium');
-
-    offering?.skus.forEach((sku) => {
-      // sku.extravars
-      // sku.product.description;
-      // sku.product.price
-    });
-} catch (e) {
-  [...]
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
     var offerings = await Glassfy.offerings();
     var offering = offerings.all
@@ -337,21 +357,42 @@ try {
   [...]
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    let offering = Glassfy.offerings().all.find((o) => o.offeringId === 'premium');
+
+    offering?.skus.forEach((sku) => {
+      // sku.extravars
+      // sku.product.description;
+      // sku.product.price
+    });
+} catch (e) {
+  [...]
+}
+```
+</TabItem>
+</Tabs>
 
 **Adapty**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
             // the requested paywall
-      			// call getPaywallProducts here
+                // call getPaywallProducts here
         case let .failure(error):
             // handle the error
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -366,7 +407,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -380,19 +423,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-	const id = 'YOUR_PLACEMENT_ID';
-	const locale = 'en';
-
-	const paywall = await adapty.getPaywall(id, locale);
-  // the requested paywall
-  // call getPaywallProducts here
-} catch (error) {
-	// handle the error
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -402,8 +435,26 @@ try {
 } catch (e) {
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-```swift title="Swift"
+    const paywall = await adapty.getPaywall(id, locale);
+  // the requested paywall
+  // call getPaywallProducts here
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -420,13 +471,15 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             val products = result.value
             // the requested products
-          	for (product in products) {
+            for (product in products) {
                 // product.localizedTitle
                 // product.localizedDescription
                 // product.localizedPrice
@@ -441,12 +494,14 @@ Adapty.getPaywallProducts(paywall) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getPaywallProducts(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
         // the requested products
-      	for (AdaptyPaywallProduct product: products) {
+        for (AdaptyPaywallProduct product: products) {
             // product.localizedTitle
             // product.localizedDescription
             // product.localizedPrice
@@ -461,16 +516,9 @@ Adapty.getPaywallProducts(paywall, result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-	// ...paywall
-	const products = await adapty.getPaywallProducts(paywall);
-  // the requested products list
-} catch (error) {
-	// handle the error
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -486,6 +534,20 @@ try {
 } catch (e) {
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    // ...paywall
+    const products = await adapty.getPaywallProducts(paywall);
+  // the requested products list
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
 
 In Adapty, you always request the paywall via [placement id](placements). If you want to see conversions, learn how [to log paywall views](present-remote-config-paywalls#track-paywall-view-events).
 
@@ -493,7 +555,9 @@ In Adapty, you always request the paywall via [placement id](placements). If you
 
 **Glassfy**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Glassfy.permissions { permissions, err in
     guard let permissions = permissions else { return }
     for p in permissions.all {
@@ -510,7 +574,9 @@ Glassfy.permissions { permissions, err in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Glassfy.permissions { permission, err ->
     // update app status accordingly
     permission?.all?.forEach {
@@ -524,7 +590,9 @@ Glassfy.permissions { permission, err ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Glassfy.permissions(new PermissionsCallback() {
     @Override
     public void onResult(@Nullable Permissions permission, @Nullable GlassfyError error) {
@@ -545,7 +613,24 @@ Glassfy.permissions(new PermissionsCallback() {
     }
 });
 ```
-```typescript title="React Native (TS)"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
+try {
+var permission = await Glassfy.permissions();
+      permission.all?.forEach((p)=> {
+        if (p.permissionId == "premium" && p.isValid==true) {
+          // unlock aFeature
+        }
+      });
+} catch (e) {
+  // initialization error
+  [...]
+}
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
 try {
     const permissions = await Glassfy.permissions();
     permissions.all.forEach((p)=>{
@@ -566,33 +651,24 @@ try {
   [...]
 }
 ```
-```javascript title="Flutter"
-try {
-var permission = await Glassfy.permissions();
-      permission.all?.forEach((p)=> {
-        if (p.permissionId == "premium" && p.isValid==true) {
-          // unlock aFeature
-        }
-      });
-} catch (e) {
-  // initialization error
-  [...]
-}
-```
+</TabItem>
+</Tabs>
 
-**Adapty**
-
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
-      	profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        	// grant access to premium features
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
         }
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -606,7 +682,9 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -618,14 +696,9 @@ Adapty.getProfile(result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-	const profile = await adapty.getProfile();
-} catch (error) {
-  // handle the error
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().getProfile();
   // check the access
@@ -634,12 +707,26 @@ try {
 } catch (e) {
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+</Tabs>
+**Adapty**
 
 #### Make a purchase
 
 **Glassfy**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Glassfy.purchase(sku: premiumSku) { (transaction, e) in
     // update app status accondingly
     if let p = transaction?.permissions["aPermission"] {
@@ -651,7 +738,9 @@ Glassfy.purchase(sku: premiumSku) { (transaction, e) in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Glassfy.purchase(activity, sku) { transaction, err ->
     // update app status accordingly
     transaction?.permissions
@@ -666,7 +755,9 @@ Glassfy.purchase(activity, sku) { transaction, err ->
         }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Glassfy.purchase(activity, sku, new PurchaseCallback() {
     @Override
     public void onResult(@Nullable Transaction t, @Nullable GlassfyError err) {
@@ -689,19 +780,9 @@ Glassfy.purchase(activity, sku, new PurchaseCallback() {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-    const transaction = await Glassfy.purchaseSku(premiumSku );
-    const permission = transaction.permissions.all.find((p) => p.permissionId === "aPermission");
-    if (permission && permission.isValid) {
-        // unlock aFeature
-    }
-} catch (e) {
-  // initialization error
-  [...]
-}
-```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
     var transaction = await Glassfy.purchaseSku(sku);
 
@@ -717,10 +798,28 @@ try {
   [...]
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    const transaction = await Glassfy.purchaseSku(premiumSku );
+    const permission = transaction.permissions.all.find((p) => p.permissionId === "aPermission");
+    if (permission && permission.isValid) {
+        // unlock aFeature
+    }
+} catch (e) {
+  // initialization error
+  [...]
+}
+```
+</TabItem>
+</Tabs>
 
 **Adapty**
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -732,7 +831,9 @@ Adapty.makePurchase(product: product) { result in
     }
 }
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -751,17 +852,19 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
         //NOTE: info is null in case of cross-grade with DEFERRED proration mode
         AdaptyProfile profile = info != null ? info.getProfile() : null;
         
-      	if (profile != null) {
+        if (profile != null) {
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
             
-          	if (premium != null && premium.isActive()) {
+            if (premium != null && premium.isActive()) {
                 // successful purchase
             }
         }
@@ -771,29 +874,37 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-```typescript title="React Native (TS)"
-try {
-	const profile = await adapty.makePurchase(product);
-  const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
-  
-	if (isSubscribed) {
-		// grant access to features in accordance with access level
-	}
-} catch (error) {
-	// handle the error
-}
-```
-```javascript title="Flutter"
+
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
-		// successful purchase      
+        // successful purchase      
   }
 } on AdaptyError catch (adaptyError) {
-	// handle the error
+    // handle the error
 } catch (e) {
 }
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+try {
+    const profile = await adapty.makePurchase(product);
+  const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+  
+    if (isSubscribed) {
+        // grant access to features in accordance with access level
+    }
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
 
 ### Test and release a new version of your app
 

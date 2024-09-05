@@ -19,7 +19,7 @@ This topic describes the flow only for **Remote Config paywalls**. Displaying an
    1. [Create your products in the Adapty dashboard](create-product).
 2. [Create a paywall in the Adapty Dashboard and incorporate the products into your paywall](create-paywall).
 3. [Create placements and incorporate your paywall into the placement](create-placement).
-4. [Install Adapty SDK](installation) in your mobile app.
+4. [Install Adapty SDK](installation-of-adapty-sdks) in your mobile app.
 </details>
 
 ## How to display and process paywalls designed by the remote config

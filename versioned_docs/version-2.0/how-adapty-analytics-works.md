@@ -8,7 +8,7 @@ Adapty Analytics offers a powerful suite of tools that provide valuable insights
 
 To learn more about specific metrics and advanced analytics features, please refer to the relevant sections in the documentation menu.
 
-To get started with Adapty analytics, simply [install](installation) the Adapty SDK for your iOS or Android apps. From there, you can analyze close to real-time metrics with [advanced controls](controls-filters-grouping-compare-proceeds), such as filters and grouping, including country, paywall, product, and more. By utilizing this powerful tool, you can gain a deeper understanding of your user base and make data-driven decisions to optimize your app's performance.
+To get started with Adapty analytics, simply [install](installation-of-adapty-sdks) the Adapty SDK for your iOS or Android apps. From there, you can analyze close to real-time metrics with [advanced controls](controls-filters-grouping-compare-proceeds), such as filters and grouping, including country, paywall, product, and more. By utilizing this powerful tool, you can gain a deeper understanding of your user base and make data-driven decisions to optimize your app's performance.
 
 ### Close to real-time data for advanced analysis
 
