@@ -8,7 +8,7 @@ metadataTitle: "Amazon S3 Integration for Exporting Adapty Events and Paywall Vi
 
 Amazon S3 is used for a variety of purposes, including data storage, backup and archiving, content storage and delivery, big data analytics, and disaster recovery.
 
-With Amazon S3 integrated, you can:
+With Amazon S3 integrated, you can do this:
 
 1. Export Adapty events and paywall views to Amazon S3 bucket as CSV files.
 2. Use the exported data for a wide range of purposes, including detailed analytics, predictions, or behavior analysis.
