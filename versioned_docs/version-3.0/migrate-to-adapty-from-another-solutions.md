@@ -20,7 +20,7 @@ All users who have ever activated subscription will move as soon as they open a 
 
 ### Installing Adapty SDK
 
-Install Adapty SDK for your platform ([iOS](ios-installation), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app and replace your legacy logic with appropriate methods from Adapty SDK. Core things you need to replace:
+Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app and replace your legacy logic with appropriate methods from Adapty SDK. Core things you need to replace:
 
 - Checking an [Access level](access-level) to open a gated content;
 - Making a purchase;

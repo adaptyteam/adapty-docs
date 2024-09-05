@@ -44,7 +44,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
   src={require('./img/2406d97-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
+    width: '300px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -56,7 +56,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 ### Install Adapty SDK and replace RevenueCat SDK
 
-IInstall Adapty SDK for your platform ([iOS](ios-installation), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
+IInstall Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
 
 You need to replace a couple of SDK methods on the app side. Let's look at the most common functions and how to replace them with Adapty SDK.
 
