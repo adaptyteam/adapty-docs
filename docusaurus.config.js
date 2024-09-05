@@ -311,17 +311,17 @@ const config = {
         copyright: `© ${new Date().getFullYear()} Adapty Tech Inc.`,
       },
 
-      /*
+      
       algolia: {
       // The application ID provided by Algolia
-      appId: 'YOUR_APP_ID',
+      appId: 'IPH9RRTSQS',
 
       // Public API key: it is safe to commit it
-      apiKey: 'YOUR_SEARCH_API_KEY',
+      apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
 
-      indexName: 'YOUR_INDEX_NAME',
+      indexName: 'adapty',
       },
-      */
+      
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
