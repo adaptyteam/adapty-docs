@@ -3,6 +3,7 @@ title: "Display paywalls designed with Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
+import Details from '@site/src/components/Details';
 
 With Adapty, you have the flexibility to configure paywalls remotely, defining the products to display in your app. This streamlined process eliminates the need to hardcode your products.
 

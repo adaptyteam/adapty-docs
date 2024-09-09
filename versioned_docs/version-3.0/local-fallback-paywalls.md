@@ -3,6 +3,7 @@ title: "Download fallback paywalls"
 description: "Explore how fallback paywalls ensure uninterrupted in-app purchases, even without an internet connection. Learn how Adapty's innovative solutions empower developers to define fallback paywalls for a seamless user experience."
 metadataTitle: "Fallback Paywalls: Ensuring Seamless In-App Purchases | Adapty"
 ---
+import Details from '@site/src/components/Details';
 
 A paywall is an in-app storefront where customers can see and purchase products within your mobile app. Typically, paywalls are fetched from the server when a customer accesses them. 
 

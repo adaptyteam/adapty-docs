@@ -5,6 +5,7 @@ metadataTitle: "Optimize Paywalls with Flexible Configuration using Paywall Remo
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 
 The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
 

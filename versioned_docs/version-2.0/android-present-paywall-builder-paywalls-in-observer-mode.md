@@ -3,6 +3,7 @@ title: "Android - Present Paywall Builder paywalls in Observer mode"
 description: ""
 metadataTitle: ""
 ---
+import Details from '@site/src/components/Details';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 

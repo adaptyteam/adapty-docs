@@ -5,6 +5,7 @@ metadataTitle: ""
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 
 With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 

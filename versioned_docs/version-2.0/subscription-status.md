@@ -5,6 +5,7 @@ metadataTitle: "Check Subscription Status with AdaptyProfile Access Levels"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 
 Adapty makes it easy to track subscription status without needing to manually input product IDs into your code. Instead, you can simply check for an active [access level](access-level) to confirm a user's subscription status.
 

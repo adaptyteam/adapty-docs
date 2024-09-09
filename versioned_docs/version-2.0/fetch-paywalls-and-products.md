@@ -5,6 +5,7 @@ metadataTitle: "Learn how to fetch paywalls and products for remote config paywa
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 
 Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
 

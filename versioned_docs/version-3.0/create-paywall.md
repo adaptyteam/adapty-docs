@@ -3,6 +3,7 @@ title: "Create paywall"
 description: ""
 metadataTitle: ""
 ---
+import Details from '@site/src/components/Details';
 
 A [paywall](paywalls) serves as an in-app storefront where customers can browse products and make purchases.
 

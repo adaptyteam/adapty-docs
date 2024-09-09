@@ -5,6 +5,7 @@ metadataTitle: "Learn how to fetch paywalls and products for remote config paywa
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 
 After [you designed the visual part for your paywall](adapty-paywall-builder-legacy) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 

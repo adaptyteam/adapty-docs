@@ -3,6 +3,7 @@ title: "iOS - Present Paywall Builder paywalls in Observer mode"
 description: ""
 metadataTitle: ""
 ---
+import Details from '@site/src/components/Details';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
