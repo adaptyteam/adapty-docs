@@ -7,7 +7,7 @@ export default function SupportLink() {
       <button
         className="support__button support__button--feedback"
         onClick={() =>
-          (window.location.href = "https://docs.adapty.io/discuss")
+          (window.location.href = "https://ask.adapty.io/documentation-feedback")
         }
       >
         <svg
