@@ -348,6 +348,13 @@ const config = {
         hideable: false,
       },
     }),
+
+     scripts: [
+    {
+      src: 'https://survey.survicate.com/workspaces/af55d3f51f8189593de1c948b75c88f6/web_surveys.js',
+      async: true,
+    },
+  ],
 };
 
 export default config;
