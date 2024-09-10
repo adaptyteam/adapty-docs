@@ -4,11 +4,14 @@ description: "Learn how to use webhooks to get instant notifications about subsc
 metadataTitle: "Understanding Webhooks: Real-Time Notifications for Subscription Events"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A webhook is a convenient and fast way to get notifications about [events](events). For example, if a new trial is started, a subscription is renewed, or a billing issue happens. The webhook mechanism works through a callback function. You set up a URL (called Endpoint URL) to which an HTTP request is sent when an event occurs. 
 
 
-<img
-  src={require('./img/e5dce30-image_3.png').default}
+<Zoom>
+  <img src={require('./img/e5dce30-image_3.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ A webhook is a convenient and fast way to get notifications about [events](event
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

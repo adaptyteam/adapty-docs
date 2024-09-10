@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 After installing the Adapty SDK and releasing your app, you can access your users and subscribers in the [Profiles](profiles-crm) section. But what if you have legacy infrastructure and need to migrate to Adapty, or simply want to see your existing data in Adapty?
 
 :::note

@@ -4,13 +4,16 @@ description: "Learn how to use Google Play and App Store offers to attract and k
 metadataTitle: "How to create offers in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty allows you to offer discounted pricing to existing or churned subscribers. To use this feature, you need to first [create the offer in App Store Connect](app-store-offers) and/or [create the offer in Play Console](google-play-offers). Once you have the offer ready in the app stores, you can easily add it to Adapty:
 
 1. Open the [**Paywalls and Products**](https://app.adapty.io/products) section from the Adapty main menu, then select the **Products** tab.
 
    
-<img
-  src={require('./img/6b9e928-edit_product.png').default}
+<Zoom>
+  <img src={require('./img/6b9e928-edit_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -25,8 +29,8 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
 3. In the opened **Edit product** window, click the **Add Offer** button below the **Offers** title.  
 
    
-<img
-  src={require('./img/b0e04fe-add_offer.png').default}
+<Zoom>
+  <img src={require('./img/b0e04fe-add_offer.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,6 +38,7 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

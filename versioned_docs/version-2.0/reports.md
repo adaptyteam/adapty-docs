@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Receive timely and relevant information straight to your inbox, including revenue, churn rate, active subscribers, active trials, and more – the same metrics available in  [Charts](analytics-charts). These reports can arrive on a daily, weekly or monthly basis and show dynamics comparing the most recent period to the one that came before it.
 
 The data we send in the reports is based on what you have configured your [**Overview**](https://app.adapty.io/overview) page meaning metrics, their order, reporting timezone and revenue type.
@@ -20,8 +23,8 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Under the **Email reports** section, choose the types of reports you wish to receive – daily, weekly, and/or monthly.
 
 
-<img
-  src={require('./img/bf5cdab-email_reports.png').default}
+<Zoom>
+  <img src={require('./img/bf5cdab-email_reports.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,6 +32,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -37,8 +41,8 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Customize each report type by selecting the relevant apps. For this, click the **Edit** button.
 
    
-<img
-  src={require('./img/ebe22ac-email_reports_apps.png').default}
+<Zoom>
+  <img src={require('./img/ebe22ac-email_reports_apps.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +50,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -58,8 +63,8 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 2. Click the **Edit** button and choose your time zone.
 
    
-<img
-  src={require('./img/59ad3d8-time_zone.png').default}
+<Zoom>
+  <img src={require('./img/59ad3d8-time_zone.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +72,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

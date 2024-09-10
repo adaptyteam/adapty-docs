@@ -4,6 +4,9 @@ description: "The document outlines a migration plan for switching from RevenueC
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Your migration plan will have 5 logical steps and take an average of 2 hours. 90% of all migrations take less than one working day.
 
 1. Learn the core differences; create and prepare an Adapty account _(5 minutes)_;
@@ -40,8 +43,8 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 - General (you show it in settings or inside the app after the onboarding).
 
 
-<img
-  src={require('./img/2406d97-image.png').default}
+<Zoom>
+  <img src={require('./img/2406d97-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '300px', /* image width */
@@ -49,6 +52,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -144,8 +148,8 @@ You should wait for at least a week after the release with the SDK before doing 
 Ask RevenueCat about the historical data on their [support page](https://app.revenuecat.com/settings/support). For the file format reference, check this page: [Importing Historical Data to Adapty](importing-historical-data-to-adapty). Also, you can use this [Google Sheets file](https://docs.google.com/spreadsheets/d/162LMI9D7-BP63Jkllj2AtpaD7FQFa0-V-Yht1U65Ojs/edit#gid=70701724).
 
 
-<img
-  src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png').default}
+<Zoom>
+  <img src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -153,6 +157,7 @@ Ask RevenueCat about the historical data on their [support page](https://app.rev
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

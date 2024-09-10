@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The product list is a key element of your paywall, showcasing your offerings and products in an organized, attractive manner. This list is crucial in guiding users towards making a purchase. Let’s explore how to configure and enhance the product list to maximize its effectiveness.
 
 The **Content** tab contains the products that will be displayed in the paywall. Those are absolutely the same products, you've added to the paywall when created it. You can adjust the list of products, and this will affect the list of products in the **General** tab of the paywall.
@@ -23,8 +26,8 @@ Enhancing the visual appeal of specific products can significantly rebalance use
 A product badge is a small label that can be added to a product. This badge can provide additional promotional info  and direct users choice. The badge size automatically adjusts to fit the text, and its position is optimized for your paywall layout.
 
 
-<img
-  src={require('./img/eedb135-PB_product_badge.png').default}
+<Zoom>
+  <img src={require('./img/eedb135-PB_product_badge.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -32,6 +35,7 @@ A product badge is a small label that can be added to a product. This badge can 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -42,8 +46,8 @@ To add a product badge:
 1. Turn on the **Product badge** toggle in the setting of a specific product.
 
 
-<img
-  src={require('./img/2a5779d-PB_product_badge_config.png').default}
+<Zoom>
+  <img src={require('./img/2a5779d-PB_product_badge_config.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,6 +55,7 @@ To add a product badge:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +68,8 @@ To add a product badge:
 For the **Products as list + purchase button** purchase flow, you can **preselect** a product to gently nudge users towards it. This can be especially effective in directing user choice.
 
 
-<img
-  src={require('./img/3f37969-PB_preselected_product.png').default}
+<Zoom>
+  <img src={require('./img/3f37969-PB_preselected_product.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -72,6 +77,7 @@ For the **Products as list + purchase button** purchase flow, you can **preselec
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -82,8 +88,8 @@ To preselect a product:
 1. Open the **Products** element.
 
 
-<img
-  src={require('./img/da4e4c4-PB_preselect_product.png').default}
+<Zoom>
+  <img src={require('./img/da4e4c4-PB_preselect_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -91,6 +97,7 @@ To preselect a product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -100,8 +107,8 @@ To preselect a product:
 3. Adjust the view of the selected product as well as the default view of other products in the **Style** tab if necessary.
 
 
-<img
-  src={require('./img/ac7411e-PB_setup_selected_default_button.png').default}
+<Zoom>
+  <img src={require('./img/ac7411e-PB_setup_selected_default_button.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -109,6 +116,7 @@ To preselect a product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -119,8 +127,8 @@ To preselect a product:
 For the **Products as purchase buttons** purchase flow, you can **highlight** a preferred product to make it the primary choice, drawing immediate user attention..
 
 
-<img
-  src={require('./img/afc2882-PB_highlighted_product.png').default}
+<Zoom>
+  <img src={require('./img/afc2882-PB_highlighted_product.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -128,6 +136,7 @@ For the **Products as purchase buttons** purchase flow, you can **highlight** a 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -138,8 +147,8 @@ To highlight a product:
 1. In the left pane, choose the product you want  to highlight.
 
 
-<img
-  src={require('./img/a630507-PB_highlight_product.png').default}
+<Zoom>
+  <img src={require('./img/a630507-PB_highlight_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -147,6 +156,7 @@ To highlight a product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -159,8 +169,8 @@ To highlight a product:
 Each product can feature different text for offers in the **Text** subsection. The **Default** tab contains the text displayed without an offer. This is the perfect place to use [tag variables](paywall-builder-tag-variables) or [custom tags](custom-tags-in-paywall-builder) for dynamic, localized content. Start typing with a triangle bracket, and Adapty will suggest available tag variables to insert localized data from the stores
 
 
-<img
-  src={require('./img/0de6871-PB_text.png').default}
+<Zoom>
+  <img src={require('./img/0de6871-PB_text.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -168,6 +178,7 @@ Each product can feature different text for offers in the **Text** subsection. T
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -182,8 +193,8 @@ To add a toggle:
 1. In the **Products** element, change the **Products grouping** option to **Toggle (for free trials and other offers)**. This will add two subsections: **Toggle on** and **Toggle off**.
 
 
-<img
-  src={require('./img/d859a58-PB_turn_on_toggle.png').default}
+<Zoom>
+  <img src={require('./img/d859a58-PB_turn_on_toggle.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -191,6 +202,7 @@ To add a toggle:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -200,8 +212,8 @@ To add a toggle:
 3. In the **Toggle** element, define whether the toggle should be on or off by default in the paywall by the **Default state** toggle.
 
 
-<img
-  src={require('./img/4127a67-PB_toggle_default_state.png').default}
+<Zoom>
+  <img src={require('./img/4127a67-PB_toggle_default_state.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -209,6 +221,7 @@ To add a toggle:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

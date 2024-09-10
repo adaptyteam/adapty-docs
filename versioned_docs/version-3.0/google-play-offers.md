@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 With Billing Library v5, Google introduced a new way of working with offers. It gives you much more flexibility, but it's important to configure them properly. After reading this short guide from Adapty, you'll have a full understanding of Google Play Offers.
 
 :::note
@@ -19,8 +22,8 @@ Checklist to successfully use Google Play offers
 ## Overview
 
 
-<img
-  src={require('./img/04aca48-sub-offers.jpeg').default}
+<Zoom>
+  <img src={require('./img/04aca48-sub-offers.jpeg').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,6 +31,7 @@ Checklist to successfully use Google Play offers
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -40,8 +44,8 @@ Now you can create multiple offers for every base plan (previously known as subs
 ## Configuring offers in Google Play
 
 
-<img
-  src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.png').default}
+<Zoom>
+  <img src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +53,7 @@ Now you can create multiple offers for every base plan (previously known as subs
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +64,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 1. To create an offer, click **Add offer** and choose the base plan from the list.
 
    
-<img
-  src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
+<Zoom>
+  <img src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +73,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -75,8 +81,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 2. Enter the offer ID. It will be later used in the analytics and Adapty dashboard, so give it a meaningful name.
 
    
-<img
-  src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
+<Zoom>
+  <img src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,6 +90,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -95,8 +102,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    3. **Developer determined**: you can control who can use this offer from the app code. Be cautious using it in production to avoid possible fraud: customers can activate a free or discounted subscription over and over again. A good use case for this offer type is winning back churned subscribers.
 
    
-<img
-  src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
+<Zoom>
+  <img src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,6 +111,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -116,8 +124,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
       An offer can have two phases. In this case, the first phase must be a Free trial, and the second one is either a Single payment or a Discounted recurring payment. They would be applied in this order.
 
    
-<img
-  src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
+<Zoom>
+  <img src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -125,6 +133,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -132,8 +141,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 5. Activate the offer to use it in the app.
 
    
-<img
-  src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
+<Zoom>
+  <img src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -141,6 +150,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -148,8 +158,8 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 After activating the offer, you should copy its ID to use in Adapty.
 
 
-<img
-  src={require('./img/0800923-001938-November-03-ANtSI48t.png').default}
+<Zoom>
+  <img src={require('./img/0800923-001938-November-03-ANtSI48t.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -157,6 +167,7 @@ After activating the offer, you should copy its ID to use in Adapty.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -169,8 +180,8 @@ The `1-month` plan has three offers: `free-trial-1-week` (1), `free-trial-3-days
 Let's create a 1-month product in Adapty with all the offers. You can do it from a single screen.
 
 
-<img
-  src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.png').default}
+<Zoom>
+  <img src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -178,6 +189,7 @@ Let's create a 1-month product in Adapty with all the offers. You can do it from
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -197,8 +209,8 @@ When creating a paywall or editing a draft of the paywall, choose the offer from
 If you configure a paywall like this, a monthly subscription will not have a free trial. A yearly subscription will have a 1-week trial if the customer is eligible.
 
 
-<img
-  src={require('./img/3f2c59f-001942-November-03-9iARsVaa.png').default}
+<Zoom>
+  <img src={require('./img/3f2c59f-001942-November-03-9iARsVaa.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -206,6 +218,7 @@ If you configure a paywall like this, a monthly subscription will not have a fre
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

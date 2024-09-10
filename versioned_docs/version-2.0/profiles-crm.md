@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Profiles is a CRM for your users. With Profiles, you can:
 
 1. Find a user with any ID you have including email and phone number.
@@ -12,8 +15,8 @@ Profiles is a CRM for your users. With Profiles, you can:
 4. Grant the user a subscription.
 
 
-<img
-  src={require('./img/profiles.png').default}
+<Zoom>
+  <img src={require('./img/profiles.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -21,6 +24,7 @@ Profiles is a CRM for your users. With Profiles, you can:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -44,8 +48,8 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
 ## User properties
 
 
-<img
-  src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
+<Zoom>
+  <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,6 +57,7 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -80,8 +85,8 @@ After installing SDK, Adapty automatically collects user events from the payment
 You can see custom attributes that were set either from SDK or manually assign them to the user using the Add attribute button in the Attributes section on the profile page.
 
 
-<img
-  src={require('./img/c8b3db7-add_attribute.png').default}
+<Zoom>
+  <img src={require('./img/c8b3db7-add_attribute.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -89,6 +94,7 @@ You can see custom attributes that were set either from SDK or manually assign t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -99,8 +105,8 @@ You can see custom attributes that were set either from SDK or manually assign t
 In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access. 
 
 
-<img
-  src={require('./img/image20283029.png').default}
+<Zoom>
+  <img src={require('./img/image20283029.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -108,6 +114,7 @@ In a profile, you can find an active subscription. At any time you can prolong t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -140,8 +147,8 @@ A new profile record that generates a subsequent transaction, called a "non-orig
 Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
 
 
-<img
-  src={require('./img/98d0dad-non-original_profile.png').default}
+<Zoom>
+  <img src={require('./img/98d0dad-non-original_profile.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -149,5 +156,6 @@ Here is an example of a non-original profile. Notice the absence of events in th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

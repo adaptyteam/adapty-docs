@@ -4,6 +4,9 @@ description: "Learn how to prepare for purchase testing using TestFlight, ensuri
 metadataTitle: "Testing Purchases with TestFlight: A Step-by-Step Guide"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 TestFlight lets you get feedback from members of your team. Testing is done on real devices, and the testers will need to use their real Apple accounts. Please note that TestFlight uses the sandbox environment for in-app purchases. Transactions and purchases don’t incur charges in this case.  
 Testing with TestFlight on a sandbox environment is the best choice when you want to let your team members test your app. For more details, you can refer to [Apple's documentation on Beta testing with TestFlight](https://developer.apple.com/testflight/).
 

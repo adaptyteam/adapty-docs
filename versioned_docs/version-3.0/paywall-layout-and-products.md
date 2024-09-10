@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 After selecting a template for your paywall in Adapty's Paywall Builder, you can customize the paywall's visual appearance to match your brand's style. The Layout settings provide a variety of controls for adjusting the layout, background, and overall look of the paywall. Let's explore these settings: The layout settings control the basic aspects of the paywall, including the template, background color, default fonts, purchase flow, and top buttons.
 
 ## Purchase flow
@@ -13,8 +16,8 @@ Decide how users will complete purchases. There are two options:
 - **Products as list + purchase button**: Users select products first, then click the buy button to start the purchase.
 
   
-<img
-  src={require('./img/a816501-PB_products_list.png').default}
+<Zoom>
+  <img src={require('./img/a816501-PB_products_list.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -22,14 +25,15 @@ Decide how users will complete purchases. There are two options:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 - **Products as purchase buttons**: Each product is a button, and the purchase begins when the user clicks a product button.
 
   
-<img
-  src={require('./img/4114858-PB_products_buttons.png').default}
+<Zoom>
+  <img src={require('./img/4114858-PB_products_buttons.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -37,6 +41,7 @@ Decide how users will complete purchases. There are two options:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -46,8 +51,8 @@ Decide how users will complete purchases. There are two options:
 Maintain visual consistency by setting a default font for your paywall. Options include the system font (SF Pro for iOS, Roboto for Android), available common fonts, or uploading a custom font.
 
 
-<img
-  src={require('./img/8a095a9-PB_background_color.gif').default}
+<Zoom>
+  <img src={require('./img/8a095a9-PB_background_color.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,6 +60,7 @@ Maintain visual consistency by setting a default font for your paywall. Options 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -65,8 +71,8 @@ Maintain visual consistency by setting a default font for your paywall. Options 
 It's important to keep your paywall visually consistent with the rest of your app — and one of the biggest visual factors is the font that you're using. You can choose to simply have a system font for your paywall (SF Pro for iOS, Roboto for Android), use one of the available common fonts, or upload your own custom font:
 
 
-<img
-  src={require('./img/a306fd5-PB_default_font.png').default}
+<Zoom>
+  <img src={require('./img/a306fd5-PB_default_font.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -74,6 +80,7 @@ It's important to keep your paywall visually consistent with the rest of your ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -89,8 +96,8 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 2. Choose the button's look and position. The preview will update instantly.
 
 
-<img
-  src={require('./img/960ea1d-PB_Layout_button.png').default}
+<Zoom>
+  <img src={require('./img/960ea1d-PB_Layout_button.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -98,6 +105,7 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -112,8 +120,8 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 3. To delay the appearance of the button, adjust the **Show after delay** slider.
 
 
-<img
-  src={require('./img/9f9a159-PB_delay_slider.png').default}
+<Zoom>
+  <img src={require('./img/9f9a159-PB_delay_slider.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -121,5 +129,6 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

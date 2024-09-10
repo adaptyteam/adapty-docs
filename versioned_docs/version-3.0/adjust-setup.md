@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We consider that you have already set up your Adjust system and installed Adjust SDK in the mobile app.
 
 Adapty integration with Adjust is done in the following steps:
@@ -37,8 +40,8 @@ To set up the integration with Adjust:
 6. Scroll down to the **S2S security** section and click the **Open S2S security** button.
 
    
-<img
-  src={require('./img/500cac0-adjust_open_s2s_security.png').default}
+<Zoom>
+  <img src={require('./img/500cac0-adjust_open_s2s_security.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +49,7 @@ To set up the integration with Adjust:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -53,8 +57,8 @@ To set up the integration with Adjust:
 7. In the **S2S security** window, copy the S2S token.
 
 
-<img
-  src={require('./img/d3cb288-adjust_token.png').default}
+<Zoom>
+  <img src={require('./img/d3cb288-adjust_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,6 +66,7 @@ To set up the integration with Adjust:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -70,8 +75,8 @@ To set up the integration with Adjust:
 8. Open the Adapty Dashboard and paste the copied token to the **iOS OAuth token** and **Android OAuth token** fields. If you have both iOS and Android apps added as the same app in Adjust, paste the same value to both fields. If the apps are added as separate apps, those values will be different.
 
 
-<img
-  src={require('./img/84ec347-adjust_adapty_oath_token.png').default}
+<Zoom>
+  <img src={require('./img/84ec347-adjust_adapty_oath_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -79,6 +84,7 @@ To set up the integration with Adjust:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -87,8 +93,8 @@ To set up the integration with Adjust:
 7. Next, you need to provide the **app token** for your iOS and Android apps. Open your Adjust dashboard again and switch to the **App information** tab.
 
 
-<img
-  src={require('./img/8da6bc3-adjust_app_token.png').default}
+<Zoom>
+  <img src={require('./img/8da6bc3-adjust_app_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -96,6 +102,7 @@ To set up the integration with Adjust:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -106,8 +113,8 @@ To set up the integration with Adjust:
    Please note that the section has 2 field sets: **Production** and **Sandbox**. Use the sandbox set for [Adjust integration testing](test-adjust-integration), events created in the sandbox environment will be sent with this token.
 
 
-<img
-  src={require('./img/d6d0831-adjust_adapty_app_token.png').default}
+<Zoom>
+  <img src={require('./img/d6d0831-adjust_adapty_app_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -115,6 +122,7 @@ To set up the integration with Adjust:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -143,8 +151,8 @@ To create an event in the Adjust dashboard:
 4. Click the **Add event** button.
 
 
-<img
-  src={require('./img/2db6d69-adjust_add_event.png').default}
+<Zoom>
+  <img src={require('./img/2db6d69-adjust_add_event.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -152,6 +160,7 @@ To create an event in the Adjust dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -160,8 +169,8 @@ To create an event in the Adjust dashboard:
 5. In the **Add event** window, enter the name of the event. This name is not used in Adapty, so use any name convenient for you.
 
 
-<img
-  src={require('./img/0f35698-adjust_add_new_event.png').default}
+<Zoom>
+  <img src={require('./img/0f35698-adjust_add_new_event.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -169,6 +178,7 @@ To create an event in the Adjust dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -189,8 +199,8 @@ Now, when you have all required events created in Adjust, it's time to link them
 3. Open the **Events** tab.
 
 
-<img
-  src={require('./img/931df25-adjust_copy_event.png').default}
+<Zoom>
+  <img src={require('./img/931df25-adjust_copy_event.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -198,6 +208,7 @@ Now, when you have all required events created in Adjust, it's time to link them
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -208,8 +219,8 @@ Now, when you have all required events created in Adjust, it's time to link them
 6. In the **iOS event names** and **Android event names** sections, enable the events you want to share to Adjust. Refer to the [Events to send to 3d-party integrations](events) topic for the complete list of events that can be sent with detailed descriptions of them. 
 
 
-<img
-  src={require('./img/af8bc56-adjust_adapty_event_on.png').default}
+<Zoom>
+  <img src={require('./img/af8bc56-adjust_adapty_event_on.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -217,6 +228,7 @@ Now, when you have all required events created in Adjust, it's time to link them
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -225,8 +237,8 @@ Now, when you have all required events created in Adjust, it's time to link them
 3. Paste the copied token next to the corresponding event. If you have both iOS and Android apps added as the same app in Adjust, paste the same value to both iOS and Android section fields. If the apps are added as separate apps, those values will be different.
 
 
-<img
-  src={require('./img/ab92bf9-adjust_adapty_event_token.png').default}
+<Zoom>
+  <img src={require('./img/ab92bf9-adjust_adapty_event_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -234,6 +246,7 @@ Now, when you have all required events created in Adjust, it's time to link them
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

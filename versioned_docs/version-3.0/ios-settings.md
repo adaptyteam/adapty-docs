@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 To configure the App Store credentials and ensure optimal functionality of the Adapty iOS SDK, navigate to the [iOS SDK](https://app.adapty.io/settings/ios-sdk) tab within the App Settings page of the Adapty Dashboard. Then, configure the following parameters:
 
 
-<img
-  src={require('./img/3d4087e-CleanShot_2023-06-26_at_13.27.042x.png').default}
+<Zoom>
+  <img src={require('./img/3d4087e-CleanShot_2023-06-26_at_13.27.042x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ To configure the App Store credentials and ensure optimal functionality of the A
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

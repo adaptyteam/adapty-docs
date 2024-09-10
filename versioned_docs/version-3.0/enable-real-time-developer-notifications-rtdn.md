@@ -4,13 +4,16 @@ description: "Stay informed about critical events and maintain data accuracy by 
 metadataTitle: "Google Play Console: Enabling Real-time Developer Notifications (RTDN) for Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Setting up real-time developer notifications (RTDN) is crucial for ensuring data accuracy as it enables you to receive updates instantly from the Play Store, including information on refunds and other events.
 
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
-<img
-  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+<Zoom>
+  <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -25,8 +29,8 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
 
    
-<img
-  src={require('./img/a72ff2d-copy_topic.png').default}
+<Zoom>
+  <img src={require('./img/a72ff2d-copy_topic.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,6 +38,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -46,8 +51,8 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
 4. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
 
 
-<img
-  src={require('./img/e55ba0e-paste_topic_name.png').default}
+<Zoom>
+  <img src={require('./img/e55ba0e-paste_topic_name.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,6 +60,7 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

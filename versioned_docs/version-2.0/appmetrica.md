@@ -3,6 +3,9 @@ title: "AppMetrica"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -13,8 +16,8 @@ import TabItem from '@theme/TabItem';
 To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica) and set credentials.
 
 
-<img
-  src={require('./img/2500769-CleanShot_2023-08-18_at_14.57.352x.png').default}
+<Zoom>
+  <img src={require('./img/2500769-CleanShot_2023-08-18_at_14.57.352x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -22,6 +25,7 @@ To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -30,8 +34,8 @@ To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/
 Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choose the app you want to send events to and go to **Settings**. Copy **Application ID** and **Post API key** and use them to set up the integration in Adapty.
 
 
-<img
-  src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.png').default}
+<Zoom>
+  <img src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -39,6 +43,7 @@ Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -51,8 +56,8 @@ AppMetrica syncs events every 4 hours, so it may take some time for events to ap
 Below the credentials, there are three groups of events you can send to AppMetrics from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.png').default}
+<Zoom>
+  <img src={require('./img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -60,6 +65,7 @@ Below the credentials, there are three groups of events you can send to AppMetri
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

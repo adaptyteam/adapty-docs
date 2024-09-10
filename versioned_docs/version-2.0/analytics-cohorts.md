@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty cohorts are designed to answer several important questions:
 
 1. On what day does a cohort pay off?
@@ -14,8 +17,8 @@ Adapty cohorts are designed to answer several important questions:
 Cohorts work with the app data we gather through SDK and store notifications and don't require any additional configuration from your side.
 
 
-<img
-  src={require('./img/cfc961c-cohorts_general.png').default}
+<Zoom>
+  <img src={require('./img/cfc961c-cohorts_general.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,14 +26,15 @@ Cohorts work with the app data we gather through SDK and store notifications and
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/00bf923-cohorts_monthly.png').default}
+<Zoom>
+  <img src={require('./img/00bf923-cohorts_monthly.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,6 +42,7 @@ Cohorts work with the app data we gather through SDK and store notifications and
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -54,8 +59,8 @@ Whereas tracking **by renewals** shows the retention and churn of the cohorts fr
 Choose your convenient mode or use them both for more conclusions and ideas. 
 
 
-<img
-  src={require('./img/4d5ffdd-cohorts.png').default}
+<Zoom>
+  <img src={require('./img/4d5ffdd-cohorts.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,6 +68,7 @@ Choose your convenient mode or use them both for more conclusions and ideas.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -92,8 +98,8 @@ In the image below you can see a typical cohort.
 
 
 
-<img
-  src={require('./img/8df3173-cohorts_marks.png').default}
+<Zoom>
+  <img src={require('./img/8df3173-cohorts_marks.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -101,6 +107,7 @@ In the image below you can see a typical cohort.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -109,8 +116,8 @@ In the image below you can see a typical cohort.
 You can hover on any cell in the cohort to view detailed metrics for this period.
 
 
-<img
-  src={require('./img/2744770-cohort_details.png').default}
+<Zoom>
+  <img src={require('./img/2744770-cohort_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -118,6 +125,7 @@ You can hover on any cell in the cohort to view detailed metrics for this period
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -130,8 +138,8 @@ The cells with oblique lines in the background are the periods that are not fini
 Adapty offers a wide range of controls to help you gain valuable insights when looking into your cohorts' analyses.   By default, Adapty builds cohorts based on the data from all purchases. It might be useful to filter all the products of the same duration or specific products. You can also use country, store, paywall, segment, and attribution data as a filter. You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 
-<img
-  src={require('./img/ad10de0-cohorts_filter.png').default}
+<Zoom>
+  <img src={require('./img/ad10de0-cohorts_filter.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,6 +147,7 @@ Adapty offers a wide range of controls to help you gain valuable insights when l
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -149,8 +158,8 @@ On the right of the control panel, there's a button to export cohort data to CSV
 There are 4 metrics that can be shown in cohorts: Subscriptions, Payers, Revenue, ARPU, ARPPU, and ARPAS. You can either display them as absolute values or as a relative change from the start of the cohort.
 
 
-<img
-  src={require('./img/7f8484d-cohorts_absolute.png').default}
+<Zoom>
+  <img src={require('./img/7f8484d-cohorts_absolute.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -158,6 +167,7 @@ There are 4 metrics that can be shown in cohorts: Subscriptions, Payers, Revenue
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -166,8 +176,8 @@ There are 4 metrics that can be shown in cohorts: Subscriptions, Payers, Revenue
 You can set the date range for cohorts and choose the segment. The segment determines a timespan for each row of the cohort.
 
 
-<img
-  src={require('./img/e20b676-cohorts_period.png').default}
+<Zoom>
+  <img src={require('./img/e20b676-cohorts_period.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -175,6 +185,7 @@ You can set the date range for cohorts and choose the segment. The segment deter
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

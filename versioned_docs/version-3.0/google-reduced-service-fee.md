@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Learn how Adapty can help you manage your proceeds on Google Play Store, including the reduced service fee program for developers earning less than $1,000,000 USD annually. By following the necessary steps to join the program and updating your membership status in the Adapty Sashboard, you can ensure that your sales commission is accurately calculated, and you receive reliable information on your transactions.  
 Adapty also supports the Small Business Program for App Store. You can reference [this document](app-store-small-business-program) for more details.
 
@@ -28,8 +31,8 @@ You can select your entry date according to your preference. However, it's impor
 To manage your Reduced Service Fee membership status for Google Play, go to the **App Settings > General tab** in your Adapty account. Click the **Add period** button to specify your membership status for a specific period range. In the "Period" field, select a date range that indicates your business's membership start and end dates. This range can include any date in the past or the future. You can add additional membership periods by clicking on the "Add Period" button again.
 
 
-<img
-  src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+<Zoom>
+  <img src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +40,7 @@ To manage your Reduced Service Fee membership status for Google Play, go to the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

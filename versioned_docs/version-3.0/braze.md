@@ -3,6 +3,9 @@ title: "Braze"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -19,8 +22,8 @@ To integrate Braze go to [**Integrations** -> **Braze**](https://app.adapty.io/i
 The initial step of the integration process is to provide the necessary credentials to establish a connection between your Braze and Adapty profiles. You will need the **REST API Key**, your **Braze Instance ID**, and **App IDs** for iOS and Android for the integration to work properly:
 
 
-<img
-  src={require('./img/5f1e62c-adapty_braze.png').default}
+<Zoom>
+  <img src={require('./img/5f1e62c-adapty_braze.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,6 +31,7 @@ The initial step of the integration process is to provide the necessary credenti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -36,8 +40,8 @@ The initial step of the integration process is to provide the necessary credenti
 1. **REST API Key** can be created in **Braze Dashboard** → **Settings** → **API Keys**. Make sure your key has a `users.track` permission when creating it:
 
 
-<img
-  src={require('./img/b5fdf16-adapty_braze_create_api_key.png').default}
+<Zoom>
+  <img src={require('./img/b5fdf16-adapty_braze_create_api_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,14 +49,15 @@ The initial step of the integration process is to provide the necessary credenti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/1e5b4b8-adapty_braze_api_key_users_track.png').default}
+<Zoom>
+  <img src={require('./img/1e5b4b8-adapty_braze_api_key_users_track.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -60,6 +65,7 @@ The initial step of the integration process is to provide the necessary credenti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -69,8 +75,8 @@ The initial step of the integration process is to provide the necessary credenti
 3. iOS and Android App IDs can be found in Braze Dashboard → Settings → API Keys as well. Copy them from here:
 
 
-<img
-  src={require('./img/1e6d21b-adapty_braze_app_ids.png').default}
+<Zoom>
+  <img src={require('./img/1e6d21b-adapty_braze_app_ids.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -78,6 +84,7 @@ The initial step of the integration process is to provide the necessary credenti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -88,8 +95,8 @@ The initial step of the integration process is to provide the necessary credenti
 Below the credentials, there are three groups of events you can send to Braze from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Braze. Check the full list of the Events offered by Adapty [here](events):
 
 
-<img
-  src={require('./img/702e628-adapty_braze_events_names.png').default}
+<Zoom>
+  <img src={require('./img/702e628-adapty_braze_events_names.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -97,6 +104,7 @@ Below the credentials, there are three groups of events you can send to Braze fr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty offers SDKs and integrations tailored for Google Platforms, simplifying the development of in-app purchases, subscriptions, paywalls, and A/B tests. 
 
 Use the following resources to maximize the benefits Adapty provides for Google Platforms.

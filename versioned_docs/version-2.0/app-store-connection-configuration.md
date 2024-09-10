@@ -4,6 +4,9 @@ description: "Streamline App Store integration for your mobile app with Adapty, 
 metadataTitle: "Adapty App Store Integration Configuration"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 This section describes how to establish the connection between the App Store and Adapty for your iOS app. This is required for us to be able to show subscription analytics and validate purchases. You can complete the integration during the initial onboarding or later in the **App Settings** within the Adapty Dashboard.
 
 Although you might have initially configured the integration of your mobile app and Adapty during onboarding, you can modify these settings later in the **App settings**. 
@@ -21,8 +24,8 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 2. Copy the **Bundle ID** in the **General Information** sub-section.
 
    
-<img
-  src={require('./img/afd5012-bundle_id_apple.png').default}
+<Zoom>
+  <img src={require('./img/afd5012-bundle_id_apple.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,6 +33,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -37,8 +41,8 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu.
 
    
-<img
-  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+<Zoom>
+  <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +50,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -53,8 +58,8 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 4. Paste the copied value to the **Bundle ID** field.
 
    
-<img
-  src={require('./img/2d64163-bundle_id.png').default}
+<Zoom>
+  <img src={require('./img/2d64163-bundle_id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,6 +67,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -74,8 +80,8 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 2. In the **Active **list, find the key you've created in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.
 
    
-<img
-  src={require('./img/19a2868-issuer_apple.png').default}
+<Zoom>
+  <img src={require('./img/19a2868-issuer_apple.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,14 +89,15 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 3. Copy **Issuer ID** and paste it to the **In-app purchase Issuer ID** field in the Adapty Dashboard.
 
    
-<img
-  src={require('./img/c2b42e7-issuer_id.png').default}
+<Zoom>
+  <img src={require('./img/c2b42e7-issuer_id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -98,6 +105,7 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -108,8 +116,8 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section 
 
 
-<img
-  src={require('./img/88cdfff-download_inapp_file.png').default}
+<Zoom>
+  <img src={require('./img/88cdfff-download_inapp_file.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,6 +125,7 @@ Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-Ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -125,8 +134,8 @@ Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-Ap
 into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in the Adapty Dashboard.
 
 
-<img
-  src={require('./img/253b840-in-app_file_upload.png').default}
+<Zoom>
+  <img src={require('./img/253b840-in-app_file_upload.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -134,6 +143,7 @@ into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -148,8 +158,8 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 2. Scroll down to the **App-Specific Shared Secret** sub-section.
 
    
-<img
-  src={require('./img/2bd112a-shared_secret_apple.png').default}
+<Zoom>
+  <img src={require('./img/2bd112a-shared_secret_apple.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -157,6 +167,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -168,8 +179,8 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 3. Click the **Manage** button.
 
    
-<img
-  src={require('./img/2d8b4c0-shared_secret_apple_copy.png').default}
+<Zoom>
+  <img src={require('./img/2d8b4c0-shared_secret_apple_copy.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -177,6 +188,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -186,8 +198,8 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 5. Paste the copied **Shared Secret** to the **App Store shared secret** field in the Adapty Dashboard. 
 
    
-<img
-  src={require('./img/4f9624d-shared_secret.png').default}
+<Zoom>
+  <img src={require('./img/4f9624d-shared_secret.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -195,6 +207,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

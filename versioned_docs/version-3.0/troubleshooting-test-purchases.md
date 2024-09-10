@@ -4,6 +4,9 @@ description: "Encounter transaction issues during test purchases with Adapty? Fo
 metadataTitle: "Troubleshooting Test Purchases with Adapty: Solutions for Transaction Issues"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 If you encounter transaction issues, please first make sure you have completed all the steps outlined in the [release checklist](release-checklist). If you've completed all the steps and still encounter issues, please follow the guidance provided below to resolve them:
 
 | Issue | Solution |
@@ -18,8 +21,8 @@ If you encounter transaction issues, please first make sure you have completed a
 Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
 
 
-<img
-  src={require('./img/98d0dad-non-original_profile.png').default}
+<Zoom>
+  <img src={require('./img/98d0dad-non-original_profile.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -27,5 +30,6 @@ Here is an example of a non-original profile. Notice the absence of events in th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

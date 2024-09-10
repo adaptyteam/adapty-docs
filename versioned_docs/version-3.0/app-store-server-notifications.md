@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Apple offers server-to-server notifications, so you can instantly be notified about subscription events.
 
 Adapty helps you with that. The only thing you need to do is to set the URL for App Store Server Notifications inside your App Store Connect to Adapty status URL.
@@ -19,8 +22,8 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 1. Copy URL for App Store Server Notifications in Adapty Dashboard [**App Settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk)
 
 
-<img
-  src={require('./img/010401b-CleanShot_2023-08-25_at_11.50.592x.png').default}
+<Zoom>
+  <img src={require('./img/010401b-CleanShot_2023-08-25_at_11.50.592x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,6 +31,7 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -36,8 +40,8 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 2. Sign in to your App Store Connect account, choose the app, and go to the **App Information** page in section **General**. Use the **URL from Adapty** for both **Production** and **Sandbox** notifications, and save the changes. 
 
 
-<img
-  src={require('./img/9638538-CleanShot_2023-08-25_at_11.47.322x.png').default}
+<Zoom>
+  <img src={require('./img/9638538-CleanShot_2023-08-25_at_11.47.322x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,6 +49,7 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -53,8 +58,8 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 Adapty supports both **Version 1** and **Version 2** Notifications. You can choose whichever version best suits your needs. To learn more about the differences between the two versions, please refer to this [link](https://developer.apple.com/documentation/appstoreservernotifications/app_store_server_notifications_changelog). You can also check out [our tutorial ](https://adapty.io/blog/storekit-2-api-tutorial/)to learn details about the version.
 
 
-<img
-  src={require('./img/dd65995-CleanShot_2023-03-24_at_11.19.532x.png').default}
+<Zoom>
+  <img src={require('./img/dd65995-CleanShot_2023-03-24_at_11.19.532x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,6 +67,7 @@ Adapty supports both **Version 1** and **Version 2** Notifications. You can choo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -74,8 +80,8 @@ Please note that to use **Version 2** Notifications, it is necessary to configur
 Sometimes, you might still want to receive raw S2S events from Apple. To continue receiving them while using Adapty, just add your endpoint to the **URL for forwarding raw Apple events** field, and we'll send raw events as-is from Apple.
 
 
-<img
-  src={require('./img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.png').default}
+<Zoom>
+  <img src={require('./img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,5 +89,6 @@ Sometimes, you might still want to receive raw S2S events from Apple. To continu
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

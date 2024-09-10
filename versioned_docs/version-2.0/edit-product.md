@@ -4,6 +4,9 @@ description: ""
 metadataTitle: "Edit product in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 In Adapty you can combine similar products that you have in App Store and Play Store in a single internal [Product](product). This allows you to use a single Adapty product across all platforms, instead of using each vendor's products.
 
 :::warning
@@ -22,8 +25,8 @@ To edit the product:
 4. Click the **Save** button to confirm the changes.
 
 
-<img
-  src={require('./img/4218c22-edit_product.png').default}
+<Zoom>
+  <img src={require('./img/4218c22-edit_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -31,5 +34,6 @@ To edit the product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

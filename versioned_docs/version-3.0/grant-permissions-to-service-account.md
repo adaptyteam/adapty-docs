@@ -4,13 +4,16 @@ description: "Authorize Adapty's service account by granting essential permissio
 metadataTitle: "Google Play Console: Granting Permissions to Adapty's Service Account"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Grant the required permissions to the service account that Adapty will use to manage subscriptions and validate purchases.
 
 1. Open the [**Users and permissions**](https://play.google.com/console/u/0/developers/8970033217728091060/users-and-permissions) page in the Google Play Console and click the **Invite new users** button.
 
    
-<img
-  src={require('./img/7b0e614-users_and_permissions.png').default}
+<Zoom>
+  <img src={require('./img/7b0e614-users_and_permissions.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,14 +21,15 @@ Grant the required permissions to the service account that Adapty will use to ma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. In the **Invite user** page, enter the email of the service users you've created.
 
    
-<img
-  src={require('./img/3afd002-invite_user.png').default}
+<Zoom>
+  <img src={require('./img/3afd002-invite_user.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,14 +37,15 @@ Grant the required permissions to the service account that Adapty will use to ma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 3. Switch to the  **Account permissions** tab.
 
    
-<img
-  src={require('./img/4e2717b-account_permissions.png').default}
+<Zoom>
+  <img src={require('./img/4e2717b-account_permissions.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -48,6 +53,7 @@ Grant the required permissions to the service account that Adapty will use to ma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

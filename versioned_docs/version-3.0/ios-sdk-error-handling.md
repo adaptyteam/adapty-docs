@@ -4,6 +4,9 @@ description: "Learn how to effectively manage errors in iOS development with Ada
 metadataTitle: "iOS Error Handling: AdaptyError Overview"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty SDK has its own wrapper for all kinds of errors, called `AdaptyError`. Basically, every error returned by an SDK is `AdaptyError`. It has two useful properties: `originalError` and `adaptyErrorCode`, described below.
 
 **originalError** contains an original error in case you need the original one to work with. Can be [SKError](https://developer.apple.com/documentation/storekit/skerror), [NSError](https://developer.apple.com/documentation/foundation/nserror) or just general Swift [Error](https://developer.apple.com/documentation/swift/error). This property is optional since some errors can be generated directly by SDK, like inconsistent or missing data, and won't have the original error around which the wrapper was initially built.

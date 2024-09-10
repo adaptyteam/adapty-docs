@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Testing in-app purchases (IAPs) in your Android app can be a crucial step before releasing your app to the public. Sandbox testing is a safe and efficient way to test IAPs without charging real money to your users. In this guide, we'll walk you through the process of sandbox testing IAPs on the Google Play Store for Android.
 
 ## Test your app on a real device
@@ -31,8 +34,8 @@ This will allow you to configure licensing testing for your app and ensure that 
 In our example, we already have a list of testers:
 
 
-<img
-  src={require('./img/7a11c96-image.png').default}
+<Zoom>
+  <img src={require('./img/7a11c96-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,6 +43,7 @@ In our example, we already have a list of testers:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -50,8 +54,8 @@ In our example, we already have a list of testers:
 1. Publish a signed version of your app to a closed track. If you haven't created a closed track yet, you can create one in the **Closed testing** section of the **Testing** menu.
 
 
-<img
-  src={require('./img/5511dff-image.png').default}
+<Zoom>
+  <img src={require('./img/5511dff-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,6 +63,7 @@ In our example, we already have a list of testers:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -67,8 +72,8 @@ In our example, we already have a list of testers:
    Just as previously, you can use one of the existing lists or create a new one:
 
 
-<img
-  src={require('./img/1badc43-image.png').default}
+<Zoom>
+  <img src={require('./img/1badc43-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,6 +81,7 @@ In our example, we already have a list of testers:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -86,8 +92,8 @@ In our example, we already have a list of testers:
 3. Open the **Opt-in URL** in your testing device to make the user a tester. You can send the URL to your device via email, for example.
 
 
-<img
-  src={require('./img/6cce394-image.png').default}
+<Zoom>
+  <img src={require('./img/6cce394-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -95,14 +101,15 @@ In our example, we already have a list of testers:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/c1eb89d-image.png').default}
+<Zoom>
+  <img src={require('./img/c1eb89d-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -110,6 +117,7 @@ In our example, we already have a list of testers:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -146,8 +154,8 @@ Generate a signed APK or use Android App Bundle to upload a signed APK to the cl
 After you've uploaded the APK, wait a few minutes for the release to process. Then, open your testing device and sign in with the email account you added to the Testers list. You can then test in-app purchases as you would on a production app.
 
 
-<img
-  src={require('./img/a8d2da9-image.png').default}
+<Zoom>
+  <img src={require('./img/a8d2da9-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,6 +163,7 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -163,8 +172,8 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
 If you run into any issues, refer to the documentation or contact Google Play Developer support. 
 
 
-<img
-  src={require('./img/605874f-image.png').default}
+<Zoom>
+  <img src={require('./img/605874f-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -172,5 +181,6 @@ If you run into any issues, refer to the documentation or contact Google Play De
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

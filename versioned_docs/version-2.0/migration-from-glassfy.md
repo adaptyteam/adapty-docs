@@ -3,14 +3,17 @@ title: "Migration from Glassfy"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
 _Glassfy services will be ending in December 2024_. We worked with them to make the transition as easy as possible for you. This guide will help you migrate your subscribers to Adapty in less than a day. Most importantly, the migration will be 100% seamless for your customers; they will continue using the app without interruptions.
 
 
-<img
-  src={require('./img/526afff-glassfy-banner.webp').default}
+<Zoom>
+  <img src={require('./img/526afff-glassfy-banner.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ _Glassfy services will be ending in December 2024_. We worked with them to make 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -69,8 +73,8 @@ You've done it at least once already, so we'll just leave the link to the docs. 
 To sell the product in Adapty SDK, you have to create it in the dashboard first. This process is very similar to how SKUs are created in Glassfy. Just give it a name, choose the access level (aka permission), and product IDs for the App Store / Google Play. You can read more about the products [here](product).
 
 
-<img
-  src={require('./img/5878f01-002900-August-01-BbJcEGHE.png').default}
+<Zoom>
+  <img src={require('./img/5878f01-002900-August-01-BbJcEGHE.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -78,6 +82,7 @@ To sell the product in Adapty SDK, you have to create it in the dashboard first.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -90,8 +95,8 @@ To sell the product in Adapty SDK, you have to create it in the dashboard first.
 Once you created the products, you should create the paywalls (aka offerings). A paywall can have one or more products. It can also have remote configuration, which allows you to customize the paywalls without new releases, localize the paywalls and onboarding and [much more](paywalls). You can even design and create paywalls without any coding with the [Adapty paywall builder](/3.0/adapty-paywall-builder).
 
 
-<img
-  src={require('./img/aac7858-002901-August-01-5BJyKpql.png').default}
+<Zoom>
+  <img src={require('./img/aac7858-002901-August-01-5BJyKpql.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -99,6 +104,7 @@ Once you created the products, you should create the paywalls (aka offerings). A
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -114,8 +120,8 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 - General (you show it in settings or inside the app after the onboarding)
 
 
-<img
-  src={require('./img/2406d97-image.png').default}
+<Zoom>
+  <img src={require('./img/2406d97-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -123,6 +129,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -131,8 +138,8 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 With the placements, you can dynamically change which Paywall or A/B test should be displayed in the designated place of your application. You can even show different paywalls to different [audiences](audience) in your application.
 
 
-<img
-  src={require('./img/c77c57b-002902-August-01-3AWT4LRe.png').default}
+<Zoom>
+  <img src={require('./img/c77c57b-002902-August-01-3AWT4LRe.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -140,6 +147,7 @@ With the placements, you can dynamically change which Paywall or A/B test should
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

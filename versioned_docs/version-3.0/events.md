@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Apple and Google send subscription events directly to the server using [App Store Server Notifications](app-store-server-notifications) and [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn). Therefore, mobile apps cannot send events to analytical systems correctly and on-time. For example, if the user subscribed and then didn't open the app, without a server developer will get zero information about subscription status. 
 
 After installing Adapty SDK and setting up [App Store Server Notifications](app-store-server-notifications) for iOS and [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn). for Android, Adapty receives info about your customer behavior and converts it into human-readable events.
@@ -159,8 +162,8 @@ Adapty sends events to your server and 3rd party analytical systems.
 Adapty has a special event `access_level_updated`. It is sent only to [webhook](webhook) integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. Before you had to keep track of several events to sync subscription state and some cases were not covered, like setting access level manually from Adapty CRM. Now, no matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
 
 
-<img
-  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+<Zoom>
+  <img src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -168,6 +171,7 @@ Adapty has a special event `access_level_updated`. It is sent only to [webhook](
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -219,8 +223,8 @@ We determine the deliverability based on HTTP status and consider everything **o
 You can see the status of certain integration events in the event list in the Adapty Dashboard. The system displays the statuses of integrations that are enabled for the app, regardless of whether the event type is enabled or disabled for a specific integration. If the event type is disabled for a particular integration, it will be color-coded as gray in the event feed. If there are any issues with integration, the integration name will be highlighted in red, indicating that attention is required to resolve the problem. In addition, the system provides tooltips when you hover over the integration name. These tooltips offer more detailed information about the reasons for the non-delivery of an event. 
 
 
-<img
-  src={require('./img/f69ea1a-Screenshot_2023-06-02_at_14.58.48.png').default}
+<Zoom>
+  <img src={require('./img/f69ea1a-Screenshot_2023-06-02_at_14.58.48.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -228,6 +232,7 @@ You can see the status of certain integration events in the event list in the Ad
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

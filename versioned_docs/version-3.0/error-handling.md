@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty returns errors for you to handle. We've categorized them by framework for your convenience:
 
 - [Handle errors in iOS](ios-sdk-error-handling)

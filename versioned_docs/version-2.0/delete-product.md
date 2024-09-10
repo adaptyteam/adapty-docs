@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 You can only delete products that are not used in paywalls.
 
 To delete the product:
@@ -12,8 +15,8 @@ To delete the product:
 2. Click the **3-dot** button next to the product and select the **Delete** option.
 
 
-<img
-  src={require('./img/4218c22-edit_product.png').default}
+<Zoom>
+  <img src={require('./img/4218c22-edit_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -21,6 +24,7 @@ To delete the product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -29,8 +33,8 @@ To delete the product:
 2. In the **Delete product** window, enter the product name you're about to delete.
 
 
-<img
-  src={require('./img/b945add-delete_product.png').default}
+<Zoom>
+  <img src={require('./img/b945add-delete_product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,6 +42,7 @@ To delete the product:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

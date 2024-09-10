@@ -4,6 +4,9 @@ description: "Optimize user access management in your mobile app with Adapty's A
 metadataTitle: "Enhanced User Access Control: Creating Access Levels in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level for. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases).
 
 When you create an app in the Adapty Dashboard, the `premium` access level is automatically generated. This serves as the default access level and it cannot be deleted.
@@ -13,8 +16,8 @@ To create a new access level:
 1. Open the **[Paywalls and Products](https://app.adapty.io/access-levels) ** section from the Adapty main menu, then select the **Access levels** tab.
 
    
-<img
-  src={require('./img/5b2bc83-access_levels.png').default}
+<Zoom>
+  <img src={require('./img/5b2bc83-access_levels.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -22,6 +25,7 @@ To create a new access level:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -29,8 +33,8 @@ To create a new access level:
 2. Click the **Create access level** button. 
 
    
-<img
-  src={require('./img/b8646ca-image.png').default}
+<Zoom>
+  <img src={require('./img/b8646ca-image.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,6 +42,7 @@ To create a new access level:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

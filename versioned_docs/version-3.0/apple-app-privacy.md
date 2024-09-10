@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Apple requires a privacy disclosure for all new apps and app updates both in the [**App Privacy**](https://appstoreconnect.apple.com/apps/6477523342/distribution/privacy) section of the App Store Connect and as the app manifest file.  Adapty is a third-party dependency to your app, therefore you’ll need to properly disclose the ways you are using Adapty in regards to user's data.
 
 ## Apple app privacy manifest
@@ -58,8 +61,8 @@ In the [**App Privacy**](https://appstoreconnect.apple.com/apps/6477523342/distr
 When using Adapty, you must disclose that your app collects ‘Purchases’ information.
 
 
-<img
-  src={require('./img/feb3b9f-CleanShot_2023-08-25_at_12.32.552x.png').default}
+<Zoom>
+  <img src={require('./img/feb3b9f-CleanShot_2023-08-25_at_12.32.552x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +70,7 @@ When using Adapty, you must disclose that your app collects ‘Purchases’ info
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -79,8 +83,8 @@ If you are identifying users with **`customerUserId`**, you'll need to select 'U
 Adapty collects IDFA, so you'll need to select 'Device ID'.
 
 
-<img
-  src={require('./img/93f3daa-CleanShot_2023-08-25_at_12.35.272x.png').default}
+<Zoom>
+  <img src={require('./img/93f3daa-CleanShot_2023-08-25_at_12.35.272x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -88,6 +92,7 @@ Adapty collects IDFA, so you'll need to select 'Device ID'.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -98,8 +103,8 @@ After making your selections, you'll need to indicate how the data is used simil
 After making your privacy selections, Apple will show a preview of your app's privacy section. If you have chosen Purchases and Identifiers as described above, your app's privacy details should look something like this:
 
 
-<img
-  src={require('./img/17e4ba7-CleanShot_2023-08-25_at_12.36.442x.png').default}
+<Zoom>
+  <img src={require('./img/17e4ba7-CleanShot_2023-08-25_at_12.36.442x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -107,5 +112,6 @@ After making your privacy selections, Apple will show a preview of your app's pr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

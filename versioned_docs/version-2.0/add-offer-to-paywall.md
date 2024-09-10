@@ -4,6 +4,9 @@ description: "Learn how to make an offer visible and selectable within a Adapty 
 metadataTitle: "How to use App Store and Google Play offers to empower your paywalls"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Offers in the App Store and Google Play are special deals or discounts provided by these platforms for in-app purchases.
 
 To make an offer visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
@@ -11,8 +14,8 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
 1. While [configuring the products on a paywall](create-paywall), click the **Add offer** button next to the product the offer belongs to. The button is available only for the products that have offers.
 
    
-<img
-  src={require('./img/3a727c2-add_offer_to_paywall.png').default}
+<Zoom>
+  <img src={require('./img/3a727c2-add_offer_to_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,14 +23,15 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. Select an offer you [created earlier](create-offer) for this product from the **Offer** list.
 
 
-<img
-  src={require('./img/8eab55a-add_offer_to_paywall_2.png').default}
+<Zoom>
+  <img src={require('./img/8eab55a-add_offer_to_paywall_2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,5 +39,6 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

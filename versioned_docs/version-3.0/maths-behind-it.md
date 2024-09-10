@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A/B testing is a powerful technique used to compare the performance of two different versions of a paywall. The ultimate goal is to determine which version is more effective based on the average revenue per user over a 12-month period. However, waiting for a full year to collect data and make decisions is impractical. Therefore, a 2-week revenue per user is used as a proxy metric, chosen based on historical data analysis to approximate the target metric. To achieve accurate and reliable results, it is crucial to employ a robust statistical method capable of handling diverse data types. Bayesian statistics, a popular approach in modern data analysis, provides a flexible and intuitive framework for A/B testing. By incorporating prior knowledge and updating it with new data, Bayesian methods allow for better decision-making under uncertainty. This document provides a comprehensive guide to the mathematical analysis employed by Adapty in evaluating A/B test results and providing valuable insights for data-driven decision-making.
 
 ## Adapty's approach to statistical analysis

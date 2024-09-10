@@ -4,6 +4,9 @@ description: "Set your app's integration with Adapty by configuring Play Store i
 metadataTitle: "Google Play Store Integration Configuration with Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 This section outlines the integration process for your mobile app sold via Google Play with Adapty. You'll need to input your app's configuration data from the Play Store into the Adapty Dashboard. This step is crucial for validating purchases and receiving subscription updates from the Play Store within Adapty.
 
 You can complete this process during the initial onboarding or make changes later in the **App Settings** of the Adapty Dashboard.
@@ -20,8 +23,8 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 2. Select the app whose ID you need. The **Dashboard** window opens.
 
 
-<img
-  src={require('./img/7889edb-package_name.png').default}
+<Zoom>
+  <img src={require('./img/7889edb-package_name.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,6 +32,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -39,8 +43,8 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 4. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
-<img
-  src={require('./img/b00066c-package_name.png').default}
+<Zoom>
+  <img src={require('./img/b00066c-package_name.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -48,6 +52,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +64,8 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 1. Upload the service account private key file in JSON format that you have created at the [Create service account key file](create-service-account) step into the **Service account key file** area.
 
 
-<img
-  src={require('./img/20fdba1-service_key_file.png').default}
+<Zoom>
+  <img src={require('./img/20fdba1-service_key_file.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +73,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

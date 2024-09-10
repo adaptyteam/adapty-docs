@@ -4,13 +4,16 @@ description: "Learn how to set up App Store server notifications in Adapty to re
 metadataTitle: "How to Enable App Store Server Notifications in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Setting up App Store server notifications is crucial for ensuring data accuracy as it enables you to receive updates instantly from the App Store, including information on refunds and other events.
 
 1. Copy the **URL for App Store server notification** in the Adapty Dashboard. 
 
    
-<img
-  src={require('./img/2901185-app_server_notifications.png').default}
+<Zoom>
+  <img src={require('./img/2901185-app_server_notifications.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -25,8 +29,8 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 3. Paste the copied **URL for App Store server notification** into the **Production Server URL** and **Sandbox Server URL** fields.
 
    
-<img
-  src={require('./img/86fb3d2-app_server_notifications_apple.png').default}
+<Zoom>
+  <img src={require('./img/86fb3d2-app_server_notifications_apple.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,5 +38,6 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

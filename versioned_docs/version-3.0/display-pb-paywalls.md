@@ -3,6 +3,9 @@ title: "Display paywalls designed with new Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.

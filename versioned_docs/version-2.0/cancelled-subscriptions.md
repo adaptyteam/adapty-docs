@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Subscriptions renewal canceled chart displays the number of subscriptions that have had their auto-renew status switched off (canceled by the user). When a subscription's auto-renew status is turned off, it means that the subscription will not renew automatically for the next period. However, the user still retains access to the app's premium features until the end of the current period.
 
 
-<img
-  src={require('./img/65b8324-small-CleanShot_2023-05-08_at_15.22.252x.png').default}
+<Zoom>
+  <img src={require('./img/65b8324-small-CleanShot_2023-05-08_at_15.22.252x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Subscriptions renewal canceled chart displays the number of subscriptions th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

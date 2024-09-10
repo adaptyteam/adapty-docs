@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 If you want to use [promo campaigns](promo-campaigns), you will need to generate a certificate for sending push notifications. It takes several steps to generate and may take about 15 minutes.
 
 ### Create a signing certificate

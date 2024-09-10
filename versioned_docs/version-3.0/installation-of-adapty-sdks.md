@@ -4,6 +4,9 @@ description: "Learn how to integrate AdaptySDK and AdaptyUI SDK into your mobile
 metadataTitle: "AdaptySDK and AdaptyUI SDK Integration Guide for Mobile Apps"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Main **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.

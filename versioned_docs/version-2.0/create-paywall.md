@@ -3,6 +3,9 @@ title: "Create paywall"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
 A [paywall](paywalls) serves as an in-app storefront where customers can browse products and make purchases.
@@ -19,8 +22,8 @@ To create a new paywall in the Adapty dashboard:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. The paywall list page in the Adapy dashboard provides an overview of all the paywalls that have been set up in your account along with their metrics.
 
 
-<img
-  src={require('./img/c661ee3-paywalls.png').default}
+<Zoom>
+  <img src={require('./img/c661ee3-paywalls.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,6 +31,7 @@ To create a new paywall in the Adapty dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -36,8 +40,8 @@ To create a new paywall in the Adapty dashboard:
 2. Click the **Create paywall** button.
 
 
-<img
-  src={require('./img/4b200e5-create_paywall.png').default}
+<Zoom>
+  <img src={require('./img/4b200e5-create_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,6 +49,7 @@ To create a new paywall in the Adapty dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -56,8 +61,8 @@ To create a new paywall in the Adapty dashboard:
    Please note that after your paywall will get shown on the production at least once it will be impossible to change the products on the paywall as this may affect the paywall metrics. 
 
 
-<img
-  src={require('./img/0479b51-ad_product_to_paywall.png').default}
+<Zoom>
+  <img src={require('./img/0479b51-ad_product_to_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,6 +70,7 @@ To create a new paywall in the Adapty dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -74,8 +80,8 @@ To create a new paywall in the Adapty dashboard:
    Apple's intro offers get sorted out automatically, so you don't have to add them separately in Adapty. 
 
 
-<img
-  src={require('./img/f586eee-add_offer.png').default}
+<Zoom>
+  <img src={require('./img/f586eee-add_offer.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,6 +89,7 @@ To create a new paywall in the Adapty dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Discover important data and insights from our [A/B tests](ab-tests), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
 
 ### A/B test results
@@ -11,8 +14,8 @@ Discover important data and insights from our [A/B tests](ab-tests), comparing d
 Here are three metrics that Adapty provides for A/B test results:
 
 
-<img
-  src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png').default}
+<Zoom>
+  <img src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,6 +23,7 @@ Here are three metrics that Adapty provides for A/B test results:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -54,8 +58,8 @@ The system displays the metrics based on the selected time period and organizes 
 ### Profile install date filtration
 
 
-<img
-  src={require('./img/2bf4d9f-Area.gif').default}
+<Zoom>
+  <img src={require('./img/2bf4d9f-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,6 +67,7 @@ The system displays the metrics based on the selected time period and organizes 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -75,8 +80,8 @@ The system displays the metrics based on the selected time period and organizes 
 You can choose from a range of time periods to analyze metrics data, allowing you to focus on specific durations such as days, weeks, months, or custom date ranges.
 
 
-<img
-  src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.png').default}
+<Zoom>
+  <img src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,6 +89,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -103,8 +109,8 @@ You can find more information about the available controls, filters, grouping op
 One of the key components of the paywall metrics page is the chart section, which visually represents the selected metrics and facilitates easy analysis.
 
 
-<img
-  src={require('./img/e6b0674-Area.gif').default}
+<Zoom>
+  <img src={require('./img/e6b0674-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -112,6 +118,7 @@ One of the key components of the paywall metrics page is the chart section, whic
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -126,8 +133,8 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the A/B test details summary section is displayed, which includes information about the state, duration, placements, and other related details about the  A/B test.
 
 
-<img
-  src={require('./img/90fa3f5-Area.gif').default}
+<Zoom>
+  <img src={require('./img/90fa3f5-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -135,6 +142,7 @@ Next to the single metrics chart, the A/B test details summary section is displa
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -145,8 +153,8 @@ Next to the single metrics chart, the A/B test details summary section is displa
 Here are the key metrics that are available for the A/B tests:
 
 
-<img
-  src={require('./img/30c7b68-Area.gif').default}
+<Zoom>
+  <img src={require('./img/30c7b68-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -154,6 +162,7 @@ Here are the key metrics that are available for the A/B tests:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

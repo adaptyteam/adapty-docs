@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
@@ -43,8 +46,8 @@ To use the Adapty Paywall Builder:
 4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most. 
 
    
-<img
-  src={require('./img/cdca1ee-builder_templates.png').default}
+<Zoom>
+  <img src={require('./img/cdca1ee-builder_templates.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,6 +55,7 @@ To use the Adapty Paywall Builder:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +63,8 @@ To use the Adapty Paywall Builder:
 5. Click the **Choose** button to confirm your choice.
 
    
-<img
-  src={require('./img/795b91b-builder_main_window.png').default}
+<Zoom>
+  <img src={require('./img/795b91b-builder_main_window.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +72,7 @@ To use the Adapty Paywall Builder:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -94,8 +99,8 @@ To migrate a paywall to the new Paywall Builder:
 2. Open the **Builder** tab.
 
    
-<img
-  src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+<Zoom>
+  <img src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -103,6 +108,7 @@ To migrate a paywall to the new Paywall Builder:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -112,8 +118,8 @@ To migrate a paywall to the new Paywall Builder:
 6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
 
    
-<img
-  src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+<Zoom>
+  <img src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -121,6 +127,7 @@ To migrate a paywall to the new Paywall Builder:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -136,8 +143,8 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 - **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.
 
 
-<img
-  src={require('./img/210c8e2-simple_elements.png').default}
+<Zoom>
+  <img src={require('./img/210c8e2-simple_elements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -145,6 +152,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -158,8 +166,8 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
   - Link blocks with links inside
 
 
-<img
-  src={require('./img/8a23be4-compound_elements.png').default}
+<Zoom>
+  <img src={require('./img/8a23be4-compound_elements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -167,6 +175,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

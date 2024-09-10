@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Billing issue chart displays the number of subscriptions that have entered the Billing Issue state. This state is typically triggered when the store, such as Apple or Google, is unable to receive payment from the subscriber for some reason. This could happen due to reasons such as an expired credit card or insufficient funds.
 
 
-<img
-  src={require('./img/8749d28-CleanShot_2023-07-11_at_15.21.262x.png').default}
+<Zoom>
+  <img src={require('./img/8749d28-CleanShot_2023-07-11_at_15.21.262x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Billing issue chart displays the number of subscriptions that have entered t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 :::note
 Custom fonts are only available on AdaptyUI SDK v.2.1.0 and higher
 :::
@@ -15,8 +18,8 @@ One of the hallmarks of great design is consistency in visuals. So when building
 Every text you see in Paywall Builder can have its own font and style. You can adjusted this in font controls for every text element:
 
 
-<img
-  src={require('./img/2b67da0-CleanShot_2024-02-07_at_13.27.092x.png').default}
+<Zoom>
+  <img src={require('./img/2b67da0-CleanShot_2024-02-07_at_13.27.092x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ Every text you see in Paywall Builder can have its own font and style. You can a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -36,8 +40,8 @@ But in some cases, it'd be more convenient to change the font on the entire payw
 When you create a paywall in Builder, Adapty uses a system font by default. That usually means SF Pro on iOS and Roboto on Android (though it can vary depending on the device). You can also pick one of the fonts commonly used across the apps (Arial, Times New Roman, Courier New, Georgia, Palatino and Verdana). There are also a few styles to choose from available for each of those fonts:
 
 
-<img
-  src={require('./img/8812fab-CleanShot_2024-01-12_at_19.33.072x.png').default}
+<Zoom>
+  <img src={require('./img/8812fab-CleanShot_2024-01-12_at_19.33.072x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -45,6 +49,7 @@ When you create a paywall in Builder, Adapty uses a system font by default. That
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -61,8 +66,8 @@ However in our testing we observed that those fonts are typically recognised by 
 If you need more than what is offered by default, you will need to add a custom font. Click on "Add custom font" in any of the font dropdowns and you'll see this screen:
 
 
-<img
-  src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.png').default}
+<Zoom>
+  <img src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -70,6 +75,7 @@ If you need more than what is offered by default, you will need to add a custom 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -115,8 +121,8 @@ The `fontName` in the above snippet is exactly what we're looking for. It could 
 Second method is way simpler: you just need to install the font on your Mac computer, open the Font Book app, find the font and use it's `PostScript name`:
 
 
-<img
-  src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.png').default}
+<Zoom>
+  <img src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -124,6 +130,7 @@ Second method is way simpler: you just need to install the font on your Mac comp
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

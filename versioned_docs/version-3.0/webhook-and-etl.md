@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Check Adapty's step-by-step guides on how to integrate Adapty SDK with webhook and ETL options such as Amazon S3 and Google Cloud Storage. 
 
 With webhook integration, you can receive real-time notifications regarding user actions and events. These notifications can be customized and delivered to a preferred endpoint, enabling you to easily monitor and analyze your app's data. Use the following documentation to learn more about Adapty's webhook integration and how to implement it in your app,

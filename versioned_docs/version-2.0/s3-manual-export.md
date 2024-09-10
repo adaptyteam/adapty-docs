@@ -4,6 +4,9 @@ description: "Discover the steps to manually export subscription events and payw
 metadataTitle: "How to Manually Export Data to Amazon S3 Using Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 In addition to the automatic event data export to Amazon S3, Adapty also offers on-demand file export functionality. This feature allows you to export subscription events or paywall views for a specific time interval to your S3 bucket upon request. Adapty will save one export file per day for the days you select, giving you greater control over the data and timing of your exports. 
 
 The data will be exported using the same credentials and to the same folder you [set up for the automatic export](set-up-amazon-s3#set-up-amazon-s3-integration-in-the-adapty-dashboard).
@@ -17,8 +20,8 @@ To export subscription events or paywall views to Amazon S3 on-demand:
 2. In the **Manual file export** section, click the date interval below the section name and choose the period you need events or paywall views for. The specified date range will be used to export the events or paywall views created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC.
 
 
-<img
-  src={require('./img/7c76736-s3_adapty_manual_export.png').default}
+<Zoom>
+  <img src={require('./img/7c76736-s3_adapty_manual_export.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ To export subscription events or paywall views to Amazon S3 on-demand:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

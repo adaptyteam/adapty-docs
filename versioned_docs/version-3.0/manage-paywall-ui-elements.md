@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 After choosing a template, the elements of it will be displayed in the left pane. Use this pane to organize the elements on your paywall. The elements will appear on the paywall in the same order as they do in the left pane.
 
 ## Add element
@@ -14,8 +17,8 @@ To add an element to your paywall above the layout:
 2. Choose the element you want to add. The new element will appear in the list above the **Footer**.
 
 
-<img
-  src={require('./img/ee68985-PB_add_new_element.png').default}
+<Zoom>
+  <img src={require('./img/ee68985-PB_add_new_element.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,6 +26,7 @@ To add an element to your paywall above the layout:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -34,8 +38,8 @@ To add an element to a compound element:
 2. Select the element you want to add.
 
 
-<img
-  src={require('./img/abbf9ef-PB_add_element.png').default}
+<Zoom>
+  <img src={require('./img/abbf9ef-PB_add_element.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,6 +47,7 @@ To add an element to a compound element:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -55,8 +60,8 @@ To delete an element from the paywall:
 1. Click the element in the left pane to open its details.
 
    
-<img
-  src={require('./img/d6763f3-delete_element.png').default}
+<Zoom>
+  <img src={require('./img/d6763f3-delete_element.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,6 +69,7 @@ To delete an element from the paywall:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -77,8 +83,8 @@ To rename an element:
 1. Click the element in the left pane to open its details.
 
    
-<img
-  src={require('./img/a5b26ba-edit_element.png').default}
+<Zoom>
+  <img src={require('./img/a5b26ba-edit_element.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -86,6 +92,7 @@ To rename an element:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -101,8 +108,8 @@ To duplicate an element :
 1. Click the element in the left pane to open its details.
 
    
-<img
-  src={require('./img/07e81d6-duplicate_element.png').default}
+<Zoom>
+  <img src={require('./img/07e81d6-duplicate_element.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -110,6 +117,7 @@ To duplicate an element :
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -124,8 +132,8 @@ To move an element: Drag and drop the element to its new position on the layout 
 A purple line indicates an available position for the element, while a red line shows an inaccessible position.
 
 
-<img
-  src={require('./img/3c9252a-PB_move_between_layers.gif').default}
+<Zoom>
+  <img src={require('./img/3c9252a-PB_move_between_layers.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -133,5 +141,6 @@ A purple line indicates an available position for the element, while a red line 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

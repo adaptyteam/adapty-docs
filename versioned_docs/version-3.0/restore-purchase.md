@@ -3,6 +3,9 @@ title: "Restore purchases in mobile app"
 description: "Learn how to implement the restore purchases feature in your iOS and Android apps using Adapty. Discover the importance of enabling users to regain access to their previously purchased content without additional charges, and explore the simple process of restoring purchases using the .restorePurchases() method."
 metadataTitle: "Adapty: How to Restore Purchases on iOS and Android Apps"
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 

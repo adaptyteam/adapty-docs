@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Grace period chart displays the number of subscriptions that have entered the grace period state due to a billing issue. During this period, the subscription remains active while the store tries to receive payment from the subscriber. If payment is not successfully received before the grace period ends, the subscription enters the billing issue state.
 
 
-<img
-  src={require('./img/06bb222-CleanShot_2023-07-11_at_15.20.452x.png').default}
+<Zoom>
+  <img src={require('./img/06bb222-CleanShot_2023-07-11_at_15.20.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Grace period chart displays the number of subscriptions that have entered th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

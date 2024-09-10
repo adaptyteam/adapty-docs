@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty's integration with Amazon S3 allows you to store event and paywall visit data securely in one central location. You will be able to save your [subscription events](events) to your Amazon S3 bucket as .csv files.  
 To set up this integration, you will need to follow a few simple steps in the AWS Console and Adapty dashboard.
 
@@ -35,8 +38,8 @@ To integrate Amazon S3 go to [**Integrations** -> **Amazon S3**](https://app.ada
 First of all set credentials to build a connection between Amazon S3 and Adapty profiles. 
 
 
-<img
-  src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.png').default}
+<Zoom>
+  <img src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,6 +47,7 @@ First of all set credentials to build a connection between Amazon S3 and Adapty 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -67,8 +71,8 @@ This guide will help you create the necessary credentials in your AWS Console.
 First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) in your AWS Console and select the option to **Create Policy**.
 
 
-<img
-  src={require('./img/7af075c-CleanShot_2023-03-21_at_10.52.002x.png').default}
+<Zoom>
+  <img src={require('./img/7af075c-CleanShot_2023-03-21_at_10.52.002x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,6 +80,7 @@ First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amaz
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -113,8 +118,8 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
 ```
 
 
-<img
-  src={require('./img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.png').default}
+<Zoom>
+  <img src={require('./img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -122,6 +127,7 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -130,8 +136,8 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
 After completing the policy configuration, you may choose to add tags (optional) and then click **Next** to proceed to the final step. In this step, you will name your policy and simply click on the **Create policy** button to finalize the creation process.
 
 
-<img
-  src={require('./img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.png').default}
+<Zoom>
+  <img src={require('./img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,6 +145,7 @@ After completing the policy configuration, you may choose to add tags (optional)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -151,8 +158,8 @@ To enable Adapty to upload raw data reports to your bucket, you will need to pro
 To proceed with that, navigate to the IAM Console and select the [Users section](https://console.aws.amazon.com/iamv2/home#/users). From there, click on the **Add users** button.
 
 
-<img
-  src={require('./img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.png').default}
+<Zoom>
+  <img src={require('./img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -160,6 +167,7 @@ To proceed with that, navigate to the IAM Console and select the [Users section]
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -168,8 +176,8 @@ To proceed with that, navigate to the IAM Console and select the [Users section]
 Give the user a name, choose **Access key – Programmatic access**, and proceed to permissions.
 
 
-<img
-  src={require('./img/467ee4d-j6aoX.png').default}
+<Zoom>
+  <img src={require('./img/467ee4d-j6aoX.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -177,6 +185,7 @@ Give the user a name, choose **Access key – Programmatic access**, and proceed
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -185,8 +194,8 @@ Give the user a name, choose **Access key – Programmatic access**, and proceed
 For the next step, please select the **Add user to group** option and then click the **Create group** button.
 
 
-<img
-  src={require('./img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.png').default}
+<Zoom>
+  <img src={require('./img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -194,6 +203,7 @@ For the next step, please select the **Add user to group** option and then click
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -202,8 +212,8 @@ For the next step, please select the **Add user to group** option and then click
 Next, you need to assign a name to your User Group and select the policy that was previously created by you. Once you have selected the policy, click on the **Create group** button to complete the process.
 
 
-<img
-  src={require('./img/df29c12-CleanShot_2023-03-21_at_11.28.052x.png').default}
+<Zoom>
+  <img src={require('./img/df29c12-CleanShot_2023-03-21_at_11.28.052x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -211,6 +221,7 @@ Next, you need to assign a name to your User Group and select the policy that wa
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -219,8 +230,8 @@ Next, you need to assign a name to your User Group and select the policy that wa
 After successfully creating the group, please **select it** and proceed to the next step.
 
 
-<img
-  src={require('./img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.png').default}
+<Zoom>
+  <img src={require('./img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -228,6 +239,7 @@ After successfully creating the group, please **select it** and proceed to the n
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -236,8 +248,8 @@ After successfully creating the group, please **select it** and proceed to the n
 Since this is the final step for this section, you may proceed by simply clicking on the **Create User** button.
 
 
-<img
-  src={require('./img/ea43722-CleanShot_2023-03-21_at_11.40.462x.png').default}
+<Zoom>
+  <img src={require('./img/ea43722-CleanShot_2023-03-21_at_11.40.462x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -245,6 +257,7 @@ Since this is the final step for this section, you may proceed by simply clickin
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -253,8 +266,8 @@ Since this is the final step for this section, you may proceed by simply clickin
 Lastly, you can either **download the credentials in .csv** format or alternatively, copy and paste the credentials directly from the dashboard.
 
 
-<img
-  src={require('./img/bcf35e1-S3created.png').default}
+<Zoom>
+  <img src={require('./img/bcf35e1-S3created.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -262,6 +275,7 @@ Lastly, you can either **download the credentials in .csv** format or alternativ
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -274,8 +288,8 @@ In addition to the automatic event data export to Amazon S3, Adapty also provide
 The specified date range will be used to export the events created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC.
 
 
-<img
-  src={require('./img/466bd29-CleanShot_2023-03-21_at_12.35.252x.png').default}
+<Zoom>
+  <img src={require('./img/466bd29-CleanShot_2023-03-21_at_12.35.252x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -283,6 +297,7 @@ The specified date range will be used to export the events created from Date A 0
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -367,8 +382,8 @@ Here is the table structure for the paywall visits:
 Below the credentials, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+<Zoom>
+  <img src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -376,5 +391,6 @@ Below the credentials, there are three groups of events you can export, send, an
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

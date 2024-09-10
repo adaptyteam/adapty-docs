@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Are you looking to boost your in-app purchases and subscription revenue? One effective way to optimize your offerings is through A/B testing. With Adapty you can easily create and manage A/B tests for different pricing strategies, subscription lengths, trial durations, and more. In this guide, we'll walk you through the steps of creating A/B tests in the Adapty Dashboard and analyzing the results to make data-driven decisions about your in-app purchases and subscriptions. Whether you're new to A/B testing or looking to improve your existing strategies, this guide will provide you with the tools and insights you need to maximize your app's revenue potential.
 
 ### Important
@@ -31,8 +34,8 @@ To create a new A/B test from the **A/B tests** section:
 1. Open the [**A/B tests**](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
 
    
-<img
-  src={require('./img/3ca9b3c-AB_tests.png').default}
+<Zoom>
+  <img src={require('./img/3ca9b3c-AB_tests.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,14 +43,15 @@ To create a new A/B test from the **A/B tests** section:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. In the **A/B tests** window, click the **Create A/B test** button located at the top right side of the page. 
 
 
-<img
-  src={require('./img/72af454-create_AB_test.png').default}
+<Zoom>
+  <img src={require('./img/72af454-create_AB_test.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,6 +59,7 @@ To create a new A/B test from the **A/B tests** section:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -65,8 +70,8 @@ To create a new A/B test from the **A/B tests** section:
 5. Click the **Add paywall** button.
 
    
-<img
-  src={require('./img/2d25ae6-create_AB_test_with_data.png').default}
+<Zoom>
+  <img src={require('./img/2d25ae6-create_AB_test_with_data.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -74,6 +79,7 @@ To create a new A/B test from the **A/B tests** section:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -83,8 +89,8 @@ To create a new A/B test from the **A/B tests** section:
 3. Choose the paywalls you want to test and they will show in the **Create the A/B test** window.
 
 
-<img
-  src={require('./img/870cfda-AB_test_with_Paywalls.png').default}
+<Zoom>
+  <img src={require('./img/870cfda-AB_test_with_Paywalls.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -92,6 +98,7 @@ To create a new A/B test from the **A/B tests** section:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -115,8 +122,8 @@ You'll be prompted to choose whether you want to select an existing paywall grou
 Once you've added your paywalls, you can assign weights to each option to control how often they appear during the test. You can also set a test goal to track your progress and determine which paywall performs best with your audience.
 
 
-<img
-  src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png').default}
+<Zoom>
+  <img src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -124,6 +131,7 @@ Once you've added your paywalls, you can assign weights to each option to contro
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

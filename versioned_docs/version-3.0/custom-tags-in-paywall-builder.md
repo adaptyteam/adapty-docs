@@ -3,6 +3,9 @@ title: "Custom tags in paywall builder"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -43,8 +46,8 @@ To add a custom tag:
    - Custom tags can’t overlap with any of the  [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
 
 
-<img
-  src={require('./img/1ea0b95-adding_custom_tag.png').default}
+<Zoom>
+  <img src={require('./img/1ea0b95-adding_custom_tag.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,14 +55,15 @@ To add a custom tag:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/6f97bd0-custom_tag.png').default}
+<Zoom>
+  <img src={require('./img/6f97bd0-custom_tag.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +71,7 @@ To add a custom tag:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -75,8 +80,8 @@ To add a custom tag:
 2. After adding the custom tag, make sure to enter a fallback line. This fallback text will appear in your app if it doesn’t recognize a particular custom tag, ensuring users won’t see the tag displayed as code. The fallback text replaces the entire line containing the custom tag.
 
    
-<img
-  src={require('./img/4d43874-custom_tag_fallback.png').default}
+<Zoom>
+  <img src={require('./img/4d43874-custom_tag_fallback.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,6 +89,7 @@ To add a custom tag:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

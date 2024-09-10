@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Install Adapty SDK and start analyzing real-time metrics of your iOS or Android app with advanced filters, such as ad network, ad campaign, country, A/B test, and more.
 
 
-<img
-  src={require('./img/a3f96d8-analytics.png').default}
+<Zoom>
+  <img src={require('./img/a3f96d8-analytics.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ Install Adapty SDK and start analyzing real-time metrics of your iOS or Android 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

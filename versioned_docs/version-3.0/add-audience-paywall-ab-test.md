@@ -4,6 +4,9 @@ description: "Optimize user engagement by linking audiences with paywalls or A/B
 metadataTitle: "Targeted Content Delivery: Adding Audiences, paywalls, and A/B tests to Placements in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Audiences in Adapty are segments of your customers that let you target the paywalls or A/B tests accurately. You can set up these [segments](segments) using specific filters, making sure that the right paywalls show up for the right people.
 
 When it comes to [placement](placements) in Adapty, adding an audience to it means you're aiming specific content—like paywalls or A/B tests—at certain user groups. Linking an audience with a placement ensures that the content you want is seen by the right users at the right points in their app journey.
@@ -11,8 +14,8 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 1. Open the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<img
-  src={require('./img/df6f87b-placements.png').default}
+<Zoom>
+  <img src={require('./img/df6f87b-placements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,6 +23,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -27,8 +31,8 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 2. In the **Placements** window, click the **Edit** button next to the placement where you wish to add an audience.
 
    
-<img
-  src={require('./img/fe7154d-new_placement.png').default}
+<Zoom>
+  <img src={require('./img/fe7154d-new_placement.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -36,6 +40,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -43,8 +48,8 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 3. In the **Placements/ Your placement** window, click the **Add audience** button and choose the desired user segment from the list. Please note that only [segments you have previously created](segments#creation) are accessible in the list. These segments signify different audience groups defined and created within Adapty.
 
    
-<img
-  src={require('./img/d0d720f-Area.gif').default}
+<Zoom>
+  <img src={require('./img/d0d720f-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,6 +57,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +69,8 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
    If you're uncertain about the effectiveness of the created paywall, consider comparing it with another one in an A/B test. Adapty provides the flexibility to enhance your monetization strategy further by introducing A/B tests. These tests involve presenting users with multiple paywalls to evaluate and determine the most effective one. Explore further insights on A/B tests in our [A/B test](ab-tests) documentation.
 
    
-<img
-  src={require('./img/f23da25-Area.gif').default}
+<Zoom>
+  <img src={require('./img/f23da25-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,6 +78,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

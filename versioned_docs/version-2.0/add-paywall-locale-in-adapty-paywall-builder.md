@@ -4,6 +4,9 @@ description: "Effortlessly tailor your paywall for different markets by integrat
 metadataTitle: "Optimize Localization: Adding Locale in Adapty Paywall Builder"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Localizing is a tedious process that requires time and precision. When using Paywall Builder, Adapty does almost all of the work for you, as most of the things you'll need work out of the box. This page describes how it works.
 
 Suppose you've finished configuring your paywall in the default `en` localization and you like the result. Now it's time to add another language.
@@ -13,8 +16,8 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 1. Switch over to the **Localizations** tab below the **Builder** title. 
 
    
-<img
-  src={require('./img/0a6100c-PB_localization.png').default}
+<Zoom>
+  <img src={require('./img/0a6100c-PB_localization.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -22,14 +25,15 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. Click the **Add locale** button, and select all languages you want to have in your app.
 
    
-<img
-  src={require('./img/4abdb84-add_locale.png').default}
+<Zoom>
+  <img src={require('./img/4abdb84-add_locale.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +41,7 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -44,8 +49,8 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
       Once added, the new locale will be pre-filled with values from the default.
 
    
-<img
-  src={require('./img/0e99ddb-copy_locale.png').default}
+<Zoom>
+  <img src={require('./img/0e99ddb-copy_locale.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,6 +58,7 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -66,8 +72,8 @@ You can learn more about it [here](get-pb-paywalls).
 3. Now you can fill in the translated values for the new locale. There are a few controls in this table that can make it easier (especially if you have many locales).
 
    
-<img
-  src={require('./img/df4b331-locale_options.png').default}
+<Zoom>
+  <img src={require('./img/df4b331-locale_options.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -75,6 +81,7 @@ You can learn more about it [here](get-pb-paywalls).
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -95,8 +102,8 @@ We strongly recommend using tag variables (such as `<PROD_TITLE/>`) to speed up 
 You can check your texts while editing by simply switching over back to the **Builder** tab and selecting another locale:
 
 
-<img
-  src={require('./img/2b31427-choose_localization.png').default}
+<Zoom>
+  <img src={require('./img/2b31427-choose_localization.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,6 +111,7 @@ You can check your texts while editing by simply switching over back to the **Bu
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

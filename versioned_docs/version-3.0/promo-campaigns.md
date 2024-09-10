@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Promo Campaigns designed for upselling in your app. Send promo offers with automated campaigns in push notifications. To start:
 
 - Create a [segment](segments) or use predefined one

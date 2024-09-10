@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 To use fallback paywalls:
 
 1. Place the fallback JSON file you downloaded in the Adapty Dashboard alongside your app in the user's device.

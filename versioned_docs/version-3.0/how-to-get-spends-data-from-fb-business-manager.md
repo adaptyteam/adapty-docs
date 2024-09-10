@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We use data from FB Business Manager to build cohort analytics based on your spending, so you can optimize your expenses. Currently, we need data formed in a special way. This page is a tutorial for creating custom data reports in Facebook Business Manager.
 
 ### 1. Set up Ads Manager
@@ -12,8 +15,8 @@ First of all, you have to enter your <a href="https://business.facebook.com/"> F
 The next step is to open Ads Manager. Usually, it is present in the left panel of your Facebook Business Manager. If you don\`t see the Ads Manager tab there, you can manually add it.
 
 
-<img
-  src={require('./img/1734111-edit_tools.png').default}
+<Zoom>
+  <img src={require('./img/1734111-edit_tools.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -21,14 +24,15 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/01e2f0f-setup_ads_manager.png').default}
+<Zoom>
+  <img src={require('./img/01e2f0f-setup_ads_manager.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -36,6 +40,7 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -46,8 +51,8 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 In the Ads Manager tab, you should select the project you are creating the report for and create Custom Report.
 
 
-<img
-  src={require('./img/80e4cd5-general_report_view.png').default}
+<Zoom>
+  <img src={require('./img/80e4cd5-general_report_view.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -55,14 +60,15 @@ In the Ads Manager tab, you should select the project you are creating the repor
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/6bd82d8-create_custom_report.png').default}
+<Zoom>
+  <img src={require('./img/6bd82d8-create_custom_report.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -70,6 +76,7 @@ In the Ads Manager tab, you should select the project you are creating the repor
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -80,8 +87,8 @@ In the Ads Manager tab, you should select the project you are creating the repor
 The next step is to adjust breakdowns. Adapty needs your data granulated by day, AdID, AdSetId, CampaignID. Please see the required breakdowns on a picture below.
 
 
-<img
-  src={require('./img/5281d00-breakdowns.png').default}
+<Zoom>
+  <img src={require('./img/5281d00-breakdowns.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -89,6 +96,7 @@ The next step is to adjust breakdowns. Adapty needs your data granulated by day,
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -105,8 +113,8 @@ Engagement: Link clicks, Unique link clicks, Outbound clicks, Unique outbound cl
 Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Name, Campaign ID, Campaign name.  
 
 
-<img
-  src={require('./img/a8df062-performance_metrics.png').default}
+<Zoom>
+  <img src={require('./img/a8df062-performance_metrics.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -114,14 +122,15 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/6df97d7-engagement_metrics.png').default}
+<Zoom>
+  <img src={require('./img/6df97d7-engagement_metrics.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -129,14 +138,15 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/e9547ad-settings_metrics.png').default}
+<Zoom>
+  <img src={require('./img/e9547ad-settings_metrics.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -144,6 +154,7 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -157,8 +168,8 @@ The same metrics are needed for all other languages. Currently supported languag
 Then, we have to download the report. Please select CSV file format and don\`t add any summary rows to the file.
 
 
-<img
-  src={require('./img/7f42174-select_download.png').default}
+<Zoom>
+  <img src={require('./img/7f42174-select_download.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -166,14 +177,15 @@ Then, we have to download the report. Please select CSV file format and don\`t a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/b0e2ad2-finish_export.png').default}
+<Zoom>
+  <img src={require('./img/b0e2ad2-finish_export.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -181,6 +193,7 @@ Then, we have to download the report. Please select CSV file format and don\`t a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

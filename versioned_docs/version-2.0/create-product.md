@@ -4,6 +4,9 @@ description: "Learn how to optimize mobile app monetization with Adapty's produc
 metadataTitle: "What is product in Adapty and how to create it"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 No matter how you use Adapty, you need to create a product in the Adapty Dashboard and link products you've created in the app stores into it. Product creation in app stores is done separately from Adapty and involves defining details like price, duration, and free trials for your in-app purchases or subscriptions. Adapty will then use these settings to manage and analyze transactions in your app. Please check our guides on how to create products in stores:
 
 - [How to create a product in App Store](app-store-products)
@@ -14,8 +17,8 @@ After your products are set up in the stores, you are ready to add your products
 1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab.
 
 
-<img
-  src={require('./img/7c9573a-products_tab.png').default}
+<Zoom>
+  <img src={require('./img/7c9573a-products_tab.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,6 +26,7 @@ After your products are set up in the stores, you are ready to add your products
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -31,8 +35,8 @@ After your products are set up in the stores, you are ready to add your products
 2. Click the **Create product** button located in the top-right corner of the product list page. This action will initiate the process of creating a product within your app. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
 
 
-<img
-  src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.png').default}
+<Zoom>
+  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,6 +44,7 @@ After your products are set up in the stores, you are ready to add your products
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -69,8 +74,8 @@ After your products are set up in the stores, you are ready to add your products
       - **Legacy fallback product**: A fallback product is used exclusively for apps using older versions of the Adapty SDK (versions 2.5 and below). By marking a product as backward compatible in the Google Play Console, Adapty can identify whether it can be purchased by older SDK versions. For this field please specify the value in the following format `<subscription_id>:<base_plan_id>`.
 
         
-<img
-  src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
+<Zoom>
+  <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -78,6 +83,7 @@ After your products are set up in the stores, you are ready to add your products
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
