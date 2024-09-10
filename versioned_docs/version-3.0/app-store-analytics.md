@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 App Store analytics allows you to filter metrics by dates, products, and countries. As of now, it only works for iOS after uploading [App Store Connect credentials](app-store-connection-configuration). To get more insights for both iOS and Android, install SDK, and use [Charts](analytics-charts).
 
 
-<img
-  src={require('./img/cleanshot-2020-09-16-at-01.20.21-2x.png').default}
+<Zoom>
+  <img src={require('./img/cleanshot-2020-09-16-at-01.20.21-2x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ App Store analytics allows you to filter metrics by dates, products, and countri
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
