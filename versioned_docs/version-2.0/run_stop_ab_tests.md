@@ -31,7 +31,7 @@ To run your A/B test for the chosen audience and placement:
 3. In the opened **Running A/B test** window, select a **Placement** from the drop-down list. This indicates where in your app the A/B test will display for the chosen audience. This list includes all [placements](placements)  you have in Adapty for your app.
 4. From the **Audience** drop-down list, choose user segment for your A/B test. This list includes all [segments](segments) you have in Adapty for your app.  
    If you choose an audience that is a part of some other placement, it will automatically become a part of the chosen placement as well after you run the A/B test.  
-   Please note that every audience has a numerical **Priority** (starting from 1). If you add an audience with a priority lower than #1 to an A/B test, potential users for this A/B test may be directed to an audience with a higher priority instead, bypassing their participation in this A/B test. You can [adjust audience priority](change-audience-priority)in the placement itself.
+   Please note that every audience has a numerical **Priority** (starting from 1). If you add an audience with a priority lower than #1 to an A/B test, potential users for this A/B test may be directed to an audience with a higher priority instead, bypassing their participation in this A/B test. You can [adjust audience priority](change-audience-priority) in the placement itself.
 5. After you've chosen the audience and placement for the A/B test, click the **Run** button to launch it. 
 
 After launching, you can then track its progress and view metrics on the [A/B test metrics](results-and-metrics) page. This will help you identify the better-performing variation and make informed decisions to enhance your app's performance. For more details on Adapty A/B test metrics, refer to [Maths behind the A/B tests](maths-behind-it) section.
@@ -58,7 +58,7 @@ There are two options available to stop an A/B test: you can do so either from t
 
 
 1. Open the **A/B tests** section from the Adapty main menu and locate the A/B test you want to stop. Only tests that are currently running can be stopped.
-2. Click on the **Stop **button next to the A/B test.
+2. Click on the **Stop** button next to the A/B test.
 3. In the opened **Stop the A/B test** window, choose how to finish the A/B test. You have two options:
 
 - Select a winner paywall from the list of tested paywalls.  

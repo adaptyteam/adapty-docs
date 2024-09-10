@@ -3,12 +3,13 @@ title: "Display paywalls designed with new Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
+import Details from '@site/src/components/Details';
 
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.
 
 here are two ways to customize a paywall in the Adapty Dashboard: 
 
-- The simple, no-code tool called the[**Paywall Builder**](adapty-paywall-builder) 
+- The simple, no-code tool called the [**Paywall Builder**](adapty-paywall-builder) 
 - The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file containing the data needed to render the paywall on the device
 
 :::warning

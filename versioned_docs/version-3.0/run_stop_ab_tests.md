@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](present-remote-config-paywalls#track-paywall-view-events): from the **Placement** page or the **A/B test** page.
+Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-tests): from the **Placement** page or the **A/B test** page.
 
 ### How to run the A/B test
 
@@ -58,7 +58,7 @@ There are two options available to stop an A/B test: you can do so either from t
 
 
 1. Open the **A/B tests** section from the Adapty main menu and locate the A/B test you want to stop. Only tests that are currently running can be stopped.
-2. Click on the **Stop **button next to the A/B test.
+2. Click on the **Stop** button next to the A/B test.
 3. In the opened **Stop the A/B test** window, choose how to finish the A/B test. You have two options:
 
 - Select a winner paywall from the list of tested paywalls.  
