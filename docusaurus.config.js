@@ -269,7 +269,7 @@ const config = {
               },
               {
                 label: "SDK Models",
-                href: "https://docs.adapty.io/docs/sdk-models",
+                href: "https://adapty.io/docs/sdk-models",
               },
             ],
           },
