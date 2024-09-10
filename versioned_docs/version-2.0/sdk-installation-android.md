@@ -19,7 +19,8 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.7.x–2.9.x        | 2.0.x            |
 | 2.10.0             | 2.1.2            |
 | 2.10.2             | 2.1.3            |
-| 2.11.x             | 2.11.x           |
+| 2.11.0 - 2.11.3    | 2.11.0 - 2.11.2  |
+| 2.11.4             | 2.11.3           |
 
 You can install Adapty SDK via Gradle.
 
@@ -36,8 +37,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation 'io.adapty:android-sdk:2.11.3'
-    implementation 'io.adapty:android-ui:2.11.2'
+    implementation 'io.adapty:android-sdk:2.11.4'
+    implementation 'io.adapty:android-ui:2.11.3'
 }
 ```
 </TabItem>
@@ -45,8 +46,8 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation("io.adapty:android-sdk:2.11.3")
-    implementation("io.adapty:android-ui:2.11.1")
+    implementation("io.adapty:android-sdk:2.11.4")
+    implementation("io.adapty:android-ui:2.11.3")
 }
 ```
 </TabItem>
@@ -56,8 +57,8 @@ dependencies {
 
 [versions]
 ..
-adapty = "2.11.3"
-adaptyUi = "2.11.1"
+adapty = "2.11.4"
+adaptyUi = "2.11.3"
 
 [libraries]
 ..
