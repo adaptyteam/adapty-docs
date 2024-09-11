@@ -1,5 +1,5 @@
 ---
-title: "Custom tags in paywall builder"
+title: "Adapty Plugin for FlutterFlow"
 description: ""
 metadataTitle: ""
 ---
@@ -89,7 +89,7 @@ Therefore, before moving forward, make sure that you have do the following in th
 
 After you've done it, you can call your paywall in you mobile app created with FlutterFlow.
 
-## Create page state variable
+## Step 1. Create page state variable
 
 When you're setting up a paywall in your mobile app, you need a place to keep track of the paywall data while the user is on that page. That’s where a page state variable comes in. Think of a page state variable as a temporary box that stores paywall data specific to a single screen in your app.
 
@@ -172,9 +172,13 @@ In this setup, the page state variable does a few important things:
 
 here we are, we've create a page state variable for a paywall. Now we need to define what can be done with this paywall and how it can behave. 
 
-## Create Action Block
+## Step 2. Create Action Block
 
-Action Block is an action flow for the paywall that will define how to get it, process, and what to do in case when something goes wrong. Let's start with the Action Block creating. We will do it with FlutterFlow Action Flow Editor:
+Action Block is an action flow for the paywall that will define how to get it, process, and what to do in case when something goes wrong. We will first prepare this action block and later, in step 3, will use it in our app flow.
+
+Let's start with the Action Block creating. We will do it with FlutterFlow Action Flow Editor:
+
+### Step 2.1. Open FlutterFlow Action Flow Editor
 
 1. In the right pane, click the **Actions** button.
 
@@ -214,6 +218,9 @@ Action Block is an action flow for the paywall that will define how to get it, p
   }}
 />
 </Zoom>
+
+
+### Step 2.2. Create an action to receive Adapty paywall
 
 4. After that the **Action Flow Editor** opens and ready for work. Let's first get the paywall added to the placement in Adapty. For this, we need to create it as an action: click the **Add Action** button.
 
@@ -294,11 +301,295 @@ Action Block is an action flow for the paywall that will define how to get it, p
 />
 </Zoom>
 
-10. Now we have finished with all the formalities and can draw our action flow. For this, click the **plus (+)** button below the **Custom Action** block.
+10. Now we have finished with all the formalities and can draw our action flow. 
+
+### Step 2.3. Add condition to process successful Adapty paywal load and its failure
+
+1. Click the **plus (+)** button below the **Custom Action** block.
+
+<Zoom>
+  <img src={require('./FF_img/plus-button.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. We are going to process both ways: when the paywall is successfully received and when something went wrong and the paywall is not received. That is why we are going to add a condition - success of the paywall receiving. Choose **Add Conditional**.
+
+<Zoom>
+  <img src={require('./FF_img/add-conditional.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. In the **Set Variable** window, expand the **Action Output** section - you may need to scroll the list to find it. 
+<Zoom>
+  <img src={require('./FF_img/action-outputs.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+13. In the **Action Output** section, click the action output variable we've created in step 9. In our examople, its `paywallResult`.
+
+<Zoom>
+  <img src={require('./FF_img/action-output-paywallResult.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+14. Th easiest way to check that the Adapty paywall is successfully received is to check if it has a field with a value. Let;s do that. In the **Available Options** list, choose **Has Field**.
+
+<Zoom>
+  <img src={require('./FF_img/has-field.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+15. In the **Field (AdaptyGetPaywallResult)** list, choose **value**.
+
+<Zoom>
+  <img src={require('./FF_img/value.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+16. We've finished setting up the condition, click the **Confirm** button. 
+
+<Zoom>
+  <img src={require('./FF_img/confirm.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Step 2.4. Process successful paywall receving case
+
+17. Now let's set up what should happen in case when the paywall is successfully received. Click the **plus (+)** button below the **TRUE** label.
+
+<Zoom>
+  <img src={require('./FF_img/true.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+18. From the list, choos **Add Action**.
+
+<Zoom>
+  <img src={require('./FF_img/add-action.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+19. In the right pane, choose **Update Page State** (you can find it in the **State Management** section or with a search).
+<Zoom>
+  <img src={require('./FF_img/update-page-state.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+20. Now we need to define what should be updated. Click the **Add field** button.
+
+<Zoom>
+  <img src={require('./FF_img/update-page-state-add-field.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+21. In the **Search for field** window, choose the field you set up in step 3, in our case it's **paywall**. 
+<Zoom>
+  <img src={require('./FF_img/field-paywall.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+22. Now lets define how our paywall will be updated. In the **Select Update Type**, choose **Set Value**.
+
+<Zoom>
+  <img src={require('./FF_img/set-value.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+23. Click on the `UNSET` value in the **Value to Set** field, and in the opened **Set Variable** window, choose the action output variable you set up in the step 9. In our case, its **paywallResult**.
+
+<Zoom>
+  <img src={require('./FF_img/page-reload-action-output.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+24. In the **Available Options** field, choose **Data Structure Field**.
+<Zoom>
+  <img src={require('./FF_img/data-structure-field.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+25. And finally, in the **Select Field** list, choose **value**.
+
+<Zoom>
+  <img src={require('./FF_img/data-structure-field-value.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+26. Now click the **Confirm** button. This will save the changes in the action which will happen if a paywall is successfully received - update the ID of the paywall.
+<Zoom>
+  <img src={require('./FF_img/set-variable-confirm.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Step 2.5. Handle failed paywall receving 
+
+Please set up what will happen if paywall is not received successfully. Please refer to our [Handle errors in Flutter](error-handling-on-flutter-react-native-unity) section for the complete list of all possible error codes to handle them.
+Once you finish with this step, close the FlutterFlow Action Flow Editor by clicking the 
+
+<Zoom>
+  <img src={require('./FF_img/close-editor.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Step 3. Fetch paywall on page loading
+
+Now when we have prepared the action block for processing the paywall or failure to receive it. Now lets use this action block in our application flow. 
+
+
+
+
+
 
 
 <Zoom>
-  <img src={require('./FF_img/custom_actions.png').default}
+  <img src={require('./FF_img/true.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+<Zoom>
+  <img src={require('./FF_img/true.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+<Zoom>
+  <img src={require('./FF_img/true.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+<Zoom>
+  <img src={require('./FF_img/true.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -312,7 +603,19 @@ Action Block is an action flow for the paywall that will define how to get it, p
 
 
 <Zoom>
-  <img src={require('./FF_img/custom_actions.png').default}
+  <img src={require('./FF_img/true.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+<Zoom>
+  <img src={require('./FF_img/true.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
