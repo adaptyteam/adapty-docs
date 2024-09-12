@@ -210,7 +210,7 @@ Now we’ll create a variable to hold the products fetched with the paywall.
 
 Congratulations! You've set up the parameters and variables required to fetch paywall products. Let's now build an action block to fetch those products, similar to what we did when fetching the paywall.
 
-## Create action block to fetch paywall products
+## Step 4. Create action block to fetch paywall products
 
 You’re already familiar with action blocks. Let’s create one to fetch paywall products.
 

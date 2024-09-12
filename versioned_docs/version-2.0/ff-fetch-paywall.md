@@ -7,24 +7,12 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We assume you'll design the paywall UI yourself using FlutterFlow's rich features. In parallel, you'll need to [create the same paywall](create-paywall) iin the Adapty Dashboard. You don't need to design the UI in Adapty, but be sure to add the products—subscriptions or non-subscriptions—that you want to sell on the paywall. Ensure that the paywall you design in FlutterFlow matches the number of products in the Adapty paywall.
-
-Once you've created a paywall in the Adapty Dashboard, please [create a placement](create-placement) and [add your paywall](add-audience-paywall-ab-test) to it. Adapty's placement system allows you to experiment with different paywalls, swapping one out for another over time without needing to release a new app version.
-
-The only thing you need to hardcode in your mobile app is the placement ID. This means you hardcode the placement ID, and through it, you get the set of products configured for the specific paywall added to this placement.
-
-Before proceeding, make sure you've done the following in the Adapty Dashboard::
-
-1. [Created at least one paywall and added at least one product to it](create-paywall).
-2. [Created at last one placement](create-placement) and [added your paywall to it](add-audience-paywall-ab-test).
-
-After completing these steps, you'll be able to call your paywall in your FlutterFlow app.
 
 ## Step 1. Create page state variable
 
 When setting up a paywall in your mobile app, you'll need a place to track the paywall data while the user is on that page. This is where a page state variable comes in. Think of it as a temporary storage box for paywall data specific to a single screen in your app.
 
-### Why Do You Need One?
+### Why do we need one?
 The page state variable serves several key functions:
 
 - **Stores Your Paywall**: It holds the paywall element when it’s received.

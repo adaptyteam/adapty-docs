@@ -1,5 +1,5 @@
 ---
-title: "Presenting Adapty paywall in FlutterFlow"
+title: "Present Adapty paywall in FlutterFlow"
 description: ""
 metadataTitle: ""
 ---
