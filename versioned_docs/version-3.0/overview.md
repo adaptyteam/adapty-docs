@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [Overview](https://app.adapty.io/overview) is a section of Adapty Dashboard that allows you to see multiple metrics in a single place. You can customize which charts you would like to see and view data for all of your apps at once (unlike in [Charts](charts) which you can use to dive deeper into a particular app).
 
 It's located right under Home in the left-side menu:
 
 
-<img
-  src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.png').default}
+<Zoom>
+  <img src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ It's located right under Home in the left-side menu:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -42,8 +46,8 @@ Overview has the following charts available (you can click on the name to learn 
 You can customize which charts to show as well as their order. To do that, press Edit in the top-right corner and then either remove charts you don't need, add more or rearrange existing ones by drag and dropping. You can also customize Overview contents in the "Add" menu:
 
 
-<img
-  src={require('./img/d6220fa-CleanShot_2024-01-22_at_20.01.05.gif').default}
+<Zoom>
+  <img src={require('./img/d6220fa-CleanShot_2024-01-22_at_20.01.05.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,6 +55,7 @@ You can customize which charts to show as well as their order. To do that, press
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +68,8 @@ Controls for diving deeper into your data in Overview are very similar to what w
 There is one important difference though: you can group and filter by country, store and, most notably, by app — as Overview shows data for all of your apps at once by default. This can be helpful to understand how each of your app contributes to your business metrics:
 
 
-<img
-  src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.png').default}
+<Zoom>
+  <img src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,6 +77,7 @@ There is one important difference though: you can group and filter by country, s
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty's integration with Google Cloud Storage allows you to store event and paywall visit data securely in one central location.  You will be able to save your [subscription events](events) to your Google Cloud Storage bucket as .csv files.  
 To set up this integration, you will need to follow a few simple steps in the Google Cloud Console and Adapty Dashboard.
 
@@ -22,8 +25,8 @@ To integrate Google Cloud Storage go to [**Integrations** -> **Google Cloud Stor
 First of all set credentials to build a connection between Google Cloud Storage and Adapty profiles. 
 
 
-<img
-  src={require('./img/eea5f4e-CleanShot_2023-03-17_at_14.20.312x.png').default}
+<Zoom>
+  <img src={require('./img/eea5f4e-CleanShot_2023-03-17_at_14.20.312x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -31,6 +34,7 @@ First of all set credentials to build a connection between Google Cloud Storage 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -60,8 +64,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 1. For the first step, you need to go to the [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) section of your Google Cloud account and choose the relevant project or create a new one. 
 
 
-<img
-  src={require('./img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.png').default}
+<Zoom>
+  <img src={require('./img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -69,6 +73,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -77,8 +82,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Next, create a new service account for the Adapty by clicking on the "+ CREATE SERVICE ACCOUNT" button.
 
    
-<img
-  src={require('./img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.png').default}
+<Zoom>
+  <img src={require('./img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -86,6 +91,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -93,8 +99,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 3. Fill out the fields in the first step, as access will be granted at a later stage. In order to read more details about this page read the documentation [here](https://cloud.google.com/iam/docs/service-accounts-create).
 
    
-<img
-  src={require('./img/2190c50-CleanShot_2023-03-17_at_15.48.552x.png').default}
+<Zoom>
+  <img src={require('./img/2190c50-CleanShot_2023-03-17_at_15.48.552x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -102,6 +108,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -109,8 +116,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 4. To create and download a [private JSON key](https://cloud.google.com/iam/docs/keys-create-delete), navigate to the KEYS section and click on the "ADD KEY" button.
 
    
-<img
-  src={require('./img/8a45468-CleanShot_2023-03-17_at_15.58.092x.png').default}
+<Zoom>
+  <img src={require('./img/8a45468-CleanShot_2023-03-17_at_15.58.092x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -118,6 +125,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -125,8 +133,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 5. In the DETAILS section, locate the Email value linked to the recently created service account and make a copy of it. This information will be necessary for the upcoming steps to authorize the account and allow it to write to the bucket.
 
    
-<img
-  src={require('./img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.png').default}
+<Zoom>
+  <img src={require('./img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -134,6 +142,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -141,8 +150,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 6. To proceed go to the Google Cloud Storage's[ Buckets](https://console.cloud.google.com/storage/browser) page and either select an existing bucket or create a new one to store the Event or Visuts Data reports from Adapty.  Then navigate to the PERMISSIONS section and select the option to [GRANT ACCESS](https://support.google.com/cloudidentity/answer/9178892?hl=en).
 
    
-<img
-  src={require('./img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.png').default}
+<Zoom>
+  <img src={require('./img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -150,6 +159,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -157,8 +167,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 7. In the PERMISSIONS section, input the Email of the service account obtained in the fifth step mentioned earlier, then choose the Storage Object Creator role. Finally, click on SAVE to apply the changes.
 
    
-<img
-  src={require('./img/62801f4-CleanShot_2023-03-17_at_16.17.312x.png').default}
+<Zoom>
+  <img src={require('./img/62801f4-CleanShot_2023-03-17_at_16.17.312x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -166,6 +176,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -175,8 +186,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 8. After passing these steps have successfully completed the necessary setup steps in the Google Cloud Console! The final step involves entering the bucket's name, accessing the JSON file containing the downloaded private key, and extracting the required field values for use in Adapty.
 
    
-<img
-  src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
+<Zoom>
+  <img src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -184,6 +195,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -195,8 +207,8 @@ In addition to the automatic event data export to Google Cloud Storage, Adapty a
 The specified date range will be used to export the events created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC. 
 
 
-<img
-  src={require('./img/e347308-CleanShot_2023-03-17_at_17.39.452x.png').default}
+<Zoom>
+  <img src={require('./img/e347308-CleanShot_2023-03-17_at_17.39.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -204,6 +216,7 @@ The specified date range will be used to export the events created from Date A 0
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -288,8 +301,8 @@ Here is the table structure for the paywall visits:
 Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
+<Zoom>
+  <img src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -297,5 +310,6 @@ Below the credentials, there are three groups of events you can export, send, an
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

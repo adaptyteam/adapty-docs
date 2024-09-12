@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 If you already have your own purchase infrastructure and aren't prepared to fully switch to Adapty, you can explore [Observer mode](observer-vs-full-mode). It'll provide you with the best analytics capabilities, integration with attribution and analytics systems, and a CRM with your users' profiles.
 
 To make all this work in Observer mode, it's enough to enable it when configuring the Adapty SDK by setting the `observerMode` parameter to `true` as described in Adapty SDK configuration for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdks).

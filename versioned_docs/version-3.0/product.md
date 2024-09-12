@@ -4,6 +4,9 @@ description: "Learn about App Store and Google Play products – digital items u
 metadataTitle: "What are products in mobile apps and how to improve mobile app monetization with Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A Product is any item or content that is available for purchase within a mobile application. This can include various digital goods such as virtual items, subscriptions, additional features, or content upgrades that users can buy to enhance their experience within the app. For example, in a gaming app, products might include in-game currency, power-ups, or expansion packs. In a productivity app, products might include premium features or access to exclusive content. These products are managed and sold through the in-app purchase system provided by the platform (e.g., Apple App Store or Google Play Store).
 
 In Adapty you can combine similar products that you have in App Store and Play Store in a single internal product. This allows you to use a single Adapty product across all platforms, instead of using each vendor's products.
@@ -21,8 +24,8 @@ Checklist to successfully display products in your mobile app
 After you create products in the Adapty Dashboard, they are visible in the  **Products** tab of the **[Paywalls and Products](https://app.adapty.io/products)** section.
 
 
-<img
-  src={require('./img/a26de79-Products_list.png').default}
+<Zoom>
+  <img src={require('./img/a26de79-Products_list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,5 +33,6 @@ After you create products in the Adapty Dashboard, they are visible in the  **Pr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

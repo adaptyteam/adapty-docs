@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [Adapty paywall builder](/3.0/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
@@ -24,8 +27,8 @@ The **main image** is the centerpiece of your paywall's design, influencing the 
 - Graphic works but use it without claims as there is a separate place for texts in the asset.
 
 
-<img
-  src={require('./img/449450a-Export-1693233428253.gif').default}
+<Zoom>
+  <img src={require('./img/449450a-Export-1693233428253.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +36,7 @@ The **main image** is the centerpiece of your paywall's design, influencing the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -50,8 +54,8 @@ The mask type determines the shape of the main image, allowing you to apply crea
 - Leaf
 
 
-<img
-  src={require('./img/ce6499d-Area.gif').default}
+<Zoom>
+  <img src={require('./img/ce6499d-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,6 +63,7 @@ The mask type determines the shape of the main image, allowing you to apply crea
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -71,8 +76,8 @@ You can adjust the roundness of the image mask using numerical values (not avail
 The background color of the paywall sets the tone for the entire experience. You can choose a background color that aligns with your brand's identity or complements the image. The background color acts as a canvas that enhances the visual appeal of the paywall. You have the option to select either a solid color or a gradient color for the background.
 
 
-<img
-  src={require('./img/cc48986-Export-1693233802152.gif').default}
+<Zoom>
+  <img src={require('./img/cc48986-Export-1693233802152.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,6 +85,7 @@ The background color of the paywall sets the tone for the entire experience. You
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -90,8 +96,8 @@ The background color of the paywall sets the tone for the entire experience. You
 It's important to keep your paywall visually consistent with the rest of your app — and one of the biggest visual factors is the font that you're using. You can choose to simply have a system font for your paywall (SF Pro for iOS, Roboto for Android), use one of the available common fonts or upload your own custom font:
 
 
-<img
-  src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png').default}
+<Zoom>
+  <img src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -99,6 +105,7 @@ It's important to keep your paywall visually consistent with the rest of your ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -126,8 +133,8 @@ For soft paywalls, you can define the view of the closing paywall button and how
 2. In the expanded section, pick how the button should look and where it should be. The preview on the right will instantly change to reflect your choice.
 
    
-<img
-  src={require('./img/423fc40-close_button_definition.png').default}
+<Zoom>
+  <img src={require('./img/423fc40-close_button_definition.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -135,6 +142,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -146,8 +154,8 @@ For soft paywalls, you can define the view of the closing paywall button and how
 3. To add a delay before showing this Close button, switch on the **Show after delay** toggle.
 
 
-<img
-  src={require('./img/466fb18-show_after_delay.png').default}
+<Zoom>
+  <img src={require('./img/466fb18-show_after_delay.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,6 +163,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -163,8 +172,8 @@ For soft paywalls, you can define the view of the closing paywall button and how
 4. In the expanded section, specify the delay duration (in milliseconds) before the Close button starts fading in and indicate how long the button's fade-in animation should last.
 
    
-<img
-  src={require('./img/c967c2b-fading_button.png').default}
+<Zoom>
+  <img src={require('./img/c967c2b-fading_button.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -172,6 +181,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -179,8 +189,8 @@ For soft paywalls, you can define the view of the closing paywall button and how
 Here is a video to show the whole process:
 
 
-<img
-  src={require('./img/fd9c0b8-Soft_paywall.gif').default}
+<Zoom>
+  <img src={require('./img/fd9c0b8-Soft_paywall.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -188,6 +198,7 @@ Here is a video to show the whole process:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -198,8 +209,8 @@ Here is a video to show the whole process:
 Use the drop-down menu above the asset to select different devices, providing a preview of how your layout will appear on various screens. This feature enables you to ensure that your paywall looks optimal across different devices and screen sizes.
 
 
-<img
-  src={require('./img/a6ccf83-Export-1693241907397.gif').default}
+<Zoom>
+  <img src={require('./img/a6ccf83-Export-1693241907397.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -207,6 +218,7 @@ Use the drop-down menu above the asset to select different devices, providing a 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -217,8 +229,8 @@ Use the drop-down menu above the asset to select different devices, providing a 
 In the products tab of Adapty's paywall builder, you have the ability to create and customize a visually appealing product section that showcases your offerings to users. This tab enables you to configure various aspects of the product's appearance and textual content. Let's delve into the options available for customization in the products tab:
 
 
-<img
-  src={require('./img/32256b5-adapty_products_section.png').default}
+<Zoom>
+  <img src={require('./img/32256b5-adapty_products_section.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -226,6 +238,7 @@ In the products tab of Adapty's paywall builder, you have the ability to create 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -244,8 +257,8 @@ Highlighting a specific product can draw user attention. In the main product con
 Let's take a look at how you can customize each product on your paywall:
 
 
-<img
-  src={require('./img/26d435d-CleanShot_2024-01-12_at_19.14.092x.png').default}
+<Zoom>
+  <img src={require('./img/26d435d-CleanShot_2024-01-12_at_19.14.092x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -253,6 +266,7 @@ Let's take a look at how you can customize each product on your paywall:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -263,8 +277,8 @@ Let's take a look at how you can customize each product on your paywall:
 (3) You can also control the font for each of the text labels — bold, italic or regular as well as upload your own custom fonts (learn more about it [here](using-custom-fonts-in-paywall-builder)):
 
 
-<img
-  src={require('./img/06a0a51-CleanShot_2024-01-12_at_19.19.102x.png').default}
+<Zoom>
+  <img src={require('./img/06a0a51-CleanShot_2024-01-12_at_19.19.102x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -272,6 +286,7 @@ Let's take a look at how you can customize each product on your paywall:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -302,8 +317,8 @@ By default changing each of the style components above (such as any color, font 
 You can disable Style sync for a product in the upper right corner. After that, any changes you make to the visuals will only be applied to this product:
 
 
-<img
-  src={require('./img/25d3961-adapty_chain_products.png').default}
+<Zoom>
+  <img src={require('./img/25d3961-adapty_chain_products.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -311,6 +326,7 @@ You can disable Style sync for a product in the upper right corner. After that, 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -325,8 +341,8 @@ Style sync also doesn't affect texts as those are always separate for every prod
 Once you've finished customizing how your products look, it makes sense to double-check the result using preview before testing it on a device. You can find some useful settings for it in the "eye" icon in the top-right corner:
 
 
-<img
-  src={require('./img/a902a51-paywall_builder_products_preview.png').default}
+<Zoom>
+  <img src={require('./img/a902a51-paywall_builder_products_preview.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -334,6 +350,7 @@ Once you've finished customizing how your products look, it makes sense to doubl
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

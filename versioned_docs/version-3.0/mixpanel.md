@@ -3,6 +3,9 @@ title: "Mixpanel"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -15,8 +18,8 @@ This integration enables you to bring all the Adapty events into Mixpanel. As a 
 To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**](https://app.adapty.io/integrations/mixpanel) in the Adapty Dashboard, turn on a toggle, and fill out fields.
 
 
-<img
-  src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.png').default}
+<Zoom>
+  <img src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -32,8 +36,8 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
 You need only one variable such as **Mixpanel token**. You can find the token in your Mixpanel project. If you need help, [here's](https://help.mixpanel.com/hc/en-us/articles/115004502806-Find-Project-Token-) the official docs.
 
 
-<img
-  src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.png').default}
+<Zoom>
+  <img src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,6 +45,7 @@ You need only one variable such as **Mixpanel token**. You can find the token in
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -57,8 +62,8 @@ Another thing worth mentioning is updating [User Profile Properties](https://doc
 Below the credentials, there are three groups of events you can send to Mixpanel from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+<Zoom>
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,6 +71,7 @@ Below the credentials, there are three groups of events you can send to Mixpanel
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

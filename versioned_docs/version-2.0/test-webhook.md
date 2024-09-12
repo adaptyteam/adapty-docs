@@ -4,6 +4,9 @@ description: "Learn how to test your Adapty webhook integration, validate event 
 metadataTitle: "Testing Your Webhook Integration with Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 After you set up your integration, it's time to test it. You can test both your sandbox and production integration. We recommend starting with the sandbox one and validating the maximum on it:
 
 - The events are sent and successfully delivered 
@@ -28,8 +31,8 @@ Make a purchase/start a trial/make a refund that will raise an event you've chos
 In case of successful integration, an event will appear in the **Last sent events** section of the integration and will have the **Success** status. 
 
 
-<img
-  src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+<Zoom>
+  <img src={require('./img/6ccc3bb-webhook_integration_success.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +40,7 @@ In case of successful integration, an event will appear in the **Last sent event
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -51,8 +55,8 @@ In case of successful integration, an event will appear in the **Last sent event
 
 
 
-<img
-  src={require('./img/12ff189-hover_sending_failed.png').default}
+<Zoom>
+  <img src={require('./img/12ff189-hover_sending_failed.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -60,5 +64,6 @@ In case of successful integration, an event will appear in the **Last sent event
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

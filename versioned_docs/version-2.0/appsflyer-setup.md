@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We consider that you have already set up your AppsFlyer system and installed AppsFlyer SDK in the mobile app by now.
 
 Adapty integration with AppsFlyer is done in the following steps:
@@ -29,8 +32,8 @@ To set up the integration with AppsFlyer:
 3. If you use iOS, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page -> section **General**, and copy **Apple ID**.
 
    
-<img
-  src={require('./img/43a5cc6-apple_id.png').default}
+<Zoom>
+  <img src={require('./img/43a5cc6-apple_id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,6 +41,7 @@ To set up the integration with AppsFlyer:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -45,8 +49,8 @@ To set up the integration with AppsFlyer:
 4. Paste the copied **Apple ID** to the **iOS App ID** in the Adapty Dashboard.
 
    
-<img
-  src={require('./img/61bff5a-appsflyer_iOS_app_id.png').default}
+<Zoom>
+  <img src={require('./img/61bff5a-appsflyer_iOS_app_id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -54,6 +58,7 @@ To set up the integration with AppsFlyer:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -65,8 +70,8 @@ To set up the integration with AppsFlyer:
 6. Click **Your account name** -> **Security Center** in the top-left corner of the dashboard.
 
    
-<img
-  src={require('./img/1c18c50-appsflyer_security_center.png').default}
+<Zoom>
+  <img src={require('./img/1c18c50-appsflyer_security_center.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -74,6 +79,7 @@ To set up the integration with AppsFlyer:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -83,8 +89,8 @@ To set up the integration with AppsFlyer:
 8. If you have an S2S token, please proceed with step 12. If you do not have it, click the **New token** button. 
 
    
-<img
-  src={require('./img/7934920-appsflyer_new_token.png').default}
+<Zoom>
+  <img src={require('./img/7934920-appsflyer_new_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -92,6 +98,7 @@ To set up the integration with AppsFlyer:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -107,8 +114,8 @@ To set up the integration with AppsFlyer:
 13. In the Adapty Dashboard, paste the copied S2S key into the **Dev key for iOS** and **Dev key for Android** fields. 
 
 
-<img
-  src={require('./img/43cacb2-appsflyer_dev_keys.png').default}
+<Zoom>
+  <img src={require('./img/43cacb2-appsflyer_dev_keys.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -116,6 +123,7 @@ To set up the integration with AppsFlyer:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -142,8 +150,8 @@ Another important thing is that AppsFlyer doesn't support events older than 24 h
 In the [**Integrations** -> **AppsFlyer**](https://app.adapty.io/integrations/appsflyer) page of the Adapty Dashboard, below the credentials, you can choose the events you want to send to AppsFlyer from Adapty. Simply turn on the toggles next to the [events](events) you need.
 
 
-<img
-  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+<Zoom>
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -151,6 +159,7 @@ In the [**Integrations** -> **AppsFlyer**](https://app.adapty.io/integrations/ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

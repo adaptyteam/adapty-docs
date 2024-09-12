@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Non-subscriptions chart displays the number of in-app purchases such as consumables, non-consumables, and non-renewing subscriptions. The chart doesn't include renewable payments. The chart shows the total count of these types of in-app purchases and can help you track user behavior and engagement over time.
 
 
-<img
-  src={require('./img/a700612-small-CleanShot_2023-05-12_at_12.41.002x.png').default}
+<Zoom>
+  <img src={require('./img/a700612-small-CleanShot_2023-05-12_at_12.41.002x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Non-subscriptions chart displays the number of in-app purchases such as cons
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

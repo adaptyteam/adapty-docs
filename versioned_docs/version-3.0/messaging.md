@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The acquisition is not easy or cheap in the growing mobile market. So wisely treating attracted users improves your unit economy, especially in highly competitive niches.
 
 Adapty provides real-time information about core users' payment actions. We know when your customer took a trial, if he had troubles with his payment, or if he purchased a subscription and decided to cancel later. All these and other events show the change in the state of the customer. And this is the best moment to react - send an offer, or personal gift, or whatever retaining. 

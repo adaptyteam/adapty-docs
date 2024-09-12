@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The New subscriptions chart displays the amount of new (first-time activated) subscriptions in your app. This metric shows the number of new subscriptions starting in a specific time period, including both subscriptions that start from scratch and free trials that convert into paid subscriptions. It does not include subscription renewals or subscriptions that have been restarted.
 
 
-<img
-  src={require('./img/bc458a4-small-CleanShot_2023-05-05_at_16.53.072x.png').default}
+<Zoom>
+  <img src={require('./img/bc458a4-small-CleanShot_2023-05-05_at_16.53.072x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The New subscriptions chart displays the amount of new (first-time activated) su
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

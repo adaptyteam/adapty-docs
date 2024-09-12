@@ -3,6 +3,9 @@ title: "Download fallback paywalls"
 description: "Explore how fallback paywalls ensure uninterrupted in-app purchases, even without an internet connection. Learn how Adapty's innovative solutions empower developers to define fallback paywalls for a seamless user experience."
 metadataTitle: "Fallback Paywalls: Ensuring Seamless In-App Purchases | Adapty"
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
 A paywall is an in-app storefront where customers can see and purchase products within your mobile app. Typically, paywalls are fetched from the server when a customer accesses them. 
@@ -24,8 +27,8 @@ To download the JSON file with the fallback paywalls:
 1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab or just the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<img
-  src={require('./img/9c63367-placements.png').default}
+<Zoom>
+  <img src={require('./img/9c63367-placements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +36,7 @@ To download the JSON file with the fallback paywalls:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

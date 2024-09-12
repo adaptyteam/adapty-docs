@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
 
 To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
@@ -15,8 +18,8 @@ Placement metrics are available on the placements list, where you can get an ove
 For a more detailed analysis of each placements, you can navigate to the placements detail metrics. On this page, you will find comprehensive metrics specific to the selected placements. These metrics provide deeper insights into how a particular placements is performing, allowing you to assess its effectiveness and make data-driven decisions.
 
 
-<img
-  src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png').default}
+<Zoom>
+  <img src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ For a more detailed analysis of each placements, you can navigate to the placeme
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -38,8 +42,8 @@ The system displays the metrics based on the selected time period and organizes 
 The placement metrics page offers two view options for metrics data: paywall-based and audience-based.
 
 
-<img
-  src={require('./img/9d26b32-Export-1690376094858.gif').default}
+<Zoom>
+  <img src={require('./img/9d26b32-Export-1690376094858.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -47,6 +51,7 @@ The placement metrics page offers two view options for metrics data: paywall-bas
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +64,8 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Profile install date filtration
 
 
-<img
-  src={require('./img/b1e4155-Export-1690375904086.gif').default}
+<Zoom>
+  <img src={require('./img/b1e4155-Export-1690375904086.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +73,7 @@ In the audience-based view, metrics are grouped by the target audience of the pa
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -78,8 +84,8 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 You can choose from a range of time periods to analyze metrics data, allowing you to focus on specific durations such as days, weeks, months, or custom date ranges.
 
 
-<img
-  src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png').default}
+<Zoom>
+  <img src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -87,6 +93,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -108,8 +115,8 @@ One of the key components of the placement metrics page is the chart section, wh
 The chart section on the placements metrics page includes a horizontal bar chart that visually represents the chosen metric values. Each bar in the chart corresponds to a metric value and is proportional in size, making it easy to understand the data at a glance. The horizontal line indicates the timeframe being analyzed, and the vertical column displays the numeric values of the metrics. The total value of all the metric values is displayed next to the chart.
 
 
-<img
-  src={require('./img/4623c5b-Export-1690375597411.gif').default}
+<Zoom>
+  <img src={require('./img/4623c5b-Export-1690375597411.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,6 +124,7 @@ The chart section on the placements metrics page includes a horizontal bar chart
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -129,8 +137,8 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the total metrics summary section is shown, which displays the cumulative values for the selected metrics at a specific point in time, with the ability for you to change the displayed metric using a dropdown menu.
 
 
-<img
-  src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png').default}
+<Zoom>
+  <img src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -138,6 +146,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -148,8 +157,8 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 Unlock the power of placement metrics with our comprehensive definitions. From revenue to conversion rates, gain valuable insights that will supercharge your monetization strategies and drive success for your app.
 
 
-<img
-  src={require('./img/771a0f0-Export-1690375049771.gif').default}
+<Zoom>
+  <img src={require('./img/771a0f0-Export-1690375049771.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -157,6 +166,7 @@ Unlock the power of placement metrics with our comprehensive definitions. From r
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: "Enhance user satisfaction by manually assigning access levels to s
 metadataTitle: "Personalized Access Control: Assigning Access Levels to Specific Customers in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 You can manually adjust the access level for a particular customer right in the Adapty Dashboard. This is useful, especially in support scenarios. For example, if you'd like to extend a user's premium usage by an extra week as a thank-you for leaving a fantastic review.
 
 ## Give access level to a specific customer in the Adapty Dashboard
@@ -11,8 +14,8 @@ You can manually adjust the access level for a particular customer right in the 
 1. Open the **[Profiles and Segments](https://app.adapty.io/placements)** section from the Adapty main menu, then select the **Profiles** tab.
 
    
-<img
-  src={require('./img/444f659-profiles_list.png').default}
+<Zoom>
+  <img src={require('./img/444f659-profiles_list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,6 +23,7 @@ You can manually adjust the access level for a particular customer right in the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -27,8 +31,8 @@ You can manually adjust the access level for a particular customer right in the 
 2. In the **Profiles** window, click on the customer you want to grant access to. 
 
    
-<img
-  src={require('./img/96d0abf-add_access_level_to_customer.png').default}
+<Zoom>
+  <img src={require('./img/96d0abf-add_access_level_to_customer.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -36,6 +40,7 @@ You can manually adjust the access level for a particular customer right in the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -43,8 +48,8 @@ You can manually adjust the access level for a particular customer right in the 
 3. In the opened window, click the **Add access level** button.
 
    
-<img
-  src={require('./img/2379036-add_access_level_to_customer1.png').default}
+<Zoom>
+  <img src={require('./img/2379036-add_access_level_to_customer1.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,6 +57,7 @@ You can manually adjust the access level for a particular customer right in the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

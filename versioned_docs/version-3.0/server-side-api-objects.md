@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 ## Objects
 
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.

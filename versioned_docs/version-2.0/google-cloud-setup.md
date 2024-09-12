@@ -4,6 +4,9 @@ description: ""
 metadataTitle: "Step-by-Step Guide to Setting Up Google Cloud Storage Integration with Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty [Google Cloud Storage integration](google-cloud-storage) consists of the following steps:
 
 1. You [create a Google Cloud Storage service account](google-cloud-setup#create-google-cloud-storage-service-account) in the AWS dashboard.
@@ -23,8 +26,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 1. Open [**IAM & Admin** - > **Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Cloud Console. Choose the relevant project or create a new one. You can create the same project you used for the initial configuration of Adapty with Google Play Store or another one, it does not matter.
 
 
-<img
-  src={require('./img/764db95-google_cloud_create_service_account.png').default}
+<Zoom>
+  <img src={require('./img/764db95-google_cloud_create_service_account.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -32,6 +35,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -40,8 +44,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Click the **Create service account** button.
 
 
-<img
-  src={require('./img/fb865ad-google_cloud_service_account_details.png').default}
+<Zoom>
+  <img src={require('./img/fb865ad-google_cloud_service_account_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +53,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +68,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 6. After the **Create service account** window closes and the new service account shows up in the **Service accounts** list, click the ellipsis button in the **Actions** column next to it, then select the **Manage keys** action.
 
    
-<img
-  src={require('./img/c3c03cb-google_cloud_manage_keys.png').default}
+<Zoom>
+  <img src={require('./img/c3c03cb-google_cloud_manage_keys.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,6 +77,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -79,8 +85,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 7. In the opened window named after your project, click the **Add key** button, and in the opened drop-down list, select the **Create new key** option. 
 
    
-<img
-  src={require('./img/59991da-google_cloud_create_new_key.png').default}
+<Zoom>
+  <img src={require('./img/59991da-google_cloud_create_new_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -88,6 +94,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -95,8 +102,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 8. In the **Create private key for Your_project_name** window, click the **Create **button. This action will save your private key on your computer as a JSON file. 
 
    
-<img
-  src={require('./img/c91dea6-google_cloud_create_private_key.png').default}
+<Zoom>
+  <img src={require('./img/c91dea6-google_cloud_create_private_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,6 +111,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -111,8 +119,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 9. The file created will be needed during the [initial integration of Adapty with Google Play](google-play-store-connection-configuration) step. You can use the name of the file provided in the opened **Private key saved to your computer** window to locate it if needed.
 
    
-<img
-  src={require('./img/bdb056f-google_cloud_private_key_saved.png').default}
+<Zoom>
+  <img src={require('./img/bdb056f-google_cloud_private_key_saved.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -120,6 +128,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -130,8 +139,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Open the **Permissions** tab.
 
    
-<img
-  src={require('./img/ee1e453-google_cloud_grant_access.png').default}
+<Zoom>
+  <img src={require('./img/ee1e453-google_cloud_grant_access.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,6 +148,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -146,8 +156,8 @@ Please note that we only support Service Account HMAC key authorization, means i
 4. In the **Grant access** pane, enter the email of the service account obtained in step 4 of the [Create Google Cloud Storage credentials](google-cloud-storage#create-google-cloud-storage-credentials) section into the **New principals** field. 
 
    
-<img
-  src={require('./img/ecea397-google_cloud_grant_access_details.png').default}
+<Zoom>
+  <img src={require('./img/ecea397-google_cloud_grant_access_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,6 +165,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -162,8 +173,8 @@ Please note that we only support Service Account HMAC key authorization, means i
    5. In the **Select role** list, choose the **Storage Legacy Bucket owner** role. 
 
       
-<img
-  src={require('./img/d3c6643-google_cloud_role.png').default}
+<Zoom>
+  <img src={require('./img/d3c6643-google_cloud_role.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -171,6 +182,7 @@ Please note that we only support Service Account HMAC key authorization, means i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -194,8 +206,8 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 3. Turn on the **Export subscription events to Google Cloud Storage** toggle to initiate the integration.
 
    
-<img
-  src={require('./img/9d9707e-google_cloud_adapty_creds.png').default}
+<Zoom>
+  <img src={require('./img/9d9707e-google_cloud_adapty_creds.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -203,6 +215,7 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -210,8 +223,8 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 4. Fill out the integration credentials. You can take them from the JSON file in step 8 of the [Create Google Cloud Storage service account](google-cloud-setup#create-google-cloud-storage-service-account) section above.
 
    
-<img
-  src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
+<Zoom>
+  <img src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -219,6 +232,7 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -243,8 +257,8 @@ To set up the Google Cloud Storage integration in the Adapty Dashboard:
 Below the credentials, there are three groups of events you can export, send, and store in Google Cloud Storage from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
+<Zoom>
+  <img src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -252,5 +266,6 @@ Below the credentials, there are three groups of events you can export, send, an
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

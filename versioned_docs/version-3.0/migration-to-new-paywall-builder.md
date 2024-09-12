@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We’re thrilled to introduce our [**New Paywall Builder**](adapty-paywall-builder) ! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
@@ -31,8 +34,8 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
 2. Open the **Builder** tab.
 
    
-<img
-  src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+<Zoom>
+  <img src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,6 +43,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -49,8 +53,8 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
 6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
 
    
-<img
-  src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+<Zoom>
+  <img src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -58,6 +62,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

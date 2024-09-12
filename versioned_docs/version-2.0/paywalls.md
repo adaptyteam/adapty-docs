@@ -4,6 +4,9 @@ description: "Discover the power of Adapty's dynamic in-app product display solu
 metadataTitle: "Unlock Revenue Growth: Adapty's Dynamic In-App Product Display Solution"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A paywall serves as an in-app storefront where customers can browse and make purchases. What sets it apart is its dynamic nature, allowing you to modify it without requiring app updates or even introducing new paywalls to users based on various factors using [Placements](placements).
 
 There are two ways to design the view of a paywall: using the  [Paywall Builder](/3.0/adapty-paywall-builder), which is an easy and flexible no-code tool designed to help you create top-performing paywalls without requiring development or design skills; and the [Remote Config](customize-paywall-with-remote-config), a powerful tool that allows you to build a paywall using JSON. In both scenarios, you'll have impressive paywalls for your users.

@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Expired (churned) trials chart displays the number of trials that have expired, leaving users without access to the app's premium features. In most cases, this occurs when users decide not to pay for the app or experience billing issues. 
 
 
-<img
-  src={require('./img/5523eb3-small-CleanShot_2023-05-05_at_16.31.132x.png').default}
+<Zoom>
+  <img src={require('./img/5523eb3-small-CleanShot_2023-05-05_at_16.31.132x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Expired (churned) trials chart displays the number of trials that have expir
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

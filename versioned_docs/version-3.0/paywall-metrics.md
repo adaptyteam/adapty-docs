@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty collects a series of metrics to help you better measure the performance of the paywalls. All metrics are updated in real-time, except for the views, which are updated once every several minutes. All metrics, except for the views, are attributed to the product within the paywall. This document outlines the metrics available, their definitions, and how they are calculated.
 
 Paywall metrics are available on the paywall list, providing you with an overview of the performance of all your paywalls. This consolidated view presents aggregated metrics for each paywall, allowing you to assess their effectiveness and identify areas for improvement.
@@ -11,8 +14,8 @@ Paywall metrics are available on the paywall list, providing you with an overvie
 For a more granular analysis of each paywall, you can navigate to the paywall detail metrics. In this section, you will find comprehensive metrics specific to the selected paywall, offering deeper insights into its performance.
 
 
-<img
-  src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png').default}
+<Zoom>
+  <img src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,6 +23,7 @@ For a more granular analysis of each paywall, you can navigate to the paywall de
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -34,8 +38,8 @@ For Live paywall, the metrics cover the period from the paywall's start date unt
 #### View options for metrics data
 
 
-<img
-  src={require('./img/15df73d-Area.gif').default}
+<Zoom>
+  <img src={require('./img/15df73d-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,6 +47,7 @@ For Live paywall, the metrics cover the period from the paywall's start date unt
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -57,8 +62,8 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Profile install date filtration
 
 
-<img
-  src={require('./img/6c9639d-Area.gif').default}
+<Zoom>
+  <img src={require('./img/6c9639d-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,6 +71,7 @@ In the audience-based view, metrics are grouped by the target audience of the pa
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -76,8 +82,8 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 #### Time ranges
 
 
-<img
-  src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png').default}
+<Zoom>
+  <img src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -85,6 +91,7 @@ In the audience-based view, metrics are grouped by the target audience of the pa
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -108,8 +115,8 @@ One of the key components of the paywall metrics page is the chart section, whic
 The chart section on the paywall metrics page includes a horizontal bar chart that visually represents the chosen metric values. Each bar in the chart corresponds to a metric value and is proportional in size, making it easy to understand the data at a glance. The horizontal line indicates the timeframe being analyzed, and the vertical column displays the numeric values of the metrics. The total value of all the metric values is displayed next to the chart.
 
 
-<img
-  src={require('./img/10a9b9c-Area.gif').default}
+<Zoom>
+  <img src={require('./img/10a9b9c-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,6 +124,7 @@ The chart section on the paywall metrics page includes a horizontal bar chart th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -129,8 +137,8 @@ Additionally, clicking on the arrow icon in the top right corner of the chart se
 Next to the single metrics chart, the total metrics summary section is shown, which displays the cumulative values for the selected metrics at a specific point in time, with the ability for you to change the displayed metric using a dropdown menu.
 
 
-<img
-  src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png').default}
+<Zoom>
+  <img src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -138,6 +146,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -146,8 +155,8 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 ### Metrics definitions
 
 
-<img
-  src={require('./img/1b07fd8-Area.gif').default}
+<Zoom>
+  <img src={require('./img/1b07fd8-Area.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,6 +164,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

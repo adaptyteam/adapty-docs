@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-tests): from the **Placement** page or the **A/B test** page.
 
 ### How to run the A/B test
@@ -15,8 +18,8 @@ To run your A/B test for the chosen audience and placement:
 1. Open the [**A/B tests**](ab-tests) section from the Adapty main menu.
 
    
-<img
-  src={require('./img/ebd94b2-run_ab_test.gif').default}
+<Zoom>
+  <img src={require('./img/ebd94b2-run_ab_test.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ To run your A/B test for the chosen audience and placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -43,8 +47,8 @@ When you choose to stop an A/B test, it means you have finished observing and an
 There are two options available to stop an A/B test: you can do so either from the **A/B tests** list page or the placement detail page. Regardless of whether you are on the A/B test list page or the placement detail page, both paths lead to the same flow.
 
 
-<img
-  src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+<Zoom>
+  <img src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -52,6 +56,7 @@ There are two options available to stop an A/B test: you can do so either from t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

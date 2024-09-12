@@ -4,11 +4,14 @@ description: "Refine user engagement by adjusting audience priority levels withi
 metadataTitle: "Fine-Tune Audience Targeting: Changing Priority in Adapty Placements"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 When you have different user audiences in one [placement](placements), a user can belong to more than one audience. For instance, if you've defined audiences like "Female", "Runners", and a general audience like "All users," it's crucial to determine which specific audience to consider first when a user falls into multiple categories.
 
 
-<img
-  src={require('./img/afee54f-2.png').default}
+<Zoom>
+  <img src={require('./img/afee54f-2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ When you have different user audiences in one [placement](placements), a user ca
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -29,8 +33,8 @@ To adjust audience priorities for a placement:
 2. Click the placement for which you want to change the audience priority.
 
    
-<img
-  src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
+<Zoom>
+  <img src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,14 +42,15 @@ To adjust audience priorities for a placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 3. Click the **Edit placement** button.
 
    
-<img
-  src={require('./img/3b8d8e3-edit_audience.png').default}
+<Zoom>
+  <img src={require('./img/3b8d8e3-edit_audience.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,14 +58,15 @@ To adjust audience priorities for a placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 4. After the chosen placement opens with the list of its audiences, hover over any audience and click the **Edit** button once it shows.
 
    
-<img
-  src={require('./img/2babfc8-reorder_audiences.png').default}
+<Zoom>
+  <img src={require('./img/2babfc8-reorder_audiences.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +74,7 @@ To adjust audience priorities for a placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

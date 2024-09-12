@@ -4,13 +4,16 @@ description: "Enhance integration with Adapty by creating a service account in t
 metadataTitle: "Google Cloud Console: Creating a Service Account for Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 For Adapty to automate data access, a service account is necessary in the Google Play Console.
 
 1. Open [**IAM & Admin** - > **Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section of the Google Cloud Console. Make sure you use the correct project.
 
 
-<img
-  src={require('./img/17bbf45-google_cloud_create_service_account.png').default}
+<Zoom>
+  <img src={require('./img/17bbf45-google_cloud_create_service_account.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ For Adapty to automate data access, a service account is necessary in the Google
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -26,8 +30,8 @@ For Adapty to automate data access, a service account is necessary in the Google
 2. In the Click the **Create service account** button. 
 
 
-<img
-  src={require('./img/b93eec1-service_account_details.png').default}
+<Zoom>
+  <img src={require('./img/b93eec1-service_account_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,6 +39,7 @@ For Adapty to automate data access, a service account is necessary in the Google
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -47,8 +52,8 @@ For Adapty to automate data access, a service account is necessary in the Google
 5. Click the **Create and continue** button.
 
    
-<img
-  src={require('./img/e69d713-grant_access_to_project.png').default}
+<Zoom>
+  <img src={require('./img/e69d713-grant_access_to_project.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -56,6 +61,7 @@ For Adapty to automate data access, a service account is necessary in the Google
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +69,8 @@ For Adapty to automate data access, a service account is necessary in the Google
 6. In the **Select a role** drop-down list of the **Grant this service account access to project** sub-section, select **Pub/Sub -> Pub/Sub Admin**. This role is required to enable real-time developer notifications.
 
    
-<img
-  src={require('./img/976299c-service_account_role.png').default}
+<Zoom>
+  <img src={require('./img/976299c-service_account_role.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,6 +78,7 @@ For Adapty to automate data access, a service account is necessary in the Google
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -83,8 +90,8 @@ For Adapty to automate data access, a service account is necessary in the Google
 9. Click the **Continue** button.
 
    
-<img
-  src={require('./img/ffe8d82-grant_user_access.png').default}
+<Zoom>
+  <img src={require('./img/ffe8d82-grant_user_access.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -92,6 +99,7 @@ For Adapty to automate data access, a service account is necessary in the Google
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

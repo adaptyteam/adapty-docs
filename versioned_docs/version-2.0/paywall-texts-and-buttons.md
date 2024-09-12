@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [Adapty paywall builder](/3.0/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
@@ -15,8 +18,8 @@ In this section, we will discuss the customization of buttons and text elements 
 In the buttons tab, you have the ability to define and customize various buttons that play a crucial role in guiding user interactions and enhancing the overall user experience of your paywall. This tab empowers you to configure primary Call to action (CTA) buttons as well as secondary buttons that can direct users to essential legal information. You can enable or disable the appearance of the secondary buttons. Let's deep dive into the options available for customization in the buttons tab:
 
 
-<img
-  src={require('./img/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.png').default}
+<Zoom>
+  <img src={require('./img/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ In the buttons tab, you have the ability to define and customize various buttons
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -51,8 +55,8 @@ Apart from the traditional button configurations, the Restore and Login buttons 
 ### Texts
 
 
-<img
-  src={require('./img/457e7da-Export-1693572302021.gif').default}
+<Zoom>
+  <img src={require('./img/457e7da-Export-1693572302021.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -60,6 +64,7 @@ Apart from the traditional button configurations, the Restore and Login buttons 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

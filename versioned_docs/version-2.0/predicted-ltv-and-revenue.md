@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty Predictions are designed to help you answer the following questions:
 
 1. What is the predicted lifetime value (LTV) of your user cohorts?
@@ -55,8 +58,8 @@ The ML model used to predict revenue and LTV has certain limitations that should
 To access predicted revenue and predicted LTV values for your subscribers, you can navigate to the Cohort Analyses page in your Adapty dashboard. Also, if you want to learn more about the Adapty cohort, please reference our [documentation](analytics-cohorts) about it. 
 
 
-<img
-  src={require('./img/4d808b4-Export-1691486610612.gif').default}
+<Zoom>
+  <img src={require('./img/4d808b4-Export-1691486610612.gif').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -64,6 +67,7 @@ To access predicted revenue and predicted LTV values for your subscribers, you c
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -78,8 +82,8 @@ To define the time period for which the predicted revenue and predicted LTV valu
 To provide even more valuable insights, Adapty allows you to filter predicted revenue and LTV by product. By default, Adapty builds predictions based on all purchase data, but filtering by product can help you better understand how each product is performing and how it contributes to your overall predicted revenue and LTV. 
 
 
-<img
-  src={require('./img/66a9c61-Export-1691486288948.gif').default}
+<Zoom>
+  <img src={require('./img/66a9c61-Export-1691486288948.gif').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -87,6 +91,7 @@ To provide even more valuable insights, Adapty allows you to filter predicted re
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

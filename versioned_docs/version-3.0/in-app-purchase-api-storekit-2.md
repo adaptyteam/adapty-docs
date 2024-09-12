@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 For Adapty to securely validate in-app purchases in your app, and authenticate and validate subscription requests with Apple, you need to upload an in-app purchase key and provide the Issuer ID and Key ID.
 
 ## 1\. Generate the API key
@@ -16,8 +19,8 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 2. Then click the **Plus (+)** button next to the **Active** title. The **Generate in-App Purchase Key** window will open.
 
 
-<img
-  src={require('./img/14687cb-generate_in-app_key.png').default}
+<Zoom>
+  <img src={require('./img/14687cb-generate_in-app_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -25,6 +28,7 @@ To generate API keys for the App Store Server API, you need to have either an Ad
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -34,8 +38,8 @@ To generate API keys for the App Store Server API, you need to have either an Ad
 4. Click the **Generate** button. Once the **Generate in-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
-<img
-  src={require('./img/3190ad5-integration_done.png').default}
+<Zoom>
+  <img src={require('./img/3190ad5-integration_done.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,6 +47,7 @@ To generate API keys for the App Store Server API, you need to have either an Ad
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +64,8 @@ After completing the necessary setup steps in App Store Connect, the next step i
 3. Fill out the **Issuer ID** and the  **Key ID ** with the corresponding field values copied from your [App Store Connect](in-app-purchase-api-storekit-2#1-generate-the-api-key). Please note that the fields will only be active after the app's **Bundle ID** is provided, as the in-app purchase key is specific to each app bundle.
 
    
-<img
-  src={require('./img/8b6c5b3-iOS.png').default}
+<Zoom>
+  <img src={require('./img/8b6c5b3-iOS.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +73,7 @@ After completing the necessary setup steps in App Store Connect, the next step i
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

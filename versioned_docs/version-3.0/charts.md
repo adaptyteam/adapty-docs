@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty's charts provide a comprehensive view of your app's performance metrics, enabling you to quickly and easily track key data points like user engagement, retention, and revenue. 
 
  To access any of Adapty's charts, navigate to the [Charts](https://app.adapty.io/analytics/charts/) section in the Analytics dashboard.
 
 
-<img
-  src={require('./img/3b4b570-CleanShot_2023-07-10_at_17.27.102x.png').default}
+<Zoom>
+  <img src={require('./img/3b4b570-CleanShot_2023-07-10_at_17.27.102x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ Adapty's charts provide a comprehensive view of your app's performance metrics, 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

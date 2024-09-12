@@ -4,6 +4,9 @@ description: "Efficiently manage user access in your mobile app with Adapty's Ac
 metadataTitle: "Streamlined User Access Control: Managing Access Levels in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level for. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases).
 
 When you create an app in the Adapty Dashboard, the `premium` access level is automatically generated. This serves as the default access level and it cannot be deleted. 
@@ -19,8 +22,8 @@ To begin working with access levels in Adapty, open the **[Paywalls and Products
 The **Access levels** list displays all access levels, including  the `premium` one that is added automatically and those added by you in Adapty.
 
 
-<img
-  src={require('./img/22b4a1e-access_level_list.png').default}
+<Zoom>
+  <img src={require('./img/22b4a1e-access_level_list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,5 +31,6 @@ The **Access levels** list displays all access levels, including  the `premium` 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

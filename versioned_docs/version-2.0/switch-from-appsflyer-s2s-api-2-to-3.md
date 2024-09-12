@@ -4,6 +4,9 @@ description: "Learn how Adapty's support for AppsFlyer S2S API 3 provides a seam
 metadataTitle: "Adapty Supports AppsFlyer S2S API 3 Upgrade: Enhanced Security and Fraud Reduction"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 According to the [official AppsFlyer What's New](https://support.appsflyer.com/hc/en-us/articles/20509378973457-Bulletin-Upgrading-the-AppsFlyer-S2S-API), to provide a more secure experience for API usage and to reduce fraud, AppsFlyer has upgraded its server-to-server (S2S) API for in-app events. The existing endpoint will be deprecated in the future and we recommend to start planning the switch. 
 
 Adapty supports AppsFlyer S2S API 3 and provides you with a seamless switch from API 2. Keep in mind that this switch is one-way, so you won’t be able to return to API 2 once you’ve made the change.
@@ -15,8 +18,8 @@ To switch from AppsFlyer S2S API 2 to 3:
 2. Click **Your account name** -> **Security Center** in the top-left corner of the dashboard.
 
    
-<img
-  src={require('./img/be299ea-appsflyer_security_center.png').default}
+<Zoom>
+  <img src={require('./img/be299ea-appsflyer_security_center.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ To switch from AppsFlyer S2S API 2 to 3:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ To switch from AppsFlyer S2S API 2 to 3:
 4. If you do not have an S2S token, click the **New token** button. If you have it, please proceed with step 8.
 
    
-<img
-  src={require('./img/7934920-appsflyer_new_token.png').default}
+<Zoom>
+  <img src={require('./img/7934920-appsflyer_new_token.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ To switch from AppsFlyer S2S API 2 to 3:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -55,8 +60,8 @@ To switch from AppsFlyer S2S API 2 to 3:
 8. In the **Tokens** window, copy the S2S token.
 
    
-<img
-  src={require('./img/d014c25-appsflyer_tokens.png').default}
+<Zoom>
+  <img src={require('./img/d014c25-appsflyer_tokens.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,6 +69,7 @@ To switch from AppsFlyer S2S API 2 to 3:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -73,8 +79,8 @@ To switch from AppsFlyer S2S API 2 to 3:
 10. In the **AppsFlyer S2S API** field, select **API 3**.
 
     
-<img
-  src={require('./img/c0b3e72-appsflyer_switch_API.png').default}
+<Zoom>
+  <img src={require('./img/c0b3e72-appsflyer_switch_API.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -82,6 +88,7 @@ To switch from AppsFlyer S2S API 2 to 3:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

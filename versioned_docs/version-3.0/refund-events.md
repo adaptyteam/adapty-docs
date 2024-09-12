@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Refund events chart displays the number of refunded purchases and subscriptions. Adapty attributes refund events to the moment when the refund occured, meaning that any refunds related to a subscription will be counted on an actual date of the refund and not on the start date of the subscription.
 
 
-<img
-  src={require('./img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.png').default}
+<Zoom>
+  <img src={require('./img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Refund events chart displays the number of refunded purchases and subscripti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

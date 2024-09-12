@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 To make the purchase, you have to call `.MakePurchase()` method:
 
 ```csharp title="C#"

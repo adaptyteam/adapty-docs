@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 This page provides guidance on creating a product in Play Store. While this information may not directly pertain to Adapty's functionality, it serves as a valuable resource if you encounter challenges while creating products in Google Play console.
 
 Product refers to a digital item or service that you offer within your app in Play Store, typically available for purchase. These can include in-app products such as one-time purchases, subscriptions, or other digital goods that users can acquire while using your application.
@@ -29,8 +32,8 @@ To set up a product for Android devices:
 1. Open [**Monetize** -> **Subscriptions**](https://console.cloud.google.com/iam-admin/serviceaccounts) or  [**Monetize** -> **In-app products**](https://console.cloud.google.com/iam-admin/serviceaccounts) section in the left menu of the Google Play Console.
 
    
-<img
-  src={require('./img/6eff1d1-subscription_GP.png').default}
+<Zoom>
+  <img src={require('./img/6eff1d1-subscription_GP.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,6 +41,7 @@ To set up a product for Android devices:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -45,8 +49,8 @@ To set up a product for Android devices:
 2. Click the **Create subscription** button.
 
    
-<img
-  src={require('./img/af7fe02-create_subscription_GP.png').default}
+<Zoom>
+  <img src={require('./img/af7fe02-create_subscription_GP.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -54,6 +58,7 @@ To set up a product for Android devices:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -85,8 +90,8 @@ To create a base plan:
 2. Click the **View subscription** button next to the subscription.
 
    
-<img
-  src={require('./img/4072a2a-subscriptions_GP.png').default}
+<Zoom>
+  <img src={require('./img/4072a2a-subscriptions_GP.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,6 +99,7 @@ To create a base plan:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -101,8 +107,8 @@ To create a base plan:
 3. After the subscription details open. click on the **Add base plan** button under the **Base plans and offers** title. You may need to scroll down to find it.
 
    
-<img
-  src={require('./img/b493b60-add_base_plan.png').default}
+<Zoom>
+  <img src={require('./img/b493b60-add_base_plan.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -110,6 +116,7 @@ To create a base plan:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -117,8 +124,8 @@ To create a base plan:
 4. In the opened **Add base plan** window, enter a unique identifier for the base plan in the Base **Plan ID** field. It must start with a number or lowercase letter, and can contain numbers (0-9), lowercase letters (a-z) and hyphens (-). and complete the required fields. 
 
    
-<img
-  src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.png').default}
+<Zoom>
+  <img src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -126,6 +133,7 @@ To create a base plan:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -133,8 +141,8 @@ To create a base plan:
 5. Specify the prices per region.
 
    
-<img
-  src={require('./img/8b26e1d-prices.png').default}
+<Zoom>
+  <img src={require('./img/8b26e1d-prices.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -142,6 +150,7 @@ To create a base plan:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -161,8 +170,8 @@ Older versions of Adapty SDKs do not support Google Billing Library v5+ features
 :::
 
 
-<img
-  src={require('./img/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.png').default}
+<Zoom>
+  <img src={require('./img/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -170,6 +179,7 @@ Older versions of Adapty SDKs do not support Google Billing Library v5+ features
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

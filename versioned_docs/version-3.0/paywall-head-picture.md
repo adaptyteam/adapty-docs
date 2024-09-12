@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The hero image is the star of your paywall, setting the tone, establishing the theme, and capturing users' attention right from the start. This image plays a crucial role in shaping the look and feel of your paywall on both iOS and Android platforms.
 
 ## Hero image format and size
@@ -17,8 +20,8 @@ Your main image is the centerpiece of your paywall's design, essential for capti
 - **Graphics Use**: Ideal for adding visual appeal, with separate spaces reserved for text.
 
 
-<img
-  src={require('./img/70000ff-PB_hero_image.gif').default}
+<Zoom>
+  <img src={require('./img/70000ff-PB_hero_image.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ Your main image is the centerpiece of your paywall's design, essential for capti
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -38,8 +42,8 @@ You have control over the sizing of the main image, adjusting its proportions to
 The **overlay hero image** adds a layer of depth and dynamism to your paywall. Positioned as a fixed background at the bottom, it creates a stunning effect as other elements scroll over it. This makes the hero image appear stationary, providing a visually engaging experience as users scroll through the content.
 
 
-<img
-  src={require('./img/01c702a-overlay_head_picture.gif').default}
+<Zoom>
+  <img src={require('./img/01c702a-overlay_head_picture.gif').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -47,6 +51,7 @@ The **overlay hero image** adds a layer of depth and dynamism to your paywall. P
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -55,8 +60,8 @@ The **overlay hero image** adds a layer of depth and dynamism to your paywall. P
 The **transparent layout** delivers a bold, full-screen hero image that instantly captures attention. This layout is perfect for showcasing a limited selection of products or content, filling the entire screen and making a powerful, direct impact without the need for scrolling.
 
 
-<img
-  src={require('./img/0401532-transparent_hero_picture.png').default}
+<Zoom>
+  <img src={require('./img/0401532-transparent_hero_picture.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -64,6 +69,7 @@ The **transparent layout** delivers a bold, full-screen hero image that instantl
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -76,8 +82,8 @@ Use the transparent layout for minimal content display, as it doesn’t involve 
 The **flat layout** mimics a seamless landing page, presenting all elements in a continuous, scrollable layer. Users enjoy a smooth, cohesive narrative as they scroll through the content, perfect for integrating your products or stories effectively in a unified flow.
 
 
-<img
-  src={require('./img/7c13a16-flat_hero_picture.gif').default}
+<Zoom>
+  <img src={require('./img/7c13a16-flat_hero_picture.gif').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -85,6 +91,7 @@ The **flat layout** mimics a seamless landing page, presenting all elements in a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -99,8 +106,8 @@ Ideal for storytelling or presenting a series of offerings, the flat layout lets
 The **mask type** defines the shape of the main image, allowing you to apply creative effects that enhance the visual presentation. For flat or overlay image layouts, choose from various mask types to suit your design.
 
 
-<img
-  src={require('./img/b484e36-Image_mask.gif').default}
+<Zoom>
+  <img src={require('./img/b484e36-Image_mask.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -108,6 +115,7 @@ The **mask type** defines the shape of the main image, allowing you to apply cre
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -122,8 +130,8 @@ To remove a hero image from a paywall:
 1. Open the **Hero image** element.
 
    
-<img
-  src={require('./img/67f57af-PB_remove_hero_image.gif').default}
+<Zoom>
+  <img src={require('./img/67f57af-PB_remove_hero_image.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -131,6 +139,7 @@ To remove a hero image from a paywall:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

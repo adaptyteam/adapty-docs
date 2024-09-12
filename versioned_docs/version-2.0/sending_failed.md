@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 After you set up an integration, there are 2 ways you can learn about issues with sending events:
 
 1. The **Sending failed** status in the **Last sent events** table on the integration page.
 
    
-<img
-  src={require('./img/879070c-sending_failed.png').default}
+<Zoom>
+  <img src={require('./img/879070c-sending_failed.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,14 +21,15 @@ After you set up an integration, there are 2 ways you can learn about issues wit
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. The red name of the integration in the [**Event Feed**](https://app.adapty.io/event-feed).
 
    
-<img
-  src={require('./img/863e36b-red_integrations.png').default}
+<Zoom>
+  <img src={require('./img/863e36b-red_integrations.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +37,7 @@ After you set up an integration, there are 2 ways you can learn about issues wit
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -49,8 +54,8 @@ In both cases, the system displays the statuses of integrations that are enabled
 To learn the exact issue, hover over the red text. The system will show the issue that caused the integration event sending failure. 
 
 
-<img
-  src={require('./img/54d5219-hover_sending_failed.png').default}
+<Zoom>
+  <img src={require('./img/54d5219-hover_sending_failed.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -58,6 +63,7 @@ To learn the exact issue, hover over the red text. The system will show the issu
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

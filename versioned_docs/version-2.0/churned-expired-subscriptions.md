@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The churned (expired) subscriptions chart displays the number of subscriptions that have expired, meaning that the user no longer has access to the premium features of the app. Typically, this occurs when the user decides to stop paying at the end of the subscription period for the app or encounters a billing issue.
 
 
-<img
-  src={require('./img/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.png').default}
+<Zoom>
+  <img src={require('./img/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The churned (expired) subscriptions chart displays the number of subscriptions t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

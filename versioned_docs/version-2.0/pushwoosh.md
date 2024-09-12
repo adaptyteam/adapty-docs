@@ -3,6 +3,9 @@ title: "Pushwoosh"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -16,8 +19,8 @@ First of all set credentials to build a connection between your Pushwoosh and Ad
 Pushwoosh app ID and auth token are required. 
 
 
-<img
-  src={require('./img/64e48a1-CleanShot_2023-08-18_at_11.13.212x.png').default}
+<Zoom>
+  <img src={require('./img/64e48a1-CleanShot_2023-08-18_at_11.13.212x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -25,6 +28,7 @@ Pushwoosh app ID and auth token are required.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ Pushwoosh app ID and auth token are required.
 1. **App ID** can be found in your Pushwoosh dashboard.
 
 
-<img
-  src={require('./img/ee27687-CleanShot_2023-08-18_at_14.37.442x.png').default}
+<Zoom>
+  <img src={require('./img/ee27687-CleanShot_2023-08-18_at_14.37.442x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ Pushwoosh app ID and auth token are required.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -50,8 +55,8 @@ Pushwoosh app ID and auth token are required.
 2. **Auth token **can be found in the API Access section in Pushwoosh Settings.
 
 
-<img
-  src={require('./img/50e634b-CleanShot_2023-08-18_at_14.35.022x.png').default}
+<Zoom>
+  <img src={require('./img/50e634b-CleanShot_2023-08-18_at_14.35.022x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,6 +64,7 @@ Pushwoosh app ID and auth token are required.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -69,8 +75,8 @@ Pushwoosh app ID and auth token are required.
 Below the credentials, there are three groups of events you can send to Pushwoosh from Adapty. Simply turn on the ones you need. You may also change the names of the events as you need to send it to Pushwoosh. Check the full list of the Events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/392dc31-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
+<Zoom>
+  <img src={require('./img/392dc31-screencapture-app-adapty-io-integrations-pushwoosh-2023-08-22-13_31_07.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -78,6 +84,7 @@ Below the credentials, there are three groups of events you can send to Pushwoos
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

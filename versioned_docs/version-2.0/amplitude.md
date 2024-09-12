@@ -3,6 +3,9 @@ title: "Amplitude"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -15,8 +18,8 @@ Adapty provides a complete set of data that lets you track [subscription events]
 To set up the integration with [Amplitude](https://amplitude.com/), go to [Integrations > Amplitude](https://app.adapty.io/integrations/amplitude) in the Adapty Dashboard, turn on a toggle from off to on, and fill out fields.
 
 
-<img
-  src={require('./img/3b50552-CleanShot_2023-08-15_at_16.47.102x.png').default}
+<Zoom>
+  <img src={require('./img/3b50552-CleanShot_2023-08-15_at_16.47.102x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ To set up the integration with [Amplitude](https://amplitude.com/), go to [Integ
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -32,8 +36,8 @@ To set up the integration with [Amplitude](https://amplitude.com/), go to [Integ
 You need to enter the **API Key** into Adapty. To find a token, go to your **Project settings** in Amplitude. In case you need help, refer to [official docs](https://amplitude.com/docs/apis/authentication). 
 
 
-<img
-  src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.png').default}
+<Zoom>
+  <img src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,6 +45,7 @@ You need to enter the **API Key** into Adapty. To find a token, go to your **Pro
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -53,8 +58,8 @@ Along with events, Adapty also sends the[ subscription status](subscription-stat
 Below the credentials, there are three groups of events you can send to Amplitude from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/da67694-CleanShot_2023-08-15_at_16.52.352x.png').default}
+<Zoom>
+  <img src={require('./img/da67694-CleanShot_2023-08-15_at_16.52.352x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,6 +67,7 @@ Below the credentials, there are three groups of events you can send to Amplitud
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

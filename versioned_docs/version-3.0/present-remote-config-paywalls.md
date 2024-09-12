@@ -3,6 +3,9 @@ title: "Render paywall designed by remote config"
 description: "Discover how to implement and display a custom paywall and remote config paywall in your mobile app, ensuring flexibility and control over its content and appearance, while checking user eligibility for introductory offers."
 metadataTitle: "How to Render a Custom Paywall and Remore Config Paywall"
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 

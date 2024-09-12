@@ -3,6 +3,9 @@ title: "Display paywalls designed with remote config"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
 With Adapty, you have the flexibility to configure paywalls remotely, defining the products your app will display. This process eliminates the need to hardcode your products. The only thing you hardcode is the [placement ID](placements).

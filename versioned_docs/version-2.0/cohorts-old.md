@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 By cohort, we usually mean a group of subscribers united by some action (app installation in our case) during the same selected period of time. How can this be helpful? 
 
 **Step 1 - reveal acquisition effort.**  
@@ -43,8 +46,8 @@ The reasons may be:
 Here is what the cohort table looks like:
 
 
-<img
-  src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.png').default}
+<Zoom>
+  <img src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -52,6 +55,7 @@ Here is what the cohort table looks like:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -113,8 +117,8 @@ Total row shows the total revenue/subscribers/average ARPPU for each column. Thi
 Some cells have incomplete data — the time period they correspond to isn't over for some users of the cohorts. Such cells are shaded and have a special notification in their pop-up.
 
 
-<img
-  src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.png').default}
+<Zoom>
+  <img src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -122,6 +126,7 @@ Some cells have incomplete data — the time period they correspond to isn't ove
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -142,8 +147,8 @@ After your data is uploaded you will see the additional metrics as follows.
 3. **ROAS** - (revenue) is a return on ad spend as a percentage. It’s calculated as (total revenue / ad spend) _ 100. ($60000 revenue / $20000 ad spend) _ 100 = 300% ROAS. ROAS=100% means that you earned the same amount you spent. ROAS=200% means that you earn twice more as spend.
 
 
-<img
-  src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png').default}
+<Zoom>
+  <img src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -151,6 +156,7 @@ After your data is uploaded you will see the additional metrics as follows.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -163,8 +169,8 @@ After your data is uploaded you will see the additional metrics as follows.
 You can filter the Cohorts by product, attribution, country, segment, store, product duration, or product type - with trials or without them. For example, if you filter by products with trials, only revenue from those products will be taken into account.
 
 
-<img
-  src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.png').default}
+<Zoom>
+  <img src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -172,6 +178,7 @@ You can filter the Cohorts by product, attribution, country, segment, store, pro
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: "Enhance user experience and maximize conversions by strategically 
 metadataTitle: "Optimize Engagement: Utilizing Adapty's Placements for Paywalls and A/B Tests"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 With Adapty's placement system, you can create and run [paywalls](paywalls) and [A/B tests](ab-tests) at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called Placements. 
 
 A placement in your app can manage multiple paywalls or A/B tests at a time, each made for a certain group of users, which we call  [Audiences](audience). Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version. 
@@ -15,8 +18,8 @@ To see the list of placements in Adapty, open the **Placements** section in the 
 The **Placements** list offers a comprehensive view of various locations in the user journey where paywalls or A/B tests can appear. Each item in the list corresponds to a specific placement, allowing easy management and modification. You can edit placement details, associate them with the desired paywall or A/B test for a specified audience, or remove unnecessary placements. The numbers in the table reflect the analytics for placements since their activation.
 
 
-<img
-  src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
+<Zoom>
+  <img src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ The **Placements** list offers a comprehensive view of various locations in the 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

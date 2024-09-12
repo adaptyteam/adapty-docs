@@ -4,6 +4,9 @@ description: "Begin your mobile app integration journey with Adapty by naming yo
 metadataTitle: "Adapty Integration: Naming Your Mobile Application"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 \<Блин, все-таки смотрю я на эту статью, помню о том, что мы договорились ее отдельно вынести в Getting Started — но вместе с тем: ей же все-таки не тут место? Она же не про getting started. И вообще все-таки мне кажется, что она просто не нужна. Разберутся люди, как еще один апп добавить> 
 
 Once you create an account on Adapty and give your mobile app's name and category, we automatically set up the app for you on our platform.
@@ -17,8 +20,8 @@ To add the second or any subsequent app:
 1. Click the name of your existing app at the top of the Adapty Dashboard.
 
    
-<img
-  src={require('./img/cbca917-add_new_app.png').default}
+<Zoom>
+  <img src={require('./img/cbca917-add_new_app.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ To add the second or any subsequent app:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ To add the second or any subsequent app:
 3. In the new window, enter your app's name, and category and upload a file with an icon.
 
    
-<img
-  src={require('./img/8a64858-name_category.png').default}
+<Zoom>
+  <img src={require('./img/8a64858-name_category.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ To add the second or any subsequent app:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -54,8 +59,8 @@ Although you initially configured the name and category of your application, you
 1. Open the [**App settings**](https://app.adapty.io/settings/general) from the Adapty top menu.
 
    
-<img
-  src={require('./img/26f79d5-App_settings_top_menu.png').default}
+<Zoom>
+  <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,6 +68,7 @@ Although you initially configured the name and category of your application, you
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -73,8 +79,8 @@ Although you initially configured the name and category of your application, you
 
 
 
-<img
-  src={require('./img/e5437a6-app_settings.png').default}
+<Zoom>
+  <img src={require('./img/e5437a6-app_settings.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -82,5 +88,6 @@ Although you initially configured the name and category of your application, you
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 

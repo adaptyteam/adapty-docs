@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [Adjust](https://www.adjust.com/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies track their campaign performance. 
 
 Integrating Adapty with Adjust allows app developers and marketers to close the gap between user acquisition data and revenue analytics. This integration is essential for accurately attributing app installs and user actions to various marketing campaigns and channels.
@@ -20,8 +23,8 @@ The integration between Adapty and Adjust works in two main ways.
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
 
 
-<img
-  src={require('./img/d2f019d-adjust_adapty_attributionsection.png').default}
+<Zoom>
+  <img src={require('./img/d2f019d-adjust_adapty_attributionsection.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,6 +32,7 @@ The integration between Adapty and Adjust works in two main ways.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

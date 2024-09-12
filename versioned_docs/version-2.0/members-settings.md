@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 :::note
 This page is about Adapty dashboard members
 
@@ -17,8 +20,8 @@ The Adapty dashboard members system allows you to grant different levels of acce
 The following roles are available for members in the Adapty dashboard:
 
 
-<img
-  src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png').default}
+<Zoom>
+  <img src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ The following roles are available for members in the Adapty dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -44,8 +48,8 @@ The following roles are available for members in the Adapty dashboard:
 To access the members section and add new members, please navigate to the [Account section](https://app.adapty.io/account) in the Adapty dashboard.  Within this section, you have the ability to select roles and specify apps for the new members, provided you have sufficient rights.
 
 
-<img
-  src={require('./img/f72acc9-Area_2023-06-08_181614_Jun_08_2023_0619_PM.gif').default}
+<Zoom>
+  <img src={require('./img/f72acc9-Area_2023-06-08_181614_Jun_08_2023_0619_PM.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,6 +57,7 @@ To access the members section and add new members, please navigate to the [Accou
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

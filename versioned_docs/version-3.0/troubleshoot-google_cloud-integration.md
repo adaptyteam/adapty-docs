@@ -4,6 +4,9 @@ description: "Find solutions to common problems that can cause Adapty's automati
 metadataTitle: "Troubleshoot Adapty Integration Issues with Google Cloud"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 While configuring the automatic export of Adapty events or paywall views, Adapty validates every step to prevent invalid setups. If you encounter an error message, follow the below instructions to resolve the issue:
 
 | Error | Possible reasons and solutions |

@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The revenue chart displays the total revenue earned from both subscriptions and one-time purchases, minus the revenue that was refunded later. The Revenue chart is an essential tool to monitor the financial performance of the app.
 
 
-<img
-  src={require('./img/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png').default}
+<Zoom>
+  <img src={require('./img/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The revenue chart displays the total revenue earned from both subscriptions and 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

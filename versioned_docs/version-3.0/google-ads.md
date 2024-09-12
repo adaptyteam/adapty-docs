@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The integration of Adapty with [Firebase](firebase-and-google-analytics) enables you to enrich your data and optimize your **Google Ads** campaigns by leveraging [Adapty events](events). Additionally, you can use this integration to launch interest-based advertising. With Adapty, you can gain valuable insights into user behavior and improve your campaign targeting, driving better results for your business.
 
 ### 1. Integrate Firebase with Adapty
@@ -15,8 +18,8 @@ The integration of Adapty with [Firebase](firebase-and-google-analytics) enables
 The next step is to connect your Google Ads account with your Firebase project. For that you'll need to follow these four steps:
 
 
-<img
-  src={require('./img/458e843-07c949af-d174-461d-b3d8-e9825b6b1896.jpg').default}
+<Zoom>
+  <img src={require('./img/458e843-07c949af-d174-461d-b3d8-e9825b6b1896.jpg').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ The next step is to connect your Google Ads account with your Firebase project. 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

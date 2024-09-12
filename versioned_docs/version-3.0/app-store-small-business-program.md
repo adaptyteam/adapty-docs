@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Learn about how Adapty calculates proceeds for both the App Store and Google Play Store, taking into account the reduced commission rate offered by the Small Business Program. Also, you can check the instructions on how to manage your Small Business Program membership status for the App Store in the Adapty Dashboard. By keeping your membership status up to date, you can ensure that Adapty accurately calculates your sales commission and provides reliable information on your transactions. 
 
 Adapty also supports the reduced service fee program for Google Play. You can reference [this document](google-reduced-service-fee) for more details.
@@ -35,8 +38,8 @@ To manage your Small Business Program membership status for the App Store, go to
 You can add additional membership periods by clicking on the "Add Period" button again.
 
 
-<img
-  src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+<Zoom>
+  <img src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,6 +47,7 @@ You can add additional membership periods by clicking on the "Add Period" button
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

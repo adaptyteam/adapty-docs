@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 You can navigate to the General tab of the App Settings page to manage your app's behavior, appearance, and revenue sharing. Here, you can customize your app's name and icon, manage your Adapty SDK and API keys, set your Small Business Program status, and choose the timezone for your app's analytics and charts.
 
 ## 1. App details
 
 
-<img
-  src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
+<Zoom>
+  <img src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ You can navigate to the General tab of the App Settings page to manage your app'
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -28,8 +32,8 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 ## 2\. Member of Small Business Program and Reduced Service Fee
 
 
-<img
-  src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
+<Zoom>
+  <img src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +41,7 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -47,8 +52,8 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 ### 3\. Reporting timezone
 
 
-<img
-  src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
+<Zoom>
+  <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -56,6 +61,7 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -71,8 +77,8 @@ To maintain accurate data and avoid discrepancies between Adapty analytics and A
 So you can choose the logic that will be applied to subscription price increases in Adapty:
 
 
-<img
-  src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
+<Zoom>
+  <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,6 +86,7 @@ So you can choose the logic that will be applied to subscription price increases
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

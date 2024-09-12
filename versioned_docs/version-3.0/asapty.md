@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Using [Asapty](https://asapty.com/) integration you can optimize your Search Ads campaigns. Adapty sends subscription events to Asapty, so you can build custom dashboards there, based on Apple Search Ads attribution.
 
 This specific integration doesn't add any attribution data to Adapty, as we already have everything we need from [ASA](apple-search-ads) directly.
@@ -13,8 +16,8 @@ This specific integration doesn't add any attribution data to Adapty, as we alre
 To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/integrations/asapty) in the Adapty dashboard and fill out the field value for Asapty ID.
 
 
-<img
-  src={require('./img/895de2b-CleanShot_2023-08-14_at_18.57.462x.png').default}
+<Zoom>
+  <img src={require('./img/895de2b-CleanShot_2023-08-14_at_18.57.462x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -22,6 +25,7 @@ To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/in
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -34,8 +38,8 @@ Asapty ID can be found in Settings> General section in your Asapty account.
 Below the credentials, there are three groups of events you can send to Asapty from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/58ddf41-CleanShot_2023-08-15_at_15.11.072x.png').default}
+<Zoom>
+  <img src={require('./img/58ddf41-CleanShot_2023-08-15_at_15.11.072x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,6 +47,7 @@ Below the credentials, there are three groups of events you can send to Asapty f
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 :::note
 Please check a detailed [Google Play offers](google-play-offers) guide to configure them properly.
 :::
@@ -13,8 +16,8 @@ You have the ability to create one or several offers for your base plans, and ea
 It's important to note that in the case of Google’s new billing system, trials won't be automatically assigned to users. To enable this functionality, you must create an offer and specify it during the payment configuration setup.
 
 
-<img
-  src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png').default}
+<Zoom>
+  <img src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -22,6 +25,7 @@ It's important to note that in the case of Google’s new billing system, trials
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

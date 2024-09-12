@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 **Base URL**: `https://api.adapty.io/api/v1/sdk`
 
 ## Authorization

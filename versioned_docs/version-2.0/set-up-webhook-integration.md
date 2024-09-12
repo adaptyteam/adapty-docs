@@ -4,6 +4,9 @@ description: "Discover the step-by-step process to set up webhook integration in
 metadataTitle: "Set Up Webhook Integration for Real-Time Subscription Notifications"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty [webhook integration](webhook) consists of the following steps:
 
 1. You set up your endpoint to have the **Content-Type** header as `application/json`. 
@@ -25,8 +28,8 @@ To set up the webhook integration:
 1. Open [**Integrations** -> **Webhook**](https://app.adapty.io/integrations/customwebhook) in your Adapty Dashboard.
 
 
-<img
-  src={require('./img/a3e49a8-webhook_integration.png').default}
+<Zoom>
+  <img src={require('./img/a3e49a8-webhook_integration.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,6 +37,7 @@ To set up the webhook integration:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 2. Turn on the toggle to initiate the integration.
@@ -61,8 +65,8 @@ Please note that the moment you click the **Save** button, Adapty will send a ve
 Choose the events you want to receive in your server by enabling the toggle next to it. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
 
-<img
-  src={require('./img/86942b8-event_names_renaming.png').default}
+<Zoom>
+  <img src={require('./img/86942b8-event_names_renaming.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -70,6 +74,7 @@ Choose the events you want to receive in your server by enabling the toggle next
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 The event name can be any string. You cannot leave the fields empty for enabled events. If you accidentally removed Adapty event name, you can always copy the name from the [Events to send to 3d-party integrations](events) topic.
