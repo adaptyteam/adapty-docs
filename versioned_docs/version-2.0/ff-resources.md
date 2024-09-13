@@ -19,19 +19,7 @@ metadataTitle: ""
 | makePurchase | <p>Use this action to complete a purchase and unlock the desired content. This action serves as the gateway for users to engage with the paywalls and proceed with their desired transactions.</p><p>If your paywall has an active promotional offer for the product a user is trying to buy, Adapty will automatically apply it at the time of purchase.</p>| <ul><li> **product**: an AdaptyPaywallProduct object retrieved from the paywall.</li><li> **subscriptionUpdateParams**: an AdaptySubscriptionUpdateParameters object used to upgrade or downgrade a subscription (use for Android).</li><li>**isOfferPersonalized**: Specifies whether the offer is personalized to the buyer (use for Android).</li></ul> | AdaptyProfile |
 | presentCodeRedemptionSheet | Use this action to have StoreKit present a sheet enabling the user to redeem codes provided by your app. | Text | |
 | restorePurchases | None | None | |
-| updateProfile | AdaptyProfileParameters | Text | Provide parameters in the form|
+| updateProfile | AdaptyProfileParameters |  |  |
 
-
-## Data Types
-
-To use Adapty parameter in FlutterFlow, create a variable and in the **Type** field, choose **Data Type**. Then in the second **Type** field, choose one of the Adapty data types below:
-
-| Adapty Data Type| Description |
-|--------------------------|------|
-| AdaptyError | Information about error: <ul><li> **errorCode**: Code of the returned error. Refer to [full list of errors](error-handling-on-flutter-react-native-unity) for detailed description and ways to handle it.</li><li> **errorMessage**: Short description of the message</li></ul> |
-| AdaptyGetProductResult | required |
-
-
-## Enums
 
 
