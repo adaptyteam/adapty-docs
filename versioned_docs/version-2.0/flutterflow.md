@@ -17,9 +17,9 @@ Want to update the products available on your paywall? It’s simple! Make chang
 
 What else Adapty offers you:
 
-- **Subscriptions and In-App Purchases**: Adapty handles server-side receipt validation for you and syncs your customers across all platforms, including the web.
-- **A/B Testing for Subscription Plans**: Test different prices, durations, trial periods, and visual elements to optimize your subscription offerings.
-- **Powerful Analytics**: Access detailed metrics to better understand and improve your app’s monetization.
+- **Subscriptions and in-App Purchases**: Adapty handles server-side receipt validation for you and syncs your customers across all platforms, including the web.
+- **A/B Testing for paywalls**: Test different prices, durations, trial periods, and visual elements to optimize your subscription and one-time offerings.
+- **Powerful analytics**: Access detailed metrics to better understand and improve your app’s monetization.
 - **Integrations**: Adapty seamlessly connects with third-party analytics tools like Amplitude, AppsFlyer, Adjust, Branch, Mixpanel, Facebook Ads, AppMetrica, custom Webhooks, and more.
 
 [Get started with Adapty on FlutterFlow and enjoy 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
