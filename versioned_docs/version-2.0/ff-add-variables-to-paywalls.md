@@ -17,53 +17,53 @@ In order to show data, we will need to add the following variables to your paywa
 
 1. Double-click the product text in your paywall page. 
 
-<Zoom>
-  <img src={require('./FF_img/product-text.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+  <Zoom>
+    <img src={require('./FF_img/product-text.png').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
 
 2. In the **Set from Variable** window, search for `getPaywallProductResult`variable and choose it.
 
-<Zoom>
-  <img src={require('./FF_img/add-product-title-to-page.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+  <Zoom>
+    <img src={require('./FF_img/add-product-title-to-page.png').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
 
 3. Fill in the fields in the following way:
 
-| Parameter | Value |
-|--------------------------|----------|
-| Available Options| Data Structured Field |
-| Select Field| value |
-| Available Options| Data as Index |
-| List Index Options| First |
-| Available Options| Data Structured Field |
-| Select Field| Localized Title |
-| Default Variable Value| null |
-| UI Builder Display Value| Anything, in the example, it's `product.title` |
+  | Parameter | Value |
+  |--------------------------|----------|
+  | Available Options| Data Structured Field |
+  | Select Field| value |
+  | Available Options| Data as Index |
+  | List Index Options| First |
+  | Available Options| Data Structured Field |
+  | Select Field| Localized Title |
+  | Default Variable Value| null |
+  | UI Builder Display Value| Anything, in the example, it's `product.title` |
 
-<Zoom>
-  <img src={require('./FF_img/product.title.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+  <Zoom>
+    <img src={require('./FF_img/product.title.png').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
 
 3. Click the **Confirm** button to save the changes.
 
