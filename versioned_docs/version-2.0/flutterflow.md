@@ -9,17 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-<div align="center">
-  <a href="https://app.adapty.io/flutterflow-offer/registration">
-    <img src="./img/adapty-plugin-banner.png" alt="Adapty Plugin Banner" width="600" />
-  </a>
-</div>
-
-
-:::tip
-[Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
-:::
-
 Adapty is a versatile in-app purchase platform designed to help you grow your subscriber base. Whether you’re just starting out or already have millions of users, Adapty simplifies setting up the best subscription prices, testing different strategies, and finding what works best for your app’s success.
 
 The Adapty plugin for FlutterFlow lets you leverage all of Adapty’s features without any coding. You can design paywall pages in FlutterFlow, load Adapty paywall products to them, enable purchases though your paywalls, release your app, and instantly access detailed analytics of customer purchases right in the Adapty Dashboard.
@@ -33,6 +22,4 @@ What else Adapty offers you:
 - **Powerful analytics**: Access detailed metrics to better understand and improve your app’s monetization.
 - **Integrations**: Adapty seamlessly connects with third-party analytics tools like Amplitude, AppsFlyer, Adjust, Branch, Mixpanel, Facebook Ads, AppMetrica, custom Webhooks, and more.
 
-:::tip
-[Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
-:::
+[Get started with Adapty on FlutterFlow and enjoy 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
