@@ -1,5 +1,5 @@
 ---
-title: "What is Adapty Plugin for FlutterFlow"
+title: "Adapty Plugin for FlutterFlow"
 description: ""
 metadataTitle: ""
 ---
@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-  <a href="https://app.adapty.io/flutterflow-offer/registration">
+  <a href="https://app.adapty.io/flutterflow-offer/">
     <img
       src={require('./img/adapty-plugin-banner.png').default}
       alt="Adapty Plugin Banner"
@@ -26,12 +26,11 @@ import TabItem from '@theme/TabItem';
 [Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
 :::
 
+Adapty is a versatile platform designed to help mobile apps grow. Whether you’re just starting out or already have thousands of users, Adapty simplifies implementing the in-app purchase flow, setting up and remotely controlling paywalls, testing different strategies, and studying analytics — all to speed up your growth and find what works best for your app’s success.
 
-Adapty is a versatile in-app purchase platform designed to help you grow your subscriber base. Whether you’re just starting out or already have millions of users, Adapty simplifies setting up the best subscription prices, testing different strategies, and finding what works best for your app’s success.
+The Adapty plugin for FlutterFlow lets you leverage all of Adapty’s features without any coding. You can design paywall pages in FlutterFlow, enable purchases for them and then remotely control which products get displayed on them, including targeting to specific user groups or A/B testing. And after you release your app, you can instantly access detailed analytics of your customers purchases right in our dashboard.
 
-The Adapty plugin for FlutterFlow lets you leverage all of Adapty’s features without any coding. You can design paywall pages in FlutterFlow, load Adapty paywall products to them, enable purchases though your paywalls, release your app, and instantly access detailed analytics of customer purchases right in the Adapty Dashboard.
-
-Want to update the products available on your paywall? It’s simple! Make changes in just a few clicks within the Adapty Dashboard, and your customers will see the new products immediately—no need to release a new app version!
+Want to update the products available on your paywall? It’s simple! Make changes in just a few clicks within the Adapty Dashboard, and your customers will see the new products immediately — no need to release a new app version!
 
 What else Adapty offers you:
 
