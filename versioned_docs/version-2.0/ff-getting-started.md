@@ -25,9 +25,9 @@ The only thing you hardcode in the mobile app is the placement ID.
 />
 </Zoom>
 
-When you combine all the power of Adapty and FlutterFlow, you take the best from both solutions: you design the paywall UI using FlutterFlow's rich features. In parallel, you [create the same paywall](create-paywall) in the Adapty Dashboard. You don't need to design the UI in Adapty, but be sure to add the products you want to sell on the paywall. Ensure that the paywall you design in FlutterFlow matches the number of products in the Adapty paywall.
+Combining the power of Adapty and FlutterFlow lets you make the most of both platforms. Design your paywall UI with FlutterFlow’s robust features, while simultaneously [setting up the same paywall](create-paywall) in the Adapty Dashboard. There's no need to design the UI in Adapty; just make sure to add the products you want to sell. Ensure that the paywall you create in FlutterFlow matches the number of products listed in Adapty.
 
-Once you've created a paywall in the Adapty Dashboard, please [create a placement](create-placement) and [add your paywall](add-audience-paywall-ab-test) to it. Adapty's placement system allows you to experiment with different paywalls and A/B tests, swapping one out for another over time without needing to release a new app version.
+After creating a paywall in the Adapty Dashboard, [create a placement](create-placement) and [add your paywall](add-audience-paywall-ab-test) to it. Adapty’s placement system lets you experiment with different paywalls and A/B tests, allowing you to swap them out over time without needing to release a new app version.
 
 Before proceeding, make sure you've done the following:
 
@@ -92,6 +92,8 @@ After completing these steps, you'll be able to call your paywall in your Flutte
 
 ## What's next? 
 
-- Fetch paywall: At this stage we will create a variable for a paywall and link it to the `AdaptyPaywall`. After that we will create an action block that will start on user's page load and will request Adapty paywall to the new variable and handle if any.
-- Fetch paywall data: At this stage we will create a new page for a paywall, create a parameter for paywall, create a variable for products received from Adapty paywall, and then create an action block that will start on user's page load and will request Adapty paywall products to the new variable and handle errors if any.
--  
+
+1. [Create an action flow for handling Adapty paywall products and their data in FlutterFlow](ff-action-flow).
+2. [Map the received data to the paywall you designed in FlutterFlow](ff-add-variables-to-paywalls).
+3. [Set up the purchase button on your paywall to process transactions through Adapty when clicked](ff-make-purchase).
+4. [Finally, add subscription status checks to determine whether to display paid content to the user](ff-check-subscription-status).
