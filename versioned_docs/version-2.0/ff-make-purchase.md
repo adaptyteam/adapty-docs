@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Congratulations! You've successfully [set up your paywall to display product data from Adapty](ff-add-variables-to-paywalls), including the product title and price.
 
-Now, let's move on to the final step: enabling users to purchase your product:
+Now, let's move on to the final step – letting users make a purchase through the paywall.
 
 ## Step 4.1. Enable users make your purchase
 
@@ -191,4 +191,4 @@ If the purchase fails, let's display an alert to the user.
 
 7. Finally, click the **Close** button in the top-right corner.
 
-Congratulations! Your users can now purchase your products. As an extra step, let's [set up a subscription status check](ff-check-subscription-status) elsewhere to decide whether to display paid content or the paywall.
+Congratulations! Your users can now purchase your products. As an extra step, let's [set up a check for user access to paid content](ff-check-subscription-status) elsewhere to decide whether to display paid content or the paywall to them.

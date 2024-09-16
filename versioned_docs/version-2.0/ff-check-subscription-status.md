@@ -1,5 +1,5 @@
 ---
-title: "Step 5. Check subscription"
+title: "Step 5. Check access to paid content"
 description: ""
 metadataTitle: ""
 ---
@@ -7,14 +7,14 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-When you need to decide if a user has access to some paid content, you actually need to check if the user has a specific access level. Therefore, we will check the user has at least one access level and this level is the required one. 
+When determining if a user has access to specific paid content, you'll need to verify their access level. This means checking if the user has at least one access level, and if that level is the required one.
 
-And this can be done by looking into user profile as the user profile contains information on all available access levels.
+You can do this by looking at the user profile, which contains all available access levels.
 
-Now let's do the last but not the least - let the user buy your product:
+Now, let’s allow users to purchase your product:
 
 1. Double-click the button that should show the paid content.
-2. Open the **Actions** section in the right pane if it's not open.
+2. Open the **Actions** section in the right pane if it’s not already open.
 3. Open the **Action Flow Editor**.
 4. In the **Select Action Trigger** window, choose **On Tap**.
 5. In the **No Actions Created** window, click the **Add Conditional Action** button.
@@ -30,8 +30,8 @@ Now let's do the last but not the least - let the user buy your product:
 />
 </Zoom>
 
-7. In the **Set Actions Arguments** section, choose `currentProfile` variable.
-8. Fill in other fields as listed below:
+7. In the **Set Actions Arguments** section, choose `currentProfile` variable. This is the Adapty variable that holds data about the current user's profile
+8. Fill in the fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -40,8 +40,8 @@ Now let's do the last but not the least - let the user buy your product:
   | Available Options | List Contains Items |
  
 
-9. And click **UNSET**.
-10. In the new **Set Variable** window, fill in the fields as listed below:
+9. Click **UNSET**.
+10. In the new **Set Variable** window, fill in the fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -51,7 +51,7 @@ Now let's do the last but not the least - let the user buy your product:
 
 11. Click the **Confirm** button.
 12. Click **UNSET** for the second condition.
-13. In the new **Set Variable** window, fill in the fields as listed below:
+13. In the new **Set Variable** window, fill in the fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -76,6 +76,4 @@ Now let's do the last but not the least - let the user buy your product:
 </Zoom>
 14. Click the **Confirm** button twice.
 
-Now, continue adding actions that should be done if the user has or does not have the required subscription - open the next page or show a paywall to buy the access.
-
-	
+Now, add the actions for what happens next — if the user has the right subscription or not. Either take them to the next page or show the paywall so they can buy access.
