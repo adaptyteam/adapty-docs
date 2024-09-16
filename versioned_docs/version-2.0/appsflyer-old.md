@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [AppsFlyer](https://www.appsflyer.com/) is a leading platform for mobile attribution and marketing analytics. It stands as a third-party service that gathers and organizes data from marketing campaigns. This helps companies see how well their campaigns are performing in one place.
 
 Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in AppsFlyer and analyze precisely how much revenue your campaigns generate.
@@ -14,8 +17,8 @@ The integration between Adapty and AppsFlyer operates in two main ways.
    Once you've set up the AppsFlyer integration, Adapty will start receiving attribution data from AppsFlyer. You can easily access and view this data on the user's profile page.
 
 
-<img
-  src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png').default}
+<Zoom>
+  <img src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,6 +26,7 @@ The integration between Adapty and AppsFlyer operates in two main ways.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -38,8 +42,8 @@ To setup the integration with AppsFlyer go to [Integrations > AppsFlyer](https:/
 The next step of the integration is to set credentials.
 
 
-<img
-  src={require('./img/be269e5-CleanShot_2023-08-04_at_23.51.322x.png').default}
+<Zoom>
+  <img src={require('./img/be269e5-CleanShot_2023-08-04_at_23.51.322x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -47,6 +51,7 @@ The next step of the integration is to set credentials.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -55,8 +60,8 @@ The next step of the integration is to set credentials.
 1. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in section **General**, and find **Apple ID** in the left bottom part of the screen.
 
 
-<img
-  src={require('./img/50d327d-CleanShot_2023-08-05_at_00.09.072x.png').default}
+<Zoom>
+  <img src={require('./img/50d327d-CleanShot_2023-08-05_at_00.09.072x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,6 +69,7 @@ The next step of the integration is to set credentials.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -72,8 +78,8 @@ The next step of the integration is to set credentials.
 2. Open [AppsFlyer](https://hq1.appsflyer.com/auth/login) and navigate to your app page. Scroll the left menu bar, find App Settings, and copy the **Dev Key.** Then you need to use the value Dev Key for your iOS and Android apps in the Adapty Dashboard.
 
 
-<img
-  src={require('./img/b1777fa-CleanShot_2023-08-07_at_13.15.452x.png').default}
+<Zoom>
+  <img src={require('./img/b1777fa-CleanShot_2023-08-07_at_13.15.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -81,6 +87,7 @@ The next step of the integration is to set credentials.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -99,8 +106,8 @@ Another important thing is that AppsFlyer doesn't support events older than 24 h
 Below the credentials, there are three groups of events you can send to AppsFlyer from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+<Zoom>
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -108,6 +115,7 @@ Below the credentials, there are three groups of events you can send to AppsFlye
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

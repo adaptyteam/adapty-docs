@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Once you've configured everything in the Adapty Dashboard and your mobile app, it's time to conduct in-app purchase testing.
 
 :::warning

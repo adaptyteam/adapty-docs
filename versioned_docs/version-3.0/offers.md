@@ -4,6 +4,9 @@ description: "Unlock the potential of your mobile app's monetization strategy wi
 metadataTitle: "What are offers and how to use them in Adapty to increase your customer volume"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Offers in the App Store and Google Play are special deals or discounts provided by these platforms for in-app purchases. 
 
 There are 2 types of offers:

@@ -4,6 +4,9 @@ description: "Optimize app organization by effortlessly removing unused or mista
 metadataTitle: "Efficient Placement Cleanup: Deleting Unused Placements in Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A [Placement](placements) designates a specific location within your mobile app where a paywall or A/B test can be displayed. 
 
 :::danger
@@ -17,8 +20,8 @@ To delete an existing placement:
 2. In the **Placements** window, click the **3-dot** button next to the placement and select the **Delete** option.  
 
    
-<img
-  src={require('./img/6b971ea-delete_placement_list.png').default}
+<Zoom>
+  <img src={require('./img/6b971ea-delete_placement_list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ To delete an existing placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ To delete an existing placement:
 3. In the opened **Delete placement** window, enter the product name you're about to delete.
 
    
-<img
-  src={require('./img/8177c51-delete_placement.png').default}
+<Zoom>
+  <img src={require('./img/8177c51-delete_placement.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ To delete an existing placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

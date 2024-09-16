@@ -4,6 +4,9 @@ description: "Drive user interaction and optimize conversions by creating target
 metadataTitle: "Boost Engagement: Creating Placements in Adapty for Paywalls and A/B Tests"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A [Placement](placements) designates a specific location within your mobile app where a paywall or A/B test can be displayed. For example, a subscription choice might appear in a startup flow, while a consumable product (such as golden coins) could be presented when a user runs out of coins in a game. You have the flexibility to showcase the same paywall or A/B test across multiple placements or different paywalls or A/B tests in one placement for different user segments, called audiences in Adapty. 
 
 Read the [Choose meaningful placements](choose-meaningful-placements) section for more recommendations on how to choose the right placement for a paywall.
@@ -13,8 +16,8 @@ To create a new placement:
 1. Open the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
 
    
-<img
-  src={require('./img/0561bf8-placements_create_new.png').default}
+<Zoom>
+  <img src={require('./img/0561bf8-placements_create_new.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -22,14 +25,15 @@ To create a new placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 2. In the **Placements** window, click the **Create placement** button.
 
    
-<img
-  src={require('./img/3dc0e8c-new_placement.png').default}
+<Zoom>
+  <img src={require('./img/3dc0e8c-new_placement.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +41,7 @@ To create a new placement:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

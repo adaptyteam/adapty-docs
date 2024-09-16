@@ -4,6 +4,9 @@ description: "Get started with Adapty's initial integration process with the Goo
 metadataTitle: "Adapty Initial Integration with Google Play Store: A Quick Guide"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 :::warning
 Adapty SDK v3.0 is now available for iOS only. See [Initial integration with Google Play for Adapty SDK v2](initial-android) to integrate Adapty with the Google Play Store.
 :::

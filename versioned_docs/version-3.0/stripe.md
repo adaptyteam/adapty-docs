@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
 
 - automatically providing access to paid features for users who purchased on the web but later installed the app and logged in to their account
@@ -24,8 +27,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 1. Go to [Developers → API Keys](https://dashboard.stripe.com/apikeys) in Stripe:
 
    
-<img
-  src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.png').default}
+<Zoom>
+  <img src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +36,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -40,8 +44,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 2. Click the **Reveal live (test) key button** next to the **Secret key** title, then copy it and go to Adapty's [**App Settings** → **Stripe**](https://app.adapty.io/settings/stripe). Paste the key here:
 
    
-<img
-  src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.png').default}
+<Zoom>
+  <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +53,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -56,8 +61,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 3. Next, copy the Webhook URL from the bottom of the same page in Adapty. Go to [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe and click the **Add endpoint** button:
 
    
-<img
-  src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.png').default}
+<Zoom>
+  <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,6 +70,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -82,8 +88,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    - payment_intent.succeeded
 
    
-<img
-  src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.png').default}
+<Zoom>
+  <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -91,6 +97,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -98,8 +105,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 5. Press "Add endpoint" and then press "Reveal" under the "Signing secret". This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
 
    
-<img
-  src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.png').default}
+<Zoom>
+  <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -107,6 +114,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -114,8 +122,8 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 6. Finally, paste this key into Adapty's App Settings → Stripe under "Stripe Webhook Secret":
 
    
-<img
-  src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.png').default}
+<Zoom>
+  <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -123,6 +131,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -138,8 +147,8 @@ If you're configuring Sandbox, make sure to switch to Test mode in Stripe, befor
 Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=true) and create the products you would like to sell as well as their pricing plans. Note that Stripe allows you to have multiple pricing plans per product, which is useful for tailoring your offering without the need to create additional products.
 
 
-<img
-  src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.png').default}
+<Zoom>
+  <img src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -147,6 +156,7 @@ Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=tr
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -161,8 +171,8 @@ At the moment Adapty only supports **Flat rate** ($9.99/month) or **Package pric
 We treat Stripe the same way as App Store and Google Play: it is just another store where you sell your digital products. So it is configured similarly: simply add Stripe products (namely their `product_id` and `price_id`) to the Products section of Adapty:
 
 
-<img
-  src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.png').default}
+<Zoom>
+  <img src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -170,6 +180,7 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -178,8 +189,8 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
 Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. They are pretty easy to find for each product in Stripe's [Product Catalog](https://dashboard.stripe.com/products?active=true), once you open any Product:
 
 
-<img
-  src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.png').default}
+<Zoom>
+  <img src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -187,6 +198,7 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

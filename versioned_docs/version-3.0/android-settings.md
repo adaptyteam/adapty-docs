@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 For Adapty Android SDK to work, you need to configure several parameters.
 
 
-<img
-  src={require('./img/f6d76ec-app-settings_android.png').default}
+<Zoom>
+  <img src={require('./img/f6d76ec-app-settings_android.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ For Adapty Android SDK to work, you need to configure several parameters.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

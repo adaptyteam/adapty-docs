@@ -3,6 +3,9 @@ title: "Adjust"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -16,8 +19,8 @@ The integration between Adapty and Adjust works in two main ways.
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
 
 
-<img
-  src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
+<Zoom>
+  <img src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -25,6 +28,7 @@ The integration between Adapty and Adjust works in two main ways.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -40,8 +44,8 @@ To setup the integration with Adjust go to [Integrations > Adjust](https://app.a
 The next step of the integration is to set credentials.
 
 
-<img
-  src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.png').default}
+<Zoom>
+  <img src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +53,7 @@ The next step of the integration is to set credentials.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -58,8 +63,8 @@ The next step of the integration is to set credentials.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
 
 
-<img
-  src={require('./img/e9ee52e-image_52.png').default}
+<Zoom>
+  <img src={require('./img/e9ee52e-image_52.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +72,7 @@ The next step of the integration is to set credentials.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -79,8 +85,8 @@ You may have different Adjust applications for iOS and Android, so in Adapty you
 You will need to copy **App Token** and paste it to Adapty.
 
 
-<img
-  src={require('./img/4b1601c-image_36.png').default}
+<Zoom>
+  <img src={require('./img/4b1601c-image_36.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -88,6 +94,7 @@ You will need to copy **App Token** and paste it to Adapty.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -102,8 +109,8 @@ Adjust works a bit differently from other platforms. You need to manually create
 So first step here is to find event tokens for all events that you want Adapty to send. To do that go to All Settings in your Adjust dashboard.
 
 
-<img
-  src={require('./img/6c6b9a0-image_83.png').default}
+<Zoom>
+  <img src={require('./img/6c6b9a0-image_83.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -111,14 +118,15 @@ So first step here is to find event tokens for all events that you want Adapty t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/4d4f40d-image_9.png').default}
+<Zoom>
+  <img src={require('./img/4d4f40d-image_9.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -126,14 +134,15 @@ So first step here is to find event tokens for all events that you want Adapty t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/815515f-image_16.png').default}
+<Zoom>
+  <img src={require('./img/815515f-image_16.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -141,6 +150,7 @@ So first step here is to find event tokens for all events that you want Adapty t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -149,8 +159,8 @@ So first step here is to find event tokens for all events that you want Adapty t
 Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjsut from Adapty. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.png').default}
+<Zoom>
+  <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -158,6 +168,7 @@ Copy the event token and paste it to Adapty. Below the credentials, there are th
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

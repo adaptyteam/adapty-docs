@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 We recommend testing the AppsFlyer integration end-to-end before going live. Since the integration of Adapty with AppsFlyer is bidirectional, that is sends both Adapty events from Adapty server to AppsFlyer server and AppsFlyer attribution from AppsFlyer SDK to Adapty server, we recommend validating both flow success.
 
 1. Set up the test AppsFlyer integration as described in the [Set up AppsFlyer integration](appsflyer-setup) topic. Make sure to use the **Sandbox** fields in the **Dev key for iOS** and **Dev key for Android** sections in step 6.
@@ -20,8 +23,8 @@ We recommend testing the AppsFlyer integration end-to-end before going live. Sin
 In case of successful integration, an event will appear in the **Last sent events** section of the integration and will have the **Success** status. 
 
 
-<img
-  src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+<Zoom>
+  <img src={require('./img/6ccc3bb-webhook_integration_success.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,6 +32,7 @@ In case of successful integration, an event will appear in the **Last sent event
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -39,8 +43,8 @@ In case of successful integration, an event will appear in the **Last sent event
 In case of unsuccessful integration, the event will either not appear at all or will have the **Sending failed** status in the **Last sent events** section of the integration.
 
 
-<img
-  src={require('./img/995b3bb-sending_failed.png').default}
+<Zoom>
+  <img src={require('./img/995b3bb-sending_failed.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -48,6 +52,7 @@ In case of unsuccessful integration, the event will either not appear at all or 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -71,8 +76,8 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 1. Expand a successful event in the **Last sent events** section of the integration.
 
    
-<img
-  src={require('./img/7aef747-view_profile.png').default}
+<Zoom>
+  <img src={require('./img/7aef747-view_profile.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,6 +85,7 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -87,8 +93,8 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 3. In the **Profile** window, make sure the **Attribution -> AppsFlyer** section is presented.
 
    
-<img
-  src={require('./img/943148a-profile_attribution.png').default}
+<Zoom>
+  <img src={require('./img/943148a-profile_attribution.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -96,6 +102,7 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Apple and Google provide a way to send subscription events updates the moment they occur on their servers. It's very important to send them to Adapty to avoid delays in processing subscription status, and therefore providing the best experience for your customers.
 
 In most cases, you just have to paste [Adapty URL to App Store Connect] \(doc:app-store-server-notifications) or use the [Real-time Developer Notifications (RTDN) topic provided by Adapty](real-time-developer-notifications-rtdn) in Google Play Console, no coding is needed on your side.

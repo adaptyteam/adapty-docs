@@ -4,11 +4,14 @@ description: "Learn how to use webhooks to get instant notifications about subsc
 metadataTitle: "Understanding Webhooks: Real-Time Notifications for Subscription Events"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A webhook is a convenient and fast way to get notifications about [events](events). For example, if a new trial is started, a subscription is renewed, or a billing issue happens. The webhook mechanism works through a callback function. You set up a URL (called Endpoint URL) to which an HTTP request is sent when an event occurs. 
 
 
-<img
-  src={require('./img/e5dce30-image_3.png').default}
+<Zoom>
+  <img src={require('./img/e5dce30-image_3.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ A webhook is a convenient and fast way to get notifications about [events](event
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -98,8 +102,8 @@ Webhook integration enables the control of sending attribution and user attribut
 Adapty has a special event `access_level_updated`. It is sent only to webhook integration every time the access level is updated/set for a specific customer. Use this event to update a customer's subscription in your database/system. No matter what was the source of access level changes, you will always receive a dedicated event for that, therefore it's more precise and has more details than `subscription_renewed`, `trial_started`, `entered_grace_period`, etc.
 
 
-<img
-  src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
+<Zoom>
+  <img src={require('./img/6375cb2-CleanShot_2022-05-03_at_14.22.56.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -107,6 +111,7 @@ Adapty has a special event `access_level_updated`. It is sent only to webhook in
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

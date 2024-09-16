@@ -3,6 +3,9 @@ title: "Design paywall with remote config"
 description: "Leverage the Paywall Remote Config tool to fine-tune your paywalls effortlessly. Utilize custom JSON payloads to personalize titles, images, fonts, and colors with precision. Ensure optimal performance with size restrictions per language, all without hassle"
 metadataTitle: "Optimize Paywalls with Flexible Configuration using Paywall Remote Config"
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
@@ -21,8 +24,8 @@ To start customizing a paywall using the remote config:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
 
    
-<img
-  src={require('./img/b7eb293-paywalls_edit.png').default}
+<Zoom>
+  <img src={require('./img/b7eb293-paywalls_edit.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,6 +33,7 @@ To start customizing a paywall using the remote config:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -37,8 +41,8 @@ To start customizing a paywall using the remote config:
 2. Click the **3-dot** button next to the paywall and select the **Edit** option.
 
    
-<img
-  src={require('./img/d44fdb9-switch_to_remote_config.png').default}
+<Zoom>
+  <img src={require('./img/d44fdb9-switch_to_remote_config.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +50,7 @@ To start customizing a paywall using the remote config:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -139,8 +144,8 @@ You can combine different options, and make up your own. This way you can test d
 In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
 
 
-<img
-  src={require('./img/3356ff5-remote_config_JSON.png').default}
+<Zoom>
+  <img src={require('./img/3356ff5-remote_config_JSON.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -148,6 +153,7 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -158,8 +164,8 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
 If it's not common for you to work with code and there is a need to correct some values of the JSON, Adapty has the **Table** view for you.
 
 
-<img
-  src={require('./img/4c27b2f-remote_config_table.png').default}
+<Zoom>
+  <img src={require('./img/4c27b2f-remote_config_table.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -167,6 +173,7 @@ If it's not common for you to work with code and there is a need to correct some
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -177,8 +184,8 @@ It is a copy of your JSON in the format of a table that is easy to read and unde
 To add a key, click the **Add raw** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 
-<img
-  src={require('./img/ef682d8-add_raw.png').default}
+<Zoom>
+  <img src={require('./img/ef682d8-add_raw.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -186,6 +193,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -194,8 +202,8 @@ To add a key, click the **Add raw** button. We automatically check the values an
 Additional raw options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 
-<img
-  src={require('./img/17bcf80-remote_config_table_options.png').default}
+<Zoom>
+  <img src={require('./img/17bcf80-remote_config_table_options.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -203,6 +211,7 @@ Additional raw options are mostly useful for [paywall localisations](add-remote-
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

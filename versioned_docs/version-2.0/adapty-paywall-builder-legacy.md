@@ -4,6 +4,9 @@ description: "Craft tailored in-app storefronts effortlessly using Adapty's Payw
 metadataTitle: "Design Custom Paywalls Seamlessly with Adapty Paywall Builder"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Paywall Builder is a simple no-code tool that lets you create custom paywalls — in-app storefronts in your mobile app where users can make purchases. It doesn't require any technical or design skills. You can easily improve the appearance of your paywalls, change the messages they display, and add buttons as needed. Plus, you can make changes to these screens in real-time while your app is live, without releasing a new mobile app version.
 
 The information below refers to the legacy Paywall Builder. For the new Paywall Builder, see [New Paywall Builder](/3.0/adapty-paywall-builder).
@@ -17,8 +20,8 @@ To use the Adapty Paywall Builder:
 3. You'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. From there, you can make minor adjustments to tailor it exactly to your preferences.
 
 
-<img
-  src={require('./img/44766e1-switch_on_paywall_builder.png').default}
+<Zoom>
+  <img src={require('./img/44766e1-switch_on_paywall_builder.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ To use the Adapty Paywall Builder:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

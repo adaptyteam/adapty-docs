@@ -3,6 +3,9 @@ title: "OneSignal"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -22,8 +25,8 @@ The initial step of the integration process is to provide the necessary credenti
 You'll need to provide your **OneSignal App ID** and **Auth Token**. You can find more information about OneSignal Keys and IDs in [following documentation.](https://documentation.onesignal.com/docs/keys-and-ids) 
 
 
-<img
-  src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.png').default}
+<Zoom>
+  <img src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -31,6 +34,7 @@ You'll need to provide your **OneSignal App ID** and **Auth Token**. You can fin
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -42,8 +46,8 @@ To find your OneSignal app ID and authentication key, simply navigate to your [O
 Your **App ID** can be found under the **Keys & IDs **section in the Settings tab. 
 
 
-<img
-  src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.png').default}
+<Zoom>
+  <img src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,6 +55,7 @@ Your **App ID** can be found under the **Keys & IDs **section in the Settings ta
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -59,8 +64,8 @@ Your **App ID** can be found under the **Keys & IDs **section in the Settings ta
 The Auth token can be found in the **Account & API Keys** section of your OneSignal dashboard.
 
 
-<img
-  src={require('./img/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.png').default}
+<Zoom>
+  <img src={require('./img/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,6 +73,7 @@ The Auth token can be found in the **Account & API Keys** section of your OneSig
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -80,8 +86,8 @@ After retrieving your OneSignal App ID and authentication key from the OneSignal
 Below the credentials, there are three groups of events you can send to OneSignal from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/30c7f2e-oneSignal.png').default}
+<Zoom>
+  <img src={require('./img/30c7f2e-oneSignal.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -89,6 +95,7 @@ Below the credentials, there are three groups of events you can send to OneSigna
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

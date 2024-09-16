@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Data Safety section available on Google Play provides a simple method for app developers to inform users about the data collected or shared by their app, as well as highlight their app's critical privacy and security measures. This information enables users to make more informed decisions when selecting which apps to download and use.
 
 Here is a short guide on data that Adapty collects to help you provide the required information to Google Play.
@@ -11,8 +14,8 @@ Here is a short guide on data that Adapty collects to help you provide the requi
 ## Data Collection and Security
 
 
-<img
-  src={require('./img/3508c24-image4.png').default}
+<Zoom>
+  <img src={require('./img/3508c24-image4.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,6 +23,7 @@ Here is a short guide on data that Adapty collects to help you provide the requi
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -68,8 +72,8 @@ Select 'No'.
 This data collection is required and cannot be turned off.
 
 
-<img
-  src={require('./img/2c60161-image5.png').default}
+<Zoom>
+  <img src={require('./img/2c60161-image5.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -77,6 +81,7 @@ This data collection is required and cannot be turned off.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -86,8 +91,8 @@ This data collection is required and cannot be turned off.
 Select the 'App functionality' and 'Analytics' checkboxes.
 
 
-<img
-  src={require('./img/07a3c9e-image2.png').default}
+<Zoom>
+  <img src={require('./img/07a3c9e-image2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -95,6 +100,7 @@ Select the 'App functionality' and 'Analytics' checkboxes.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -105,8 +111,8 @@ Select the 'App functionality' and 'Analytics' checkboxes.
 If you are using Adapty, you must disclose that your app collects 'Purchase history' information from the Data types section in Google Play Console. 
 
 
-<img
-  src={require('./img/1057870-image7.png').default}
+<Zoom>
+  <img src={require('./img/1057870-image7.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -114,6 +120,7 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -122,8 +129,8 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 ### Device or other IDs
 
 
-<img
-  src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.png').default}
+<Zoom>
+  <img src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -131,14 +138,15 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/ccb1a2a-image5.png').default}
+<Zoom>
+  <img src={require('./img/ccb1a2a-image5.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -146,6 +154,7 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -156,8 +165,8 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 Once you have made your data safety selections, Google will display a preview of your app's privacy section. If you have opted for "Financial Info" and "Device or other IDs" as mentioned earlier, your privacy information should appear similar to the following example
 
 
-<img
-  src={require('./img/e8d9b73-image3.png').default}
+<Zoom>
+  <img src={require('./img/e8d9b73-image3.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -165,6 +174,7 @@ Once you have made your data safety selections, Google will display a preview of
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

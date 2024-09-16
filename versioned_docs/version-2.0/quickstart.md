@@ -3,6 +3,9 @@ title: "Quickstart guide"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -55,8 +58,8 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 **Create a [paywall](paywalls) with this product** 
 
 
-<img
-  src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png').default}
+<Zoom>
+  <img src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,6 +67,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -72,8 +76,8 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 **Create a [placement](placements) and add your paywall to it**
 
 
-<img
-  src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.png').default}
+<Zoom>
+  <img src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -81,6 +85,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

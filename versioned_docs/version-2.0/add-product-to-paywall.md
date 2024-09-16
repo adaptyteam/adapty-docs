@@ -4,14 +4,17 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 To make a product visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
 
 1. While [configuring a paywall](create-paywall), click the **Add product** button under the **Products** title.
 2. From the opened drop-down list, select the products that will be shown to your customers. The list contains only previously created products. The order of the products is preserved on the SDK side, so it's important to consider the desired order when configuring the paywall. Additionally, you can specify an offer for a product if desired.
 
 
-<img
-  src={require('./img/0479b51-ad_product_to_paywall.png').default}
+<Zoom>
+  <img src={require('./img/0479b51-ad_product_to_paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -19,6 +22,7 @@ To make a product visible and selectable within a [paywall](paywalls) for your a
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

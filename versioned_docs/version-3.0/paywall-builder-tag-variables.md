@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty’s Paywall Builder lets you customize all the text for your products and their offers. If you’re supporting multiple locales, we strongly recommend using variables.
 
 ### How it works
@@ -24,8 +27,8 @@ You can only use tag variables when describing products and offers in the Produc
 2. Use variables from the [table below](paywall-builder-tag-variables#full-list-of-variables) in any text fields to describe the product and its offers.
 
 
-<img
-  src={require('./img/0351661-tag_variables.png').default}
+<Zoom>
+  <img src={require('./img/0351661-tag_variables.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +36,7 @@ You can only use tag variables when describing products and offers in the Produc
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -44,8 +48,8 @@ You can only use tag variables when describing products and offers in the Produc
 The preview doesn’t use real values to replace your variables; those are only retrieved by our SDK on a device. However, it does display template data in the same format as the actual result. You can disable this behavior by clicking the eye icon in the bottom-right corner of the preview and turning off the **Tags preview values** toggle. The preview will then show the actual values of the variables:
 
 
-<img
-  src={require('./img/da92d39-tags_preview_values.png').default}
+<Zoom>
+  <img src={require('./img/da92d39-tags_preview_values.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,6 +57,7 @@ The preview doesn’t use real values to replace your variables; those are only 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty funnels are designed to assist you with such kinds of questions:
 
 1. What percentage of installs is converted to paying clients?
@@ -16,8 +19,8 @@ With a funnel chart, you may also find more insights about user behavior setting
 Funnels work with the data that we gather through SDK and store notifications and don't require any additional configuration from your side.
 
 
-<img
-  src={require('./img/10c99f9-CleanShot_2022-06-24_at_10.08.53.png').default}
+<Zoom>
+  <img src={require('./img/10c99f9-CleanShot_2022-06-24_at_10.08.53.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -25,6 +28,7 @@ Funnels work with the data that we gather through SDK and store notifications an
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -35,8 +39,8 @@ Funnels work with the data that we gather through SDK and store notifications an
 Let's go through the elements of a funnel to understand how to read the user journey on the chart.
 
 
-<img
-  src={require('./img/ed5bf5d-CleanShot_2022-06-23_at_09.36.49.png').default}
+<Zoom>
+  <img src={require('./img/ed5bf5d-CleanShot_2022-06-23_at_09.36.49.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,6 +48,7 @@ Let's go through the elements of a funnel to understand how to read the user jou
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -53,8 +58,8 @@ The 1st column (1) is the number of installs. It is shown as an absolute value (
 A grey area nearby stands for transition parameters between steps. A conversion percent to the next step (Displayed paywall) is shown on a flag (3). Drop off percent and an absolute value of churn are shown below (4).
 
 
-<img
-  src={require('./img/00416f9-CleanShot_2022-06-23_at_14.02.06.png').default}
+<Zoom>
+  <img src={require('./img/00416f9-CleanShot_2022-06-23_at_14.02.06.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,6 +67,7 @@ A grey area nearby stands for transition parameters between steps. A conversion 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -75,8 +81,8 @@ We collect data for this step from all your paywalls that use the `logShowPaywal
 A grey area next to the 2nd column stands for transition. A conversion percent to the next step (Trial) is shown on a flag (8). Drop-off percent and the absolute value of churned customers after the paywall are shown below (9). 
 
 
-<img
-  src={require('./img/fb11650-CleanShot_2022-06-23_at_15.54.32.png').default}
+<Zoom>
+  <img src={require('./img/fb11650-CleanShot_2022-06-23_at_15.54.32.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,6 +90,7 @@ A grey area next to the 2nd column stands for transition. A conversion percent t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -96,8 +103,8 @@ You may notice that this percent is not equal now to the grey flag (8) of the pr
 So a grey area next to the 3rd column shows a conversion percent to the next step (Paid) which is displayed on a flag (13). Drop-off percent and absolute value of churned customers during a trial period are shown below (14).
 
 
-<img
-  src={require('./img/7b88909-CleanShot_2022-06-23_at_15.54.32_-_2.png').default}
+<Zoom>
+  <img src={require('./img/7b88909-CleanShot_2022-06-23_at_15.54.32_-_2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -105,6 +112,7 @@ So a grey area next to the 3rd column shows a conversion percent to the next ste
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -113,8 +121,8 @@ So a grey area next to the 3rd column shows a conversion percent to the next ste
 Starting from the trial you can hover on the step to see churn reasons.
 
 
-<img
-  src={require('./img/df40d2f-CleanShot_2022-06-23_at_17.36.08.png').default}
+<Zoom>
+  <img src={require('./img/df40d2f-CleanShot_2022-06-23_at_17.36.08.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -122,6 +130,7 @@ Starting from the trial you can hover on the step to see churn reasons.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -134,8 +143,8 @@ The percent on a grey flag shows conversion to the next step (renewal to the 2nd
 Drop off before the renewal to the 2nd period percent and absolute value are shown below the conversion (18).
 
 
-<img
-  src={require('./img/d13bf9b-CleanShot_2022-06-23_at_15.54.32-3.png').default}
+<Zoom>
+  <img src={require('./img/d13bf9b-CleanShot_2022-06-23_at_15.54.32-3.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -143,6 +152,7 @@ Drop off before the renewal to the 2nd period percent and absolute value are sho
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -161,8 +171,8 @@ This step starts a sequence of steps with a similar structure. After the 2nd ren
 A funnel chart is enriched with data in a table to provide handy material for your work with numbers. 
 
 
-<img
-  src={require('./img/4787aff-CleanShot_2022-06-23_at_21.01.44.png').default}
+<Zoom>
+  <img src={require('./img/4787aff-CleanShot_2022-06-23_at_21.01.44.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -170,6 +180,7 @@ A funnel chart is enriched with data in a table to provide handy material for yo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -182,8 +193,8 @@ Instead of this one, there are two separate: Install -> Paid and Trial -> Paid. 
 It may seem that there is a product type division: Install -> Paid column shows only products without trials while the column Trial -> Paid contains only products with trials. But that's not exactly the way it works. Because we also consider those users whose trial has expired and they purchase a product with a trial like it doesn't have it at all.
 
 
-<img
-  src={require('./img/a9bcbc7-CleanShot_2022-06-23_at_21.29.12.png').default}
+<Zoom>
+  <img src={require('./img/a9bcbc7-CleanShot_2022-06-23_at_21.29.12.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -191,6 +202,7 @@ It may seem that there is a product type division: Install -> Paid column shows 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -209,8 +221,8 @@ Variate:
 Select Absolute #, Relative %, or both to view only necessary data.
 
 
-<img
-  src={require('./img/1475e42-CleanShot_2022-06-23_at_21.50.33_-2.png').default}
+<Zoom>
+  <img src={require('./img/1475e42-CleanShot_2022-06-23_at_21.50.33_-2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -218,6 +230,7 @@ Select Absolute #, Relative %, or both to view only necessary data.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -226,8 +239,8 @@ Select Absolute #, Relative %, or both to view only necessary data.
 Finally, on the right of the control panel, there's a button to export funnel data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system.
 
 
-<img
-  src={require('./img/ff23846-CleanShot_2022-06-23_at_22.15.49.png').default}
+<Zoom>
+  <img src={require('./img/ff23846-CleanShot_2022-06-23_at_22.15.49.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -235,6 +248,7 @@ Finally, on the right of the control panel, there's a button to export funnel da
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

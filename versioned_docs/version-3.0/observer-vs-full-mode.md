@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty is a powerful and flexible in-app purchase platform designed to boost your revenue and subscriber base. With features like customizable paywalls tailored to specific user segments, A/B testing for pricing, duration, trial periods, and visual elements, as well as comprehensive analytical tools for app monetization and third-party integrations, Adapty empowers your growth strategy.
 
 However, if you already have your own purchase infrastructure and aren't prepared to switch to Adapty's system, you can explore the Adapty Observer mode. This limited mode omits the use of Adapty paywalls, targeting them to user audiences, managing the subscriptions, including handling renewals and billing retries; and focusing solely on analytics. Despite its limitations, Observer mode still offers robust analytics capabilities, including integration with attribution systems, advanced analytics, messaging, and CRM profiles. 

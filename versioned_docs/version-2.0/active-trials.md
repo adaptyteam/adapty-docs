@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The active trials chart in Adapty displays the number of unexpired free trials that are currently active at the end of a given period. Active means subscriptions that have not yet expired, and therefore, users still have access to the paid features of the app.
 
 
-<img
-  src={require('./img/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.png').default}
+<Zoom>
+  <img src={require('./img/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The active trials chart in Adapty displays the number of unexpired free trials t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

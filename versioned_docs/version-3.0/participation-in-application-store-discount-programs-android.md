@@ -4,6 +4,9 @@ description: "Manage your mobile app's participation in the Google's Reduced Ser
 metadataTitle: "Adapty: Tracking Google's Reduced Service Fee Program Participation"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Mobile applications with annual revenues in the Google Play Store below a $1M threshold are eligible for discounts on the store commission. Such a discount program is called [Google's Reduced Service Fee](google-reduced-service-fee) for applications in Google Play. Adapty can accurately calculate your app's earnings by deducting Google's commission and taking into account your eligibility for the program. For that, indicate that your mobile application is participating in one or both discount programs and specify the participation periods. 
 
 You can do it doing the initial onboarding or change it later in the **App Settings** of the Adapty Dashboard.
@@ -15,8 +18,8 @@ You can adjust the participation dates for your mobile app in the [Google's Redu
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
 
-<img
-  src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+<Zoom>
+  <img src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ You can adjust the participation dates for your mobile app in the [Google's Redu
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -40,8 +44,8 @@ If you do not participate in the Google's Reduced Service Fee, skip the step.
 1. In the **Is Your_mobile_app_name enrolled in Small Business Programs?** page, click the **Add period** phrase below the discount program in which your mobile application participates.
 
    
-<img
-  src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+<Zoom>
+  <img src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +53,7 @@ If you do not participate in the Google's Reduced Service Fee, skip the step.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

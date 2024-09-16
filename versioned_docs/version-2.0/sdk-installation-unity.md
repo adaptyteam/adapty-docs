@@ -4,6 +4,9 @@ description: "Discover step-by-step instructions for installing and configuring 
 metadataTitle: "Unity -  - Adapty SDK Installation and Configuration Guide"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
@@ -29,8 +32,8 @@ To install the Adapty SDKs:
 1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
 
    
-<img
-  src={require('./img/456bd98-adapty-unity-plugin.png').default}
+<Zoom>
+  <img src={require('./img/456bd98-adapty-unity-plugin.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '400px', /* image width */
@@ -38,6 +41,7 @@ To install the Adapty SDKs:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -45,8 +49,8 @@ To install the Adapty SDKs:
 2. Download the `adapty-ui-unity-plugin-*.unitypackage` from GitHub and import it into your project.
 
    
-<img
-  src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
+<Zoom>
+  <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '400px', /* image width */
@@ -54,6 +58,7 @@ To install the Adapty SDKs:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -138,8 +143,8 @@ Configurational options:
 1. Create a script to listen to Adapty events. Name it `AdaptyListener` in your scene. We suggest using the `DontDestroyOnLoad` method for this object to ensure it persists throughout the application's lifespan.
 
 
-<img
-  src={require('./img/2ccd564-create_adapty_listener.png').default}
+<Zoom>
+  <img src={require('./img/2ccd564-create_adapty_listener.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -147,6 +152,7 @@ Configurational options:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

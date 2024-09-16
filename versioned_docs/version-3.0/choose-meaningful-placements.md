@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 When [creating placements](create-placement), it's essential to consider the logical flow of your app and the user experience you want to create. Most apps should have no more than 5 [placements](placements) without sacrificing the ability to run experiments. Here's an example of how you can structure your placements:
 
 
-<img
-  src={require('./img/5b47c03-user-flow-placements_1.png').default}
+<Zoom>
+  <img src={require('./img/5b47c03-user-flow-placements_1.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ When [creating placements](create-placement), it's essential to consider the log
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

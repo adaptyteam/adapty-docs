@@ -4,6 +4,9 @@ description: "Manage your mobile app's participation in the App Store Small Busi
 metadataTitle: "Adapty: Tracking App Store Small Business Program Participation"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 **\<Этот шаг в новом онбординге стал просто небольшой частью настроек. Он важный, но я бы снес его в конец списка здесь — и в гугле сделал бы так же>**
 
 Mobile applications with annual revenues in the Apple App Store below a $1M threshold are eligible for discounts on the store commission through [App Store Small Business Program](app-store-small-business-program) ~~for Apple App Store applications~~. Adapty accurately calculates your app's earnings by subtracting Apple's commission, considering your eligibility for the program. You can indicate your app's participation ~~and specify the periods you can do so~~ during initial onboarding or later in the **App Settings** of the Adapty Dashboard
@@ -15,8 +18,8 @@ You can adjust the participation dates for your mobile app in the [App Store Sma
 1. Open the [**App settings**](https://app.adapty.io/settings/general) from the Adapty top menu.
 
 
-<img
-  src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+<Zoom>
+  <img src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ You can adjust the participation dates for your mobile app in the [App Store Sma
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -42,8 +46,8 @@ If your mobile app isn't enrolled in the App Store Small Business Program, you c
 1. On the **Is Your_mobile_app enrolled in Small Business Programs?** page, click the **Add period** option below the discount program your mobile application is enrolled in.
 
    
-<img
-  src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+<Zoom>
+  <img src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,6 +55,7 @@ If your mobile app isn't enrolled in the App Store Small Business Program, you c
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

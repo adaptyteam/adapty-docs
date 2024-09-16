@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The refund money chart displays the amount of money that was refunded for the selected period of time. Adapty attributes refund money to the moment when the refund was issued and the revenue decreases in the period when the refund occured.
 
 
-<img
-  src={require('./img/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.png').default}
+<Zoom>
+  <img src={require('./img/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The refund money chart displays the amount of money that was refunded for the se
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

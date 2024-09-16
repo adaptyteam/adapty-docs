@@ -4,6 +4,9 @@ description: "Follow these steps to integrate Amazon S3 with Adapty, including c
 metadataTitle: "Step-by-Step Guide to Setting Up Amazon S3 Integration with Adapty"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty [Amazon S3 integration](s3-exports) consists of the following steps:
 
 1. You [create an access policy for Adapty](set-up-amazon-s3#step-1-create-access-policy) in the AWS dashboard.
@@ -20,8 +23,8 @@ This guide will help you create the necessary credentials in your AWS Console.
 2. Click the **Create Policy** button.
 
 
-<img
-  src={require('./img/d8d42bb-s3_policies.png').default}
+<Zoom>
+  <img src={require('./img/d8d42bb-s3_policies.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,6 +32,7 @@ This guide will help you create the necessary credentials in your AWS Console.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -37,8 +41,8 @@ This guide will help you create the necessary credentials in your AWS Console.
 3. In the **Specify permissions** window, switch to the **JSON** tab.
 
 
-<img
-  src={require('./img/15ba00d-s3_specify_permissions.png').default}
+<Zoom>
+  <img src={require('./img/15ba00d-s3_specify_permissions.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +50,7 @@ This guide will help you create the necessary credentials in your AWS Console.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -86,8 +91,8 @@ This guide will help you create the necessary credentials in your AWS Console.
 6. In the **Review and create** window, define the policy name.
 
 
-<img
-  src={require('./img/2ebaf70-s3_review_and_create_policy.png').default}
+<Zoom>
+  <img src={require('./img/2ebaf70-s3_review_and_create_policy.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -95,6 +100,7 @@ This guide will help you create the necessary credentials in your AWS Console.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -112,8 +118,8 @@ To get access key ID and secret access key:
 2. Click the **Create user** button.
 
 
-<img
-  src={require('./img/6bd091d-s3_users.png').default}
+<Zoom>
+  <img src={require('./img/6bd091d-s3_users.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -121,6 +127,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -130,8 +137,8 @@ To get access key ID and secret access key:
 4. Click the **Create group** button.
 
 
-<img
-  src={require('./img/45a9ebc-s3_set_permissions.png').default}
+<Zoom>
+  <img src={require('./img/45a9ebc-s3_set_permissions.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,6 +146,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -148,8 +156,8 @@ To get access key ID and secret access key:
 6. Find and select the policy you've created in the [Step 1. Create access policy](set-up-amazon-s3#step-1-create-access-policy) section.
 
 
-<img
-  src={require('./img/ea4e51f-s3_create_user_group.png').default}
+<Zoom>
+  <img src={require('./img/ea4e51f-s3_create_user_group.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -157,6 +165,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -166,8 +175,8 @@ To get access key ID and secret access key:
 8. Select the group you've created.
 
 
-<img
-  src={require('./img/e4dac19-s3_set_permissions_choose_group.png').default}
+<Zoom>
+  <img src={require('./img/e4dac19-s3_set_permissions_choose_group.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -175,6 +184,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -184,8 +194,8 @@ To get access key ID and secret access key:
 10. In the **Review and create** window, click the **Create user** button.
 
 
-<img
-  src={require('./img/9975a47-s3_review_new_user.png').default}
+<Zoom>
+  <img src={require('./img/9975a47-s3_review_new_user.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -193,6 +203,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -201,8 +212,8 @@ To get access key ID and secret access key:
 11. In the **Users** window, click the new user you've created to open the user's details.
 
 
-<img
-  src={require('./img/e774c5a-s3_users_open_user_details.png').default}
+<Zoom>
+  <img src={require('./img/e774c5a-s3_users_open_user_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -210,6 +221,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -218,8 +230,8 @@ To get access key ID and secret access key:
 12. In the **Access key best practices & alternatives** window, select the **Third-party service** radio-button and the **Confirmation** check-box.
 
 
-<img
-  src={require('./img/2c717b7-s3_access_key_best_practices.png').default}
+<Zoom>
+  <img src={require('./img/2c717b7-s3_access_key_best_practices.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -227,6 +239,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -236,8 +249,8 @@ To get access key ID and secret access key:
 14. In the **Set description tag** window, click the **Create access key** button.
 
 
-<img
-  src={require('./img/44d1b47-s3_set_description_tag.png').default}
+<Zoom>
+  <img src={require('./img/44d1b47-s3_set_description_tag.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -245,6 +258,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -253,8 +267,8 @@ To get access key ID and secret access key:
 15. In the **Retrieve access keys** window, click the **Download .csv file** button. This file contains the Access key and Secret access key you will need when [setting up Amazon S3 integration in the Adapty Dashboard](set-up-amazon-s3#set-up-amazon-s3-integration-in-the-adapty-dashboard).
 
 
-<img
-  src={require('./img/e65fe45-s3_retrieve_access_keys.png').default}
+<Zoom>
+  <img src={require('./img/e65fe45-s3_retrieve_access_keys.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -262,6 +276,7 @@ To get access key ID and secret access key:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -287,8 +302,8 @@ To set up the Amazon S3 integration in the Adapty Dashboard:
 3. Turn on the **Export subscription events to Amazon S3** toggle to initiate the integration.
 
    
-<img
-  src={require('./img/133f9f5-s3_adapty_fields.png').default}
+<Zoom>
+  <img src={require('./img/133f9f5-s3_adapty_fields.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -296,6 +311,7 @@ To set up the Amazon S3 integration in the Adapty Dashboard:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -321,8 +337,8 @@ To choose the events to export to the Amazon S3 storage:
 3. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own.
 
 
-<img
-  src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+<Zoom>
+  <img src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -330,6 +346,7 @@ To choose the events to export to the Amazon S3 storage:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

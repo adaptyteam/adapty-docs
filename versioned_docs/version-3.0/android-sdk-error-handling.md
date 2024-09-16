@@ -4,6 +4,9 @@ description: "Discover how to streamline error management in Android development
 metadataTitle: "Android Error Handling: AdaptyError Overview"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Every error is returned by the SDK is `AdaptyError`.
 
 | Error | Code | Description |

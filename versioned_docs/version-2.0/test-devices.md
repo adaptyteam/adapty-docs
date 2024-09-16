@@ -4,6 +4,9 @@ description: "Discover how to assign your device as a test device in Adapty to b
 metadataTitle: "How to Mark Devices as Test in Adapty for Immediate Changes"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Due to caching, changes made to paywalls or placements may take up to 20 minutes to reflect on the device. This delay is needed to speed up fetching a paywall for regular users, but it can be inconvenient when testing your changes.
 
 For testing purposes, you can assign your device as test, which will disable caching and ensure that your changes are immediately displayed.
@@ -24,8 +27,8 @@ Flutter and Unity support will be added later.
 2. Scroll down to the **Test devices** section in the **General** tab.
 
    
-<img
-  src={require('./img/14c581d-test_device_add.png').default}
+<Zoom>
+  <img src={require('./img/14c581d-test_device_add.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,14 +36,15 @@ Flutter and Unity support will be added later.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 3. Click the **Add test device** button.
 
    
-<img
-  src={require('./img/f86d5e2-test_users_add_device.png').default}
+<Zoom>
+  <img src={require('./img/f86d5e2-test_users_add_device.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -48,6 +52,7 @@ Flutter and Unity support will be added later.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -90,8 +95,8 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
 2. Copy **Customer user ID** and **Adapty ID** field values in the profile details:
 
    
-<img
-  src={require('./img/345d308-test_users_CUID_adapty_ID.png').default}
+<Zoom>
+  <img src={require('./img/345d308-test_users_CUID_adapty_ID.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -99,6 +104,7 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -122,8 +128,8 @@ Apple does not provide the IDFA by default. Obtain it from the profile attributi
 2. Open the profile details and copy the **IDFA** field value in the **Attributes** section:
 
 
-<img
-  src={require('./img/ce4a63f-test_users_idfa.png').default}
+<Zoom>
+  <img src={require('./img/ce4a63f-test_users_idfa.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -131,6 +137,7 @@ Apple does not provide the IDFA by default. Obtain it from the profile attributi
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

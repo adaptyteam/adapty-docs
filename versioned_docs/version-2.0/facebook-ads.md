@@ -3,6 +3,9 @@ title: "Facebook Ads"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -19,8 +22,8 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 :::
 
 
-<img
-  src={require('./img/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.png').default}
+<Zoom>
+  <img src={require('./img/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,6 +31,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -37,8 +41,8 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 2. You need an application on [Facebook Developers](https://developers.facebook.com/) platform. Log in to your app and then find advanced settings. You can find the **App ID** in the header.
 
 
-<img
-  src={require('./img/4b326c4-001563-August-23-4tO3JVso.png').default}
+<Zoom>
+  <img src={require('./img/4b326c4-001563-August-23-4tO3JVso.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,6 +50,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -58,8 +63,8 @@ Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-Ap
 :::
 
 
-<img
-  src={require('./img/c4eb8eb-001565-August-23-483KKBbC.png').default}
+<Zoom>
+  <img src={require('./img/c4eb8eb-001565-August-23-483KKBbC.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +72,7 @@ Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-Ap
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -97,8 +103,8 @@ Please note that the Facebook Ads integration specifically caters to companies u
 StartTrial, Subscribe, CancelSubscription are standard events.
 
 
-<img
-  src={require('./img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.png').default}
+<Zoom>
+  <img src={require('./img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -106,6 +112,7 @@ StartTrial, Subscribe, CancelSubscription are standard events.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

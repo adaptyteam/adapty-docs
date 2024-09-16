@@ -3,6 +3,9 @@ title: "Flutter, React Native, Unity - Handle errors"
 description: "Discover how to streamline error management in Fluter, React Native, and Unity development with Adapty SDK's AdaptyError, providing detailed troubleshooting capabilities for comprehensive error handling"
 metadataTitle: "Fluter, React Native, and Unity Error Handling: AdaptyError Overview"
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 

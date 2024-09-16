@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Welcome to the Adapty Predictive Analytics documentation for our A/B testing feature. This tool will provide insights into the future results of your running A/B Tests and help you make data-driven decisions faster 🚀 with Adapty's ML-powered predictions.
 
 :::note
@@ -40,8 +43,8 @@ This is where our predictive model comes into play. Having the current revenue d
 Note that sometimes predicted P2BB can contradict the current P2BB. When that's the case, we highlight the variation rows with yellow like so:
 
 
-<img
-  src={require('./img/74577c6-CleanShot_2024-02-15_at_13.08.452x.png').default}
+<Zoom>
+  <img src={require('./img/74577c6-CleanShot_2024-02-15_at_13.08.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,6 +52,7 @@ Note that sometimes predicted P2BB can contradict the current P2BB. When that's 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

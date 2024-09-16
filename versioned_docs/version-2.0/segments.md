@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A Segment is a group of users with common properties.
 
 
-<img
-  src={require('./img/3244407-Segments.png').default}
+<Zoom>
+  <img src={require('./img/3244407-Segments.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ A Segment is a group of users with common properties.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ Segments are mainly used in [Placements](placements) and in [A/B tests](ab-tests
 To create a segment, write a segment name, and choose attributes.
 
 
-<img
-  src={require('./img/458e2f4-new_cohort.png').default}
+<Zoom>
+  <img src={require('./img/458e2f4-new_cohort.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ To create a segment, write a segment name, and choose attributes.
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -91,8 +96,8 @@ Adapty collects the **country of the store** for iOS devices with version 13 or 
 To create custom attributes from the Adapty Dashboard, select the ** Create Custom Attributes** from the Select Attribute Dropdown options.
 
 
-<img
-  src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png').default}
+<Zoom>
+  <img src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -100,6 +105,7 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty can help you get attribution data from Apple Search Ads and analyze your metrics with campaign and keyword segmentation. Adapty collects the attribution data for Apple Search Ads automatically through its SDK and AdServices Framework.
 
 Once you've set up the Apple Search Ads integration, Adapty will start receiving attribution data from Apple Search Ads. You can easily access and view this data on the profiles page.
 
 
-<img
-  src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png').default}
+<Zoom>
+  <img src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ Once you've set up the Apple Search Ads integration, Adapty will start receiving
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -39,8 +43,8 @@ In the Adapty Dashboard, navigate to [Settings -> Apple Search Ads.](https://app
 Locate the pre-generated public key (Adapty provides a key pair for you) and copy it.
 
 
-<img
-  src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.png').default}
+<Zoom>
+  <img src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -48,6 +52,7 @@ Locate the pre-generated public key (Adapty provides a key pair for you) and cop
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -62,8 +67,8 @@ Note: If you're using an alternative service or your own solution for Apple Sear
 In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings > User Management page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access.
 
 
-<img
-  src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.png').default}
+<Zoom>
+  <img src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -71,6 +76,7 @@ In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -85,8 +91,8 @@ As a next step, log in to the newly added account in Apple Search Ads. Navigate 
 Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
 
 
-<img
-  src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.png').default}
+<Zoom>
+  <img src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,6 +100,7 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads setting
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

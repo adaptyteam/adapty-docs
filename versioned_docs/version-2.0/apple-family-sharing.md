@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Apple's  family sharing enables the distribution of in-app purchases among family members, offering users of group-oriented apps, such as video streaming services and kids' apps, a convenient way to split subscriptions without having to share their Apple ID. By allowing up to five family members to utilize a subscription, [Family sharing](https://developer.apple.com/documentation/storekit/in-app_purchase/original_api_for_in-app_purchase/supporting_family_sharing_in_your_app) can potentially improve customer engagement and retention for your app.
 
 In this guide, we will provide instructions on how to opt-in subscriptions to Family Sharing and explain how Adapty manages purchases that are shared within a family.
@@ -14,8 +17,8 @@ Keep in mind that once you enable Family Sharing for a product, **it cannot be t
 Also, please consider that, only non-consumables and subscriptions can be shared.
 
 
-<img
-  src={require('./img/6db165a-CleanShot_2023-03-28_at_17.15.342x.png').default}
+<Zoom>
+  <img src={require('./img/6db165a-CleanShot_2023-03-28_at_17.15.342x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,6 +26,7 @@ Also, please consider that, only non-consumables and subscriptions can be shared
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

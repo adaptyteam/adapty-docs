@@ -4,6 +4,9 @@ description: "Adapt your product for diverse markets with paywall localizations,
 metadataTitle: "Enhance Global Reach: Implementing Paywall Localizations for Diverse Markets"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 In a world with many cultures, it's important to adapt your product for each country. You can do this by using paywall localizations. For each paywall, you can make versions in different languages to match the needs of specific local markets.
 
  Depending on what you use to design your paywalls, adding locale varies:

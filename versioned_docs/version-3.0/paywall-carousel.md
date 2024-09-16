@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 A carousel is a dynamic set of swipeable cards that can be moved left or right, creating a captivating visual experience. It's a fantastic tool to craft paywalls that not only draw attention but also engage users with interactive content.
 
 
-<img
-  src={require('./img/81eaa26-PB_carousel.gif').default}
+<Zoom>
+  <img src={require('./img/81eaa26-PB_carousel.gif').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -16,6 +19,7 @@ A carousel is a dynamic set of swipeable cards that can be moved left or right, 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

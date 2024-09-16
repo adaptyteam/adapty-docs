@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty Analytics offers a powerful suite of tools that provide valuable insights into your user base, allowing you to make data-driven decisions and optimize your app's performance. With Adapty, you can go beyond basic metrics and dive deep into advanced analytics such as funnels, cohorts, retention, lifetime value (LTV) charts, and more. Let's explore the general approach to data gathering, calculation, and the various analytics features available.
 
 To learn more about specific metrics and advanced analytics features, please refer to the relevant sections in the documentation menu.

@@ -4,6 +4,9 @@ description: "Learn how to set up integration with Singular"
 metadataTitle: "Singular"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 [Singular](https://www.singular.net/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies track their campaign performance. 
 
 Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in Singular and analyze precisely how much revenue your campaigns generate.
@@ -17,8 +20,8 @@ To set up the integration with AppsFlyer, go to [Integrations > Singular](https:
 For this integration to work, the Singular SDK Key is required. It can be found in Singular dashboard: Developer tools -> SDK Keys -> SDK Key (**not** SDK Secret):
 
 
-<img
-  src={require('./img/4bc50d1-singular_sdk_key.png').default}
+<Zoom>
+  <img src={require('./img/4bc50d1-singular_sdk_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,6 +29,7 @@ For this integration to work, the Singular SDK Key is required. It can be found 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -34,8 +38,8 @@ For this integration to work, the Singular SDK Key is required. It can be found 
 Below the credentials, there are three groups of events you can send to Singular from Adapty. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/e67de0c-singular_events.png').default}
+<Zoom>
+  <img src={require('./img/e67de0c-singular_events.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,6 +47,7 @@ Below the credentials, there are three groups of events you can send to Singular
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

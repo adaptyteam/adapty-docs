@@ -4,13 +4,16 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Your account page can be accessed through the link in the top right corner after you've logged into Adapty. Or just by [this link](https://app.adapty.io/account).
 
 There are several important things you can set on your account page so let's go through them. 
 
 
-<img
-  src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.png').default}
+<Zoom>
+  <img src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -18,6 +21,7 @@ There are several important things you can set on your account page so let's go 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -28,8 +32,8 @@ There are several important things you can set on your account page so let's go 
 Here you fill in your name and the name of your company. It's useful to have this info when you contact support so they can work with the correctly filled profile.
 
 
-<img
-  src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png').default}
+<Zoom>
+  <img src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,6 +41,7 @@ Here you fill in your name and the name of your company. It's useful to have thi
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

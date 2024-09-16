@@ -4,11 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The Active subscriptions chart displays the amount of unique paid subscriptions that have not yet expired at the end of each selected period. It includes regular (unexpired) in-app subscriptions that started and are currently active and excludes both free trials and subscriptions with canceled renewals. 
 
 
-<img
-  src={require('./img/a4895aa-small-CleanShot_2023-05-04_at_15.13.262x.png').default}
+<Zoom>
+  <img src={require('./img/a4895aa-small-CleanShot_2023-05-04_at_15.13.262x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -16,6 +19,7 @@ The Active subscriptions chart displays the amount of unique paid subscriptions 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

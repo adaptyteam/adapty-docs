@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 With [SplitMetrics Acquire ](https://splitmetrics.com/acquire/)integration, you can see exactly how much money your Apple Search Ads make from subscriptions. And you can track your users for months to know how much money your ads make over time.
 
 In addition, Adapty sends [subscription events](events) to SplitMetrics Acquire so that you can build custom dashboards and automation there, based on Apple Search Ads attribution.  
@@ -14,8 +17,8 @@ It doesn't add any attribution data to Adapty, as we already have everything we 
 To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](https://app.adapty.io/integrations/splitmetrics) and set credentials.
 
 
-<img
-  src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.png').default}
+<Zoom>
+  <img src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -23,6 +26,7 @@ To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](ht
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -31,8 +35,8 @@ To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](ht
 Open your SplitMetrics Acquire account, hover over one of the MMP logos and click the appeared **Settings** button. Find your Client ID in the dialog under item 5, copy it, and then paste it to Adapty as Client ID.
 
 
-<img
-  src={require('./img/4d0b2b6-Adapty.png').default}
+<Zoom>
+  <img src={require('./img/4d0b2b6-Adapty.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,14 +44,15 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
 
 
 
-<img
-  src={require('./img/4f8d0b8-AdaptyGuide.png').default}
+<Zoom>
+  <img src={require('./img/4f8d0b8-AdaptyGuide.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,6 +60,7 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -63,8 +69,8 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos and clic
 You will also have to set Apple App ID to use the integration. To find App ID, open your app page in App Store Connect, go to the App Information page in section General and find Apple ID in the left bottom part of the screen.
 
 
-<img
-  src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.png').default}
+<Zoom>
+  <img src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,6 +78,7 @@ You will also have to set Apple App ID to use the integration. To find App ID, o
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -82,8 +89,8 @@ You will also have to set Apple App ID to use the integration. To find App ID, o
 Below the credentials, there are three groups of events you can send to SplitMetrics Acquire from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
-<img
-  src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+<Zoom>
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -91,6 +98,7 @@ Below the credentials, there are three groups of events you can send to SplitMet
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

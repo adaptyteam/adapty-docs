@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty offers a wide range of controls to help you gain valuable insights and unlock the full potential of your data and gain a comprehensive view of your business performance. Whether you're analyzing charts, cohorts, funnels, retention, conversion data, or LTV, these controls provide powerful functionality. By leveraging these controls, you can dive deeper into your data and extract meaningful insights to drive your business decisions.
 
 In the following article, you can learn more about each control and how to use them effectively. Additionally, you'll find information about which controls are supported for each type of analytics, including charts, cohorts, funnels, retention, and conversion.
@@ -48,8 +51,8 @@ In LTV (lifetime value) analysis, the cohort length is chosen in the grouping se
 We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](account)
 
 
-<img
-  src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
+<Zoom>
+  <img src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -57,6 +60,7 @@ We have 2 formats of date and time - American and European. You can set one of t
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -77,8 +81,8 @@ Here's how you can interpret the insights provided by the comparison feature:
 - **Multiple Grouping and Comparison:** If you have multiple grouping options enabled, you can view multiple comparisons simultaneously on a single chart. This feature is available specifically for column charts.
 
 
-<img
-  src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
+<Zoom>
+  <img src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -86,6 +90,7 @@ Here's how you can interpret the insights provided by the comparison feature:
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -116,8 +121,8 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 | Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
 
 
-<img
-  src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
+<Zoom>
+  <img src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -125,6 +130,7 @@ In Advanced Analytics, you have access to the following filtering and grouping o
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -137,8 +143,8 @@ The Analytics section provides you with the flexibility to view each chart in di
 To change the view of a chart, simply locate and select the view dropdown menu, and then choose the desired representation option
 
 
-<img
-  src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
+<Zoom>
+  <img src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -146,6 +152,7 @@ To change the view of a chart, simply locate and select the view dropdown menu, 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -160,8 +167,8 @@ In addition to the chart view, Adapty also provides a table view for each chart.
 If you want to analyze the underlying data used to generate a chart, cohorts analysis, funnels, retentions, or conversion analytics, you can easily export it in CSV format by clicking the **Export** button. This feature allows you to access the raw data used to create the respective analysis. You can manipulate this data in spreadsheet applications or other tools to perform further analysis.
 
 
-<img
-  src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png').default}
+<Zoom>
+  <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -169,6 +176,7 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -181,8 +189,8 @@ One crucial aspect of revenue calculation is the inclusion of taxes (which can v
 In the charts tab of the Analytics section, Adapty introduces a dropdown field with three display options.
 
 
-<img
-  src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png').default}
+<Zoom>
+  <img src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -190,6 +198,7 @@ In the charts tab of the Analytics section, Adapty introduces a dropdown field w
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

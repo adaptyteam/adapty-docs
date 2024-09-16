@@ -5,6 +5,9 @@ metadataTitle: "Discover Adapty: Your Ultimate In-App Purchase Platform"
 slug: /
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.
 
 ### Marketing automation and testing

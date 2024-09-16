@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Migration has three steps:
 
 1. Switching to Adapty SDK.
@@ -42,8 +45,8 @@ Adapty can work without this URL, but you'll get a limited feature set. For exam
 When switching from a legacy system, sometimes you want two systems to work simultaneously for some time. In that case, you can use our [raw events forwarding](app-store-server-notifications#raw-events-forwarding), where Adapty is a proxy server for your legacy system.
 
 
-<img
-  src={require('./img/c7d4fd0-Seamless_migrat_a.png').default}
+<Zoom>
+  <img src={require('./img/c7d4fd0-Seamless_migrat_a.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,6 +54,7 @@ When switching from a legacy system, sometimes you want two systems to work simu
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

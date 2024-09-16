@@ -3,6 +3,9 @@ title: "Airbridge"
 description: ""
 metadataTitle: ""
 ---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
@@ -24,8 +27,8 @@ To integrate Airbridge go to [Integrations > Airbridge](https://app.adapty.io/in
 First of all set credentials to build a connection between your Airbridge and Adapty profiles. Airbridge app name and Airbridge API token are required. 
 
 
-<img
-  src={require('./img/2b31d90-Untitled-1_1.png').default}
+<Zoom>
+  <img src={require('./img/2b31d90-Untitled-1_1.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,6 +36,7 @@ First of all set credentials to build a connection between your Airbridge and Ad
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -41,8 +45,8 @@ First of all set credentials to build a connection between your Airbridge and Ad
 They both can be found in your Airbridge dashboard in the [Third-party Integrations > Adapty](https://app.airbridge.io/app/testad/integrations/third-party/adapty) section. 
 
 
-<img
-  src={require('./img/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.png').default}
+<Zoom>
+  <img src={require('./img/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -50,6 +54,7 @@ They both can be found in your Airbridge dashboard in the [Third-party Integrati
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -58,8 +63,8 @@ They both can be found in your Airbridge dashboard in the [Third-party Integrati
 Adapty API token field is pre-generated on the Adapty backend. You will need to copy the value of Adapty API token and paste it into the Airbridge Dashboard in the Adapty Authorization Token field.
 
 
-<img
-  src={require('./img/ff422d1-CleanShot_2023-03-01_at_17.11.412x.png').default}
+<Zoom>
+  <img src={require('./img/ff422d1-CleanShot_2023-03-01_at_17.11.412x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,6 +72,7 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -77,8 +83,8 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
 Below the credentials, there are three groups of events you can send to Airbridge from Adapty
 
 
-<img
-  src={require('./img/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.png').default}
+<Zoom>
+  <img src={require('./img/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -86,6 +92,7 @@ Below the credentials, there are three groups of events you can send to Airbridg
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 

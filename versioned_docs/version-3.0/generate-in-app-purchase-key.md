@@ -4,6 +4,9 @@ description: "Optimize in-app purchase transactions and enhance security by gene
 metadataTitle: "App Store Connect: Generating In-App Purchase Key"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 The **In-App Purchase Key** is a specialized API key created within App Store Connect to validate the purchases by confirming their authenticity.
 
 :::note
@@ -15,8 +18,8 @@ To generate API keys for the App Store Server API, you you must hold either an A
 2. Then click the add button **(+)** next to the **Active** title.
 
    
-<img
-  src={require('./img/6d737db-generate_in-app_key.png').default}
+<Zoom>
+  <img src={require('./img/6d737db-generate_in-app_key.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -24,6 +27,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -33,8 +37,8 @@ To generate API keys for the App Store Server API, you you must hold either an A
 4. Click the **Generate** button. Once the **Generate in-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
-<img
-  src={require('./img/fac066b-download_inapp_file.png').default}
+<Zoom>
+  <img src={require('./img/fac066b-download_inapp_file.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,6 +46,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
@@ -49,8 +54,8 @@ To generate API keys for the App Store Server API, you you must hold either an A
 5. Once you've generated your API key, click the **Download In-App Purchase Key** button to obtain the key as a file.
 
    
-<img
-  src={require('./img/d59faff-download_in-app_purchase_key.png').default}
+<Zoom>
+  <img src={require('./img/d59faff-download_in-app_purchase_key.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -58,6 +63,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
     margin: '0 auto' /* center alignment */
   }}
 />
+</Zoom>
 
 
 
