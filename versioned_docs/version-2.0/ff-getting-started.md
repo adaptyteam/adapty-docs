@@ -91,9 +91,9 @@ The Adapty FF Plugin will now be added as a dependency to your project. In the *
 
 ## Initiate Adapty plugin
 
-For the Adapty Dashboard to recognize your app, you need to provide a special key in FlutterFlow.
+For the Adapty Dashboard to recognize your app, you’ll need to provide a special key in FlutterFlow.
 
-1. When being in your project in FlutterFlow, open **Settings and Integrations** -> **Permissions** in the left menu.
+1. In your FlutterFlow project, open **Settings and Integrations** -> **Permissions** from the left menu.
 
 <Zoom>
   <img src={require('./FF_img/initiate.png').default}
@@ -119,7 +119,7 @@ For the Adapty Dashboard to recognize your app, you need to provide a special ke
 />
 </Zoom>
 
-4. In the **Permission Message** field, enter the contents of the **Public SDK key** field in the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one. 
+4. For the **Permission Message**, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
 
 After completing these steps, you'll be able to call your paywall in your FlutterFlow app and enable purchases through it.
 
