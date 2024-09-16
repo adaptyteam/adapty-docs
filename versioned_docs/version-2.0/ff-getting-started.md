@@ -36,7 +36,8 @@ Before proceeding, make sure you've done the following:
 3. And finally added the Adapty Plugin as a dependency in your FlutterFlow project as described below.
 
 <details>
-   <summary>Add the Adapty Plugin as a dependency (click to expand)</summary>
+   <summary>Add the Adapty plugin as a dependency (click to expand)</summary>
+
 1. In your project, click **Settings and Integrations** from the left menu.
 <Zoom>
   <img src={require('./FF_img/main_settings.png').default}
