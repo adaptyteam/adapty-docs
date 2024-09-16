@@ -7,18 +7,17 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Once you created all variables and linked them to the paywall page, let's move on to showing the paywall data in the beautiful paywall you have designed in FlutterFlow.
 
-In order to show data in your paywall, we will need to:
+Here’s the improved version:
 
-1. Request Adapty paywall.
-2. Request Adapty paywall products.
-3. Check if the data is successfully received.
-4. If yes, show the product title and price in our paywall page.
-5. If not, show an error message.
+After adding the Adapty Plugin as a dependency to your FlutterFlow project, it's time to build the flow that retrieves Adapty paywall data and displays it on the paywall you've designed in FlutterFlow.
+
+We first need to receive the paywall data from Adapty. We'll start by requesting the Adapty paywall, then its associated products, and finally checking if the data was successfully received. If successful, we’ll display the product title and price on the paywall page. Otherwise, we'll show an error message.
+
+Let's get started!
 
 ## Step 1.1. Request Adapty paywall
-
+As mentioned, to display data in your FlutterFlow paywall, we first need to retrieve it from Adapty. The initial step is to get the Adapty paywall itself. Here’s how:
 
 1. Open the **Actions** section in the right pane.
 
@@ -84,7 +83,7 @@ In order to show data in your paywall, we will need to:
   />
   </Zoom>
 
-6. In the **Set Actions Arguments** section, enter the real ID of the [placement you have created](create-placement) in the Adapty Dashboard to which the desired paywall is added. In our example it's `example_ab_test`. Please use your real placement ID!
+6. In the **Set Actions Arguments** section, enter the real ID of the [placement you have created](create-placement) in the Adapty Dashboard that includes the paywall. In this example it's `example_ab_test`. Be sure to use your real placement ID!
 
   <Zoom>
     <img src={require('./FF_img/placement-id.png').default}
@@ -97,7 +96,7 @@ In order to show data in your paywall, we will need to:
   />
   </Zoom>
 
-7. In the **Action Output Variable Name**, type the name of a new variable. We'll call it `getPaywallResult`.
+7. In the **Action Output Variable Name**, create a new variable and name it `getPaywallResult`. We'll use this in the next step to reference the Adapty paywall and request its products.
 
 
   <Zoom>
@@ -113,6 +112,8 @@ In order to show data in your paywall, we will need to:
 
 ## Step 1.2. Request Adapty paywall products
 
+Great! We’ve retrieved the Adapty paywall. Now, let's get the products associated with this paywall:
+
 1. Click the **plus (+)** button below, click the **Add Action** button to add an action to receive Adapty paywall products. For this, search and choose `getPaywallProducts`.
 
   <Zoom>
@@ -126,7 +127,7 @@ In order to show data in your paywall, we will need to:
   />
   </Zoom>
 
-2. In the **Set Actions Arguments** section, choose `getPaywallResult` variable we've created.
+2. In the **Set Actions Arguments** section, choose `getPaywallResult` variable created earlier.
 
   <Zoom>
     <img src={require('./FF_img/action-getPaywallResult.png').default}
@@ -139,7 +140,7 @@ In order to show data in your paywall, we will need to:
   />
   </Zoom>
 
-3. Fill in other fields as listed below:
+3. Fill in the other fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -158,11 +159,11 @@ In order to show data in your paywall, we will need to:
   </Zoom>
 
 4. Click the **Confirm** button.
-5. In the **Action Output Variable Name**, type the name of a new variable. We'll call it `getPaywallProductsResult`.
-
-That is the moment when the paywall page will update and show actual product name and price.
+5. In the **Action Output Variable Name**, create a new variable and name it `getPaywallProductsResult`. We'll use this to map the paywall you designed in FlutterFlow with the Adapty paywall data.
 
 ## Step 1.3. Add check if the paywall uploaded successfully
+
+Before moving on, let’s verify that the Adapty paywall was received successfully. If so, we can update the paywall with the product data. If not, we’ll handle the error. Here's how to add the check:
 
 1. Click the **plus (+)** button and click **Add Conditional**.
 
@@ -190,7 +191,7 @@ That is the moment when the paywall page will update and show actual product nam
   />
   </Zoom>
 
-3. To verify the Adapty paywall was received successfully, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**.
+3. To verify that the Adapty paywall was received, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**.
 
   <Zoom>
     <img src={require('./FF_img/has-field.png').default}
@@ -204,16 +205,16 @@ That is the moment when the paywall page will update and show actual product nam
   </Zoom>
 
 4. In the **Field (AdaptyGetPaywallResult)** list, choose **value**.
-6. Click the **Confirm** button to finish setting up the condition. 
+6. Click the **Confirm** button to finalize the condition. 
 
 ## Step 1.4. Log the paywall review
 
-For Adapty analytics to learn that a user has seen a paywall, it's necessary to log this paywall showing. Without this step, Adapty analytics will not count the paywall. So let's do it:
+To ensure Adapty analytics track the paywall view, we need to log this event. Without this step, the view won’t be counted in the analytics. Here’s how:
 
 1. Click the **plus (+)** button under the **TRUE** label and click **Add Action**.
 2. In the **Select Action** field, search for and choose **logShowPaywall **.
-3. Click the **Value** field in the **Set Action Arguments** area and choose the `getPaywallResult` variable we've created. As you remember, this variable contains data on paywall.
-4. Fill in the fields as listed below:
+3. Click the **Value** field in the **Set Action Arguments** area and choose the `getPaywallResult` variable we've created. This variable contains the paywall data.
+4. Fill in the fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -224,7 +225,7 @@ For Adapty analytics to learn that a user has seen a paywall, it's necessary to 
 
 ## Step 1.5. Show error if paywall not received
 
-Let's show some alert if the paywall products are not received.
+If the Adapty paywall is not received, you need to [handle the error](error-handling-on-flutter-react-native-unity#system-storekit-codes). In this example, we'll simply display an alert message.
 
 1. Add an **Informational Dialog** action to the **FALSE** label.
   <Zoom>
@@ -237,7 +238,7 @@ Let's show some alert if the paywall products are not received.
     }}
   />
   </Zoom>
-2. In the **Title** field, add text you want to see as the dialog title. In our example, it's **Error**.
+2. In the **Title** field, add text you want to see as the dialog title. In this example, it's **Error**.
 3. Click at the **Value** button of the **Message** box.
 
   <Zoom>
@@ -251,7 +252,7 @@ Let's show some alert if the paywall products are not received.
   />
   </Zoom>
 
- 4. Fill in the fields as listed below:
+ 4. Fill in the fields as follows:
 
   <Zoom>
     <img src={require('./FF_img/error.png').default}
@@ -273,8 +274,8 @@ Let's show some alert if the paywall products are not received.
   | Select Field | errorMessage |
 
 5. Click the **Confirm** button.
-6. Add **Terminate action** to the  **FALSE** flow.
-7. Click the **Close** button in the top-right.
+6. Add a **Terminate action** to the  **FALSE** flow.
+7. Click the **Close** button in the top-right corner.
   <Zoom>
     <img src={require('./FF_img/close.png').default}
     style={{
@@ -285,3 +286,5 @@ Let's show some alert if the paywall products are not received.
     }}
   />
   </Zoom>
+
+  Congratulations! You’ve successfully received the product data. Now, let’s [map it to your paywall you've designed in FlutterFlow](ff-add-variables-to-paywalls).
