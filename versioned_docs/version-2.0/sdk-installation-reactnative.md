@@ -21,7 +21,8 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.9.3 - 2.9.8      | 2.1.0            |
 | 2.10.0             | 2.1.1            |
 | 2.10.1             | 2.1.2            |
-| 2.11.x             | 2.11.0           |
+| 2.11.2             | 2.11.0           |
+| 2.11.3             | 2.11.1           |
 
 :::danger
 Go through release checklist before releasing your app
