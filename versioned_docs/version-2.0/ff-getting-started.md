@@ -35,8 +35,8 @@ Before proceeding, make sure you've done the following:
 2. [Created at last one placement](create-placement) and [added your paywall to it](add-audience-paywall-ab-test) in the Adapty Dashboard.
 3. And finally added the Adapty Plugin as a dependency in your FlutterFlow project as described below.
 
-<details>
-   <summary>Add the Adapty plugin as a dependency (click to expand)</summary>
+
+## Add the Adapty plugin as a dependency
 
 1. In your project, click **Settings and Integrations** from the left menu.
 <Zoom>
@@ -87,7 +87,39 @@ Before proceeding, make sure you've done the following:
 4. Click the **Add** button.
 
 The Adapty FF Plugin will now be added as a dependency to your project. In the **Adapty FF Plugin** window, you’ll find all the Adapty resources that have been imported into your project.
-</details>
+
+
+## Initiate Adapty plugin
+
+For the Adapty Dashboard to recognize your app, you’ll need to provide a special key in FlutterFlow.
+
+1. In your FlutterFlow project, open **Settings and Integrations** -> **Permissions** from the left menu.
+
+<Zoom>
+  <img src={require('./FF_img/initiate.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. In the opened **Permissions** window, click the **Add Permission** button.
+3. In both the **iOS Permission Key** and **Android Permission Key** field, paste `AdaptyPublicSdkKey`.
+<Zoom>
+  <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. For the **Permission Message**, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
 
 After completing these steps, you'll be able to call your paywall in your FlutterFlow app and enable purchases through it.
 
