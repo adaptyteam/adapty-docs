@@ -161,4 +161,15 @@ Information about a [paywall](paywalls).
 | variationId | String | The variation ID used to attribute purchases to this paywall |
 | vendorProductIds | String | Array of product IDs related to the paywall |
 
+## Enums
+
+### AdaptyEligibilityEnum
+
+Defines if the user qualifies for an introductory offer for an iOS subscription.
+
+| Field name                | Description |
+|--------------------------|-------------|
+| eligible | The user is eligible for an intro offer, it is safe to reflect this info in your UI | 
+| ineligible | he user is not eligible to get any offer, you shouldn't present it in your UI |
+| notApplicable | This product is not configured to have an offer |
 
