@@ -7,15 +7,11 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Once you created all variables we will need, let's add them to the beautiful paywall you have designed in FlutterFlow.
-
-In order to show data, we will need to add the following variables to your paywall:
-
-- **getPaywallProductResult**: Link it to the product text.
+Once you've received all the necessary product data, it's time to map it to the beautiful paywall you designed in FlutterFlow. In this example, we'll map the product title and its price.
 
 ## Step 2.1. Add product title to paywall page
 
-1. Double-click the product text in your paywall page. 
+1. Double-click the product text on your paywall page. 
 
   <Zoom>
     <img src={require('./FF_img/product-text.png').default}
@@ -28,7 +24,7 @@ In order to show data, we will need to add the following variables to your paywa
   />
   </Zoom>
 
-2. In the **Set from Variable** window, search for `getPaywallProductResult`variable and choose it.
+2. In the **Set from Variable** window, search for `getPaywallProductResult` variable and choose it.
 
   <Zoom>
     <img src={require('./FF_img/add-product-title-to-page.png').default}
@@ -41,7 +37,7 @@ In order to show data, we will need to add the following variables to your paywa
   />
   </Zoom>
 
-3. Fill in the fields in the following way:
+3. Fill in the fields as follows:
 
   | Parameter | Value |
   |--------------------------|----------|
@@ -69,9 +65,9 @@ In order to show data, we will need to add the following variables to your paywa
 
 ## Step 2.2. Add price text to paywall page
 
-Repeat the actions from Step 2.1 for price text, but as shown below:
+Repeat the steps from Step 2.1 for the price text as shown below:
 
-1. Double-click the price text in your paywall page. 
+1. Double-click the price text on your paywall page. 
 
 <Zoom>
   <img src={require('./FF_img/price-text.png').default}
@@ -84,7 +80,7 @@ Repeat the actions from Step 2.1 for price text, but as shown below:
 />
 </Zoom>
 
-2. Fill in the fields in the following way:
+2. Fill in the fields as follows:
 
 | Parameter | Value |
 |--------------------------|----------|
@@ -104,9 +100,9 @@ Repeat the actions from Step 2.1 for price text, but as shown below:
 
 ## Step 2.2. Add price in local currency to paywall page
 
-1. Double-click the price in your paywall page. 
+1. Double-click the price on your paywall page. 
 
-2. Fill in the fields in the following way:
+2. Fill in the fields as follows:
 
 | Parameter | Value |
 |--------------------------|----------|
@@ -125,4 +121,6 @@ Repeat the actions from Step 2.1 for price text, but as shown below:
 | UI Builder Display Value| Anything, in the example, it's `price.amount` |
 
 3. Click the **Confirm** button to save the changes.
+
+And voilà! Now, when you launch your app, it will display the product data from the Adapty paywall directly on your paywall page!
 
