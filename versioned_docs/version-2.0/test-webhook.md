@@ -51,7 +51,7 @@ In case of successful integration, an event will appear in the **Last sent event
 | Issue | Solution |
 |-----|--------|
 | The event did not appear | Your purchase did not occur and therefore the event was not created. Refer to the [Troubleshooting test purchases](troubleshooting-test-purchases) topic for the solution. |
-| The event appeared and has the **Sending failed** status | <p>We determine the deliverability based on HTTP status and consider everything **outside the 200-399 range** to be a fail.</p><p>To find more on the issue, hover over the **Sending failed** status of your unsuccessful event as shown below, then consult the [Integration Event Sending Failures](sending_failed) table to find the solution.</p> |
+| The event appeared and has the **Sending failed** status | <p>We determine the deliverability based on HTTP status and consider everything **outside the 200-399 range** to be a fail.</p><p>To find more on the issue, hover over the **Sending failed** status of your unsuccessful event as shown below.</p> |
 
 
 
