@@ -113,7 +113,7 @@ To migrate a paywall to the new Paywall Builder:
 
 
 3. Click the **Migrate paywall** button.
-4. After the migration is done, review the result and i make sure the paywall looks as it should. If not, correct it.
+4. After the migration is done, review the result and make sure the paywall looks as it should. If not, correct it.
 5. Click the **Save** button. 
 6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
 
