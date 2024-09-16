@@ -7,13 +7,13 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Congratulations! You have added logic to receive paywall product and show its title and price in the paywall page.
+Congratulations! You've successfully [set up your paywall to display product data from Adapty](ff-add-variables-to-paywalls), including the product title and price.
 
-Now let's do the last but not the least - let the user buy your product:
+Now, let's move on to the final step: enabling users to purchase your product:
 
-## Step 4.1. Make the purchase
+## Step 4.1. Enable users make your purchase
 
-1. Double-click the buy button in your paywall page.
+1. Double-click the buy button on your paywall page.
 <Zoom>
   <img src={require('./FF_img/double-click-buy.png').default}
   style={{
@@ -25,7 +25,7 @@ Now let's do the last but not the least - let the user buy your product:
 />
 </Zoom>
 
-2. Open the **Actions** section in the right pane if it's not open.
+2. In the right panel, open the **Actions** section if it's not already open.
 
 <Zoom>
   <img src={require('./FF_img/actions-makepurchase.png').default}
@@ -66,8 +66,8 @@ Now let's do the last but not the least - let the user buy your product:
 />
 </Zoom>
 
-7. In the **Set Actions Arguments** section, choose `getPaywallProductsResult` variable.
-8. Fill in other fields as listed below. 
+7. In the **Set Actions Arguments** section, choose `getPaywallProductsResult` variable created earlier.
+8. Fill in the fields as follows:
 
 	  | Parameter | Value |
 	  |--------------------------|----------|
@@ -77,7 +77,7 @@ Now let's do the last but not the least - let the user buy your product:
 	  | List Index Options | First |
 
 9. Click the **Confirm** button.
-10. In the **Action Output Variable Name**, type the name of a new variable. We'll call it `makePurchaseResult`. We will use it later to make sure the purchase is successful.
+10. In the **Action Output Variable Name**, create a new variable and name it `makePurchaseResult` - this will be used later to confirm the purchase was successful.
 
 <Zoom>
   <img src={require('./FF_img/makePurchaseResult.png').default}
@@ -90,13 +90,13 @@ Now let's do the last but not the least - let the user buy your product:
 />
 </Zoom>
 
-## Step 4.2. Add check if the purchase is successful
+## Step 4.2. Check if the purchase was successful
 
-Now let's check if the purchase was successful, you need to check . 
+Now, let's set up a check to see if the purchase went through. 
 
 1. Click the **plus (+)** button and click **Add Conditional**.
-2. In the **Set Condition for Action** section, select `makePurchaseResult` variable.
-3. In the **Set Variable** window, fill in the fields as listed below:
+2. In the **Set Condition for Action** section, select the `makePurchaseResult` variable.
+3. In the **Set Variable** window, fill in the fields as follows:
 
 	  | Parameter | Value |
 	  |--------------------------|----------|
@@ -118,10 +118,10 @@ Now let's check if the purchase was successful, you need to check .
 
 ## Step 4.3. Open paid content
 
-If the purchase is successful, you can open the paid content. Let's set it up.
+If the purchase is successful, you can unlock the paid content. Here’s how to set that up:
 
 1. Click the **plus (+)** button under the **TRUE** label and click **Add Action**.
-2. In the **Select Action** field, search for and choose the page you want to open in the **Navigate To** list. In our example, the page is called **YogaClessSession**.
+2. In the **Select Action** field, search for and select the page you want to open from the **Navigate To** list. In this example, the page is **YogaClessSession**.
 
 <Zoom>
   <img src={require('./FF_img/open-paid-content.png').default}
@@ -135,12 +135,12 @@ If the purchase is successful, you can open the paid content. Let's set it up.
 </Zoom>
 
 
-## Step 4.4 Show error message id the purchase failed
+## Step 4.4 Show error message if purchase failed
 
-Let's show some alert if the purchase failed.
+If the purchase fails, let's display an alert to the user.
 
 1. Add an **Informational Dialog** action to the **FALSE** label.
-2. In the **Title** field, add text you want to see as the dialog title, for example, **Purchase Failed**.
+2. In the **Title** field, enter the text you want for the dialog title, such as **Purchase Failed**.
  <Zoom>
     <img src={require('./FF_img/makePurchase-informational.png').default}
     style={{
@@ -165,7 +165,7 @@ Let's show some alert if the purchase failed.
   />
   </Zoom>
 
-4. Fill in the fields as listed below:
+4. Fill in the fields as follows:
 
 	  | Parameter | Value |
 	  |--------------------------|----------|
@@ -176,7 +176,7 @@ Let's show some alert if the purchase failed.
 	  | Select Field | errorMessage |
 
 5. Click the **Confirm** button.
-6. Add **Terminate action** to the  **FALSE** flow.
+6. Add a **Terminate action** to the  **FALSE** flow.
 
   <Zoom>
     <img src={require('./FF_img/makePurchaseFinal.png').default}
@@ -189,4 +189,6 @@ Let's show some alert if the purchase failed.
   />
   </Zoom>
 
-7. Click the **Close** button in the top-right.
+7. Finally, click the **Close** button in the top-right corner.
+
+Congratulations! Your users can now purchase your products. As an extra step, let's [set up a subscription status check](ff-check-subscription-status) elsewhere to decide whether to display paid content or the paywall.

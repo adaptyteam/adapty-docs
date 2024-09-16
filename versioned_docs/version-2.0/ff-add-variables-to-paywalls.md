@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Once you've received all the necessary product data, it's time to map it to the beautiful paywall you designed in FlutterFlow. In this example, we'll map the product title and its price.
+Once you've [received all the necessary product data](ff-action-flow), it's time to map it to the beautiful paywall you designed in FlutterFlow. In this example, we'll map the product title and its price.
 
 ## Step 2.1. Add product title to paywall page
 
@@ -123,4 +123,5 @@ Repeat the steps from Step 2.1 for the price text as shown below:
 3. Click the **Confirm** button to save the changes.
 
 And voilà! Now, when you launch your app, it will display the product data from the Adapty paywall directly on your paywall page!
+It's time to [let your users purchase this product](ff-make-purchase).
 
