@@ -4,12 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+## Interfaces
 
-### Interfaces
-
-#### AdaptyPaywallProduct
+### AdaptyPaywallProduct
 
 An information about a [product.](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct)
 
@@ -37,14 +34,14 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | subscriptionGroupIdentifier (_iOS only_) | string (optional)                                                                                                       | The identifier of the subscription group to which the subscription belongs. (Will be nil for iOS version below 12.0 and macOS version below 10.14).                               |
 | subscriptionPeriod                       | [`AdaptyProductSubscriptionPeriod`](sdk-models#adaptyproductsubscriptionperiod) (optional)                          | The period details for products that are subscriptions. (Will be nil for iOS version below 11.2 and macOS version below 10.14.4).                                                 |
 
-#### AdaptyProductSubscriptionPeriod
+### AdaptyProductSubscriptionPeriod
 
 | Name          | Type             | Description                                                                                                                      |
 | :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | unit          | AdaptyPeriodUnit | A unit of time that a subscription period is specified in. The possible values are: `day`, `week`, `month`, `year` and `unknown` |
 | numberOfUnits | number           | A number of period units                                                                                                         |
 
-#### AdaptyProductDiscount
+### AdaptyProductDiscount
 
 An information about a [product discount.](https://swift.adapty.io/documentation/adapty/adaptyproductdiscount/)
 
@@ -60,7 +57,7 @@ An information about a [product discount.](https://swift.adapty.io/documentation
 | subscriptionPeriod | [`AdaptyProductSubscriptionPeriod`](sdk-models#adaptyproductsubscriptionperiod) | An information about period for a product discount |
 
 
-#### AdaptyPaywall
+### AdaptyPaywall
 
 An information about a [paywall.](https://swift.adapty.io/documentation/adapty/adaptypaywall)
 
@@ -77,7 +74,7 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 | locale | string | <p>An identifier of a paywall locale</p><p></p><p>This parameter is expected to be a language code composed of one or more subtags separated by the "-" character. The first subtag is for the language, the second one is for the region (The support for regions will be added later).</p><p>Example: `en` means English, `en-US` represents US English.</p><p>If the parameter is omitted, the paywall will be returned in the default locale.</p> |
 
 
-#### AdaptyProfile
+### AdaptyProfile
 
 An information about a [user's](https://swift.adapty.io/documentation/adapty/adaptyprofile) subscription status and purchase history.
 
@@ -90,7 +87,7 @@ An information about a [user's](https://swift.adapty.io/documentation/adapty/ada
 | subscriptions    | dictionary\<string, [`Subscription `](sdk-models#adaptyprofilesubscription)>          | The keys are product ids from a store. The values are information about subscriptions. Can be null if the customer has no subscriptions        |
 | nonSubscriptions | dictionary\<string, \[[`NonSubscription `](sdk-models#adaptyprofilenonsubscription)]> | The keys are product ids from the store. The values are arrays of information about consumables. Can be null if the customer has no purchases. |
 
-#### AdaptyProfile.AccessLevel
+### AdaptyProfile.AccessLevel
 
 Information about the [user's access level.](https://swift.adapty.io/documentation/adapty/adaptyprofile/accesslevel)
 
@@ -116,7 +113,7 @@ Information about the [user's access level.](https://swift.adapty.io/documentati
 | activePromotionalOfferId | string (Optional) | An id of active promotional offer. |
 
 
-#### AdaptyProfile.Subscription
+### AdaptyProfile.Subscription
 
 Information about the [user's subscription.](https://swift.adapty.io/documentation/adapty/adaptyprofile/subscription)
 
@@ -144,7 +141,7 @@ Information about the [user's subscription.](https://swift.adapty.io/documentati
 | isSandbox | bool | True if the product was purchased in a sandbox environment |
 
 
-#### AdaptyProfile.NonSubscription
+### AdaptyProfile.NonSubscription
 
 Information about the user's non-subscription purchases.
 
@@ -160,7 +157,7 @@ Information about the user's non-subscription purchases.
 | isSandbox | boolean | True if the product was purchased in a sandbox environment |
 
 
-#### AdaptySubscriptionUpdateParameters
+### AdaptySubscriptionUpdateParameters
 
 (_Android only_)  
 Parameters to change one subscription to another.
