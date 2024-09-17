@@ -8,11 +8,14 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 
-Here’s the improved version:
-
 After adding the Adapty Plugin as a dependency to your FlutterFlow project, it's time to build the flow that retrieves Adapty paywall data and displays it on the paywall you've designed in FlutterFlow.
 
 We first need to receive the paywall data from Adapty. We'll start by requesting the Adapty paywall, then its associated products, and finally checking if the data was successfully received. If successful, we’ll display the product title and price on the paywall page. Otherwise, we'll show an error message.
+
+Before proceeding, make sure you've done the following:
+
+1. [Created at least one paywall and added at least one product to it](create-paywall) in the Adapty Dashboard.
+2. [Created at last one placement](create-placement) and [added your paywall to it](add-audience-paywall-ab-test) in the Adapty Dashboard.
 
 Let's get started!
 

@@ -10,9 +10,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-With Adapty, you can create and run paywalls and A/B tests at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called Placements. A placement in your app can manage multiple paywalls or A/B tests at a time, each made for a certain group of users, which we call Audiences. Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version.
-
-The only thing you hardcode in the mobile app is the placement ID.
+With Adapty, you can create and run paywalls and A/B tests at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called [Placements](placements). A placement in your app can manage multiple paywalls or [A/B tests](ab-tests) at a time, each made for a certain group of users, which we call [Audiences](audience). Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version. The only thing you hardcode in the mobile app is the placement ID.
 
 <Zoom>
   <img src={require('./img/audience.jpg').default}
@@ -25,16 +23,9 @@ The only thing you hardcode in the mobile app is the placement ID.
 />
 </Zoom>
 
-Combining the power of Adapty and FlutterFlow lets you make the most of both platforms. Design your paywall UI with FlutterFlow’s robust features, while simultaneously [setting up the same paywall](create-paywall) in the Adapty Dashboard. There's no need to design the UI in Adapty; just make sure to add the products you want to sell. Ensure that the paywall you create in FlutterFlow matches the number of products listed in Adapty.
+The Adapty plugin keeps your paywall updated with the latest products from your Adapty Dashboard. It [fetches the product data](ff-action-flow) and [shows it on your paywall](ff-add-variables-to-paywalls), [handles purchases](ff-make-purchase), and [checks the user’s access level](ff-check-subscription-status) to see if they should get paid content.
 
-After creating a paywall in the Adapty Dashboard, [create a placement](create-placement) and [add your paywall](add-audience-paywall-ab-test) to it. Adapty’s placement system lets you experiment with different paywalls and A/B tests, allowing you to swap them out over time without needing to release a new app version.
-
-Before proceeding, make sure you've done the following:
-
-1. [Created at least one paywall and added at least one product to it](create-paywall) in the Adapty Dashboard.
-2. [Created at last one placement](create-placement) and [added your paywall to it](add-audience-paywall-ab-test) in the Adapty Dashboard.
-3. And finally added the Adapty Plugin as a dependency in your FlutterFlow project as described below.
-
+To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-plugin-as-a-dependency) to your FlutterFlow project and [initiate it](ff-getting-started#initiate-adapty-plugin) as shown below.
 
 ## Add the Adapty plugin as a dependency
 
@@ -126,7 +117,7 @@ After completing these steps, you'll be able to call your paywall in your Flutte
 ## What's next? 
 
 
-1. [Create an action flow for handling Adapty paywall products and their data in FlutterFlow](ff-action-flow).
-2. [Map the received data to the paywall you designed in FlutterFlow](ff-add-variables-to-paywalls).
-3. [Set up the purchase button on your paywall to process transactions through Adapty when clicked](ff-make-purchase).
-4. [Finally, add subscription status checks to determine whether to display paid content to the user](ff-check-subscription-status).
+1. [Create an action flow](ff-action-flow) for handling Adapty paywall products and their data in FlutterFlow.
+2. [Map the received data to the paywall](ff-add-variables-to-paywalls) you designed in FlutterFlow.
+3. [Set up the purchase button](ff-make-purchase) on your paywall to process transactions through Adapty when clicked.
+4. Finally, [add subscription status checks](ff-check-subscription-status) to determine whether to display paid content to the user.
