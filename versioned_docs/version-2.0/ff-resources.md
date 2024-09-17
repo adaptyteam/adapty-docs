@@ -12,7 +12,7 @@ All Adapty actions are custom actions for FlutterFlow.
 | activate | Initializes the Adapty SDK | None |
 | <p id="getPaywall">getPaywall</p> | Retrieves a paywall. It does not return paywall products. Use the `getPaywallProducts` action to get the actual products | <ul><li>[Placement_ID](placements)</li><li>[Locale](localizations-and-locale-codes)</li></ul> | [AdaptyPaywall](ff-resources#adaptypaywall) |
 | <p id="getPaywallProducts">getPaywallProducts</p> | Returns a list of actual paywall products | [AdaptyPaywall](ff-resources#adaptypaywall) | |
-| <p id="getProductsIntroductoryOfferEligibility">getProductsIntroductoryOfferEligibility</p> | Checks if the user qualifies for an introductory iOS subscription offer | [AdaptyPaywallProduct](product) | AdaptyEligibilityEnum |
+| <p id="getProductsIntroductoryOfferEligibility">getProductsIntroductoryOfferEligibility</p> | Checks if the user qualifies for an introductory iOS subscription offer | [AdaptyPaywallProduct](product) | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum) |
 | <p id="getProfile">getProfile</p> |  <p>Retrieves the current app user's profile. This allows you to set access levels and other parameters</p><p>If it fails (e.g., due to no internet), cached data will be returned. Adapty regularly updates the profile cache to ensure the information stays as current as possible</p>  | None| [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) | customerUserId
 | identify | Identifies the user using your system's `customerUserId` | customerUserId | None |
 | logShowPaywall | Logs when a specific paywall is shown to the user | [AdaptyPaywall](ff-resources#adaptypaywall)  | None |
@@ -31,8 +31,8 @@ Information about the user's [access level](access-level).
 |--------------------------|----------|-------------|
 | activatedAt | DateTime | The time when this access level was activated |
 | activeIntroductoryOfferType | String | The type of an active introductory offer. If not `null, it means an offer was applied during this subscription period |
-| activePromotionalOfferId | String | The ID of an active promotional offer |
-| activePromotionalOfferType | String | The type of an active promotional offer. If not null, it means an offer was applied during this subscription period |
+| activePromotionalOfferId | String | The ID of an active promotional offer (use for iOS) |
+| activePromotionalOfferType | String | The type of an active promotional offer (use for iOS). If not null, it means an offer was applied during this subscription period |
 | billingIssueDetectedAt | DateTime | The time when a billing issue was detected. The subscription can still be active. Set to null if payment is successfully processed |
 | cancellationReason | String | The reason why the subscription was canceled |
 | expiresAt | DateTime | The access level expiration time (could be in the past or null for lifetime access) |
@@ -41,7 +41,7 @@ Information about the user's [access level](access-level).
 | isInGracePeriod | Boolean | True if this auto-renewable subscription is in the [grace period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions) |
 | isLifetime | Boolean | True if this access level is active for a lifetime (no expiration date) |
 | isRefund | Boolean | True if this purchase was refunded |
-| offerId | String | The ID of the offer used when providing the access level |
+| offerId | String | The ID of an active promotional offer (use for Android)  |
 | renewedAt | DateTime | The time when the access level was last renewed |
 | startsAt | DateTime | The start time of this access level (could be in the future) |
 | store | String | The store where the purchase was made |
