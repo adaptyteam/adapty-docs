@@ -6,6 +6,7 @@ metadataTitle: "What is product in Adapty and how to create it"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
 
 No matter how you use Adapty, you need to create a product in the Adapty Dashboard and link products you've created in the app stores into it. Product creation in app stores is done separately from Adapty and involves defining details like price, duration, and free trials for your in-app purchases or subscriptions. Adapty will then use these settings to manage and analyze transactions in your app. Please check our guides on how to create products in stores:
 
@@ -34,7 +35,6 @@ After your products are set up in the stores, you are ready to add your products
 
 2. Click the **Create product** button located in the top-right corner of the product list page. This action will initiate the process of creating a product within your app. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
 
-
 <Zoom>
   <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.png').default}
   style={{
@@ -45,10 +45,6 @@ After your products are set up in the stores, you are ready to add your products
   }}
 />
 </Zoom>
-
-
-
-
 
 3. In the opened **Create product** window, enter the following data:
 
@@ -73,7 +69,6 @@ After your products are set up in the stores, you are ready to add your products
       - **Base Plan ID:** This ID is used to define the base plan for the product in the Play Store. When adding a subscription's Product ID on the Play Store you have to provide a Base Plan ID.  A base plan defines the essential details of a subscription, encompassing the billing period, renewal type (auto-renewing or prepaid), and the associated price.  Please note, that within Adapty, each combination of the same subscription and different base plans is treated as a separate product.
       - **Legacy fallback product**: A fallback product is used exclusively for apps using older versions of the Adapty SDK (versions 2.5 and below). By marking a product as backward compatible in the Google Play Console, Adapty can identify whether it can be purchased by older SDK versions. For this field please specify the value in the following format `<subscription_id>:<base_plan_id>`.
 
-        
 <Zoom>
   <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
   style={{
@@ -85,11 +80,29 @@ After your products are set up in the stores, you are ready to add your products
 />
 </Zoom>
 
+ By configuring the product information for both the App Store and Play Store, you'll ensure smooth integration and effective management of your in-app purchases or subscriptions using Adapty.
 
+5. (optional) You can configure the product information from other app stores you sell the product through. If the required store is not listed, add it.
 
+   <details>
+   <summary>How to add a custom app store (click to expand)</summary>
+    1. Click the **Create Custom Store** button.
 
-   By configuring the product information for both the App Store and Play Store, you'll ensure smooth integration and effective management of your in-app purchases or subscriptions using Adapty.
+       <Zoom>
+         <img src={require('./img/create-product-create-store.png').default}
+         style={{
+           border: '1px solid #727272', /* border width and color */
+           width: '700px', /* image width */
+           display: 'block', /* for alignment */
+           margin: '0 auto' /* center alignment */
+         }}
+       />
+       </Zoom>
+
+    2. Enter the store’s **Title** and **Store ID**.
+
+    3. Click the **Create store** button.
+	</details>
 
 5. (optional) You can [create offers](create-offer) for the product if you need to.
-
 6. Click the **Save** button to confirm the creation of the product.
