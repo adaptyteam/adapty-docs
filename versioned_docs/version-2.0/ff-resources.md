@@ -20,6 +20,7 @@ Below are Adapty methods delivered to FlutterFlow with Adapty plugin. They can b
 | <p id="makePurchase">makePurchase</p> | Completes a purchase and unlocks content. If a paywall has a promotional offer, Adapty automatically applies it at checkout| <ul><li> **product**: an AdaptyPaywallProduct object retrieved from the paywall.</li><li> **subscriptionUpdateParams**: an `AdaptySubscriptionUpdateParameters` object used to upgrade or downgrade a subscription (use for Android).</li><li>**isOfferPersonalized**: Specifies whether the offer is personalized to the buyer (use for Android).</li></ul> | [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html)  |
 | presentCodeRedemptionSheet | Displays a sheet that allows users to redeem codes (iOS only) | None | None |
 | restorePurchases | Restores any purchases the user has made | None | [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html)  |
+| UpdateProfile | Changes optional attributes of the current user profile such as email, phone number, etc. You can later use attributes to create user [segments](segments) or just view them in CRM |  |  |
 
 ## Data Types
 
@@ -289,22 +290,61 @@ Information on subscription
 
 
 
-| Field name                          | Type                                                        | Description                                                  |
-| ----------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
-| androidBasePlanId                   | String                                                      |                                                              |
-| androidIntroductoryOfferEligibility | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum) | Definition if the user qualifies for an introductory offer for an iOS subscription |
-| androidOfferId                      | String                                                      | The ID of an active promotional offer (use for Android)      |
-| androidOfferTags                    | List < String >                                             |                                                              |
-| introductoryOffer                   | List < Data (AdaptySubscriptionPhase) >                     | The ID of an introductory offer (use for iOS)                |
-| localizedSubscriptionPeriod         | String                                                      | The period of the subscription in the user's language        |
-| promotionalOffer                    | Data (AdaptySubscriptionPhase)                              | The ID of a promotional offer (use for iOS)                  |
-| promotionalOfferEligibility         | Boolean                                                     | Definition if the user qualifies for an promotional offer for an iOS subscription |
-| promotionalOfferId                  | String                                                      |                                                              |
-| renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum) |                                                              |
-| subscriptionGroupIdentifier         | String                                                      |                                                              |
-| subscriptionPeriod                  | Data (AdaptySubscriptionPeriod)                             | The period of the subscription                               |
+| Field name                          | Type                                                         | Description                                                  |
+| ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| androidBasePlanId                   | String                                                       |                                                              |
+| androidIntroductoryOfferEligibility | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum)  | Definition if the user qualifies for an introductory offer for an iOS subscription |
+| androidOfferId                      | String                                                       | The ID of an active promotional offer (use for Android)      |
+| androidOfferTags                    | List < String >                                              |                                                              |
+| introductoryOffer                   | List < Data (AdaptySubscriptionPhase) >                      | The ID of an introductory offer (use for iOS)                |
+| localizedSubscriptionPeriod         | String                                                       | The period of the subscription in the user's language        |
+| promotionalOffer                    | Data (AdaptySubscriptionPhase)                               | The ID of a promotional offer (use for iOS)                  |
+| promotionalOfferEligibility         | Boolean                                                      | Definition if the user qualifies for an promotional offer for an iOS subscription |
+| promotionalOfferId                  | String                                                       |                                                              |
+| renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  |                                                              |
+| subscriptionGroupIdentifier         | String                                                       |                                                              |
+| subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
+
+### AdaptySubscriptionPeriod
+
+Duration of the subscription
+
+| Field name    | Type                                                      | Description                                                 |
+| ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
+| numberOfUnits | Integer                                                   | Number of days/weeks/months/years the subscription lasts.   |
+| unit          | [AdaptyPeriodUnitEnum](ff-resources#adaptyperiodunitenum) | Meaturement unit of the period: days, weeks, months, years. |
+
+### AdaptySubscriptionPhase
 
 
+
+| Field name                  | Type                                                         | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| identifier                  | String                                                       | The ID of the phase                                          |
+| localizedNumberOfPeriods    | String                                                       |                                                              |
+| localizedSubscriptionPeriod | String                                                       | The duration of the subscription in the user's language      |
+| numberOfPeriods             | Integer                                                      | The number of days/weeks/months/years the subscription lasts. |
+| paymentMode                 | [AdaptyPaymentModeEnum](ff-resources#AdaptyPaymentModeEnum)  | Payment model                                                |
+| price                       | Data ([AdaptyPrice](ff-resources#adaptyprice))               | The price of the                                             |
+| subscriptionPeriod          | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
+
+### MapKeyNonSubscriptions
+
+
+
+| Field name | Type                                                         | Description |
+| ---------- | ------------------------------------------------------------ | ----------- |
+| key        | String                                                       |             |
+| value      | List < Data ([AdaptyNonSubscription](ff-resources#adaptynonsubscription)) > |             |
+
+### MapKeySubscriptions
+
+
+
+| Field name | Type                                                         | Description |
+| ---------- | ------------------------------------------------------------ | ----------- |
+| key        | String                                                       |             |
+| value      | List < Data ([AdaptySubscription](ff-resources#adaptysubscription)) > |             |
 
 ## Enums
 
@@ -356,10 +396,18 @@ Defines the units in which the periods are measured.
 
 ### AdaptyRenewalTypeEnum
 
-Defines id the subscription is auto-renewable or not.
+Defines if the subscription is auto-renewable or not.
 
 | Field name    | Description                                         |
 | ------------- | --------------------------------------------------- |
 | prepaid       | The subscription is prepaid and not auto-renewable. |
 | autorenewable | The subscription is auto-renewable                  |
+
+### App States
+
+App state variables are specific variables that hold the current state of an application. They can be accessed and modified throughout the entire application across all pages and components. This type of variable can be useful for storing data that needs to be shared between different parts of the app, such as user preferences and authentication tokens.
+
+| Field Name     | Data Type                                          | Persisted |
+| -------------- | -------------------------------------------------- | --------- |
+| currentProfile | Data ([AdaptyProfile](ff-resources#adaptyprofile)) | False     |
 
