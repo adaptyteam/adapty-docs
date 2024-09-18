@@ -137,6 +137,11 @@ const config = {
             href: "/getting-started-with-server-side-api",
           },
           {
+            label: "Support Forum",
+            position: "left",
+            href: "https://ask.adapty.io/questions",
+          },
+          {
             type: "docsVersionDropdown",
             position: "right",
             dropdownActiveClassDisabled: true,
