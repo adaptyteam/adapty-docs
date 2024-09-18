@@ -23,7 +23,7 @@ To start customizing a paywall using the remote config:
 
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
 
-   
+
 <Zoom>
   <img src={require('./img/b7eb293-paywalls_edit.png').default}
   style={{
@@ -36,11 +36,9 @@ To start customizing a paywall using the remote config:
 </Zoom>
 
 
-
-
 2. Click the **3-dot** button next to the paywall and select the **Edit** option.
 
-   
+
 <Zoom>
   <img src={require('./img/d44fdb9-switch_to_remote_config.png').default}
   style={{
@@ -51,8 +49,6 @@ To start customizing a paywall using the remote config:
   }}
 />
 </Zoom>
-
-
 
 
 3. In the opened **Paywalls/ Your paywall** page, switch to the **Remote config** tab.
@@ -143,7 +139,6 @@ You can combine different options, and make up your own. This way you can test d
 
 In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
 
-
 <Zoom>
   <img src={require('./img/3356ff5-remote_config_JSON.png').default}
   style={{
@@ -155,14 +150,9 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
 />
 </Zoom>
 
-
-
-
-
 ### Table view of the remote config
 
 If it's not common for you to work with code and there is a need to correct some values of the JSON, Adapty has the **Table** view for you.
-
 
 <Zoom>
   <img src={require('./img/4c27b2f-remote_config_table.png').default}
@@ -175,14 +165,9 @@ If it's not common for you to work with code and there is a need to correct some
 />
 </Zoom>
 
-
-
-
-
 It is a copy of your JSON in the format of a table that is easy to read and understand. Color coding helps to recognize different data types. 
 
-To add a key, click the **Add raw** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
-
+To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 <Zoom>
   <img src={require('./img/ef682d8-add_raw.png').default}
@@ -195,12 +180,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
 />
 </Zoom>
 
-
-
-
-
-Additional raw options are mostly useful for [paywall localisations](add-remote-config-locale):
-
+Additional row options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 <Zoom>
   <img src={require('./img/17bcf80-remote_config_table_options.png').default}
@@ -212,9 +192,5 @@ Additional raw options are mostly useful for [paywall localisations](add-remote-
   }}
 />
 </Zoom>
-
-
-
-
 
 Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can [display your remote config paywalls](display-remote-config-paywalls) in your mobile app.
