@@ -8,7 +8,7 @@ We're thrilled to have you on board with Adapty! Our priority is to help you hit
 
 The initial integration is only needed for [App Store](initial_ios), [Google Play](initial-android), and [Stripe](stripe) since Adapty verifies your apps, products, and offers with these stores. 
 
-Adapty doesn’t validate data with other app stores. However, you can still mark products sold through other stores to grant access to paid content after a successful purchase, reflect transactions in your analytics, and share them via integrations.
+Adapty doesn’t validate data with other app stores and does not process purchases made through them. However, you can still mark products sold through other stores to grant access to paid content after a successful purchase, reflect transactions in your analytics, and share them via integrations.
 
 :::important
 

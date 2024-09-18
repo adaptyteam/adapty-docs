@@ -102,7 +102,15 @@ After your products are set up in the stores, you are ready to add your products
     2. Enter the store’s **Title** and **Store ID**.
 
     3. Click the **Create store** button.
-	</details>
 
-5. (optional) You can [create offers](create-offer) for the product if you need to.
+     :::important
+
+     Adapty doesn’t validate data with custom app stores and does not process purchases made through them. Make sure your backend processes the purchase and sends the transaction to Adapty using the [Adapty server-side API](getting-started-with-server-side-api). Adapty will only provide access, trigger a transaction event, send it to integrations, and reflect it in analytics after the transaction is received.
+
+     :::
+
+     </details>
+
+6. (optional) You can [create offers](create-offer) for the product if you need to.
+
 6. Click the **Save** button to confirm the creation of the product.
