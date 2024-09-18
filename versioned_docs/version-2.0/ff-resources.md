@@ -168,18 +168,18 @@ Information about a [paywall](paywalls).
 
 Information about [product](product).
 
-| Field name           | Type                             | Description                                                  |
-| -------------------- | -------------------------------- | ------------------------------------------------------------ |
-| vendorProductId      | String                           | The ID of a product from an app store                        |
-| localizedDescription | String                           | A description of the product in the user's language          |
-| localizedTitle       | String                           | The name of the product in the user's language               |
-| regionCode           | String                           | The region code of the locale used to format the price of the product (use for iOS) |
-| isFamilyShareable    | Boolean                          | A Boolean value that indicates whether the product is available for family sharing in App Store Connect. Will be always FALSE for iOS version below 14.0 and macOS version below 11.0 (use for iOS) |
-| paywallVariationId   | String                           | The ID of a variation, used to attribute purchases to this paywall |
-| paywallABTestName    | String                           | Parent A/B test name                                         |
-| paywallName          | String                           | Parent paywall name                                          |
-| price                | Data (AdaptyPrice)               | The price of the product                                     |
-| subscriptionDetails  | Data (AdaptySubscriptionDetails) | Information on subscription                                  |
+| Field name           | Type                                                         | Description                                                  |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| vendorProductId      | String                                                       | The ID of a product from an app store                        |
+| localizedDescription | String                                                       | A description of the product in the user's language          |
+| localizedTitle       | String                                                       | The name of the product in the user's language               |
+| regionCode           | String                                                       | The region code of the locale used to format the price of the product (use for iOS) |
+| isFamilyShareable    | Boolean                                                      | A Boolean value that indicates whether the product is available for family sharing in App Store Connect. Will be always FALSE for iOS version below 14.0 and macOS version below 11.0 (use for iOS) |
+| paywallVariationId   | String                                                       | The ID of a variation, used to attribute purchases to this paywall |
+| paywallABTestName    | String                                                       | Parent A/B test name                                         |
+| paywallName          | String                                                       | Parent paywall name                                          |
+| price                | Data (AdaptyPrice)                                           | The price of the product                                     |
+| subscriptionDetails  | Data ([AdaptySubscriptionDetails](ff-resources#AdaptySubscriptionDetails)) | Information on subscription                                  |
 
 ### AdaptyPrice
 
@@ -212,7 +212,7 @@ Defines if the user qualifies for an introductory offer for an iOS subscription.
 
 ### AdaptyProductSubscriptions
 
-
+In
 
 | Field name   | Type                                                  | Description                              |
 | ------------ | ----------------------------------------------------- | ---------------------------------------- |
@@ -260,7 +260,7 @@ Information on the user.
 
 ### AdaptySubscription
 
-Information on subscription
+Information on existing user subscription.
 
 | Field name                  | Type     | Description                                                  |
 | --------------------------- | -------- | ------------------------------------------------------------ |
@@ -292,7 +292,7 @@ Information on subscription
 
 | Field name                          | Type                                                         | Description                                                  |
 | ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| androidBasePlanId                   | String                                                       |                                                              |
+| androidBasePlanId                   | String                                                       | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | androidIntroductoryOfferEligibility | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum)  | Definition if the user qualifies for an introductory offer for an iOS subscription |
 | androidOfferId                      | String                                                       | The ID of an active promotional offer (use for Android)      |
 | androidOfferTags                    | List < String >                                              |                                                              |
@@ -300,9 +300,9 @@ Information on subscription
 | localizedSubscriptionPeriod         | String                                                       | The period of the subscription in the user's language        |
 | promotionalOffer                    | Data (AdaptySubscriptionPhase)                               | The ID of a promotional offer (use for iOS)                  |
 | promotionalOfferEligibility         | Boolean                                                      | Definition if the user qualifies for an promotional offer for an iOS subscription |
-| promotionalOfferId                  | String                                                       |                                                              |
+| promotionalOfferId                  | String                                                       | Android                                                      |
 | renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  |                                                              |
-| subscriptionGroupIdentifier         | String                                                       |                                                              |
+| subscriptionGroupIdentifier         | String                                                       | iOS - subscription groups                                    |
 | subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
 
 ### AdaptySubscriptionPeriod
@@ -316,7 +316,7 @@ Duration of the subscription
 
 ### AdaptySubscriptionPhase
 
-
+The phase of a subscription: free trial period, period on introduction 
 
 | Field name                  | Type                                                         | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -330,21 +330,21 @@ Duration of the subscription
 
 ### MapKeyNonSubscriptions
 
+Replacement for a dictionary of [AdaptyNonSubscription](ff-resources#adaptynonsubscription).
 
-
-| Field name | Type                                                         | Description |
-| ---------- | ------------------------------------------------------------ | ----------- |
-| key        | String                                                       |             |
-| value      | List < Data ([AdaptyNonSubscription](ff-resources#adaptynonsubscription)) > |             |
+| Field name | Type                                                         |
+| ---------- | ------------------------------------------------------------ |
+| key        | String                                                       |
+| value      | List < Data ([AdaptyNonSubscription](ff-resources#adaptynonsubscription)) > |
 
 ### MapKeySubscriptions
 
+Replacement for a dictionary of [AdaptySubscription](ff-resources#adaptysubscription).
 
-
-| Field name | Type                                                         | Description |
-| ---------- | ------------------------------------------------------------ | ----------- |
-| key        | String                                                       |             |
-| value      | List < Data ([AdaptySubscription](ff-resources#adaptysubscription)) > |             |
+| Field name | Type                                                         |
+| ---------- | ------------------------------------------------------------ |
+| key        | String                                                       |
+| value      | List < Data ([AdaptySubscription](ff-resources#adaptysubscription)) > |
 
 ## Enums
 
@@ -407,7 +407,7 @@ Defines if the subscription is auto-renewable or not.
 
 App state variables are specific variables that hold the current state of an application. They can be accessed and modified throughout the entire application across all pages and components. This type of variable can be useful for storing data that needs to be shared between different parts of the app, such as user preferences and authentication tokens.
 
-| Field Name     | Data Type                                          | Persisted |
-| -------------- | -------------------------------------------------- | --------- |
-| currentProfile | Data ([AdaptyProfile](ff-resources#adaptyprofile)) | False     |
+| Field Name     | Data Type                                          | Persisted | Description                                                  |
+| -------------- | -------------------------------------------------- | --------- | ------------------------------------------------------------ |
+| currentProfile | Data ([AdaptyProfile](ff-resources#adaptyprofile)) | False     | The variable that contains the information on the current user profile. Keep it up-to-date. |
 
