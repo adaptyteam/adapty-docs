@@ -98,12 +98,56 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 Bear in mind, that SDK calls must be made after calling **`.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
 <Tabs>
-<TabItem value="Swift" label="iOS" default>
+<TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER
+// In your AppDelegate class:
+
+let configurationBuilder =
+    Adapty.Configuration
+        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(observerMode: false) // optional
+        .with(customerUserId: "YOUR_USER_ID") // optional
+        .with(idfaCollectionDisabled: false) // optional
+        .with(ipAddressCollectionDisabled: false) // optional
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
 ```
+</TabItem><TabItem value="swiftUI" label="iOS (SwiftUI)" default>
+
+```
+import Adapty
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+        Adapty.Configuration
+          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Adapty.activate(with: configurationBuilder) { error in
+          // handle the error
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
 </TabItem>
+
 <TabItem value="kotlin" label="Android" default>
+
 ```kotlin 
 override fun onCreate() {
     super.onCreate()
