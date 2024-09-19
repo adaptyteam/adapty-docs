@@ -73,12 +73,12 @@ You can access the timezone settings in the Reported timezone section of the Gen
 
 ## 4\. Installs definition for analytics
 
-Choose how app installs should be counted in analytics:
+Choose how app install time should be counted in analytics:
 
 | Base                   | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
 | New device_ids         | <p>(Recommended) Any installation of the app on a device counts as a new install event. This includes the first install and any reinstallation on the same device. Logins are not counted as installs.</p><p>If a user has multiple devices, each installation on a different device is counted. So if the user has 5 devices with the app, you'll see 5 installs.</p> |
-| New customer_user_ids  | <p>Only the first installation of the app on the user’s first device is counted. If a user installs the app on more devices, they won’t be counted as new installs. So if a user has 5 devices, you’ll still only see 1 install.</p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p> |
+| New customer_user_ids  | <p>Only the first installation of the app on the user’s first device is counted. If a user installs the app on more devices, they won’t be counted as new installs. So if a user has 5 devices, you’ll still only see 1 install.</p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p>This option requires you to [identify users](identifying-users). If not, it will function like the **New profiles in Adapty** option.</p> |
 | New profiles in Adapty | (Legacy) Every app installation, reinstallation, or login is counted as a new install. |
 
 
