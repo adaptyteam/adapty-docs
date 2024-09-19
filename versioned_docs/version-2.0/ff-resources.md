@@ -11,16 +11,16 @@ Below are Adapty methods delivered to FlutterFlow with Adapty plugin. They can b
 |---|----|--------|----|
 | activate | Initializes the Adapty SDK | None ||
 | <p id="getPaywall">getPaywall</p> | Retrieves a paywall. It does not return paywall products. Use the `getPaywallProducts` action to get the actual products | <ul><li>[Placement_ID](placements)</li><li>[Locale](localizations-and-locale-codes)</li></ul> | [AdaptyPaywall](ff-resources#adaptypaywall) |
-| <p id="getPaywallProducts">getPaywallProducts</p> | Returns a list of actual paywall products | [AdaptyPaywall](ff-resources#adaptypaywall) | |
+| <p id="getPaywallProducts">getPaywallProducts</p> | Returns a list of actual paywall products | [AdaptyPaywall](ff-resources#adaptypaywall) | [AdaptyPaywallProduct](product) |
 | <p id="getProductsIntroductoryOfferEligibility">getProductsIntroductoryOfferEligibility</p> | Checks if the user qualifies for an introductory iOS subscription offer | [AdaptyPaywallProduct](product) | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum) |
-| <p id="getProfile">getProfile</p> |  <p>Retrieves the current app user's profile. This allows you to set access levels and other parameters</p><p>If it fails (e.g., due to no internet), cached data will be returned. Adapty regularly updates the profile cache to ensure the information stays as current as possible</p>  | None| [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) |
+| <p id="getProfile">getProfile</p> |  <p>Retrieves the current app user's profile. This allows you to set access levels and other parameters</p><p>If it fails (e.g., due to no internet), cached data will be returned. Adapty regularly updates the profile cache to ensure the information stays as current as possible</p>  | None| [AdaptyProfile](ff-resources#adaptyprofile) |
 | identify | Identifies the user using your system's `customerUserId` | customerUserId | None |
 | logShowPaywall | Logs when a specific paywall is shown to the user | [AdaptyPaywall](ff-resources#adaptypaywall)  | None |
 | logout | Logs the current user out of your app | None | None|
-| <p id="makePurchase">makePurchase</p> | Completes a purchase and unlocks content. If a paywall has a promotional offer, Adapty automatically applies it at checkout| <ul><li> **product**: an AdaptyPaywallProduct object retrieved from the paywall.</li><li> **subscriptionUpdateParams**: an `AdaptySubscriptionUpdateParameters` object used to upgrade or downgrade a subscription (use for Android).</li><li>**isOfferPersonalized**: Specifies whether the offer is personalized to the buyer (use for Android).</li></ul> | [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html)  |
+| <p id="makePurchase">makePurchase</p> | Completes a purchase and unlocks content. If a paywall has a promotional offer, Adapty automatically applies it at checkout| <ul><li> **product**: an AdaptyPaywallProduct object retrieved from the paywall.</li><li> **subscriptionUpdateParams**: an `AdaptySubscriptionUpdateParameters` object used to upgrade or downgrade a subscription (use for Android).</li><li>**isOfferPersonalized**: Specifies whether the offer is personalized to the buyer (use for Android).</li></ul> | [AdaptyProfile](ff-resources#adaptyprofile) |
 | presentCodeRedemptionSheet | Displays a sheet that allows users to redeem codes (iOS only) | None | None |
-| restorePurchases | Restores any purchases the user has made | None | [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html)  |
-| UpdateProfile | Changes optional attributes of the current user profile such as email, phone number, etc. You can later use attributes to create user [segments](segments) or just view them in CRM |  |  |
+| restorePurchases | Restores any purchases the user has made | None | [AdaptyProfile](ff-resources#adaptyprofile) |
+| UpdateProfile | Changes optional attributes of the current user profile such as email, phone number, etc. You can later use attributes to create user [segments](segments) or just view them in CRM | The ID and any parameters that need to be updated for the [AdaptyProfile](ff-resources#adaptyprofile) | [AdaptyProfile](ff-resources#adaptyprofile) |
 
 ## Data Types
 
@@ -54,21 +54,25 @@ Information about the user's [access level](access-level).
 
 ### AdaptyAccessLevelIdentifiers
 
+
+
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
 | accessLevelIdentifier | String | The ID of the access level |
-| accessLevel | Data (AdaptyAccessLevel) | Contains the associated [`AdaptyAccessLevel`](ff-resources#adaptyaccesslevel) |
-
+| accessLevel | Data ([AdaptyAccessLevel](ff-resources#AdaptyAccessLevel)) | Contains the associated [AdaptyAccessLevel](ff-resources#adaptyaccesslevel) |
 
 ### AdaptyCustomDoubleAttribute
+
+Information on custom double attributes you’ve defined for the [user](ff-resources#adaptyprofile).
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
 | key | String | The ID of the custom double attribute |
 | value | Double | Value of the custom double attribute |
 
-
 ### AdaptyCustomStringAttribute
+
+Information on custom string attributes you’ve defined for the [user](ff-resources#adaptyprofile).
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -78,7 +82,7 @@ Information about the user's [access level](access-level).
 
 ### AdaptyError
 
-CContains details about an error. For a complete list of error codes, refer to [Flutter, React Native, Unity - Handle errors](error-handling-on-flutter-react-native-unity).
+Contains details about an error. For a complete list of error codes, refer to [Flutter, React Native, Unity - Handle errors](error-handling-on-flutter-react-native-unity).
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -91,8 +95,8 @@ Contains the result of the [`getProductsIntroductoryOfferEligibility`](ff-resour
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | List < Data (AdaptyProductIntroEligibility) > | List of the user's eligibility for promotional offers |
-| error | Data (AdaptyError) | Contains details about the error via [`AdaptyError`](ff-resources#adaptyerror) |
+| value | List < Data ([AdaptyProductIntroEligibility](ff-resources#AdaptyProductIntroEligibility)) > | List of the user's eligibility for promotional offers |
+| error | Data ([AdaptyError](ff-resources#adaptyerror)) | Contains details about the error via [`AdaptyError`](ff-resources#adaptyerror) |
 
 ### AdaptyGetPaywallResult
 
@@ -100,8 +104,8 @@ Contains the result of the [`getPaywall`](ff-resources#getPaywall) custom action
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | Data (AdaptyPaywall) | Contains a list of `[AdaptyPaywall`](ff-resources#adaptypaywall) objects |
-| error | Data (AdaptyError) | Contains error information via [`AdaptyError`](ff-resources#adaptyerror) |
+| value | Data ([AdaptyPaywall](ff-resources#adaptypaywall)) | Contains a list of [AdaptyPaywall](ff-resources#adaptypaywall) objects |
+| error | Data ([AdaptyError](ff-resources#adaptyerror)) | Contains error information via [AdaptyError](ff-resources#adaptyerror) |
 
 ### AdaptyGetProductsResult
 
@@ -109,8 +113,8 @@ Contains the result of the [`getPaywallProducts`](ff-resources#getPaywallProduct
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | List < Data (AdaptyPaywallProduct) > | Contains a list of `AdaptyPaywallProduct` |
-| error | Data (AdaptyError) | Contains error information via [`AdaptyError`](ff-resources#adaptyerror)  |
+| value | List < Data ([AdaptyPaywallProduct](product)) > | Contains a list of [AdaptyPaywallProducts](product) |
+| error | Data ([AdaptyError](ff-resources#adaptyerror)) | Contains error information via [AdaptyError](ff-resources#adaptyerror)  |
 
 ### AdaptyGetProfileResult
 
@@ -118,8 +122,8 @@ Contains the result of the [`getProfile`](ff-resources#getProfile) custom action
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | Data (AdaptyProfile) | Contains the user profile as an `AdaptyProfile` |
-| error | Data (AdaptyError) | Contains error information via [`AdaptyError`](ff-resources#adaptyerror)  |
+| value | Data ([AdaptyProfile](ff-resources#adaptyprofile)) | Contains the user profile as an [AdaptyProfile](ff-resources#adaptyprofile) |
+| error | Data (AdaptyError) | Contains error information via [AdaptyError](ff-resources#adaptyerror)  |
 
 ### AdaptyMakePurchaseResult
 
@@ -127,8 +131,8 @@ Contains the result of the [`makePurchase`](ff-resources#makePurchase) custom ac
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | Data (AdaptyProfile) | CContains the user's profile as an `AdaptyProfile` |
-| error | Data (AdaptyError) | Contains error information via [`AdaptyError`](ff-resources#adaptyerror)  |
+| value | Data ([AdaptyProfile](ff-resources#adaptyprofile)) | Contains the user's profile as an [AdaptyProfile](ff-resources#adaptyprofile) |
+| error | Data ([AdaptyError](ff-resources#adaptyerror)) | Contains error information via [AdaptyError](ff-resources#adaptyerror)  |
 
 
 ### AdaptyNonSubscription
@@ -178,19 +182,19 @@ Information about [product](product).
 | paywallVariationId   | String                                                       | The ID of a variation, used to attribute purchases to this paywall |
 | paywallABTestName    | String                                                       | Parent A/B test name                                         |
 | paywallName          | String                                                       | Parent paywall name                                          |
-| price                | Data (AdaptyPrice)                                           | The price of the product                                     |
+| price                | Data ([AdaptyPriceData](ff-resources#AdaptyPriceData))       | The price of the product                                     |
 | subscriptionDetails  | Data ([AdaptySubscriptionDetails](ff-resources#AdaptySubscriptionDetails)) | Information on subscription                                  |
 
 ### AdaptyPrice
 
-Information about price
+Information about product price.
 
-| Field name      | Type   | Description                         |
-| --------------- | ------ | ----------------------------------- |
-| amount          | Double | The number equivalent of the price  |
-| currencyCode    | String | The code of the price currency      |
-| currencySymbol  | String | The code of the price currency      |
-| localizedString | String | The currency in the user's language |
+| Field name      | Type   | Description                                |
+| --------------- | ------ | ------------------------------------------ |
+| amount          | Double | The numeric value of the price             |
+| currencyCode    | String | The code of the price currency             |
+| currencySymbol  | String | The symbol used for the currency           |
+| localizedString | String | The price displayed in the user's language |
 
 ### AdaptyProductIntroEligibility
 
@@ -203,7 +207,7 @@ Defines if the user qualifies for an introductory offer for an iOS subscription.
 
 ### AdaptyProductNonsubscriptions
 
-
+Details of the active non-subscription tied to this product
 
 | Field name       | Type                                                        | Description                                                  |
 | ---------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
@@ -212,7 +216,7 @@ Defines if the user qualifies for an introductory offer for an iOS subscription.
 
 ### AdaptyProductSubscriptions
 
-In
+Details of the active subscription tied to this product.
 
 | Field name   | Type                                                  | Description                              |
 | ------------ | ----------------------------------------------------- | ---------------------------------------- |
@@ -225,11 +229,11 @@ Information on the user's profile
 
 | Field name       | Type                                                         | Description                                                  |
 | ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| accessLevels     | List < Data ([AdaptyAccessLevelIdentifiers](ff-resources#adaptyaccesslevelidentifiers)) > | List of all access levels the belong to the user             |
+| accessLevels     | List < Data ([AdaptyAccessLevelIdentifiers](ff-resources#adaptyaccesslevelidentifiers)) > | List of all access levels that belong to the user            |
 | profileId        | String                                                       | The ID of the user profile                                   |
 | customerUserId   | String                                                       | The ID of the user in the vendor's system                    |
-| subscriptions    | List < Data (MapKeySubscriptions) >                          | The list of all subscriptions purchased by the user          |
-| nonSubscriptions | List < Data (MapKeyNonSubscriptions) >                       | The list of all non0subscription products purchased by the user |
+| subscriptions    | List < Data ([MapKeySubscriptions](ff-resources#MapKeySubscriptions)) > | The list of all subscriptions purchased by the user          |
+| nonSubscriptions | List < Data ([MapKeyNonSubscriptions](ff-resources#MapKeyNonSubscriptions)) > | The list of all non-subscription products purchased by the user |
 
 ### AdaptyProfileParameters
 
@@ -254,7 +258,7 @@ Information on the user.
 | firebaseAppInstanceId         | String                                                       | The ID of the user in  [Firebase integration](firebase-and-google-analytics) |
 | airbridgeDeviceId             | String                                                       | The ID of the user's device in  [Airbridge integration](airbridge) |
 | appTrackingTransparencyStatus | AdaptyATTStatus                                              | The status of the access to IDFA (use for iOS)               |
-| analyticsDisabled             | Boolean                                                      | Definition if the external[analytics is opted out for the user](analytics-integration#disabling-external-analytics-for-a-specific-customer) |
+| analyticsDisabled             | Boolean                                                      | Definition if the external [analytics is opted out for the user](analytics-integration#disabling-external-analytics-for-a-specific-customer) |
 | customStringAttributes        | List < Data ([AdaptyCustomStringAttribute](ff-resources#adaptycustomstringattribute)) > | List of custom string attributes of the user                 |
 | customDoubleAttributes        | List < Data ([AdaptyCustomDoubleAttribute](ff-resources#adaptycustomdoubleattribute)) > | List of custom double attributes of the user                 |
 
@@ -288,21 +292,21 @@ Information on existing user subscription.
 
 ### AdaptySubscriptionDetails
 
-
+Scheme of a Subscription object as a part of the [AdaptyPaywallProduct](product).
 
 | Field name                          | Type                                                         | Description                                                  |
 | ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | androidBasePlanId                   | String                                                       | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | androidIntroductoryOfferEligibility | [AdaptyEligibilityEnum](ff-resources#adaptyeligibilityenum)  | Definition if the user qualifies for an introductory offer for an iOS subscription |
 | androidOfferId                      | String                                                       | The ID of an active promotional offer (use for Android)      |
-| androidOfferTags                    | List < String >                                              |                                                              |
-| introductoryOffer                   | List < Data (AdaptySubscriptionPhase) >                      | The ID of an introductory offer (use for iOS)                |
+| androidOfferTags                    | List < String >                                              | List of [custom tags](https://developers.google.com/android-publisher/api-ref/rest/v3/OfferTag) specified for base plans and subscription offers. |
+| introductoryOffer                   | List < Data ([AdaptySubscriptionPhase](ff-resources#adaptysubscriptionphase)) > | The ID of an introductory offer (use for iOS)                |
 | localizedSubscriptionPeriod         | String                                                       | The period of the subscription in the user's language        |
-| promotionalOffer                    | Data (AdaptySubscriptionPhase)                               | The ID of a promotional offer (use for iOS)                  |
+| promotionalOffer                    | Data ([AdaptySubscriptionPhase](ff-resources#adaptysubscriptionphase)) | The promotional offer details (use for iOS)                  |
 | promotionalOfferEligibility         | Boolean                                                      | Definition if the user qualifies for an promotional offer for an iOS subscription |
-| promotionalOfferId                  | String                                                       | Android                                                      |
-| renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  |                                                              |
-| subscriptionGroupIdentifier         | String                                                       | iOS - subscription groups                                    |
+| promotionalOfferId                  | String                                                       |                                                              |
+| renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  | Defines if the subscription is auto-renewable or not via [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum) |
+| subscriptionGroupIdentifier         | String                                                       | The ID of the product group the product belongs to (use for iOS) |
 | subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
 
 ### AdaptySubscriptionPeriod
@@ -312,21 +316,21 @@ Duration of the subscription
 | Field name    | Type                                                      | Description                                                 |
 | ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
 | numberOfUnits | Integer                                                   | Number of days/weeks/months/years the subscription lasts.   |
-| unit          | [AdaptyPeriodUnitEnum](ff-resources#adaptyperiodunitenum) | Meaturement unit of the period: days, weeks, months, years. |
+| unit          | [AdaptyPeriodUnitEnum](ff-resources#adaptyperiodunitenum) | Measurement unit of the period: days, weeks, months, years. |
 
 ### AdaptySubscriptionPhase
 
-The phase of a subscription: free trial period, period on introduction 
+Represents a subscription phase, such as a free trial or an introductory offer period.
 
 | Field name                  | Type                                                         | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | identifier                  | String                                                       | The ID of the phase                                          |
-| localizedNumberOfPeriods    | String                                                       |                                                              |
-| localizedSubscriptionPeriod | String                                                       | The duration of the subscription in the user's language      |
-| numberOfPeriods             | Integer                                                      | The number of days/weeks/months/years the subscription lasts. |
-| paymentMode                 | [AdaptyPaymentModeEnum](ff-resources#AdaptyPaymentModeEnum)  | Payment model                                                |
-| price                       | Data ([AdaptyPrice](ff-resources#adaptyprice))               | The price of the                                             |
-| subscriptionPeriod          | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
+| localizedNumberOfPeriods    | String                                                       | The length of the phase. For example, a 6-month offer would display as `6 months` in the user's language. |
+| localizedSubscriptionPeriod | String                                                       | The subscription duration in the user's language, like `3 months`. |
+| numberOfPeriods             | Integer                                                      | The number of subscription periods in this phase. For instance, a 6-month offer would have two 3-month periods. |
+| paymentMode                 | [AdaptyPaymentModeEnum](ff-resources#AdaptyPaymentModeEnum)  | The payment model used for this phase.                       |
+| price                       | Data ([AdaptyPrice](ff-resources#adaptyprice))               | The price of this phase.                                     |
+| subscriptionPeriod          | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The subscription period on which this phase is based.        |
 
 ### MapKeyNonSubscriptions
 
