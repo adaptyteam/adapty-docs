@@ -54,7 +54,7 @@ Information about the user's [access level](access-level).
 
 ### AdaptyAccessLevelIdentifiers
 
-
+Replacement for a dictionary for [AdaptyAccessLevel](ff-resources#AdaptyAccessLevel).
 
 | Field name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -334,7 +334,7 @@ Represents a subscription phase, such as a free trial or an introductory offer p
 
 ### MapKeyNonSubscriptions
 
-Replacement for a dictionary of [AdaptyNonSubscription](ff-resources#adaptynonsubscription).
+Replacement for a dictionary for [AdaptyNonSubscription](ff-resources#adaptynonsubscription).
 
 | Field name | Type                                                         |
 | ---------- | ------------------------------------------------------------ |
@@ -343,7 +343,7 @@ Replacement for a dictionary of [AdaptyNonSubscription](ff-resources#adaptynonsu
 
 ### MapKeySubscriptions
 
-Replacement for a dictionary of [AdaptySubscription](ff-resources#adaptysubscription).
+Replacement for a dictionary for [AdaptySubscription](ff-resources#adaptysubscription).
 
 | Field name | Type                                                         |
 | ---------- | ------------------------------------------------------------ |
