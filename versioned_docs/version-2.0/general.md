@@ -71,11 +71,22 @@ Choose the timezone that corresponds to the location where you're based, or wher
 
 You can access the timezone settings in the Reported timezone section of the General Tab on the App Settings page. You can also choose to set the same timezone for all the apps in your Adapty account by checking the corresponding box.
 
-## 4\. App Store price increase logic
+## 4\. Installs definition for analytics
+
+Choose how app installs should be counted in analytics:
+
+| Base                   | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| New device_ids         | <p>(Recommended) Any installation of the app on a device counts as a new install event. This includes the first install and any reinstallation on the same device. Logins are not counted as installs.</p><p>If a user has multiple devices, each installation on a different device is counted. So if the user has 5 devices with the app, you'll see 5 installs.</p> |
+| New customer_user_ids  | <p>Only the first installation of the app on the user’s first device is counted. If a user installs the app on more devices, they won’t be counted as new installs. So if a user has 5 devices, you’ll still only see 1 install.</p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p> |
+| New profiles in Adapty | (Legacy) Every app installation, reinstallation, or login is counted as a new install. |
+
+
+
+## 5. App Store price increase logic
 
 To maintain accurate data and avoid discrepancies between Adapty analytics and App Store Connect results, it is important to select the appropriate option when adjusting configurations related to price increases in App Store Connect.  
 So you can choose the logic that will be applied to subscription price increases in Adapty:
-
 
 <Zoom>
   <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
@@ -88,10 +99,6 @@ So you can choose the logic that will be applied to subscription price increases
 />
 </Zoom>
 
-
-
-
-
 - **Subscription price for existing users is preserved:** By selecting this option, the current price will be retained for your existing subscribers, even if you make changes to the price in the App Store Connect. This means that existing subscribers will continue to be billed at their original subscription price.
 - **When the subscription price is changed in App Store Connect, it changes for existing subscribers:** If you choose this option, any price changes made in the App Store Connect will be applied to your existing subscribers as well. This means that existing subscribers will be charged the new price reflecting the updated pricing set in the App Store Connect.
 
@@ -101,7 +108,7 @@ It is important to consider that the selected option not only affects analytics 
 
 Please ensure that you select the designated option that aligns with your desired approach to handling subscription prices for existing subscribers. This will help maintain accurate data and synchronization between Adapty analytics and the results obtained from the App Store Connect.
 
-## 5\. Sharing purchases between user accounts
+## 6. Sharing purchases between user accounts
 
 This setting determines what happens when Adapty receives a purchase from a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) that is currently associated with another Customer User ID.
 
@@ -128,15 +135,15 @@ We advise you only consider disabling sharing if your users **are required to lo
 
 **Note:** Disabling sharing will only affect the new users. Subscriptions that have already been shared between existing users will continue to be shared after you enable this setting.
 
-## 6\. SDK and API keys
+## 7. SDK and API keys
 
 Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
 
-## 7. Test devices
+## 8. Test devices
 
 Specify the devices to be used for testing to ensure they get instant updates for paywall or placement changes, bypassing any caching delays. For more information, see [Testing devices](test-devices).
 
-## 8. Delete the app
+## 9. Delete the app
 
 If you no longer need an app, you can delete it from Adapty. 
 
