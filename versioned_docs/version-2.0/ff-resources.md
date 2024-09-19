@@ -304,14 +304,14 @@ Scheme of a Subscription object as a part of the [AdaptyPaywallProduct](product)
 | localizedSubscriptionPeriod         | String                                                       | The period of the subscription in the user's language        |
 | promotionalOffer                    | Data ([AdaptySubscriptionPhase](ff-resources#adaptysubscriptionphase)) | The promotional offer details (use for iOS)                  |
 | promotionalOfferEligibility         | Boolean                                                      | Definition if the user qualifies for an promotional offer for an iOS subscription |
-| promotionalOfferId                  | String                                                       |                                                              |
+| promotionalOfferId                  | String                                                       | The ID of the promotional offer (use for iOS)                |
 | renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  | Defines if the subscription is auto-renewable or not via [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum) |
 | subscriptionGroupIdentifier         | String                                                       | The ID of the product group the product belongs to (use for iOS) |
 | subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
 
 ### AdaptySubscriptionPeriod
 
-Duration of the subscription
+The duration of the subscription.
 
 | Field name    | Type                                                      | Description                                                 |
 | ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
