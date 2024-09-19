@@ -1,8 +1,9 @@
 ---
-title: "Initial integration with custom app store"
+title: "Initial integration with other app stores"
 description: "Get started with Adapty's initial integration process with any app store"
 metadataTitle: "Adapty Initial Integration with App Store: A Quick Guide"
 ---
+import Zoom from 'react-medium-image-zoom';
 
 We're thrilled to have you on board with Adapty! Our priority is to help you hit the ground running and achieve the best possible outcomes for your app.
 
