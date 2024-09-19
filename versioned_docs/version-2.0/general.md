@@ -11,7 +11,6 @@ You can navigate to the General tab of the App Settings page to manage your app'
 
 ## 1. App details
 
-
 <Zoom>
   <img src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
   style={{
@@ -23,14 +22,9 @@ You can navigate to the General tab of the App Settings page to manage your app'
 />
 </Zoom>
 
-
-
-
-
 Choose a unique name and icon that represent your app in the Adapty interface. Please note that the app name and icon will not affect the app's name and icon in the App Store or Google Play. Also, make sure to select an appropriate App Category that accurately reflects your app's purpose and content. This will help users discover your app and ensure it appears in the appropriate app store categories.
 
 ## 2\. Member of Small Business Program and Reduced Service Fee
-
 
 <Zoom>
   <img src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
@@ -43,14 +37,9 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 />
 </Zoom>
 
-
-
-
-
 If you're a member of the Apple Small Business Program and/or Google's Reduced Service Fee program, you can let Adapty know by specifying the period that you are a member. Adapty will adjust the commission rate accordingly, so you can keep more of your revenue. Please note that this setting applies only to future transactions, and you need to update it if your Small Business Program status changes. You can learn more about the [App Store Small Business Program](app-store-small-business-program) and [Google's Reduced Service Fee](google-reduced-service-fee).
 
 ### 3\. Reporting timezone
-
 
 <Zoom>
   <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
@@ -62,10 +51,6 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
   }}
 />
 </Zoom>
-
-
-
-
 
 Choose the timezone that corresponds to the location where you're based, or where your app's analytics and charts are most relevant. We recommend using the same timezone as your App Store Connect or Google Play Console account to ensure consistency. Please note that this timezone setting does not affect third-party integrations in the Adapty system, which use the UTC timezone.
 
@@ -81,7 +66,7 @@ Choose how app install time should be counted in analytics:
 | New customer_user_ids  | <p>Only the first installation of the app on the user’s first device is counted. If a user installs the app on more devices, they won’t be counted as new installs. So if a user has 5 devices, you’ll still only see 1 install.</p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p>This option requires you to [identify users](identifying-users). If not, it will function like the **New profiles in Adapty** option.</p> |
 | New profiles in Adapty | (Legacy) Every app installation, reinstallation, or login is counted as a new install. |
 
-
+Keep in mind that this option only affects the [**Analytics**](https://app.adapty.io/analytics) page and does not impact the [**Overview**](https://app.adapty.io/overview) page, where you can configure the view separately.
 
 ## 5. App Store price increase logic
 

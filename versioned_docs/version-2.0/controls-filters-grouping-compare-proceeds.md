@@ -27,16 +27,16 @@ In the following article, you can learn more about each control and how to use t
 
 When using the Adapty calendar to set a time range for a chart, you have several convenient options to choose from. These options determine the date range displayed on the x-axis of the charts, allowing you to focus on specific periods of time. Here are the available quick options for time ranges:
 
-- **Last 7 days:** Displays data for the most recent 7-day period.
-- **Last month:** Shows data from the current date to the same day in the previous month.
-- **Last 28 days:** Useful for tracking weekly subscription products, as it covers the last four weeks.
-- **Last 3 months: **Displays data from the current date to three months ago.
-- **Last 6 months: **Shows data from the current date to six months ago.
-- **Last year:** Displays data from the current date to one year ago.
-- **Previous month:** Covers the full calendar month before the current month.
-- **This month: **Shows data from the 1st day of the current month until today.
-- **This quarter: **Displays data from the 1st day of the current quarter until today.
-- **This year:** Covers data from the 1st day of the current year until today.
+- **Last 7 days**: Displays data for the most recent 7-day period.
+- **Last month**: Shows data from the current date to the same day in the previous month.
+- **Last 28 days**: Useful for tracking weekly subscription products, as it covers the last four weeks.
+- **Last 3 months**: Displays data from the current date to three months ago.
+- **Last 6 months**: Shows data from the current date to six months ago.
+- **Last year**: Displays data from the current date to one year ago.
+- **Previous month**: Covers the full calendar month before the current month.
+- **This month**: Shows data from the 1st day of the current month until today.
+- **This quarter**: Displays data from the 1st day of the current quarter until today.
+- **This year**: Covers data from the 1st day of the current year until today.
 
 In addition to these predefined options, you can also select the **Custom** option to set a specific time period of your choice. This flexibility allows you to analyze your data in more granular detail or focus on specific events or campaigns. 
 
@@ -48,8 +48,7 @@ When analyzing cohorts in Adapty, you choose the cohort length, which determines
 
 In LTV (lifetime value) analysis, the cohort length is chosen in the grouping settings and determines the time period over which you want to calculate the lifetime value of users. Similar to cohorts analysis, the cohort length in LTV analysis is independent of the time frame displayed on the x-axis of the charts.
 
-We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here.](account)
-
+We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here](account).
 
 <Zoom>
   <img src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
@@ -61,10 +60,6 @@ We have 2 formats of date and time - American and European. You can set one of t
   }}
 />
 </Zoom>
-
-
-
-
 
 Please also note that all charts in Adapy analytics are displayed in UTC time.
 
@@ -80,7 +75,6 @@ Here's how you can interpret the insights provided by the comparison feature:
 - **Detailed Tooltip:** Hovering over the chart will reveal a tooltip with additional details, allowing you to examine the specifics of the comparison.
 - **Multiple Grouping and Comparison:** If you have multiple grouping options enabled, you can view multiple comparisons simultaneously on a single chart. This feature is available specifically for column charts.
 
-
 <Zoom>
   <img src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
   style={{
@@ -91,10 +85,6 @@ Here's how you can interpret the insights provided by the comparison feature:
   }}
 />
 </Zoom>
-
-
-
-
 
 ### Filtering and grouping
 
@@ -120,7 +110,6 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 | Product              | ✅         | ✅        | Filter or group metrics by [product](product) (both subscriptions and one-time purchases are available). |
 | Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
 
-
 <Zoom>
   <img src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
   style={{
@@ -132,16 +121,11 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 />
 </Zoom>
 
-
-
-
-
 ### Chart views
 
 The Analytics section provides you with the flexibility to view each chart in different visual representations, such as stacked column, stacked area, line, 100% stacked column, and 100% stacked area. By selecting the appropriate view, you can effectively communicate the information displayed on the chart and enhance your data analysis experience.
 
 To change the view of a chart, simply locate and select the view dropdown menu, and then choose the desired representation option
-
 
 <Zoom>
   <img src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
@@ -153,10 +137,6 @@ To change the view of a chart, simply locate and select the view dropdown menu, 
   }}
 />
 </Zoom>
-
-
-
-
 
 ### Table view
 
@@ -178,10 +158,6 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
 />
 </Zoom>
 
-
-
-
-
 ### Store commission and taxes
 
 One crucial aspect of revenue calculation is the inclusion of taxes (which can vary based on the user's store account country) and store commission fees. Adapty currently supports commission and tax calculation for both App Store and Play Store.
@@ -200,24 +176,20 @@ In the charts tab of the Analytics section, Adapty introduces a dropdown field w
 />
 </Zoom>
 
+The dropdown allows you to choose how the revenue is displayed in the chart. The available options are as follows:
 
-
-
-
- The dropdown allows you to choose how the revenue is displayed in the chart. The available options are as follows:
-
-#### **Gross revenue**
+#### Gross revenue
 
 This option displays the total revenue, including taxes and commission fees from both App Store / Play Store. It represents the complete revenue generated by transactions before any deductions.
 
-#### **Proceeds after store commission**
+#### Proceeds after store commission
 
 This option displays the revenue amount after deducting the store commission fee.  
 It represents the revenue that remains after the App Store / Play Store cuts its commission fees from the gross revenue. Taxes are not deducted in this display option. 
 
 Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. For detailed information on how Adapty calculates store commission fees, please refer to the corresponding documentation for [App Store](app-store-small-business-program) and [Play Store.](google-reduced-service-fee)
 
-#### **Proceeds after store commission and taxes**
+#### Proceeds after store commission and taxes
 
 This option displays the revenue amount after deducting both the store commission fee and taxes.  
 It represents the net revenue received by the app after accounting for both store's commission and applicable taxes.  We consider the VAT rate of the user's store account country when calculating taxes. Please consider that Adapty follows the logic that for Apple taxes are applied to the post-commission revenue from a transaction, while  Google applies taxes to the full amount (before store commissions are reduced from the revenue).
