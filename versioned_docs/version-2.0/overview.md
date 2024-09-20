@@ -73,7 +73,7 @@ There is one important difference though: you can group and filter by country, s
 
 Note that these settings apply to all your apps and override what you have in [App settings](general).
 
-- **Installs**: Лучше здесь это не объяснять, так как очень много деталей. Надо просто коротко описать и дать ссылку на эту секцию в App settings.
+- **Installs**: By default, installs are counted by `device_id`—a new installation or reinstallation on a device is counted as a separate install. You can change it by clicking **Edit**. For a detailed explanation of other options, see the [Installs definition for analytics](general#4-installs-definition-for-analytics) section.
 - **Timezone**: By default, the timezone for the **Overview** page is inherited from one of your apps. If your apps have different reporting timezones, customize the Overview timezone by clicking **Edit** and selecting the appropriate option from the dropdown.
 
 
