@@ -147,7 +147,7 @@ Information about the user's non-subscription purchases.
 
 | Name | Type | Description |
 |----|----|-----------|
-| purchaseId | string | An identifier of the purchase in Adapty. You can use it to ensure that you've already processed this purchase (for example tracking one time products) |
+| purchaseId | string | An identifier of the purchase in Adapty. You can use it to ensure that you've already processed this purchase (for example tracking one-time products) |
 | vendorProductId | string | An identifier of the product in a store |
 | vendorTransactionId | string (optional) | Transaction id in a store |
 | store | string | A store of the purchase. Possible values: `'app_store' | 'play_store' | 'adapty'` |
@@ -162,7 +162,7 @@ Information about the user's non-subscription purchases.
 (_Android only_)  
 Parameters to change one subscription to another.
 
-| Name                  | Type   | Description                                                                                                                                                                 |
-| :-------------------- | :----- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| oldSubVendorProductId | string | The identifier of current subscription in Play Market that needs to be replaced.                                                                                            |
-| prorationMode         | enum   | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode) values. |
+| Name                  | Type   | Description                                                  |
+| :-------------------- | :----- | :----------------------------------------------------------- |
+| oldSubVendorProductId | string | The identifier of current subscription in Play Market that needs to be replaced. |
+| ReplacementMode       | enum   | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode) values. |

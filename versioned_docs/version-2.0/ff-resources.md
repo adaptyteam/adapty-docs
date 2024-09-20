@@ -18,10 +18,12 @@ Below are Adapty methods delivered to FlutterFlow with Adapty plugin. They can b
 | updateProfile | Changes optional attributes of the current user profile such as email, phone number, etc. You can later use attributes to create user [segments](segments) or just view them in CRM | The ID and any parameters that need to be updated for the [AdaptyProfile](ff-resources#adaptyprofile) | [AdaptyError](ff-resources#adaptyerror) (Optional) |
 | restorePurchases | Restores any purchases the user has made | None | [AdaptyGetProfileResult](ff-resources#adaptygetprofileresult) |
 | logShowPaywall | Logs when a specific paywall is shown to the user | [AdaptyPaywall](ff-resources#adaptypaywall)  | [AdaptyError](ff-resources#adaptyerror) (Optional) |
-| logShowOnboarding | TODO: | <ul><li> **name**: String</li><li> **screenName**: String<li> **order**: Integer</li> | [AdaptyError](ff-resources#adaptyerror) (Optional) |
+| logShowOnboarding | <p>Tracks users' steps during the onboarding process.</p> <p>The onboarding stage is a crucial part of modern mobile apps. The effectiveness of its implementation, the quality of the content, and the number of steps can significantly impact user behavior, particularly their willingness to subscribe or make purchases. To help you analyze user behavior during this critical phase without leaving Adapty, we’ve added the capability to send dedicated events every time a user navigates to a new onboarding screen.</p> | An unsigned integer representing the position of this screen in your onboarding sequence (must be greater than 0).</li></ul> | [AdaptyError](ff-resources#adaptyerror) (Optional) |
 | identify | Identifies the user using your system's `customerUserId` | customerUserId | [AdaptyError](ff-resources#adaptyerror) (Optional) |
 | logout | Logs the current user out of your app | None | [AdaptyError](ff-resources#adaptyerror) (Optional)|
 | presentCodeRedemptionSheet | Displays a sheet that allows users to redeem codes (iOS only) | None | None |
+
+
 
 ## Data Types
 
@@ -55,7 +57,7 @@ Information about the user's [access level](access-level).
 
 ### AdaptyAccessLevelIdentifiers
 
-This struct is intended to replace key-value pair for Map<String, AdaptyAccessLevel> [AdaptyAccessLevel](ff-resources#AdaptyAccessLevel).
+This struct is intended to replace key-value pair for `Map<String, AdaptyAccessLevel` [AdaptyAccessLevel](ff-resources#AdaptyAccessLevel).
 
 | Field Name | Type | Description |
 |------------|------|-------------|
@@ -208,7 +210,7 @@ Defines if the user qualifies for an introductory offer for an iOS subscription.
 
 ### AdaptyProductNonsubscriptions
 
-Details of the active non-subscription tied to this product
+Details of the active non-subscription tied to this product.
 
 | Field Name       | Type                                                        | Description                                                  |
 | ---------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
@@ -335,12 +337,13 @@ Represents a subscription phase, such as a free trial or an introductory offer p
 
 ### AdaptySubscriptionUpdateParameters
 
-TODO
+(*Android only*)
+Parameters for replacing one subscription with another.
 
-| Field Name | Type                                                         |
-| ---------- | ------------------------------------------------------------ |
-| oldSubVendorProductId | String                                                       |
-| replacementMode       | [AdaptySubscriptionUpdateReplacementMode](ff-resources#adaptysubscriptionupdatereplacementmode) |
+| Field Name | Type                                                         | Description |
+| ---------- | ------------------------------------------------------------ | ---------- |
+| oldSubVendorProductId | String                                                       | The ID of the current subscription in the Play Store that you want to replace. |
+| replacementMode       | [AdaptySubscriptionUpdateReplacementMode](ff-resources#adaptysubscriptionupdatereplacementmode) | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode) values. |
 
 ### MapKeyNonSubscriptions
 
@@ -400,7 +403,7 @@ Defines the payment model.
 
 Defines the units in which the periods are measured.
 
-| Field Name |             |
+| Field Name | Description |
 | ---------- | ----------- |
 | day        | In days     |
 | week       | In weeks    |
@@ -423,11 +426,11 @@ Defines the subscription update mode for Android.
 
 | Field Name    | Description                                         |
 | ------------- | --------------------------------------------------- |
-| withTimeProration | TODO |
-| chargeProratedPrice | TODO |
-| withoutProration | TODO |
-| deferred | TODO |
-| chargeFullPrice | TODO |
+| withTimeProration | (default) The new plan takes effect immediately, and the remaining time will be prorated and credited to the user. |
+| chargeProratedPrice | The new plan takes effect immediately, and the billing cycle remains the same. The price for the remaining period will be charged. This option is only available for subscription upgrades. |
+| withoutProration | The new plan takes effect immediately, and the new price will be charged on the next recurrence time. The billing cycle stays the same. |
+| deferred | The new purchase takes effect immediately, and the new plan will take effect when the old item expires. |
+| chargeFullPrice | The new plan takes effect immediately, and the billing cycle remains the same. The price for the remaining period will be charged. This option is only available for subscription upgrades. |
 
 ### App States
 
