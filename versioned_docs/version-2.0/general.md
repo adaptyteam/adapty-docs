@@ -11,7 +11,6 @@ You can navigate to the General tab of the App Settings page to manage your app'
 
 ## 1. App details
 
-
 <Zoom>
   <img src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
   style={{
@@ -23,14 +22,9 @@ You can navigate to the General tab of the App Settings page to manage your app'
 />
 </Zoom>
 
-
-
-
-
 Choose a unique name and icon that represent your app in the Adapty interface. Please note that the app name and icon will not affect the app's name and icon in the App Store or Google Play. Also, make sure to select an appropriate App Category that accurately reflects your app's purpose and content. This will help users discover your app and ensure it appears in the appropriate app store categories.
 
 ## 2\. Member of Small Business Program and Reduced Service Fee
-
 
 <Zoom>
   <img src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
@@ -43,14 +37,9 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 />
 </Zoom>
 
-
-
-
-
 If you're a member of the Apple Small Business Program and/or Google's Reduced Service Fee program, you can let Adapty know by specifying the period that you are a member. Adapty will adjust the commission rate accordingly, so you can keep more of your revenue. Please note that this setting applies only to future transactions, and you need to update it if your Small Business Program status changes. You can learn more about the [App Store Small Business Program](app-store-small-business-program) and [Google's Reduced Service Fee](google-reduced-service-fee).
 
-### 3\. Reporting timezone
-
+## 3\. Reporting timezone
 
 <Zoom>
   <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
@@ -63,19 +52,26 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 />
 </Zoom>
 
-
-
-
-
 Choose the timezone that corresponds to the location where you're based, or where your app's analytics and charts are most relevant. We recommend using the same timezone as your App Store Connect or Google Play Console account to ensure consistency. Please note that this timezone setting does not affect third-party integrations in the Adapty system, which use the UTC timezone.
 
 You can access the timezone settings in the Reported timezone section of the General Tab on the App Settings page. You can also choose to set the same timezone for all the apps in your Adapty account by checking the corresponding box.
 
-## 4\. App Store price increase logic
+## 4\. Installs definition for analytics
+
+Choose what is defined as a new install event in analytics:
+
+| Base                   | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| New device_ids         | <p>(Recommended) Any new instance (installation) of the app counts as a new install event. This includes both the first installs and reinstalls. If a user has multiple devices, each installation on a different device is counted (if a user has your app on 5 devices, you'll see 5 installs).</p> |
+| New customer_user_ids  | <p>This option only makes sense if you're [identifying users in Adapty](identifying-users). In that case for logged in users we only count the first installation of the app. If a user installs the app on more devices, they won’t be counted as new installs. Anonymous users (those that have not logged in) are not counted in analytics. </p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p> Note that if you are not [identifying users](identifying-users), you won't get any installs in analytics with this option enabled. </p> |
+| New profiles in Adapty | (Legacy) Every app installation, reinstallation and anonymous profiles created during logouts are counted as new installs. |
+
+Keep in mind that this option only affects the [**Analytics**](https://app.adapty.io/analytics) page and does not impact the [**Overview**](https://app.adapty.io/overview) page, where you can configure the view separately.
+
+## 5. App Store price increase logic
 
 To maintain accurate data and avoid discrepancies between Adapty analytics and App Store Connect results, it is important to select the appropriate option when adjusting configurations related to price increases in App Store Connect.  
 So you can choose the logic that will be applied to subscription price increases in Adapty:
-
 
 <Zoom>
   <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
@@ -88,10 +84,6 @@ So you can choose the logic that will be applied to subscription price increases
 />
 </Zoom>
 
-
-
-
-
 - **Subscription price for existing users is preserved:** By selecting this option, the current price will be retained for your existing subscribers, even if you make changes to the price in the App Store Connect. This means that existing subscribers will continue to be billed at their original subscription price.
 - **When the subscription price is changed in App Store Connect, it changes for existing subscribers:** If you choose this option, any price changes made in the App Store Connect will be applied to your existing subscribers as well. This means that existing subscribers will be charged the new price reflecting the updated pricing set in the App Store Connect.
 
@@ -101,7 +93,7 @@ It is important to consider that the selected option not only affects analytics 
 
 Please ensure that you select the designated option that aligns with your desired approach to handling subscription prices for existing subscribers. This will help maintain accurate data and synchronization between Adapty analytics and the results obtained from the App Store Connect.
 
-## 5\. Sharing purchases between user accounts
+## 6. Sharing purchases between user accounts
 
 This setting determines what happens when Adapty receives a purchase from a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) that is currently associated with another Customer User ID.
 
@@ -128,15 +120,15 @@ We advise you only consider disabling sharing if your users **are required to lo
 
 **Note:** Disabling sharing will only affect the new users. Subscriptions that have already been shared between existing users will continue to be shared after you enable this setting.
 
-## 6\. SDK and API keys
+## 7. SDK and API keys
 
 Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
 
-## 7. Test devices
+## 8. Test devices
 
 Specify the devices to be used for testing to ensure they get instant updates for paywall or placement changes, bypassing any caching delays. For more information, see [Testing devices](test-devices).
 
-## 8. Delete the app
+## 9. Delete the app
 
 If you no longer need an app, you can delete it from Adapty. 
 
