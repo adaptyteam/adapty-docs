@@ -23,10 +23,6 @@ You can navigate to the General tab of the App Settings page to manage your app'
 />
 </Zoom>
 
-
-
-
-
 Choose a unique name and icon that represent your app in the Adapty interface. Please note that the app name and icon will not affect the app's name and icon in the App Store or Google Play. Also, make sure to select an appropriate App Category that accurately reflects your app's purpose and content. This will help users discover your app and ensure it appears in the appropriate app store categories.
 
 ## 2\. Member of Small Business Program and Reduced Service Fee
@@ -51,7 +47,6 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 
 ### 3\. Reporting timezone
 
-
 <Zoom>
   <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
   style={{
@@ -63,10 +58,6 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 />
 </Zoom>
 
-
-
-
-
 Choose the timezone that corresponds to the location where you're based, or where your app's analytics and charts are most relevant. We recommend using the same timezone as your App Store Connect or Google Play Console account to ensure consistency. Please note that this timezone setting does not affect third-party integrations in the Adapty system, which use the UTC timezone.
 
 You can access the timezone settings in the Reported timezone section of the General Tab on the App Settings page. You can also choose to set the same timezone for all the apps in your Adapty account by checking the corresponding box.
@@ -75,7 +66,6 @@ You can access the timezone settings in the Reported timezone section of the Gen
 
 To maintain accurate data and avoid discrepancies between Adapty analytics and App Store Connect results, it is important to select the appropriate option when adjusting configurations related to price increases in App Store Connect.  
 So you can choose the logic that will be applied to subscription price increases in Adapty:
-
 
 <Zoom>
   <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
@@ -87,10 +77,6 @@ So you can choose the logic that will be applied to subscription price increases
   }}
 />
 </Zoom>
-
-
-
-
 
 - **Subscription price for existing users is preserved:** By selecting this option, the current price will be retained for your existing subscribers, even if you make changes to the price in the App Store Connect. This means that existing subscribers will continue to be billed at their original subscription price.
 - **When the subscription price is changed in App Store Connect, it changes for existing subscribers:** If you choose this option, any price changes made in the App Store Connect will be applied to your existing subscribers as well. This means that existing subscribers will be charged the new price reflecting the updated pricing set in the App Store Connect.
@@ -130,7 +116,18 @@ We advise you only consider disabling sharing if your users **are required to lo
 
 ## 6\. SDK and API keys
 
-Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
+Use the **Public SDK key** in the [**App settings**](https://app.adapty.io/settings/general) to integrate Adapty SDKs into your app, and the **Secret Key** to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
+
+<Zoom>
+  <img src={require('./img/api_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## 7. Test devices
 

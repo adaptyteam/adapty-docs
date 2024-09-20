@@ -2,25 +2,26 @@
 title: "API specs"
 description: ""
 metadataTitle: ""
+toc: false
 ---
 
 **Base URL**: `https://api.adapty.io/api/v1/sdk`
 
 ## Authorization
 
-Each API request must be signed with the [Secret Key](general).
+Each API request must be signed with the [Secret Key](general#7-sdk-and-api-keys).
 
 When calling API:
 
-- You must set **Authorization** header with value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
+- You must set **Authorization** header with the value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
 - Use JSON payload in the request body for POST and PATCH requests
-- All request must set header **Content-Type**: application/json
+- All requests must set header **Content-Type**: application/json
 
 ## Working with customer user ID
 
 Most server-side API requests allow passing `customer_user_id` as a URL parameter. This makes it easy for you to query/update data in Adapty, without having to store Adapty's `profile_id`.  In most cases, you should pass `customer_user_id` as is, without any modifications.
 
-However, if your `customer_user_id` contains [reserved URI characters](https://en.wikipedia.org/wiki/Percent-encoding), for example `/`, `?`, `+` you should pass it encoded. Use the [Base64URL](https://www.base64encode.org/) encoding (not the regular Base64). This way, all special characters will be encoded and Adapty will decode it upon receiving. To tell Adapty the `customer_user_id` is encoded, pass the `is_user_id_base64url_encoded=1` get parameter. Note, that passing the `is_user_id_base64url_encoded=1` get parameter without actual encoding, will end up with 400 validation error.
+However, if your `customer_user_id` contains [reserved URI characters](https://en.wikipedia.org/wiki/Percent-encoding), for example,`/`, `?`, `+` you should pass it encoded. Use the [Base64URL](https://www.base64encode.org/) encoding (not the regular Base64). This way, all special characters will be encoded and Adapty will decode it upon receiving. To tell Adapty the `customer_user_id` is encoded, pass the `is_user_id_base64url_encoded=1` get parameter. Note, that passing the `is_user_id_base64url_encoded=1` get parameter without actual encoding, will end up with a 400 validation error.
 
 You should only encode the `customer_user_id` if you pass it as a URL path. When sending `customer_user_id` inside the JSON payload (for example, when creating the profile), you should not encode it.
 
@@ -385,6 +386,6 @@ Path parameters:
 
 Calling this endpoint enables the deletion of a user's profile and all related data, rendering it inaccessible to the client. Any profile history linked to the deleted profile will be detached, and integration events previously sent to integrations will be deleted from the event feed. 
 
-Should another profile make a purchase from the device with the same Apple ID (or when subscription is restored), the profile history will be reassigned to the new profile, and integration events will be reissued.
+Should another profile make a purchase from the device with the same Apple ID (or when a subscription is restored), the profile history will be reassigned to the new profile, and integration events will be reissued.
 
 Please be aware that this endpoint does not support bulk deletion, therefore each request must be handled individually. For managing a substantial number of users, it is advisable to execute requests concurrently.
