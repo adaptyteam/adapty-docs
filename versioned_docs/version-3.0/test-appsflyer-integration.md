@@ -62,10 +62,10 @@ In case of unsuccessful integration, the event will either not appear at all or 
 
 Please consult the table below for guidance on resolving the issues:
 
-| Issue                                                    | Solution                                                                                                                                                                                                                   |
-| :------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The event did not appear                                 | Your purchase did not occur and therefore the event was not created. Refer to the [Troubleshooting test purchases](troubleshooting-test-purchases) topic for the solution.                                             |
-| The event appeared and has the **Sending failed** status | The event was created but for some reason, it was not successfully delivered to the AppsFlyer server. To solve the issue, consult the [Troubleshooting on integration event sending failures](sending_failed) section. |
+| Issue                                                    | Solution                                                     |
+| :------------------------------------------------------- | :----------------------------------------------------------- |
+| The event did not appear                                 | Your purchase did not occur and therefore the event was not created. Refer to the [Troubleshooting test purchases](troubleshooting-test-purchases) topic for the solution. |
+| The event appeared and has the **Sending failed** status | The event was created but for some reason, it was not successfully delivered to the AppsFlyer server. |
 
 ## Validate successful AppsFlyer attribution delivery to Adapty
 

@@ -62,10 +62,10 @@ In case of unsuccessful integration, the event will either not appear at all or 
 
 Please consult the table below for guidance on resolving the issues:
 
-| Issue                                                    | Solution                                                                                                                                                                                                                   |
-| :------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The event did not appear                                 | Your purchase did not occur and therefore the event was not created. Refer to the [Troubleshooting test purchases](troubleshooting-test-purchases) topic for the solution.                                             |
-| The event appeared and has the **Sending failed** status | The event was created but for some reason, it was not successfully delivered to the AppsFlyer server. To solve the issue, consult the [Troubleshooting on integration event sending failures](sending_failed) section. |
+| Issue                                                    | Solution                                                     |
+| :------------------------------------------------------- | :----------------------------------------------------------- |
+| The event did not appear                                 | Your purchase did not occur and therefore the event was not created. Refer to the [Troubleshooting test purchases](troubleshooting-test-purchases) topic for the solution. |
+| The event appeared and has the **Sending failed** status | The event was created but for some reason, it was not successfully delivered to the AppsFlyer server. |
 
 ## Validate successful Adjust attribution delivery to Adapty
 
@@ -76,6 +76,7 @@ In case of successful Adjust attribution receiving, you will see these attribute
 1. Expand a successful event in the **Last sent events** section of the integration.
 
    
+
 <Zoom>
   <img src={require('./img/743211b-adjust_adapty_view_profile.png').default}
   style={{
@@ -93,6 +94,7 @@ In case of successful Adjust attribution receiving, you will see these attribute
 3. In the **Profile** window, make sure the **Attributes -> Adjust** section is presented.
 
    
+
 <Zoom>
   <img src={require('./img/dfbb1ca-adjust_adapty_attribution.png').default}
   style={{
