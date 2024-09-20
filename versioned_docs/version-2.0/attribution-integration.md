@@ -10,6 +10,19 @@ Adapty allows easy integration with the popular attribution services: [AppsFlyer
 
 Send subscription events with correct user properties and ID's to attributions services you use.
 
+### Important
+
+:::warning
+
+- **Avoid event duplication**: Be sure to disable subscription event forwarding from both devices and your server to prevent duplicates. If you're using direct integration with Facebook, remember to turn off event forwarding from AppsFlyer, Adjust, or Branch.
+
+- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won’t be able to send subscription events.
+- **Set a single attribution source**: Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
+  For iOS devices, this means non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if it's enabled. You can disable Apple Search Ads attribution collection by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads). 
+- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won’t be overwritten in analytics once stored.
+
+:::
+
 Follow our detailed guidance on configuring the following 3d-part attribution integrations:
 
 - [Adjust](adjust)
@@ -27,23 +40,7 @@ Don't see your attribution provider?
 Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll consider adding it.
 :::
 
-### Important
-
-:::warning
-Avoiding events duplication
-
-Make sure to turn off sending subscription events from devices and your server to avoid duplication.
-
-If you set up direct integration with Facebook, turn off events forwarding from AppsFlyer, Adjust, or Branch.
-:::
-
-:::info
-Be sure you've set up attribution integration in Adapty Dashboard, otherwise, we won't be able to send subscription events.
-:::
-
-:::note
-Attribution data is set for every profile one time, we won't override the data once it's been saved.
-:::
+<!--
 
 ### Setting attribution data
 
@@ -372,7 +369,7 @@ Adapty.updateProfile(builder.build(), error -> {
 </TabItem>
 </Tabs>
 
-
+-->
 
 
 ### Custom
@@ -391,3 +388,4 @@ let attribution = [
 ]
 Adapty.updateAttribution(attribution, source: .custom)
 ```
+
