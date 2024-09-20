@@ -343,7 +343,7 @@ Parameters for replacing one subscription with another.
 | Field Name | Type                                                         | Description |
 | ---------- | ------------------------------------------------------------ | ---------- |
 | oldSubVendorProductId | String                                                       | The ID of the current subscription in the Play Store that you want to replace. |
-| replacementMode       | [AdaptySubscriptionUpdateReplacementMode](ff-resources#adaptysubscriptionupdatereplacementmode) | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode) values. |
+| replacementMode       | [AdaptySubscriptionUpdateReplacementMode](ff-resources#adaptysubscriptionupdatereplacementmode) | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode) values. |
 
 ### MapKeyNonSubscriptions
 
