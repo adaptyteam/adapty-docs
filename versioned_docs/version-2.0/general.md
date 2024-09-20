@@ -39,7 +39,7 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 
 If you're a member of the Apple Small Business Program and/or Google's Reduced Service Fee program, you can let Adapty know by specifying the period that you are a member. Adapty will adjust the commission rate accordingly, so you can keep more of your revenue. Please note that this setting applies only to future transactions, and you need to update it if your Small Business Program status changes. You can learn more about the [App Store Small Business Program](app-store-small-business-program) and [Google's Reduced Service Fee](google-reduced-service-fee).
 
-### 3\. Reporting timezone
+## 3\. Reporting timezone
 
 <Zoom>
   <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
@@ -58,13 +58,13 @@ You can access the timezone settings in the Reported timezone section of the Gen
 
 ## 4\. Installs definition for analytics
 
-Choose how app install time should be counted in analytics:
+Choose what is defined as a new install event in analytics:
 
 | Base                   | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
-| New device_ids         | <p>(Recommended) Any installation of the app on a device counts as a new install event. This includes the first install and any reinstallation on the same device. Logins are not counted as installs.</p><p>If a user has multiple devices, each installation on a different device is counted. So if the user has 5 devices with the app, you'll see 5 installs.</p> |
-| New customer_user_ids  | <p>Only the first installation of the app on the user’s first device is counted. If a user installs the app on more devices, they won’t be counted as new installs. So if a user has 5 devices, you’ll still only see 1 install.</p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p>This option requires you to [identify users](identifying-users). If not, it will function like the **New profiles in Adapty** option.</p> |
-| New profiles in Adapty | (Legacy) Every app installation, reinstallation, or login is counted as a new install. |
+| New device_ids         | <p>(Recommended) Any new instance (installation) of the app counts as a new install event. This includes both the first installs and reinstalls. If a user has multiple devices, each installation on a different device is counted (if a user has your app on 5 devices, you'll see 5 installs).</p> |
+| New customer_user_ids  | <p>This option only makes sense if you're [identifying users in Adapty](identifying-users). In that case for logged in users we only count the first installation of the app. If a user installs the app on more devices, they won’t be counted as new installs. Anonymous users (those that have not logged in) are not counted in analytics. </p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p> Note that if you are not [identifying users](identifying-users), you won't get any installs in analytics with this option enabled. </p> |
+| New profiles in Adapty | (Legacy) Every app installation, reinstallation and anonymous profiles created during logouts are counted as new installs. |
 
 Keep in mind that this option only affects the [**Analytics**](https://app.adapty.io/analytics) page and does not impact the [**Overview**](https://app.adapty.io/overview) page, where you can configure the view separately.
 
