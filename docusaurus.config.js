@@ -132,7 +132,7 @@ const config = {
             ],
           },
           {
-            label: "API Reference",
+            label: "Server-side API v2",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
