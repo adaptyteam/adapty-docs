@@ -18,7 +18,7 @@ If you work in [Observer mode](observer-vs-full-mode), refer to the [Android - P
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs>
-  <TabItem value="kotlin" label="Kotlin (Views - option 1)" default>
+  <TabItem value="kotlin1" label="Kotlin (Views - option 1)" default>
 
 ```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
@@ -33,7 +33,7 @@ In order to display the visual paywall on the device screen, you must first conf
    )
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin (Views - option 2)" default>
+<TabItem value="kotlin2" label="Kotlin (Views - option 2)" default>
 
 ```
    val paywallView =
@@ -53,7 +53,7 @@ In order to display the visual paywall on the device screen, you must first conf
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Kotlin (Jetpack Compose)" default>
+<TabItem value="kotlin3" label="Kotlin (Jetpack Compose)" default>
 
 ```
 AdaptyPaywallScreen(
@@ -68,7 +68,7 @@ AdaptyPaywallScreen(
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Java (option 1)" default>
+<TabItem value="java1" label="Java (option 1)" default>
 
 ```java
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -83,7 +83,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 );
 ```
 </TabItem>
-<TabItem value="kotlin" label="Java (option 2)" default>
+<TabItem value="java2" label="Java (option 2)" default>
 
 ```
 AdaptyPaywallView paywallView =

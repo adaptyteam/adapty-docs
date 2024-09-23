@@ -89,7 +89,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs>
-  <TabItem value="kotlin" label="Kotlin (Views - option 1)" default>
+  <TabItem value="kotlin1" label="Kotlin (Views - option 1)" default>
 
 ```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
@@ -105,7 +105,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Kotlin (Views - option 2)" default>
+<TabItem value="kotlin2" label="Kotlin (Views - option 2)" default>
 
 ```
    val paywallView =
@@ -125,7 +125,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Kotlin (Jetpack Compose)" default>
+<TabItem value="kotlin3" label="Kotlin (Jetpack Compose)" default>
 
 ```
 AdaptyPaywallScreen(
@@ -140,7 +140,7 @@ AdaptyPaywallScreen(
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Java (option 1)" default>
+<TabItem value="java1" label="Java (option 1)" default>
 
 ```java
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -156,7 +156,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Java (option 2)" default>
+<TabItem value="java2" label="Java (option 2)" default>
 
 ```
 AdaptyPaywallView paywallView =
