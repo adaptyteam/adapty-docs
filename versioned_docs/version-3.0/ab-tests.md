@@ -84,7 +84,7 @@ To create a new A/B test from the **A/B tests** section:
 
 
 
-<!----->
+
 
 3. Choose the paywalls you want to test and they will show in the **Create the A/B test** window.
 
@@ -107,7 +107,7 @@ To create a new A/B test from the **A/B tests** section:
 4. You have two ways to save the new A/B test:
    1. You can choose to save the newly created paywall **as a draft**, which means the test won't be launched at once. You can run the test later from the placement or A/B test list. This option is suitable if you're not yet ready to make the test live and want to review and modify it further before implementation. If you choose this option, click the **Save as draft** button.
    2. Alternatively, you can choose to run the A/B test immediately by clicking the **Run A/B test** button. This will prompt you to select the placement and audience for which the A/B test will get live. Once you click the "**Run A/B test**" button, the A/B test will become active and live.  
-      To learn more about running A/B tests and the process involved, you can refer to the [documentation](run_stop_ab_tests) on running A/B tests. You'll be able to monitor and track the test's performance using various metrics. For more information on these metrics, please refer to the [metrics documentation](results-and-metrics). 
+      To learn more about running A/B tests and the process involved, you can refer to the [documentation](run_stop_ab_tests)on running A/B tests. You'll be able to monitor and track the test's performance using various metrics. For more information on these metrics, please refer to the [metrics documentation](results-and-metrics). 
 
 ### Creating A/B test from the placement
 

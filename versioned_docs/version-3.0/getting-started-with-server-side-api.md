@@ -4,9 +4,6 @@ description: ""
 metadataTitle: ""
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-
 With API you can:
 
 1. Get user's subscription status.
