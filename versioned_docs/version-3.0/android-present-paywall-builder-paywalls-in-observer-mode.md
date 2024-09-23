@@ -89,21 +89,25 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
+  <TabItem value="kotlin" label="Kotlin (Views - option 1)" default>
+
+```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
        products,
-       AdaptyPaywallInsets.of(topInset, bottomInset),
        eventListener,
        personalizedOfferResolver,
        tagResolver,
-       observerModeHandler,
+       timerResolver,
+       observerModeHandler, 
    )
+```
 
-   //======= OR =======
+</TabItem>
+<TabItem value="kotlin" label="Kotlin (Views - option 2)" default>
 
+```
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
@@ -113,42 +117,64 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
        showPaywall(
            viewConfiguration,
            products,
-           AdaptyPaywallInsets.of(topInset, bottomInset),
            personalizedOfferResolver,
            tagResolver,
+           timerResolver,
        )
    }
-   ```
+```
+
 </TabItem>
-<TabItem value="java" label="Java" default>
-   ```java 
-   AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-           activity,
-           viewConfiguration,
-           products,
-           AdaptyPaywallInsets.of(topInset, bottomInset),
-           eventListener,
-           personalizedOfferResolver,
-           tagResolver,
-           observerModeHandler
-   );
+<TabItem value="kotlin" label="Kotlin (Jetpack Compose)" default>
 
-   //======= OR =======
+```
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+    observerModeHandler,
+)
+```
 
-   AdaptyPaywallView paywallView =
-     new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
-   ...
-   paywallView.setEventListener(eventListener);
-   paywallView.setObserverModeHandler(observerModeHandler);
-   paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
-   ```
+</TabItem>
+<TabItem value="kotlin" label="Java (option 1)" default>
+
+```java
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        products,
+        eventListener,
+        personalizedOfferResolver,
+        tagResolver,
+        timerResolver,
+        observerModeHandler
+);
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Java (option 2)" default>
+
+```
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+paywallView.setEventListener(eventListener);
+paywallView.showPaywall(viewConfiguration, products, personalizedOfferResolver, tagResolver, timerResolver);
+```
+
 </TabItem>
 <TabItem value="XML" label="XML" default>
-   ```xml 
-   <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
-       android:layout_width="match_parent"
-       android:layout_height="match_parent" />
-   ```
+
+```xml 
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
 </TabItem>
 </Tabs>
 
@@ -156,11 +182,10 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
    Request parameters:
 
-   | Parameter | Presence | Description |
+| Parameter | Presence | Description |
 |---------|--------|-----------|
 | **Products** | optional | Provide an array of `AdaptyPaywallProduct `to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
 | **ViewConfiguration** | required | Supply an `AdaptyViewConfiguration` object containing visual details of the paywall. Use the `Adapty.getViewConfiguration(paywall)` method to load it. Refer to [Fetch the visual configuration of paywall](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) topic for more details. |
-| **Insets** | required | Define an `AdaptyPaywallInsets` object containing information about the area overlapped by system bars, creating vertical margins for content. If neither the status bar nor the navigation bar overlaps the `AdaptyPaywallView`, pass `AdaptyPaywallInsets.NONE`. For fullscreen mode where system bars overlap part of your UI, obtain insets as shown under the table. |
 | **EventListener** | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **PersonalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
 | **TagResolver** | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
@@ -168,65 +193,4 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 | **variationId** | required | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)   object. |
 | **transaction** | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)   object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)   object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase)  class.</p> |
 
-   For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
-
-<Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
-   import androidx.core.graphics.Insets
-   import androidx.core.view.ViewCompat
-   import androidx.core.view.WindowInsetsCompat
-
-   //create extension function
-   fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
-       ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
-           val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-           ViewCompat.setOnApplyWindowInsetsListener(this, null)
-           action(systemBarInsets)
-           insets
-       }
-   }
-   //and then use it with the view
-   paywallView.onReceiveSystemBarsInsets { insets ->
-       val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
-       paywallView.setEventListener(eventListener)
-       paywallView.setObserverModeHandler(observerModeHandler)
-       paywallView.showPaywall(viewConfig, products, paywallInsets, personalizedOfferResolver, tagResolver)
-   }
-   ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-   ```java 
-   import androidx.core.graphics.Insets;
-   import androidx.core.view.ViewCompat;
-   import androidx.core.view.WindowInsetsCompat;
-
-   ...
-
-   ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
-       Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-       ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
-     
-       AdaptyPaywallInsets paywallInsets =
-                    AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
-       paywallView.setEventListener(eventListener);
-       paywallView.setObserverModeHandler(observerModeHandler);
-       paywallView.showPaywall(viewConfiguration, products, paywallInsets, personalizedOfferResolver, tagResolver);
-               
-       return insets;
-   });
-   ```
-</TabItem>
-</Tabs>
-
-
-
-   Returns:
-
-   | Object              | Description                                        |
-   | :------------------ | :------------------------------------------------- |
-   | `AdaptyPaywallView` | object, representing the requested paywall screen. |
-
-:::warning
-Don't forget to [Associate paywalls to purchase transactions](associate-paywalls-to-transactions). Otherwise, Adapty will not determine the source paywall of the purchase.
-:::
+   

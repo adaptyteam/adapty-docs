@@ -14,13 +14,14 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 
-| Adapty SDK version | AdaptyUI version |
-| :----------------- | :--------------- |
-| 2.7.x–2.9.x        | 2.0.x            |
-| 2.10.0             | 2.1.2            |
-| 2.10.2             | 2.1.3            |
-| 2.11.0 - 2.11.3    | 2.11.0 - 2.11.2  |
-| 2.11.5             | 2.11.3           |
+| Adapty SDK version | AdaptyUI SDK version |
+| :----------------- | :------------------- |
+| 2.7.x–2.9.x        | 2.0.x                |
+| 2.10.0             | 2.1.2                |
+| 2.10.2             | 2.1.3                |
+| 2.11.0 - 2.11.3    | 2.11.0 - 2.11.2      |
+| 2.11.5             | 2.11.3               |
+| 3.0.0              | 3.0.0                |
 
 You can install Adapty SDK via Gradle.
 
@@ -37,8 +38,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation 'io.adapty:android-sdk:2.11.5'
-    implementation 'io.adapty:android-ui:2.11.3'
+    implementation 'io.adapty:android-sdk:3.0.0'
+    implementation 'io.adapty:android-ui:3.0.0'
 }
 ```
 </TabItem>
@@ -46,8 +47,8 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation("io.adapty:android-sdk:2.11.5")
-    implementation("io.adapty:android-ui:2.11.3")
+    implementation("io.adapty:android-sdk:3.0.0")
+    implementation("io.adapty:android-ui:3.0.0")
 }
 ```
 </TabItem>
@@ -57,8 +58,8 @@ dependencies {
 
 [versions]
 ..
-adapty = "2.11.5"
-adaptyUi = "2.11.3"
+adapty = "3.0.0"
+adaptyUi = "3.0.0"
 
 [libraries]
 ..

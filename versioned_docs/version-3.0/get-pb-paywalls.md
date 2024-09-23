@@ -198,8 +198,8 @@ if (!paywall.hasViewConfiguration()) {
 
 AdaptyUI.getViewConfiguration(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
-        AdaptyUI.ViewConfiguration viewConfiguration =
-          ((AdaptyResult.Success<AdaptyUI.ViewConfiguration>) result).getValue();
+        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) result).getValue();
         // use loaded configuration
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
@@ -221,7 +221,8 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="React Native" label="React Native (TS)" default>
+
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
 
@@ -236,7 +237,8 @@ if (paywall.hasViewConfiguration) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view

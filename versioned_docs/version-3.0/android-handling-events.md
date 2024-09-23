@@ -22,12 +22,12 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 If a user has performed some action  (`Close`, `OpenURL` or `Custom`, this method will be invoked:
 
 ```kotlin title="Kotlin"
-override fun onActionPerformed(action: AdaptyUI.Action, view: AdaptyPaywallView) {
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
     when (action) {
-        AdaptyUI.Action.Close -> (view.context as? Activity)?.onBackPressed()
+        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
         
         is AdaptyUI.Action.OpenUrl -> //launching intent to open url
-        
+       
         is AdaptyUI.Action.Custom -> //no default action
     }
 }
@@ -56,7 +56,7 @@ If a product is selected for purchase (by a user or by the system), this method 
 ```kotlin title="Kotlin"
 public override fun onProductSelected(
     product: AdaptyPaywallProduct,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
@@ -67,7 +67,7 @@ If a user initiates the purchase process, this method will be invoked:
 ```kotlin title="Kotlin"
 public override fun onPurchaseStarted(
     product: AdaptyPaywallProduct,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
@@ -80,7 +80,7 @@ If a user initiates the purchase process but manually interrupts it afterward, t
 ```kotlin title="Kotlin"
 public override fun onPurchaseCanceled(
     product: AdaptyPaywallProduct,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
@@ -94,9 +94,9 @@ If `Adapty.makePurchase()` succeeds, this method will be invoked:
 public override fun onPurchaseSuccess(
     profile: AdaptyProfile?,
     product: AdaptyPaywallProduct,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {
-    (view.context as? Activity)?.onBackPressed()
+    (context as? Activity)?.onBackPressed()
 }
 ```
 
@@ -112,7 +112,7 @@ If `Adapty.makePurchase()` fails, this method will be invoked:
 public override fun onPurchaseFailure(
     error: AdaptyError,
     product: AdaptyPaywallProduct,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
@@ -125,7 +125,7 @@ If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 ```kotlin title="Kotlin"
 public override fun onRestoreSuccess(
     profile: AdaptyProfile,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
@@ -138,8 +138,21 @@ If `Adapty.restorePurchases()` fails, this method will be invoked:
 ```kotlin title="Kotlin"
 public override fun onRestoreFailure(
     error: AdaptyError,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
+```
+
+#### Upgrade subscription
+
+When a user requests to upgrade their subscription, this method will be invoked:
+
+```kotlin title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+): AdaptySubscriptionUpdateParameters? {
+    return AdaptySubscriptionUpdateParameters(...)
+}
 ```
 
 ### Data fetching and rendering
@@ -151,7 +164,7 @@ If you don't pass the products during the initialization, AdaptyUI will retrieve
 ```kotlin title="Kotlin"
 public override fun onLoadingProductsFailure(
     error: AdaptyError,
-    view: AdaptyPaywallView,
+    context: Context,
 ): Boolean = false
 ```
 
@@ -164,7 +177,7 @@ If an error occurs during the interface rendering, it will be reported by callin
 ```kotlin title="Kotlin"
 public override fun onRenderingError(
     error: AdaptyError,
-    view: AdaptyPaywallView,
+    context: Context,
 ) {}
 ```
 
