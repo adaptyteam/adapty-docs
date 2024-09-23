@@ -242,11 +242,23 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 </TabItem>
 </Tabs>
 
+Request parameters:
+
+| Parameter | Presence | Description                                                  |
+| --------- | -------- | ------------------------------------------------------------ |
+| paywall   | Required | Paywall_id you received as a response parameter of the `getPaywall` method in the [Fetch paywall designed with Paywall Builder](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) step. |
+
+Response parameters:
+
+| Parameter             | Description                                                  |
+| --------------------- | ------------------------------------------------------------ |
+| **viewConfiguration** | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. You'll need it when [presenting the paywall](present-pb-paywalls) in your mobile app. |
+
 :::note
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
 
-Once you have successfully loaded the paywall and its view configuration, you can proceed to presenting the paywall in your mobile app.
+Once you have successfully loaded the paywall and its view configuration, you can proceed to [presenting the paywall](present-pb-paywalls) in your mobile app.
 
 ## Speed up paywall fetching with default audience paywall
 
