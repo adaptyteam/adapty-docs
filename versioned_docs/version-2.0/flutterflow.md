@@ -43,6 +43,4 @@ What else Adapty offers you:
 - **Powerful analytics**: Access detailed metrics to better understand and improve your app’s monetization.
 - **Integrations**: Adapty seamlessly connects with third-party analytics tools like Amplitude, AppsFlyer, Adjust, Branch, Mixpanel, Facebook Ads, AppMetrica, custom Webhooks, and more.
 
-:::tip
-[Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
-:::
+Ready to get started? Check out our [Getting Started](ff-getting-started) page for the FlutterFlow plugin!
