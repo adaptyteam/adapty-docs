@@ -2,13 +2,17 @@
 title: "Getting started with server-side API"
 description: ""
 metadataTitle: ""
-hide_table_of_contents: false
+hide_table_of_contents: true
 displayed_sidebar: APISidebar
 ---
+
+import RequestExample from '@site/reusable/api-create-profile-example_request.md';
 
 Adapty's API lets you access and modify your Adapty data programmatically. We also support [webhooks](webhook), where we notify your server of events as they happen.
 
 This API enables you to seamlessly integrate Adapty with your existing services.
+
+
 
 ## Authorization
 
@@ -21,3 +25,4 @@ This API enables you to seamlessly integrate Adapty with your existing services.
   - **adapty-customer-user-id**: The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. It will work only if you [identify the users](identifying-users) in your mobile app code via Adapty SDK.
 
 - **Body**:  The API expects the request to use the body as JSON.
+
