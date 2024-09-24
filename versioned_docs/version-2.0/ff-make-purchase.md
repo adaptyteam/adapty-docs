@@ -11,17 +11,17 @@ Congratulations! You've successfully [set up your paywall to display product dat
 
 Now, let's move on to the final step – letting users make a purchase through the paywall.
 
-## Step 4.1. Enable users make your purchase
+## Step 4.1. Enable users to make your purchase
 
 1. Double-click the buy button on your paywall page.
 <Zoom>
-  <img src={require('./FF_img/double-click-buy.png').default}
-  style={{
+    <img src={require('./FF_img/double-click-buy.png').default}
+    style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
+    }}
 />
 </Zoom>
 
@@ -149,8 +149,8 @@ If the purchase fails, let's display an alert to the user.
       display: 'block', /* for alignment */
       margin: '0 auto' /* center alignment */
     }}
-  />
-  </Zoom>
+    />
+    </Zoom>
 
 3. Click at the **Value** button of the **Message** box.
 
