@@ -2,7 +2,6 @@
 title: "API specs"
 description: ""
 metadataTitle: ""
-toc: false
 ---
 
 **Base URL**: `https://api.adapty.io/api/v1/sdk`
