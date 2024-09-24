@@ -43,4 +43,10 @@ What else Adapty offers you:
 - **Powerful analytics**: Access detailed metrics to better understand and improve your app’s monetization.
 - **Integrations**: Adapty seamlessly connects with third-party analytics tools like Amplitude, AppsFlyer, Adjust, Branch, Mixpanel, Facebook Ads, AppMetrica, custom Webhooks, and more.
 
-Ready to get started? Check out our [Getting Started](ff-getting-started) page for the FlutterFlow plugin!
+## What's next?
+
+1. [Add the Adapty plugin as a dependency](ff-getting-started) to your FlutterFlow project and initiate it.
+2. [Create an action flow](https://adapty.io/docs/ff-action-flow) for handling Adapty paywall products and their data in FlutterFlow.
+3. [Map the received data to the paywall](https://adapty.io/docs/ff-add-variables-to-paywalls) you designed in FlutterFlow.
+4. [Set up the purchase button](https://adapty.io/docs/ff-make-purchase) on your paywall to process transactions through Adapty when clicked.
+5. Finally, [add subscription status checks](https://adapty.io/docs/ff-check-subscription-status) to determine whether to display paid content to the user.
