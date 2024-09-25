@@ -3,6 +3,7 @@ title: "Introduction to Adapty server-side API"
 description: ""
 metadataTitle: ""
 hide_table_of_contents: true
+displayed_sidebar: APISidebar
 ---
 
  With API you can:

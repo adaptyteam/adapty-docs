@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import ProfileObject from './reusable/ProfileObject.md';
+import CustomerAccessLevel from './reusable/CustomerAccessLevel.md';
+
 ## Objects
 
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
@@ -14,15 +17,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 Info about the [customer and his subscription.  ](server-side-api-objects#profile)
 
-| Param                    | Type  | Required | Nullable | Description                                                                                                                                                                                                                                         |
-| :----------------------- | :---- | :------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **profile\_id**          | UUID  | ✅        | ❌        | Adapty profile ID                                                                                                                                                                                                                                   |
-| **customer\_user\_id**   | str   | ✅        | ✅        | User ID in developer’s \(your\) system.                                                                                                                                                                                                             |
-| **paid\_access\_levels** | dict  | ✅        | ✅        | Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [CustomerAccessLevel](#customeraccesslevel) objects. Can be null if the customer has no access levels                     |
-| **subscriptions**        | dict  | ✅        | ✅        | Dictionary where the keys are vendor product IDs. Values are [Subscription](#subscription) objects. Can be null if the customer has no subscriptions                                                                                                |
-| **non\_subscriptions**   | dict  | ✅        | ✅        | Dictionary where the keys are vendor product ids. Values are an array of [Non-Subscription](#non-subscription) objects. Can be null if the customer has no purchases.                                                                               |
-| **custom\_attributes**   | dict  | ✅        | ✅        | The dictionary that collects the profile's all custom attributes about its own users. A maximum of 10 custom attributes for the profile are allowed to be set. Only strings and floats are allowed as values, booleans will be converted to floats. |
-| **total\_revenue\_usd**  | float | ✅        | ❌        | Float value, it is equal to all total revenue USD which earned the profile.                                                                                                                                                                         |
+<ProfileObject />
 
 ### CustomerAccessLevel
 
@@ -36,24 +31,13 @@ if (profile.paidAccessLevels["premium"]?.isActive == true) {
 }
 ```
 
-| Param                                 | Type          | Required | Nullable | Description                                                                                                                                                                                                                                                                                                         |
-| :------------------------------------ | :------------ | :------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **id**                                | str           | ✅        | ❌        | Paid Access Level identifier configured by a developer in the Adapty Dashboard                                                                                                                                                                                                                                      |
-| **is\_active**                        | bool          | ✅        | ❌        | Boolean indicating whether the paid access level is active                                                                                                                                                                                                                                                          |
-| **expires\_at**                       | ISO 8601 date | ✅        | ✅        | The datetime when the access level will expire. It may be in the past and may be null for lifetime access                                                                                                                                                                                                           |
-| **starts\_at**                        | ISO 8601 date | ✅        | ✅        | The datetime when the access level will be active. May be in the future                                                                                                                                                                                                                                             |
-| **is\_lifetime**                      | bool          | ✅        | ❌        | Boolean indicating whether the paid access level is active for a lifetime \(no expiration date\). If set to true you shouldn’t use expires\_at                                                                                                                                                                      |
-| **vendor\_product\_id**               | str           | ✅        | ✅        | Identifier of the product in the vendor system \(App Store/Google Play/Stripe, etc.\) that unlocked this access level                                                                                                                                                                                               |
-| **base_plan_id**                      | str           | ✅        | ✅        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe.                                                                                 |
-| **store**                             | str           | ✅        | ✅        | Store where the product was purchased. Possible values are: **app\_store**, **play\_store**, and **adapty**                                                                                                                                                                                                         |
-| **activated\_at**                     | ISO 8601 date | ✅        | ❌        | The datetime when the access level was activated. May be in the future                                                                                                                                                                                                                                              |
-| **renewed\_at**                       | ISO 8601 date | ✅        | ✅        | The datetime when the access level was renewed                                                                                                                                                                                                                                                                      |
-| **will\_renew**                       | bool          | ✅        | ❌        | Boolean indicating whether an auto-renewable subscription is set to renew                                                                                                                                                                                                                                           |
-| **is\_in\_grace\_period**             | bool          | ✅        | ❌        | Boolean indicating whether auto-renewable subscription is in the [grace period](https://developer.apple.com/news/?id=09122019c)                                                                                                                                                                                     |
-| **unsubscribed\_at**                  | ISO 8601 date | ✅        | ✅        | The datetime when an auto-renewable subscription was cancelled. Subscription can still be active, it means that auto-renewal is turned off. It will be set to null if the user reactivates the subscription                                                                                                         |
-| **billing\_issue\_detected\_at**      | ISO 8601 date | ✅        | ✅        | The datetime when a billing issue was detected and a vendor was not able to charge the card. Subscription can still be active. Will set to null if the charge is successful                                                                                                                                         |
-| **active\_introductory\_offer\_type** | str           | ✅        | ✅        | The type of active [introductory offer](https://developer.apple.com/app-store/subscriptions/#offering-introductory-prices). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period |
-| **active\_promotional\_offer\_type**  | str           | ✅        | ✅        | The type of active [promotional offer](https://developer.apple.com/app-store/subscriptions/#subscription-offers). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period           |
+You can do the following action via Adapty server-side API:
+
+- Ggrant access level to your end user without providing transaction
+- Set transaction and grant access level to your end user
+- Revoke access level from your end user
+
+<CustomerAccessLevel />
 
 ### Subscription
 
