@@ -144,7 +144,7 @@ public override fun onRestoreFailure(
 
 #### Upgrade subscription
 
-When a user requests to upgrade their subscription, this method will be invoked:
+If a new subscription is purchased while another one is still active, override this method to replace the current subscription with the new one. If the active subscription should remain active and the new one is added separately, return `null`:
 
 ```kotlin title="Kotlin"
 public override fun onAwaitingSubscriptionUpdateParams(

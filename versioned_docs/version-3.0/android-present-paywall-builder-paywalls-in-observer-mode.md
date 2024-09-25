@@ -86,10 +86,15 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    | onStartPurchase()  | onStartPurchase.invoke()  | The callback should be invoked to notify AdaptyUI that the purchase is started.                                                   |
    | onFinishPurchase() | onFinishPurchase.invoke() | The callback should be invoked to notify AdaptyUI that the purchase is finished successfully or not, or the purchase is canceled. |
 
-2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
+2. In order to display the visual paywall on the device screen, you must first configure it.
 
 <Tabs>
-  <TabItem value="kotlin1" label="Kotlin (Views - option 1)" default>
+<TabItem value="views" label="Views" default>
+
+To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
+
+<Tabs>
+  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
 
 ```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
@@ -105,38 +110,23 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 ```
 
 </TabItem>
-<TabItem value="kotlin2" label="Kotlin (Views - option 2)" default>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
-```
+```kotlin
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
    with(paywallView) {
-       setEventListener(eventListener)
-       setObserverModeHandler(observerModeHandler)
        showPaywall(
            viewConfiguration,
            products,
+					 eventListener,
            personalizedOfferResolver,
            tagResolver,
            timerResolver,
+					 observerModeHandler,
        )
    }
-```
-
-</TabItem>
-<TabItem value="kotlin3" label="Kotlin (Jetpack Compose)" default>
-
-```
-AdaptyPaywallScreen(
-    viewConfiguration,
-    products,
-    eventListener,
-    personalizedOfferResolver,
-    tagResolver,
-    timerResolver,
-    observerModeHandler,
-)
 ```
 
 </TabItem>
@@ -158,12 +148,11 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
 
-```
+```java
 AdaptyPaywallView paywallView =
   new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
-paywallView.setEventListener(eventListener);
-paywallView.showPaywall(viewConfiguration, products, personalizedOfferResolver, tagResolver, timerResolver);
+paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver, observerModeHandler);
 ```
 
 </TabItem>
@@ -179,6 +168,25 @@ paywallView.showPaywall(viewConfiguration, products, personalizedOfferResolver, 
 </Tabs>
 
    After the view has been successfully created, you can add it to the view hierarchy and display it.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+To do this, use this composable function:
+
+```kotlin
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+
+</TabItem>
+</Tabs>
 
    Request parameters:
 

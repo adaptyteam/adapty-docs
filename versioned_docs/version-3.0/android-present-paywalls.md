@@ -15,10 +15,13 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 If you work in [Observer mode](observer-vs-full-mode), refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic instead.
 :::
 
+<Tabs>
+<TabItem value="views" label="Views" default>
+
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs>
-  <TabItem value="kotlin1" label="Kotlin (Views - option 1)" default>
+  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
 
 ```kotlin 
    val paywallView = AdaptyUI.getPaywallView(
@@ -29,42 +32,25 @@ In order to display the visual paywall on the device screen, you must first conf
        personalizedOfferResolver,
        tagResolver,
        timerResolver,
-       observerModeHandler, 
    )
 ```
 </TabItem>
-<TabItem value="kotlin2" label="Kotlin (Views - option 2)" default>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
-```
+```kotlin
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
    with(paywallView) {
-       setEventListener(eventListener)
-       setObserverModeHandler(observerModeHandler)
        showPaywall(
            viewConfiguration,
            products,
+					 eventListener,
            personalizedOfferResolver,
            tagResolver,
            timerResolver,
        )
    }
-```
-
-</TabItem>
-<TabItem value="kotlin3" label="Kotlin (Jetpack Compose)" default>
-
-```
-AdaptyPaywallScreen(
-    viewConfiguration,
-    products,
-    eventListener,
-    personalizedOfferResolver,
-    tagResolver,
-    timerResolver,
-    observerModeHandler,
-)
 ```
 
 </TabItem>
@@ -78,19 +64,17 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         eventListener,
         personalizedOfferResolver,
         tagResolver,
-        timerResolver,
-        observerModeHandler
+        timerResolver
 );
 ```
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
 
-```
+```java
 AdaptyPaywallView paywallView =
   new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
-paywallView.setEventListener(eventListener);
-paywallView.showPaywall(viewConfiguration, products, personalizedOfferResolver, tagResolver, timerResolver);
+paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver);
 ```
 
 </TabItem>
@@ -106,15 +90,32 @@ paywallView.showPaywall(viewConfiguration, products, personalizedOfferResolver, 
 
 After the view has been successfully created, you can add it to the view hierarchy and display it on the screen of the device.
 
-If you get `AdaptyPaywallView` _not_ by calling `AdaptyUI.getPaywallView()`, you will also need to call `.setEventListener()` and `.showPaywall()` methods.
+If you get `AdaptyPaywallView` _not_ by calling `AdaptyUI.getPaywallView()`, you will also need to call the `.showPaywall()` method.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+In order to display the visual paywall on the device screen, you must first configure it. To do this, use this composable function:
+
+```kotlin
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+</TabItem>
+</Tabs>
 
 Request parameters:
 
 | Parameter                     | Presence | Description                                                  |
 | :---------------------------- | :------- | :----------------------------------------------------------- |
-| **paywall**                   | required | Specify an `AdaptyPaywall` object, for which you are trying to get a screen representation. |
-| **products**                  | optional | Provide an array of `AdaptyPaywallProduct `to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
 | **viewConfiguration**         | required | Supply an `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `Adapty.getViewConfiguration(paywall)` method to load it. Refer to [Fetch the visual configuration of paywall](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) topic for more details. |
+| **products**                  | optional | Provide an array of `AdaptyPaywallProduct `to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
 | **eventListener**             | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **personalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
 | **tagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
