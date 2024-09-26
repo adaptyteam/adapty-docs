@@ -1,27 +1,14 @@
+<!--- ProfileObject.md --->
 
-
-| Parameter          | Type          | Required in request | Nullable in request | Description                                                  |
-| :----------------- | :------------ | ------------------- | ------------------- | :----------------------------------------------------------- |
-| first_name         | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's first name                                   |
-| last_name          | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's last name                                    |
-| gender             | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's gender. Possible values: <ul><li> `m` for male</li><li> `f` for female</li><li> `o` for other</li></ul>. |
-| email              | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's email                                        |
-| phone_number       | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's phone number                                 |
-| birthday           | ISO 8601 date | :heavy_minus_sign:  | :heavy_minus_sign:  | Your end user's birthday                                     |
-| ip_country         | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Country of the end user in ISO 3166-2 format. It needs to be passed if the request is made from the server and not from the client, in order to set the current country. Otherwise, we will determine the country by the IP address of the request. |
-| store_country      | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Country of the end user app store                            |
-| store              | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The app store                                                |
-| analytics_disabled | Boolean       | :heavy_minus_sign:  | :heavy_minus_sign:  | <p>Optoon to [opt out external analytics](analytics-integration#disabling-external-analytics-for-a-specific-customer). If you disable analytics, then events will not be sent to integrations, and the idfa, idfv, advertising_id fields will become nullable.</p><p>ON - External analytics is opted out for this end user</p><p>OFF - Analytics works by default</p> |
-| custom_attributes  | Dictionary    | :heavy_minus_sign:  | :heavy_minus_sign:  | <p>A maximum of 30 custom attributes for the profile are allowed to be set. If you provide the `custom_attributes` disctionary, you must provide at least one atttribute key.</p><p>**Key**: The key must be a string with no more than 30 characters. Only letters, numbers, dashes, points and underscores allowed</p><p>**Value**: The attribute value must be no more than 30 characters. Only strings and floats are allowed as values, booleans will be converted to floats. Send an empty value or null to delete the attribute.</p> |
-| device_id          | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | The device identifier is generated on the client side        |
-| device             | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The end-user-visible device model name.                      |
-| locale             | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The locale used by the end user                              |
-| os                 | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The operating system used by the end user                    |
-| platform           | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The device platform used by the end user                     |
-| timezone           | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The timezone of the end user                                 |
-| user_agent         | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Details about the end user environment: device, operating system, and browser information of the end user interacting with your application |
-| idfa               | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The Identifier for Advertisers, assigned by Apple to a user's device. |
-| idfv               | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
-| advertising_id     | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
-| android_id         | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | On Android 8.0 (API level 26) and higher versions of the platform, a 64-bit number (expressed as a hexadecimal string), unique to each combination of app-signing key, user, and device. For more details, see [Android developer documentation](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
-| android_app_set_id | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | An [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - unique, per-device, per developer-account user-resettable ID for non-monetizing advertising use cases. |
+| Parameter         | Type       | Nullable           | Description                                                  |
+| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
+| app_id            | String     | :heavy_minus_sign: | The ID of your app. You can see in the the Adapty Dashboard: App Settings -> General tab. |
+| profile_id        | UUID       | :heavy_minus_sign: | Adapty profile ID                                            |
+| customer_user_id  | String     | :heavy_plus_sign:  | User ID in developer’s (your) system.                        |
+| total_revenue_usd | Float      | :heavy_minus_sign: | Float value, it is equal to all total revenue USD which earned in the profile. |
+| segment_hash      | String     | :heavy_minus_sign: |                                                              |
+| timestamp         | Integer    | :heavy_minus_sign: | Response time in milliseconds, needs for resolve a race condition |
+| custom_attributes | Dictionary | :heavy_minus_sign: | <p>A maximum of 30 custom attributes to the profile are allowed to be set. If you provide the `custom_attributes` dictionary, you must provide at least one attribute key.</p><p>**Key**: The key must be a string with no more than 30 characters. Only letters, numbers, dashes, points, and underscores allowed</p><p>**Value**: The attribute value must be no more than 30 characters. Only strings and floats are allowed as values, booleans will be converted to floats. Send an empty value or null to delete the attribute.</p> |
+| access_levels     | Dictionary | :heavy_plus_sign:  | Profile Paid Access Level objects. Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [Access level](https://adapty.io/docs/server-side-api-objects#customeraccesslevel) objects. Can be null if the customer has no access levels |
+| subscriptions     | Dictionary | :heavy_plus_sign:  | Dictionary where the keys are vendor product IDs. Values are [Subscription](https://adapty.io/docs/server-side-api-objects#subscription) objects. Can be null if the customer has no subscriptions |
+| non_subscriptions | Dictionary | :heavy_plus_sign:  | Dictionary where the keys are vendor product ids. Values are an array of [Non-Subscription](https://adapty.io/docs/server-side-api-objects#non-subscription) objects. Can be null if the customer has no purchases. |

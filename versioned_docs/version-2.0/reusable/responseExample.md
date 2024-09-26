@@ -1,47 +1,4 @@
-<!--- grantaccessresponse.md --->
-
-import CustomerAccessLevel from './/CustomerAccessLevel.md';  
-import Subscription from './/Subscription.md';  
-import NonSubscription from './/NonSubscription.md';  
-
-
-
-
-
-## 200 Success
-
-The request is successful.
-
-#### Response
-
-| Parameter         | Type       | Nullable           | Description                                                  |
-| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
-| app_id            |            |                    |                                                              |
-| profile_id        | UUID       | ❌                  | Adapty profile ID                                            |
-| customer_user_id  | String     | ✅                  | User ID in developer’s (your) system.                        |
-| total_revenue_usd | Float      | ❌                  | Float value, it is equal to all total revenue USD which earned the profile. |
-| segment_hash      |            |                    |                                                              |
-| timestamp         | Integer    | :heavy_minus_sign: | Response time in milliseconds, needs for resolve a race condition |
-| custom_attributes | Dictionary | :heavy_minus_sign: | <p>A maximum of 30 custom attributes for the profile are allowed to be set. If you provide the `custom_attributes` disctionary, you must provide at least one atttribute key.</p><p>**Key**: The key must be a string with no more than 30 characters. Only letters, numbers, dashes, points and underscores allowed</p><p>**Value**: The attribute value must be no more than 30 characters. Only strings and floats are allowed as values, booleans will be converted to floats. Send an empty value or null to delete the attribute.</p> |
-| access_levels     | Dictionary | ✅                  | Profile Paid Access Level objects. Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [CustomerAccessLevel](https://adapty.io/docs/server-side-api-objects#customeraccesslevel) objects. Can be null if the customer has no access levels |
-| subscriptions     | Dictionary | ✅                  | Dictionary where the keys are vendor product IDs. Values are [Subscription](https://adapty.io/docs/server-side-api-objects#subscription) objects. Can be null if the customer has no subscriptions |
-| non_subscriptions | Dictionary | ✅                  | Dictionary where the keys are vendor product ids. Values are an array of [Non-Subscription](https://adapty.io/docs/server-side-api-objects#non-subscription) objects. Can be null if the customer has no purchases. |
-
-#### Response objects
-
-##### Access levels object
-
-<CustomerAccessLevel />
-
-##### Subscription object
-
-<Subscription />
-
-##### Non-Subscription object
-
-<NonSubscription />
-
-#### Response example
+<!--- responseExample.md --->
 
 ```
 {

@@ -7,10 +7,14 @@ displayed_sidebar: APISidebar
 ---
 import Details from '@site/src/components/Details';
 import CreateProfileRequestExample from './reusable/api-create-profile-example_request.md';
-import ResponseExample from './reusable/api-responses.md';
+import Response from './reusable/api-responses.md';
+import ResponseExample from './reusable/responseExample.md';
+import ProfileRequest from './reusable/ProfileRequest.md';
 import ProfileObject from './reusable/ProfileObject.md';
-import CustomerAccessLevel from './reusable/CustomerAccessLevel.md';
+import AccessLevel from './reusable/AccessLevel.md';
 import GrantAccessLevelRequestExample from './reusable/GrantAccessLevelRequestExample.md';
+import Purchase from './reusable/Purchase.md';
+import Subscription from './reusable/Subscription.md';
 
 Adapty's API lets you access and modify your Adapty data programmatically. We also support [webhooks](webhook), where we notify your server of events as they happen.
 
@@ -48,25 +52,25 @@ Object that contains details about your customer and their subscription.
 
 Retrieves the details of an existing end user of your app.
 
-##### Endpoint
+#### Endpoint
 
 ```
 https://api.adapty.io/api/v1/server-side-api/profiles/
 ```
 
-##### Method
+#### Method
 
 ```
 GET
 ```
 
-##### Parameters
+#### Parameters
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-##### Response
+#### Response
 
-<details>    <summary>Profile object (click to expand)</summary> <ProfileObject /> </details>
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
 
 <details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
 
@@ -76,33 +80,31 @@ ___
 
 Creates a new end user of your app in Adapty.
 
-##### Endpoint
+#### Endpoint
 
 ```
 https://api.adapty.io/api/v1/server-side-api/profiles/
 ```
 
-##### Method
+#### Method
 
 ```
 POST
 ```
 
-##### Parameters
+#### Parameters
+ `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+  <ProfileRequest /> 
 
-<details> 
-  <summary>Profile object (click to expand)</summary>
-  All parameters are optional. `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
-  <ProfileObject /> 
-</details>
-
-##### Example request
+#### Example request
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-##### Response
+#### Response
 
-<!--- ??? response --->
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+
+<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
 
 ___
 
@@ -110,42 +112,33 @@ ___
 
 Changes your end user profile attributes.
 
-Endpoint
+#### Endpoint
 
 ```
 https://api.adapty.io/api/v1/server-side-api/profiles/
 ```
 
-Method
+#### Method
 
 ```
 PATCH
 ```
 
-##### Parameters
+#### Parameters
 
-<details> 
-  <summary> Profile object (click to expand) </summary>
-  All parameters are optional. `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
-  <ProfileObject /> 
-</details>
+`Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+  <ProfileRequest /> 
 
-##### Example request
+
+#### Example request
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-##### Response
+#### Response
 
-Returns a profile object, if a valid `profile_id` or `customer_user_id` was supplied. If not, please review possible errors.
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
 
-<details> 
-  <summary> Profile object (click to expand) </summary>
-  All parameters are optional. `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
-  <ProfileObject /> 
-</details>
-
-<!--- ??? response --->
-
+<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
 
 ___
 
@@ -159,23 +152,23 @@ Should another profile make a purchase from the device with the same Apple ID (o
 
 Please be aware that this endpoint does not support bulk deletion, therefore each request must be handled individually. For managing a substantial number of users, it is advisable to execute requests concurrently.
 
-##### Endpoint
+#### Endpoint
 
 ```
 https://api.adapty.io/api/v1/server-side-api/profiles/
 ```
 
-##### Method
+#### Method
 
 ```
 DELETE
 ```
 
-##### Parameters
+#### Parameters
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-##### Response
+#### Response
 
 <!--- ??? response --->
 
@@ -183,9 +176,11 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 
 ## Access levels
 
-### Access Level object
+### Access level object
 
-<CustomerAccessLevel />
+Info about current customer’s [access level](https://adapty.io/docs/access-level).
+
+<AccessLevel />
 
 ### Grant access level
 
@@ -193,19 +188,19 @@ Provides access level to your end-user without providing an info on the transact
 
 To grant access with providing the transaction details, please use the Set Transaction request <!--- ??? --->
 
-##### Endpoint
+#### Endpoint
 
 ```
 https://api.adapty.io/api/v1/server-side-api/grant/access-level/
 ```
 
-##### Method
+#### Method
 
 ```
 POST
 ```
 
-##### Parameters
+#### Parameters
 
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
 | --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
@@ -215,8 +210,84 @@ POST
 
 <details>    <summary>Example request (click to expand)</summary> <GrantAccessLevelRequestExample /> </details>
 
-##### Response
+#### Response
+
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+
+<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
 
 ### Revoke access level
 
+Removes an access level from an end user of your app in Adapty.
+
+#### Endpoint
+
+```
+https://api.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/
+```
+
+#### Method
+
+```
+POST
+```
+
+#### Parameters
+
+| Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
+| --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
+| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard |
+| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
+
+#### Request example
+
+```json
+{
+  "access_level_id": "premium",
+  "revoke_at": "2022-10-12T09:42:50.000000+0000"
+}
+```
+
+#### Response
+
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+
+<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+
+## Transactions
+
 ### Set transaction
+
+Creates a new transaction for an end user of your app in Adapty and provides access level.
+
+#### Endpoint
+
+```
+https://api.adapty.io/api/v1/server-side-api/profiles/
+```
+
+#### Method
+
+```
+POST
+```
+
+#### Parameters
+
+Either the **Purchase** or **Subscription** object:
+
+##### Purchase object
+
+<Purchase />
+
+##### Subscription object
+
+<Subscription />
+
+#### Request example
+
+#### Response
+
+<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+
+<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
