@@ -7,7 +7,7 @@ displayed_sidebar: APISidebar
 ---
 
 import Details from '@site/src/components/Details';
-import CreateProfileRequestExample from './reusable/api-create-profile-example_request.md';
+import CreateProfileRequestExample from './reusable/CreateProfileRequestExample.md';
 import Response from './reusable/api-responses.md';
 import ResponseExample from './reusable/responseExample.md';
 import ProfileRequest from './reusable/ProfileRequest.md';
@@ -176,7 +176,7 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 
 
 
-## Access levels
+##  Access levels
 
 ### Access level object
 
@@ -210,7 +210,18 @@ POST
 | starts_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will be active. May be in the future |
 | expires_at      | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
 
-<details>    <summary>Example request (click to expand)</summary> <GrantAccessLevelRequestExample /> </details>
+#### Example request
+
+<details>    
+<summary>Example request (click to expand)</summary>
+  ```json title="JSON"
+{
+  "access_level_id": "premium",
+  "starts_at": "2022-10-12T09:42:50.000000+0000",
+  "expires_at": "2024-10-12T09:42:50.000000+0000"
+}
+  ```
+</details>
 
 #### Response
 
@@ -242,14 +253,15 @@ POST
 | revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
 
 #### Request example
-
-```json
+<details>    
+<summary>Example request (click to expand)</summary>
+```json title="JSON"
 {
   "access_level_id": "premium",
-  "revoke_at": "2022-10-12T09:42:50.000000+0000"
+  "revoke_at": "2024-10-12T09:42:50.000000+0000"
 }
 ```
-
+</details>    
 #### Response
 
 <details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
@@ -287,7 +299,31 @@ Either the **Purchase** or **Subscription** object:
 <Subscription />
 
 #### Request example
-
+<details>    
+<summary>Request example (click to expand)</summary>
+```json title="JSON"
+{
+  "store": "app_store",
+  "environment": "Production",
+  "store_product_id": "1year.premium",
+  "store_transaction_id": "30002109551456",
+  "store_original_transaction_id": "30002109561269",
+  "offer_category": "introductory",
+  "offer_type": "free_trial",
+  "offer_id": "annual_free_trial",
+  "is_family_shared": false,
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 0
+  },
+  "purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "refunded_at": "2022-10-15T09:42:50.000000+0000",
+  "cancellation_reason": "voluntarily_cancelled",
+  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d"
+}
+```
+</details>
 #### Response
 
 <details>    <summary>Response variants (click to expand)</summary> <Response /> </details>

@@ -41,7 +41,7 @@
     ],
     "subscriptions": [
       {
-        "store": "string",
+        "store": "app_store",
         "store_product_id": "string",
         "store_base_plan_id": "string",
         "store_transaction_id": "string",
