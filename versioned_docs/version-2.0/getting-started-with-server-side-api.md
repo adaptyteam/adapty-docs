@@ -256,6 +256,14 @@ POST
 
 ## Transactions
 
+### Purchase object
+
+<Purchase />
+
+### Subscription object
+
+<Subscription />
+
 ### Set transaction
 
 Creates a new transaction for an end user of your app in Adapty and provides access level.
@@ -291,3 +299,4 @@ Either the **Purchase** or **Subscription** object:
 <details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
 
 <details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+

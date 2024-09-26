@@ -2,6 +2,8 @@
 title: "API objects"
 description: ""
 metadataTitle: ""
+hide_table_of_contents: true
+displayed_sidebar: APISidebar
 ---
 
 import ProfileObject from './reusable/ProfileObject.md';
@@ -9,6 +11,7 @@ import AccessLevel from './reusable/AccessLevel.md';
 import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
 import NonSubscription from './reusable/NonSubscription.md';
+import Offer from './reusable/Offer.md';
 
 ## Objects
 
@@ -22,7 +25,7 @@ Info about the [customer and his subscription.  ](server-side-api-objects#profil
 
 <ProfileObject />
 
-### CustomerAccessLevel
+### Access evel
 
 Info about customer’s [access level](access-level).
 
@@ -36,11 +39,11 @@ if (profile.paidAccessLevels["premium"]?.isActive == true) {
 
 You can do the following action via Adapty server-side API:
 
-- Ggrant access level to your end user without providing transaction
+- Grant access level to your end user without providing transaction
 - Set transaction and grant access level to your end user
 - Revoke access level from your end user
 
-<CustomerAccessLevel />
+<AccessLevel />
 
 ### Subscription
 
@@ -53,3 +56,8 @@ Info about vendor subscription. You don’t have to use this object in most case
 Info about non-subscription purchases. These can be one-time \(consumable\) products, unlocks \(like new map unlock in the game\), etc.  
 
 <NonSubscription />
+
+### Offer
+
+<Offer />
+
