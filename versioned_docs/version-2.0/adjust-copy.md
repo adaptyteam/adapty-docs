@@ -72,16 +72,16 @@ Where
 | **s2s** | Integer | A hardcoded s2s=1 parameter to inform the endpoint that the requests are server-to-server. |
 | **adid** | String | The Adjust identifier associated with the device. Useful for identifying LAT users on iOS without IDFA information. |
 | **idfv** | String | The identifier for vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. Applicable to iOS apps only |
-| **gps_adid** | String | Google Play advertising identifier. Android only |
+| **gps_adid** | String | Google Play advertising identifier. Android-only |
 | **revenue** | Float | Revenue event value in full currency units (149.99 = $149.99). Adjust's servers accept a minimum value of 0.001 for this parameter. |
 | **currency** | Float | Local currency (defaults to USD). |
 | **app_token** | String | Adjust app token |
 | **android_id** | String | Android identifier, only sent if gps_adid is not present. Android only |
-| **ip_address** | String | <p>The IP address of the device. Used for linking events to third parties (for example: Google) and including location-related information (for example: city, postal_code) in your callbacks.</p><p></p><p>The ip_address parameter accepts only IPv4 addresses. IPv6 isn't currently supported.</p> |
+| **ip_address** | String | <p>The IP address of the device. Used for linking events to third parties (for example, Google) and including location-related information (for example, city, postal_code) in your callbacks.</p><p></p><p>The ip_address parameter accepts only IPv4 addresses. IPv6 isn't currently supported.</p> |
 | **user_agent** | String | The user agent of the device. Must be URL-encoded. |
 | **event_token** | String | Adjust event token |
-| **callback_params** | ? | A URL-encoded JSON object containing string key-value pairs. |
-| **created_at_unix** |  | The date and time at which the event occurred. |
+| **callback_params** | JSON object | A URL-encoded JSON object containing string key-value pairs. |
+| **created_at_unix** | ISO 8601 date | The date and time at which the event occurred. |
 | **customer_user_id** | String | The Customer User ID (CUID) is a unique user identifier. It is usually generated and set by the app owner at the time of user registration. The CUID lets app owners follow user journeys across different devices |
 | **external_device_id** | String | An [external device identifier](https://help.adjust.com/en/article/external-device-identifiers) is a case-sensitive, custom value assigned to a device or user. |
 
