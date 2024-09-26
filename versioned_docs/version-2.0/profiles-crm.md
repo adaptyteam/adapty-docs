@@ -14,7 +14,6 @@ Profiles is a CRM for your users. With Profiles, you can:
 3. Analyze user's properties such as subscription state, total revenue/proceeds, last seen, and more.
 4. Grant the user a subscription.
 
-
 <Zoom>
   <img src={require('./img/profiles.png').default}
   style={{
@@ -25,10 +24,6 @@ Profiles is a CRM for your users. With Profiles, you can:
   }}
 />
 </Zoom>
-
-
-
-
 
 In a full table of subscribers, you can filter, sort, and find users. The state describes user state in terms of a subscription and can be:
 
@@ -47,7 +42,6 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
 
 ## User properties
 
-
 <Zoom>
   <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
   style={{
@@ -58,10 +52,6 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
   }}
 />
 </Zoom>
-
-
-
-
 
 You can send any properties that you want for the user.
 
@@ -84,7 +74,6 @@ After installing SDK, Adapty automatically collects user events from the payment
 
 You can see custom attributes that were set either from SDK or manually assign them to the user using the Add attribute button in the Attributes section on the profile page.
 
-
 <Zoom>
   <img src={require('./img/c8b3db7-add_attribute.png').default}
   style={{
@@ -96,14 +85,9 @@ You can see custom attributes that were set either from SDK or manually assign t
 />
 </Zoom>
 
-
-
-
-
 ## Grant a subscription
 
 In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access. 
-
 
 <Zoom>
   <img src={require('./img/image20283029.png').default}
@@ -116,10 +100,6 @@ In a profile, you can find an active subscription. At any time you can prolong t
 />
 </Zoom>
 
-
-
-
-
 It's most useful for users without an active subscription so you can grant the individual user or a group of users premium features for some time. Please note that adjusting the subscription date for active subscriptions will not impact the ongoing payments.
 
 :::note
@@ -128,7 +108,7 @@ It's most useful for users without an active subscription so you can grant the i
 
 ## Profile record creation
 
-Adapty creates an internal profile ID for every user. However, if you have your own authentication system, [set your own Customer User ID](identifying-users), a unique identifier for each user in your system. In this case. Adapty will add this ID to the user profile, which will give you several advantages:
+Adapty creates an internal profile ID for every user. However, if you have your own authentication system, [set your own Customer User ID](identifying-users), a unique identifier for each user in your system. In this case, Adapty will add this ID to the user profile, which will give you several advantages:
 
 1. All transactions and events will be tied to the same profile.
 2. You can find users by their customer user ID in the [**Profiles**](profiles-crm) section and view their transactions and events.
@@ -157,5 +137,4 @@ Here is an example of a non-original profile. Notice the absence of events in th
   }}
 />
 </Zoom>
-
 
