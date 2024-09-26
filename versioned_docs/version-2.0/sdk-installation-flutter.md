@@ -16,10 +16,10 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.9.3              | 2.1.0                |
 | 2.10.0             | 2.1.1                |
 | 2.10.1             | 2.1.2                |
-| 2.10.2             | 2.1.3                |
+| 2.10.3             | 2.1.3                |
 
 :::danger
-Go through release checklist before releasing your app
+Go through the release checklist before releasing your app
 
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
@@ -30,8 +30,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
    ```yaml title="pubspec.yaml"
    dependencies:
-   adapty_flutter: ^2.10.1
-   adapty_ui_flutter: ^2.1.1
+   adapty_flutter: ^2.10.3
+   adapty_ui_flutter: ^2.1.3
    ```
 
 2. Run:
