@@ -14,8 +14,8 @@ import ResponseExample from './/responseExample.md';
 import Details from '@site/src/components/Details'; 
 import ProfileObject from './/ProfileObject.md';  
 
-<details>  
-	<summary>**200 Success** (click to expand)</summary> 
+## 200 Success
+
 
 The request is successful, the response will have the following data:
 #### 	Response objects
@@ -37,8 +37,6 @@ The request is successful, the response will have the following data:
 #### 	Response example
 
 <responseExample />
-
-</details>
 
 
 

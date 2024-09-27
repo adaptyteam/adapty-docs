@@ -7,15 +7,21 @@ displayed_sidebar: APISidebar
 ---
 
 import Details from '@site/src/components/Details';
-import CreateProfileRequestExample from './reusable/CreateProfileRequestExample.md';
-import Response from './reusable/api-responses.md';
-import ResponseExample from './reusable/responseExample.md';
+
+import ProfileObject from './reusable/ProfileObject.md';import CreateProfileRequestExample from './reusable/CreateProfileRequestExample.md';
 import ProfileRequest from './reusable/ProfileRequest.md';
-import ProfileObject from './reusable/ProfileObject.md';
-import AccessLevel from './reusable/AccessLevel.md';
+import ProfileResponse from './reusable/ProfileResponse.md';
+import ProfileResponseBadRequest from './reusable/ProfileResponseBadRequest.md';
+import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
+import ProfileResponseUnauthorized from './reusable/ProfileResponseUnauthorized.md';
+import ResponseExample from './reusable/responseExample.md';import AccessLevel from './reusable/AccessLevel.md';
 import GrantAccessLevelRequestExample from './reusable/GrantAccessLevelRequestExample.md';
+import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
+import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
 import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
+
+
 
 Adapty's API lets you access and modify your Adapty data programmatically. We also support [webhooks](webhook), where we notify your server of events as they happen.
 
@@ -69,11 +75,24 @@ GET
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-#### Response
+#### Responses
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+<ProfileResponseUnauthorized /> 
+</details>
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+<ProfileResponseNotFound />  
+</details>
 
 ___
 
@@ -102,11 +121,24 @@ POST
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Response
+#### Responses
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**400 - Bad request** (click to expand)</summary> 
+<ProfileResponseBadRequest />  
+</details>
+
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+<ProfileResponseUnauthorized />  
+</details>
 
 ___
 
@@ -136,11 +168,29 @@ PATCH
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Response
+#### Responses
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**400 - Bad request** (click to expand)</summary> 
+<ProfileResponseBadRequest />  
+</details>
+
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+<ProfileResponseUnauthorized />  
+</details>
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+<ProfileResponseNotFound />  
+</details>
 
 ___
 
@@ -170,11 +220,22 @@ DELETE
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-#### Response
+#### Responses
 
-<!--- ??? response --->
+<details>    
+<summary>**204 - Success** (click to expand)</summary> 
+<ProfileResponse />
+</details>
 
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+<ProfileResponseUnauthorized />  
+</details>
 
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+<ProfileResponseNotFound />  
+</details>
 
 ##  Access levels
 
@@ -222,12 +283,38 @@ POST
 }
   ```
 </details>
+#### Responses
 
-#### Response
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**400 - Bad request** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound />  
+<AccessLevelDoesNotExist />
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseUnauthorized />  
+</details>
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseNotFound />  
+</details>
+
+___
+
+
 
 ### Revoke access level
 
@@ -262,11 +349,36 @@ POST
 }
 ```
 </details>    
-#### Response
+#### Responses
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**400 - Bad request** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound />  
+<AccessLevelDoesNotExist />
+</details>
+
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseUnauthorized />  
+</details>
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseNotFound />  
+</details>
+
+___
 
 ## Transactions
 
@@ -277,7 +389,7 @@ Creates a new transaction for an end user of your app in Adapty and provides acc
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profiles/
+https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
 ```
 
 #### Method
@@ -324,11 +436,36 @@ Either the **Purchase** or **Subscription** object:
 }
 ```
 </details>
-#### Response
+#### Responses
 
-<details>    <summary>Response variants (click to expand)</summary> <Response /> </details>
+<details>    
+<summary>**200 - Success** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponse />
+Response example
+<ResponseExample />  
+</details>
 
-<details>    <summary>Example response (click to expand)</summary> <ResponseExample /> </details>
+<details>    
+<summary>**400 - Bad request** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound />  
+<AccessLevelDoesNotExist />
+</details>
+
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseUnauthorized />  
+</details>
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseNotFound />  
+</details>
+
+___
 
 
 

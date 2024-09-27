@@ -1,9 +1,5 @@
 <!---NonSubscription.md--->
 
-## Non Subscription
-
-Info about non-subscription purchases. These can be one-time (consumable) products, unlocks (like new map unlock in the game), etc.
-
 | Parameter                     | Type          | Required in request | Nullable in request | Description                                                  |
 | :---------------------------- | :------------ | :------------------ | :------------------ | :----------------------------------------------------------- |
 | purchase_id                   | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Identifier of the purchase in Adapty. You can use it to ensure that you’ve already processed this purchase, for example tracking one-time products |
