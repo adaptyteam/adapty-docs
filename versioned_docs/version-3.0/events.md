@@ -214,7 +214,7 @@ We don't send `access_level_updated` upon subscription expiration - please, refe
 
 Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](server-side-api-specs#prolonggrant-a-subscription-for-a-user)
 
-For detailed descriptions of the mentioned properties, you can refer to the[ API objects documentation](server-side-api-objects).
+For detailed descriptions of the mentioned properties, you can refer to the [API objects documentation](server-side-api-objects).
 
 ## Sending failed
 
