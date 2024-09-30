@@ -1,13 +1,13 @@
 <!--- AccessLevelNoProfileAccessLevel.md --->
 
-The request failed because the profile defined in the request does not have the defined profile.
+The request failed because the profile defined in the request does not have the defined profile. Recheck that you entered correct profile in the header and access level in the body, make sure their IDs do not have typos.
 
 ###### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
 | errors      | Object  | Buletted: <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
-| error_code  | String  | Short error name. Always `not_found`                         |
+| error_code  | String  | Short error name. Always `profile_paid_access_level_does_not_exist` |
 | status_code | Integer | HTTP status. Always `400`                                    |
 
 ###### Response example

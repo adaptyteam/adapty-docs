@@ -23,6 +23,7 @@ import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAcce
 import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsMoreThanExpirationDate.md';
 import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
+import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
 
 
 
@@ -366,17 +367,18 @@ Response example
 </details>
 <details>    
 <summary>**400 - Bad request** (click to expand)</summary> 
+ #### Access level does not exist
+<AccessLevelDoesNotExist />
+---
+#### No profile access level
+<AccessLevelNoProfileAccessLevel />
+---
 #### Profile not found
 <AccessLevelProfileNotFound /> 
 ---
-#### Access level does not exist
-<AccessLevelDoesNotExist />
----
- No profile access level
-<AccessLevelNoProfileAccessLevel />
----
 #### Revocation date is more than current expiration date
 <RevocationDateIsMoreThanExpirationDate />
+
 
 </details>
 
@@ -460,13 +462,24 @@ Either the **Purchase** or **Subscription** object:
 Response example
 <ResponseExample />  
 </details>
-
 <details>    
 <summary>**400 - Bad request** (click to expand)</summary> 
   <p> </p>
-<AccessLevelProfileNotFound />  
-<AccessLevelDoesNotExist />
+#### Free trial price must be 0
+<FreeTrialPrice />
+---
+#### Missing offer ID for promotional offer or offer code
+<MissingOfferID />
+---
+#### Profile not found
+<AccessLevelProfileNotFound /> 
+---
+
+
+
+
 </details>
+
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 

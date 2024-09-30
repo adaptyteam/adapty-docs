@@ -2,7 +2,7 @@
 title: "Responses to server-side API requests"
 description: ""
 metadataTitle: ""
-toc: false
+displayed_sidebar: APISidebar
 ---
 
 <!--- api-responses.md --->
@@ -19,39 +19,60 @@ import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
 import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
 import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
 import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsMoreThanExpirationDate.md';
+import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';
+import MissingOfferID from './reusable/MissingOfferID.md';
+import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
+
+
 
 ## 200 Success
 
 
 The request is successful, the response will have the following data:
-#### 	Response objects
+
+#### 	Response object
 
 <ProfileObject />	
 
 #### 	Response example
 
-<responseExample />
+<ResponseExample />
+
+---
 
 ## 400 Bad request
 
-<ProfileResponseBadRequest /> 
+### Access level does not exist
 
-#### Profile not found
-<AccessLevelProfileNotFound /> 
-
-#### Access level does not exist
 <AccessLevelDoesNotExist />
 
-####  No profile access level
+### Free trial price must be 0
+
+<FreeTrialPrice />
+
+### Missing offer ID for promotional offer or offer code
+
+<MissingOfferID />
+
+### No profile access level
 
 <AccessLevelNoProfileAccessLevel />
 
-#### Revocation date is more than current expiration date
+### Profile not found
+
+<AccessLevelProfileNotFound /> 
+
+### Revocation date is more than current expiration date
+
 <RevocationDateIsMoreThanExpirationDate />
+
+---
 
 ## 401 Unauthorised
 
 <ProfileResponseUnauthorized />
+
+---
 
 ## 404 Not found
 
