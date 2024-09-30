@@ -44,9 +44,9 @@ const config = {
           sidebarPath: require.resolve("./sidebars.js"),
           path: "docs",
           routeBasePath: "/",
-          lastVersion: "3.0",
+          lastVersion: '3.0',
           versions: {
-            "3.0": {
+            "3.0" : {
               label: "3.0",
               path: "/",
               banner: "none",

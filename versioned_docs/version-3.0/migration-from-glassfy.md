@@ -36,7 +36,7 @@ When you migrate from Glassfy to Adapty, you can use all our features, including
 Here are the 3 easy steps to migrate your app from Glassfy to Adapty:
 
 1. Learn the core differences (very few of them) and set up an Adapty account _(15 minutes)_;
-2. Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity))  _(1 hour)_;
+2. Install Adapty SDK for your platform – [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](/2.0/sdk-installation-reactnative), [Flutter](/2.0/sdk-installation-flutter), [Unity](/2.0/sdk-installation-unity)  _(1 hour)_;
 3. Test and release the new version of your app _(30 minutes)._
 
 :::info
@@ -157,7 +157,7 @@ Well done, now you can integrate Adapty SDK into your app!
 
 ### Install Adapty SDK to replace Glassfy SDK
 
-Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)).
+Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](/2.0/sdk-installation-reactnative), [Flutter](/2.0/sdk-installation-flutter), [Unity](/2.0/sdk-installation-unity)).
 
 #### SDK activation
 

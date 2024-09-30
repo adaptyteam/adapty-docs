@@ -17,12 +17,6 @@ In the [Google’s billing system](https://developer.android.com/google/play/bil
 - **Base plans:** These represent specific configurations of billing periods, renewal types, and prices (how the items are sold). Examples include "annual with auto-renewal" or "prepaid monthly."
 - **Offers:** These entail discounts available to eligible users, modifying the base plan's price. For instance, a "free 14-day trial for new users."
 
-:::note
-Adapty SDK 2.6.0 already supports Google Billing Library v5 and v6 as well as the modern Google Play subscriptions structure such as multiple base plans per subscription, multiple offers per base plan, and multiple phases per offer.
-
-Please refer to our [documentation](whats-new-in-adapty-sdk-20) for more details about how to migrate to Adapty SDK 2.6.0.
-:::
-
 ## How to create a product in Play Store?
 
 Product refers to a digital item or service that you offer within your app, typically available for purchase. These can include in-app products such as one-time purchases, subscriptions, or other digital goods that users can acquire while using your application.
@@ -32,6 +26,7 @@ To set up a product for Android devices:
 1. Open [**Monetize** -> **Subscriptions**](https://console.cloud.google.com/iam-admin/serviceaccounts) or  [**Monetize** -> **In-app products**](https://console.cloud.google.com/iam-admin/serviceaccounts) section in the left menu of the Google Play Console.
 
    
+
 <Zoom>
   <img src={require('./img/6eff1d1-subscription_GP.png').default}
   style={{
@@ -49,6 +44,7 @@ To set up a product for Android devices:
 2. Click the **Create subscription** button.
 
    
+
 <Zoom>
   <img src={require('./img/af7fe02-create_subscription_GP.png').default}
   style={{
@@ -90,6 +86,7 @@ To create a base plan:
 2. Click the **View subscription** button next to the subscription.
 
    
+
 <Zoom>
   <img src={require('./img/4072a2a-subscriptions_GP.png').default}
   style={{
@@ -107,6 +104,7 @@ To create a base plan:
 3. After the subscription details open. click on the **Add base plan** button under the **Base plans and offers** title. You may need to scroll down to find it.
 
    
+
 <Zoom>
   <img src={require('./img/b493b60-add_base_plan.png').default}
   style={{
@@ -124,6 +122,7 @@ To create a base plan:
 4. In the opened **Add base plan** window, enter a unique identifier for the base plan in the Base **Plan ID** field. It must start with a number or lowercase letter, and can contain numbers (0-9), lowercase letters (a-z) and hyphens (-). and complete the required fields. 
 
    
+
 <Zoom>
   <img src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.png').default}
   style={{
@@ -141,6 +140,7 @@ To create a base plan:
 5. Specify the prices per region.
 
    
+
 <Zoom>
   <img src={require('./img/8b26e1d-prices.png').default}
   style={{

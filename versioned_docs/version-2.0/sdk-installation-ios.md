@@ -13,16 +13,16 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 
-| Adapty SDK version                   | AdaptyUI SDK version                                                                                                                                                                 |
-| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.7.x, 2.8.x                         | 2.0.x                                                                                                                                                                                |
-| 2.9.x - 2.10.0                       | 2.1.2                                                                                                                                                                                |
-| 2.10.1                               | 2.1.3                                                                                                                                                                                |
-| 2.10.3 and all later 2.10.x versions | 2.1.5                                                                                                                                                                                |
-| 2.11.1                               | 2.11.1                                                                                                                                                                               |
-| 2.11.2                               | 2.11.2                                                                                                                                                                               |
-| 2.11.3                               | 2.11.3                                                                                                                                                                               |
-| 3.x                                  | Included as a module within the Adapty SDK. For more information, see [iOS - Adapty SDK v. 3.x installation & configuration](/3.0/sdk-installation-ios). |
+| Adapty SDK version                   | AdaptyUI SDK version                                         |
+| :----------------------------------- | :----------------------------------------------------------- |
+| 2.7.x, 2.8.x                         | 2.0.x                                                        |
+| 2.9.x - 2.10.0                       | 2.1.2                                                        |
+| 2.10.1                               | 2.1.3                                                        |
+| 2.10.3 and all later 2.10.x versions | 2.1.5                                                        |
+| 2.11.1                               | 2.11.1                                                       |
+| 2.11.2                               | 2.11.2                                                       |
+| 2.11.3                               | 2.11.3                                                       |
+| 3.x                                  | Included as a module within the Adapty SDK. For more information, see [iOS - Adapty SDK v. 3.x installation & configuration](/docs/sdk-installation-ios). |
 
 You can install AdaptySDK and AdaptyUI SDK via CocoaPods, or Swift Package Manager.
 

@@ -7,7 +7,7 @@ metadataTitle: "Optimize Localization: Adding Locale in Adapty Paywall Builder"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Localizing is a tedious process that requires time and precision. When using Paywall Builder, Adapty does almost all of the work for you, as most of the things you'll need work out of the box. This page describes how it works.
+Localizing is a tedious process that requires time and precision. When using [Paywall Builder](adapty-paywall-builder-legacy), Adapty does almost all of the work for you, as most of the things you'll need work out of the box. This page describes how it works.
 
 Suppose you've finished configuring your paywall in the default `en` localization and you like the result. Now it's time to add another language.
 
@@ -16,6 +16,7 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 1. Switch over to the **Localizations** tab below the **Builder** title. 
 
    
+
 <Zoom>
   <img src={require('./img/0a6100c-PB_localization.png').default}
   style={{
@@ -32,6 +33,7 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 2. Click the **Add locale** button, and select all languages you want to have in your app.
 
    
+
 <Zoom>
   <img src={require('./img/4abdb84-add_locale.png').default}
   style={{
@@ -49,6 +51,7 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
       Once added, the new locale will be pre-filled with values from the default.
 
    
+
 <Zoom>
   <img src={require('./img/0e99ddb-copy_locale.png').default}
   style={{
@@ -72,6 +75,7 @@ You can learn more about it [here](get-pb-paywalls).
 3. Now you can fill in the translated values for the new locale. There are a few controls in this table that can make it easier (especially if you have many locales).
 
    
+
 <Zoom>
   <img src={require('./img/df4b331-locale_options.png').default}
   style={{

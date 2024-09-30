@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Paywall Builder is a simple no-code tool that lets you create custom paywalls — in-app storefronts in your mobile app where users can make purchases. It doesn't require any technical or design skills. You can easily improve the appearance of your paywalls, change the messages they display, and add buttons as needed. Plus, you can make changes to these screens in real-time while your app is live, without releasing a new mobile app version.
 
-The information below refers to the legacy Paywall Builder. For the new Paywall Builder, see [New Paywall Builder](../adapty-paywall-builder).
+The information below refers to the legacy Paywall Builder. For the new Paywall Builder, see [New Paywall Builder](/docs/adapty-paywall-builder).
 
 Whether you're aiming to boost sales, highlight content, or offer exclusive features, the paywall builder offers an easy way to achieve your goals.
 
