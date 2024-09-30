@@ -30,7 +30,7 @@ Before releasing your application, make sure to thoroughly review the  [Release 
 
 In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
 
-1. Enter the repository URL: [https://github.com/adaptyteam/AdaptySDK-iOS.git(https://github.com/adaptyteam/AdaptySDK-iOS.git).
+1. Enter the repository URL: [https://github.com/adaptyteam/AdaptySDK-iOS.git](https://github.com/adaptyteam/AdaptySDK-iOS.git).
 2. Select the version and click Add Package.
 3. Choose the modules you need:
    1. **Adapty** is the mandatory module.
@@ -65,7 +65,7 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift title="Swift"
+```swift 
 // In your AppDelegate class:
 import Adapty
 
