@@ -2,7 +2,6 @@
 title: "API objects"
 description: ""
 metadataTitle: ""
-hide_table_of_contents: true
 displayed_sidebar: APISidebar
 ---
 
@@ -13,6 +12,7 @@ import Subscription from './reusable/Subscription.md';
 import NonSubscription from './reusable/NonSubscription.md';
 import Offer from './reusable/Offer.md';
 import Price from './reusable/Price.md';
+import Purchase from './reusable/Purchase.md';
 
 ## Objects
 
@@ -67,9 +67,13 @@ You can do the following action via Adapty server-side API:
 
 <NonSubscription />
 
+### Purchase
+
+<Purchase />
+
 ### Offer
 
-Information on the applied offer. The Offer object is a part of [Subscription](server-side-api-objects#subscription), [Access level](server-side-api-objects#access-level) objects.
+Information on the applied offer. The Offer object is a part of the  [Subscription](server-side-api-objects#subscription), [Access level](server-side-api-objects#access-level) objects.
 
 You can do the following actions with offers via Adapty server-side API:
 
@@ -79,8 +83,10 @@ You can do the following actions with offers via Adapty server-side API:
 
 ### Price
 
-Information about the cost of your product in local currency.
+Information about the cost of your product in local currency. The Price object is a part of the  [Subscription](server-side-api-objects#subscription) and Purchase objects.
 
 You can do the following actions with product price via Adapty server-side API:
+
+- [Set transaction to your user](server-side-api-specs#set-transaction) and specify its price
 
 <Price />

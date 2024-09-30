@@ -1,6 +1,6 @@
 <!--- FreeTrialPrice.md ---> 
 
-The request failed because the request contains an `offer_category` parameter with a value different from `introductory` or `offer_type` and yet does not contain `offer_id`. In this case, provide `offer_id`or remove `offer_category` or `offer_type` from the request.
+The request failed because the request contains an  `offer_type` parameter with the value `free_trial` and yet the `value` parameter of the [Price](server-side-api-objects#price) object is not equal to zero.
 
 Another possible reason is that you added the `offer_id` parameter and left it `null` which it is not nullable. In this case, either add the `offer_id` value or remove the parameter.
 

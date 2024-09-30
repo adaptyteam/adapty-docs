@@ -1,6 +1,6 @@
 <!--- Price.md --->
 
-Discount price of a product in a local currency.
+
 
 | Parameter | Type   | Required in request | Nullable in request | Description                                    |
 | --------- | ------ | ------------------- | ------------------- | ---------------------------------------------- |

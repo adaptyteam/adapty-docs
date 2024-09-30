@@ -24,6 +24,7 @@ import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsM
 import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
 import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
+import MissingOfferID from './reusable/MissingOfferID.md'; 
 
 
 
