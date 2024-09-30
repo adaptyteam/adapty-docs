@@ -2,9 +2,7 @@
 
 
 
----
 
-#### Access level does not exist
 
 The request failed because the access level defined in the request was not found. Review that your request does not contain typos in the `access_level_id` and that it belongs to the correct app.
 

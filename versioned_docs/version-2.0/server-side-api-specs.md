@@ -14,12 +14,17 @@ import ProfileResponse from './reusable/ProfileResponse.md';
 import ProfileResponseBadRequest from './reusable/ProfileResponseBadRequest.md';
 import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from './reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from './reusable/responseExample.md';import AccessLevel from './reusable/AccessLevel.md';
+import ResponseExample from './reusable/responseExample.md';
+import AccessLevel from './reusable/AccessLevel.md';
 import GrantAccessLevelRequestExample from './reusable/GrantAccessLevelRequestExample.md';
 import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
 import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
+import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';
+import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsMoreThanExpirationDate.md';
 import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
+
+
 
 
 
@@ -80,9 +85,10 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <details>    
 <summary>**200 - Success** (click to expand)</summary> 
 <ProfileResponse />
-Response example
+**Response example**
 <ResponseExample />  
 </details>
+
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
@@ -358,13 +364,22 @@ POST
 Response example
 <ResponseExample />  
 </details>
-
 <details>    
 <summary>**400 - Bad request** (click to expand)</summary> 
-  <p> </p>
-<AccessLevelProfileNotFound />  
+#### Profile not found
+<AccessLevelProfileNotFound /> 
+---
+#### Access level does not exist
 <AccessLevelDoesNotExist />
+---
+ No profile access level
+<AccessLevelNoProfileAccessLevel />
+---
+#### Revocation date is more than current expiration date
+<RevocationDateIsMoreThanExpirationDate />
+
 </details>
+
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
