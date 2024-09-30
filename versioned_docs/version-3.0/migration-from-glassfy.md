@@ -92,7 +92,7 @@ To sell the product in Adapty SDK, you have to create it in the dashboard first.
 
 #### Create paywalls
 
-Once you created the products, you should create the paywalls (aka offerings). A paywall can have one or more products. It can also have remote configuration, which allows you to customize the paywalls without new releases, localize the paywalls and onboarding and [much more](paywalls). You can even design and create paywalls without any coding with the [Adapty paywall builder](/3.0/adapty-paywall-builder).
+Once you created the products, you should create the paywalls (aka offerings). A paywall can have one or more products. It can also have remote configuration, which allows you to customize the paywalls without new releases, localize the paywalls and onboarding and [much more](paywalls). You can even design and create paywalls without any coding with the [Adapty paywall builder](adapty-paywall-builder).
 
 
 <Zoom>

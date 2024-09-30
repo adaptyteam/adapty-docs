@@ -15,7 +15,7 @@ Checklist to successfully use Google Play offers
 1. [Create and activate](google-play-offers#configuring-offers-in-google-play) offers in Google Play Console.
 2. [Add](google-play-offers#adding-offers-to-adapty-products) offers to Adapty Products.
 3. [Choose](google-play-offers#choosing-the-offer-in-adapty-paywalls) the offer to use in Adapty Paywall.
-4. [Use](whats-new-in-adapty-sdk-26) Adapty SDK 2.6 or newer.
+4. Use Adapty SDK 2.6 or newer.
 5. [Check eligibility criteria](google-play-offers#configuring-offers-in-google-play) for the offer in Google Play Console if everything is configured, but the offer is not applied.
 :::
 
@@ -64,6 +64,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 1. To create an offer, click **Add offer** and choose the base plan from the list.
 
    
+
 <Zoom>
   <img src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
   style={{
@@ -81,6 +82,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 2. Enter the offer ID. It will be later used in the analytics and Adapty dashboard, so give it a meaningful name.
 
    
+
 <Zoom>
   <img src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
   style={{
@@ -102,6 +104,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    3. **Developer determined**: you can control who can use this offer from the app code. Be cautious using it in production to avoid possible fraud: customers can activate a free or discounted subscription over and over again. A good use case for this offer type is winning back churned subscribers.
 
    
+
 <Zoom>
   <img src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
   style={{
@@ -124,6 +127,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
       An offer can have two phases. In this case, the first phase must be a Free trial, and the second one is either a Single payment or a Discounted recurring payment. They would be applied in this order.
 
    
+
 <Zoom>
   <img src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
   style={{
@@ -141,6 +145,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 5. Activate the offer to use it in the app.
 
    
+
 <Zoom>
   <img src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
   style={{
