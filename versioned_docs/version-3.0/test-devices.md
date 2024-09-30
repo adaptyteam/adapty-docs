@@ -89,7 +89,9 @@ Let's review all possible options in detail.
 Both identifiers can be obtained in the **Profile** details of the Adapty Dashboard:
 
 1. Find the user's profile in the [**Adapty Profiles** -> **Event feed** tab](https://app.adapty.io/event-feed).
-   > 📘 To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
+  :::note
+  To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
+  :::
 2. Copy **Customer user ID** and **Adapty ID** field values in the profile details:
 
    
@@ -111,7 +113,7 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
 
 | Identifier | Usage |
 |----------|-----|
-| IDFA | <p>The Identifier for Advertisers (IDFA) is a unique device identifier assigned by Apple to a user’s device.</p><p></p><p>It's ideal for iOS devices as it never changes on its own, although you can manually reset it.</p><p></p><p>📘 Note: Since the rollout of iOS 14.5, advertisers must ask for user consent to access the IDFA. Ensure you are asking for consent in your app and you have provided it on your test device.</p> |
+| IDFA | <p>The Identifier for Advertisers (IDFA) is a unique device identifier assigned by Apple to a user’s device.</p><p></p><p>It's ideal for iOS devices as it never changes on its own, although you can manually reset it.</p><p>**Note**: Since the rollout of iOS 14.5, advertisers must ask for user consent to access the IDFA. Ensure you are asking for consent in your app and you have provided it on your test device.</p> |
 | IDFV | The Identifier for Vendors (IDFV) is a unique alphanumeric identifier assigned by Apple to all apps on a single device from the same publisher/vendor. It can change if you reinstall or update your app. |
 
 
@@ -120,7 +122,9 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
 Apple does not provide the IDFA by default. Obtain it from the profile attribution in the Adapty Dashboard:
 
 1. Find the user's profile in the [**Adapty Profiles** -> **Event feed** tab](https://app.adapty.io/event-feed).
-   > 📘 To find the exact profile, make a rare type of transaction (for example, a refund). In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
+  :::note
+  To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
+  :::
 2. Open the profile details and copy the **IDFA** field value in the **Attributes** section:
 
 
@@ -153,7 +157,7 @@ UIDevice.current.identifierForVendor
 
 | Identifier | Usage |
 |----------|-----|
-| Advertising ID | <p>The Advertising ID is a unique device identifier assigned by Google to a user’s device.</p><p></p><p>It's ideal for Android devices as it never changes on its own, although you can manually reset it.</p><p></p><p>📘 Note: To use it, turn off the **Opt out of Ads Personalization** in your **Ads** settings if you use Android 12 or higher.</p> |
+| Advertising ID | <p>The Advertising ID is a unique device identifier assigned by Google to a user’s device.</p><p>It's ideal for Android devices as it never changes on its own, although you can manually reset it.</p><p> **Note**: To use it, turn off the **Opt out of Ads Personalization** in your **Ads** settings if you use Android 12 or higher.</p>|
 | Android ID | The Android ID is a unique identifier for each combination of app-signing key, user, and device. Available on Android 8.0 and higher versions. |
 
 

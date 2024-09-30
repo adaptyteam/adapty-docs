@@ -137,9 +137,9 @@ Response parameters:
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 
-After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
+After fetching the paywall, check if it includes a `viewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `viewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
-For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. In cross-platform SDKs, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
+For paywalls with a `viewConfiguration`, use the `getViewConfiguration` method to load the view configuration. In cross-platform SDKs, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
 :::warning
 The result of the `createPaywallView` method can be used only once. If you need to reuse it, call the `createPaywallView` method again.
@@ -242,11 +242,23 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 </TabItem>
 </Tabs>
 
+Request parameters:
+
+| Parameter   | Presence | Description                                                  |
+| ----------- | -------- | ------------------------------------------------------------ |
+| **paywall** | Required | Paywall_id you received as a response parameter of the `getPaywall` method in the [Fetch paywall designed with Paywall Builder](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) step. |
+
+Response parameters:
+
+| Parameter             | Description                                                  |
+| --------------------- | ------------------------------------------------------------ |
+| **viewConfiguration** | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. You'll need it when [presenting the paywall](present-pb-paywalls) in your mobile app. |
+
 :::note
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
 
-Once you have successfully loaded the paywall and its view configuration, you can proceed to presenting the paywall in your mobile app.
+Once you have successfully loaded the paywall and its view configuration, you can proceed to [presenting the paywall](present-pb-paywalls) in your mobile app.
 
 ## Speed up paywall fetching with default audience paywall
 

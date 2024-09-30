@@ -60,7 +60,7 @@ Choose your convenient mode or use them both for more conclusions and ideas.
 
 
 <Zoom>
-  <img src={require('./img/005b9cb-cohorts.png').default}
+  <img src={require('./img/4d5ffdd-cohorts.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,7 +117,7 @@ You can hover on any cell in the cohort to view detailed metrics for this period
 
 
 <Zoom>
-  <img src={require('./img/396fdfb-cohort_details.png').default}
+  <img src={require('./img/2744770-cohort_details.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,7 +139,7 @@ Adapty offers a wide range of controls to help you gain valuable insights when l
 
 
 <Zoom>
-  <img src={require('./img/1a71117-cohorts_filter.png').default}
+  <img src={require('./img/ad10de0-cohorts_filter.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,11 +155,11 @@ Adapty offers a wide range of controls to help you gain valuable insights when l
 
 On the right of the control panel, there's a button to export cohort data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system.
 
-There are 4 metrics that can be shown in cohorts: Subscriptions, Revenue, ARPU, ARPPU, and ARPAS. You can either display them as absolute values or as a relative change from the start of the cohort.
+There are 4 metrics that can be shown in cohorts: Subscriptions, Payers, Revenue, ARPU, ARPPU, and ARPAS. You can either display them as absolute values or as a relative change from the start of the cohort.
 
 
 <Zoom>
-  <img src={require('./img/21850cb-cohorts_absolute.png').default}
+  <img src={require('./img/7f8484d-cohorts_absolute.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -177,7 +177,7 @@ You can set the date range for cohorts and choose the segment. The segment deter
 
 
 <Zoom>
-  <img src={require('./img/171cc90-cohorts_period.png').default}
+  <img src={require('./img/e20b676-cohorts_period.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

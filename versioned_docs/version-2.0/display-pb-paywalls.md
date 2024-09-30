@@ -9,12 +9,12 @@ With Adapty, you have the flexibility to configure paywalls remotely, defining t
 
 There are 2 ways to customize a paywall in the Adapty Dashboard: 
 
-- simple no-code tool called [**Paywall Builder**](/3.0/adapty-paywall-builder) 
+- simple no-code tool called [**Paywall Builder**](adapty-paywall-builder-legacy) 
 - flexible [**remote config**](customize-paywall-with-remote-config), a JSON with data needed to render the paywall on the device
 
 This topic describes the flow only for **Paywall Builder paywalls**. Displaying and handling the interactive parts of the paywall is different for remote config paywalls, so if you want to know more about it, please refer to the [Display remote config paywalls](display-remote-config-paywalls) topic.
 
-If you've [designed a paywall using the Paywall Builder](/3.0/adapty-paywall-builder), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains what should be shown within the paywall, how it should be shown, and how to process user's actions like making purchases. Moreover, this paywall takes care of logging the paywall view event on its own, so you don't need to worry about ensuring analytics receives the data. 
+If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder-legacy), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains what should be shown within the paywall, how it should be shown, and how to process user's actions like making purchases. Moreover, this paywall takes care of logging the paywall view event on its own, so you don't need to worry about ensuring analytics receives the data. 
 
 However, some coding still remains necessary. For instance, you'll need to retrieve the paywall itself, display it within the mobile app, and respond to the events it generates.
 

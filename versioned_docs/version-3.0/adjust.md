@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-[Adjust](https://www.adjust.com/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies see track their campaign performance. 
+[Adjust](https://www.adjust.com/) is one of the leading Mobile Measurement Partner (MMP) platforms, that collects and presents data from marketing campaigns. This helps companies track their campaign performance. 
 
 Adapty provides a complete set of data that lets you track [subscription events](events) from stores in one place. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in Adjust and analyze precisely how much revenue your campaigns generate.
 
@@ -17,7 +17,6 @@ The integration between Adapty and Adjust works in two main ways.
 
 1. **Receiving attribution data from Adjust**  
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
-
 
 <Zoom>
   <img src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
@@ -181,7 +180,159 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
 <Tabs>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+For Adjust version 5.0 or later, use the following:
+
+<Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
+```swift 
+Adjust.attribution { attribution in
+    guard let attributionDictionary = attribution?.dictionary() else { return }
+
+    Adjust.adid { adid in
+        guard let adid else { return }
+
+        Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```kotlin 
+Adjust.getAttribution { attribution ->
+    if (attribution == null) return@getAttribution
+
+    Adjust.getAdid { adid ->
+        if (adid == null) return@getAdid
+
+        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+
+```java
+Adjust.getAttribution(attribution -> {
+    if (attribution == null) return;
+
+    Adjust.getAdid(adid -> {
+        if (adid == null) return;
+
+        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid, error -> {
+            // handle the error
+        });
+    });
+});
+```
+
+</TabItem>
+
+<TabItem value="Flutter" label="Flutter" default>
+
+```javascript 
+import 'package:adjust_sdk/adjust.dart';
+import 'package:adjust_sdk/adjust_config.dart';
+
+try {
+  final adid = await Adjust.getAdid();
+
+  if (adid == null) {
+    // handle the error
+  }
+
+  final attributionData = await Adjust.getAttribution();
+
+  var attribution = Map<String, String>();
+
+  if (attributionData.trackerToken != null) attribution['trackerToken'] = attributionData.trackerToken!;
+  if (attributionData.trackerName != null) attribution['trackerName'] = attributionData.trackerName!;
+  if (attributionData.network != null) attribution['network'] = attributionData.network!;
+  if (attributionData.adgroup != null) attribution['adgroup'] = attributionData.adgroup!;
+  if (attributionData.creative != null) attribution['creative'] = attributionData.creative!;
+  if (attributionData.clickLabel != null) attribution['clickLabel'] = attributionData.clickLabel!;
+  if (attributionData.costType != null) attribution['costType'] = attributionData.costType!;
+  if (attributionData.costAmount != null) attribution['costAmount'] = attributionData.costAmount!.toString();
+  if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
+  if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
+
+  Adapty().updateAttribution(
+    attribution,
+    source: AdaptyAttributionSource.adjust,
+    networkUserId: adid,
+  );
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+
+```csharp 
+using static AdaptySDK.Adapty;
+using AdjustSdk;
+
+Adjust.GetAdid((adid) => {
+  Adjust.GetAttribution((attribution) => {
+    Dictionary<String, object> data = new Dictionary<String, object>();
+
+    data["network"] = attribution.Network;
+    data["campaign"] = attribution.Campaign;
+    data["adgroup"] = attribution.Adgroup;
+    data["creative"] = attribution.Creative;
+
+    String attributionString = JsonUtility.ToJson(data);
+    Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+      // handle the error
+    });
+  });
+});
+```
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+
+```typescript 
+import { Adjust, AdjustConfig } from "react-native-adjust";
+import { adapty } from "react-native-adapty";
+
+var adjustConfig = new AdjustConfig(appToken, environment);
+
+// Before submiting Adjust config...
+adjustConfig.setAttributionCallbackListener(attribution => {
+  // Make sure Adapty SDK is activated at this point
+  // You may want to lock this thread awaiting of `activate`
+  adapty.updateAttribution(attribution, "adjust");
+});
+
+// ...
+Adjust.create(adjustConfig);
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+For Adjust version 4.x or earlier, use the following:
+
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
@@ -191,8 +342,10 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
     }
 }
 ```
+
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
@@ -206,8 +359,10 @@ config.setOnAttributionChangedListener { attribution ->
 }
 Adjust.onCreate(config)
 ```
+
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
@@ -234,8 +389,10 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
         } catch (e) {}
       };
 ```
+
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
@@ -255,8 +412,10 @@ public void attributionChangedDelegate(AdjustAttribution attribution) {
     });
 }
 ```
+
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
@@ -273,9 +432,9 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 // ...
 Adjust.create(adjustConfig);
 ```
+
 </TabItem>
 </Tabs>
 
-
-
-
+</TabItem>
+</Tabs>

@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We’re thrilled to introduce our  [**New Paywall Builder**](/3.0/adapty-paywall-builder)! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
+We’re thrilled to introduce our  [**New Paywall Builder**](/docs/adapty-paywall-builder)! This advanced no-code tool is designed to make creating custom paywalls more intuitive and powerful than ever before, allowing you to craft beautiful, engaging paywalls with ease. No technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 

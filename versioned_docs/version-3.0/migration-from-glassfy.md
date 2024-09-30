@@ -36,7 +36,7 @@ When you migrate from Glassfy to Adapty, you can use all our features, including
 Here are the 3 easy steps to migrate your app from Glassfy to Adapty:
 
 1. Learn the core differences (very few of them) and set up an Adapty account _(15 minutes)_;
-2. Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity))  _(1 hour)_;
+2. Install Adapty SDK for your platform – [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](/2.0/sdk-installation-reactnative), [Flutter](/2.0/sdk-installation-flutter), [Unity](/2.0/sdk-installation-unity)  _(1 hour)_;
 3. Test and release the new version of your app _(30 minutes)._
 
 :::info
@@ -92,7 +92,7 @@ To sell the product in Adapty SDK, you have to create it in the dashboard first.
 
 #### Create paywalls
 
-Once you created the products, you should create the paywalls (aka offerings). A paywall can have one or more products. It can also have remote configuration, which allows you to customize the paywalls without new releases, localize the paywalls and onboarding and [much more](paywalls). You can even design and create paywalls without any coding with the [Adapty paywall builder](/3.0/adapty-paywall-builder).
+Once you created the products, you should create the paywalls (aka offerings). A paywall can have one or more products. It can also have remote configuration, which allows you to customize the paywalls without new releases, localize the paywalls and onboarding and [much more](paywalls). You can even design and create paywalls without any coding with the [Adapty paywall builder](adapty-paywall-builder).
 
 
 <Zoom>
@@ -157,7 +157,7 @@ Well done, now you can integrate Adapty SDK into your app!
 
 ### Install Adapty SDK to replace Glassfy SDK
 
-Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)).
+Install Adapty SDK for your platform ([iOS](sdk-installation-ios, [Android](sdk-installation-android), [React Native](/2.0/sdk-installation-reactnative), [Flutter](/2.0/sdk-installation-flutter), [Unity](/2.0/sdk-installation-unity)).
 
 #### SDK activation
 

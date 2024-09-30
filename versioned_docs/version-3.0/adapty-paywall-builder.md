@@ -16,7 +16,7 @@ We’re excited to introduce our **New Paywall Builder**, compatible with Adapty
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
 :::warning
-This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](../adapty-paywall-builder-legacy).
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](./2.0/adapty-paywall-builder-legacy).
 :::
 
 ## Structure of a paywall
@@ -46,6 +46,7 @@ To use the Adapty Paywall Builder:
 4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most. 
 
    
+
 <Zoom>
   <img src={require('./img/cdca1ee-builder_templates.png').default}
   style={{
@@ -63,6 +64,7 @@ To use the Adapty Paywall Builder:
 5. Click the **Choose** button to confirm your choice.
 
    
+
 <Zoom>
   <img src={require('./img/795b91b-builder_main_window.png').default}
   style={{
@@ -99,6 +101,7 @@ To migrate a paywall to the new Paywall Builder:
 2. Open the **Builder** tab.
 
    
+
 <Zoom>
   <img src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
   style={{
@@ -118,6 +121,7 @@ To migrate a paywall to the new Paywall Builder:
 6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
 
    
+
 <Zoom>
   <img src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
   style={{
