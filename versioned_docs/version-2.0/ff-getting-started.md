@@ -29,26 +29,32 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 ## Add the Adapty plugin as a dependency
 
+:::note
+
+To add the Adapty Plugin, you need a paid access to FlutterFlow.
+
+:::
+
 1. In your project, click **Settings and Integrations** from the left menu.
 <Zoom>
-  <img src={require('./FF_img/main_settings.png').default}
-  style={{
+    <img src={require('./FF_img/main_settings.png').default}
+    style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
+    }}
 />
 </Zoom>
-2. In the **App Settings** section on the left, select **Project dependencies**.
+2. In the **App Settings** section on the left, select **Project Dependencies**.
 <Zoom>
-  <img src={require('./FF_img/settings_dependencies.png').default}
-  style={{
+    <img src={require('./FF_img/settings_dependencies.png').default}
+    style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
+    }}
 />
 </Zoom>
 3. In the **Project Dependencies** window, click the **Add Dependency** button.
@@ -63,15 +69,15 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
   }}
 />
 </Zoom>
-4. From the list, choose **Adapty FF Plugun**.
+4. In the **FlutterFlow Libraries** field, enter `adapty-xtuel0`.
 <Zoom>
-  <img src={require('./FF_img/select_adapty_plugin.png').default}
-  style={{
+    <img src={require('./FF_img/select_adapty_plugin.png').default}
+    style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
+    }}
 />
 </Zoom>
 
@@ -98,15 +104,15 @@ For the Adapty Dashboard to recognize your app, you’ll need to provide a speci
 </Zoom>
 
 2. In the opened **Permissions** window, click the **Add Permission** button.
-3. In both the **iOS Permission Key** and **Android Permission Key** field, paste `AdaptyPublicSdkKey`.
+3. In both the **iOS Permission Key** and **Android Permission Key** fields, paste `AdaptyPublicSdkKey`.
 <Zoom>
-  <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
-  style={{
+    <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
+    style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
+    }}
 />
 </Zoom>
 
