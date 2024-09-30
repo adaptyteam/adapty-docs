@@ -229,7 +229,7 @@ Don't forget about Privacy Labels
 :::
 
 :::danger
-If you are using paywalls that were not built with [Adapty Paywall Builder](/3.0/adapty-paywall-builder), make sure to [send paywall views](present-remote-config-paywalls#track-paywall-view-events) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
+If you are using paywalls that were not built with [Adapty Paywall Builder](adapty-paywall-builder-legacy), make sure to [send paywall views](present-remote-config-paywalls#track-paywall-view-events) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
 :::
 
 If you have any questions about integrating Adapty SDK, feel free to contact us using [the website](https://adapty.io) (we use Intercom in the bottom right corner) or just email us at [support@adapty.io](mailto:support@adapty.io).

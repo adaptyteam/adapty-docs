@@ -9,7 +9,7 @@ With Adapty, you have the flexibility to configure paywalls remotely, defining t
 
 There are 2 ways to customize a paywall in the Adapty Dashboard: 
 
-- a simple no-code tool called [**Paywall Builder**](/3.0/adapty-paywall-builder) 
+- a simple no-code tool called [**Paywall Builder**](adapty-paywall-builder-legacy) 
 - flexible [**remote config**](customize-paywall-with-remote-config), a JSON with data needed to render the paywall on the device
 
 This topic describes the flow only for **Remote Config paywalls**. Displaying and handling the interactive parts of the paywall is different for Paywall Builder paywalls, so if you want to know more about it, please consult the [Display paywalls designed with Paywall Builder](display-pb-paywalls) topic.

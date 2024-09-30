@@ -4,7 +4,7 @@ description: ""
 metadataTitle: ""
 ---
 
-Paywalls configured with the [Paywall Builder](/3.0/adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
+Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 If you need to control or monitor the processes that take place on the purchase screen, implement the `AdaptyUiEventListener` methods.
 

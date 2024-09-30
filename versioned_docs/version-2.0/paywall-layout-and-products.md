@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[Adapty paywall builder](/3.0/adapty-paywall-builder) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty paywall builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
@@ -133,6 +133,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
 2. In the expanded section, pick how the button should look and where it should be. The preview on the right will instantly change to reflect your choice.
 
    
+
 <Zoom>
   <img src={require('./img/423fc40-close_button_definition.png').default}
   style={{
@@ -172,6 +173,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
 4. In the expanded section, specify the delay duration (in milliseconds) before the Close button starts fading in and indicate how long the button's fade-in animation should last.
 
    
+
 <Zoom>
   <img src={require('./img/c967c2b-fading_button.png').default}
   style={{

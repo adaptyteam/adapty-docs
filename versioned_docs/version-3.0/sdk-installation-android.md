@@ -12,21 +12,10 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
 - **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
-Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
-
-| Adapty SDK version | AdaptyUI SDK version |
-| :----------------- | :------------------- |
-| 2.7.x–2.9.x        | 2.0.x                |
-| 2.10.0             | 2.1.2                |
-| 2.10.2             | 2.1.3                |
-| 2.11.0 - 2.11.3    | 2.11.0 - 2.11.2      |
-| 2.11.5             | 2.11.3               |
-| 3.0.0              | 3.0.0                |
-
 You can install Adapty SDK via Gradle.
 
 :::danger
-Go through release checklist before releasing your app
+Go through the release checklist before releasing your app
 
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
@@ -38,17 +27,20 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation 'io.adapty:android-sdk:3.0.0'
-    implementation 'io.adapty:android-ui:3.0.0'
+    implementation platform('io.adapty:adapty-bom:3.0.0')
+    implementation 'io.adapty:android-sdk'
+    implementation 'io.adapty:android-ui'
 }
 ```
 </TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
 ```kotlin 
 dependencies {
     ...
-    implementation("io.adapty:android-sdk:3.0.0")
-    implementation("io.adapty:android-ui:3.0.0")
+    implementation(platform("io.adapty:adapty-bom:3.0.0"))
+    implementation("io.adapty:android-sdk")
+    implementation("io.adapty:android-ui")
 }
 ```
 </TabItem>
@@ -58,13 +50,13 @@ dependencies {
 
 [versions]
 ..
-adapty = "3.0.0"
-adaptyUi = "3.0.0"
+adaptyBom = "3.0.0"
 
 [libraries]
 ..
-adapty = { group = "io.adapty", name = "android-sdk", version.ref = "adapty" }
-adapty-ui = { group = "io.adapty", name = "android-ui", version.ref = "adaptyUi" }
+adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
+adapty = { module = "io.adapty:android-sdk" }
+adapty-ui = { module = "io.adapty:android-ui" }
 
 
 
@@ -72,6 +64,7 @@ adapty-ui = { group = "io.adapty", name = "android-ui", version.ref = "adaptyUi"
 
 dependencies {
     ...
+    implementation(libs.adapty.bom)
     implementation(libs.adapty)
     implementation(libs.adapty.ui)
 }

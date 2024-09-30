@@ -45,9 +45,11 @@ Note that at the very least you need to implement the reactions to both `Close` 
 This method is _not_ invoked when user taps the system back button instead of the close icon on the screen.
 :::
 
-> 💡 Login Action
-> 
-> If you have configured Login Action in the dashboard, you should implement reaction for custom action with id `"login"`
+:::info
+
+If you have configured Login Action in the dashboard, you should implement reaction for custom action with id `"login"`
+
+:::
 
 #### Product selection
 

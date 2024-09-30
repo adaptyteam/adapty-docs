@@ -9,10 +9,10 @@ import TabItem from '@theme/TabItem';
 Restoring Purchases in both iOS and Android is a feature that allows users to regain access to previously purchased content, such as subscriptions or in-app purchases, without being charged again. This feature is especially useful for users who may have uninstalled and reinstalled the app or switched to a new device and want to access their previously purchased content without paying again.
 
 :::note
-In paywalls built with [Paywall Builder](/3.0/adapty-paywall-builder), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
+In paywalls built with [Paywall Builder](adapty-paywall-builder-legacy), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
 :::
 
-To restore a purchase if you do not use the [Paywall Builder](/3.0/adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
+To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder-legacy) to customize the paywall, call `.restorePurchases()` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
