@@ -22,6 +22,20 @@ import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsM
 import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';
 import MissingOfferID from './reusable/MissingOfferID.md';
 import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
+import FamilySharePrice from './reusable/FamilySharePrice.md'; 
+import RefundDateNull from './reusable/RefundDateNull.md'; 
+import RefundDate from './reusable/RefundDate.md';
+import originallyPurchasedDate from './reusable/originallyPurchasedDate.md';
+import StoreTransactionId from './reusable/StoreTransactionId.md';
+import GracePeriodBilling from './reusable/GracePeriodBilling.md';
+import ExpiresDate from './reusable/ExpiresDate.md';
+import RenewStatusChangedDate from './reusable/RenewStatusChangedDate.md';
+import BillingIssueDetectedDate from './reusable/BillingIssueDetectedDate.md';
+import GracePeriodExpiresDate from './reusable/GracePeriodExpiresDate.md';
+
+
+
+
 
 
 
@@ -42,29 +56,67 @@ The request is successful, the response will have the following data:
 
 ## 400 Bad request
 
-### Access level does not exist
+### billing_issue_detected_at_date_comparison_error
 
-<AccessLevelDoesNotExist />
+<BillingIssueDetectedDate />
 
-### Free trial price must be 0
+### expires_date_error
+
+<ExpiresDate />
+
+### family_share_price_error
+
+<FamilySharePrice />
+
+### free_trial_price_error
 
 <FreeTrialPrice />
 
-### Missing offer ID for promotional offer or offer code
+### grace_period_expires_date_error
+
+<GracePeriodExpiresDate />
+
+### missing_offer_id
 
 <MissingOfferID />
 
-### No profile access level
+### originally_purchased_date_error
+
+<originallyPurchasedDate />
+
+### paid_access_level_does_not_exist
+
+<AccessLevelDoesNotExist />
+
+### profile_paid_access_level_does_not_exist
 
 <AccessLevelNoProfileAccessLevel />
 
-### Profile not found
+### profile_does_not_exist
 
 <AccessLevelProfileNotFound /> 
 
-### Revocation date is more than current expiration date
+### refund_date_error
+
+<RefundDate />
+
+### refund_fields_error
+
+<RefundDateNull />
+
+### renew_status_changed_date_error
+
+<RenewStatusChangedDate />
+
+### revocation_date_more_than_expiration_date
 
 <RevocationDateIsMoreThanExpirationDate />
+
+### store_transaction_id_error
+
+<StoreTransactionId />
+
+
 
 ---
 

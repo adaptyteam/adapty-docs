@@ -8,7 +8,7 @@ Another possible reason is that you added the `offer_id` parameter and left it `
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | Buletted: <ul><li> **source**: (string) Always `offer_type`</li><li> **errors**: Descriptive name of the error. </li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `offer_type`</li><li> **errors**: Descriptive name of the error. </li></ul> |
 | error_code  | String  | Short error name. Always: `free_trial_price_error`           |
 | status_code | Integer | HTTP status. Always `400`                                    |
 

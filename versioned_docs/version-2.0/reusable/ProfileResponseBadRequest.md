@@ -6,7 +6,7 @@ The request failed due to some error in a field
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | Buletted: <ul><li> **source**: (string) Field that caused the error(s)</li><li> **errors**: (list) listed errors</li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Field that caused the error(s)</li><li> **errors**: (list) listed errors</li></ul> |
 | error_code  | String  | Short error name                                             |
 | status_code | Integer | HTTP status, always `400`                                    |
 

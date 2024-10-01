@@ -16,7 +16,6 @@ import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from './reusable/ProfileResponseUnauthorized.md';
 import ResponseExample from './reusable/responseExample.md';
 import AccessLevel from './reusable/AccessLevel.md';
-import GrantAccessLevelRequestExample from './reusable/GrantAccessLevelRequestExample.md';
 import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
 import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
 import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';

@@ -8,7 +8,7 @@ The request failed because the profile defined in the request header was not fou
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | Buletted: <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error. </li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error. </li></ul> |
 | error_code  | String  | Short error name. Possible value: `profile_does_not_exist`   |
 | status_code | Integer | HTTP status. Always `400`                                    |
 

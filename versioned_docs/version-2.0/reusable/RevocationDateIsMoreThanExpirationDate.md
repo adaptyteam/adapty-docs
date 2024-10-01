@@ -6,7 +6,7 @@ The request failed because the `revoke_at` you defined in the request is later t
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | Buletted: <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
 | error_code  | String  | Short error name. Always `revocation_date_more_than_expiration_date` |
 | status_code | Integer | HTTP status. Always `400`                                    |
 

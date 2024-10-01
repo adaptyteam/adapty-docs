@@ -6,7 +6,7 @@ The request failed because the profile defined in the request does not have the 
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | Buletted: <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
 | error_code  | String  | Short error name. Always `profile_paid_access_level_does_not_exist` |
 | status_code | Integer | HTTP status. Always `400`                                    |
 

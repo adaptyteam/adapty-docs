@@ -12,7 +12,6 @@ import Subscription from './reusable/Subscription.md';
 import NonSubscription from './reusable/NonSubscription.md';
 import Offer from './reusable/Offer.md';
 import Price from './reusable/Price.md';
-import Purchase from './reusable/Purchase.md';
 
 ## Objects
 
