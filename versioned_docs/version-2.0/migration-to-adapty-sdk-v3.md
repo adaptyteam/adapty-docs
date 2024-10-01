@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](/doc/adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
+Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](/docs/adapty-paywall-builder), the new version of the no-code user-friendly tool to create paywalls. With its maximum flexibility and rich design capabilities, your paywalls will become most effective and profitable.
 
 ## Upgrade process includes
 
