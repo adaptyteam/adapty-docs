@@ -32,7 +32,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 ## How to start designing a paywall with new Paywall Builder
 
 :::warning
-The new Paywall Builder is available for iOS only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-to-adapty-sdk-v3) for your new paywalls to function properly!
+The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-to-adapty-sdk-v3) for your new paywalls to function properly!
 :::
 
 To use the Adapty Paywall Builder:
