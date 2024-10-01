@@ -28,11 +28,7 @@ import TabItem from '@theme/TabItem';
 
 Adapty is a versatile platform designed to help mobile apps grow. Whether you’re just starting out or already have thousands of users, Adapty lets you save months on integrating in-app purchases and double subscription revenue with paywall management.
 
-:::info
-The Adapty plugin will be available with the release of FlutterFlow 5.0 on September 24th.
-:::
-
-The Adapty plugin for FlutterFlow lets you leverage all of Adapty’s features without any coding. You can design paywall pages in FlutterFlow, enable purchases for them and then remotely control which products get displayed on them, including targeting to specific user groups or A/B testing. And after you release your app, you can instantly access detailed analytics of your customers purchases right in our dashboard.
+The Adapty plugin for FlutterFlow lets you leverage all of Adapty’s features without any coding. You can design paywall pages in FlutterFlow, enable purchases for them, and then remotely control which products get displayed on them, including targeting to specific user groups or A/B testing. And after you release your app, you can instantly access detailed analytics of your customers' purchases right in our dashboard.
 
 Want to update the products available on your paywall? It’s simple! Make changes in just a few clicks within the Adapty Dashboard, and your customers will see the new products immediately — no need to release a new app version!
 

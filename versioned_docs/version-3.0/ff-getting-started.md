@@ -2,6 +2,7 @@
 title: "Getting started"
 description: ""
 metadataTitle: ""
+
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -30,27 +31,27 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 ## Add the Adapty plugin as a dependency
 
 1. In your project, click **Settings and Integrations** from the left menu.
-<Zoom>
-  <img src={require('./FF_img/main_settings.png').default}
-  style={{
+   <Zoom>
+     <img src={require('./FF_img/main_settings.png').default}
+     style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+     }}
+   />
+   </Zoom>
 2. In the **App Settings** section on the left, select **Project dependencies**.
-<Zoom>
-  <img src={require('./FF_img/settings_dependencies.png').default}
-  style={{
+   <Zoom>
+     <img src={require('./FF_img/settings_dependencies.png').default}
+     style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+     }}
+   />
+   </Zoom>
 3. In the **Project Dependencies** window, click the **Add Dependency** button.
 
 <Zoom>
@@ -63,22 +64,21 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
   }}
 />
 </Zoom>
-4. From the list, choose **Adapty FF Plugun**.
-<Zoom>
-  <img src={require('./FF_img/select_adapty_plugin.png').default}
-  style={{
+
+4. In the **FlutterFlow Libraries** field, enter `adapty-xtuel0`.
+   <Zoom>
+     <img src={require('./FF_img/select_adapty_plugin.png').default}
+     style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-4. Click the **Add** button.
+     }}
+   />
+   </Zoom>
+5. Click the **Add** button.
 
 The Adapty FF Plugin will now be added as a dependency to your project. In the **Adapty FF Plugin** window, you’ll find all the Adapty resources that have been imported into your project.
-
 
 ## Initiate Adapty plugin
 
@@ -99,23 +99,21 @@ For the Adapty Dashboard to recognize your app, you’ll need to provide a speci
 
 2. In the opened **Permissions** window, click the **Add Permission** button.
 3. In both the **iOS Permission Key** and **Android Permission Key** field, paste `AdaptyPublicSdkKey`.
-<Zoom>
-  <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
-  style={{
+   <Zoom>
+     <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
+     style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
+     }}
+   />
+   </Zoom>
 4. For the **Permission Message**, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
 
 After completing these steps, you'll be able to call your paywall in your FlutterFlow app and enable purchases through it.
 
 ## What's next? 
-
 
 1. [Create an action flow](ff-action-flow) for handling Adapty paywall products and their data in FlutterFlow.
 2. [Map the received data to the paywall](ff-add-variables-to-paywalls) you designed in FlutterFlow.
