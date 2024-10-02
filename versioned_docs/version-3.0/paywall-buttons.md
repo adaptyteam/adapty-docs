@@ -29,5 +29,6 @@ When opening another paywall, it’s done the usual way. That means fetching the
 
 **What's next:**
 
-- [Handle paywall actions](ios-handling-events#actions) 
+- [Handle paywall actions in iOS](ios-handling-events#actions) 
+- [Handle paywall actions in Android](android-handling-events#actions) 
 
