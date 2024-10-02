@@ -17,7 +17,9 @@ To control or monitor processes occurring on the paywall screen within your mobi
 
 #### Actions
 
-If a user performs some action (`close`, `openURL(url:)` or `custom(id:)`), the method below will be invoked. Note that this is just an example and you can implement the response to actions differently:
+When a user performs an action (like clicking a close, restore, custom button, or opening a URL), the method below will be triggered. You’ll need to define what each action should do. To identify the action, use its **Button action ID** from the Adapty Dashboard. 
+
+Here’s an example, but feel free to handle the actions in your own way:
 
 ```swift title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
@@ -38,11 +40,21 @@ func paywallController(_ controller: AdaptyPaywallController,
 }
 ```
 
-For example, if a user taps the close button, the action `close` will occur and you are supposed to dismiss the paywall. Note that at the very least you need to implement the reactions to both `close` and `openURL`.
+Keep in mind that predefined and custom actions are handled differently. For example, if a user taps the close button, the `close` action will be triggered. But if the user taps a custom button, like **Login** or **Open another paywall**, the `custom(id)` action will be triggered.
 
-> 💡 Login Action
-> 
-> If you have configured Login Action in the dashboard, you should also implement reaction for custom action with id `"login"`.
+The following predefined actions are supported:
+
+- `close`
+- `restore`
+- `openURL(url)`
+
+Custom paywall actions are processed by the `custom(id)` action, where `id` is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall".
+
+:::tip
+
+Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
+
+:::
 
 #### Product selection
 
