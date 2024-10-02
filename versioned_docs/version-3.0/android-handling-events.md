@@ -19,7 +19,9 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 #### Actions
 
-If a user has performed some action  (`Close`, `OpenURL` or `Custom`, this method will be invoked:
+When a user performs an action (like close, restore, login, open URL, or a custom action), the method below will be triggered. You’ll need to define what each action should do. To identify the action, use its **Button action ID** from the Adapty Dashboard.
+
+Here’s an example, but feel free to handle the actions in your own way:
 
 ```kotlin title="Kotlin"
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
@@ -33,21 +35,19 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 }
 ```
 
-The following action types are supported: 
+Keep in mind that predefined and custom actions are handled differently. For example, if a user taps the close button, the `close` action will be triggered. But if the user taps a custom button, like **Login** or **Open another paywall**, the `custom(id)` action will be triggered.
 
-- `Close`
-- `OpenUrl(url)`
-- `Custom(id)`
+The following predefined actions are supported:
 
-Note that at the very least you need to implement the reactions to both `Close` and `OpenURL`. For example, if a user taps the close button, the action `Close` will occur and you are supposed to dismiss the paywall. 
+- `close`
+- `restore`
+- `openURL(url)`
 
-:::warning
-This method is _not_ invoked when user taps the system back button instead of the close icon on the screen.
-:::
+Custom paywall actions are processed by the `custom(id)` action, where `id` is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall".
 
-:::info
+:::tip
 
-If you have configured Login Action in the dashboard, you should implement reaction for custom action with id `"login"`
+Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
 
 :::
 
