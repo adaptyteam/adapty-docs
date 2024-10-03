@@ -81,15 +81,16 @@ GET
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-#### Responses
+#### Successful response: 200 - Success
+
+<ProfileResponse />
 
 <details>    
-<summary>**200 - Success** (click to expand)</summary> 
-<ProfileResponse />
-**Response example**
+  <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
 
+#### Errors
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
@@ -128,24 +129,28 @@ POST
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Responses
+#### Successful response: 200 - Success
+
+<ProfileResponse />
 
 <details>    
-<summary>**200 - Success** (click to expand)</summary> 
-<ProfileResponse />
-Response example
+  <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
 
-<details>    
-<summary>**400 - Bad request** (click to expand)</summary> 
-<ProfileResponseBadRequest />  
-</details>
+#### Errors
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
-<ProfileResponseUnauthorized />  
+<ProfileResponseUnauthorized /> 
 </details>
+
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+<ProfileResponseNotFound />  
+</details>
+
 
 ___
 
@@ -175,14 +180,17 @@ PATCH
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Responses
+#### Successful response: 200 - Success
+
+<ProfileResponse />
 
 <details>    
-<summary>**200 - Success** (click to expand)</summary> 
-<ProfileResponse />
-Response example
+  <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
+
+#### Errors
+
 
 <details>    
 <summary>**400 - Bad request** (click to expand)</summary> 
@@ -227,12 +235,14 @@ DELETE
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-#### Responses
+#### Successful response: 204 - Success
 
-<details>    
-<summary>**204 - Success** (click to expand)</summary> 
-<ProfileResponse />
-</details>
+##### Header:
+
+| Name       | Type   | Description                                                  |
+| :--------- | ------ | :----------------------------------------------------------- |
+| Request-Id | String | Request ID, all backend logs have this id Example: 758f01dfd9e74ccfbabb4934241c4966 |
+
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
@@ -290,15 +300,17 @@ POST
 }
   ```
 </details>
-#### Responses
+#### Successful response
+
+<ProfileResponse />
 
 <details>    
-<summary>**200 - Success** (click to expand)</summary> 
-  <p> </p>
-<ProfileResponse />
-Response example
+  <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
+
+#### Errors
+
 
 <details>    
 <summary>**400 - Bad request** (click to expand)</summary> 

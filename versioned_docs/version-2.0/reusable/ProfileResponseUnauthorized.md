@@ -6,7 +6,7 @@ The request failed because of improper or missed authorization. Refer to the [Au
 
 The request failed due to the fact that the defined profile is not found
 
-###### Body
+###### Body:
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -14,7 +14,7 @@ The request failed due to the fact that the defined profile is not found
 | error_code  | String  | Short error name. Always `not_authenticated`                 |
 | status_code | Integer | HTTP status. Always `401`                                    |
 
-###### Response example
+###### Response example:
 
 ```json
 {

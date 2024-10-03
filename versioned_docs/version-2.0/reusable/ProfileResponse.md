@@ -2,14 +2,12 @@
 
 <p> </p>
 
-This response means that the request was successful
-
-###### Header
+###### Header:
 
 | Name       | Type   | Description                                                  |
 | :--------- | ------ | :----------------------------------------------------------- |
 | Request-Id | String | Request ID, all backend logs have this id<br />Example: 758f01dfd9e74ccfbabb4934241c4966 |
 
-###### Body
+###### Body:
 
 [Profile object](server-side-api-specs#profile-object)
