@@ -1,5 +1,5 @@
 ---
-title: "Getting started with server-side API"
+title: "Server-side API"
 description: ""
 metadataTitle: ""
 
@@ -7,13 +7,15 @@ metadataTitle: ""
 
 With API you can:
 
-1. Get user's subscription status.
+1. Get the user's subscription status and full details.
 2. Activate a subscription for a user with an [access level](access-level).
-3. Get user's attributes.
-4. Set user's attributes.
+3. Grant or revoke the user's [access level](access-level) without providing a transaction ID.
+4. Get or set user's attributes.
+
+
 
 :::note
-You can't get subscription events via API, but you can use [Webhook](webhook) or direct integration with a service that you're using.
+To get subscription events, use a [Webhook](webhook) integration with Adapty or direct integration with the service that you're using.
 :::
 
 To correctly work with API you need to use a unique ID for your users. This may be an email, a phone number, your internal ID. Without such an ID it's impossible to identify the same user on multiple platforms.

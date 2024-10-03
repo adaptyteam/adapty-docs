@@ -76,6 +76,10 @@ The request is successful, the response will have the following data:
 
 <GracePeriodExpiresDate />
 
+### grace_period_billing_error
+
+<GracePeriodBilling />
+
 ### missing_offer_id
 
 <MissingOfferID />

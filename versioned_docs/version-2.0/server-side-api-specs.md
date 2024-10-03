@@ -24,9 +24,14 @@ import Purchase from './reusable/Purchase.md';
 import Subscription from './reusable/Subscription.md';
 import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
 import MissingOfferID from './reusable/MissingOfferID.md'; 
-
-
-
+import BillingIssueDetectedDate from './reusable/BillingIssueDetectedDate.md'; 
+import ExpiresDate from './reusable/ExpiresDate.md'; 
+import FamilySharePrice from './reusable/FamilySharePrice.md'; 
+import GracePeriodBilling from './reusable/GracePeriodBilling.md'; 
+import RefundDate from './reusable/RefundDate.md'; 
+import RefundDateNull from './reusable/RefundDateNull.md'; 
+import RenewStatusChangedDate from './reusable/RenewStatusChangedDate.md'; 
+import StoreTransactionId from './reusable/StoreTransactionId.md'; 
 
 
 Adapty's API lets you access and modify your Adapty data programmatically. We also support [webhooks](webhook), where we notify your server of events as they happen.
@@ -129,7 +134,9 @@ POST
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Successful response: 200 - Success
+#### Successful response
+
+**200 - Success**
 
 <ProfileResponse />
 
@@ -180,7 +187,9 @@ PATCH
 
 <details>    <summary>Example request (click to expand)</summary> <CreateProfileRequestExample /> </details>
 
-#### Successful response: 200 - Success
+#### Successful response
+
+**200 - Success**
 
 <ProfileResponse />
 
@@ -235,7 +244,9 @@ DELETE
 
 None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
 
-#### Successful response: 204 - Success
+#### Successful response
+
+**204 - Success**
 
 ##### Header:
 
@@ -253,6 +264,166 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
 </details>
+## Transactions
+
+### Set transaction
+
+Creates a new transaction for an end user of your app in Adapty and provides access level. The transaction created by this method will appear in your [analytics](https://app.adapty.io/analytics) and [**Event Feed**](https://app.adapty.io/event-feed) and well as will be sent to all integrations.
+
+This method is recommended over the [Grant access level](server-side-api-specs#grant-access-level) one.
+
+#### Endpoint
+
+```
+https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
+```
+
+#### Method
+
+```
+POST
+```
+
+#### Parameters
+
+Either the **Purchase** or **Subscription** object:
+
+##### Purchase object
+
+<Purchase />
+
+##### Subscription object
+
+<Subscription />
+
+#### Request example
+
+<details>    
+<summary>Request example (click to expand)</summary>
+```json title="JSON"
+{
+  "store": "app_store",
+  "environment": "Production",
+  "store_product_id": "1year.premium",
+  "store_transaction_id": "30002109551456",
+  "store_original_transaction_id": "30002109561269",
+  "offer_category": "introductory",
+  "offer_type": "free_trial",
+  "offer_id": "annual_free_trial",
+  "is_family_shared": false,
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 0
+  },
+  "purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "refunded_at": "2022-10-15T09:42:50.000000+0000",
+  "cancellation_reason": "voluntarily_cancelled",
+  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d"
+}
+```
+</details>
+
+#### Successful response: 200 - Success
+
+<ProfileResponse />
+
+<details>    
+  <summary>Successful response example</summary>
+<ResponseExample />  
+</details>
+
+
+#### Errors
+
+**400 - Bad request**
+
+<div style={{ marginLeft: '20px' }}>
+<details>    
+<summary>**free_trial_price_error** (click to expand)</summary> 
+  <p> </p>
+<FreeTrialPrice />
+</details>
+<details>    
+<summary>**missing_offer_id** (click to expand)</summary> 
+  <p> </p>
+<MissingOfferID />
+</details>
+<details>    
+<summary>**profile_does_not_exist** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound /> 
+</details>
+<details>    
+<summary>**family_share_price_error** (click to expand)</summary> 
+  <p> </p>
+<FamilySharePrice />
+</details>
+<details>    
+<summary>**refund_fields_error** (click to expand)</summary> 
+  <p> </p>
+<RefundDateNull />
+</details>
+<details>    
+<summary>**refund_date_error** (click to expand)</summary> 
+  <p> </p>
+<RefundDate />
+</details>
+<details>    
+<summary>**originally_purchased_date_error** (click to expand)</summary> 
+  <p> </p>
+<originallyPurchasedDate />
+</details>
+<details>    
+<summary>**store_transaction_id_error** (click to expand)</summary> 
+  <p> </p>
+<StoreTransactionId />
+</details>
+<details>    
+<summary>**grace_period_billing_error** (click to expand)</summary> 
+  <p> </p>
+<GracePeriodBilling />
+</details>
+<details>    
+<summary>**expires_date_error** (click to expand)</summary> 
+  <p> </p>
+<ExpiresDate />
+</details>
+<details>    
+<summary>**renew_status_changed_date_error** (click to expand)</summary> 
+  <p> </p>
+<RenewStatusChangedDate />
+</details>
+<details>    
+<summary>**billing_issue_detected_at_date_comparison_error** (click to expand)</summary> 
+  <p> </p>
+<BillingIssueDetectedDate />
+</details>
+<details>    
+<summary>**grace_period_expires_date_error** (click to expand)</summary> 
+  <p> </p>
+<FreeTrialPrice />
+</details>
+</div>
+<p> </p>
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseUnauthorized />  
+</details>
+
+
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+  <p> </p>
+<ProfileResponseNotFound />  
+</details>
+
+
+___
+
+
+
 
 ##  Access levels
 
@@ -264,9 +435,11 @@ Info about current customer’s [access level](https://adapty.io/docs/access-lev
 
 ### Grant access level
 
-Provides access level to your end-user without providing an info on the transaction. This comes in handy if you have bonuses for referrals or other events related to your products.
+Provides access level to your end-user without providing info on the transaction. This comes in handy if you have bonuses for referrals or other events related to your products. 
 
-To grant access with providing the transaction details, please use the Set Transaction request <!--- ??? --->
+The access level provided by this method will not be reflected in your [analytics](https://app.adapty.io/analytics). It will be sent to only webhook integration, and only in this case will appear in the **Event Feed**. If webhook integration is not enabled, granting access level will not be shown in the [**Event Feed**](https://app.adapty.io/event-feed).
+
+To grant access and simultaneously provide the transaction details, please use the [Set Transaction request](server-side-api-specs#set-transaction) which is recommended.
 
 #### Endpoint
 
@@ -300,7 +473,7 @@ POST
 }
   ```
 </details>
-#### Successful response
+#### Successful response: 200 - Success
 
 <ProfileResponse />
 
@@ -308,17 +481,26 @@ POST
   <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
-
 #### Errors
 
+ **400 - Bad request**
+<div style={{ marginLeft: '20px' }}>
 
-<details>    
-<summary>**400 - Bad request** (click to expand)</summary> 
+<details> 
+<summary>**paid_access_level_does_not_exist** (click to expand)</summary> 
   <p> </p>
-<AccessLevelProfileNotFound />  
 <AccessLevelDoesNotExist />
+
 </details>
 
+<details> 
+<summary> **profile_does_not_exist** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound />  
+</details>
+
+</div>
+<p> </p>
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
   <p> </p>
@@ -368,32 +550,46 @@ POST
 }
 ```
 </details>    
-#### Responses
+#### Successful response: 200 - Success
+
+<ProfileResponse />
 
 <details>    
-<summary>**200 - Success** (click to expand)</summary> 
-  <p> </p>
-<ProfileResponse />
-Response example
+  <summary>Successful response example</summary>
 <ResponseExample />  
 </details>
-<details>    
-<summary>**400 - Bad request** (click to expand)</summary> 
- #### Access level does not exist
+
+#### Errors
+
+**400 - Bad request**
+<div style={{ marginLeft: '20px' }}>
+
+<details> 
+<summary>**paid_access_level_does_not_exist** (click to expand)</summary> 
+  <p> </p>
 <AccessLevelDoesNotExist />
----
-#### No profile access level
-<AccessLevelNoProfileAccessLevel />
----
-#### Profile not found
-<AccessLevelProfileNotFound /> 
----
-#### Revocation date is more than current expiration date
-<RevocationDateIsMoreThanExpirationDate />
-
-
 </details>
 
+<details>    
+<summary> **profile_does_not_exist** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelProfileNotFound />  
+</details>
+
+<details> 
+<summary>**profile_paid_access_level_does_not_exist** (click to expand)</summary> 
+  <p> </p>
+<AccessLevelNoProfileAccessLevel />
+</details>
+
+<details> 
+<summary>**revocation_date_more_than_expiration_date** (click to expand)</summary> 
+  <p> </p>
+<RevocationDateIsMoreThanExpirationDate />
+</details>
+
+</div>
+<p> </p>
 
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
@@ -409,16 +605,17 @@ Response example
 
 ___
 
-## Transactions
+## Purchase in Stripe
+### Validate purchase, provide access level to customer, and import their transaction history
 
-### Set transaction
+Validates a purchase using the provided Stripe token using the credentials of Stripe in your App Settings inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Stripe to the profile in Adapty with the specified `customer_user_id`. If there was no profile with this `customer_user_id` before — it will be created.
 
-Creates a new transaction for an end user of your app in Adapty and provides access level.
+Profile events are generated along the way and imported transactions are counted towards MTR.
 
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
+https://api.adapty.io/api/v1/server-side-api/purchase/stripe/token/validate/
 ```
 
 #### Method
@@ -429,122 +626,75 @@ POST
 
 #### Parameters
 
-Either the **Purchase** or **Subscription** object:
-
-##### Purchase object
-
-<Purchase />
-
-##### Subscription object
-
-<Subscription />
-
-#### Request example
-<details>    
-<summary>Request example (click to expand)</summary>
-```json title="JSON"
-{
-  "store": "app_store",
-  "environment": "Production",
-  "store_product_id": "1year.premium",
-  "store_transaction_id": "30002109551456",
-  "store_original_transaction_id": "30002109561269",
-  "offer_category": "introductory",
-  "offer_type": "free_trial",
-  "offer_id": "annual_free_trial",
-  "is_family_shared": false,
-  "price": {
-    "country": "US",
-    "currency": "USD",
-    "value": 0
-  },
-  "purchased_at": "2022-10-12T09:42:50.000000+0000",
-  "refunded_at": "2022-10-15T09:42:50.000000+0000",
-  "cancellation_reason": "voluntarily_cancelled",
-  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d"
-}
-```
-</details>
-#### Responses
-
-<details>    
-<summary>**200 - Success** (click to expand)</summary> 
-  <p> </p>
-<ProfileResponse />
-Response example
-<ResponseExample />  
-</details>
-<details>    
-<summary>**400 - Bad request** (click to expand)</summary> 
-  <p> </p>
-#### Free trial price must be 0
-<FreeTrialPrice />
----
-#### Missing offer ID for promotional offer or offer code
-<MissingOfferID />
----
-#### Profile not found
-<AccessLevelProfileNotFound /> 
----
-
-
-
-
-</details>
-
-
-<details>    
-<summary>**401 - Unauthorized** (click to expand)</summary> 
-  <p> </p>
-<ProfileResponseUnauthorized />  
-</details>
-
-<details>    
-<summary>**404 - Not found** (click to expand)</summary> 
-  <p> </p>
-<ProfileResponseNotFound />  
-</details>
-
-___
-
-
-
-### Validate a purchase from Stripe, provide access level to a customer, and import his transaction history from Stripe
-
-```
-POST: /api/v1/sdk/purchase/stripe/token/validate/
-```
-
 :::warning
-This request must use a different Content-Type: `Content-Type: application/vnd.api+json'`
+This request requires different authorization parameters:
+
+- **Base URL**: https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/
+- **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header with value `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
+- **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/vnd.api+json`.
+- **Body**:  The API expects the request to use the body as JSON.
+
 :::
 
-Request parameters:
+| Param                  | Type   | Required          | Nullable           | Description                                                  |
+| :--------------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
+| **customer\_user\_id** | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](http://localhost:3000/docs/identifying-users) in your mobile app code via Adapty SDK |
+| **stripe\_token**      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
 
-| Param                  | Type | Required | Nullable | Description                                                                                                                                            |
-| :--------------------- | :--- | :------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **customer\_user\_id** | str  | ✅        | ❌        | Developer's internal customer ID                                                                                                                       |
-| **stripe\_token**      | str  | ✅        | ❌        | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
+#### Example request
 
-Sample request:
 
-```json title="CURL"
-curl
---location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
---header 'Content-Type: application/vnd.api+json' \
---header 'Authorization: Api-Key <PUBLIC_OR_PRIVATE_KEY' \
---data-raw '{
-  "data": {
-    "type": "stripe_receipt_validation_result",
-    "attributes": {
-        "customer_user_id": "<CUSTOMER_USER_ID>",
-        "stripe_token": "sub_1OM8brJTlbIG45BdDRFOHWAU"
+  ```curl title="CURL"
+  --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
+  --header 'Content-Type: application/vnd.api+json' \
+  --header 'Authorization: Api-Key <PUBLIC_OR_PRIVATE_KEY' \
+  --data-raw '{
+    "data": {
+      "type": "stripe_receipt_validation_result",
+      "attributes": {
+          "customer_user_id": "<CUSTOMER_USER_ID>",
+          "stripe_token": "sub_1OM8brJTlbIG45BdDRFOHWAU"
+      }
     }
-  }
-}'
+  }'
+  ```
+
+
+#### Successful response: 200 - Success
+
+```json
+{
+  "data": null
+}
 ```
 
-Validates a purchase using provided Stripe token using the credentials of Stripe in your App Settings inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Stripe to the profile in Adapty with the specified customer_user_id. If there was no profile with this customer_user_id before — it will be created.
+#### Errors
 
-Profile events are generated along the way and imported transactions are counted towards MTR.
+##### **400** Bad request
+
+Contain a list of errors with parameters.
+
+**Parameters**
+
+| Parameter | Type    | Description                                                  |
+| --------- | ------- | ------------------------------------------------------------ |
+| detail    | String  | Descriptive information about the error.                     |
+| source    | String  | An object containing a `"pointer"` that references the exact location in the request document causing the issue |
+| Status    | Integer | HTTP status. Always `400`                                    |
+
+**Response example**
+
+```
+{
+  "errors": [
+    {
+      "detail": "none is not an allowed value",
+      "source": {
+        "pointer": "/data/attributes/stripe_token"
+      },
+      "status": "400"
+    }
+  ]
+}
+```
 
