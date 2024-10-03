@@ -219,6 +219,13 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+```csharp 
+AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
+  // use the view
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
 
@@ -231,13 +238,6 @@ if (paywall.hasViewConfiguration) {
 } else {
     //use your custom logic
 }
-```
-</TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
-```csharp 
-AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
-  // use the view
-});
 ```
 </TabItem>
 </Tabs>
