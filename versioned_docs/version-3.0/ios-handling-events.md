@@ -22,10 +22,9 @@ When a user performs an action (like clicking a close, restore, custom button, o
 The following built-in actions are supported:
 
 - `close`
-- `restore`
 - `openURL(url)`
 
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `paywallController(_:didPerform:)` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your IDs, like "open_another_paywall". 
+Custom actions are handled differently. For example, if a user taps a custom button, like **Login**, **Restore**, or **Open another paywall**, the delegate method `paywallController(_:didPerform:)` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The IDs for the custom actions "login" and "restore" are predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
 
 Here’s an example, but feel free to handle the actions in your own way:
 
