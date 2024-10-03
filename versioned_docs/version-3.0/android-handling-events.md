@@ -19,7 +19,14 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 #### Actions
 
-When a user performs an action (like close, restore, login, open URL, or a custom action), the method below will be triggered. You’ll need to define what each action should do. To identify the action, use its **Button action ID** from the Adapty Dashboard.
+When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You’ll need to define what each action should do. 
+
+The following built-in actions are supported:
+
+- `Close`
+- `OpenUrl(url)`
+
+Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `onActionPerformed(…)` will be triggered with the `Custom(id:)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
 
 Here’s an example, but feel free to handle the actions in your own way:
 
@@ -34,16 +41,6 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
     }
 }
 ```
-
-Keep in mind that predefined and custom actions are handled differently. For example, if a user taps the close button, the `close` action will be triggered. But if the user taps a custom button, like **Login** or **Open another paywall**, the `custom(id)` action will be triggered.
-
-The following predefined actions are supported:
-
-- `close`
-- `restore`
-- `openURL(url)`
-
-Custom paywall actions are processed by the `custom(id)` action, where `id` is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall".
 
 :::tip
 
