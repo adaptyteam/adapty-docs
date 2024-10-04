@@ -4,12 +4,14 @@ description: ""
 metadataTitle: ""
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 
 With Adapty you don't have to hardcode product ids to check subscription status. You just have to verify that the user has an active access level. To do this, you have to call `.getProfile()` method:
 
-```kotlin title="Kotlin"
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin 
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -23,7 +25,9 @@ Adapty.getProfile { result ->
     }
 }
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -35,6 +39,11 @@ Adapty.getProfile(result -> {
     }
 });
 ```
+</TabItem>
+</Tabs>
+
+
+
 
 Response parameters:
 
