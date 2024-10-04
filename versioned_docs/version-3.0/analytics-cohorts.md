@@ -18,7 +18,7 @@ Cohorts work with the app data we gather through SDK and store notifications and
 
 
 <Zoom>
-  <img src={require('./img/cfc961c-cohorts_general.png').default}
+  <img src={require('./img/cfc961c-cohorts_general.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ Cohorts work with the app data we gather through SDK and store notifications and
 
 
 <Zoom>
-  <img src={require('./img/00bf923-cohorts_monthly.png').default}
+  <img src={require('./img/00bf923-cohorts_monthly.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -60,7 +60,7 @@ Choose your convenient mode or use them both for more conclusions and ideas.
 
 
 <Zoom>
-  <img src={require('./img/4d5ffdd-cohorts.png').default}
+  <img src={require('./img/4d5ffdd-cohorts.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -99,7 +99,7 @@ In the image below you can see a typical cohort.
 
 
 <Zoom>
-  <img src={require('./img/8df3173-cohorts_marks.png').default}
+  <img src={require('./img/8df3173-cohorts_marks.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,7 +117,7 @@ You can hover on any cell in the cohort to view detailed metrics for this period
 
 
 <Zoom>
-  <img src={require('./img/2744770-cohort_details.png').default}
+  <img src={require('./img/2744770-cohort_details.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,7 +139,7 @@ Adapty offers a wide range of controls to help you gain valuable insights when l
 
 
 <Zoom>
-  <img src={require('./img/ad10de0-cohorts_filter.png').default}
+  <img src={require('./img/ad10de0-cohorts_filter.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -159,7 +159,7 @@ There are 4 metrics that can be shown in cohorts: Subscriptions, Payers, Revenue
 
 
 <Zoom>
-  <img src={require('./img/7f8484d-cohorts_absolute.png').default}
+  <img src={require('./img/7f8484d-cohorts_absolute.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -177,7 +177,7 @@ You can set the date range for cohorts and choose the segment. The segment deter
 
 
 <Zoom>
-  <img src={require('./img/e20b676-cohorts_period.png').default}
+  <img src={require('./img/e20b676-cohorts_period.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

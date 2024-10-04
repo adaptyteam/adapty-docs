@@ -17,7 +17,7 @@ Promo Campaigns designed for upselling in your app. Send promo offers with autom
 Promo offers are sent _only once per campaign per user._ So you can't accidentally spam your user with many pushes. Each user can receive only one message for a given campaign. If you need to send multiple pushes, just create another campaign.
 :::
 
-![](https://files.readme.io/ca4f82e-Promo_campaigns.png "Promo campaigns.png")
+![](https://files.readme.io/ca4f82e-Promo_campaigns.webp "Promo campaigns.webp")
 
 ### Before you start
 
@@ -27,7 +27,7 @@ Make sure to upload the [push certificate](ios-push-notifications) for iOS and s
 
 ### Creation
 
-![](https://files.readme.io/9919938-Promo_campaign.png "Promo campaign.png")
+![](https://files.readme.io/9919938-Promo_campaign.webp "Promo campaign.webp")
 
 There are two ways to send a push with a promo offer:
 
@@ -36,8 +36,8 @@ There are two ways to send a push with a promo offer:
 
 Also, you can set a delay for sending push notifications. This could be especially useful in action-based campaigns so users don't feel tracked so much.
 
-![](https://files.readme.io/7fd39d3-Delay.png "Delay.png")
+![](https://files.readme.io/7fd39d3-Delay.webp "Delay.webp")
 
-![](https://files.readme.io/6d1e90f-Promo_campaigns_send_now.png "Promo campaigns send now.png")
+![](https://files.readme.io/6d1e90f-Promo_campaigns_send_now.webp "Promo campaigns send now.webp")
 
 You can use Send now button multiple times, but only new users will receive the offer.

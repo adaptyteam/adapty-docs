@@ -24,7 +24,7 @@ In case of successful integration, an event will appear in the **Last sent event
 
 
 <Zoom>
-  <img src={require('./img/0a79033-adjust_adapty_success.png').default}
+  <img src={require('./img/0a79033-adjust_adapty_success.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,7 +44,7 @@ In case of unsuccessful integration, the event will either not appear at all or 
 
 
 <Zoom>
-  <img src={require('./img/67df7e0-adjust_adapty_sending_failed.png').default}
+  <img src={require('./img/67df7e0-adjust_adapty_sending_failed.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -77,7 +77,7 @@ In case of successful Adjust attribution receiving, you will see these attribute
 
    
 <Zoom>
-  <img src={require('./img/743211b-adjust_adapty_view_profile.png').default}
+  <img src={require('./img/743211b-adjust_adapty_view_profile.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,7 +94,7 @@ In case of successful Adjust attribution receiving, you will see these attribute
 
    
 <Zoom>
-  <img src={require('./img/dfbb1ca-adjust_adapty_attribution.png').default}
+  <img src={require('./img/dfbb1ca-adjust_adapty_attribution.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

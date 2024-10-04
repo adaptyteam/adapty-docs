@@ -35,7 +35,7 @@ In our example, we already have a list of testers:
 
 
 <Zoom>
-  <img src={require('./img/7a11c96-image.png').default}
+  <img src={require('./img/7a11c96-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,7 +55,7 @@ In our example, we already have a list of testers:
 
 
 <Zoom>
-  <img src={require('./img/5511dff-image.png').default}
+  <img src={require('./img/5511dff-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -73,7 +73,7 @@ In our example, we already have a list of testers:
 
 
 <Zoom>
-  <img src={require('./img/1badc43-image.png').default}
+  <img src={require('./img/1badc43-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -93,7 +93,7 @@ In our example, we already have a list of testers:
 
 
 <Zoom>
-  <img src={require('./img/6cce394-image.png').default}
+  <img src={require('./img/6cce394-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -109,7 +109,7 @@ In our example, we already have a list of testers:
 
 
 <Zoom>
-  <img src={require('./img/c1eb89d-image.png').default}
+  <img src={require('./img/c1eb89d-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,7 +155,7 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
 
 
 <Zoom>
-  <img src={require('./img/a8d2da9-image.png').default}
+  <img src={require('./img/a8d2da9-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -173,7 +173,7 @@ If you run into any issues, refer to the documentation or contact Google Play De
 
 
 <Zoom>
-  <img src={require('./img/605874f-image.png').default}
+  <img src={require('./img/605874f-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

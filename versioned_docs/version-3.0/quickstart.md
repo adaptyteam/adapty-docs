@@ -28,7 +28,7 @@ Configure SDKs to validate purchases and get subscription updates from one or bo
 **App Store configuration**  
 In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/settings/ios-sdk)_ and fill in the fields using the instructions below. 
 
-![](https://files.readme.io/b41b8db-CleanShot_2024-01-03_at_12.40.422x.png)
+![](https://files.readme.io/b41b8db-CleanShot_2024-01-03_at_12.40.422x.webp)
 
 To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.com/), go to **My Apps**, and select the app whose ID you need. On the app page, in the drop-down **More** menu, select **About this App**. The app ID is displayed in the **Bundle ID** field.  
 – [How to connect to In-App Purchase API?](in-app-purchase-api-storekit-2)  
@@ -37,7 +37,7 @@ To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.co
 **Play Store configuration**  
 Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_ and fill in the fields.
 
-![Play Store configuration](https://files.readme.io/fa64f4d-99608fc-Android_store_configuration.png "99608fc-Android_store_configuration.png")
+![Play Store configuration](https://files.readme.io/fa64f4d-99608fc-Android_store_configuration.webp "99608fc-Android_store_configuration.webp")
 
 To find Package Name, open the [Google Play Developer Console](https://play.google.com/console/u/0/developers) and select the app whose ID you need. The ID is specified next to the app's name and logo.  
 – [Where to find Service account key file? **→** ](service-account-key-file)  
@@ -47,11 +47,11 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 **[Add Access Level](access-level) (optional)** 
 
-![Creating a product](https://files.readme.io/1574ebf-5c59a11-Access_Levels.png "5c59a11-Access_Levels.png")
+![Creating a product](https://files.readme.io/1574ebf-5c59a11-Access_Levels.webp "5c59a11-Access_Levels.webp")
 
 **Add [product](product)** 
 
-![Add product](https://files.readme.io/0f9ffd0-807efd2-Product.png "807efd2-Product.png")
+![Add product](https://files.readme.io/0f9ffd0-807efd2-Product.webp "807efd2-Product.webp")
 
 ### Setting up a paywall to show in the app
 
@@ -59,7 +59,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 
 <Zoom>
-  <img src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.png').default}
+  <img src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -77,7 +77,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 
 <Zoom>
-  <img src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.png').default}
+  <img src={require('./img/a404841-CleanShot_2023-12-01_at_17.21.382x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

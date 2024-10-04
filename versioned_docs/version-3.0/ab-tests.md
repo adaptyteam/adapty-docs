@@ -35,7 +35,7 @@ To create a new A/B test from the **A/B tests** section:
 
    
 <Zoom>
-  <img src={require('./img/3ca9b3c-AB_tests.png').default}
+  <img src={require('./img/3ca9b3c-AB_tests.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,7 +51,7 @@ To create a new A/B test from the **A/B tests** section:
 
 
 <Zoom>
-  <img src={require('./img/72af454-create_AB_test.png').default}
+  <img src={require('./img/72af454-create_AB_test.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -71,7 +71,7 @@ To create a new A/B test from the **A/B tests** section:
 
    
 <Zoom>
-  <img src={require('./img/2d25ae6-create_AB_test_with_data.png').default}
+  <img src={require('./img/2d25ae6-create_AB_test_with_data.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -90,7 +90,7 @@ To create a new A/B test from the **A/B tests** section:
 
 
 <Zoom>
-  <img src={require('./img/870cfda-AB_test_with_Paywalls.png').default}
+  <img src={require('./img/870cfda-AB_test_with_Paywalls.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -123,7 +123,7 @@ Once you've added your paywalls, you can assign weights to each option to contro
 
 
 <Zoom>
-  <img src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.png').default}
+  <img src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -24,7 +24,7 @@ In case of successful integration, an event will appear in the **Last sent event
 
 
 <Zoom>
-  <img src={require('./img/6ccc3bb-webhook_integration_success.png').default}
+  <img src={require('./img/6ccc3bb-webhook_integration_success.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,7 +44,7 @@ In case of unsuccessful integration, the event will either not appear at all or 
 
 
 <Zoom>
-  <img src={require('./img/995b3bb-sending_failed.png').default}
+  <img src={require('./img/995b3bb-sending_failed.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -77,7 +77,7 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 
    
 <Zoom>
-  <img src={require('./img/7aef747-view_profile.png').default}
+  <img src={require('./img/7aef747-view_profile.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,7 +94,7 @@ In case of successful AppsFlyer attribution receiving, you will see these attrib
 
    
 <Zoom>
-  <img src={require('./img/943148a-profile_attribution.png').default}
+  <img src={require('./img/943148a-profile_attribution.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

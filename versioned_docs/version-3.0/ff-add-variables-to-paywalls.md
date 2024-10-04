@@ -14,7 +14,7 @@ Once you've [received all the necessary product data](ff-action-flow), it's time
 1. Double-click the product text on your paywall page. 
 
   <Zoom>
-    <img src={require('./FF_img/product-text.png').default}
+    <img src={require('./FF_img/product-text.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -27,7 +27,7 @@ Once you've [received all the necessary product data](ff-action-flow), it's time
 2. In the **Set from Variable** window, search for `getPaywallProductResult` variable and choose it.
 
   <Zoom>
-    <img src={require('./FF_img/add-product-title-to-page.png').default}
+    <img src={require('./FF_img/add-product-title-to-page.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -51,7 +51,7 @@ Once you've [received all the necessary product data](ff-action-flow), it's time
   | UI Builder Display Value| Anything, in the example, it's `product.title` |
 
   <Zoom>
-    <img src={require('./FF_img/product.title.png').default}
+    <img src={require('./FF_img/product.title.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -70,7 +70,7 @@ Repeat the steps from Step 2.1 for the price text as shown below:
 1. Double-click the price text on your paywall page. 
 
 <Zoom>
-  <img src={require('./FF_img/price-text.png').default}
+  <img src={require('./FF_img/price-text.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

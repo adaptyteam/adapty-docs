@@ -11,7 +11,7 @@ A Segment is a group of users with common properties.
 
 
 <Zoom>
-  <img src={require('./img/3244407-Segments.png').default}
+  <img src={require('./img/3244407-Segments.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -38,7 +38,7 @@ To create a segment, write a segment name, and choose attributes.
 
 
 <Zoom>
-  <img src={require('./img/1af9744-new_cohort.png').default}
+  <img src={require('./img/1af9744-new_cohort.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -97,7 +97,7 @@ To create custom attributes from the Adapty Dashboard, select the ** Create Cust
 
 
 <Zoom>
-  <img src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.png').default}
+  <img src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

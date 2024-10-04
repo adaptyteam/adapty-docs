@@ -15,7 +15,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 
 1. Double-click the buy button on your paywall page.
 <Zoom>
-  <img src={require('./FF_img/double-click-buy.png').default}
+  <img src={require('./FF_img/double-click-buy.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,7 +28,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 2. In the right panel, open the **Actions** section if it's not already open.
 
 <Zoom>
-  <img src={require('./FF_img/actions-makepurchase.png').default}
+  <img src={require('./FF_img/actions-makepurchase.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 3. Open the **Action Flow Editor**.
 
 <Zoom>
-  <img src={require('./FF_img/new-editor.png').default}
+  <img src={require('./FF_img/new-editor.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -56,7 +56,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 6. In the **Actions Flow Editor** window, search for `makePurchase` custom action and choose it.
 
 <Zoom>
-  <img src={require('./FF_img/make-purchase.png').default}
+  <img src={require('./FF_img/make-purchase.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,7 +80,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 10. In the **Action Output Variable Name**, create a new variable and name it `makePurchaseResult` - this will be used later to confirm the purchase was successful.
 
 <Zoom>
-  <img src={require('./FF_img/makePurchaseResult.png').default}
+  <img src={require('./FF_img/makePurchaseResult.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,7 +104,7 @@ Now, let's set up a check to see if the purchase went through.
 	  | Select Field | profile |
 
 <Zoom>
-  <img src={require('./FF_img/check-makePurchaseResult.png').default}
+  <img src={require('./FF_img/check-makePurchaseResult.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -124,7 +124,7 @@ If the purchase is successful, you can unlock the paid content. Here’s how to 
 2. In the **Select Action** field, search for and select the page you want to open from the **Navigate To** list. In this example, the page is **YogaClessSession**.
 
 <Zoom>
-  <img src={require('./FF_img/open-paid-content.png').default}
+  <img src={require('./FF_img/open-paid-content.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -142,7 +142,7 @@ If the purchase fails, let's display an alert to the user.
 1. Add an **Informational Dialog** action to the **FALSE** label.
 2. In the **Title** field, enter the text you want for the dialog title, such as **Purchase Failed**.
  <Zoom>
-    <img src={require('./FF_img/makePurchase-informational.png').default}
+    <img src={require('./FF_img/makePurchase-informational.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -155,7 +155,7 @@ If the purchase fails, let's display an alert to the user.
 3. Click at the **Value** button of the **Message** box.
 
   <Zoom>
-    <img src={require('./FF_img/makePurchase-error.png').default}
+    <img src={require('./FF_img/makePurchase-error.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -179,7 +179,7 @@ If the purchase fails, let's display an alert to the user.
 6. Add a **Terminate action** to the  **FALSE** flow.
 
   <Zoom>
-    <img src={require('./FF_img/makePurchaseFinal.png').default}
+    <img src={require('./FF_img/makePurchaseFinal.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */

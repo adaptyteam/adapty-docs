@@ -23,7 +23,7 @@ The initial step of the integration process is to provide the necessary credenti
 
 
 <Zoom>
-  <img src={require('./img/5f1e62c-adapty_braze.png').default}
+  <img src={require('./img/5f1e62c-adapty_braze.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ The initial step of the integration process is to provide the necessary credenti
 
 
 <Zoom>
-  <img src={require('./img/b5fdf16-adapty_braze_create_api_key.png').default}
+  <img src={require('./img/b5fdf16-adapty_braze_create_api_key.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -57,7 +57,7 @@ The initial step of the integration process is to provide the necessary credenti
 
 
 <Zoom>
-  <img src={require('./img/1e5b4b8-adapty_braze_api_key_users_track.png').default}
+  <img src={require('./img/1e5b4b8-adapty_braze_api_key_users_track.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,7 +76,7 @@ The initial step of the integration process is to provide the necessary credenti
 
 
 <Zoom>
-  <img src={require('./img/1e6d21b-adapty_braze_app_ids.png').default}
+  <img src={require('./img/1e6d21b-adapty_braze_app_ids.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -96,7 +96,7 @@ Below the credentials, there are three groups of events you can send to Braze fr
 
 
 <Zoom>
-  <img src={require('./img/702e628-adapty_braze_events_names.png').default}
+  <img src={require('./img/702e628-adapty_braze_events_names.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

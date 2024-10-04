@@ -13,7 +13,7 @@ Once you've set up the Apple Search Ads integration, Adapty will start receiving
 
 
 <Zoom>
-  <img src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.png').default}
+  <img src={require('./img/ba4a3e9-CleanShot_2023-08-21_at_15.14.592x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,7 +43,7 @@ In the Adapty Dashboard, navigate to [Settings -> Apple Search Ads.](https://app
 Locate the pre-generated public key (Adapty provides a key pair for you) and copy it.
 
 <Zoom>
-  <img src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.png').default}
+  <img src={require('./img/baa5998-CleanShot_2023-08-21_at_14.55.542x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,7 +62,7 @@ Note: If you're using an alternative service or your own solution for Apple Sear
 In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings > User Management page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access.
 
 <Zoom>
-  <img src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.png').default}
+  <img src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -81,7 +81,7 @@ As a next step, log in to the newly added account in Apple Search Ads. Navigate 
 Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
 
 <Zoom>
-  <img src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.png').default}
+  <img src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -140,7 +140,7 @@ For iOS devices, this means non-organic Apple Search Ads attribution will always
 You can disable Apple Search Ads attribution receiving by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads).
 
 <Zoom>
-  <img src={require('./img/asa-disable.png').default}
+  <img src={require('./img/asa-disable.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

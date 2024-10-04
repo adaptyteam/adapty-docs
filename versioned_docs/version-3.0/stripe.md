@@ -28,7 +28,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.png').default}
+  <img src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -45,7 +45,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.png').default}
+  <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -62,7 +62,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.png').default}
+  <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -89,7 +89,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.png').default}
+  <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -106,7 +106,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.png').default}
+  <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -123,7 +123,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
    
 <Zoom>
-  <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.png').default}
+  <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -148,7 +148,7 @@ Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=tr
 
 
 <Zoom>
-  <img src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.png').default}
+  <img src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -172,7 +172,7 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
 
 
 <Zoom>
-  <img src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.png').default}
+  <img src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -190,7 +190,7 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 
 
 <Zoom>
-  <img src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.png').default}
+  <img src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

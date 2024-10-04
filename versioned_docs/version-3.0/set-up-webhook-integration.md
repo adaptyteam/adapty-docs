@@ -29,7 +29,7 @@ To set up the webhook integration:
 
 
 <Zoom>
-  <img src={require('./img/a3e49a8-webhook_integration.png').default}
+  <img src={require('./img/a3e49a8-webhook_integration.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,7 +66,7 @@ Choose the events you want to receive in your server by enabling the toggle next
 
 
 <Zoom>
-  <img src={require('./img/86942b8-event_names_renaming.png').default}
+  <img src={require('./img/86942b8-event_names_renaming.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

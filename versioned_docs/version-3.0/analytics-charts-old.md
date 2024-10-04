@@ -11,7 +11,7 @@ Install Adapty SDK and start analyzing real-time metrics of your iOS or Android 
 
 
 <Zoom>
-  <img src={require('./img/a3f96d8-analytics.png').default}
+  <img src={require('./img/a3f96d8-analytics.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -37,7 +37,7 @@ Total money received from both subscriptions and one-time purchases. Does not in
 
 The measure of the predictable and recurring revenue components of your subscription business. Calculated as following:
 
-![](https://files.readme.io/4253297-CleanShot_2021-03-10_at_17.50.24.png "CleanShot 2021-03-10 at 17.50.24.png")
+![](https://files.readme.io/4253297-CleanShot_2021-03-10_at_17.50.24.webp "CleanShot 2021-03-10 at 17.50.24.webp")
 
 Where:  
 Ps - subscription price  

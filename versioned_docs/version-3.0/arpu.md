@@ -11,7 +11,7 @@ ARPU (average revenue per user) chart displays the average revenue generated per
 
 
 <Zoom>
-  <img src={require('./img/cee527c-small-CleanShot_2023-05-09_at_14.58.472x.png').default}
+  <img src={require('./img/cee527c-small-CleanShot_2023-05-09_at_14.58.472x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

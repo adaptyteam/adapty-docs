@@ -20,7 +20,7 @@ Now, let’s allow users to purchase your product:
 5. In the **No Actions Created** window, click the **Add Conditional Action** button.
 6. In the **Actions Flow Editor** window, choose **Combine Conditions**.
 <Zoom>
-  <img src={require('./FF_img/combined-condition.png').default}
+  <img src={require('./FF_img/combined-condition.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,7 +65,7 @@ Now, let’s allow users to purchase your product:
 
 
 <Zoom>
-  <img src={require('./FF_img/check-subscription-end.png').default}
+  <img src={require('./FF_img/check-subscription-end.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

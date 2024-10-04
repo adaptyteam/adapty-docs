@@ -26,7 +26,7 @@ First of all set credentials to build a connection between Google Cloud Storage 
 
 
 <Zoom>
-  <img src={require('./img/eea5f4e-CleanShot_2023-03-17_at_14.20.312x.png').default}
+  <img src={require('./img/eea5f4e-CleanShot_2023-03-17_at_14.20.312x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,7 +65,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
 
 <Zoom>
-  <img src={require('./img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.png').default}
+  <img src={require('./img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,7 +83,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.png').default}
+  <img src={require('./img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -100,7 +100,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/2190c50-CleanShot_2023-03-17_at_15.48.552x.png').default}
+  <img src={require('./img/2190c50-CleanShot_2023-03-17_at_15.48.552x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -117,7 +117,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/8a45468-CleanShot_2023-03-17_at_15.58.092x.png').default}
+  <img src={require('./img/8a45468-CleanShot_2023-03-17_at_15.58.092x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -134,7 +134,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.png').default}
+  <img src={require('./img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -151,7 +151,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.png').default}
+  <img src={require('./img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -168,7 +168,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/62801f4-CleanShot_2023-03-17_at_16.17.312x.png').default}
+  <img src={require('./img/62801f4-CleanShot_2023-03-17_at_16.17.312x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -187,7 +187,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 
    
 <Zoom>
-  <img src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.png').default}
+  <img src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -208,7 +208,7 @@ The specified date range will be used to export the events created from Date A 0
 
 
 <Zoom>
-  <img src={require('./img/e347308-CleanShot_2023-03-17_at_17.39.452x.png').default}
+  <img src={require('./img/e347308-CleanShot_2023-03-17_at_17.39.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -302,7 +302,7 @@ Below the credentials, there are three groups of events you can export, send, an
 
 
 <Zoom>
-  <img src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.png').default}
+  <img src={require('./img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

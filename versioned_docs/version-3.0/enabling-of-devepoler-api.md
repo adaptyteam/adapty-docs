@@ -23,7 +23,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/fd66a11-google_cloud_project.png').default}
+  <img src={require('./img/fd66a11-google_cloud_project.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,7 +40,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/f754f72-google_play_api.png').default}
+  <img src={require('./img/f754f72-google_play_api.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -57,7 +57,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/d47ed14-google_play_api_create_credentials.png').default}
+  <img src={require('./img/d47ed14-google_play_api_create_credentials.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -74,7 +74,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/966cf73-Google_play_developer_reporting_api.png').default}
+  <img src={require('./img/966cf73-Google_play_developer_reporting_api.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -91,7 +91,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/e776d77-Google_play_developer_reporting_api_enabled.png').default}
+  <img src={require('./img/e776d77-Google_play_developer_reporting_api_enabled.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -108,7 +108,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/b13f609-enable_Cloud_Pub_Sub_API.png').default}
+  <img src={require('./img/b13f609-enable_Cloud_Pub_Sub_API.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -125,7 +125,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 
    
 <Zoom>
-  <img src={require('./img/3f45602-Cloud_Pub_Sub_API_enabled.png').default}
+  <img src={require('./img/3f45602-Cloud_Pub_Sub_API_enabled.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -148,7 +148,7 @@ You can recheck it in the [**APIs & Services**](https://console.cloud.google.com
 
 
 <Zoom>
-  <img src={require('./img/b81d174-google_enabled_api.png').default}
+  <img src={require('./img/b81d174-google_enabled_api.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

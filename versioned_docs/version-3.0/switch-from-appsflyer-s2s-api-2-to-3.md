@@ -19,7 +19,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 
    
 <Zoom>
-  <img src={require('./img/be299ea-appsflyer_security_center.png').default}
+  <img src={require('./img/be299ea-appsflyer_security_center.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,7 +38,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 
    
 <Zoom>
-  <img src={require('./img/7934920-appsflyer_new_token.png').default}
+  <img src={require('./img/7934920-appsflyer_new_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -61,7 +61,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 
    
 <Zoom>
-  <img src={require('./img/d014c25-appsflyer_tokens.png').default}
+  <img src={require('./img/d014c25-appsflyer_tokens.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,7 +80,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 
     
 <Zoom>
-  <img src={require('./img/c0b3e72-appsflyer_switch_API.png').default}
+  <img src={require('./img/c0b3e72-appsflyer_switch_API.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

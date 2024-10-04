@@ -41,7 +41,7 @@ To set up the integration with Adjust:
 
    
 <Zoom>
-  <img src={require('./img/500cac0-adjust_open_s2s_security.png').default}
+  <img src={require('./img/500cac0-adjust_open_s2s_security.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -58,7 +58,7 @@ To set up the integration with Adjust:
 
 
 <Zoom>
-  <img src={require('./img/d3cb288-adjust_token.png').default}
+  <img src={require('./img/d3cb288-adjust_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,7 +76,7 @@ To set up the integration with Adjust:
 
 
 <Zoom>
-  <img src={require('./img/84ec347-adjust_adapty_oath_token.png').default}
+  <img src={require('./img/84ec347-adjust_adapty_oath_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,7 +94,7 @@ To set up the integration with Adjust:
 
 
 <Zoom>
-  <img src={require('./img/8da6bc3-adjust_app_token.png').default}
+  <img src={require('./img/8da6bc3-adjust_app_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -114,7 +114,7 @@ To set up the integration with Adjust:
 
 
 <Zoom>
-  <img src={require('./img/d6d0831-adjust_adapty_app_token.png').default}
+  <img src={require('./img/d6d0831-adjust_adapty_app_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -152,7 +152,7 @@ To create an event in the Adjust dashboard:
 
 
 <Zoom>
-  <img src={require('./img/2db6d69-adjust_add_event.png').default}
+  <img src={require('./img/2db6d69-adjust_add_event.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -170,7 +170,7 @@ To create an event in the Adjust dashboard:
 
 
 <Zoom>
-  <img src={require('./img/0f35698-adjust_add_new_event.png').default}
+  <img src={require('./img/0f35698-adjust_add_new_event.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -200,7 +200,7 @@ Now, when you have all required events created in Adjust, it's time to link them
 
 
 <Zoom>
-  <img src={require('./img/931df25-adjust_copy_event.png').default}
+  <img src={require('./img/931df25-adjust_copy_event.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -220,7 +220,7 @@ Now, when you have all required events created in Adjust, it's time to link them
 
 
 <Zoom>
-  <img src={require('./img/af8bc56-adjust_adapty_event_on.png').default}
+  <img src={require('./img/af8bc56-adjust_adapty_event_on.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -238,7 +238,7 @@ Now, when you have all required events created in Adjust, it's time to link them
 
 
 <Zoom>
-  <img src={require('./img/ab92bf9-adjust_adapty_event_token.png').default}
+  <img src={require('./img/ab92bf9-adjust_adapty_event_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

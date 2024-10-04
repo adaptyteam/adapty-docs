@@ -18,7 +18,7 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 
    
 <Zoom>
-  <img src={require('./img/1e80bd1-filter_paywalls.png').default}
+  <img src={require('./img/1e80bd1-filter_paywalls.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 
    
 <Zoom>
-  <img src={require('./img/d090e08-paywalls_back_to_active.png').default}
+  <img src={require('./img/d090e08-paywalls_back_to_active.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
