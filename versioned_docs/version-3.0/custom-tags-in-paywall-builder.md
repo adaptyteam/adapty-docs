@@ -124,7 +124,8 @@ AdaptyUiTagResolver tagResolver = customTags::get;
 <TabItem value="rn" label="React Native" default>
 
 ```typescript
-let customTags: Record<string, string> = ...
+let customTags: Record<string, string> = { "USERNAME": "John" }
+//and then you can pass it to createPaywallView as follows:
 view = await createPaywallView(paywall, { customTags })
 ```
 

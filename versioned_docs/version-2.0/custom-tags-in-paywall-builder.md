@@ -61,6 +61,7 @@ To add a custom tag to a line:
 2. After entering the custom tag, make sure to enter the fallback line. The fallback is the text displayed in your app if it does not know about a particular custom tag. This ensures that users won't see the custom tag as code; instead, they'll see the designated fallback text. Please note that the fallback replaces the entire line containing the custom tag
 
    
+
 <Zoom>
   <img src={require('./img/36b8480-fallback_for_custom_tag.png').default}
   style={{
@@ -100,6 +101,17 @@ customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
 ```
 </TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript
+let customTags: Record<string, string> = { "USERNAME": "John" }
+//and then you can pass it to createPaywallView as follows:
+view = await createPaywallView(paywall, { customTags })
+```
+
+</TabItem>
+
 </Tabs>
 
 
