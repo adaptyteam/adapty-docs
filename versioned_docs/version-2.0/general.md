@@ -122,7 +122,18 @@ We advise you only consider disabling sharing if your users **are required to lo
 
 ## 7. SDK and API keys
 
-Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
+Use the **Public SDK key** in the [**App settings**](https://app.adapty.io/settings/general) to integrate Adapty SDKs into your app, and the **Secret Key** to access Adapty's Server API. You can generate new keys or revoke existing ones as needed.
+
+<Zoom>
+  <img src={require('./img/api_keys.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## 8. Test devices
 

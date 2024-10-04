@@ -111,6 +111,12 @@ const config = {
             label: "Documentation",
           },
           {
+            type: "docSidebar",
+            sidebarId: "APISidebar",
+            position: "left",
+            label: "API",
+          },
+          {
             label: "SDK Reference",
             position: "left",
             items: [
@@ -131,11 +137,6 @@ const config = {
                 href: "https://react-native.adapty.io/classes/adapty",
               },
             ],
-          },
-          {
-            label: "API Reference",
-            position: "left",
-            href: "/getting-started-with-server-side-api",
           },
           {
             label: "Support Forum",
