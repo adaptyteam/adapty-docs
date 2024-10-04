@@ -47,7 +47,7 @@ To create a Sandbox Apple ID:
 
    
 <Zoom>
-  <img src={require('./img/7c1fdd0-apple_test_account.png').default}
+  <img src={require('./img/7c1fdd0-apple_test_account.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,7 +63,7 @@ To create a Sandbox Apple ID:
 
    
 <Zoom>
-  <img src={require('./img/57c3a7c-apple_new_test_account.png').default}
+  <img src={require('./img/57c3a7c-apple_new_test_account.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -28,7 +28,7 @@ First of all set credentials to build a connection between your Airbridge and Ad
 
 
 <Zoom>
-  <img src={require('./img/2b31d90-Untitled-1_1.png').default}
+  <img src={require('./img/2b31d90-Untitled-1_1.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,7 +46,7 @@ They both can be found in your Airbridge dashboard in the [Third-party Integrati
 
 
 <Zoom>
-  <img src={require('./img/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.png').default}
+  <img src={require('./img/5a2f627-Screenshot_2023-02-21_at_11.19.29_AM.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,7 +64,7 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
 
 
 <Zoom>
-  <img src={require('./img/ff422d1-CleanShot_2023-03-01_at_17.11.412x.png').default}
+  <img src={require('./img/ff422d1-CleanShot_2023-03-01_at_17.11.412x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,7 +84,7 @@ Below the credentials, there are three groups of events you can send to Airbridg
 
 
 <Zoom>
-  <img src={require('./img/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.png').default}
+  <img src={require('./img/eb4e3a9-CleanShot_2023-08-22_at_13.58.472x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

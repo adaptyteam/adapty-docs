@@ -20,7 +20,7 @@ The integration between Adapty and Branch operates in two main ways.
 
 
 <Zoom>
-  <img src={require('./img/49f4aa7-CleanShot_2023-08-11_at_17.36.072x.png').default}
+  <img src={require('./img/49f4aa7-CleanShot_2023-08-11_at_17.36.072x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,7 +43,7 @@ To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrat
 
 
 <Zoom>
-  <img src={require('./img/817a051-CleanShot_2023-08-11_at_15.54.372x.png').default}
+  <img src={require('./img/817a051-CleanShot_2023-08-11_at_15.54.372x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -61,7 +61,7 @@ To get the value for the **Branch Key**,  open your Branch [Account Settings](ht
 
 
 <Zoom>
-  <img src={require('./img/130e58b-CleanShot_2023-08-11_at_15.24.162x.png').default}
+  <img src={require('./img/130e58b-CleanShot_2023-08-11_at_15.24.162x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,7 +83,7 @@ You can send an event with Proceeds \(after Apple/Google cut\) or just revenue. 
 
 
 <Zoom>
-  <img src={require('./img/a645cf8-CleanShot_2023-08-11_at_15.18.282x.png').default}
+  <img src={require('./img/a645cf8-CleanShot_2023-08-11_at_15.18.282x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -19,7 +19,7 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 
 
 <Zoom>
-  <img src={require('./img/c38cb41-paywalls_archive.png').default}
+  <img src={require('./img/c38cb41-paywalls_archive.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,7 +37,7 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 
    
 <Zoom>
-  <img src={require('./img/3d70992-archive_paywall.png').default}
+  <img src={require('./img/3d70992-archive_paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

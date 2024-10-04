@@ -15,7 +15,7 @@ In the example below, we have a placement with the identifier `Onboarding`. In y
 
 
 <Zoom>
-  <img src={require('./img/6bf7797-1_1.png').default}
+  <img src={require('./img/6bf7797-1_1.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

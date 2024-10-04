@@ -13,7 +13,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 
    
 <Zoom>
-  <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
+  <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,7 +30,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 
    
 <Zoom>
-  <img src={require('./img/a72ff2d-copy_topic.png').default}
+  <img src={require('./img/a72ff2d-copy_topic.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,7 +52,7 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
 
 
 <Zoom>
-  <img src={require('./img/e55ba0e-paste_topic_name.png').default}
+  <img src={require('./img/e55ba0e-paste_topic_name.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

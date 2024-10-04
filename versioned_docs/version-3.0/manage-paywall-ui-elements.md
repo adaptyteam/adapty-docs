@@ -18,7 +18,7 @@ To add an element to your paywall above the layout:
 
 
 <Zoom>
-  <img src={require('./img/ee68985-PB_add_new_element.png').default}
+  <img src={require('./img/ee68985-PB_add_new_element.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -39,7 +39,7 @@ To add an element to a compound element:
 
 
 <Zoom>
-  <img src={require('./img/abbf9ef-PB_add_element.png').default}
+  <img src={require('./img/abbf9ef-PB_add_element.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -61,7 +61,7 @@ To delete an element from the paywall:
 
    
 <Zoom>
-  <img src={require('./img/d6763f3-delete_element.png').default}
+  <img src={require('./img/d6763f3-delete_element.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,7 +84,7 @@ To rename an element:
 
    
 <Zoom>
-  <img src={require('./img/a5b26ba-edit_element.png').default}
+  <img src={require('./img/a5b26ba-edit_element.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -109,7 +109,7 @@ To duplicate an element :
 
    
 <Zoom>
-  <img src={require('./img/07e81d6-duplicate_element.png').default}
+  <img src={require('./img/07e81d6-duplicate_element.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

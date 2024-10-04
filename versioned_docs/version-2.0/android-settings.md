@@ -11,7 +11,7 @@ For Adapty Android SDK to work, you need to configure several parameters.
 
 
 <Zoom>
-  <img src={require('./img/f6d76ec-app-settings_android.png').default}
+  <img src={require('./img/f6d76ec-app-settings_android.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

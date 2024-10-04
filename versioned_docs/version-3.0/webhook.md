@@ -11,7 +11,7 @@ A webhook is a convenient and fast way to get notifications about [events](event
 
 
 <Zoom>
-  <img src={require('./img/e5dce30-image_3.png').default}
+  <img src={require('./img/e5dce30-image_3.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

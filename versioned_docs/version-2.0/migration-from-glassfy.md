@@ -74,7 +74,7 @@ To sell the product in Adapty SDK, you have to create it in the dashboard first.
 
 
 <Zoom>
-  <img src={require('./img/5878f01-002900-August-01-BbJcEGHE.png').default}
+  <img src={require('./img/5878f01-002900-August-01-BbJcEGHE.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -96,7 +96,7 @@ Once you created the products, you should create the paywalls (aka offerings). A
 
 
 <Zoom>
-  <img src={require('./img/aac7858-002901-August-01-5BJyKpql.png').default}
+  <img src={require('./img/aac7858-002901-August-01-5BJyKpql.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -121,7 +121,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 
 <Zoom>
-  <img src={require('./img/2406d97-image.png').default}
+  <img src={require('./img/2406d97-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,7 +139,7 @@ With the placements, you can dynamically change which Paywall or A/B test should
 
 
 <Zoom>
-  <img src={require('./img/c77c57b-002902-August-01-3AWT4LRe.png').default}
+  <img src={require('./img/c77c57b-002902-August-01-3AWT4LRe.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

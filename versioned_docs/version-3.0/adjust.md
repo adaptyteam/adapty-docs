@@ -19,7 +19,7 @@ The integration between Adapty and Adjust works in two main ways.
    Once you've set up the Adjust integration, Adapty will start receiving attribution data from Adjust. You can easily access and view this data on the user's profile page.
 
 <Zoom>
-  <img src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.png').default}
+  <img src={require('./img/98769d9-CleanShot_2023-08-11_at_14.39.182x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,7 +44,7 @@ The next step of the integration is to set credentials.
 
 
 <Zoom>
-  <img src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.png').default}
+  <img src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,7 +63,7 @@ The next step of the integration is to set credentials.
 
 
 <Zoom>
-  <img src={require('./img/e9ee52e-image_52.png').default}
+  <img src={require('./img/e9ee52e-image_52.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -85,7 +85,7 @@ You will need to copy **App Token** and paste it to Adapty.
 
 
 <Zoom>
-  <img src={require('./img/4b1601c-image_36.png').default}
+  <img src={require('./img/4b1601c-image_36.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -109,7 +109,7 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 <Zoom>
-  <img src={require('./img/6c6b9a0-image_83.png').default}
+  <img src={require('./img/6c6b9a0-image_83.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -125,7 +125,7 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 <Zoom>
-  <img src={require('./img/4d4f40d-image_9.png').default}
+  <img src={require('./img/4d4f40d-image_9.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -141,7 +141,7 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 <Zoom>
-  <img src={require('./img/815515f-image_16.png').default}
+  <img src={require('./img/815515f-image_16.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -159,7 +159,7 @@ Copy the event token and paste it to Adapty. Below the credentials, there are th
 
 
 <Zoom>
-  <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.png').default}
+  <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -19,7 +19,7 @@ In the buttons tab, you have the ability to define and customize various buttons
 
 
 <Zoom>
-  <img src={require('./img/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.png').default}
+  <img src={require('./img/e0f7e1c-CleanShot_2023-09-01_at_16.46.492x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

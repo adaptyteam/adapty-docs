@@ -21,7 +21,7 @@ To use the Adapty Paywall Builder:
 
 
 <Zoom>
-  <img src={require('./img/44766e1-switch_on_paywall_builder.png').default}
+  <img src={require('./img/44766e1-switch_on_paywall_builder.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -11,7 +11,7 @@ The Subscriptions renewal canceled chart displays the number of subscriptions th
 
 
 <Zoom>
-  <img src={require('./img/65b8324-small-CleanShot_2023-05-08_at_15.22.252x.png').default}
+  <img src={require('./img/65b8324-small-CleanShot_2023-05-08_at_15.22.252x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

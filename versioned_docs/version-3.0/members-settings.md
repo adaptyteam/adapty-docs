@@ -21,7 +21,7 @@ The following roles are available for members in the Adapty dashboard:
 
 
 <Zoom>
-  <img src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.png').default}
+  <img src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

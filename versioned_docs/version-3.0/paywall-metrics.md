@@ -15,7 +15,7 @@ For a more granular analysis of each paywall, you can navigate to the paywall de
 
 
 <Zoom>
-  <img src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.png').default}
+  <img src={require('./img/d73bd6c-CleanShot_2023-07-19_at_16.05.412x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -83,7 +83,7 @@ In the audience-based view, metrics are grouped by the target audience of the pa
 
 
 <Zoom>
-  <img src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.png').default}
+  <img src={require('./img/e8ace98-CleanShot_2023-07-19_at_16.12.442x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -138,7 +138,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 
 <Zoom>
-  <img src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.png').default}
+  <img src={require('./img/b7ff0c8-CleanShot_2023-07-19_at_16.19.332x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

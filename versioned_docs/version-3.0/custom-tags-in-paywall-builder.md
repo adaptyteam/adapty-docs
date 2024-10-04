@@ -47,7 +47,7 @@ To add a custom tag:
 
 
 <Zoom>
-  <img src={require('./img/1ea0b95-adding_custom_tag.png').default}
+  <img src={require('./img/1ea0b95-adding_custom_tag.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,7 +63,7 @@ To add a custom tag:
 
 
 <Zoom>
-  <img src={require('./img/6f97bd0-custom_tag.png').default}
+  <img src={require('./img/6f97bd0-custom_tag.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -81,7 +81,7 @@ To add a custom tag:
 
    
 <Zoom>
-  <img src={require('./img/4d43874-custom_tag_fallback.png').default}
+  <img src={require('./img/4d43874-custom_tag_fallback.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

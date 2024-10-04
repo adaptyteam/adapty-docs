@@ -11,7 +11,7 @@ The churned (expired) subscriptions chart displays the number of subscriptions t
 
 
 <Zoom>
-  <img src={require('./img/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.png').default}
+  <img src={require('./img/2b882cd-small-CleanShot_2023-05-08_at_15.09.592x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -48,7 +48,7 @@ There are two options available to stop an A/B test: you can do so either from t
 
 
 <Zoom>
-  <img src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.png').default}
+  <img src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

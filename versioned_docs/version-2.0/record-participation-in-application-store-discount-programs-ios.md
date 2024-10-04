@@ -19,7 +19,7 @@ You can adjust the participation dates for your mobile app in the [App Store Sma
 
 
 <Zoom>
-  <img src={require('./img/10ad0df-participation_reduced-fee_program.png').default}
+  <img src={require('./img/10ad0df-participation_reduced-fee_program.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -47,7 +47,7 @@ If your mobile app isn't enrolled in the App Store Small Business Program, you c
 
    
 <Zoom>
-  <img src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.png').default}
+  <img src={require('./img/d5a7f5c-Is_app_enrolled_in_Small_Business_Programs_calendar.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

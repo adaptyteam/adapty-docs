@@ -36,7 +36,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
    
 
 <Zoom>
-  <img src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+  <img src={require('./img/3f4d4c2-PB_migrate_paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -56,7 +56,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
    
 
 <Zoom>
-  <img src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+  <img src={require('./img/78f63f0-PB_hughlighted_issues.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

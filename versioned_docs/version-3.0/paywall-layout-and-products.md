@@ -17,7 +17,7 @@ Decide how users will complete purchases. There are two options:
 
   
 <Zoom>
-  <img src={require('./img/a816501-PB_products_list.png').default}
+  <img src={require('./img/a816501-PB_products_list.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -33,7 +33,7 @@ Decide how users will complete purchases. There are two options:
 
   
 <Zoom>
-  <img src={require('./img/4114858-PB_products_buttons.png').default}
+  <img src={require('./img/4114858-PB_products_buttons.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -72,7 +72,7 @@ It's important to keep your paywall visually consistent with the rest of your ap
 
 
 <Zoom>
-  <img src={require('./img/a306fd5-PB_default_font.png').default}
+  <img src={require('./img/a306fd5-PB_default_font.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -97,7 +97,7 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 
 
 <Zoom>
-  <img src={require('./img/960ea1d-PB_Layout_button.png').default}
+  <img src={require('./img/960ea1d-PB_Layout_button.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -121,7 +121,7 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 
 
 <Zoom>
-  <img src={require('./img/9f9a159-PB_delay_slider.png').default}
+  <img src={require('./img/9f9a159-PB_delay_slider.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

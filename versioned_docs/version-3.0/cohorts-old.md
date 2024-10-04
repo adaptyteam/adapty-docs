@@ -47,7 +47,7 @@ Here is what the cohort table looks like:
 
 
 <Zoom>
-  <img src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.png').default}
+  <img src={require('./img/b00fac2-CleanShot_2022-12-21_at_07.14.45.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -118,7 +118,7 @@ Some cells have incomplete data — the time period they correspond to isn't ove
 
 
 <Zoom>
-  <img src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.png').default}
+  <img src={require('./img/d531c66-CleanShot_2022-12-21_at_16.27.00.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -148,7 +148,7 @@ After your data is uploaded you will see the additional metrics as follows.
 
 
 <Zoom>
-  <img src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.png').default}
+  <img src={require('./img/6fc260c-CleanShot_2022-12-21_at_16.31.45_2.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -170,7 +170,7 @@ You can filter the Cohorts by product, attribution, country, segment, store, pro
 
 
 <Zoom>
-  <img src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.png').default}
+  <img src={require('./img/602c3db-CleanShot_2022-12-21_at_16.53.50.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

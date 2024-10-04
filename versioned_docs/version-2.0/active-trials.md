@@ -11,7 +11,7 @@ The active trials chart in Adapty displays the number of unexpired free trials t
 
 
 <Zoom>
-  <img src={require('./img/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.png').default}
+  <img src={require('./img/da1d7ab-small-CleanShot_2023-05-05_at_15.29.502x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

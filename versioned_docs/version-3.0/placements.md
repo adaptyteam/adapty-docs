@@ -19,7 +19,7 @@ The **Placements** list offers a comprehensive view of various locations in the 
 
 
 <Zoom>
-  <img src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.png').default}
+  <img src={require('./img/dfc4a1c-CleanShot_2023-07-26_at_14.51.342x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

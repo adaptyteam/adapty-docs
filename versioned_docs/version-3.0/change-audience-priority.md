@@ -11,7 +11,7 @@ When you have different user audiences in one [placement](placements), a user ca
 
 
 <Zoom>
-  <img src={require('./img/afee54f-2.png').default}
+  <img src={require('./img/afee54f-2.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ To adjust audience priorities for a placement:
 
    
 <Zoom>
-  <img src={require('./img/cd0f0e1-2024-02-13_16-36-33.png').default}
+  <img src={require('./img/cd0f0e1-2024-02-13_16-36-33.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -50,7 +50,7 @@ To adjust audience priorities for a placement:
 
    
 <Zoom>
-  <img src={require('./img/3b8d8e3-edit_audience.png').default}
+  <img src={require('./img/3b8d8e3-edit_audience.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,7 +66,7 @@ To adjust audience priorities for a placement:
 
    
 <Zoom>
-  <img src={require('./img/2babfc8-reorder_audiences.png').default}
+  <img src={require('./img/2babfc8-reorder_audiences.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

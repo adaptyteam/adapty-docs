@@ -13,7 +13,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 A paywall button is a UI element that lets users do things like login, restore a purchase, or close the paywall. It can also trigger custom actions, like taking users to a different page, giving you a lot of flexibility. You can even create custom flows. For example, a button could close the current paywall and open a new one, allowing you to link paywalls together.
 
 <Zoom>
-  <img src={require('./img/paywall_button.png').default}
+  <img src={require('./img/paywall_button.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

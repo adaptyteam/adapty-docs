@@ -15,7 +15,7 @@ Profiles is a CRM for your users. With Profiles, you can:
 4. Grant the user a subscription.
 
 <Zoom>
-  <img src={require('./img/profiles.png').default}
+  <img src={require('./img/profiles.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,7 +43,7 @@ You can group users into Segment to create [Promo Campaigns](promo-campaigns), g
 ## User properties
 
 <Zoom>
-  <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.png').default}
+  <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -75,7 +75,7 @@ After installing SDK, Adapty automatically collects user events from the payment
 You can see custom attributes that were set either from SDK or manually assign them to the user using the Add attribute button in the Attributes section on the profile page.
 
 <Zoom>
-  <img src={require('./img/378c1fb-add_attribute.png').default}
+  <img src={require('./img/378c1fb-add_attribute.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -90,7 +90,7 @@ You can see custom attributes that were set either from SDK or manually assign t
 In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access. 
 
 <Zoom>
-  <img src={require('./img/b1d74fd-edit_paid_access_level.png').default}
+  <img src={require('./img/b1d74fd-edit_paid_access_level.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -128,7 +128,7 @@ Here is an example of a non-original profile. Notice the absence of events in th
 
 
 <Zoom>
-  <img src={require('./img/98d0dad-non-original_profile.png').default}
+  <img src={require('./img/98d0dad-non-original_profile.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

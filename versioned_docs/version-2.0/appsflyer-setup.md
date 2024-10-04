@@ -33,7 +33,7 @@ To set up the integration with AppsFlyer:
 
    
 <Zoom>
-  <img src={require('./img/43a5cc6-apple_id.png').default}
+  <img src={require('./img/43a5cc6-apple_id.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -50,7 +50,7 @@ To set up the integration with AppsFlyer:
 
    
 <Zoom>
-  <img src={require('./img/61bff5a-appsflyer_iOS_app_id.png').default}
+  <img src={require('./img/61bff5a-appsflyer_iOS_app_id.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -71,7 +71,7 @@ To set up the integration with AppsFlyer:
 
    
 <Zoom>
-  <img src={require('./img/1c18c50-appsflyer_security_center.png').default}
+  <img src={require('./img/1c18c50-appsflyer_security_center.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -90,7 +90,7 @@ To set up the integration with AppsFlyer:
 
    
 <Zoom>
-  <img src={require('./img/7934920-appsflyer_new_token.png').default}
+  <img src={require('./img/7934920-appsflyer_new_token.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -115,7 +115,7 @@ To set up the integration with AppsFlyer:
 
 
 <Zoom>
-  <img src={require('./img/43cacb2-appsflyer_dev_keys.png').default}
+  <img src={require('./img/43cacb2-appsflyer_dev_keys.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -151,7 +151,7 @@ In the [**Integrations** -> **AppsFlyer**](https://app.adapty.io/integrations/ap
 
 
 <Zoom>
-  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

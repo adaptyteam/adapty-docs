@@ -30,7 +30,7 @@ To download the JSON file with the fallback paywalls:
 
    
 <Zoom>
-  <img src={require('./img/9c63367-placements.png').default}
+  <img src={require('./img/9c63367-placements.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

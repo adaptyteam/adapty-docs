@@ -13,7 +13,7 @@ You can customize the text before and after the timer to create the desired mess
 
 
 <Zoom>
-  <img src={require('./img/87de83a-Timer_withou_text.png').default}
+  <img src={require('./img/87de83a-Timer_withou_text.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -29,7 +29,7 @@ You can customize the text before and after the timer to create the desired mess
 
 
 <Zoom>
-  <img src={require('./img/f1be626-timer_example.png').default}
+  <img src={require('./img/f1be626-timer_example.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -49,7 +49,7 @@ You can customize the text before and after the timer to create the desired mess
 
 
 <Zoom>
-  <img src={require('./img/e83e891-timer.png').default}
+  <img src={require('./img/e83e891-timer.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -24,7 +24,7 @@ The integration between Adapty and Adjust works in two main ways.
 
 
 <Zoom>
-  <img src={require('./img/d2f019d-adjust_adapty_attributionsection.png').default}
+  <img src={require('./img/d2f019d-adjust_adapty_attributionsection.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

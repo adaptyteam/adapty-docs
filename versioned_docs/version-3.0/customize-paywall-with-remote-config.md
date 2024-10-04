@@ -25,7 +25,7 @@ To start customizing a paywall using the remote config:
 
    
 <Zoom>
-  <img src={require('./img/b7eb293-paywalls_edit.png').default}
+  <img src={require('./img/b7eb293-paywalls_edit.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,7 +42,7 @@ To start customizing a paywall using the remote config:
 
    
 <Zoom>
-  <img src={require('./img/d44fdb9-switch_to_remote_config.png').default}
+  <img src={require('./img/d44fdb9-switch_to_remote_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,7 +80,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 <TabItem value="Images" label="Images" default>
 ```json 
 {
-    "background_image": "https://adapty.io/media/paywalls/bg1.png"
+    "background_image": "https://adapty.io/media/paywalls/bg1.webp"
 }
 
 # Test images on your paywall
@@ -145,7 +145,7 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
 
 
 <Zoom>
-  <img src={require('./img/3356ff5-remote_config_JSON.png').default}
+  <img src={require('./img/3356ff5-remote_config_JSON.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -165,7 +165,7 @@ If it's not common for you to work with code and there is a need to correct some
 
 
 <Zoom>
-  <img src={require('./img/4c27b2f-remote_config_table.png').default}
+  <img src={require('./img/4c27b2f-remote_config_table.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -185,7 +185,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
 
 
 <Zoom>
-  <img src={require('./img/ef682d8-add_raw.png').default}
+  <img src={require('./img/ef682d8-add_raw.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -203,7 +203,7 @@ Additional raw options are mostly useful for [paywall localisations](add-remote-
 
 
 <Zoom>
-  <img src={require('./img/17bcf80-remote_config_table_options.png').default}
+  <img src={require('./img/17bcf80-remote_config_table_options.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

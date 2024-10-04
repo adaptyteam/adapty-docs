@@ -17,7 +17,7 @@ It doesn't add any attribution data to Adapty, as we already have everything we 
 To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](https://app.adapty.io/integrations/splitmetrics) and set credentials.
 
 <Zoom>
-  <img src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.png').default}
+  <img src={require('./img/8255349-CleanShot_2023-08-14_at_17.39.422x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,7 +30,7 @@ To integrate SplitMetrics Acquire go to [Integrations > SplitMetrics Acquire](ht
 Open your SplitMetrics Acquire account, hover over one of the MMP logos, and click the **Settings** button. Find your Client ID in the dialog under item **5**, copy it, and then paste it to Adapty as **Client ID**.
 
 <Zoom>
-  <img src={require('./img/4d0b2b6-Adapty.png').default}
+  <img src={require('./img/4d0b2b6-Adapty.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos, and cli
 </Zoom>
 
 <Zoom>
-  <img src={require('./img/4f8d0b8-AdaptyGuide.png').default}
+  <img src={require('./img/4f8d0b8-AdaptyGuide.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -54,7 +54,7 @@ Open your SplitMetrics Acquire account, hover over one of the MMP logos, and cli
 You will also have to set Apple App ID to use the integration. To find your App ID, open your app page in App Store Connect, go to the **App Information page** in the **General** section, and find the **Apple ID** in the left bottom part of the screen.
 
 <Zoom>
-  <img src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.png').default}
+  <img src={require('./img/61578ee-CleanShot_2022-04-20_at_17.55.03.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -69,7 +69,7 @@ You will also have to set Apple App ID to use the integration. To find your App 
 Below the credentials, there are three groups of events you can send to SplitMetrics Acquire from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 <Zoom>
-  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

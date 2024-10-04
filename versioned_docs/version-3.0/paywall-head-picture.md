@@ -61,7 +61,7 @@ The **transparent layout** delivers a bold, full-screen hero image that instantl
 
 
 <Zoom>
-  <img src={require('./img/0401532-transparent_hero_picture.png').default}
+  <img src={require('./img/0401532-transparent_hero_picture.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */

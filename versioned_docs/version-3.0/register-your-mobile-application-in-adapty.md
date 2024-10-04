@@ -21,7 +21,7 @@ To add the second or any subsequent app:
 
    
 <Zoom>
-  <img src={require('./img/cbca917-add_new_app.png').default}
+  <img src={require('./img/cbca917-add_new_app.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -38,7 +38,7 @@ To add the second or any subsequent app:
 
    
 <Zoom>
-  <img src={require('./img/8a64858-name_category.png').default}
+  <img src={require('./img/8a64858-name_category.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -60,7 +60,7 @@ Although you initially configured the name and category of your application, you
 
    
 <Zoom>
-  <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
+  <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -80,7 +80,7 @@ Although you initially configured the name and category of your application, you
 
 
 <Zoom>
-  <img src={require('./img/e5437a6-app_settings.png').default}
+  <img src={require('./img/e5437a6-app_settings.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

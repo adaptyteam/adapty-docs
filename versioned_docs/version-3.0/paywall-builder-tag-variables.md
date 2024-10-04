@@ -28,7 +28,7 @@ You can only use tag variables when describing products and offers in the Produc
 
 
 <Zoom>
-  <img src={require('./img/0351661-tag_variables.png').default}
+  <img src={require('./img/0351661-tag_variables.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,7 +49,7 @@ The preview doesn’t use real values to replace your variables; those are only 
 
 
 <Zoom>
-  <img src={require('./img/da92d39-tags_preview_values.png').default}
+  <img src={require('./img/da92d39-tags_preview_values.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

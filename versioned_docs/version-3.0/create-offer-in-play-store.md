@@ -17,7 +17,7 @@ It's important to note that in the case of Google’s new billing system, trials
 
 
 <Zoom>
-  <img src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.png').default}
+  <img src={require('./img/56a2ea9-CleanShot_2023-07-20_at_17.25.042x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

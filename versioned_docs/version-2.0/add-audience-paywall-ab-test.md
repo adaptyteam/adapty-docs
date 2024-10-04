@@ -15,7 +15,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 
    
 <Zoom>
-  <img src={require('./img/df6f87b-placements.png').default}
+  <img src={require('./img/df6f87b-placements.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -32,7 +32,7 @@ When it comes to [placement](placements) in Adapty, adding an audience to it mea
 
    
 <Zoom>
-  <img src={require('./img/fe7154d-new_placement.png').default}
+  <img src={require('./img/fe7154d-new_placement.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -11,7 +11,7 @@ The revenue chart displays the total revenue earned from both subscriptions and 
 
 
 <Zoom>
-  <img src={require('./img/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.png').default}
+  <img src={require('./img/6e4d0e6-small-CleanShot_2023-05-04_at_16.53.552x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

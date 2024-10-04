@@ -23,7 +23,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 
 
 <Zoom>
-  <img src={require('./img/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.png').default}
+  <img src={require('./img/fd84ddf-CleanShot_2023-08-15_at_15.45.442x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,7 +42,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 
 
 <Zoom>
-  <img src={require('./img/4b326c4-001563-August-23-4tO3JVso.png').default}
+  <img src={require('./img/4b326c4-001563-August-23-4tO3JVso.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,7 +64,7 @@ Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-Ap
 
 
 <Zoom>
-  <img src={require('./img/c4eb8eb-001565-August-23-483KKBbC.png').default}
+  <img src={require('./img/c4eb8eb-001565-August-23-483KKBbC.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,7 +104,7 @@ StartTrial, Subscribe, CancelSubscription are standard events.
 
 
 <Zoom>
-  <img src={require('./img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.png').default}
+  <img src={require('./img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

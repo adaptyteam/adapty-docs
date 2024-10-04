@@ -19,7 +19,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 
    
 <Zoom>
-  <img src={require('./img/6d737db-generate_in-app_key.png').default}
+  <img src={require('./img/6d737db-generate_in-app_key.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -38,7 +38,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 
    
 <Zoom>
-  <img src={require('./img/fac066b-download_inapp_file.png').default}
+  <img src={require('./img/fac066b-download_inapp_file.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,7 +55,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 
    
 <Zoom>
-  <img src={require('./img/d59faff-download_in-app_purchase_key.png').default}
+  <img src={require('./img/d59faff-download_in-app_purchase_key.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

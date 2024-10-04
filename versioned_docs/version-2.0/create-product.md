@@ -18,7 +18,7 @@ After your products are set up in the stores, you are ready to add your products
 
 
 <Zoom>
-  <img src={require('./img/7c9573a-products_tab.png').default}
+  <img src={require('./img/7c9573a-products_tab.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -36,7 +36,7 @@ After your products are set up in the stores, you are ready to add your products
 
 
 <Zoom>
-  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.png').default}
+  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -75,7 +75,7 @@ After your products are set up in the stores, you are ready to add your products
 
         
 <Zoom>
-  <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
+  <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

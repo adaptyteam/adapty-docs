@@ -11,7 +11,7 @@ The Grace period chart displays the number of subscriptions that have entered th
 
 
 <Zoom>
-  <img src={require('./img/06bb222-CleanShot_2023-07-11_at_15.20.452x.png').default}
+  <img src={require('./img/06bb222-CleanShot_2023-07-11_at_15.20.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

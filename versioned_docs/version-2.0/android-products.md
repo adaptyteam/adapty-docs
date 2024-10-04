@@ -30,7 +30,7 @@ To set up a product for Android devices:
 
    
 <img
-  src={require('./img/6eff1d1-subscription_GP.png').default}
+  src={require('./img/6eff1d1-subscription_GP.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,7 +46,7 @@ To set up a product for Android devices:
 
    
 <img
-  src={require('./img/af7fe02-create_subscription_GP.png').default}
+  src={require('./img/af7fe02-create_subscription_GP.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -86,7 +86,7 @@ To create a base plan:
 
    
 <img
-  src={require('./img/4072a2a-subscriptions_GP.png').default}
+  src={require('./img/4072a2a-subscriptions_GP.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -102,7 +102,7 @@ To create a base plan:
 
    
 <img
-  src={require('./img/b493b60-add_base_plan.png').default}
+  src={require('./img/b493b60-add_base_plan.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -118,7 +118,7 @@ To create a base plan:
 
    
 <img
-  src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.png').default}
+  src={require('./img/8146763-CleanShot_2023-07-20_at_16.51.412x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -134,7 +134,7 @@ To create a base plan:
 
    
 <img
-  src={require('./img/8b26e1d-prices.png').default}
+  src={require('./img/8b26e1d-prices.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -162,7 +162,7 @@ Older versions of Adapty SDKs do not support Google Billing Library v5+ features
 
 
 <img
-  src={require('./img/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.png').default}
+  src={require('./img/b5e70cb-CleanShot_2023-07-20_at_17.03.252x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

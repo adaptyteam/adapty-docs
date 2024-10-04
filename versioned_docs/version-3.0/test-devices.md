@@ -28,7 +28,7 @@ Flutter and Unity support will be added later.
 
    
 <Zoom>
-  <img src={require('./img/14c581d-test_device_add.png').default}
+  <img src={require('./img/14c581d-test_device_add.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,7 +44,7 @@ Flutter and Unity support will be added later.
 
    
 <Zoom>
-  <img src={require('./img/f86d5e2-test_users_add_device.png').default}
+  <img src={require('./img/f86d5e2-test_users_add_device.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -96,7 +96,7 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
 
    
 <Zoom>
-  <img src={require('./img/345d308-test_users_CUID_adapty_ID.png').default}
+  <img src={require('./img/345d308-test_users_CUID_adapty_ID.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -129,7 +129,7 @@ Apple does not provide the IDFA by default. Obtain it from the profile attributi
 
 
 <Zoom>
-  <img src={require('./img/ce4a63f-test_users_idfa.png').default}
+  <img src={require('./img/ce4a63f-test_users_idfa.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -97,7 +97,7 @@ It's important to keep your paywall visually consistent with the rest of your ap
 
 
 <Zoom>
-  <img src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.png').default}
+  <img src={require('./img/959d3e4-CleanShot_2024-01-12_at_18.47.472x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -135,7 +135,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
    
 
 <Zoom>
-  <img src={require('./img/423fc40-close_button_definition.png').default}
+  <img src={require('./img/423fc40-close_button_definition.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -156,7 +156,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
 
 
 <Zoom>
-  <img src={require('./img/466fb18-show_after_delay.png').default}
+  <img src={require('./img/466fb18-show_after_delay.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -175,7 +175,7 @@ For soft paywalls, you can define the view of the closing paywall button and how
    
 
 <Zoom>
-  <img src={require('./img/c967c2b-fading_button.png').default}
+  <img src={require('./img/c967c2b-fading_button.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -232,7 +232,7 @@ In the products tab of Adapty's paywall builder, you have the ability to create 
 
 
 <Zoom>
-  <img src={require('./img/32256b5-adapty_products_section.png').default}
+  <img src={require('./img/32256b5-adapty_products_section.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -260,7 +260,7 @@ Let's take a look at how you can customize each product on your paywall:
 
 
 <Zoom>
-  <img src={require('./img/26d435d-CleanShot_2024-01-12_at_19.14.092x.png').default}
+  <img src={require('./img/26d435d-CleanShot_2024-01-12_at_19.14.092x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -280,7 +280,7 @@ Let's take a look at how you can customize each product on your paywall:
 
 
 <Zoom>
-  <img src={require('./img/06a0a51-CleanShot_2024-01-12_at_19.19.102x.png').default}
+  <img src={require('./img/06a0a51-CleanShot_2024-01-12_at_19.19.102x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -320,7 +320,7 @@ You can disable Style sync for a product in the upper right corner. After that, 
 
 
 <Zoom>
-  <img src={require('./img/25d3961-adapty_chain_products.png').default}
+  <img src={require('./img/25d3961-adapty_chain_products.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -344,7 +344,7 @@ Once you've finished customizing how your products look, it makes sense to doubl
 
 
 <Zoom>
-  <img src={require('./img/a902a51-paywall_builder_products_preview.png').default}
+  <img src={require('./img/a902a51-paywall_builder_products_preview.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -21,7 +21,7 @@ To export subscription events or paywall views to Amazon S3 on-demand:
 
 
 <Zoom>
-  <img src={require('./img/4abf58f-google_cloud_adapty_manual_export.png').default}
+  <img src={require('./img/4abf58f-google_cloud_adapty_manual_export.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -39,7 +39,7 @@ To export subscription events or paywall views to Amazon S3 on-demand:
 
    
 <Zoom>
-  <img src={require('./img/b360a6b-google_cloud_adapty_export.png').default}
+  <img src={require('./img/b360a6b-google_cloud_adapty_export.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

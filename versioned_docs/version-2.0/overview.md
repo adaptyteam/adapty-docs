@@ -12,7 +12,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 It's located right under Home in the left-side menu:
 
 <Zoom>
-  <img src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.png').default}
+  <img src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -58,7 +58,7 @@ Controls for diving deeper into your data in Overview are very similar to what w
 There is one important difference though: you can group and filter by country, store, and, most notably, by app — as Overview shows data for all of your apps at once by default. This can be helpful in understanding how each of your apps contributes to your business metrics:
 
 <Zoom>
-  <img src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.png').default}
+  <img src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

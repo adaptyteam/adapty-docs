@@ -21,7 +21,7 @@ To export subscription events or paywall views to Amazon S3 on-demand:
 
 
 <Zoom>
-  <img src={require('./img/7c76736-s3_adapty_manual_export.png').default}
+  <img src={require('./img/7c76736-s3_adapty_manual_export.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

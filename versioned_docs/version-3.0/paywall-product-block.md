@@ -27,7 +27,7 @@ A product badge is a small label that can be added to a product. This badge can 
 
 
 <Zoom>
-  <img src={require('./img/eedb135-PB_product_badge.png').default}
+  <img src={require('./img/eedb135-PB_product_badge.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -47,7 +47,7 @@ To add a product badge:
 
 
 <Zoom>
-  <img src={require('./img/2a5779d-PB_product_badge_config.png').default}
+  <img src={require('./img/2a5779d-PB_product_badge_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -69,7 +69,7 @@ For the **Products as list + purchase button** purchase flow, you can **preselec
 
 
 <Zoom>
-  <img src={require('./img/3f37969-PB_preselected_product.png').default}
+  <img src={require('./img/3f37969-PB_preselected_product.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -89,7 +89,7 @@ To preselect a product:
 
 
 <Zoom>
-  <img src={require('./img/da4e4c4-PB_preselect_product.png').default}
+  <img src={require('./img/da4e4c4-PB_preselect_product.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -108,7 +108,7 @@ To preselect a product:
 
 
 <Zoom>
-  <img src={require('./img/ac7411e-PB_setup_selected_default_button.png').default}
+  <img src={require('./img/ac7411e-PB_setup_selected_default_button.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -128,7 +128,7 @@ For the **Products as purchase buttons** purchase flow, you can **highlight** a 
 
 
 <Zoom>
-  <img src={require('./img/afc2882-PB_highlighted_product.png').default}
+  <img src={require('./img/afc2882-PB_highlighted_product.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '200px', /* image width */
@@ -148,7 +148,7 @@ To highlight a product:
 
 
 <Zoom>
-  <img src={require('./img/a630507-PB_highlight_product.png').default}
+  <img src={require('./img/a630507-PB_highlight_product.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -170,7 +170,7 @@ Each product can feature different text for offers in the **Text** subsection. T
 
 
 <Zoom>
-  <img src={require('./img/0de6871-PB_text.png').default}
+  <img src={require('./img/0de6871-PB_text.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -194,7 +194,7 @@ To add a toggle:
 
 
 <Zoom>
-  <img src={require('./img/d859a58-PB_turn_on_toggle.png').default}
+  <img src={require('./img/d859a58-PB_turn_on_toggle.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -213,7 +213,7 @@ To add a toggle:
 
 
 <Zoom>
-  <img src={require('./img/4127a67-PB_toggle_default_state.png').default}
+  <img src={require('./img/4127a67-PB_toggle_default_state.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

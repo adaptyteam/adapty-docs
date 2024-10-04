@@ -19,7 +19,7 @@ Every text element in Paywall Builder can have its own font and style. You can a
 
 
 <Zoom>
-  <img src={require('./img/56a8845-choose_font.png').default}
+  <img src={require('./img/56a8845-choose_font.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ When you create a paywall in the Builder, Adapty uses a system font by default. 
 
 
 <Zoom>
-  <img src={require('./img/f9d87dc-default_fonts.png').default}
+  <img src={require('./img/f9d87dc-default_fonts.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,7 +67,7 @@ If you need more than what’s offered by default, you can add a custom font. On
 
 
 <Zoom>
-  <img src={require('./img/7498a5a-add_custom_font.png').default}
+  <img src={require('./img/7498a5a-add_custom_font.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -89,7 +89,7 @@ If you need more than what’s offered by default, you can add a custom font. On
 
 
 <Zoom>
-  <img src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.png').default}
+  <img src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -137,7 +137,7 @@ The second method is simpler: Install the font on your Mac, open the **Font Book
 
 
 <Zoom>
-  <img src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.png').default}
+  <img src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
