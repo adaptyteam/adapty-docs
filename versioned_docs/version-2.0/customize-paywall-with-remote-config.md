@@ -25,7 +25,7 @@ To start customizing a paywall using the remote config:
 
 
 <Zoom>
-  <img src={require('./img/b7eb293-paywalls_edit.png').default}
+  <img src={require('./img/b7eb293-paywalls_edit.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,7 +40,7 @@ To start customizing a paywall using the remote config:
 
 
 <Zoom>
-  <img src={require('./img/d44fdb9-switch_to_remote_config.png').default}
+  <img src={require('./img/d44fdb9-switch_to_remote_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,7 +76,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 <TabItem value="Images" label="Images" default>
 ```json 
 {
-    "background_image": "https://adapty.io/media/paywalls/bg1.png"
+    "background_image": "https://adapty.io/media/paywalls/bg1.webp"
 }
 
 # Test images on your paywall
@@ -140,7 +140,7 @@ You can combine different options, and make up your own. This way you can test d
 In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
 
 <Zoom>
-  <img src={require('./img/3356ff5-remote_config_JSON.png').default}
+  <img src={require('./img/3356ff5-remote_config_JSON.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,7 +155,7 @@ In the **JSON** view of the remote config, you can enter any JSON formatted data
 If it's not common for you to work with code and there is a need to correct some values of the JSON, Adapty has the **Table** view for you.
 
 <Zoom>
-  <img src={require('./img/4c27b2f-remote_config_table.png').default}
+  <img src={require('./img/4c27b2f-remote_config_table.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -170,7 +170,7 @@ It is a copy of your JSON in the format of a table that is easy to read and unde
 To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 <Zoom>
-  <img src={require('./img/ef682d8-add_raw.png').default}
+  <img src={require('./img/ef682d8-add_raw.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -183,7 +183,7 @@ To add a key, click the **Add row** button. We automatically check the values an
 Additional row options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 <Zoom>
-  <img src={require('./img/17bcf80-remote_config_table_options.png').default}
+  <img src={require('./img/17bcf80-remote_config_table_options.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

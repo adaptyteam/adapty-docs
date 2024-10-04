@@ -18,7 +18,7 @@ The integration between Adapty and AppsFlyer operates in two main ways.
 
 
 <Zoom>
-  <img src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.png').default}
+  <img src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,7 +43,7 @@ The next step of the integration is to set credentials.
 
 
 <Zoom>
-  <img src={require('./img/be269e5-CleanShot_2023-08-04_at_23.51.322x.png').default}
+  <img src={require('./img/be269e5-CleanShot_2023-08-04_at_23.51.322x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -61,7 +61,7 @@ The next step of the integration is to set credentials.
 
 
 <Zoom>
-  <img src={require('./img/50d327d-CleanShot_2023-08-05_at_00.09.072x.png').default}
+  <img src={require('./img/50d327d-CleanShot_2023-08-05_at_00.09.072x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -79,7 +79,7 @@ The next step of the integration is to set credentials.
 
 
 <Zoom>
-  <img src={require('./img/b1777fa-CleanShot_2023-08-07_at_13.15.452x.png').default}
+  <img src={require('./img/b1777fa-CleanShot_2023-08-07_at_13.15.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -107,7 +107,7 @@ Below the credentials, there are three groups of events you can send to AppsFlye
 
 
 <Zoom>
-  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

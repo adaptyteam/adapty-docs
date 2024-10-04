@@ -25,7 +25,7 @@ After you create products in the Adapty Dashboard, they are visible in the  **Pr
 
 
 <Zoom>
-  <img src={require('./img/a26de79-Products_list.png').default}
+  <img src={require('./img/a26de79-Products_list.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

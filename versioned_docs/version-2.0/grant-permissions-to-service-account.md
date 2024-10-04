@@ -13,7 +13,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 
    
 <Zoom>
-  <img src={require('./img/7b0e614-users_and_permissions.png').default}
+  <img src={require('./img/7b0e614-users_and_permissions.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,7 +29,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 
    
 <Zoom>
-  <img src={require('./img/3afd002-invite_user.png').default}
+  <img src={require('./img/3afd002-invite_user.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,7 +45,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 
    
 <Zoom>
-  <img src={require('./img/4e2717b-account_permissions.png').default}
+  <img src={require('./img/4e2717b-account_permissions.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -44,7 +44,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 
 <Zoom>
-  <img src={require('./img/2406d97-image.png').default}
+  <img src={require('./img/2406d97-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '300px', /* image width */
@@ -149,7 +149,7 @@ Ask RevenueCat about the historical data on their [support page](https://app.rev
 
 
 <Zoom>
-  <img src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.png').default}
+  <img src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

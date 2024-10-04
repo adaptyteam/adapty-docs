@@ -47,7 +47,7 @@ To add a custom tag to a line:
 
 
 <Zoom>
-  <img src={require('./img/7ec0e4f-custom_tag.png').default}
+  <img src={require('./img/7ec0e4f-custom_tag.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -62,7 +62,7 @@ To add a custom tag to a line:
 
    
 <Zoom>
-  <img src={require('./img/36b8480-fallback_for_custom_tag.png').default}
+  <img src={require('./img/36b8480-fallback_for_custom_tag.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

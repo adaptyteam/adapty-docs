@@ -13,7 +13,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 
 <Zoom>
-  <img src={require('./img/17bbf45-google_cloud_create_service_account.png').default}
+  <img src={require('./img/17bbf45-google_cloud_create_service_account.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -31,7 +31,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 
 <Zoom>
-  <img src={require('./img/b93eec1-service_account_details.png').default}
+  <img src={require('./img/b93eec1-service_account_details.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -53,7 +53,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
    
 <Zoom>
-  <img src={require('./img/e69d713-grant_access_to_project.png').default}
+  <img src={require('./img/e69d713-grant_access_to_project.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -70,7 +70,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
    
 <Zoom>
-  <img src={require('./img/976299c-service_account_role.png').default}
+  <img src={require('./img/976299c-service_account_role.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -91,7 +91,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
    
 <Zoom>
-  <img src={require('./img/ffe8d82-grant_user_access.png').default}
+  <img src={require('./img/ffe8d82-grant_user_access.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

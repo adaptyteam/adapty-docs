@@ -19,7 +19,7 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
 
 
 <Zoom>
-  <img src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.png').default}
+  <img src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,7 +37,7 @@ You need only one variable such as **Mixpanel token**. You can find the token in
 
 
 <Zoom>
-  <img src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.png').default}
+  <img src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -63,7 +63,7 @@ Below the credentials, there are three groups of events you can send to Mixpanel
 
 
 <Zoom>
-  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.png').default}
+  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

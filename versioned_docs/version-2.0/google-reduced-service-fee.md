@@ -32,7 +32,7 @@ To manage your Reduced Service Fee membership status for Google Play, go to the 
 
 
 <Zoom>
-  <img src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.png').default}
+  <img src={require('./img/65d9968-CleanShot_2023-04-11_at_15.00.482x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

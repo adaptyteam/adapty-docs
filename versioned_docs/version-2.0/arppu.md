@@ -13,7 +13,7 @@ The Average revenue per paying user (ARPPU) chart displays the average revenue p
 
 
 <Zoom>
-  <img src={require('./img/55cb433-small-CleanShot_2023-05-09_at_14.10.022x.png').default}
+  <img src={require('./img/55cb433-small-CleanShot_2023-05-09_at_14.10.022x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

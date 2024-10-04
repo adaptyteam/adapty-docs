@@ -13,7 +13,7 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 
    
 <Zoom>
-  <img src={require('./img/2901185-app_server_notifications.png').default}
+  <img src={require('./img/2901185-app_server_notifications.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,7 +30,7 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 
    
 <Zoom>
-  <img src={require('./img/86fb3d2-app_server_notifications_apple.png').default}
+  <img src={require('./img/86fb3d2-app_server_notifications_apple.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

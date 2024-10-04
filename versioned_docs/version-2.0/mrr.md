@@ -11,7 +11,7 @@ The Monthly recurring revenue (MRR) chart displays the normalized revenue genera
 
 
 <Zoom>
-  <img src={require('./img/17cbed0-small-CleanShot_2023-05-11_at_17.32.242x.png').default}
+  <img src={require('./img/17cbed0-small-CleanShot_2023-05-11_at_17.32.242x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,7 +29,7 @@ The Monthly recurring revenue (MRR) chart displays the normalized revenue genera
 
 Adapty calculates the predictable and recurring revenue components of your subscription business using the following formula:
 
-![](https://files.readme.io/4253297-CleanShot_2021-03-10_at_17.50.24.png "CleanShot 2021-03-10 at 17.50.24.png")
+![](https://files.readme.io/4253297-CleanShot_2021-03-10_at_17.50.24.webp "CleanShot 2021-03-10 at 17.50.24.webp")
 
 Where:  
 Ps - subscription price  
