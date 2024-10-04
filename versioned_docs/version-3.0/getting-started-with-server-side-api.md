@@ -18,6 +18,17 @@ With API you can:
 You can't get subscription events via API, but you can use [Webhook](webhook) or direct integration with a service that you're using.
 :::
 
+<Zoom>
+  <img src={require('./img/Adapty_Communication_Scheme.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 To correctly work with API you need to use a unique ID for your users. This may be an email, a phone number, your internal ID. Without such an ID it's impossible to identify the same user on multiple platforms.
 
 ## Case 1: Syncing subscribers between web and mobile
