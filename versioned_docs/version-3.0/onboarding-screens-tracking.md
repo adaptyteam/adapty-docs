@@ -3,7 +3,8 @@ title: "Track onboarding screens"
 description: ""
 metadataTitle: ""
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
@@ -13,16 +14,24 @@ In order for you to be able to analyze user behavior at this critical stage with
 
 To do this, simply call the `.logShowOnboarding` function:
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift
 Adapty.logShowOnboarding(name: "onboarding_name", screenName: "first_screen", screenOrder: 1)
 ```
-```kotlin title="Kotlin"
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin
 Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", screenOrder = 1)
 ```
-```java title="Java"
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java
 Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);
 ```
-```javascript title="Flutter"
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
 try {
   await Adapty().logShowOnboarding(name: 'onboarding_name', 
                                    screenName: 'first_screen', 
@@ -32,20 +41,26 @@ try {
 } catch (e) {
 }
 ```
-```typescript title="React Native"
-await adapty.logShowOnboarding(
-	1, /* screenOrder */
-	'onboarding_name', /* name */
-	'first_screen' /* screenName */
-);
-```
-```csharp title="Unity"
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp
 Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
     if(error != null) {
       // handle the error
     }
 });
 ```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript
+await adapty.logShowOnboarding(
+	1, /* screenOrder */
+	'onboarding_name', /* name */
+	'first_screen' /* screenName */
+);
+```
+</TabItem>
+</Tabs>
 
 | Parameter       | Presence | Description                                                                                                             |
 | :-------------- | :------- | :---------------------------------------------------------------------------------------------------------------------- |
