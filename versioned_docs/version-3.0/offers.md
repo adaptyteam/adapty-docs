@@ -12,10 +12,13 @@ Offers in the App Store and Google Play are special deals or discounts provided 
 There are 2 types of offers:
 
 - **Introductory offer**  
-    An introductory offer is a special welcome for users who are exploring a subscription-based app for the first time. It's a promotion that you can set up to provide new subscribers with a discounted price, a free trial, or other enticing deals for a certain period.  
-  Please also consider, that introductory offers on iOS are applied automatically if the user is eligible, no need to create them in Adapty.
+    An introductory offer is a special welcome for users who are exploring a subscription-based app for the first time. It's a promotion that you can set up to provide new subscribers with a discounted price, a free trial, or other enticing deals for a certain period. 
 - **Promotional offer**  
   A promotional offer is a friendly invitation for users who are already familiar with a subscription-based app. It's a special deal or discount that you can create to engage existing or past subscribers. With promotional offers, you can provide discounted prices, free trials, or other enticing deals to encourage users to renew or re-subscribe.
+
+:::note
+Introductory offers on iOS are applied automatically if the user is eligible. Do not create them in Adapty.
+:::
 
 These offers help attract and keep users engaged, making the app experience more rewarding. By using these special incentives, you can boost user interest and loyalty, contributing to the overall success of their apps.
 
