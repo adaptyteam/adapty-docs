@@ -23,7 +23,7 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 
 
 <Zoom>
-  <img src={require('./img/010401b-CleanShot_2023-08-25_at_11.50.592x.png').default}
+  <img src={require('./img/010401b-CleanShot_2023-08-25_at_11.50.592x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 
 
 <Zoom>
-  <img src={require('./img/9638538-CleanShot_2023-08-25_at_11.47.322x.png').default}
+  <img src={require('./img/9638538-CleanShot_2023-08-25_at_11.47.322x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,7 +59,7 @@ Adapty supports both **Version 1** and **Version 2** Notifications. You can choo
 
 
 <Zoom>
-  <img src={require('./img/dd65995-CleanShot_2023-03-24_at_11.19.532x.png').default}
+  <img src={require('./img/dd65995-CleanShot_2023-03-24_at_11.19.532x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -81,7 +81,7 @@ Sometimes, you might still want to receive raw S2S events from Apple. To continu
 
 
 <Zoom>
-  <img src={require('./img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.png').default}
+  <img src={require('./img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

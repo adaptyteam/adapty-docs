@@ -16,7 +16,7 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 
 
 <Zoom>
-  <img src={require('./img/1734111-edit_tools.png').default}
+  <img src={require('./img/1734111-edit_tools.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -32,7 +32,7 @@ The next step is to open Ads Manager. Usually, it is present in the left panel o
 
 
 <Zoom>
-  <img src={require('./img/01e2f0f-setup_ads_manager.png').default}
+  <img src={require('./img/01e2f0f-setup_ads_manager.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -52,7 +52,7 @@ In the Ads Manager tab, you should select the project you are creating the repor
 
 
 <Zoom>
-  <img src={require('./img/80e4cd5-general_report_view.png').default}
+  <img src={require('./img/80e4cd5-general_report_view.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -68,7 +68,7 @@ In the Ads Manager tab, you should select the project you are creating the repor
 
 
 <Zoom>
-  <img src={require('./img/6bd82d8-create_custom_report.png').default}
+  <img src={require('./img/6bd82d8-create_custom_report.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -88,7 +88,7 @@ The next step is to adjust breakdowns. Adapty needs your data granulated by day,
 
 
 <Zoom>
-  <img src={require('./img/5281d00-breakdowns.png').default}
+  <img src={require('./img/5281d00-breakdowns.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -114,7 +114,7 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 
 <Zoom>
-  <img src={require('./img/a8df062-performance_metrics.png').default}
+  <img src={require('./img/a8df062-performance_metrics.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -130,7 +130,7 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 
 <Zoom>
-  <img src={require('./img/6df97d7-engagement_metrics.png').default}
+  <img src={require('./img/6df97d7-engagement_metrics.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -146,7 +146,7 @@ Settings metrics: Reporting starts, Reporting ends, Ad ID, Ad set ID, Ad Set Nam
 
 
 <Zoom>
-  <img src={require('./img/e9547ad-settings_metrics.png').default}
+  <img src={require('./img/e9547ad-settings_metrics.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -169,7 +169,7 @@ Then, we have to download the report. Please select CSV file format and don\`t a
 
 
 <Zoom>
-  <img src={require('./img/7f42174-select_download.png').default}
+  <img src={require('./img/7f42174-select_download.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -185,7 +185,7 @@ Then, we have to download the report. Please select CSV file format and don\`t a
 
 
 <Zoom>
-  <img src={require('./img/b0e2ad2-finish_export.png').default}
+  <img src={require('./img/b0e2ad2-finish_export.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

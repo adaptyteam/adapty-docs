@@ -14,7 +14,7 @@ To make a product visible and selectable within a [paywall](paywalls) for your a
 
 
 <Zoom>
-  <img src={require('./img/0479b51-ad_product_to_paywall.png').default}
+  <img src={require('./img/0479b51-ad_product_to_paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

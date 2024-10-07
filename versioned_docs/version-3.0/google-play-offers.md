@@ -45,7 +45,7 @@ Now you can create multiple offers for every base plan (previously known as subs
 
 
 <Zoom>
-  <img src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.png').default}
+  <img src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,7 +66,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 
 <Zoom>
-  <img src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.png').default}
+  <img src={require('./img/75a5d69-eb0bc9a-001931-November-03-eQdthUMx.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -84,7 +84,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 
 <Zoom>
-  <img src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.png').default}
+  <img src={require('./img/ff282c2-c0b1dfa-001930-November-03-XYnbieeu.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -106,7 +106,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 
 <Zoom>
-  <img src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.png').default}
+  <img src={require('./img/ee302dc-a506e5a-001934-November-03-TVBLOz2L.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -129,7 +129,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 
 <Zoom>
-  <img src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.png').default}
+  <img src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -147,7 +147,7 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    
 
 <Zoom>
-  <img src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.png').default}
+  <img src={require('./img/d3fc09b-f149ba6-001937-November-03-MO9Gz3ap.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -164,7 +164,7 @@ After activating the offer, you should copy its ID to use in Adapty.
 
 
 <Zoom>
-  <img src={require('./img/0800923-001938-November-03-ANtSI48t.png').default}
+  <img src={require('./img/0800923-001938-November-03-ANtSI48t.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -186,7 +186,7 @@ Let's create a 1-month product in Adapty with all the offers. You can do it from
 
 
 <Zoom>
-  <img src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.png').default}
+  <img src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -215,7 +215,7 @@ If you configure a paywall like this, a monthly subscription will not have a fre
 
 
 <Zoom>
-  <img src={require('./img/3f2c59f-001942-November-03-9iARsVaa.png').default}
+  <img src={require('./img/3f2c59f-001942-November-03-9iARsVaa.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

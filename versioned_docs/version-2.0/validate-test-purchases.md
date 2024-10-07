@@ -17,7 +17,7 @@ If the test purchase is successful, its transaction event will be dsplayed in th
 
 
 <Zoom>
-  <img src={require('./img/9ade2d5-event_feed_sandbox.png').default}
+  <img src={require('./img/9ade2d5-event_feed_sandbox.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -39,7 +39,7 @@ If you observe no transaction event within 10 minutes or encounter an error in t
 
 
 <Zoom>
-  <img src={require('./img/31a79b2-no_events.png').default}
+  <img src={require('./img/31a79b2-no_events.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

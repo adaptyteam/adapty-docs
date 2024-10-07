@@ -24,7 +24,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
 
 <Zoom>
-  <img src={require('./img/7889edb-package_name.png').default}
+  <img src={require('./img/7889edb-package_name.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,7 +44,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
    
 <Zoom>
-  <img src={require('./img/b00066c-package_name.png').default}
+  <img src={require('./img/b00066c-package_name.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,7 +65,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
 
 <Zoom>
-  <img src={require('./img/20fdba1-service_key_file.png').default}
+  <img src={require('./img/20fdba1-service_key_file.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

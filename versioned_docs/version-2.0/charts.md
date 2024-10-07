@@ -13,7 +13,7 @@ Adapty's charts provide a comprehensive view of your app's performance metrics, 
 
 
 <Zoom>
-  <img src={require('./img/3b4b570-CleanShot_2023-07-10_at_17.27.102x.png').default}
+  <img src={require('./img/3b4b570-CleanShot_2023-07-10_at_17.27.102x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

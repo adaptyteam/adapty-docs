@@ -15,7 +15,7 @@ To link an access level to a product:
 
 
 <Zoom>
-  <img src={require('./img/e71651e-add_access_level_to_product.png').default}
+  <img src={require('./img/e71651e-add_access_level_to_product.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

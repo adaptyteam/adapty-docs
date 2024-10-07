@@ -11,7 +11,7 @@ App Store analytics allows you to filter metrics by dates, products, and countri
 
 
 <Zoom>
-  <img src={require('./img/cleanshot-2020-09-16-at-01.20.21-2x.png').default}
+  <img src={require('./img/cleanshot-2020-09-16-at-01.20.21-2x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

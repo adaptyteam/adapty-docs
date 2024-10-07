@@ -19,7 +19,7 @@ For a more detailed analysis of each placements, you can navigate to the placeme
 
 
 <Zoom>
-  <img src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.png').default}
+  <img src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -85,7 +85,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 
 <Zoom>
-  <img src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.png').default}
+  <img src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -138,7 +138,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 
 <Zoom>
-  <img src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.png').default}
+  <img src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

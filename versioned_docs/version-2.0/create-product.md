@@ -18,7 +18,7 @@ After your products are set up in the stores, you are ready to add your products
 
 
 <Zoom>
-  <img src={require('./img/7c9573a-products_tab.png').default}
+  <img src={require('./img/7c9573a-products_tab.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,7 +35,7 @@ After your products are set up in the stores, you are ready to add your products
 2. Click the **Create product** button located in the top-right corner of the product list page. This action will initiate the process of creating a product within your app. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
 
 <Zoom>
-  <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.png').default}
+  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,10 +44,6 @@ After your products are set up in the stores, you are ready to add your products
   }}
 />
 </Zoom>
-
-
-
-
 
 3. In the opened **Create product** window, enter the following data:
 
@@ -107,6 +103,19 @@ After your products are set up in the stores, you are ready to add your products
       Adapty doesn’t validate data with custom app stores and does not process purchases made through them. Make sure your backend processes the purchase and sends the transaction to Adapty using the [Adapty server-side API](getting-started-with-server-side-api). Adapty will only provide access, trigger a transaction event, send it to integrations, and reflect it in analytics after the transaction is received.
       :::
       </details>
+=======
+
+<Zoom>
+  <img src={require('./img/bb0b34c-CleanShot_2023-07-28_at_16.40.362x.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+>>>>>>> Pictures
 
 6. (optional) You can [create offers](create-offer) for the product if you need to.
 

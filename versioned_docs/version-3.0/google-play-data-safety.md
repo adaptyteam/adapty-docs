@@ -15,7 +15,7 @@ Here is a short guide on data that Adapty collects to help you provide the requi
 
 
 <Zoom>
-  <img src={require('./img/3508c24-image4.png').default}
+  <img src={require('./img/3508c24-image4.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -73,7 +73,7 @@ This data collection is required and cannot be turned off.
 
 
 <Zoom>
-  <img src={require('./img/2c60161-image5.png').default}
+  <img src={require('./img/2c60161-image5.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -92,7 +92,7 @@ Select the 'App functionality' and 'Analytics' checkboxes.
 
 
 <Zoom>
-  <img src={require('./img/07a3c9e-image2.png').default}
+  <img src={require('./img/07a3c9e-image2.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -112,7 +112,7 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 
 <Zoom>
-  <img src={require('./img/1057870-image7.png').default}
+  <img src={require('./img/1057870-image7.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -130,7 +130,7 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 
 <Zoom>
-  <img src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.png').default}
+  <img src={require('./img/d10f132-CleanShot_2023-03-01_at_17.55.312x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -146,7 +146,7 @@ If you are using Adapty, you must disclose that your app collects 'Purchase hist
 
 
 <Zoom>
-  <img src={require('./img/ccb1a2a-image5.png').default}
+  <img src={require('./img/ccb1a2a-image5.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -166,7 +166,7 @@ Once you have made your data safety selections, Google will display a preview of
 
 
 <Zoom>
-  <img src={require('./img/e8d9b73-image3.png').default}
+  <img src={require('./img/e8d9b73-image3.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

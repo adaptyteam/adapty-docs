@@ -24,7 +24,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 
 
 <Zoom>
-  <img src={require('./img/bf5cdab-email_reports.png').default}
+  <img src={require('./img/bf5cdab-email_reports.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,7 +42,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 
 
 <Zoom>
-  <img src={require('./img/ebe22ac-email_reports_apps.png').default}
+  <img src={require('./img/ebe22ac-email_reports_apps.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,7 +66,7 @@ Rest assured, whichever reports you select, you'll receive the most up-to-date a
 
 
 <Zoom>
-  <img src={require('./img/59ad3d8-time_zone.png').default}
+  <img src={require('./img/59ad3d8-time_zone.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -37,7 +37,7 @@ For those who prefer a hands-on approach, templates with a minimal design offer 
 
 
 <Zoom>
-  <img src={require('./img/eba907e-PB_templates_minimal_design.png').default}
+  <img src={require('./img/eba907e-PB_templates_minimal_design.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -59,7 +59,7 @@ When creating a new paywall, Adapty offers a selection of templates. You can eas
 
    
 <Zoom>
-  <img src={require('./img/24a8f3b-PB_change_template.png').default}
+  <img src={require('./img/24a8f3b-PB_change_template.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -75,7 +75,7 @@ When creating a new paywall, Adapty offers a selection of templates. You can eas
 
    
 <Zoom>
-  <img src={require('./img/984a1e9-PB_select_template.png').default}
+  <img src={require('./img/984a1e9-PB_select_template.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

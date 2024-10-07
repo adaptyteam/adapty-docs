@@ -17,7 +17,7 @@ To create a new placement:
 
    
 <Zoom>
-  <img src={require('./img/0561bf8-placements_create_new.png').default}
+  <img src={require('./img/0561bf8-placements_create_new.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,7 +33,7 @@ To create a new placement:
 
    
 <Zoom>
-  <img src={require('./img/3dc0e8c-new_placement.png').default}
+  <img src={require('./img/3dc0e8c-new_placement.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

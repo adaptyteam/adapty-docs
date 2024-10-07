@@ -18,7 +18,7 @@ Cohorts work with the app data we gather through SDK and store notifications and
 
 
 <Zoom>
-  <img src={require('./img/df9e069-CleanShot_2023-08-08_at_13.27.422x.png').default}
+  <img src={require('./img/df9e069-CleanShot_2023-08-08_at_13.27.422x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ Cohorts work with the app data we gather through SDK and store notifications and
 
 
 <Zoom>
-  <img src={require('./img/f03fdaf-CleanShot_2023-08-08_at_13.28.482x.png').default}
+  <img src={require('./img/f03fdaf-CleanShot_2023-08-08_at_13.28.482x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -60,7 +60,7 @@ Choose your convenient mode or use them both for more conclusions and ideas.
 
 
 <Zoom>
-  <img src={require('./img/ba5333c-CleanShot_2023-08-08_at_13.29.442x.png').default}
+  <img src={require('./img/ba5333c-CleanShot_2023-08-08_at_13.29.442x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -95,7 +95,7 @@ In the image below you can see a typical cohort.
 
 
 <Zoom>
-  <img src={require('./img/74f5e10-gfd.png').default}
+  <img src={require('./img/74f5e10-gfd.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -113,7 +113,7 @@ You can hover on any cell in the cohort to view detailed metrics for this period
 
 
 <Zoom>
-  <img src={require('./img/9b8a433-Screenshot_2023-08-08_at_13.36.52.png').default}
+  <img src={require('./img/9b8a433-Screenshot_2023-08-08_at_13.36.52.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -135,7 +135,7 @@ Adapty offers a wide range of controls to help you gain valuable insights when l
 
 
 <Zoom>
-  <img src={require('./img/be9eca6-CleanShot_2023-08-08_at_13.37.512x.png').default}
+  <img src={require('./img/be9eca6-CleanShot_2023-08-08_at_13.37.512x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -155,7 +155,7 @@ There are 4 metrics that can be shown in cohorts: Subscriptions, Revenue, ARPPU,
 
 
 <Zoom>
-  <img src={require('./img/eeb479d-dfgdfgdf.png').default}
+  <img src={require('./img/eeb479d-dfgdfgdf.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -173,7 +173,7 @@ You can set the date range for cohorts and choose the segment. The segment deter
 
 
 <Zoom>
-  <img src={require('./img/56c0d5b-CleanShot_2023-08-08_at_14.04.572x.png').default}
+  <img src={require('./img/56c0d5b-CleanShot_2023-08-08_at_14.04.572x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

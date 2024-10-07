@@ -51,7 +51,7 @@ In LTV (lifetime value) analysis, the cohort length is chosen in the grouping se
 We have 2 formats of date and time - American and European. You can set one of them in your Adapty account as described [here](account).
 
 <Zoom>
-  <img src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.png').default}
+  <img src={require('./img/f3480e4-CleanShot_2023-07-10_at_20.56.292x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,7 +76,7 @@ Here's how you can interpret the insights provided by the comparison feature:
 - **Multiple Grouping and Comparison:** If you have multiple grouping options enabled, you can view multiple comparisons simultaneously on a single chart. This feature is available specifically for column charts.
 
 <Zoom>
-  <img src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.png').default}
+  <img src={require('./img/c07addf-CleanShot_2023-07-10_at_20.59.372x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -111,7 +111,7 @@ In Advanced Analytics, you have access to the following filtering and grouping o
 | Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
 
 <Zoom>
-  <img src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.png').default}
+  <img src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -128,7 +128,7 @@ The Analytics section provides you with the flexibility to view each chart in di
 To change the view of a chart, simply locate and select the view dropdown menu, and then choose the desired representation option
 
 <Zoom>
-  <img src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.png').default}
+  <img src={require('./img/b70ae4f-CleanShot_2023-07-10_at_20.53.002x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -148,7 +148,7 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
 
 
 <Zoom>
-  <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.png').default}
+  <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -166,7 +166,7 @@ In the charts tab of the Analytics section, Adapty introduces a dropdown field w
 
 
 <Zoom>
-  <img src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.png').default}
+  <img src={require('./img/ad32b17-CleanShot_2023-07-10_at_20.51.382x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

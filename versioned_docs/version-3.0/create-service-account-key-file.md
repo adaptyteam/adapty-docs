@@ -17,7 +17,7 @@ It usually takes at least 24 hours for your new service account to become active
 
 
 <Zoom>
-  <img src={require('./img/c3156cb-action_manage_keys.png').default}
+  <img src={require('./img/c3156cb-action_manage_keys.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,7 +35,7 @@ It usually takes at least 24 hours for your new service account to become active
 
    
 <Zoom>
-  <img src={require('./img/44b30ee-create_new_key.png').default}
+  <img src={require('./img/44b30ee-create_new_key.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,7 +52,7 @@ It usually takes at least 24 hours for your new service account to become active
 
    
 <Zoom>
-  <img src={require('./img/e7b8101-cretae_private_key.png').default}
+  <img src={require('./img/e7b8101-cretae_private_key.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -69,7 +69,7 @@ It usually takes at least 24 hours for your new service account to become active
 
    
 <Zoom>
-  <img src={require('./img/187ddc6-Private_key_saved.png').default}
+  <img src={require('./img/187ddc6-Private_key_saved.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

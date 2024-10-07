@@ -13,7 +13,7 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
 
    
 <Zoom>
-  <img src={require('./img/6b9e928-edit_product.png').default}
+  <img src={require('./img/6b9e928-edit_product.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,7 +30,7 @@ Adapty allows you to offer discounted pricing to existing or churned subscribers
 
    
 <Zoom>
-  <img src={require('./img/b0e04fe-add_offer.png').default}
+  <img src={require('./img/b0e04fe-add_offer.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -48,7 +48,7 @@ To use the Adapty Paywall Builder:
    
 
 <Zoom>
-  <img src={require('./img/cdca1ee-builder_templates.png').default}
+  <img src={require('./img/cdca1ee-builder_templates.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -66,7 +66,7 @@ To use the Adapty Paywall Builder:
    
 
 <Zoom>
-  <img src={require('./img/795b91b-builder_main_window.png').default}
+  <img src={require('./img/795b91b-builder_main_window.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -103,7 +103,7 @@ To migrate a paywall to the new Paywall Builder:
    
 
 <Zoom>
-  <img src={require('./img/3f4d4c2-PB_migrate_paywall.png').default}
+  <img src={require('./img/3f4d4c2-PB_migrate_paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -123,7 +123,7 @@ To migrate a paywall to the new Paywall Builder:
    
 
 <Zoom>
-  <img src={require('./img/78f63f0-PB_hughlighted_issues.png').default}
+  <img src={require('./img/78f63f0-PB_hughlighted_issues.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -148,7 +148,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 
 <Zoom>
-  <img src={require('./img/210c8e2-simple_elements.png').default}
+  <img src={require('./img/210c8e2-simple_elements.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -171,7 +171,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 
 <Zoom>
-  <img src={require('./img/8a23be4-compound_elements.png').default}
+  <img src={require('./img/8a23be4-compound_elements.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

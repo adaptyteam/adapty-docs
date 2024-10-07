@@ -22,15 +22,15 @@ You can only use tag variables when describing products and offers in the "Produ
 
 1. Select the "Products" tab of the Builder
 
-![](https://files.readme.io/88265fb-tag_variables_scroll_to_products.png)
+![](https://files.readme.io/88265fb-tag_variables_scroll_to_products.webp)
 
 2. Choose the product you'd like to customize:
 
-![](https://files.readme.io/0a69e8f-tag_variables_select_product.png)
+![](https://files.readme.io/0a69e8f-tag_variables_select_product.webp)
 
 3. Use variables from [the table below](paywall-builder-tag-variables#full-list-of-variables) in any of the text fields to describe the product and its offers:
 
-![](https://files.readme.io/8c77550-tag_variables_usage.png)
+![](https://files.readme.io/8c77550-tag_variables_usage.webp)
 
 4. Check Preview on the right side of the screen to make sure all renders as intended.
 
@@ -39,7 +39,7 @@ You can only use tag variables when describing products and offers in the "Produ
 
 You can disable this behavior by pressing "eye" icon in the top-right corner of the Preview and switching off the **"Tags preview values"** switch. The preview will then show the actual values of the variables:
 
-![](https://files.readme.io/aaf7439-tag_variables_preview_values_off.png)
+![](https://files.readme.io/aaf7439-tag_variables_preview_values_off.webp)
 :::
 
 ### Full list of variables

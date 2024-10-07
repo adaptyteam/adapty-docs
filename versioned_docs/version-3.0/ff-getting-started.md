@@ -32,7 +32,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 1. In your project, click **Settings and Integrations** from the left menu.
    <Zoom>
-     <img src={require('./FF_img/main_settings.png').default}
+     <img src={require('./FF_img/main_settings.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,7 +43,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
    </Zoom>
 2. In the **App Settings** section on the left, select **Project dependencies**.
    <Zoom>
-     <img src={require('./FF_img/settings_dependencies.png').default}
+     <img src={require('./FF_img/settings_dependencies.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,7 +55,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 3. In the **Project Dependencies** window, click the **Add Dependency** button.
 
 <Zoom>
-  <img src={require('./FF_img/add-dependency.png').default}
+  <img src={require('./FF_img/add-dependency.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -67,7 +67,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 4. In the **FlutterFlow Libraries** field, enter `adapty-xtuel0`.
    <Zoom>
-     <img src={require('./FF_img/select_adapty_plugin.png').default}
+     <img src={require('./FF_img/select_adapty_plugin.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -87,7 +87,7 @@ For the Adapty Dashboard to recognize your app, you’ll need to provide a speci
 1. In your FlutterFlow project, open **Settings and Integrations** -> **Permissions** from the left menu.
 
 <Zoom>
-  <img src={require('./FF_img/initiate.png').default}
+  <img src={require('./FF_img/initiate.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -100,7 +100,7 @@ For the Adapty Dashboard to recognize your app, you’ll need to provide a speci
 2. In the opened **Permissions** window, click the **Add Permission** button.
 3. In both the **iOS Permission Key** and **Android Permission Key** field, paste `AdaptyPublicSdkKey`.
    <Zoom>
-     <img src={require('./FF_img/AdaptyPublicSdkKey.png').default}
+     <img src={require('./FF_img/AdaptyPublicSdkKey.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

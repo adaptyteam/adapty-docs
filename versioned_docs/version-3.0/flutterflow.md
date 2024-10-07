@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
   <a href="https://app.adapty.io/flutterflow-offer/">
     <img
-      src={require('./img/adapty-plugin-banner.png').default}
+      src={require('./img/adapty-plugin-banner.webp').default}
       alt="Adapty Plugin Banner"
       style={{
         border: '1px solid #727272', // border width and color

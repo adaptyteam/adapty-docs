@@ -39,7 +39,7 @@ First of all set credentials to build a connection between Amazon S3 and Adapty 
 
 
 <Zoom>
-  <img src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.png').default}
+  <img src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -72,7 +72,7 @@ First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amaz
 
 
 <Zoom>
-  <img src={require('./img/7af075c-CleanShot_2023-03-21_at_10.52.002x.png').default}
+  <img src={require('./img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -119,7 +119,7 @@ In the Policy editor, paste the following JSON and change `adapty-s3-integration
 
 
 <Zoom>
-  <img src={require('./img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.png').default}
+  <img src={require('./img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -137,7 +137,7 @@ After completing the policy configuration, you may choose to add tags (optional)
 
 
 <Zoom>
-  <img src={require('./img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.png').default}
+  <img src={require('./img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -159,7 +159,7 @@ To proceed with that, navigate to the IAM Console and select the [Users section]
 
 
 <Zoom>
-  <img src={require('./img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.png').default}
+  <img src={require('./img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -177,7 +177,7 @@ Give the user a name, choose **Access key – Programmatic access**, and proceed
 
 
 <Zoom>
-  <img src={require('./img/467ee4d-j6aoX.png').default}
+  <img src={require('./img/467ee4d-j6aoX.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -195,7 +195,7 @@ For the next step, please select the **Add user to group** option and then click
 
 
 <Zoom>
-  <img src={require('./img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.png').default}
+  <img src={require('./img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -213,7 +213,7 @@ Next, you need to assign a name to your User Group and select the policy that wa
 
 
 <Zoom>
-  <img src={require('./img/df29c12-CleanShot_2023-03-21_at_11.28.052x.png').default}
+  <img src={require('./img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -231,7 +231,7 @@ After successfully creating the group, please **select it** and proceed to the n
 
 
 <Zoom>
-  <img src={require('./img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.png').default}
+  <img src={require('./img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -249,7 +249,7 @@ Since this is the final step for this section, you may proceed by simply clickin
 
 
 <Zoom>
-  <img src={require('./img/ea43722-CleanShot_2023-03-21_at_11.40.462x.png').default}
+  <img src={require('./img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -267,7 +267,7 @@ Lastly, you can either **download the credentials in .csv** format or alternativ
 
 
 <Zoom>
-  <img src={require('./img/bcf35e1-S3created.png').default}
+  <img src={require('./img/bcf35e1-S3created.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -289,7 +289,7 @@ The specified date range will be used to export the events created from Date A 0
 
 
 <Zoom>
-  <img src={require('./img/466bd29-CleanShot_2023-03-21_at_12.35.252x.png').default}
+  <img src={require('./img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -383,7 +383,7 @@ Below the credentials, there are three groups of events you can export, send, an
 
 
 <Zoom>
-  <img src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.png').default}
+  <img src={require('./img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

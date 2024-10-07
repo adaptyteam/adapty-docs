@@ -33,7 +33,7 @@ To install the Adapty SDKs:
 
    
 <Zoom>
-  <img src={require('./img/456bd98-adapty-unity-plugin.png').default}
+  <img src={require('./img/456bd98-adapty-unity-plugin.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '400px', /* image width */
@@ -50,7 +50,7 @@ To install the Adapty SDKs:
 
    
 <Zoom>
-  <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.png').default}
+  <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '400px', /* image width */
@@ -144,7 +144,7 @@ Configurational options:
 
 
 <Zoom>
-  <img src={require('./img/2ccd564-create_adapty_listener.png').default}
+  <img src={require('./img/2ccd564-create_adapty_listener.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

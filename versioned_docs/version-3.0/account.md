@@ -13,7 +13,7 @@ There are several important things you can set on your account page so let's go 
 
 
 <Zoom>
-  <img src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.png').default}
+  <img src={require('./img/27b3508-CleanShot_2022-12-21_at_20.47.10.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,7 +33,7 @@ Here you fill in your name and the name of your company. It's useful to have thi
 
 
 <Zoom>
-  <img src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.png').default}
+  <img src={require('./img/c48cdeb-CleanShot_2022-12-22_at_08.24.40.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

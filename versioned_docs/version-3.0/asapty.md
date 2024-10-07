@@ -16,7 +16,7 @@ This specific integration doesn't add any attribution data to Adapty, as we alre
 To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/integrations/asapty) in the Adapty dashboard and fill out the field value for Asapty ID.
 
 <Zoom>
-  <img src={require('./img/895de2b-CleanShot_2023-08-14_at_18.57.462x.png').default}
+  <img src={require('./img/895de2b-CleanShot_2023-08-14_at_18.57.462x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -33,7 +33,7 @@ Asapty ID can be found in Settings> General section in your Asapty account.
 Below the credentials, there are three groups of events you can send to Asapty from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 <Zoom>
-  <img src={require('./img/58ddf41-CleanShot_2023-08-15_at_15.11.072x.png').default}
+  <img src={require('./img/58ddf41-CleanShot_2023-08-15_at_15.11.072x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

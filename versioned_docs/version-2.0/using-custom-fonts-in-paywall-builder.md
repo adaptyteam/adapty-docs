@@ -19,7 +19,7 @@ Every text you see in Paywall Builder can have its own font and style. You can a
 
 
 <Zoom>
-  <img src={require('./img/2b67da0-CleanShot_2024-02-07_at_13.27.092x.png').default}
+  <img src={require('./img/2b67da0-CleanShot_2024-02-07_at_13.27.092x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -41,7 +41,7 @@ When you create a paywall in Builder, Adapty uses a system font by default. That
 
 
 <Zoom>
-  <img src={require('./img/8812fab-CleanShot_2024-01-12_at_19.33.072x.png').default}
+  <img src={require('./img/8812fab-CleanShot_2024-01-12_at_19.33.072x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -67,7 +67,7 @@ If you need more than what is offered by default, you will need to add a custom 
 
 
 <Zoom>
-  <img src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.png').default}
+  <img src={require('./img/89fb748-CleanShot_2024-02-07_at_13.21.552x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -122,7 +122,7 @@ Second method is way simpler: you just need to install the font on your Mac comp
 
 
 <Zoom>
-  <img src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.png').default}
+  <img src={require('./img/bb8a902-CleanShot_2024-01-12_at_20.32.222x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */

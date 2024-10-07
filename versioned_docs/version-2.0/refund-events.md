@@ -11,7 +11,7 @@ The Refund events chart displays the number of refunded purchases and subscripti
 
 
 <Zoom>
-  <img src={require('./img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.png').default}
+  <img src={require('./img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

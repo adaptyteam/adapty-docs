@@ -20,7 +20,7 @@ Funnels work with the data that we gather through SDK and store notifications an
 
 
 <Zoom>
-  <img src={require('./img/10c99f9-CleanShot_2022-06-24_at_10.08.53.png').default}
+  <img src={require('./img/10c99f9-CleanShot_2022-06-24_at_10.08.53.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -40,7 +40,7 @@ Let's go through the elements of a funnel to understand how to read the user jou
 
 
 <Zoom>
-  <img src={require('./img/ed5bf5d-CleanShot_2022-06-23_at_09.36.49.png').default}
+  <img src={require('./img/ed5bf5d-CleanShot_2022-06-23_at_09.36.49.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,7 +59,7 @@ A grey area nearby stands for transition parameters between steps. A conversion 
 
 
 <Zoom>
-  <img src={require('./img/00416f9-CleanShot_2022-06-23_at_14.02.06.png').default}
+  <img src={require('./img/00416f9-CleanShot_2022-06-23_at_14.02.06.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -82,7 +82,7 @@ A grey area next to the 2nd column stands for transition. A conversion percent t
 
 
 <Zoom>
-  <img src={require('./img/fb11650-CleanShot_2022-06-23_at_15.54.32.png').default}
+  <img src={require('./img/fb11650-CleanShot_2022-06-23_at_15.54.32.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,7 +104,7 @@ So a grey area next to the 3rd column shows a conversion percent to the next ste
 
 
 <Zoom>
-  <img src={require('./img/7b88909-CleanShot_2022-06-23_at_15.54.32_-_2.png').default}
+  <img src={require('./img/7b88909-CleanShot_2022-06-23_at_15.54.32_-_2.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -122,7 +122,7 @@ Starting from the trial you can hover on the step to see churn reasons.
 
 
 <Zoom>
-  <img src={require('./img/df40d2f-CleanShot_2022-06-23_at_17.36.08.png').default}
+  <img src={require('./img/df40d2f-CleanShot_2022-06-23_at_17.36.08.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -144,7 +144,7 @@ Drop off before the renewal to the 2nd period percent and absolute value are sho
 
 
 <Zoom>
-  <img src={require('./img/d13bf9b-CleanShot_2022-06-23_at_15.54.32-3.png').default}
+  <img src={require('./img/d13bf9b-CleanShot_2022-06-23_at_15.54.32-3.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -172,7 +172,7 @@ A funnel chart is enriched with data in a table to provide handy material for yo
 
 
 <Zoom>
-  <img src={require('./img/4787aff-CleanShot_2022-06-23_at_21.01.44.png').default}
+  <img src={require('./img/4787aff-CleanShot_2022-06-23_at_21.01.44.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -194,7 +194,7 @@ It may seem that there is a product type division: Install -> Paid column shows 
 
 
 <Zoom>
-  <img src={require('./img/a9bcbc7-CleanShot_2022-06-23_at_21.29.12.png').default}
+  <img src={require('./img/a9bcbc7-CleanShot_2022-06-23_at_21.29.12.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -222,7 +222,7 @@ Select Absolute #, Relative %, or both to view only necessary data.
 
 
 <Zoom>
-  <img src={require('./img/1475e42-CleanShot_2022-06-23_at_21.50.33_-2.png').default}
+  <img src={require('./img/1475e42-CleanShot_2022-06-23_at_21.50.33_-2.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -240,7 +240,7 @@ Finally, on the right of the control panel, there's a button to export funnel da
 
 
 <Zoom>
-  <img src={require('./img/ff23846-CleanShot_2022-06-23_at_22.15.49.png').default}
+  <img src={require('./img/ff23846-CleanShot_2022-06-23_at_22.15.49.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

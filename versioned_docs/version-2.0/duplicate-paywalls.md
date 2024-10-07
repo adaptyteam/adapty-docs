@@ -17,7 +17,7 @@ To duplicate a paywall in the Adapty dashboard:
 
 
 <Zoom>
-  <img src={require('./img/07f592d-duplicate_paywall.png').default}
+  <img src={require('./img/07f592d-duplicate_paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

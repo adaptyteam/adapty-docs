@@ -12,7 +12,7 @@ You can navigate to the General tab of the App Settings page to manage your app'
 ## 1. App details
 
 <Zoom>
-  <img src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.png').default}
+  <img src={require('./img/8fa2929-CleanShot_2023-04-21_at_15.16.222x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -27,7 +27,7 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 ## 2\. Member of Small Business Program and Reduced Service Fee
 
 <Zoom>
-  <img src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.png').default}
+  <img src={require('./img/825e2be-CleanShot_2023-04-19_at_13.43.292x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -42,7 +42,7 @@ If you're a member of the Apple Small Business Program and/or Google's Reduced S
 ## 3\. Reporting timezone
 
 <Zoom>
-  <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.png').default}
+  <img src={require('./img/47227f9-CleanShot_2023-04-19_at_13.45.302x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -74,7 +74,7 @@ To maintain accurate data and avoid discrepancies between Adapty analytics and A
 So you can choose the logic that will be applied to subscription price increases in Adapty:
 
 <Zoom>
-  <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.png').default}
+  <img src={require('./img/b766c8b-CleanShot_2023-07-18_at_19.28.18_22x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

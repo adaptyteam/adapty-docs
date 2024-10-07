@@ -44,7 +44,7 @@ Note that sometimes predicted P2BB can contradict the current P2BB. When that's 
 
 
 <Zoom>
-  <img src={require('./img/74577c6-CleanShot_2024-02-15_at_13.08.452x.png').default}
+  <img src={require('./img/74577c6-CleanShot_2024-02-15_at_13.08.452x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

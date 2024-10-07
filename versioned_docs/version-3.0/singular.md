@@ -21,7 +21,7 @@ For this integration to work, the Singular SDK Key is required. It can be found 
 
 
 <Zoom>
-  <img src={require('./img/4bc50d1-singular_sdk_key.png').default}
+  <img src={require('./img/4bc50d1-singular_sdk_key.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -39,7 +39,7 @@ Below the credentials, there are three groups of events you can send to Singular
 
 
 <Zoom>
-  <img src={require('./img/e67de0c-singular_events.png').default}
+  <img src={require('./img/e67de0c-singular_events.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

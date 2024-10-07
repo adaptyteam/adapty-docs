@@ -19,7 +19,7 @@ To set up the integration with [Amplitude](https://amplitude.com/), go to [Integ
 
 
 <Zoom>
-  <img src={require('./img/3b50552-CleanShot_2023-08-15_at_16.47.102x.png').default}
+  <img src={require('./img/3b50552-CleanShot_2023-08-15_at_16.47.102x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -37,7 +37,7 @@ You need to enter the **API Key** into Adapty. To find a token, go to your **Pro
 
 
 <Zoom>
-  <img src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.png').default}
+  <img src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,7 +59,7 @@ Below the credentials, there are three groups of events you can send to Amplitud
 
 
 <Zoom>
-  <img src={require('./img/da67694-CleanShot_2023-08-15_at_16.52.352x.png').default}
+  <img src={require('./img/da67694-CleanShot_2023-08-15_at_16.52.352x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

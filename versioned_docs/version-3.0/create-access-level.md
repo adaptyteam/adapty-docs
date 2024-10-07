@@ -17,7 +17,7 @@ To create a new access level:
 
    
 <Zoom>
-  <img src={require('./img/5b2bc83-access_levels.png').default}
+  <img src={require('./img/5b2bc83-access_levels.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ To create a new access level:
 
    
 <Zoom>
-  <img src={require('./img/b8646ca-image.png').default}
+  <img src={require('./img/b8646ca-image.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

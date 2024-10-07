@@ -21,7 +21,7 @@ Retention is performed with the data that we gather through SDK and store notifi
 
 
 <Zoom>
-  <img src={require('./img/86dc5ac-CleanShot_2023-01-09_at_18.56.15.png').default}
+  <img src={require('./img/86dc5ac-CleanShot_2023-01-09_at_18.56.15.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -55,7 +55,7 @@ So let's keep in a glance together WHY and HOW.
 
 
 <Zoom>
-  <img src={require('./img/e501382-CleanShot_2022-07-11_at_21.09.20.png').default}
+  <img src={require('./img/e501382-CleanShot_2022-07-11_at_21.09.20.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -75,7 +75,7 @@ Such a measurement benefits because it's usually cheaper to sell to your custome
 
 
 <Zoom>
-  <img src={require('./img/e10de4a-CleanShot_2022-07-11_at_21.06.45.png').default}
+  <img src={require('./img/e10de4a-CleanShot_2022-07-11_at_21.06.45.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -94,7 +94,7 @@ The second reason WHY is that retention charts show the actual consuming lifetim
 
 
 <Zoom>
-  <img src={require('./img/26a7026-CleanShot_2022-07-11_at_21.36.36.png').default}
+  <img src={require('./img/26a7026-CleanShot_2022-07-11_at_21.36.36.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -113,7 +113,7 @@ Moving faster than the main competitors is good but sometimes jumping out of the
 
 
 <Zoom>
-  <img src={require('./img/cee8bd6-CleanShot_2022-07-11_at_22.02.39.png').default}
+  <img src={require('./img/cee8bd6-CleanShot_2022-07-11_at_22.02.39.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -139,7 +139,7 @@ For data calculation, this checkbox works as follows. When "Show trials" is sele
 
 
 <Zoom>
-  <img src={require('./img/d849428-CleanShot_2022-07-12_at_11.24.57.png').default}
+  <img src={require('./img/d849428-CleanShot_2022-07-12_at_11.24.57.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -158,7 +158,7 @@ The table contains the same grouping and filters chosen for the chart.
 
 
 <Zoom>
-  <img src={require('./img/e8803c2-CleanShot_2022-07-12_at_11.50.48.png').default}
+  <img src={require('./img/e8803c2-CleanShot_2022-07-12_at_11.50.48.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -186,7 +186,7 @@ Use #Absolute and %Relative control to view the necessary data.
 
 
 <Zoom>
-  <img src={require('./img/d891f77-CleanShot_2022-07-12_at_12.43.11.png').default}
+  <img src={require('./img/d891f77-CleanShot_2022-07-12_at_12.43.11.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -204,7 +204,7 @@ Finally, on the right of the control panel, there's a button to export funnel da
 
 
 <Zoom>
-  <img src={require('./img/f351197-CleanShot_2022-07-12_at_13.26.49.png').default}
+  <img src={require('./img/f351197-CleanShot_2022-07-12_at_13.26.49.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

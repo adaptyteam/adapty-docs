@@ -25,7 +25,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 1. Open the **Actions** section in the right pane.
 
   <Zoom>
-    <img src={require('./FF_img/switch-to-actions.png').default}
+    <img src={require('./FF_img/switch-to-actions.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -38,7 +38,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 2. Open the **Action Flow Editor**.
 
   <Zoom>
-    <img src={require('./FF_img/new-editor.png').default}
+    <img src={require('./FF_img/new-editor.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -50,7 +50,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 
 3. In the **Select Action Trigger** window, choose **On Page Load**.
   <Zoom>
-    <img src={require('./FF_img/new-on-page-load.png').default}
+    <img src={require('./FF_img/new-on-page-load.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -63,7 +63,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 4. In the **No Actions Created** window, click the **Add Action** button.
 
   <Zoom>
-    <img src={require('./FF_img/new-add-action.png').default}
+    <img src={require('./FF_img/new-add-action.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -76,7 +76,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 5. In the **Actions Flow Editor** window, search for `getPaywall` custom action and choose it.
 
   <Zoom>
-    <img src={require('./FF_img/new-get-paywall.png').default}
+    <img src={require('./FF_img/new-get-paywall.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -89,7 +89,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 6. In the **Set Actions Arguments** section, enter the real ID of the [placement you have created](create-placement) in the Adapty Dashboard that includes the paywall. In this example it's `example_ab_test`. Be sure to use your real placement ID!
 
   <Zoom>
-    <img src={require('./FF_img/placement-id.png').default}
+    <img src={require('./FF_img/placement-id.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -103,7 +103,7 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 
 
   <Zoom>
-    <img src={require('./FF_img/new-getpaywallresult-output.png').default}
+    <img src={require('./FF_img/new-getpaywallresult-output.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -120,7 +120,7 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
 1. Click the **plus (+)** button below, click the **Add Action** button to add an action to receive Adapty paywall products. For this, search and choose `getPaywallProducts`.
 
   <Zoom>
-    <img src={require('./FF_img/new-getpaywallproducts.png').default}
+    <img src={require('./FF_img/new-getpaywallproducts.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -133,7 +133,7 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
 2. In the **Set Actions Arguments** section, choose `getPaywallResult` variable created earlier.
 
   <Zoom>
-    <img src={require('./FF_img/action-getPaywallResult.png').default}
+    <img src={require('./FF_img/action-getPaywallResult.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -151,7 +151,7 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
   | Select Field| value |
 
   <Zoom>
-    <img src={require('./FF_img/getPaywall_result-fields.png').default}
+    <img src={require('./FF_img/getPaywall_result-fields.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -171,7 +171,7 @@ Before moving on, let’s verify that the Adapty paywall was received successful
 1. Click the **plus (+)** button and click **Add Conditional**.
 
   <Zoom>
-    <img src={require('./FF_img/new-add-conditional.png').default}
+    <img src={require('./FF_img/new-add-conditional.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -184,7 +184,7 @@ Before moving on, let’s verify that the Adapty paywall was received successful
 2. In the **Action Output** section, select the action output variable created earlier (`getPaywallResult` in our example).
 
   <Zoom>
-    <img src={require('./FF_img/condition-getPaywallResult.png').default}
+    <img src={require('./FF_img/condition-getPaywallResult.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -197,7 +197,7 @@ Before moving on, let’s verify that the Adapty paywall was received successful
 3. To verify that the Adapty paywall was received, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**.
 
   <Zoom>
-    <img src={require('./FF_img/has-field.png').default}
+    <img src={require('./FF_img/has-field.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -232,7 +232,7 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
 
 1. Add an **Informational Dialog** action to the **FALSE** label.
   <Zoom>
-    <img src={require('./FF_img/informational-dialog.png').default}
+    <img src={require('./FF_img/informational-dialog.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -245,7 +245,7 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
 3. Click at the **Value** button of the **Message** box.
 
   <Zoom>
-    <img src={require('./FF_img/value-parameters.png').default}
+    <img src={require('./FF_img/value-parameters.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -258,7 +258,7 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
  4. Fill in the fields as follows:
 
   <Zoom>
-    <img src={require('./FF_img/error.png').default}
+    <img src={require('./FF_img/error.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -280,7 +280,7 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
 6. Add a **Terminate action** to the  **FALSE** flow.
 7. Click the **Close** button in the top-right corner.
   <Zoom>
-    <img src={require('./FF_img/close.png').default}
+    <img src={require('./FF_img/close.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */

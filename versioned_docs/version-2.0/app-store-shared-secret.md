@@ -27,7 +27,7 @@ Select your app on the [App Store Connect apps page](https://appstoreconnect.app
 
 
 <Zoom>
-  <img src={require('./img/4185892-CleanShot_2023-08-25_at_12.14.41_22x.png').default}
+  <img src={require('./img/4185892-CleanShot_2023-08-25_at_12.14.41_22x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,7 +45,7 @@ Generate a Shared Secret, copy it, and don't forget to paste it in Adapty Dashbo
 
 
 <Zoom>
-  <img src={require('./img/2b25bba-CleanShot_2023-08-25_at_12.15.562x.png').default}
+  <img src={require('./img/2b25bba-CleanShot_2023-08-25_at_12.15.562x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -65,7 +65,7 @@ Select [App settings -> iOS SDK](https://app.adapty.io/settings/ios-sdk) in Adap
 
 
 <Zoom>
-  <img src={require('./img/5e00c24-CleanShot_2022-12-29_at_07.53.55.png').default}
+  <img src={require('./img/5e00c24-CleanShot_2022-12-29_at_07.53.55.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -17,7 +17,7 @@ How to set up a localization for a paywall customized using remote config:
 
    
 <Zoom>
-  <img src={require('./img/deaa5f0-paywalls_edit.png').default}
+  <img src={require('./img/deaa5f0-paywalls_edit.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -34,7 +34,7 @@ How to set up a localization for a paywall customized using remote config:
 
    
 <Zoom>
-  <img src={require('./img/68e80c5-switch_to_remote_config.png').default}
+  <img src={require('./img/68e80c5-switch_to_remote_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,7 +51,7 @@ How to set up a localization for a paywall customized using remote config:
 
    
 <Zoom>
-  <img src={require('./img/eea8027-add_locale.png').default}
+  <img src={require('./img/eea8027-add_locale.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,7 +68,7 @@ How to set up a localization for a paywall customized using remote config:
 
    
 <Zoom>
-  <img src={require('./img/032b429-remote_config_localization.png').default}
+  <img src={require('./img/032b429-remote_config_localization.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -88,7 +88,7 @@ Feel free to use the context menu of the English locale to fix localization issu
 
   
 <Zoom>
-  <img src={require('./img/d7e70f1-remote_confi_loc_table_options.png').default}
+  <img src={require('./img/d7e70f1-remote_confi_loc_table_options.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

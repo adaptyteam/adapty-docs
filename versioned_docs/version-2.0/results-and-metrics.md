@@ -15,7 +15,7 @@ Here are three metrics that Adapty provides for A/B test results:
 
 
 <Zoom>
-  <img src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.png').default}
+  <img src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -81,7 +81,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 
 <Zoom>
-  <img src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.png').default}
+  <img src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
