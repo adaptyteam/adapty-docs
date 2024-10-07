@@ -22,3 +22,7 @@ try {
 }
 
 ```
+
+**Next step:**
+
+- [Handle paywall events](react-native-handling-events-legacy)

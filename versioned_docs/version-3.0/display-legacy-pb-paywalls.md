@@ -25,3 +25,7 @@ For displaying:
 - remote config paywalls, please read [Display paywalls designed with new Paywall Builder](display-remote-config-paywalls)
 
 :::
+
+**Next step:**
+
+- [Fetch legacy Paywall Builder paywalls and their configuration])(get-legacy-pb-paywalls)

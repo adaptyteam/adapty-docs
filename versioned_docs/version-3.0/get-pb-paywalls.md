@@ -83,30 +83,8 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
-```javascript 
-try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
-  // the requested paywall
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="Unity" label="Unity" default>
-```csharp 
-Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
-  
-  // paywall - the resulting object
-});
-```
-</TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -208,19 +186,6 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
-```javascript 
-import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
-
-try {
-  final view = await AdaptyUI().createPaywallView(paywall: paywall);
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
-```
-</TabItem>
 <TabItem value="React Native" label="React Native (TS)" default>
 
 ```typescript 
@@ -235,14 +200,6 @@ if (paywall.hasViewConfiguration) {
 } else {
     //use your custom logic
 }
-```
-</TabItem>
-<TabItem value="Unity" label="Unity" default>
-
-```csharp 
-AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
-  // use the view
-});
 ```
 </TabItem>
 </Tabs>
@@ -314,7 +271,8 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="RN" label="React Native" default>
+
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';

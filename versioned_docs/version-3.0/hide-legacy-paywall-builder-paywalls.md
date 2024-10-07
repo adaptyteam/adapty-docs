@@ -8,9 +8,19 @@ While Paywall Builder seamlessly handles the purchasing process upon clicking "b
 
 In native iOS and Android SDKs, you have complete control over both presenting and hiding the paywalls. However in Flutter, React Native, and Unity SDKs this works a bit differently. Learn how below.
 
-:::note
-This guide covers only hiding  **new Paywall Builder paywalls**. To learn on how to hide **legacy Paywall Builder paywalls**, read the [Hide Paywall Builder paywalls (on cross-platform SDKs)](hide-paywall-builder-paywalls)
-:::
+## Dismiss a paywall screen in Flutter
+
+You can hide a paywall screen by calling the `view.dismiss` method.
+
+```typescript title="Flutter"
+try {
+  await view.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
 
 ## Dismiss a paywall screen in React Native
 
@@ -26,4 +36,14 @@ try {
   // handle the error
 }
 
+```
+
+## Dismiss a paywall screen in Unity
+
+You can hide a paywall view by calling the `view.Dismiss` method.
+
+```typescript title="Flutter"
+view.Dismiss((error) => {
+  // handle the error
+});
 ```

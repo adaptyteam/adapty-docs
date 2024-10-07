@@ -13,3 +13,7 @@ view.Present((error) => {
   // handle the error
 });
 ```
+
+**Next step:**
+
+- [Handle paywall events](unity-handling-events-legacy)

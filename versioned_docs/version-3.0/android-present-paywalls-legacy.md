@@ -149,3 +149,7 @@ Returns:
 | Object              | Description                                        |
 | :------------------ | :------------------------------------------------- |
 | `AdaptyPaywallView` | object, representing the requested paywall screen. |
+
+**Next step:**
+
+- [Handle paywall events](android-handling-events-legacy)

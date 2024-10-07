@@ -100,3 +100,7 @@ Closure parameters:
 | **didFailRendering**  | If an error occurs during the interface rendering, this callback will be invoked. |
 
 Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
+
+**Next step:**
+
+- [Handle paywall events](ios-handling-events-legacy)
