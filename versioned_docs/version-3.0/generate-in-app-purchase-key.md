@@ -18,6 +18,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 2. Then click the add button **(+)** next to the **Active** title.
 
    
+
 <Zoom>
   <img src={require('./img/6d737db-generate_in-app_key.png').default}
   style={{
@@ -37,6 +38,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 4. Click the **Generate** button. Once the **Generate in-App Purchase Key** window closes, you'll see the created key in the **Active** list.
 
    
+
 <Zoom>
   <img src={require('./img/fac066b-download_inapp_file.png').default}
   style={{
@@ -54,6 +56,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 5. Once you've generated your API key, click the **Download In-App Purchase Key** button to obtain the key as a file.
 
    
+
 <Zoom>
   <img src={require('./img/d59faff-download_in-app_purchase_key.png').default}
   style={{
@@ -70,3 +73,7 @@ To generate API keys for the App Store Server API, you you must hold either an A
 
 6. In the **Download in-App Purchase Key** window, click the **Download** button. The file is saved to your computer.  
    It's crucial to keep this file secure for future uploading to the Adapty Dashboard. Note that the generated file can only be downloaded once, so ensure safe storage until you upload it. The generated .p8 key from the **In-App Purchase section** can be used for both the  [In-app purchase API](in-app-purchase-api-storekit-2) and [promotional offers](app-store-promotional-offers).
+
+**What's next:**
+
+- [Configure App Store integration](app-store-connection-configuration)

@@ -22,6 +22,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 2. In the top-left corner of the Google Cloud window, select the project you wish to use or create a new one. Ensure you use the same Google Cloud project until you upload the service account key file to Adapty.
 
    
+
 <Zoom>
   <img src={require('./img/fd66a11-google_cloud_project.png').default}
   style={{
@@ -39,6 +40,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 3. Open the [**Google Play Android Developer API**](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com) page. 
 
    
+
 <Zoom>
   <img src={require('./img/f754f72-google_play_api.png').default}
   style={{
@@ -56,6 +58,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 4. Click the **Enable **button and wait for the status **Enabled** to show. This means the Google Android Developer API is enabled.
 
    
+
 <Zoom>
   <img src={require('./img/d47ed14-google_play_api_create_credentials.png').default}
   style={{
@@ -73,6 +76,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 5. Open the [**Google Play Developer Reporting API**](https://console.cloud.google.com/apis/library/playdeveloperreporting.googleapis.com) page.
 
    
+
 <Zoom>
   <img src={require('./img/966cf73-Google_play_developer_reporting_api.png').default}
   style={{
@@ -90,6 +94,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 6. Click the **Enable **button and wait for the status **Enabled** to show.
 
    
+
 <Zoom>
   <img src={require('./img/e776d77-Google_play_developer_reporting_api_enabled.png').default}
   style={{
@@ -107,6 +112,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 7. Open the [**Cloud Pub/Sub API**](https://console.cloud.google.com/marketplace/product/google/pubsub.googleapis.com) page.
 
    
+
 <Zoom>
   <img src={require('./img/b13f609-enable_Cloud_Pub_Sub_API.png').default}
   style={{
@@ -124,6 +130,7 @@ Here's how to enable Developer APIs in the Google Play Console:
 8. Click the **Enable **button and wait for the status **Enabled** to show.
 
    
+
 <Zoom>
   <img src={require('./img/3f45602-Cloud_Pub_Sub_API_enabled.png').default}
   style={{
@@ -158,4 +165,6 @@ You can recheck it in the [**APIs & Services**](https://console.cloud.google.com
 />
 </Zoom>
 
+**What's next**
 
+- [Create a service account in the Google Cloud Console](create-service-account)

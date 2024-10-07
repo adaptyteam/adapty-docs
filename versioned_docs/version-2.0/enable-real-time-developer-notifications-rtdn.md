@@ -12,6 +12,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
+
 <Zoom>
   <img src={require('./img/26f79d5-App_settings_top_menu.png').default}
   style={{
@@ -29,6 +30,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
 
    
+
 <Zoom>
   <img src={require('./img/a72ff2d-copy_topic.png').default}
   style={{
