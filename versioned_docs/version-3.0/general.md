@@ -95,30 +95,36 @@ Please ensure that you select the designated option that aligns with your desire
 
 ## 6. Sharing purchases between user accounts
 
-This setting determines what happens when Adapty receives a purchase from a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) that is currently associated with another Customer User ID.
+This setting controls what happens when Adapty receives a purchase from a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) that is already associated with another Customer User ID.
 
-Sharing is enabled by default — meaning that anonymous and identified users can share the same [access level](access-level) provided by Adapty if the app store on their device is under the same Apple/Google ID. This can be helpful for example when your user re-installs the app and chooses to log in under a different email — in that case, they will still get access to their previous purchase.
+By default, **Transfer to the new user** is enabled, meaning the user can continue accessing the [access level](access-level) provided by Adapty after logging out or reinstalling the app, as long as the device is still signed in to the same Apple/Google ID.
 
-Apple and Google require "sharing" in-app purchases between your users by default, because they rely on their Apple/Google IDs to tie the purchase to — and otherwise restoring would not work on some reinstalls.
+Here’s what happens:
 
-However, you might want to disable sharing between different user accounts in case you rely on an internal login system and you would like to prevent two people from using the same purchase.
+- The new user receives the access level, while the old user loses it. Afterward, the purchase is only available to the new user.
+<!--- - An `access_level_updated` event is created in both the new and old user profiles, allowing you to track the transfer. --->
+- All future transactions are logged as events in the original user’s profile with Customer User ID to keep them organized in one place.
+- Access levels are still shared between anonymous users (users who haven’t been assigned a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration)).
 
-Here is what happens when this option is disabled:
+If **Sharing is enabled**, anonymous and identified users can share the same [access level](access-level) provided by Adapty, as long as their device is signed in with the same Apple/Google ID. By default, Apple and Google require in-app purchases to be shared across users with the same Apple/Google ID, as it’s necessary for restoring purchases after a reinstall.
 
-- Access level is still shared between anonymous users (that is if a user never gets identified and assigned a [customer user ID](identifying-users#setting-customer-user-id-on-configuration))
-- When Adapty first sees a customer user ID connected to the original purchase (for example, when a user logs in or signs up), this purchase becomes "owned" by this customer user ID.
-- After that, this purchase is only available to the original user. If another user (anonymous or identified) comes along with the same Apple/Google ID after a reinstall — Adapty will not provide access to them.
-- You can "untie" the purchase only by [deleting the owner's user profile](server-side-api-specs#delete-users-data). After deletion, this access level becomes available to the first user profile to claim it (anonymous or identified).
+However, you may want to **disable sharing** between different user accounts if you have an internal login system and need to prevent multiple people from using the same purchase.
 
-That way you can make sure there is only one user profile for every subscription.
+Here’s what happens when sharing is disabled:
+
+- Access levels are still shared between anonymous users.
+- When Adapty first detects a Customer User ID tied to the original purchase (e.g., after a user logs in or signs up), the purchase is assigned to that Customer User ID.
+- From that point on, the purchase is only available to the original user. If another user (anonymous or identified) with the same Apple/Google ID tries to access it after a reinstall, Adapty won’t grant them access.
+- You can "untie" the purchase by [deleting the owner’s user profile](server-side-api-specs#delete-users-data). After deletion, the access level becomes available to the first user profile that claims it, whether anonymous or identified.
+- Disabling sharing only affects new users. Subscriptions already shared between users will continue to be shared after the sharing is disabled.
+
+This ensures there’s only one user profile per subscription.
 
 :::warning
-Disabled sharing may result in some of your users not getting access on login
 
-We advise you only consider disabling sharing if your users **are required to login** before they get a chance to make a purchase. Otherwise there could be cases where a user purchases a subscription, logs into an existing account and loses access once and for all.
-:::
+Disabling sharing may prevent some users from regaining access after logging in.
 
-**Note:** Disabling sharing will only affect the new users. Subscriptions that have already been shared between existing users will continue to be shared after you enable this setting.
+We recommend only disabling sharing if your users **must log in** before making a purchase. Otherwise, there’s a risk that a user could buy a subscription, log into an existing account, and lose access permanently.:::
 
 ## 7. SDK and API keys
 
