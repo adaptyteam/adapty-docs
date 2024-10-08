@@ -12,9 +12,9 @@ Below are Adapty methods delivered to FlutterFlow with Adapty plugin. They can b
 | activate | Initializes the Adapty SDK | None ||
 | <p id="getPaywall">getPaywall</p> | Retrieves a paywall. It does not return paywall products. Use the `getPaywallProducts` action to get the actual products | <ul><li>[Placement_ID](placements)</li><li>[Locale](localizations-and-locale-codes)</li></ul> | [AdaptyGetPaywallResult](ff-resources#adaptygetpaywallresult)|
 | <p id="getPaywallProducts">getPaywallProducts</p> | Returns a list of actual paywall products | [AdaptyPaywall](ff-resources#adaptypaywall) | [AdaptyGetProductsResult](ff-resources#adaptygetproductsresult) |
-| <p id="getProductsIntroductoryOfferEligibility">getProductsIntroductoryOfferEligibility</p> | Checks if the user qualifies for an introductory iOS subscription offer | [AdaptyPaywallProduct](product) | [AdaptyGetIntroEligibilitiesResult](ff-resources#adaptygetintroeligibilitiesresult) |
+| <p id="getproductsintroductoryoffereligibility">getProductsIntroductoryOfferEligibility</p> | Checks if the user qualifies for an introductory iOS subscription offer | [AdaptyPaywallProduct](product) | [AdaptyGetIntroEligibilitiesResult](ff-resources#adaptygetintroeligibilitiesresult) |
 | <p id="makePurchase">makePurchase</p> | Completes a purchase and unlocks content. If a paywall has a promotional offer, Adapty automatically applies it at checkout| <ul><li> **product**: an AdaptyPaywallProduct object retrieved from the paywall.</li><li> **subscriptionUpdateParams**: an [`AdaptySubscriptionUpdateParameters`](ff-resources#adaptysubscriptionupdateparameters) object used to upgrade or downgrade a subscription (use for Android).</li><li>**isOfferPersonalized**: Specifies whether the offer is personalized to the buyer (use for Android).</li></ul> | [AdaptyMakePurchaseResult](ff-resources#adaptymakepurchaseresult) |
-| <p id="getProfile">getProfile</p> |  <p>Retrieves the current app user's profile. This allows you to set access levels and other parameters</p><p>If it fails (e.g., due to no internet), cached data will be returned. Adapty regularly updates the profile cache to ensure the information stays as current as possible</p>  | None| [AdaptyGetProfileResult](ff-resources#adaptygetprofileresult) |
+| <p id="getprofile">getProfile</p> |  <p>Retrieves the current app user's profile. This allows you to set access levels and other parameters</p><p>If it fails (e.g., due to no internet), cached data will be returned. Adapty regularly updates the profile cache to ensure the information stays as current as possible</p>  | None| [AdaptyGetProfileResult](ff-resources#adaptygetprofileresult) |
 | updateProfile | Changes optional attributes of the current user profile such as email, phone number, etc. You can later use attributes to create user [segments](segments) or just view them in CRM | The ID and any parameters that need to be updated for the [AdaptyProfile](ff-resources#adaptyprofile) | [AdaptyError](ff-resources#adaptyerror) (Optional) |
 | restorePurchases | Restores any purchases the user has made | None | [AdaptyGetProfileResult](ff-resources#adaptygetprofileresult) |
 | logShowPaywall | Logs when a specific paywall is shown to the user | [AdaptyPaywall](ff-resources#adaptypaywall)  | [AdaptyError](ff-resources#adaptyerror) (Optional) |
@@ -57,12 +57,12 @@ Information about the user's [access level](access-level).
 
 ### AdaptyAccessLevelIdentifiers
 
-This struct is intended to replace key-value pair for `Map<String, AdaptyAccessLevel` [AdaptyAccessLevel](ff-resources#AdaptyAccessLevel).
+This struct is intended to replace key-value pair for `Map<String, AdaptyAccessLevel` [AdaptyAccessLevel](ff-resources#adaptyaccesslevel).
 
 | Field Name | Type | Description |
 |------------|------|-------------|
 | accessLevelIdentifier | String | The ID of the access level |
-| accessLevel | Data ([AdaptyAccessLevel](ff-resources#AdaptyAccessLevel)) | The associated [AdaptyAccessLevel](ff-resources#adaptyaccesslevel) |
+| accessLevel | Data ([AdaptyAccessLevel](ff-resources#adaptyaccesslevel)) | The associated [AdaptyAccessLevel](ff-resources#adaptyaccesslevel) |
 
 ### AdaptyCustomDoubleAttribute
 
@@ -94,11 +94,11 @@ Contains details about an error. For a complete list of error codes, refer to [F
 
 ### AdaptyGetIntroEligibilitiesResult
 
-Contains the result of the [`getProductsIntroductoryOfferEligibility`](ff-resources#getProductsIntroductoryOfferEligibility) custom action.
+Contains the result of the [`getProductsIntroductoryOfferEligibility`](ff-resources#getproductsintroductoryoffereligibility) custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
-| value | List < Data ([AdaptyProductIntroEligibility](ff-resources#AdaptyProductIntroEligibility)) > | List of the user's eligibility for promotional offers |
+| value | List < Data ([AdaptyProductIntroEligibility](ff-resources#adaptyproductintroeligibility)) > | List of the user's eligibility for promotional offers |
 | error | Data ([AdaptyError](ff-resources#adaptyerror)) | Contains details about the error via [`AdaptyError`](ff-resources#adaptyerror) |
 
 ### AdaptyGetPaywallResult
@@ -121,7 +121,7 @@ Contains the result of the [`getPaywallProducts`](ff-resources#getPaywallProduct
 
 ### AdaptyGetProfileResult
 
-Contains the result of the [`getProfile`](ff-resources#getProfile) custom action.
+Contains the result of the [`getProfile`](ff-resources#getprofile) custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|

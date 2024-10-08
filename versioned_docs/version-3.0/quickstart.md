@@ -28,7 +28,16 @@ Configure SDKs to validate purchases and get subscription updates from one or bo
 **App Store configuration**  
 In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/settings/ios-sdk)_ and fill in the fields using the instructions below. 
 
-![](https://files.readme.io/b41b8db-CleanShot_2024-01-03_at_12.40.422x.webp)
+<Zoom>
+  <img src={require('./img/qs.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.com/), go to **My Apps**, and select the app whose ID you need. On the app page, in the drop-down **More** menu, select **About this App**. The app ID is displayed in the **Bundle ID** field.  
 – [How to connect to In-App Purchase API?](in-app-purchase-api-storekit-2)  
@@ -37,7 +46,16 @@ To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.co
 **Play Store configuration**  
 Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_ and fill in the fields.
 
-![Play Store configuration](https://files.readme.io/fa64f4d-99608fc-Android_store_configuration.webp "99608fc-Android_store_configuration.webp")
+<Zoom>
+  <img src={require('./img/qs-Android_store_configuration.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 To find Package Name, open the [Google Play Developer Console](https://play.google.com/console/u/0/developers) and select the app whose ID you need. The ID is specified next to the app's name and logo.  
 – [Where to find Service account key file? **→** ](service-account-key-file)  
@@ -47,16 +65,33 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 **[Add Access Level](access-level) (optional)** 
 
-![Creating a product](https://files.readme.io/1574ebf-5c59a11-Access_Levels.webp "5c59a11-Access_Levels.webp")
+<Zoom>
+  <img src={require('./img/qs-Access_Levels.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 **Add [product](product)** 
 
-![Add product](https://files.readme.io/0f9ffd0-807efd2-Product.webp "807efd2-Product.webp")
+<Zoom>
+  <img src={require('./img/qs-Product.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ### Setting up a paywall to show in the app
 
 **Create a [paywall](paywalls) with this product** 
-
 
 <Zoom>
   <img src={require('./img/13f5f1d-CleanShot_2023-07-03_at_16.00.092x.webp').default}

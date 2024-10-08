@@ -32,7 +32,6 @@ To install the Adapty SDKs:
 1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
 
    
-
 <Zoom>
   <img src={require('./img/456bd98-adapty-unity-plugin.webp').default}
   style={{
@@ -50,7 +49,6 @@ To install the Adapty SDKs:
 2. Download the `adapty-ui-unity-plugin-*.unitypackage` from GitHub and import it into your project.
 
    
-
 <Zoom>
   <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.webp').default}
   style={{
@@ -120,7 +118,7 @@ The Adapty Unity Plugin on Android is automatically initialized. To ensure it wo
    <manifest ...>
        <application ...>
             ...
-   
+
            <meta-data
                android:name="AdaptyPublicSdkKey"
                android:value="PUBLIC_SDK_KEY" />
@@ -164,7 +162,7 @@ Configurational options:
 
    ```csharp title="C#"
    using AdaptySDK;
-   ```
+  ```
 
 2. Subscribe to Adapty events:
 
