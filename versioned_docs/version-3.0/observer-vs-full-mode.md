@@ -30,7 +30,7 @@ In Observer mode, the Adapty SDK simply listens for new transactions from Apple/
 ## How to set up Observer mode
 
 1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios), [for Android](sdk-installation-android), [for Flutter](/2.0/sdk-installation-flutter), [for React Native](/2.0/sdk-installation-reactnative), and [for Unity](/2.0/sdk-installation-unity).
+2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter), [for React Native](sdk-installation-reactnative), and [for Unity](sdk-installation-unity).
 3. (optional) If you want to use 3d-party integrations, set them up as described in the [Configure 3d-party integration](configuration) topic.
 
 :::warning

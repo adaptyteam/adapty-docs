@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 If you already have your own purchase infrastructure and aren't prepared to fully switch to Adapty, you can explore [Observer mode](observer-vs-full-mode). It'll provide you with the best analytics capabilities, integration with attribution and analytics systems, and a CRM with your users' profiles.
 
-To make all this work in Observer mode, it's enough to enable it when configuring the Adapty SDK by setting the `observerMode` parameter to `true` as described in Adapty SDK configuration for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](/2.0/sdk-installation-flutter#configure-adapty-sdks-for-ios), [React Native](/2.0/sdk-installation-reactnative#configure-adapty-sdks), and [Unity](/2.0/sdk-installation-unity#configure-adapty-sdks).
+To make all this work in Observer mode, it's enough to enable it when configuring the Adapty SDK by setting the `observerMode` parameter to `true` as described in Adapty SDK configuration for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdks).
 
 If you want to also use Adapty's paywalls and A/B test functionality, it is possible, though it will require extra effort on your part in Observer mode compared to Full mode. To do this:
 

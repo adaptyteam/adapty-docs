@@ -51,11 +51,11 @@ const config = {
               path: "/",
               banner: "none",
             },
-            "2.0": {
+            /*"2.0": {
               banner: "none",
               path: "2.0",
 
-            },
+            },*/
           },
           includeCurrentVersion: false,
         },
@@ -110,7 +110,7 @@ const config = {
             position: "left",
             label: "Documentation",
           },
-          {
+          /*{
             label: "SDK Reference",
             position: "left",
             items: [
@@ -131,7 +131,7 @@ const config = {
                 href: "https://react-native.adapty.io/classes/adapty",
               },
             ],
-          },
+          },*/
           {
             label: "API Reference",
             position: "left",
@@ -142,11 +142,11 @@ const config = {
             position: "left",
             href: "https://ask.adapty.io/questions",
           },
-          {
+          /*{
             type: "docsVersionDropdown",
             position: "right",
             dropdownActiveClassDisabled: true,
-          },
+          },*/
           {
             href: "https://app.adapty.io/login",
             label: "Sign In",
