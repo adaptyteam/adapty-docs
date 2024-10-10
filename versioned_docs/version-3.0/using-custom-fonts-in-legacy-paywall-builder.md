@@ -1,5 +1,5 @@
 ---
-title: "Custom fonts in paywall builder"
+title: "Custom fonts in legacy Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
@@ -12,6 +12,12 @@ Custom fonts are only available on AdaptyUI SDK v.2.1.0 and higher
 :::
 
 One of the hallmarks of great design is consistency in visuals. So when building no-code paywalls you might want to make sure you use a custom font for your paywall to match the rest of your app. Here we'll talk about how we work with customising fonts and how you can use them.
+
+:::important
+
+This section describes the legacy Paywall Builder, compatible with Adapty SDK v2.x or earlier. For information on the new Paywall Builder compatible with Adapty SDK v3.x or later, see [Custom fonts in new Paywall Builder](using-custom-fonts-in-paywall-builder).
+
+:::
 
 ## What can be customized
 

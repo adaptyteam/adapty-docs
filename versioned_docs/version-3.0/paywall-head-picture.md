@@ -9,6 +9,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 The hero image is the star of your paywall, setting the tone, establishing the theme, and capturing users' attention right from the start. This image plays a crucial role in shaping the look and feel of your paywall on both iOS and Android platforms.
 
+:::warning
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Main image in legacy Paywall Builder](paywall-layout-and-products-legacy#main-image-and-sizing).
+:::
+
 ## Hero image format and size
 
 Your main image is the centerpiece of your paywall's design, essential for captivating users and driving them to take action. Follow these guidelines to ensure your hero image is effective and visually appealing:
@@ -130,6 +134,7 @@ To remove a hero image from a paywall:
 1. Open the **Hero image** element.
 
    
+
 <Zoom>
   <img src={require('./img/67f57af-PB_remove_hero_image.gif').default}
   style={{

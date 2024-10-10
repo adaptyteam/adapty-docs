@@ -1,5 +1,5 @@
 ---
-title: "Paywall builder templates"
+title: "Legacy Paywall Builder templates"
 description: ""
 metadataTitle: ""
 ---
@@ -12,6 +12,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
 
 When creating or editing paywalls using Adapty's paywall builder, you have the flexibility to choose from three distinct layout options, each with its own corresponding templates. The template layout you select will dictate the visual appearance and user experience of the paywall in your iOS or Android app. Let's explore the three available template layout options:
+
+:::important
+
+This section describes the legacy Paywall Builder, compatible with Adapty SDK v2.x or earlier. For information on the new Paywall Builder compatible with Adapty SDK v3.x or later, see [New Paywall Builder templates](paywall-builder-templates).
+
+:::
 
 ### Overlay
 

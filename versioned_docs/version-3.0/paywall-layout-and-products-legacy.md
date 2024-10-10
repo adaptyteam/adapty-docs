@@ -13,6 +13,12 @@ Moreover, Adapty empowers you to optimize your paywalls further with [A/B testin
 
 In this section, we will discuss the customization of the layout and products of your paywalls.
 
+:::important
+
+This section describes the legacy Paywall Builder, compatible with Adapty SDK v2.x or earlier. For information on the new Paywall Builder compatible with Adapty SDK v3.x or later, see [Paywall layout in new Paywall Builder](paywall-layout-and-products).
+
+:::
+
 ### Layout
 
 After selecting the preferred layout type and corresponding template for your paywall in Adapty's paywall builder, you gain the ability to shape the visual appearance of your paywall, making it engaging and aligned with your brand's aesthetics. This tab offers a range of controls that allow you to customize various aspects of the paywall's layout, background, and appearance. Let's explore the controls and options available in the Layout tab:

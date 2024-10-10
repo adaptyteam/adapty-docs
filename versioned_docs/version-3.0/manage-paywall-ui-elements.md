@@ -9,6 +9,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 After choosing a template, the elements of it will be displayed in the left pane. Use this pane to organize the elements on your paywall. The elements will appear on the paywall in the same order as they do in the left pane.
 
+:::important
+
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
+
+:::
+
 ## Add element
 
 To add an element to your paywall above the layout:
@@ -60,6 +66,7 @@ To delete an element from the paywall:
 1. Click the element in the left pane to open its details.
 
    
+
 <Zoom>
   <img src={require('./img/d6763f3-delete_element.png').default}
   style={{
@@ -83,6 +90,7 @@ To rename an element:
 1. Click the element in the left pane to open its details.
 
    
+
 <Zoom>
   <img src={require('./img/a5b26ba-edit_element.png').default}
   style={{
@@ -108,6 +116,7 @@ To duplicate an element :
 1. Click the element in the left pane to open its details.
 
    
+
 <Zoom>
   <img src={require('./img/07e81d6-duplicate_element.png').default}
   style={{
@@ -142,5 +151,4 @@ A purple line indicates an available position for the element, while a red line 
   }}
 />
 </Zoom>
-
 

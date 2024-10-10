@@ -9,6 +9,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 After selecting a template for your paywall in Adapty's Paywall Builder, you can customize the paywall's visual appearance to match your brand's style. The Layout settings provide a variety of controls for adjusting the layout, background, and overall look of the paywall. Let's explore these settings: The layout settings control the basic aspects of the paywall, including the template, background color, default fonts, purchase flow, and top buttons.
 
+:::warning
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Paywall layout in legacy Paywall Builder](paywall-layout-and-products-legacy#layout).
+:::
+
 ## Purchase flow
 
 Decide how users will complete purchases. There are two options:
@@ -16,6 +20,7 @@ Decide how users will complete purchases. There are two options:
 - **Products as list + purchase button**: Users select products first, then click the buy button to start the purchase.
 
   
+
 <Zoom>
   <img src={require('./img/a816501-PB_products_list.png').default}
   style={{
@@ -32,6 +37,7 @@ Decide how users will complete purchases. There are two options:
 - **Products as purchase buttons**: Each product is a button, and the purchase begins when the user clicks a product button.
 
   
+
 <Zoom>
   <img src={require('./img/4114858-PB_products_buttons.png').default}
   style={{
@@ -130,5 +136,4 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
   }}
 />
 </Zoom>
-
 

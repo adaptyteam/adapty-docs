@@ -1,5 +1,5 @@
 ---
-title: "Tag variables for product info in Paywall builder"
+title: "Tag variables for product info in legacy Paywall Builder"
 description: ""
 metadataTitle: ""
 ---
@@ -13,6 +13,12 @@ When texts for your products contain a tag variable from our list, our SDK uses 
 **Example**: suppose you have a "Premium Subscription" and your app is available both in the US and Spain. So you're  selling "Premium Subscription for $4.99/month" in the US and "Suscripción Premium por €4.99/mes" in Spain.
 
 Tag variables allow you to rely on the data obtained directly from the store to localize such strings — so titles and prices will always be correct.
+
+:::important
+
+This section describes the legacy Paywall Builder, compatible with Adapty SDK v2.x or earlier. For information on the new Paywall Builder compatible with Adapty SDK v3.0 or later, see [Tag variables for product info in new Paywall Builder](paywall-builder-tag-variables).
+
+:::
 
 ### How to use tag variables
 

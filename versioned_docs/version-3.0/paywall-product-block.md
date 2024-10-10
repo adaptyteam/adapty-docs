@@ -17,6 +17,10 @@ After you reviewed the list of products:
 2. Define how a product should look if it is selected or not in the **Style** tab of the **Products** section.
 3. Configure the overall view of the block in the **Layout** tab.
 
+:::warning
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Products in legacy Paywall Builder](paywall-layout-and-products-legacy#products).
+:::
+
 ## Product view customisation
 
 Enhancing the visual appeal of specific products can significantly rebalance user attention. Highlighting a product or special offer can encourage users to focus on it. Let’s look at some powerful customization options.
