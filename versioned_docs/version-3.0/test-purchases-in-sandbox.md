@@ -36,9 +36,11 @@ Testing in-app purchases in the sandbox environment doesn’t involve uploading 
 ### Step 1. Create a Sandbox test account  (Sandbox Apple ID) in the App Store Connect
 
 :::warning
-Create a new sandbox test account
 
-When testing your purchases, it's crucial to create a new sandbox test account each time. This ensures a clean purchase history, optimal performance, and smooth functionality.
+When testing purchases, it's important to create a new sandbox test account each time. This helps keep the purchase history clean, ensuring better performance and smoother functionality.
+
+Alternatively, you can clear the purchase history for your existing test account. For more details, check out the [Apple Developer documentation](https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchases_with_sandbox/#3894622).
+
 :::
 
 To create a Sandbox Apple ID:
@@ -46,6 +48,7 @@ To create a Sandbox Apple ID:
 1. Open **App Store Connect**. Proceed to [**Users and Access** → **Sandbox**  → **Test Accounts**](https://appstoreconnect.apple.com/access/users/sandbox) section.
 
    
+
 <Zoom>
   <img src={require('./img/7c1fdd0-apple_test_account.webp').default}
   style={{
@@ -62,6 +65,7 @@ To create a Sandbox Apple ID:
 2. Click the add button  **(+)** button next to the **Test Accounts** title.
 
    
+
 <Zoom>
   <img src={require('./img/57c3a7c-apple_new_test_account.webp').default}
   style={{
