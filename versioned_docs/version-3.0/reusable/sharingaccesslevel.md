@@ -31,7 +31,7 @@ Disabling sharing may prevent users from regaining access after logging in.
 We recommend disabling sharing only if your users **must log in with the same Customer User ID** before making a purchase. Otherwise, an identified user could buy a subscription, log into another account, and lose access permanently.
 :::
 
-### Example Usage
+**Example Usage**
 
 | My app...                                                    | Option to choose                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
