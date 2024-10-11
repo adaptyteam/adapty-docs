@@ -4,12 +4,26 @@ description: "Explore Adapty's server-side API for managing user subscriptions, 
 metadataTitle: "Unlock Subscription and User Management with Adapty's Server-Side API"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 With the API, you can:
 
 1. Check a user's subscription status.
 2. Activate a user's subscription with an [access level](access-level).
 3. Retrieve user attributes.
 4. Set user attributes.
+
+<Zoom>
+  <img src={require('./img/Adapty-Communication-Scheme.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 :::note
 
