@@ -7,8 +7,14 @@ metadataTitle: ""
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
-:::note
-If you work in [Observer mode](observer-vs-full-mode), refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic instead.
+:::warning
+
+This guide covers the process for **legacy Paywall Builder paywalls** only which requires SDK v2.x or earlier. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls as well as for [Observer mode](observer-vs-full-mode).
+
+- For presenting **New Paywall Builder paywalls**, check out [iOS - Present new Paywall Builder paywalls](ios-present-paywalls).
+- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- For presenting **Observer mode paywalls**, see [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)
+
 :::
 
 ## Present paywalls in Swift

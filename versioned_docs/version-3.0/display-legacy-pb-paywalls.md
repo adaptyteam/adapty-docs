@@ -16,7 +16,7 @@ here are two ways to customize a paywall in the Adapty Dashboard:
 
 - The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file containing the data needed to render the paywall on the device
 
-:::important
+:::warning
 This guide covers the process for **legacy Paywall Builder paywalls** only. The process for displaying and handling interactive paywall elements differs for paywalls designed with different versions of Paywall Builder and remote config paywalls. 
 
 For displaying:
@@ -28,4 +28,4 @@ For displaying:
 
 **Next step:**
 
-- [Fetch legacy Paywall Builder paywalls and their configuration])(get-legacy-pb-paywalls)
+- [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls)

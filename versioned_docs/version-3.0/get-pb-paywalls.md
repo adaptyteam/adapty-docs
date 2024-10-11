@@ -1,5 +1,5 @@
 ---
-title: "Fetch Paywall Builder paywalls and their configuration"
+title: "Fetch new Paywall Builder paywalls and their configuration"
 description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
 metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
 ---
@@ -12,16 +12,14 @@ import Details from '@site/src/components/Details';
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
-:::important
+:::warning
 
 This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon.
 
 The process for fetching paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
-For fetching:
-
-- **Legacy Paywall Builder paywalls**, check out [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls).
-- **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
+- For fetching **Legacy Paywall Builder paywalls**, check out [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls).
+- For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
 
 :::
 
