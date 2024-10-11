@@ -77,8 +77,8 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaDeviceId`.  If not set, Adapty uses your user ID (`customerUserId`). Make sure that the user id you use to send data to AppMetrica from your app is the same one you send to Adapty. These links should help to set up a user id for AppMetrica in your app.
 
-- [Set profile ID](https://appmetrica.yandex.com/docs/mobile-sdk-dg/ios/objective-c/ref/YMMYandexMetrica.html#method_detail__method_setUserProfileID) iOS;
-- [Get device ID](https://yandex.ru/dev/appmetrica/doc/mobile-sdk-dg/ios/swift/ref/YMMYandexMetrica-docpage/#method_detail__method_requestAppMetricaDeviceIDWithCompletionQueue) iOS;
+- [Set profile ID](https://appmetrica.yandex.ru/docs/en/sdk/ios/analytics/swift/AppMetrica#property_userProfileID) iOS;
+- [Get device ID](https://appmetrica.yandex.ru/docs/en/sdk/ios/analytics/swift/AppMetrica#requestStartupIdentifiersWithKeys__completionQueue__completionBlock) iOS;
 - [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.0.0/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
 - [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.0.0/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
