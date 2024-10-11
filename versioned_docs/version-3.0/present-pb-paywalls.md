@@ -13,8 +13,19 @@ For detailed guidance on presenting paywalls within different frameworks, please
 
 - [iOS - Present paywalls](ios-present-paywalls)
 - [Android - Present paywalls](android-present-paywalls)
-- [React Native](react-native-present-paywalls)
+- [Flutter - Present paywalls](flutter-present-paywalls)
+- [React Native - Present paywalls](react-native-present-paywalls)
+- [Unity - Present paywalls](unity-present-paywalls)
 
-:::warning
-The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
+:::important
+
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon.
+
+The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
+
+For presenting:
+
+- **Legacy Paywall Builder paywalls**, check out [Present legacy Paywall Builder paywalls and their configuration](present-legacy-pb-paywalls).
+- **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+
 :::

@@ -11,8 +11,18 @@ import TabItem from '@theme/TabItem';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
-:::note
-If you work in [Observer mode](observer-vs-full-mode), refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic instead.
+:::important
+
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon.
+
+The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls as well as for [Observer mode](observer-vs-full-mode).
+
+For presenting:
+
+- **Legacy Paywall Builder paywalls**, check out [Android- Present legacy Paywall Builder paywalls](android-present-paywalls-legacy).
+- **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- **Observer mode paywalls**, see [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode)
+
 :::
 
 <Tabs>

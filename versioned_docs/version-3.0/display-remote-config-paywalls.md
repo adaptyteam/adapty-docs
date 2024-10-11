@@ -8,14 +8,14 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
-With Adapty, you have the flexibility to configure paywalls remotely, defining the products your app will display. This process eliminates the need to hardcode your products. The only thing you hardcode is the [placement ID](placements).
+With Adapty, you can configure paywalls remotely and define the products your app will display—no need to hardcode the products. The only thing you’ll need to hardcode is the [placement ID](placements).
 
-There are 2 ways to customize a paywall in the Adapty Dashboard: 
+There are two ways to customize a paywall in the Adapty Dashboard:
 
-- a simple no-code tool called [**Paywall Builder**](adapty-paywall-builder) 
-- flexible [**remote config**](customize-paywall-with-remote-config), a JSON with data needed to render the paywall on the device
+- The no-code [**Paywall Builder**](adapty-paywall-builder)
+- The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file that contains the data needed to render the paywall on the device
 
-This topic describes the flow only for **Remote Config paywalls**. Displaying and handling the interactive parts of the paywall is different for Paywall Builder paywalls, so if you want to know more about it, please consult the [Display paywalls designed with Paywall Builder](display-pb-paywalls) topic.
+This guide covers **Remote Config paywalls** only. The process for displaying and handling interactive elements is different for Paywall Builder paywalls. If you’d like to learn more about that, check out the [Display paywalls designed with Paywall Builder](display-pb-paywalls) guide.
 
 <details>
    <summary>Before you start displaying paywalls (click to expand)</summary>
