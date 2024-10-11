@@ -6,7 +6,7 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import sharingaccesslevel from './/reusable/sharingaccesslevel.md';
+import Sharingaccesslevel from './/reusable/sharingaccesslevel.md';
 
 Profiles is a CRM for your users. With Profiles, you can:
 
@@ -142,4 +142,4 @@ Here is an example of a non-original profile. Notice the absence of events in th
 
 When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
 
-<sharingaccesslevel />
+<Sharingaccesslevel />

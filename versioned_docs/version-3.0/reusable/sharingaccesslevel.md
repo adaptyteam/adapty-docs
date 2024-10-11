@@ -28,13 +28,14 @@ Apple and Google require in-app purchases to be shared or transferred between us
 
 Disabling sharing may prevent users from regaining access after logging in.
 
-We recommend disabling sharing only if your users **must log in with the same Customer User ID** before making a purchase. Otherwise, an identified user could buy a subscription, log into another account, and lose access permanently.:::
+We recommend disabling sharing only if your users **must log in with the same Customer User ID** before making a purchase. Otherwise, an identified user could buy a subscription, log into another account, and lose access permanently.
+:::
 
 ### Example Usage
 
 | My app...                                                    | Option to choose                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Does not have a login system and only uses Adapty’s anonymous profile IDs. | Any option will work, as access levels are always shared between anonymous profile IDs for all three options. |
+| Does not have a login system and only uses Adapty’s anonymous profile IDs. | Use the default option, as access levels are always shared between anonymous profile IDs for all three options. |
 | Has an optional login system and allows customers to make purchases before creating an account. | Choose **Transfer access to new user** to ensure that customers who purchase without an account can still restore their transactions later. |
 | Requires customers to create an account before purchasing but allows purchases to be linked to multiple Customer User IDs. | Choose **Transfer access to new user** to ensure that only one Customer User ID has access at a time, while still allowing users to log in with a different Customer User ID without losing their paid access. |
 | Requires customers to create an account before purchasing, with strict rules that tie purchases to a single Customer User ID. | Choose **Disabled** to ensure that transactions are never transferred between accounts. |
