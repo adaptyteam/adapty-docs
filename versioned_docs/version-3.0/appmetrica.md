@@ -79,8 +79,8 @@ Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaD
 
 - [Set profile ID](https://appmetrica.yandex.com/docs/mobile-sdk-dg/ios/objective-c/ref/YMMYandexMetrica.html#method_detail__method_setUserProfileID) iOS;
 - [Get device ID](https://yandex.ru/dev/appmetrica/doc/mobile-sdk-dg/ios/swift/ref/YMMYandexMetrica-docpage/#method_detail__method_requestAppMetricaDeviceIDWithCompletionQueue) iOS;
-- [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
-- [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
+- [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.0.0/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
+- [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.0.0/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
