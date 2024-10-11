@@ -11,7 +11,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adding a video clip to your paywall can be a powerful way to engage users and boost conversions. Videos help explain your offers more clearly, highlight key features, and create a more dynamic, visually appealing experience that captures attention.
+Adding a video clip to your paywall is a great way to engage users and increase conversions. Videos can explain your offers more clearly, highlight key features, and create a more dynamic, visually appealing experience that grabs attention.
 
 <Zoom>
   <img src={require('./img/paywall-video-hands.gif').default}
@@ -23,10 +23,16 @@ Adding a video clip to your paywall can be a powerful way to engage users and bo
 />
 </Zoom>
 
-Add it instead of the picture in the Hero image element:
+:::info
+
+Video is supported on iOS starting with version 3.1.0. Support for Android, React Native, Flutter, and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
+
+:::
+
+1. Add the video in place of the **Hero image** element. First, switch to video mode.
 
 <Zoom>
-  <img src={require('./img/add-paywall-video.png').default}
+  <img src={require('./img/add-paywall-video.webp').default}
   style={{
     width: '700px', /* image width */
     display: 'block', /* for alignment */
@@ -35,13 +41,18 @@ Add it instead of the picture in the Hero image element:
 />
 </Zoom>
 
-You can upload a video either as a file or as a URL. If you are going to upload the file via a link, please place the file on the sites that can provide a direct link to the file rather than the link to the built-in editor/viewer. That is the format of the link should be: `https://example-domain.com/folders/filename.mp4`. Services like Google Cloud and Amazon Cloud provide the correct format, but you can use any platform or your own storage as long as it meets this requirement.
+1. Then, drag and drop your video file into the **Video file** area.
 
-:::info
+<Zoom>
+<img src={require('./img/drag-and-drop-video.webp').default}
+  style={{
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-Video is supported on iOS starting with version 3.0.1. Support for Android, React Native, Flutter, and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
-
-:::
 
 ## Supported Formats and Specifications
 
