@@ -7,12 +7,22 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With API you can:
-
+With the API, you can:
 1. Get user's subscription status.
 2. Activate a subscription for a user with an [access level](access-level).
 3. Get user's attributes.
 4. Set user's attributes.
+
+<Zoom>
+  <img src={require('./img/Adapty-Communication-Scheme.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 :::note
 You can't get subscription events via API, but you can use [Webhook](webhook) or direct integration with a service that you're using.
