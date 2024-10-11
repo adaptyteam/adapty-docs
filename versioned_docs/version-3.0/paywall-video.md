@@ -29,7 +29,9 @@ Video is supported on iOS starting with version 3.1.0. Support for Android, Reac
 
 :::
 
-1. Add the video in place of the **Hero image** element. First, switch to video mode.
+Add the video in place of the **Hero image** element:
+
+1. First, switch to video mode.
 
 <Zoom>
   <img src={require('./img/add-paywall-video.webp').default}
