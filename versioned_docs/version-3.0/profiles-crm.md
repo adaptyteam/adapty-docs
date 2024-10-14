@@ -6,6 +6,7 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Sharingaccesslevel from './/reusable/sharingaccesslevel.md';
 
 Profiles is a CRM for your users. With Profiles, you can:
 
@@ -126,7 +127,6 @@ A new profile record that generates a subsequent transaction, called a "non-orig
 
 Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
 
-
 <Zoom>
   <img src={require('./img/98d0dad-non-original_profile.webp').default}
   style={{
@@ -138,3 +138,8 @@ Here is an example of a non-original profile. Notice the absence of events in th
 />
 </Zoom>
 
+## Sharing access levels between profiles
+
+When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
+
+<Sharingaccesslevel />
