@@ -16,5 +16,5 @@ In the framework-specific sections, we'll dive into details of effective managem
 - [React Native - Handling events](react-native-handling-events-1)
 
 :::warning
-The new Paywall Builder is available for iOS, Android, and React Native only and requires Adapty SDK v3.0 or later. For handling of legacy Paywall Builder paywall events, see [Handle paywall events designed with legacy Paywall Builder](handling-pb-paywall-events).
+The new Paywall Builder is available for iOS, Android, and React Native only and requires Adapty SDK v3.0 or later. For handling of legacy Paywall Builder paywall events, see [Handle paywall events designed with legacy Paywall Builder](handling-legacy-pb-paywall-events).
 :::

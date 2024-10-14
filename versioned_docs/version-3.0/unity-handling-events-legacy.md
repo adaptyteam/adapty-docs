@@ -2,6 +2,7 @@
 title: "Unity - Handle paywall events"
 description: ""
 metadataTitle: ""
+toc_max_heading_level: 4
 ---
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder-legacy) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.

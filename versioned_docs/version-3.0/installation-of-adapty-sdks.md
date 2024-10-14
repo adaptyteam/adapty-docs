@@ -16,7 +16,6 @@ The Adapty SDK installation and configuration depend on your framework, so refer
 
 - [Install and configure Adapty SDKs on iOS](sdk-installation-ios)
 - [Install and configure Adapty SDKs on Android](sdk-installation-android)
-
-:::warning
-Adapty SDK v3.0 is now available for iOS and Android only. For installation guidance on Flutter, React Native, and Unity, see [Installation of Adapty SDKs v.2](installation-of-adapty-sdks).
-:::
+- [Install and configure Adapty SDKs on Flutter](sdk-installation-flutter)
+- [Install and configure Adapty SDKs on React Native](sdk-installation-reactnative) 
+- [Install and configure Adapty SDKs on Unity](sdk-installation-unity)

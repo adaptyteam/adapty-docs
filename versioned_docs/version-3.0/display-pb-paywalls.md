@@ -15,10 +15,8 @@ here are two ways to customize a paywall in the Adapty Dashboard:
 - The simple, no-code tool called the [**Paywall Builder**](adapty-paywall-builder) 
 - The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file containing the data needed to render the paywall on the device
 
-:::important
+:::warning
 This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon. 
-
-The process for displaying and handling interactive paywall elements differs for paywalls designed with different versions of Paywall Builder and remote config paywalls. 
 
 For displaying:
 

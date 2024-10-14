@@ -2,6 +2,7 @@
 title: "React Native - Handle paywall events"
 description: ""
 metadataTitle: ""
+toc_max_heading_level: 4
 ---
 
 import Zoom from 'react-medium-image-zoom';

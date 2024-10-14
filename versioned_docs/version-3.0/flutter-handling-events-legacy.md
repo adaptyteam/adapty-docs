@@ -2,9 +2,14 @@
 title: "Flutter - Handle paywall events"
 description: ""
 metadataTitle: ""
+toc_max_heading_level: 4
 ---
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder-legacy) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
+
+:::warning
+This guide covers the process for **legacy Paywall Builder paywalls** only which requires Adapty SDK up to v2.x. For presenting paywalls in Adapty SDK v3.0 or later designed with new Paywall Builder, see [Flutter - Handle paywall events designed with new Paywall Builder](android-handling-events).
+:::
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` methods and register the observer before presenting any screen:
 

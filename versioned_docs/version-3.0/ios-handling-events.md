@@ -2,6 +2,7 @@
 title: "iOS - Handle paywall events"
 description: ""
 metadataTitle: ""
+toc_max_heading_level: 4
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -10,7 +11,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
-This guide covers the process for **new Paywall Builder paywalls** only which requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](ios-handling-events-legacy).
+This guide covers the process for **new Paywall Builder paywalls** only which requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [iOS - Handle paywall events designed with legacy Paywall Builder](ios-handling-events-legacy).
 :::
 
 ## Handling events in Swift
