@@ -1,5 +1,5 @@
 ---
-title: "Paywall Video"
+title: "Paywall hero video"
 description: ""
 metadataTitle: ""
 ---
@@ -13,6 +13,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Adding a video clip to your paywall is a great way to engage users and increase conversions. Videos can explain your offers more clearly, highlight key features, and create a more dynamic, visually appealing experience that grabs attention.
 
+:::note
+
+To use the Paywall hero video, you’ll need a paid plan: Pro, Pro+, or Enterprise.
+:::
+
 <Zoom>
   <img src={require('./img/paywall-video-hands.gif').default}
   style={{
@@ -23,15 +28,15 @@ Adding a video clip to your paywall is a great way to engage users and increase 
 />
 </Zoom>
 
-:::info
+:::warning
 
-Video is supported on iOS starting with version 3.1.0. Support for Android, React Native, Flutter, and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
+Hero video is supported on iOS starting with version 3.1.0. Support for Android, React Native, Flutter, and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
 
 :::
 
-Add the video in place of the **Hero image** element:
+Add the **Hero video** in place of the **Hero image** element:
 
-1. First, switch to video mode.
+1. First, switch to the video mode.
 
 <Zoom>
   <img src={require('./img/add-paywall-video.webp').default}
@@ -43,7 +48,7 @@ Add the video in place of the **Hero image** element:
 />
 </Zoom>
 
-1. Then, drag and drop your video file into the **Video file** area.
+2. Then, drag and drop your video file into the **Video file** area.
 
 <Zoom>
 <img src={require('./img/drag-and-drop-video.webp').default}
@@ -55,14 +60,13 @@ Add the video in place of the **Hero image** element:
 />
 </Zoom>
 
+## Supported formats and specifications
 
-## Supported Formats and Specifications
-
-| Specification     | Details                                                      |
-| ----------------- | ------------------------------------------------------------ |
-| Supported formats | <ul><li> mp4</li><li> webm</li><li> mov</li><li> avi</li><li> gif</li></ul> |
-| Minimum size      | 640х480                                                      |
-| Maximum length    | 30 sec                                                       |
+| Specification     | Details      |
+| ----------------- | ------------ |
+| Supported formats | mp4 and webp |
+| Minimum size      | 640х480      |
+| Maximum length    | 30 sec       |
 
 <!--- <Zoom>
   <img src={require('./img/paywall-video-config.png').default}
