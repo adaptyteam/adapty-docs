@@ -9,12 +9,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
-:::important
+:::warning
 
-This guide covers the process for **new Paywall Builder paywalls** only which requires SDK v3.0. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
-- For presenting **Legacy Paywall Builder paywalls**, check out [React Native - Present Paywall Builder paywalls](react-native-present-paywalls-legacy).
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- For presenting **legacy Paywall Builder paywalls**, check out [React Native - Present Paywall Builder paywalls](react-native-present-paywalls-legacy).
+- For presenting **remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
 
 :::
 

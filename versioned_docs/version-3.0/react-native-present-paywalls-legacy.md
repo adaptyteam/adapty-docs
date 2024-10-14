@@ -8,7 +8,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide covers the process for **legacy Paywall Builder paywalls** only which requires SDK v2.x or earlier. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
+This guide is for **legacy Paywall Builder paywalls** only which require SDK v2.x or earlier. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
 - For presenting **New Paywall Builder paywalls**, check out [React Native - Present new Paywall Builder paywalls](react-native-present-paywalls).
 - For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).

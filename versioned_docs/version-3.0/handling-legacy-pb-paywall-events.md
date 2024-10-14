@@ -6,9 +6,9 @@ metadataTitle: ""
 
 Paywalls designed with the [legacy Paywall Builder](adapty-paywall-builder-legacy) generate some events that require your attention and handling after they are raised. Among such events are paywall closure, URL opening, product selection, purchase start, purchase cancellation, successful and failed purchase, as well as successful and failed purchase restoration.
 
-:::important
+:::warning
 
-This guide covers the process for **legacy Paywall Builder paywalls** only which requires SDK v2.x or earlier. For handling of **New Paywall Builder paywall** events, check out [Handle new Paywall Builder paywall events](handling-pb-paywall-events).
+This guide is for **legacy Paywall Builder paywalls** only which require SDK v2.x or earlier. For handling of **New Paywall Builder paywall** events, check out [Handle new Paywall Builder paywall events](handling-pb-paywall-events).
 
 :::
 
