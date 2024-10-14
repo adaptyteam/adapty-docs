@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Dark mode has become an essential feature for improving user experience in mobile apps, especially for users who spend long periods interacting with content. It helps reduce eye strain in low-light settings and can even conserve battery life on OLED or AMOLED screens. 
+Dark mode has become an essential feature for improving user experience in mobile apps, especially for users who spend long periods interacting with content. Most apps that support dark mode also choose to have two different versions of the paywall (light and dark) for consistency, and Adapty allows to do exactly that.
 <Zoom>
   <img src={require('./img/darkmode.webp').default}
   style={{
