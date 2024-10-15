@@ -30,7 +30,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 ## Add the Adapty plugin as a dependency
 
-1. In your project, click **Settings and Integrations** from the left menu.
+1. In the [FlutterFlow Dashboard](https://app.flutterflow.io/dashboard), open your project, and then click **Settings and Integrations** from the left menu.
    <Zoom>
      <img src={require('./FF_img/main_settings.webp').default}
      style={{
@@ -79,6 +79,42 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 5. Click the **Add** button.
 
 The Adapty FF Plugin will now be added as a dependency to your project. In the **Adapty FF Plugin** window, you’ll find all the Adapty resources that have been imported into your project.
+
+## Activate Adapty plugin
+
+To get the Adapty plugin up and running, you'll need to activate it.
+
+1. In your FlutterFlow project, open **Custom Code** from the left menu.
+
+   <Zoom>
+     <img src={require('./FF_img/custom_code.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Under **Custom Files**, select `main.dart`.
+
+3. In the right pane, click the **plus** button next to **Initial Actions**.
+
+   <Zoom>
+     <img src={require('./FF_img/activate.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+4. From the dropdown, choose `activate`.
+
+5. Click **Save**.
 
 ## Initiate Adapty plugin
 
