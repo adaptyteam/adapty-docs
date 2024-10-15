@@ -17,6 +17,30 @@ To set user attributes, call `.updateProfile()` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+let builder = AdaptyProfileParameters.Builder()
+    .with(email: "email@email.com")
+    .with(phoneNumber: "+18888888888")
+    .with(facebookAnonymousId: "facebookAnonymousId")
+    .with(amplitudeUserId: "amplitudeUserId")
+    .with(amplitudeDeviceId: "amplitudeDeviceId")
+    .with(mixpanelUserId: "mixpanelUserId")
+    .with(appmetricaProfileId: "appmetricaProfileId")
+    .with(appmetricaDeviceId: "appmetricaDeviceId")
+    .with(firstName: "John")
+    .with(lastName: "Appleseed")
+    .with(gender: .other)
+    .with(birthday: Date())
+    
+do {
+    try await Adapty.updateProfile(params: builder.build())
+} catch {
+    // handle the error
+}
+```
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 let builder = AdaptyProfileParameters.Builder()
     .with(email: "email@email.com")
@@ -40,6 +64,7 @@ Adapty.updateProfile(params: builder.build()) { error in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 val builder = AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
@@ -63,6 +88,7 @@ Adapty.updateProfile(builder.build()) { error ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
@@ -86,6 +112,7 @@ Adapty.updateProfile(builder.build(), error -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 final builder = AdaptyProfileParametersBuilder()
   ..setEmail("email@email.com")
@@ -110,6 +137,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```typescript 
 // Only for TypeScript validation
 import type { AdaptyProfileParameters } from 'react-native-adapty';
@@ -137,13 +165,14 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```csharp
 var builder = new Adapty.ProfileParameters.Builder()
         .SetFirstName("John")
-    .SetLastName("Appleseed")
-    .SetBirthday(new DateTime(1970, 1, 3))
-    .SetGender(ProfileGender.Female)
-    .SetEmail("example@adapty.io");
+        .SetLastName("Appleseed")
+        .SetBirthday(new DateTime(1970, 1, 3))
+        .SetGender(ProfileGender.Female)
+        .SetEmail("example@adapty.io");
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
     if(error != nil) {
@@ -172,8 +201,25 @@ The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<V
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
 <Tabs>
+
 <TabItem value="Swift" label="Swift" default>
-```swift 
+
+```swift
+if #available(iOS 14, macOS 11.0, *) {
+    let builder = AdaptyProfileParameters.Builder()
+        .with(appTrackingTransparencyStatus: .authorized)
+
+    do {
+      try await Adapty.updateProfile(params: builder.build())
+    } catch {
+      // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
+```swift
 if #available(iOS 14, macOS 11.0, *) {
     let builder = AdaptyProfileParameters.Builder()
         .with(appTrackingTransparencyStatus: .authorized)
@@ -187,6 +233,7 @@ if #available(iOS 14, macOS 11.0, *) {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript
 final builder = AdaptyProfileParametersBuilder()
   ..setAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.authorized);
@@ -200,6 +247,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 var builder = new Adapty.ProfileParameters.Builder();
         .SetAppTrackingTransparencyStatus(IOSAppTrackingTransparencyStatus.Authorized);
@@ -212,6 +260,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript
 import {AppTrackingTransparencyStatus} from 'react-native-adapty';
 

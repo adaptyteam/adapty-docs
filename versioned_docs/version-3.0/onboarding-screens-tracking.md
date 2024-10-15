@@ -16,8 +16,27 @@ To do this, simply call the `.logShowOnboarding` function:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift
-Adapty.logShowOnboarding(name: "onboarding_name", screenName: "first_screen", screenOrder: 1)
+do {
+    try await Adapty.logShowOnboarding(
+      name: "onboarding_name", 
+      screenName: "first_screen", 
+      screenOrder: 1
+    )
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
+```swift
+Adapty.logShowOnboarding(
+  name: "onboarding_name", 
+  screenName: "first_screen", 
+  screenOrder: 1
+)
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>

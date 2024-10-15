@@ -65,6 +65,7 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 // In your AppDelegate class:
 import Adapty
@@ -83,6 +84,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 </TabItem>
 <TabItem value="SwiftUI" label="SwiftUI" default>
+
 ```swift 
 import Adapty
 
@@ -97,8 +99,8 @@ struct SampleApp: App {
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
 
-        Adapty.activate(with: configurationBuilder) { error in
-          // handle the error
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
         }
     }
 
@@ -139,16 +141,17 @@ You need to configure the AdaptyUI module only if you plan to use [Paywall Build
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 // After calling Adapty.activate()
-        let adaptyUIConfiguration = AdaptyUI.Configuration(
-            mediaCacheConfiguration: .init(
-                memoryStorageTotalCostLimit: 100 * 1024 * 1024,
-                memoryStorageCountLimit: .max,
-                diskStorageSizeLimit: 100 * 1024 * 1024
-            )
-        )
-        AdaptyUI.activate(
-            configuration: adaptyUIConfiguration
-        )
+let adaptyUIConfiguration = AdaptyUI.Configuration(
+    mediaCacheConfiguration: .init(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024,
+        memoryStorageCountLimit: .max,
+        diskStorageSizeLimit: 100 * 1024 * 1024
+    )
+)
+
+try await AdaptyUI.activate(
+    configuration: adaptyUIConfiguration
+)
 ```
 
 Please note that AdaptyUI configuration is optional, you can activate AdaptyUI module without its config. However, if you use the config, all parameters are required in it.
@@ -180,10 +183,10 @@ Adapty.logLevel = .verbose
 
 ## Redirect the logging system messages
 
-If you need to send Adapty's log messages to your system or save them to a file, you can override the default behavior:
+If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
 
 ```swift title="Swift"
-Adapty.setLogHandler { level, message in
-    writeToLocalFile("Adapty \(level): \(message)")
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
 }
 ```

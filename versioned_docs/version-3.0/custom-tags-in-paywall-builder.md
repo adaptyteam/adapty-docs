@@ -101,6 +101,7 @@ To use custom tags in your mobile app, create a tagResolver object—a dictionar
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 let tagResolver = [
     "USERNAME": "John",
@@ -108,12 +109,14 @@ let tagResolver = [
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");

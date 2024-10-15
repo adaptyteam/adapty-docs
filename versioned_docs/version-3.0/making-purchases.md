@@ -31,13 +31,27 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let info = try await Adapty.makePurchase(product: product)
+    if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // successful purchase
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
-      if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        // successful purchase
-      }
+        if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // successful purchase
+        }
     case let .failure(error):
         // handle the error
     }
@@ -149,6 +163,20 @@ Below is a complete example of making the purchase of the access level `premium`
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift
+do {
+    let info = try await Adapty.makePurchase(product: product)
+    if info.profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift
 Adapty.makePurchase(product: product) { result in
     switch result {
@@ -163,6 +191,7 @@ Adapty.makePurchase(product: product) { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {

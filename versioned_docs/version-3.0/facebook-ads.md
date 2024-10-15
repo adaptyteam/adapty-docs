@@ -128,20 +128,22 @@ Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make s
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
 import FacebookCore
 
 let builder = AdaptyProfileParameters.Builder()
     .with(facebookAnonymousId: AppEvents.shared.anonymousID)
 
-Adapty.updateProfile(params: builder.build()) { error in
-    if error != nil {
-        // handle the error                        
-    }
+do {
+    try Adapty.updateProfile(params: builder.build())
+} catch {
+    // handle the error
 }
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin
 val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
@@ -154,17 +156,20 @@ Adapty.updateProfile(builder.build()) { error ->
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```text
 There is no official SDK for Flutter
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 anonymousID is not available in the official SDK
 https://github.com/facebook/facebook-sdk-for-unity/issues/676
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript
 import { adapty } from 'react-native-adapty';
 import { AppEventsLogger } from 'react-native-fbsdk-next';

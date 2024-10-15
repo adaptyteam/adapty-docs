@@ -14,11 +14,29 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `ios_fallback.json`.
 
-```swift title="Swift"
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+
+```swift
+do {
+     if let urlPath = Bundle.main.url(forResource: fileName, withExtension: "json") {
+          try await Adapty.setFallbackPaywalls(fileURL: urlPath)
+     }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
+```swift
 if let url = Bundle.main.url(forResource: "ios_fallback", withExtension: "json") {
      Adapty.setFallbackPaywalls(fileURL: url)
-
+}
 ```
+</TabItem>
+</Tabs>
+
 
 Parameters:
 
