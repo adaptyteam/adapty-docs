@@ -16,7 +16,7 @@ If one of the users (either the new or the old one) is not identified, the acces
 
 Although the access level is transferred, all past and future transactions are logged as events in the original Customer User ID to maintain consistent analytics and keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
 
-After switching to **Transfer access to new user**, access levels won’t be transferred between profiles immediately. The transfer process for each specific access level is triggered only when Adapty receives an event from the store, such as a subscription renewal, restore or when validating a transaction.
+After switching to **Transfer access to new user**, access levels won’t be transferred between profiles immediately. The transfer process for each specific access level is triggered only when Adapty receives an event from the store, such as subscription renewal, restore, or when validating a transaction.
 
 ### Disabled
 
