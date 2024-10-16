@@ -1,3 +1,7 @@
+---
+no_index: true
+---
+
 <!--- sharingaccesslevel.md --->
 
 ### Enabled (default)
