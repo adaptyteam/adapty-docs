@@ -4,6 +4,9 @@ description: ""
 metadataTitle: ""
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty paywall builder has a way to customize all the text corresponding to your products and their offers. But if you have multiple locales — we strongly recommend using variables.
 
 ### How it works
@@ -22,15 +25,42 @@ You can only use tag variables when describing products and offers in the "Produ
 
 1. Select the "Products" tab of the Builder
 
-![](https://files.readme.io/88265fb-tag_variables_scroll_to_products.webp)
+<Zoom>
+  <img src={require('./img/88265fb-tag_variables_scroll_to_products.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 2. Choose the product you'd like to customize:
 
-![](https://files.readme.io/0a69e8f-tag_variables_select_product.webp)
+<Zoom>
+  <img src={require('./img/0a69e8f-tag_variables_select_product.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 3. Use variables from [the table below](paywall-builder-tag-variables#full-list-of-variables) in any of the text fields to describe the product and its offers:
 
-![](https://files.readme.io/8c77550-tag_variables_usage.webp)
+<Zoom>
+  <img src={require('./img/8c77550-tag_variables_usage.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 4. Check Preview on the right side of the screen to make sure all renders as intended.
 
@@ -39,7 +69,16 @@ You can only use tag variables when describing products and offers in the "Produ
 
 You can disable this behavior by pressing "eye" icon in the top-right corner of the Preview and switching off the **"Tags preview values"** switch. The preview will then show the actual values of the variables:
 
-![](https://files.readme.io/aaf7439-tag_variables_preview_values_off.webp)
+<Zoom>
+  <img src={require('./img/aaf7439-tag_variables_preview_values_off.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 :::
 
 ### Full list of variables

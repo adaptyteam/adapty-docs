@@ -74,7 +74,6 @@ How can one read the comparison insights?
 4. Hover on the chart and take a look at the details in an appearing tooltip. 
 5. You can see both multiple grouping and comparison at the same time on one chart for a specific type of chart - columns. 
 
-
 <Zoom>
   <img src={require('./img/ba05509-CleanShot_2023-01-05_at_21.12.00.webp').default}
   style={{
@@ -92,7 +91,16 @@ How can one read the comparison insights?
 
 #### 2. Filters and grouping.
 
-![](https://files.readme.io/e2c9132-CleanShot_2023-01-05_at_14.09.51_2.webp "CleanShot 2023-01-05 at 14.09.51 2.webp")
+<Zoom>
+  <img src={require('./img/e2c9132-CleanShot_2023-01-05_at_14.09.51_2.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ### Metrics
 
@@ -100,17 +108,44 @@ Advanced Analytics allows you to track the following metrics.
 
 #### Revenue
 
-![](https://files.readme.io/e402f47-small-CleanShot_2023-05-02_at_15.20.262x.webp)
+<Zoom>
+  <img src={require('./img/e402f47-small-CleanShot_2023-05-02_at_15.20.262x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 Total money received from both subscriptions and one-time purchases. Does not include revenue from subscriptions and purchases that were refunded afterward.
 
 #### Monthly Recurring Revenue (MRR)
 
-![](https://files.readme.io/bda5de5-small-CleanShot_2023-05-02_at_15.19.412x.webp)
+<Zoom>
+  <img src={require('./img/bda5de5-small-CleanShot_2023-05-02_at_15.19.412x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The measure of the predictable and recurring revenue components of your subscription business. Calculated as following:
 
-![](https://files.readme.io/4253297-CleanShot_2021-03-10_at_17.50.24.webp "CleanShot 2021-03-10 at 17.50.24.webp")
+<Zoom>
+  <img src={require('./img/4253297-CleanShot_2021-03-10_at_17.50.24.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 Where:  
 Ps - subscription price  
@@ -146,7 +181,27 @@ The ARPU metric provides insight into the financial performance of your app and 
 
 #### ARPPU
 
-![](https://files.readme.io/c69eb6f-small-CleanShot_2023-05-02_at_15.18.562x.webp)
+<Zoom>
+  <img src={require('./img/ba05509-CleanShot_2023-01-05_at_21.12.00.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+<Zoom>
+  <img src={require('./img/c69eb6f-small-CleanShot_2023-05-02_at_15.18.562x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 An average revenue per paid user. Calculated as `revenue / number of users who paid`  
 If revenue this day is $1000, and there were 50 users who made at least one purchase,  
@@ -156,7 +211,16 @@ ARPPU = 1000 / 50 = $20.
 
 The Installs chart shows the total number of users who have installed the app for the first time, as well as any reinstalls by existing users. This includes multiple installations by the same user on different devices. Please note that incomplete downloads or installations that are canceled before completion are not counted toward the install count.
 
-![](https://files.readme.io/62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.webp)
+<Zoom>
+  <img src={require('./img/62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](identifying-users) for identifying users.
 
@@ -166,13 +230,31 @@ Please note that If your app has in-app user authentication, the Installs chart 
 
  The number of currently active subscriptions.  
 
-![](https://files.readme.io/b7fc69b-small-CleanShot_2023-05-02_at_15.16.232x.webp)
+<Zoom>
+  <img src={require('./img/b7fc69b-small-CleanShot_2023-05-02_at_15.16.232x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 #### Subscriptions by renewal status
 
 The number of active subscriptions segmented by renewal status, which indicates whether or not this subscription will be renewed in the next period.
 
-![](https://files.readme.io/07088ad-small-CleanShot_2023-05-02_at_14.12.482x.webp)
+<Zoom>
+  <img src={require('./img/07088ad-small-CleanShot_2023-05-02_at_14.12.482x.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 #### Cancelled Subscriptions
 
@@ -218,25 +300,61 @@ The Non-subscriptions chart displays the number of in-app purchases such as cons
 
 #### Active Trials
 
-![](https://files.readme.io/268fd02-active_trials.webp "active trials.webp")
+<Zoom>
+  <img src={require('./img/268fd02-active_trials.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The number of trials that are currently active.
 
 #### New Trials
 
-![](https://files.readme.io/2362e11-__2021-12-08__13.09.02.webp "Снимок экрана 2021-12-08 в 13.09.02.webp")
+<Zoom>
+  <img src={require('./img/2362e11-__2021-12-08__13.09.02.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The number of trials activated.
 
 #### Trials Renewal Cancelled
 
-![](https://files.readme.io/fc30fc3-trials_renewal_cancelled.webp "trials renewal cancelled.webp")
+<Zoom>
+  <img src={require('./img/fc30fc3-trials_renewal_cancelled.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The number of trials with cancelled renewal (cancelled by user). When the renewal for the trial is disabled, this means that this trial won't be automatically converted to paid subscription, yet the user still has premium features of the app until the end of the current period.
 
 #### Expired (Churned) Trials
 
-![](https://files.readme.io/490337d-expired_trials.webp "expired trials.webp")
+<Zoom>
+  <img src={require('./img/490337d-expired_trials.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The number of trials that expired, i.e. the user has no access to the premium features of the app. Usually, it means that the user has decided not to pay for the app or encountered a billing issue.
 
@@ -244,13 +362,31 @@ The number of trials that expired, i.e. the user has no access to the premium fe
 
 #### Refund Events
 
-![](https://files.readme.io/31e3f3e-refund_events.webp "refund events.webp")
+<Zoom>
+  <img src={require('./img/31e3f3e-refund_events.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 The number of refunded purchases and subscriptions.
 
 #### Refund Money
 
-![](https://files.readme.io/07b7ff5-refund_money.webp "refund money.webp")
+<Zoom>
+  <img src={require('./img/07b7ff5-refund_money.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 Amount of money that was refunded. Calculated before store's fee.
 
@@ -272,7 +408,7 @@ Filter metrics by platform (iOS/Android).
 
 #### A/B tests
 
-Filter metrics by A/B tests that are associated with purchases.
+Filter metrics by A/B tests that are associated with purchases.  
 
 #### Attribution
 
