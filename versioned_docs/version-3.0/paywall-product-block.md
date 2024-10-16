@@ -138,14 +138,9 @@ For the **Products as purchase buttons** purchase flow, you can **highlight** a 
 />
 </Zoom>
 
-
-
-
-
 To highlight a product:
 
 1. In the left pane, choose the product you want  to highlight.
-
 
 <Zoom>
   <img src={require('./img/a630507-PB_highlight_product.png').default}
@@ -158,16 +153,11 @@ To highlight a product:
 />
 </Zoom>
 
-
-
-
-
 2. In the **Style** subsection, adjust the design to make the product stand out more..
 
 ### Product offers
 
 Each product can feature different text for offers in the **Text** subsection. The **Default** tab contains the text displayed without an offer. This is the perfect place to use [tag variables](paywall-builder-tag-variables) or [custom tags](custom-tags-in-paywall-builder) for dynamic, localized content. Start typing with a triangle bracket, and Adapty will suggest available tag variables to insert localized data from the stores
-
 
 <Zoom>
   <img src={require('./img/0de6871-PB_text.png').default}
@@ -180,10 +170,6 @@ Each product can feature different text for offers in the **Text** subsection. T
 />
 </Zoom>
 
-
-
-
-
 ## Switching between 2 product sets by trial toggle
 
 For a versatile user experience, you can allow users to switch between two sets of products using a toggle. This is especially useful for differentiating between standard products and trials.
@@ -191,7 +177,6 @@ For a versatile user experience, you can allow users to switch between two sets 
 To add a toggle:
 
 1. In the **Products** element, change the **Products grouping** option to **Toggle (for free trials and other offers)**. This will add two subsections: **Toggle on** and **Toggle off**.
-
 
 <Zoom>
   <img src={require('./img/d859a58-PB_turn_on_toggle.png').default}
@@ -204,13 +189,8 @@ To add a toggle:
 />
 </Zoom>
 
-
-
-
-
 2. Add products to both subsections to create views for when the toggle is on or off.
 3. In the **Toggle** element, define whether the toggle should be on or off by default in the paywall by the **Default state** toggle.
-
 
 <Zoom>
   <img src={require('./img/4127a67-PB_toggle_default_state.png').default}
@@ -222,9 +202,5 @@ To add a toggle:
   }}
 />
 </Zoom>
-
-
-
-
 
 By mastering these customization options, you can create a compelling, visually appealing product list that guides users towards making a purchase effortlessly

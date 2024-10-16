@@ -32,10 +32,7 @@ import ExpiresDate from './reusable/ExpiresDate.md';
 import RenewStatusChangedDate from './reusable/RenewStatusChangedDate.md';
 import BillingIssueDetectedDate from './reusable/BillingIssueDetectedDate.md';
 import GracePeriodExpiresDate from './reusable/GracePeriodExpiresDate.md';
-
-
-
-
+import OneTimePurchaseTrial from './reusable/OneTimePurchaseTrial.md';
 
 
 
@@ -83,6 +80,10 @@ The request is successful, the response will have the following data:
 ### missing_offer_id
 
 <MissingOfferID />
+
+### one_time_purchase_trial_error
+
+<OneTimePurchaseTrial />
 
 ### originally_purchased_date_error
 

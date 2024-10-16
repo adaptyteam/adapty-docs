@@ -13,6 +13,6 @@
 | price                         | Object        | :heavy_plus_sign:   | :heavy_minus_sign:  | Price of the subscription/purchase as a [Price](server-side-api-objects#price) object. The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal. |
 | purchased_at                  | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:  | The datetime when the access level was purchased the latest time |
 | refunded_at                   | ISO 8601 date | :heavy_minus_sign:  | :heavy_minus_sign:  | If the purchase was refunded, the datetime of the refund.    |
-| cancellation_reason           | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Possible values: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded`, `unknown` |
+| cancellation_reason           | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Possible values: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`,`upgraded`, `unknown`, `adapty_revoked`. |
 | variation_id                  | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | The variation ID used to attribute purchases to the paywall via which they were made |
 

@@ -8,7 +8,7 @@ Another possible reason is that you added the `offer_id` parameter and left it `
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `offer_category`</li><li> **errors**: Descriptive name of the error. </li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `offer.category`</li><li> **errors**: Descriptive name of the error. </li></ul> |
 | error_code  | String  | Short error name. Possible value: `missing_offer_id`         |
 | status_code | Integer | HTTP status. Always `400`                                    |
 

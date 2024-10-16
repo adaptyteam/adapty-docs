@@ -66,7 +66,7 @@ You can do the following action via Adapty server-side API:
 
 <NonSubscription />
 
-### Purchase
+### One-Time Purchase
 
 <Purchase />
 
