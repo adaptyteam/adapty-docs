@@ -266,6 +266,14 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 </details>
 ## Transactions
 
+### One-time purchase object
+
+<Purchase />
+
+### Subscription object
+
+<Subscription />
+
 ### Set transaction
 
 Creates a new transaction for an end user of your app in Adapty and provides access level. The transaction created by this method will appear in your [analytics](https://app.adapty.io/analytics) and [**Event Feed**](https://app.adapty.io/event-feed) and well as will be sent to all integrations.
@@ -286,30 +294,24 @@ POST
 
 #### Parameters
 
-Either the **Purchase** or **Subscription** object:
-
-##### Purchase object
-
-<Purchase />
-
-##### Subscription object
-
-<Subscription />
+Either the [One-time purchase](server-side-api-specs#one-time-purchase-object) or [Subscription](server-side-api-specs#subscription-object) object.
 
 #### Request example
 
 <details>    
 <summary>Request example (click to expand)</summary>
-```json title="JSON"
-{
+```json title="JSON"{
+  "purchase_type": "one_time_purchase",
   "store": "app_store",
   "environment": "Production",
   "store_product_id": "1year.premium",
   "store_transaction_id": "30002109551456",
-  "store_original_transaction_id": "30002109561269",
-  "offer_category": "introductory",
-  "offer_type": "free_trial",
-  "offer_id": "annual_free_trial",
+  "store_original_transaction_id": "30002109461269",
+  "offer": {
+    "category": "introductory",
+    "type": "free_trial",
+    "id": "annual_free_trial"
+  },
   "is_family_shared": false,
   "price": {
     "country": "US",
@@ -317,11 +319,12 @@ Either the **Purchase** or **Subscription** object:
     "value": 0
   },
   "purchased_at": "2022-10-12T09:42:50.000000+0000",
-  "refunded_at": "2022-10-15T09:42:50.000000+0000",
+  "refunded_at": "2022-10-12T09:42:50.000000+0000",
   "cancellation_reason": "voluntarily_cancelled",
   "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d"
 }
 ```
+
 </details>
 
 #### Successful response: 200 - Success
@@ -340,7 +343,32 @@ Either the **Purchase** or **Subscription** object:
 
 <div style={{ marginLeft: '20px' }}>
 <details>    
+<summary>**billing_issue_detected_at_date_comparison_error** (click to expand)</summary> 
+  <p> </p>
+<BillingIssueDetectedDate />
+</details>
+<details>    
+<summary>**expires_date_error** (click to expand) </summary> 
+  <p> </p>
+<ExpiresDate />
+</details>
+<details> 
+<summary>**family_share_price_error** (click to expand)</summary> 
+  <p> </p>
+<FamilySharePrice />
+</details>
+<details>    
 <summary>**free_trial_price_error** (click to expand)</summary> 
+  <p> </p>
+<FreeTrialPrice />
+</details>
+<details>    
+<summary>**grace_period_billing_error** (click to expand)</summary> 
+  <p> </p>
+<GracePeriodBilling />
+</details>
+<details>    
+<summary>**grace_period_expires_date_error** (click to expand)</summary> 
   <p> </p>
 <FreeTrialPrice />
 </details>
@@ -350,19 +378,14 @@ Either the **Purchase** or **Subscription** object:
 <MissingOfferID />
 </details>
 <details>    
+<summary>**originally_purchased_date_error** (click to expand)</summary> 
+  <p> </p>
+<originallyPurchasedDate />
+</details>
+<details>    
 <summary>**profile_does_not_exist** (click to expand)</summary> 
   <p> </p>
 <AccessLevelProfileNotFound /> 
-</details>
-<details>    
-<summary>**family_share_price_error** (click to expand)</summary> 
-  <p> </p>
-<FamilySharePrice />
-</details>
-<details>    
-<summary>**refund_fields_error** (click to expand)</summary> 
-  <p> </p>
-<RefundDateNull />
 </details>
 <details>    
 <summary>**refund_date_error** (click to expand)</summary> 
@@ -370,24 +393,9 @@ Either the **Purchase** or **Subscription** object:
 <RefundDate />
 </details>
 <details>    
-<summary>**originally_purchased_date_error** (click to expand)</summary> 
+<summary>**refund_fields_error** (click to expand)</summary> 
   <p> </p>
-<originallyPurchasedDate />
-</details>
-<details>    
-<summary>**store_transaction_id_error** (click to expand)</summary> 
-  <p> </p>
-<StoreTransactionId />
-</details>
-<details>    
-<summary>**grace_period_billing_error** (click to expand)</summary> 
-  <p> </p>
-<GracePeriodBilling />
-</details>
-<details>    
-<summary>**expires_date_error** (click to expand)</summary> 
-  <p> </p>
-<ExpiresDate />
+<RefundDateNull />
 </details>
 <details>    
 <summary>**renew_status_changed_date_error** (click to expand)</summary> 
@@ -395,14 +403,9 @@ Either the **Purchase** or **Subscription** object:
 <RenewStatusChangedDate />
 </details>
 <details>    
-<summary>**billing_issue_detected_at_date_comparison_error** (click to expand)</summary> 
+<summary>**store_transaction_id_error** (click to expand)</summary> 
   <p> </p>
-<BillingIssueDetectedDate />
-</details>
-<details>    
-<summary>**grace_period_expires_date_error** (click to expand)</summary> 
-  <p> </p>
-<FreeTrialPrice />
+<StoreTransactionId />
 </details>
 </div>
 <p> </p>
@@ -411,7 +414,6 @@ Either the **Purchase** or **Subscription** object:
   <p> </p>
 <ProfileResponseUnauthorized />  
 </details>
-
 
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
@@ -471,7 +473,7 @@ POST
   "starts_at": "2022-10-12T09:42:50.000000+0000",
   "expires_at": "2024-10-12T09:42:50.000000+0000"
 }
-  ```
+```
 </details>
 #### Successful response: 200 - Success
 
@@ -543,12 +545,14 @@ POST
 #### Request example
 <details>    
 <summary>Example request (click to expand)</summary>
+
 ```json title="JSON"
 {
   "access_level_id": "premium",
   "revoke_at": "2024-10-12T09:42:50.000000+0000"
 }
 ```
+
 </details>    
 #### Successful response: 200 - Success
 

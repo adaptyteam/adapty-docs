@@ -1,17 +1,17 @@
 <!--- StoreTransactionId ---> 
 
-In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction is the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations. If the transaction is the very first purchase, it can be its own original transaction.
+In the case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction is the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations. If the transaction is the very first purchase in the subscription chain, it can be its own original transaction.
 
-The `store_transaction_id` is the unique identification of the original transaction, while  `store_transaction_id` is the unique identification of the current transaction. Therefore, `purchased_at` can never be earlier than the `originally_purchased_at`. Maximum, they can coincide for the very first transaction.
+Another case is a one-time purchase. It never creates chains as it cannot have prolongations. For it, the `store_transaction_id` is always the same as the `store_original_transaction_id`.
 
-The request failed because the `originally_purchased_at` parameter in it is later than the `purchased_at`.  Make it earlier or equal to the `purchased_at`.
+Your request failed because the `store_transaction_id` value for the [One-Time Purchase](server-side-api-objects#one-time-purchase) object differs from its `store_original_transaction_id` . To fix the issue, either make them the same, or change the object - use [Subscription](server-side-api-objects#subscription) instead of the One-Time Purchase.
 
 ###### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
 | errors      | Object  | <ul><li> **source**: (string) Always `store_transaction_id`</li><li> **errors**: Descriptive name of the error</li></ul> |
-| error_code  | String  | Short error name. Always `store_transaction_id`              |
+| error_code  | String  | Short error name. Always store_transaction_id_error`         |
 | status_code | Integer | HTTP status. Always `400`                                    |
 
 ###### Response example
@@ -26,7 +26,7 @@ The request failed because the `originally_purchased_at` parameter in it is late
       ]
     }
   ],
-  "error_code": "store_transaction_id",
+  "error_code": "store_transaction_id_error",
   "status_code": 400
 }
 ```

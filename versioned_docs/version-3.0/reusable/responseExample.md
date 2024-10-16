@@ -24,9 +24,9 @@
         "store_transaction_id": "530001802720333",
         "store_original_transaction_id": "530001724306018",
         "offer": {
-          "offer_category": "introductory",
-          "offer_type": "free_trial",
-          "offer_id": "offer12"
+          "category": "introductory",
+          "type": "free_trial",
+          "id": "offer12"
         },
         "environment": "Production",
         "starts_at": "2022-10-12T09:42:50.000000+0000",
