@@ -10,6 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import Addactivationaction from './reusable/addactivationaction.md';
 
 With Adapty, you can create and run paywalls and A/B tests at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called [Placements](placements). A placement in your app can manage multiple paywalls or [A/B tests](ab-tests) at a time, each made for a certain group of users, which we call [Audiences](audience). Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version. The only thing you hardcode in the mobile app is the placement ID.
 
@@ -80,41 +81,7 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 The Adapty FF Plugin will now be added as a dependency to your project. In the **Adapty FF Plugin** window, you’ll find all the Adapty resources that have been imported into your project.
 
-## Activate Adapty plugin
-
-To get the Adapty plugin up and running, you'll need to activate it.
-
-1. In your FlutterFlow project, open **Custom Code** from the left menu.
-
-   <Zoom>
-     <img src={require('./FF_img/custom_code.webp').default}
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-2. Under **Custom Files**, select `main.dart`.
-
-3. In the right pane, click the **plus** button next to **Initial Actions**.
-
-   <Zoom>
-     <img src={require('./FF_img/activate.webp').default}
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-4. From the dropdown, choose `activate`.
-
-5. Click **Save**.
+<Addactivationaction />
 
 ## Initiate Adapty plugin
 
