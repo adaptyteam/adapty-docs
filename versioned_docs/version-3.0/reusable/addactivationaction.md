@@ -22,9 +22,7 @@ To get the Adapty plugin up and running, you'll need to activate it.
    />
    </Zoom>
 
-2. Under **Custom Files**, select `main.dart`.
-
-3. In the right pane, click the **plus** button next to **Initial Actions**.
+2. Click the **Add** button.
 
    <!--- <Zoom>
      <img src={require('../FF_img/activate.webp').default}
@@ -37,7 +35,20 @@ To get the Adapty plugin up and running, you'll need to activate it.
    />
    </Zoom> --->
 
+3. Choose **Action**.
+
 4. Enter the name of the new action as `activateAdaptyAction`.
+
+   <Zoom>
+     <img src={require('../FF_img/add-activateAdaptyAction.webp').default}
+     style={{
+       border: 'none', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
 
 5. Paste to the bottom of the created file the next code snipped:
 
@@ -50,34 +61,6 @@ Future activateAdaptyAction() async {
 }
 ```
 
-6. Replace `YOUR_API_KEY` with your real value.
-
-<Zoom>
-  <img src={require('../FF_img/add-activateAdaptyAction.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+6. For  `YOUR_API_KEY`, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
 
 7. Click **Save Action**.
-
-## Call the new activation action at application launch
-
-1. Navigate to `main.dart` in the **Custom Files** section.
-2. Remove legacy `activate` action from the Initial Actions section at the right pane if needed.
-3. Click the plus (**+**) button and choose `activateAdaptyAction`.
-
-<Zoom>
-  <img src={require('../FF_img/update-activation.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>

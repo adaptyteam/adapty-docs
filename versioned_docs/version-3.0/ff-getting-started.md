@@ -83,6 +83,22 @@ The Adapty FF Plugin will now be added as a dependency to your project. In the *
 
 <Addactivationaction />
 
+## Call the new activation action at application launch
+
+1. Navigate to `main.dart` in the **Custom Files** section.
+2. Click the plus (**+**) button and choose `activateAdaptyAction`.
+
+<Zoom>
+  <img src={require('./FF_img/update-activation.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## Initiate Adapty plugin
 
 For the Adapty Dashboard to recognize your app, you’ll need to provide a special key in FlutterFlow.
