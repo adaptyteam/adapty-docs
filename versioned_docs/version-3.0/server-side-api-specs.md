@@ -62,7 +62,7 @@ Request parameters:
 | **duration_days** | int | ✅\* see below | ❌ | Additional days to a current subscription\*\* |
 | **is_lifetime** | bool | ✅\* see below | ❌ | If set true, then a user will forever have a paid access level forever |
 | **starts_at** | ISO 8601 date | ❌ | ❌ | If the start time of the action is in the future, then you can transfer it. If the start time and the period are indicated, the period will be counted from the indicated time |
-| **vendor_product_id** | str | ❌ | ❌ | Vendor product ID which initiates subscription renewal. The default value is **adapty\_promotion** |
+| **vendor_product_id** | str | ❌ | ❌ | Vendor product ID which initiates subscription renewal. The default value is **adapty_server_side_product** |
 | **base_plan_id** | str | ❌ | ❌ | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | **vendor_original_transaction_id** | str | ❌ | ❌ | ID of the original transaction in the subscription renewal chain in a vendor environment. |
 | **vendor_transaction_id** | str | ❌ | ❌ | <p>Transaction ID in a vendor environment.</p><p>If it is the same as **vendor_original_transaction_id** or if **vendor_original_transaction_id** is absent, Adapty considers it the first subscription purchase. If it differs from **vendor_original_transaction_id**, Adapty considers the purchase the subscription renewal.</p> |
@@ -117,7 +117,7 @@ Sample response:
         "expires_at": "2023-03-29T15:30:34.000000+0000",
         "starts_at": null,
         "will_renew": false,
-        "vendor_product_id": "adapty_promotion",
+        "vendor_product_id": "adapty_server_side_product",
         "base_plan_id": "premium_autorenewing",
         "vendor_transaction_id": "1000000630116569",
         "vendor_original_transaction_id": "1000000625263604",
