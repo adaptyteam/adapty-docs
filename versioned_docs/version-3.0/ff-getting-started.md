@@ -146,6 +146,17 @@ Future activateAdaptyAction() async {
 
 1. Navigate to `main.dart` in the **Custom Code** section.
 
+   <Zoom>
+     <img src={require('./FF_img/dartmain.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
 2. Click the plus (**+**) button and choose `activateAdaptyAction`.
 
    <Zoom>
