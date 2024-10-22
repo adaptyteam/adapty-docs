@@ -85,7 +85,7 @@ The Adapty FF Plugin will now be added as a dependency to your project. In the *
 
 ## Call the new activation action at application launch
 
-1. Navigate to `main.dart` in the **Custom Files** section.
+1. Navigate to `main.dart` in the **Custom Code** section.
 2. Click the plus (**+**) button and choose `activateAdaptyAction`.
 
 <Zoom>
