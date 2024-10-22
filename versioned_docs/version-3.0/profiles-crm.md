@@ -6,7 +6,7 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Sharingaccesslevel from './/reusable/sharingaccesslevel.md';
+import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
 
 Profiles is a CRM for your users. With Profiles, you can:
 

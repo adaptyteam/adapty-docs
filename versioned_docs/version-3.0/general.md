@@ -6,7 +6,7 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Sharingaccesslevel from './reusable/sharingaccesslevel.md';
+import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
 
 You can navigate to the General tab of the App Settings page to manage your app's behavior, appearance, and revenue sharing. Here, you can customize your app's name and icon, manage your Adapty SDK and API keys, set your Small Business Program status, and choose the timezone for your app's analytics and charts.
 
