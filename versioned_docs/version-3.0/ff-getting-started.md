@@ -80,7 +80,9 @@ To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-p
 
 The Adapty FF Plugin will now be added as a dependency to your project. In the **Adapty FF Plugin** window, you’ll find all the Adapty resources that have been imported into your project.
 
-## Activate Adapty plugin
+
+
+## Add plugin activation action
 
 To get the Adapty plugin up and running, you'll need to activate it.
 
@@ -97,9 +99,65 @@ To get the Adapty plugin up and running, you'll need to activate it.
    />
    </Zoom>
 
-2. Under **Custom Files**, select `main.dart`.
+2. Click the **Add** button.
 
-3. In the right pane, click the **plus** button next to **Initial Actions**.
+   <!--- <Zoom>
+     <img src={require('./FF_img/activate.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom> --->
+
+3. Choose **Action**.
+
+4. Enter the name of the new action as `activateAdaptyAction`.
+
+   <Zoom>
+     <img src={require('./FF_img/add-activateAdaptyAction.webp').default}
+     style={{
+       border: 'none', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+5. Paste to the bottom of the created file the next code snipped:
+
+```swift
+import 'package:adapty_xtuel0/custom_code/actions/index.dart'
+    as adapty_xtuel0_actions;
+
+Future activateAdaptyAction() async {
+  await adapty_xtuel0_actions.activate("YOUR_API_KEY");
+}
+```
+
+6. For  `YOUR_API_KEY`, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
+
+7. Click **Save Action**.
+
+## Call the new activation action at application launch
+
+1. Navigate to `main.dart` in the **Custom Code** section.
+
+   <Zoom>
+     <img src={require('./FF_img/dartmain.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Click the plus (**+**) button and choose `activateAdaptyAction`.
 
    <Zoom>
      <img src={require('./FF_img/activate.webp').default}
@@ -112,9 +170,7 @@ To get the Adapty plugin up and running, you'll need to activate it.
    />
    </Zoom>
 
-4. From the dropdown, choose `activate`.
-
-5. Click **Save**.
+3. Click **Save**.
 
 ## Initiate Adapty plugin
 
