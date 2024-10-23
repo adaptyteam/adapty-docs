@@ -48,8 +48,8 @@ In the Adapty Dashboard, the following fields are needed to set up the connectio
 | **Google Cloud Project ID**                     | A user-assigned identifier for your Google Cloud project. Find this ID in the downloaded private JSON key file under the `project_id` field.                                                                                                                                                       |
 | **Google Cloud Service Account Private Key ID** | A unique identifier assigned to your private key when you create a new service account in the Google Cloud Console.  Find this ID in the downloaded private JSON key file under the `private_key_id` field.                                                                                        |
 | **Google Cloud Bucket Name**                    | The name of the bucket in Google Cloud Storage where you want to store your data. It should be unique within the Google Cloud Storage environment and should not contain any spaces.                                                                                                               |
-| **Email **                                      | The email address associated with your service account in Google Cloud Console. It is used to grant access to resources in your project.                                                                                                                                                           |
-| **Folder inside the bucket **                   | The name of the folder inside the bucket where you want to store your data. It should be unique within the bucket and can be used to organize your data. This field is optional to fill.                                                                                                           |
+| **Email**                                      | The email address associated with your service account in Google Cloud Console. It is used to grant access to resources in your project.                                                                                                                                                           |
+| **Folder inside the bucket**                   | The name of the folder inside the bucket where you want to store your data. It should be unique within the bucket and can be used to organize your data. This field is optional to fill.                                                                                                           |
 
 ## Create Google Cloud Storage credentials
 
@@ -82,6 +82,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 2. Next, create a new service account for the Adapty by clicking on the "+ CREATE SERVICE ACCOUNT" button.
 
    
+
 <Zoom>
   <img src={require('./img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp').default}
   style={{
@@ -99,6 +100,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 3. Fill out the fields in the first step, as access will be granted at a later stage. In order to read more details about this page read the documentation [here](https://cloud.google.com/iam/docs/service-accounts-create).
 
    
+
 <Zoom>
   <img src={require('./img/2190c50-CleanShot_2023-03-17_at_15.48.552x.webp').default}
   style={{
@@ -116,6 +118,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 4. To create and download a [private JSON key](https://cloud.google.com/iam/docs/keys-create-delete), navigate to the KEYS section and click on the "ADD KEY" button.
 
    
+
 <Zoom>
   <img src={require('./img/8a45468-CleanShot_2023-03-17_at_15.58.092x.webp').default}
   style={{
@@ -133,6 +136,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 5. In the DETAILS section, locate the Email value linked to the recently created service account and make a copy of it. This information will be necessary for the upcoming steps to authorize the account and allow it to write to the bucket.
 
    
+
 <Zoom>
   <img src={require('./img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp').default}
   style={{
@@ -150,6 +154,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 6. To proceed go to the Google Cloud Storage's[ Buckets](https://console.cloud.google.com/storage/browser) page and either select an existing bucket or create a new one to store the Event or Visuts Data reports from Adapty.  Then navigate to the PERMISSIONS section and select the option to [GRANT ACCESS](https://support.google.com/cloudidentity/answer/9178892?hl=en).
 
    
+
 <Zoom>
   <img src={require('./img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp').default}
   style={{
@@ -167,6 +172,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 7. In the PERMISSIONS section, input the Email of the service account obtained in the fifth step mentioned earlier, then choose the Storage Object Creator role. Finally, click on SAVE to apply the changes.
 
    
+
 <Zoom>
   <img src={require('./img/62801f4-CleanShot_2023-03-17_at_16.17.312x.webp').default}
   style={{
@@ -186,6 +192,7 @@ Please note that we only support Service Account HMAC key authorization, means i
 8. After passing these steps have successfully completed the necessary setup steps in the Google Cloud Console! The final step involves entering the bucket's name, accessing the JSON file containing the downloaded private key, and extracting the required field values for use in Adapty.
 
    
+
 <Zoom>
   <img src={require('./img/c967e16-CleanShot_2023-03-17_at_16.23.332x.webp').default}
   style={{
@@ -264,7 +271,7 @@ Here is the table structure for the events:
 | **idfa** | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) on iOS devices |
 | **advertising_id** | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device |
 | **ip_address** | Device IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes |
-| **cancellation_reason** | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be:</p><p>**iOS & Android**_voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS**  _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p>**Android**  _new_subscription_replace_, _cancelled_by_developer_</p> |
+| **cancellation_reason** | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be:</p><p>**iOS & Android**_voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS**  _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p> **Android**  _new_subscription_replace_, _cancelled_by_developer_</p> |
 | **android_app_set_id** | An [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - unique, per-device, per developer-account user-resettable ID for non-monetizing advertising use cases. |
 | **android_id** | On Android 8.0 (API level 26) and higher versions of the platform, a 64-bit number (expressed as a hexadecimal string), unique to each combination of app-signing key, user, and device. For more details, see [Android developer documentation](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
 | **device** | The end-user-visible device model name. |
@@ -311,5 +318,4 @@ Below the credentials, there are three groups of events you can export, send, an
   }}
 />
 </Zoom>
-
 
