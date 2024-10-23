@@ -62,7 +62,7 @@ Each event is wrapped into the following structure:
   "event_datetime": "2023-02-18T18:40:22.000000+0000",
   "event_properties": <event-specific properties>,
   "event_api_version": 1,
-  "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-711011fe5800", "customer_user_id": "some_id"}],
+  "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-733311fe5800", "customer_user_id": "example@gmail.com"}],
   "attributions": {"attribution_source1": <attribution_data>, "attribution_source2": <attribution_data>, ...},
   "user_attributes": {"attribute_name1": "attribute_value1", "attribute_name2": "attribute_value2", ...}
   "integration_ids": {"firebase_app_instance_id": "val1", "branch_id": "val2", "one_signal_player_id": "val3", ... }

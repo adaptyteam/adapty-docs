@@ -150,6 +150,7 @@ Event example
     "environment": "Sandbox",
     "vendor_product_id": "premium",
     "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "profile_has_access_level": true,
     "store": "app_store"
 }
 ```
@@ -210,6 +211,7 @@ Adapty has a special event `access_level_updated`. It is sent only to [webhook](
 | **active_introductory_offer_type** | str           |
 | **active_promotional_offer_type**  | str           |
 | **active_promotional_offer_id**    | str           |
+| **profile_has_access_level** | bool |
 
 We don't send `access_level_updated` upon subscription expiration - please, refer to **expires_at** value to end the subscriptions on your side. 
 
