@@ -43,6 +43,7 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 4. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
+
 <Zoom>
   <img src={require('./img/b00066c-package_name.webp').default}
   style={{
@@ -63,7 +64,6 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 
 1. Upload the service account private key file in JSON format that you have created at the [Create service account key file](create-service-account) step into the **Service account key file** area.
 
-
 <Zoom>
   <img src={require('./img/20fdba1-service_key_file.webp').default}
   style={{
@@ -75,8 +75,8 @@ The Package name is the unique identifier of your app in the Google Play Store. 
 />
 </Zoom>
 
+Don't forget to click the **Save** button to confirm the changes.
 
+**What's next**
 
-
-
-2. Don't forget to click the **Save** button to confirm the changes.
+- [Enable Real-time developer notifications (RTDN) in the Google Play Console](enable-real-time-developer-notifications-rtdn)

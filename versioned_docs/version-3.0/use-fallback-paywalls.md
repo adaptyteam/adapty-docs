@@ -13,6 +13,7 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting En
 
 - [iOS](ios-use-fallback-paywalls)
 - [Android](android-use-fallback-paywalls)
-- [Flutter](/2.0/flutter-use-fallback-paywalls)
-- [React Native](/2.0/react-native-use-fallback-paywalls)
-- [Unity](/2.0/unity-use-fallback-paywalls)
+- [Flutter](flutter-use-fallback-paywalls)
+- [React Native](react-native-use-fallback-paywalls)
+- [Unity](unity-use-fallback-paywalls)
+

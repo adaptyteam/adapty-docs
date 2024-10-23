@@ -21,9 +21,11 @@ Use the drop-down menu under the preview to select different devices, providing 
 />
 </Zoom>
 
+:::warning
 
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS, Android, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Legacy Paywall Builder device compatibility preview](paywall-layout-and-products-legacy#device-compatibility-preview).
 
-
+:::
 
 To review the tags used in elements:
 
@@ -41,5 +43,4 @@ To review the tags used in elements:
   }}
 />
 </Zoom>
-
 

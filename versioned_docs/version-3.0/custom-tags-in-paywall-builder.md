@@ -24,7 +24,7 @@ Here are some ways you can use custom tags:
 Custom tags help you create a flexible paywall that adapts to various situations, making your app's interface more personalized and engaging.
 
 :::warning
-Make sure to add fallbacks for every line with custom tags
+Make sure to add fallbacks for every line with custom tags,.
 
 Remember to include fallbacks for every line with custom tags.
 
@@ -56,26 +56,6 @@ To add a custom tag:
   }}
 />
 </Zoom>
-
-
-
-
-
-
-<Zoom>
-  <img src={require('./img/6f97bd0-custom_tag.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
 
 2. After adding the custom tag, make sure to enter a fallback line. This fallback text will appear in your app if it doesn’t recognize a particular custom tag, ensuring users won’t see the tag displayed as code. The fallback text replaces the entire line containing the custom tag.
 

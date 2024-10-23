@@ -17,6 +17,12 @@ When you add tag variables from our list to your product texts, our SDK pulls in
 
 Tag variables allow you to automatically localize these strings based on data directly from the store, ensuring that titles and prices are always accurate.
 
+:::warning
+
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS, Android, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Legacy Paywall Builder tag variables](paywall-builder-tag-variables-legacy).
+
+:::
+
 ### How to use tag variables
 
 :::note

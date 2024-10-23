@@ -12,6 +12,7 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 1. Copy the **URL for App Store server notification** in the Adapty Dashboard. 
 
    
+
 <Zoom>
   <img src={require('./img/2901185-app_server_notifications.webp').default}
   style={{
@@ -29,6 +30,7 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 3. Paste the copied **URL for App Store server notification** into the **Production Server URL** and **Sandbox Server URL** fields.
 
    
+
 <Zoom>
   <img src={require('./img/86fb3d2-app_server_notifications_apple.webp').default}
   style={{
@@ -40,4 +42,11 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 />
 </Zoom>
 
+**What's next**
 
+Set up the Adapty SDK for:
+
+- [iOS](sdk-installation-ios)
+- [Flutter](sdk-installation-flutter)
+- [React Native](sdk-installation-reactnative)
+- [Unity](sdk-installation-unity)

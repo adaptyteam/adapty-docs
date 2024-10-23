@@ -138,7 +138,7 @@ dependencies {
     ...
 -   implementation 'io.adapty:android-sdk:2.11.5'
 -   implementation 'io.adapty:android-ui:2.11.3'
-+   implementation platform('io.adapty:adapty-bom:3.0.1')
++   implementation platform('io.adapty:adapty-bom:3.0.2')
 +   implementation 'io.adapty:android-sdk'
 +   implementation 'io.adapty:android-ui'
 }
@@ -152,7 +152,7 @@ dependencies {
     ...
 -   implementation("io.adapty:android-sdk:2.11.5")
 -   implementation("io.adapty:android-ui:2.11.3")
-+   implementation(platform("io.adapty:adapty-bom:3.0.1"))
++   implementation(platform("io.adapty:adapty-bom:3.0.2"))
 +   implementation("io.adapty:android-sdk")
 +   implementation("io.adapty:android-ui")
 }
@@ -168,7 +168,7 @@ dependencies {
 ..
 - adapty = "2.11.5"
 - adaptyUi = "2.11.3"
-+ adaptyBom = "3.0.1"
++ adaptyBom = "3.0.2"
 
 [libraries]
 ..

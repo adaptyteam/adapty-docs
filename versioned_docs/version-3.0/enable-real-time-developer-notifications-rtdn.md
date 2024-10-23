@@ -12,6 +12,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
    
+
 <Zoom>
   <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
   style={{
@@ -24,11 +25,10 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 </Zoom>
 
 
-
-
 2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
 
    
+
 <Zoom>
   <img src={require('./img/a72ff2d-copy_topic.webp').default}
   style={{
@@ -41,15 +41,12 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 </Zoom>
 
 
-
-
 :::note
 If the contents of the **Enable Pub/Sub API** field have a wrong format (correct format starts with `projects/...`), make sure you've enabled all developers APIs and granted all required permissions to the service account.
 :::
 
 3. Open the [Google Play Console](https://play.google.com/console/), choose your app, and scroll down the left menu to find **Monetize** -> **Monetization setup**.
 4. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
-
 
 <Zoom>
   <img src={require('./img/e55ba0e-paste_topic_name.webp').default}
@@ -62,9 +59,14 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
 />
 </Zoom>
 
-
-
-
-
 5. Paste the contents of the **Enable Pub/Sub API** field you've copied in the Adapty **App Settings** into the **Topic name** field.
 6. Click the **Save changes** button in the Google Play Console.
+
+**What's next**
+
+Set up the Adapty SDK for:
+
+- [Android](sdk-installation-android)
+- [Flutter](sdk-installation-flutter)
+- [React Native](sdk-installation-reactnative)
+- [Unity](sdk-installation-unity)

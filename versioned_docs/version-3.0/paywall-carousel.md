@@ -21,11 +21,11 @@ A carousel is a dynamic set of swipeable cards that can be moved left or right, 
 />
 </Zoom>
 
+:::warning
 
+Carousels are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 and later, available for iOS, Android, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall carousel functionality.
 
-
-
-
+:::
 
 Use the power of carousels to elevate your paywall's appeal:
 

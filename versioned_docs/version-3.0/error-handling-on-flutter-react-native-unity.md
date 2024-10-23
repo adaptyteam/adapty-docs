@@ -76,7 +76,7 @@ try {
 
 | Error | Code | Description |
 |-----|----|-----------|
-| adaptyNotInitialized | 20 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](/2.0/sdk-installation-reactnative#configure-adapty-sdks). |
+| adaptyNotInitialized | 20 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native]( sdk-installation-reactnative#configure-adapty-sdks). |
 | productNotFound | 22 | This error indicates that the product requested for purchase is not available in the store. |
 | invalidJson | 23 | The paywall JSON is not valid. Fix it in the Adapty Dashboard. Refer to the [Customize paywall with remote config](customize-paywall-with-remote-config)  topic for details on how to fix it. |
 | currentSubscriptionToUpdateNotFoundInHistory | 24 | The original subscription that needs to be renewed is not found. |
@@ -110,7 +110,7 @@ try {
 
 | Error                | Code    | Description                                                  |
 | :------------------- | :------ | :----------------------------------------------------------- |
-| notActivated         | 2002    | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](/2.0/sdk-installation-reactnative#configure-adapty-sdks). |
+| notActivated         | 2002    | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative#configure-adapty-sdks). |
 | badRequest           | 2003    | Bad request.                                                 |
 | serverError          | 2004    | Server error.                                                |
 | networkFailed        | 2005    | The network request failed.                                  |

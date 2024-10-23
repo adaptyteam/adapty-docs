@@ -9,7 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 A card is a paywall element that combines several other elements into a single block. The card itself may or may not be visible if this is not needed. To make it visible, add it a background or background picture, frame, etc.
 
-
 <Zoom>
   <img src={require('./img/16fd800-PB_card_example.webp').default}
   style={{
@@ -21,9 +20,11 @@ A card is a paywall element that combines several other elements into a single b
 />
 </Zoom>
 
+:::warning
 
+Paywall cards are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 and later, available for iOS, Android, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall card functionality.
 
-
+:::
 
 1. Add a card as a separate element to a paywall or to another paywall element, for example, to a carousel.
 2. Add element you need in the card.
@@ -40,5 +41,4 @@ A card is a paywall element that combines several other elements into a single b
   }}
 />
 </Zoom>
-
 

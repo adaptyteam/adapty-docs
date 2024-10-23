@@ -13,8 +13,8 @@ A paywall is an in-app storefront where customers can see and purchase products 
 Adapty generates fallbacks as a JSON file in the necessary format, reflecting English versions of the paywalls you've configured in the Adapty Dashboard. To let your users see your fallback paywall:
 
 1. Download the file from the Adapty Dashboard - one per app store and Adapty SDK version - as described below.
-2. For iOS, Android, and React Native: Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), and [React Native](/2.0/react-native-use-fallback-paywalls).
-3. For Flutter and Unity: Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](/2.0/flutter-use-fallback-paywalls) and [Unity](/2.0/unity-use-fallback-paywalls).
+2. For iOS, Android, and React Native: Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), and [React Native](react-native-use-fallback-paywalls).
+3. For Flutter and Unity: Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls) and [Unity](unity-use-fallback-paywalls).
 
 ## Download fallback paywalls as a file in the Adapty Dashboard
 

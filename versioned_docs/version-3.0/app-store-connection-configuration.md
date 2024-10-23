@@ -24,6 +24,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 2. Copy the **Bundle ID** in the **General Information** sub-section.
 
    
+
 <Zoom>
   <img src={require('./img/afd5012-bundle_id_apple.webp').default}
   style={{
@@ -41,6 +42,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu.
 
    
+
 <Zoom>
   <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
   style={{
@@ -58,6 +60,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 4. Paste the copied value to the **Bundle ID** field.
 
    
+
 <Zoom>
   <img src={require('./img/2d64163-bundle_id.webp').default}
   style={{
@@ -80,6 +83,7 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 2. In the **Active **list, find the key you've created in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.
 
    
+
 <Zoom>
   <img src={require('./img/19a2868-issuer_apple.webp').default}
   style={{
@@ -96,6 +100,7 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 3. Copy **Issuer ID** and paste it to the **In-app purchase Issuer ID** field in the Adapty Dashboard.
 
    
+
 <Zoom>
   <img src={require('./img/c2b42e7-issuer_id.webp').default}
   style={{
@@ -158,6 +163,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 2. Scroll down to the **App-Specific Shared Secret** sub-section.
 
    
+
 <Zoom>
   <img src={require('./img/2bd112a-shared_secret_apple.webp').default}
   style={{
@@ -179,6 +185,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 3. Click the **Manage** button.
 
    
+
 <Zoom>
   <img src={require('./img/2d8b4c0-shared_secret_apple_copy.webp').default}
   style={{
@@ -198,6 +205,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 5. Paste the copied **Shared Secret** to the **App Store shared secret** field in the Adapty Dashboard. 
 
    
+
 <Zoom>
   <img src={require('./img/4f9624d-shared_secret.webp').default}
   style={{
@@ -213,3 +221,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 
 
 6. Click the **Save** button in the Adapty Dashboard to confirm the changes.
+
+**What's next**
+
+- Enable App Store server notifications

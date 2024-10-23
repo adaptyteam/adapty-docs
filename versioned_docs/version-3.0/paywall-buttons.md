@@ -12,6 +12,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 A paywall button is a UI element that lets users do things like login, restore a purchase, or close the paywall. It can also trigger custom actions and start custom flows, like taking users to a different page, giving you a lot of flexibility. For example, a button could close the current paywall and open a new one, allowing you to link paywalls together.
 
+:::warning
+
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS, Android, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Paywall texts and buttons in legacy Paywall Builder](paywall-texts-and-buttons).
+
+:::
+
 <Zoom>
   <img src={require('./img/paywall_button.webp').default}
   style={{

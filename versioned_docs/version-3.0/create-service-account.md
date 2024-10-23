@@ -52,6 +52,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 5. Click the **Create and continue** button.
 
    
+
 <Zoom>
   <img src={require('./img/e69d713-grant_access_to_project.webp').default}
   style={{
@@ -69,6 +70,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 6. In the **Select a role** drop-down list of the **Grant this service account access to project** sub-section, select **Pub/Sub -> Pub/Sub Admin**. This role is required to enable real-time developer notifications.
 
    
+
 <Zoom>
   <img src={require('./img/976299c-service_account_role.webp').default}
   style={{
@@ -90,6 +92,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 9. Click the **Continue** button.
 
    
+
 <Zoom>
   <img src={require('./img/ffe8d82-grant_user_access.webp').default}
   style={{
@@ -105,3 +108,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 
 10. Click the **Done** button without any changes. The **Service accounts** window opens.
+
+**What's next**
+
+- [Grant permissions to the service account in the Google Play Console](grant-permissions-to-service-account)

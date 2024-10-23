@@ -7,16 +7,17 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-:::note
-Custom fonts are only available on AdaptyUI SDK v.2.1.0 and higher.
+Consistency in visuals is key to great design. When building no-code paywalls, you might want to use a custom font to match the rest of your app. Here, we'll discuss how to customize fonts and how you can use them.
+
+:::warning
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom fonts in legacy Paywall Builder](using-custom-fonts-in-legacy-paywall-builder).
 :::
 
-Consistency in visuals is key to great design. When building no-code paywalls, you might want to use a custom font to match the rest of your app. Here, we'll discuss how to customize fonts and how you can use them.
+##
 
 ## What can be customized
 
 Every text element in Paywall Builder can have its own font and style. You can adjust this in the font controls for each text element:
-
 
 <Zoom>
   <img src={require('./img/56a8845-choose_font.webp').default}
@@ -28,10 +29,6 @@ Every text element in Paywall Builder can have its own font and style. You can a
   }}
 />
 </Zoom>
-
-
-
-
 
 In some cases, it’s more convenient to change the font for the entire paywall. You can do this in the Layout section of the Paywall Builder by adjusting the [by adjusting the Paywall Font](paywall-layout-and-products#font-settings-of-your-paywall).
 

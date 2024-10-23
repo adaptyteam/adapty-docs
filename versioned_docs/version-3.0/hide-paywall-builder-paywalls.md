@@ -1,29 +1,16 @@
 ---
-title: "Hide Paywall Builder paywalls (on cross-platform SDKs)"
+title: "Hide new Paywall Builder paywalls on React Native"
 description: ""
 metadataTitle: ""
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-
 While Paywall Builder seamlessly handles the purchasing process upon clicking "buy" buttons, you have to manage the closure of paywall screens within your mobile app.
 
-In native iOS and Android SDKs you have complete control over both presenting and hiding the paywalls. However in Flutter, React Native, and Unity SDKs this works a bit differently. Learn how below.
+In native iOS and Android SDKs, you have complete control over both presenting and hiding the paywalls. However in Flutter, React Native, and Unity SDKs this works a bit differently. Learn how below.
 
-## Dismiss a paywall screen in Flutter
-
-You can hide a paywall screen by calling the `view.dismiss` method.
-
-```typescript title="Flutter"
-try {
-  await view.dismiss();
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
-```
+:::warning
+This guide covers only hiding  **new Paywall Builder paywalls** which requires Adapty SDK v3.0 or later. To learn how to hide **legacy Paywall Builder paywalls**, read the [Hide legacy Paywall Builder paywalls (on cross-platform SDKs)](hide-legacy-paywall-builder-paywalls)
+:::
 
 ## Dismiss a paywall screen in React Native
 
@@ -39,14 +26,4 @@ try {
   // handle the error
 }
 
-```
-
-## Dismiss a paywall screen in Unity
-
-You can hide a paywall view by calling the `view.Dismiss` method.
-
-```typescript title="Flutter"
-view.Dismiss((error) => {
-  // handle the error
-});
 ```

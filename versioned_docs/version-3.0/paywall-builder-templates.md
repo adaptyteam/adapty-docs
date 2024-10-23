@@ -9,7 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Ready-made paywall templates are professionally designed and tailored to streamline your paywall creation process. These templates are crafted by expert designers to help you present your products attractively with minimal effort. Simply add your logo, infuse your brand personality, and you’re all set to captivate your audience and drive sales!
 
-
 <Zoom>
   <img src={require('./img/501b43c-PB-templates_listing.gif').default}
   style={{
@@ -21,9 +20,11 @@ Ready-made paywall templates are professionally designed and tailored to streaml
 />
 </Zoom>
 
+:::warning
 
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS, Android, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Legacy Paywall Builder templates](paywall-builder-templates-legacy).
 
-
+:::
 
 ## Using Paywall Templates
 
@@ -34,7 +35,6 @@ Templates serve as a fantastic starting point, offering beautifully structured l
 - **Customizability**: Personalize each template with your brand elements to make it uniquely yours.
 
 For those who prefer a hands-on approach, templates with a minimal design offer a blank canvas. These templates come with basic placements, making it easier for you to unleash your creativity and build a paywall from scratch using Adapty's versatile, feature-rich, and user-friendly paywall builder.
-
 
 <Zoom>
   <img src={require('./img/eba907e-PB_templates_minimal_design.webp').default}
@@ -49,8 +49,6 @@ For those who prefer a hands-on approach, templates with a minimal design offer 
 
 
 
-
-
 ## Choose paywall template
 
 When creating a new paywall, Adapty offers a selection of templates. You can easily switch between templates at any moment after that; however, it’s important to note that replacing a template will discard any changes made to your paywall design. To avoid losing your work, we recommend duplicating the paywall before changing templates so that you could return to the saved paywall if needed.
@@ -58,6 +56,7 @@ When creating a new paywall, Adapty offers a selection of templates. You can eas
 1. In the **Layout settings** of the paywall, click the **Change template** button.
 
    
+
 <Zoom>
   <img src={require('./img/24a8f3b-PB_change_template.webp').default}
   style={{
@@ -74,6 +73,7 @@ When creating a new paywall, Adapty offers a selection of templates. You can eas
 2. In the opened **Choose paywall** window, browse and select a new template.
 
    
+
 <Zoom>
   <img src={require('./img/984a1e9-PB_select_template.webp').default}
   style={{

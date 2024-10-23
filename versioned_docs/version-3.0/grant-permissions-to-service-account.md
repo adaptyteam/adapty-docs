@@ -12,6 +12,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 1. Open the [**Users and permissions**](https://play.google.com/console/u/0/developers/8970033217728091060/users-and-permissions) page in the Google Play Console and click the **Invite new users** button.
 
    
+
 <Zoom>
   <img src={require('./img/7b0e614-users_and_permissions.webp').default}
   style={{
@@ -28,6 +29,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 2. In the **Invite user** page, enter the email of the service users you've created.
 
    
+
 <Zoom>
   <img src={require('./img/3afd002-invite_user.webp').default}
   style={{
@@ -44,6 +46,7 @@ Grant the required permissions to the service account that Adapty will use to ma
 3. Switch to the  **Account permissions** tab.
 
    
+
 <Zoom>
   <img src={require('./img/4e2717b-account_permissions.webp').default}
   style={{
@@ -64,3 +67,7 @@ Grant the required permissions to the service account that Adapty will use to ma
    - Manage store presence
 5. Click the **Invite user** button.
 6. In the **Send invite?** window, click the **Send invite** button. The service account will show in the user list.
+
+**What's next**
+
+- [Generate the service account key file in the Google Play Console](create-service-account-key-file)

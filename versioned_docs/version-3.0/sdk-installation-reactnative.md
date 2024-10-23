@@ -23,6 +23,7 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.10.1             | 2.1.2            |
 | 2.11.2             | 2.11.0           |
 | 2.11.3             | 2.11.1           |
+| 3.0.1              | 3.0.0            |
 
 :::danger
 Go through release checklist before releasing your app
@@ -102,11 +103,13 @@ If you opt for a purely native approach, please consult the following instructio
    pod install --project-directory=ios/
    ```
 
-   The minimal supported iOS version is 13.0. If you encounter an error during pod installation, locate this line in your`ios/Podfile` and update the minimal target. Tand update the minimum target. Afterward, you should be able to successfully execute `pod install`.
+   The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
+
+   If you run into an error during pod installation, find this line in your `ios/Podfile` and update the minimum target. After that, you should be able to run `pod install` without any issues.
 
    ```diff title="Podfile"
    -platform :ios, min_ios_version_supported
-   +platform :ios, 13.0
+   +platform :ios, 15.0
    ```
 
 2. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
