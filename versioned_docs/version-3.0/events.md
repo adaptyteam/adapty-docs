@@ -116,7 +116,7 @@ In that case following events will be sent:
 | **expires_at** | ISO 8601 date | Date and time when paid access will expire. |
 | **activated_at** | ISO 8601 date | Date and time when paid access was activated. |
 | **billing_issue_detected_at** | ISO 8601 date | Date and time of billing issue. |
-| **profile_has_access_level** | Bool | A boolean that indicates whether the profile has an active access level. |
+| **profile_has_access_level** | Bool | A boolean that indicates whether the profile has an active access level (Webhook only). |
 
 
 Each event has the following properties:
