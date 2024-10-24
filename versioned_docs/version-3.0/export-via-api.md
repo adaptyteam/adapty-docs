@@ -7,6 +7,8 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+If you need to download analytics into csv file, you can use Adpty API to do so.
+
 ## Import request collection to Postman
 
 1. [Download client-api.yaml](api/client-api.yaml)
@@ -33,7 +35,7 @@ import 'react-medium-image-zoom/dist/styles.css';
   />
   </Zoom>
   
-  2. In the Value field, enter the API Key in format `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
+  2. In the **Value** field, enter the API Key in format `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
 - **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/json`.
 - **Body**:  The API expects the request to use the body as JSON.
 
