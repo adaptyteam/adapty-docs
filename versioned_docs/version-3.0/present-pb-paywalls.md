@@ -17,7 +17,7 @@ For detailed guidance on presenting paywalls within different frameworks, please
 
 :::warning
 
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon.
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS, Android, and React Native, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter and Unity is coming soon.
 
 - For presenting **legacy Paywall Builder paywalls**, check out [Present legacy Paywall Builder paywalls and their configuration](present-legacy-pb-paywalls).
 
