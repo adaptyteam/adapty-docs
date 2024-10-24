@@ -119,6 +119,7 @@ In that case following events will be sent:
 | **profile_has_access_level** | Bool | A boolean that indicates whether the profile has an active access level (Webhook only). |
 
 
+
 Each event has the following properties:
 
 `transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`. 
@@ -150,7 +151,6 @@ Event example
     "environment": "Sandbox",
     "vendor_product_id": "premium",
     "event_datetime": "2020-02-18T18:40:22.000000+0000",
-    "profile_has_access_level": true,
     "store": "app_store"
 }
 ```
