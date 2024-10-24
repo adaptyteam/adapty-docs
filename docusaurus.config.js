@@ -35,6 +35,8 @@ const config = {
     locales: ["en"],
   },
 
+  themes: ['docusaurus-theme-openapi'],
+
   presets: [
     [
       "classic",
@@ -77,26 +79,10 @@ const config = {
     'docusaurus-plugin-openapi',
     {
       id: 'api1',
-      path: './static/api/export-api-schema.yaml',  // Path to API 1 schema
+      path: './static/api/client-api.yaml',  // Path to API 1 schema
       routeBasePath: '/api1',  // Route for API 1 documentation
     },
-  ]/*,
-  [
-    'docusaurus-plugin-openapi',
-    {
-      id: 'api2',
-      path: './static/api/api2-schema.yaml',  // Path to API 2 schema
-      routeBasePath: '/api2',  // Route for API 2 documentation
-    },
-  ],
-  [
-    'docusaurus-plugin-openapi',
-    {
-      id: 'api3',
-      path: './static/api/api3-schema.yaml',  // Path to API 3 schema
-      routeBasePath: '/api3',  // Route for API 3 documentation
-    },
-  ],*/
+  ]
 ],
 
     /*[
