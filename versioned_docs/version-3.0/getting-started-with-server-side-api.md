@@ -25,6 +25,8 @@ With the API, you can:
 />
 </Zoom>
 
+<p> </p>
+
 :::note
 
 To track subscription events, use [Webhook](webhook) integration in Adapty or integrate directly with your existing service.
