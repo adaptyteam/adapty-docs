@@ -23,6 +23,8 @@ Adapty doesn’t validate data with other app stores and does not process purcha
 />
 </Zoom>
 
+<p> </p>
+
 :::important
 
 Make sure your backend processes the purchase and sends the transaction to Adapty using the [Adapty server-side API](getting-started-with-server-side-api). Adapty will only provide access, trigger a transaction event, send it to integrations, and reflect it in analytics after the transaction is received.
