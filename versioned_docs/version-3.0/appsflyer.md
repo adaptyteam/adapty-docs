@@ -16,9 +16,9 @@ Adapty provides a complete set of data that lets you track [subscription events]
 The integration between Adapty and AppsFlyer operates in two main ways.
 
 1. **Receiving attribution data from AppsFlyer**  
-      Once you've set up the AppsFlyer integration, Adapty will start receiving attribution data from AppsFlyer. You can easily access and view this data on the user's profile page.
+      Once you've [set up sending Appsflyer attribution to Adapty in your app code](appsflyer#sdk-configuration), Adapty will start receiving attribution data from AppsFlyer. You can easily access and view this data on the user's profile page.
 
-   
+
 <Zoom>
   <img src={require('./img/c2991f6-CleanShot_2023-08-04_at_16.29.202x.webp').default}
   style={{
@@ -47,6 +47,7 @@ To setup the integration with AppsFlyer:
 3. The next step of the integration is to set credentials. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in section **General**, and find **Apple ID** in the left bottom part of the screen.
 
    
+
 <Zoom>
   <img src={require('./img/43a5cc6-apple_id.webp').default}
   style={{
@@ -64,6 +65,7 @@ To setup the integration with AppsFlyer:
 4. Paste the copied **Apple ID** to the **iOS App ID** in the Adapty Dashboard.
 
    
+
 <Zoom>
   <img src={require('./img/61bff5a-appsflyer_iOS_app_id.webp').default}
   style={{
@@ -85,6 +87,7 @@ To setup the integration with AppsFlyer:
 6. Click **Your account name** -> **Security Center** in the top-right corner of the dashboard.
 
    
+
 <Zoom>
   <img src={require('./img/1c18c50-appsflyer_security_center.webp').default}
   style={{
@@ -104,6 +107,7 @@ To setup the integration with AppsFlyer:
 8. If you have an S2S token, please proceed to step 12. If you do not have it, click the **New token** button. 
 
    
+
 <Zoom>
   <img src={require('./img/7934920-appsflyer_new_token.webp').default}
   style={{
@@ -129,6 +133,7 @@ To setup the integration with AppsFlyer:
 13. In the Adapty Dashboard, paste the copied S2S key into the **Dev key for iOS** and **Dev key for Android** fields. 
 
     
+
 <Zoom>
   <img src={require('./img/a7d1c31-appsflyer_dev_keys.webp').default}
   style={{
