@@ -14,7 +14,7 @@ After [you designed the visual part for your paywall](adapty-paywall-builder) wi
 
 :::warning
 
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, React Native, and Unity is coming soon.
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iO, Android, and React Native, as it requires SDK v3.0, which is available for iOS and Android only. Support for Flutter, and Unity is coming soon.
 
 - For fetching **Legacy Paywall Builder paywalls**, check out [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls).
 - For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
