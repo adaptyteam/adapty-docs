@@ -11,8 +11,7 @@ If you need to download analytics into csv file, you can use Adpty API to do so.
 
 ## Import request collection to Postman
 
-1. [Download client-api.yaml](api/client-api.yaml)
-2. In Postman, click the **Import** button.
+1. In Postman, click the **Import** button.
 3. Drag-and-drop the **client-api.yaml** file into Postman.
 4. Select the **Import to Postman collection** radio-button.
 5. Click **Import**.
