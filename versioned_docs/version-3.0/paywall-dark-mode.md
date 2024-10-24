@@ -18,7 +18,7 @@ Dark mode has become an essential feature for improving user experience in mobil
   }}
 />
 </Zoom>
-:::info
+:::warning
 Dark mode is supported on iOS starting with version 3.1.0. Support for Android, React Native, Flutter, and Unity is coming soon. Dark mode is also included in fallback paywalls.
 :::
 To set up dark mode for your paywall:
