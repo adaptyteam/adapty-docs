@@ -91,16 +91,6 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads setting
 />
 </Zoom>
 
-## iAd Framework
-
-:::danger
-Deprecated since iOS 14.5
-
-This is the old way to get Search Ads attribution and it is only supported by Adapty SDK prior to version 2.8.0. For more modern approach look into AdServices Framework.
-:::
-
-Apple Search Ads via iAd Framework doesn't require any configuration in Adapty Dashboard, but you will need to enable it on the app side. Just add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plist` file and set it to `YES` (boolean value).
-
 ## Uploading your own keys
 
 :::note
