@@ -70,7 +70,7 @@ adapty-ui = { module = "io.adapty:android-ui" }
 
 dependencies {
     ...
-    implementation(libs.adapty.bom)
+    implementation(platform(libs.adapty.bom))
     implementation(libs.adapty)
     implementation(libs.adapty.ui)
 }
