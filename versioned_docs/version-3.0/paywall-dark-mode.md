@@ -11,7 +11,7 @@ Dark mode has become an essential feature for improving user experience in mobil
 
 :::note
 
-To use the Paywall hero video, you’ll need a paid plan: Pro, Pro+, or Enterprise.
+To use the Paywall dark mode, you’ll need a paid plan: Pro, Pro+, or Enterprise.
 
 :::
 
