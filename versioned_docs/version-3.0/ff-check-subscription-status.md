@@ -14,55 +14,127 @@ You can do this by looking at the user profile, which contains all available acc
 Now, let’s allow users to purchase your product:
 
 1. Double-click the button that should show the paid content.
+
 2. Open the **Actions** section in the right pane if it’s not already open.
+
 3. Open the **Action Flow Editor**.
+
 4. In the **Select Action Trigger** window, choose **On Tap**.
+
 5. In the **No Actions Created** window, click the **Add Conditional Action** button.
+
 6. In the **Actions Flow Editor** window, choose **Combine Conditions**.
-<Zoom>
-  <img src={require('./FF_img/combined-condition.webp').default}
-  style={{
+  <Zoom>
+    <img src={require('./FF_img/combined-condition.webp').default}
+    style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
+
+7. In the **Set Actions Arguments** section, choose `currentProfile` variable. This is the Adapty variable that holds data about the current user's profile.
+
+   <Zoom>
+     <img src={require('./FF_img/current-profile.webp').default}
+     style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+9. Fill in the fields as follows:
+
+| Parameter | Value |
+|--------------------------|----------|
+| Available Options| Data Structure Field |
+| Select Field | accessLevels |
+| Available Options | Filter List Items |
+| Filter Conditions | Conditions -> Single Condition |
+
+<Zoom>
+  <img src={require('./FF_img/filter-list-items.webp').default}
+  style={{
+ border: '1px solid #727272', /* border width and color */
+ width: '700px', /* image width */
+ display: 'block', /* for alignment */
+ margin: '0 auto' /* center alignment */
   }}
 />
 </Zoom>
 
-7. In the **Set Actions Arguments** section, choose `currentProfile` variable. This is the Adapty variable that holds data about the current user's profile
-8. Fill in the fields as follows:
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Available Options| Data Structure Field |
-  | Select Field | accessLevels |
-  | Available Options | List Contains Items |
- 
+9. In the **Filter Conditions** field, click **UNSET**. 
 
-9. Click **UNSET**.
-10. In the new **Set Variable** window, fill in the fields as follows:
+10. In the **Set Variable** window, click **Conditions** -> **Single Condition**.
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Available Options| Data Structure Field |
-  | Select Field | accessLevels |
-  | Available Options | Is Set and Not Empty |
+    <Zoom>
+      <img src={require('./FF_img/single-condition.webp').default}
+      style={{
+     border: '1px solid #727272', /* border width and color */
+     width: '700px', /* image width */
+     display: 'block', /* for alignment */
+     margin: '0 auto' /* center alignment */
+      }}
+    />
+    </Zoom>
 
-11. Click the **Confirm** button.
-12. Click **UNSET** for the second condition.
-13. In the new **Set Variable** window, fill in the fields as follows:
+11. In the new **Set Variable** window, click **UNSET** next to **First value**.
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Available Options| Data Structure Field |
-  | Select Field | accessLevels |
-  | List Index Options | First |
-  | Available Options| Data Structure Field |
-  | Select Field | accessLevels |
-  | Available Options| Data Structure Field |
-  | Select Field | isActive |
+    <Zoom>
+      <img src={require('./FF_img/first-value.webp').default}
+      style={{
+     border: '1px solid #727272', /* border width and color */
+     width: '700px', /* image width */
+     display: 'block', /* for alignment */
+     margin: '0 auto' /* center alignment */
+      }}
+    />
+    </Zoom>
 
+| Parameter         | Value                 |
+| ----------------- | --------------------- |
+| First Value       | Item in List          |
+| Available Options | Data Structure Field  |
+| Select Field      | accessLevelIdentifier |
+
+
+9. Click **Confirm**.
+
+10. In the **Set Variable** window, click **UNSET** next to **Second value**.
+
+11. In the **Value** field, enter the ID of your access level, in our example we use `premium`.
+
+    <Zoom>
+      <img src={require('./FF_img/second-value.webp').default}
+      style={{
+     border: '1px solid #727272', /* border width and color */
+     width: '700px', /* image width */
+     display: 'block', /* for alignment */
+     margin: '0 auto' /* center alignment */
+      }}
+    />
+    </Zoom>
+
+12. Click **Confirm**.
+
+    
+
+13. In the new **Set Variable** window where you returned, fill in the fields as follows:
+
+| Parameter | Value |
+|--------------------------|----------|
+| Available Options| Item as Index |
+| List Index Options | First |
+| Available Options| Data Structure Field |
+| Select Field | accessLevels |
+| Available Options| Data Structure Field |
+| Select Field | isActive |
 
 <Zoom>
   <img src={require('./FF_img/check-subscription-end.webp').default}
@@ -74,6 +146,7 @@ Now, let’s allow users to purchase your product:
   }}
 />
 </Zoom>
+
 14. Click the **Confirm** button twice.
 
 Now, add the actions for what happens next — if the user has the right subscription or not. Either take them to the next page or show the paywall so they can buy access.
