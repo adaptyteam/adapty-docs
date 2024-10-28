@@ -2,34 +2,23 @@
 // @ts-check
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
-// There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/docs/api/docusaurus-config
 
 import { themes as prismThemes } from "prism-react-renderer";
+const remarkGfm = require("remark-gfm");
+const rehypeFormat = require("rehype-format");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
   tagline: "Learn how to start with Adapty and get maximum out of your app",
   favicon: "img/favicon_black.svg",
-
-  // Set the production url of your site here
   url: "https://adapty.io",
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/docs/",
-
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: "adapty", // Usually your GitHub org/user name.
-  projectName: "adapty-docs", // Usually your repo name.
-
+  organizationName: "adapty",
+  projectName: "adapty-docs",
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "ignore",
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: "en",
     locales: ["en"],
@@ -40,8 +29,7 @@ const config = {
   presets: [
     [
       "classic",
-      /** @type {import('@docusaurus/preset-classic').Options} */
-      ({
+      {
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           path: "docs",
@@ -60,30 +48,43 @@ const config = {
             },*/
           },
           includeCurrentVersion: false,
+          remarkPlugins: [remarkGfm],
+          rehypePlugins: [rehypeFormat], // Moved plugins here
         },
         blog: {
           showReadingTime: false,
         },
         gtag: {
-          trackingID: "G-0M1BCR2275", // Replace with your Google Analytics Measurement ID
-          anonymizeIP: true, // Optional, anonymize IP addresses
+          trackingID: "G-0M1BCR2275",
+          anonymizeIP: true,
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
-      }),
+      },
     ],
   ],
+
   plugins: [
-      [
-    'docusaurus-plugin-openapi',
-    {
-      id: 'api1',
-      path: './static/api/client-api.yaml',  // Path to API 1 schema
-      routeBasePath: '/api1',  // Route for API 1 documentation
-    },
-  ]
-],
+    [
+      'docusaurus-plugin-openapi-docs',
+      {
+        id: 'api1',
+        docsPluginId: 'classic',
+        config: {
+          api1: {
+            specPath: './static/api/client-api.yaml',
+            outputDir: 'versioned_docs/version-3.0/api1',
+            sidebarOptions: {
+              groupPathsBy: 'tag',
+            },
+          },
+        },
+      },
+    ],
+  ],
+};
+
 
     /*[
       '@docusaurus/plugin-client-redirects',
@@ -365,14 +366,13 @@ const config = {
         autoCollapseCategories: true,
         hideable: true,
       },
-    }),
+    });
 
      scripts: [
     {
       src: 'https://survey.survicate.com/workspaces/af55d3f51f8189593de1c948b75c88f6/web_surveys.js',
       async: true,
     },
-  ],
-};
+  ];
 
-export default config;
+module.exports = config;
