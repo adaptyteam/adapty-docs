@@ -111,7 +111,7 @@ try {
 | Error                | Code    | Description                                                  |
 | :------------------- | :------ | :----------------------------------------------------------- |
 | notActivated         | 2002    | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative#configure-adapty-sdks). |
-| badRequest           | 2003    | Bad request.                                                 |
+| badRequest           | 2003    | <p>Bad request.</p><p>If you see the error **The current user has insufficient permissions to perform the requested operation** in the logs, make sure you've completed all the steps of the [Initial integration with Google Play](initial-android) without skipping any substeps.</p> |
 | serverError          | 2004    | Server error.                                                |
 | networkFailed        | 2005    | The network request failed.                                  |
 | decodingFailed       | 2006    | This error indicates that response decoding failed.          |
