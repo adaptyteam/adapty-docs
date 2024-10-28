@@ -4,7 +4,7 @@
 | :----------------- | :------------ | ------------------- | ------------------- | :----------------------------------------------------------- |
 | first_name         | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's first name                                   |
 | last_name          | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's last name                                    |
-| gender             | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's gender. Possible values: <ul><li> `m` for male</li><li> `f` for female</li><li> `o` for other</li></ul>. |
+| gender             | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's gender.                                      |
 | email              | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's email                                        |
 | phone_number       | String        | :heavy_minus_sign:  | :heavy_plus_sign:   | Your end user's phone number                                 |
 | birthday           | ISO 8601 date | :heavy_minus_sign:  | :heavy_minus_sign:  | Your end user's birthday                                     |
