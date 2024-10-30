@@ -295,6 +295,6 @@ Adapty tracks only full refunds. Proration or partial refunds are currently not 
 
 ### Transaction ID reusage
 
-If you delete an invoice, Stripe will reuse this invoice ID, and can do it even in different environment (so if you delete invoice in Sandbox environment, it's ID might resurface in one of the new invoices in the Production one). 
+If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
 
-To avoid this behaviour, change the invoice ID logic to **Sequentially for each customer**.
+To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
