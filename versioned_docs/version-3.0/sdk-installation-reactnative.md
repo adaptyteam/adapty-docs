@@ -23,7 +23,7 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.10.1             | 2.1.2            |
 | 2.11.2             | 2.11.0           |
 | 2.11.3             | 2.11.1           |
-| 3.0.1              | 3.0.0            |
+| 3.0.1              | 3.0.0-3.0.1      |
 
 :::danger
 Go through release checklist before releasing your app
