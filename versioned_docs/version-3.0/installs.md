@@ -27,9 +27,11 @@ The Installs chart shows the total number of users who have installed the app fo
 
 ### Calculation
 
-The calculation logic for the Installs chart provided by Adapty involves counting the total number of times the app has been installed by both new and existing users, including any reinstalls on different devices. However, incomplete installations or downloads that were canceled before completion are not included in the total count.
+Adapty’s Installs chart counts the total number of times the app has been installed, including by both new and existing users, as well as any reinstalls on different devices. However, incomplete installs or downloads canceled before finishing are not counted.
 
-Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](identifying-users) for identifying users
+You can define what qualifies as a new install event—whether it’s an installation on a specific device or one made by a specific user. Since a single user can have more than one device, this choice may affect your results. Set this in [**App Settings**](https://app.adapty.io/settings/general) under the [Installs definition for analytics](general#4-installs-definition-for-analytics) parameter.
+
+If you’re using the legacy **Installs definition for analytics** option based on profiles, the Installs chart might also include counts of new logged-in users who have accessed your app multiple times.
 
 ### Available filters and grouping
 
