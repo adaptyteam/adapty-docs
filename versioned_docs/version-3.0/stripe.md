@@ -27,6 +27,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 1. Go to [Developers → API Keys](https://dashboard.stripe.com/apikeys) in Stripe:
 
    
+
 <Zoom>
   <img src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp').default}
   style={{
@@ -44,6 +45,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 2. Click the **Reveal live (test) key button** next to the **Secret key** title, then copy it and go to Adapty's [**App Settings** → **Stripe**](https://app.adapty.io/settings/stripe). Paste the key here:
 
    
+
 <Zoom>
   <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp').default}
   style={{
@@ -61,6 +63,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 3. Next, copy the Webhook URL from the bottom of the same page in Adapty. Go to [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe and click the **Add endpoint** button:
 
    
+
 <Zoom>
   <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp').default}
   style={{
@@ -88,6 +91,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
    - payment_intent.succeeded
 
    
+
 <Zoom>
   <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp').default}
   style={{
@@ -105,6 +109,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 5. Press "Add endpoint" and then press "Reveal" under the "Signing secret". This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
 
    
+
 <Zoom>
   <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp').default}
   style={{
@@ -122,6 +127,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 6. Finally, paste this key into Adapty's App Settings → Stripe under "Stripe Webhook Secret":
 
    
+
 <Zoom>
   <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp').default}
   style={{
@@ -170,7 +176,6 @@ At the moment Adapty only supports **Flat rate** ($9.99/month) or **Package pric
 
 We treat Stripe the same way as App Store and Google Play: it is just another store where you sell your digital products. So it is configured similarly: simply add Stripe products (namely their `product_id` and `price_id`) to the Products section of Adapty:
 
-
 <Zoom>
   <img src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.webp').default}
   style={{
@@ -182,12 +187,7 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
 />
 </Zoom>
 
-
-
-
-
 Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. They are pretty easy to find for each product in Stripe's [Product Catalog](https://dashboard.stripe.com/products?active=true), once you open any Product:
-
 
 <Zoom>
   <img src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp').default}
@@ -200,9 +200,11 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 />
 </Zoom>
 
+:::warning
 
+Products are required! Be sure to create your Stripe products in the Adapty Dashboard. Adapty only tracks events for transactions linked to these products, so don’t skip this step—otherwise, transaction events won’t be created.
 
-
+:::
 
 After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
 
@@ -268,13 +270,13 @@ It will show up in Analytics but not in the sections that rely on counting profi
 
 You also have a fourth option to not create profiles at all but this is not recommended due to the above limitations in Analytics.
 
-### Current limitations
+## Current limitations
 
-#### Upgrading, downgrading and proration
+### Upgrading, downgrading and proration
 
 Subscription changes such as upgrading or downgrading can result in prorated charges. Adapty will not account for these charges in revenue calculations. It would be best to disable these options manually via the Stripe dashboard. You can also disable them by setting the `proration_behaviour` attribute value to `none` via the Stripe API.
 
-#### Cancellations
+### Cancellations
 
 Stripe has two subscription cancellation options:
 
@@ -283,10 +285,16 @@ Stripe has two subscription cancellation options:
 
 Adapty supports both options, but the revenue calculation for immediate cancellation will disregard the proration option.
 
-#### Billing Issues and Grace Period
+### Billing Issues and Grace Period
 
 When a customer encounters an issue with their payment, Adapty will generate a billing issue event and access will be revoked. We do not support Stripe's Grace Period just yet — this will be a part of future releases.
 
-#### Refunds
+### Refunds
 
 Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
+
+### Transaction ID reusage
+
+If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
+
+To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
