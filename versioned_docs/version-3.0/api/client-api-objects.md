@@ -3229,7 +3229,7 @@ or
 | Property     | Value                                                        |
 | ------------ | ------------------------------------------------------------ |
 | segmentation | <ul><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> day</li><li> week</li><li> month</li><li> year</li></ul> |
-| period_unit  | <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul><li> none</li></ul> |
+| period_unit  | <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li><li> none</li></ul> |
 
 ### CornerRadius
 
@@ -3340,7 +3340,8 @@ or
     "value": "string",
     "name": "string"
   }
-}
+
+```
 </details>
 
 **Properties** 
@@ -3351,7 +3352,7 @@ or
 
 ### CustomStoreResponse
 
-```
+
 <details>
  <summary>Example (click to expand)</summary>
 
@@ -3367,7 +3368,6 @@ or
 }
 
 ```
-
 </details>
 
 **Properties** 
@@ -4659,7 +4659,7 @@ Included Mixins:
 | ------- | -------------------------- | ------------------ | ------------------------------------------------------------ |
 | id      | string                     | :heavy_plus_sign:  | example: en-GB                                               |
 | strings | array of [String](#string) | :heavy_minus_sign: |                                                              |
-| assets  | array                      | :heavy_minus_sign: | <p> discriminator:</p><ul><li> propertyName: type</li><li> mapping: color: [AssetColor](#assetcolor), linear-gradient: [AssetColorGradient](#assetcolorgradient'), radial-gradient: [AssetColorGradient](#assetcolorgradient), conic-gradient: [AssetColorGradient](#assetcolorgradient), image: [AssetImage](#assetimage), font: [AssetFont](#assetfont)</li><li></ul> <p>oneOf: </p><ul><li> [AssetColor](#assetcolor)</li><li>[AssetColorGradient](#assetcolorgradient)</li><li> [AssetImage](#assetimage)</li><li> [AssetFont](#assetfont)</li></ul> |
+| assets  | array                      | :heavy_minus_sign: | <p> discriminator:</p><ul><li> propertyName: type</li><li> mapping: color: [AssetColor](#assetcolor), linear-gradient: [AssetColorGradient](#assetcolorgradient'), radial-gradient: [AssetColorGradient](#assetcolorgradient), conic-gradient: [AssetColorGradient](#assetcolorgradient), image: [AssetImage](#assetimage), font: [AssetFont](#assetfont)</li></ul> <p>oneOf: </p><ul><li> [AssetColor](#assetcolor)</li><li>[AssetColorGradient](#assetcolorgradient)</li><li> [AssetImage](#assetimage)</li><li> [AssetFont](#assetfont)</li></ul> |
 
 ### Localizations
 
@@ -5068,7 +5068,7 @@ Included Mixins:
 | placement_audience_version_id | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
 | state                         | array of [State](#state) | :heavy_minus_sign: | An enumeration.                                              |
 | purchase_container_id         | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| country                       | anyOf                    | :heavy_minus_sign: | <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul |
+| country                       | anyOf                    | :heavy_minus_sign: | <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul> |
 | store_product_id         | array of stings                                 | :heavy_minus_sign: | minItems: 2, maxItems: 2 |
 | duration                 | array of [Duration](#duration)                  | :heavy_minus_sign: | An enumeration. |
 | attribution_source       | array of stings                           | :heavy_minus_sign: |                 |
