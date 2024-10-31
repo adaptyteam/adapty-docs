@@ -18,6 +18,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 2. Click **Your account name** -> **Security Center** in the top-left corner of the dashboard.
 
    
+
 <Zoom>
   <img src={require('./img/be299ea-appsflyer_security_center.webp').default}
   style={{
@@ -37,6 +38,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 4. If you do not have an S2S token, click the **New token** button. If you have it, please proceed with step 8.
 
    
+
 <Zoom>
   <img src={require('./img/7934920-appsflyer_new_token.webp').default}
   style={{
@@ -60,6 +62,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 8. In the **Tokens** window, copy the S2S token.
 
    
+
 <Zoom>
   <img src={require('./img/d014c25-appsflyer_tokens.webp').default}
   style={{
@@ -79,6 +82,7 @@ To switch from AppsFlyer S2S API 2 to 3:
 10. In the **AppsFlyer S2S API** field, select **API 3**.
 
     
+
 <Zoom>
   <img src={require('./img/c0b3e72-appsflyer_switch_API.webp').default}
   style={{
@@ -97,4 +101,4 @@ To switch from AppsFlyer S2S API 2 to 3:
 
 12. Click the **Save** button to confirm the switch.
 
-At this moment, your integration instantly switches to AppsFlyer S2S API 3 and your new events will be sent to the [new URL](https://api3.appsflyer.com/inappevent).
+At this moment, your integration instantly switches to AppsFlyer S2S API 3 and your new events will be sent to the new URL: `https://api3.appsflyer.com/inappevent`.
