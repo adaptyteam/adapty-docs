@@ -9,10 +9,10 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name          | Type                          | Required          | Description                                                  |
-| ------------- | ----------------------------- | ----------------- | ------------------------------------------------------------ |
-| certainty     | boolean                       | :heavy_plus_sign: |                                                              |
-| probabilities | `additionalProperties` object | :heavy_plus_sign: | any of: <ul><li>type: number</li><li> type: string</li></ul> |
+| Name          | Type             | Required          | Description                                                  |
+| ------------- | ---------------- | ----------------- | ------------------------------------------------------------ |
+| certainty     | boolean          | :heavy_plus_sign: |                                                              |
+| probabilities | array of objects | :heavy_plus_sign: | An array where each item is an object with dynamic properties. Each property within the object can have a value of `number` or `string`. |
 
 <details>
  <summary>Example (click to expand)</summary>
@@ -146,12 +146,12 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name           | Type                                       | Required           | Description                                                  |
-| -------------- | ------------------------------------------ | ------------------ | ------------------------------------------------------------ |
-| title          | string                                     | :heavy_plus_sign:  |                                                              |
-| goal           | string                                     | :heavy_plus_sign:  |                                                              |
-| paywalls_group | [PaywallsGroupData](#paywallsgroupdata)    | :heavy_minus_sign: | Annotation:    This object is immutable dataset.  @dataclass(frozen=True) |
-| paywalls       | [[ABTestPaywallData](#aabtestpaywalldata)] | :heavy_plus_sign:  | Annotation: This object is immutable dataset.  @dataclass(frozen=True) |
+| Name           | Type                                              | Required           | Description                                                  |
+| -------------- | ------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| title          | string                                            | :heavy_plus_sign:  |                                                              |
+| goal           | string                                            | :heavy_plus_sign:  |                                                              |
+| paywalls_group | [PaywallsGroupData](#paywallsgroupdata)           | :heavy_minus_sign: | Annotation:    This object is immutable dataset.  @dataclass(frozen=True) |
+| paywalls       | array of [ABTestPaywallData](#aabtestpaywalldata) | :heavy_plus_sign:  | Annotation: This object is immutable dataset.  @dataclass(frozen=True) |
 
 <details>
  <summary>Example (click to expand)</summary>
@@ -431,14 +431,14 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name       | Type                                                      | Required           | Description     |
-| ---------- | --------------------------------------------------------- | ------------------ | --------------- |
-| ab_test    | [ABTest](#abtest)                                         | :heavy_plus_sign:  |                 |
-| state      | [ABTestState](#abteststate)                               | :heavy_plus_sign:  | An enumeration. |
-| started_at | string(date-time)                                         | :heavy_minus_sign: |                 |
-| stopped_at | string(date-time)                                         | :heavy_minus_sign: |                 |
-| metrics    | [[ABTestPaywallTotalMetrics](#abtestpaywalltotalmetrics)] | :heavy_plus_sign:  |                 |
-| predict    | [ABPredict](#abpredict)                                   | :heavy_minus_sign: |                 |
+| Name       | Type                                                         | Required           | Description     |
+| ---------- | ------------------------------------------------------------ | ------------------ | --------------- |
+| ab_test    | [ABTest](#abtest)                                            | :heavy_plus_sign:  |                 |
+| state      | [ABTestState](#abteststate)                                  | :heavy_plus_sign:  | An enumeration. |
+| started_at | string(date-time)                                            | :heavy_minus_sign: |                 |
+| stopped_at | string(date-time)                                            | :heavy_minus_sign: |                 |
+| metrics    | array of [ABTestPaywallTotalMetrics](#abtestpaywalltotalmetrics) | :heavy_plus_sign:  |                 |
+| predict    | [ABPredict](#abpredict)                                      | :heavy_minus_sign: |                 |
 
 <h2 id="tocS_ABTestListMetrics">ABTestListMetrics</h2>
 
@@ -1888,12 +1888,12 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name   | Type                                                    | Required          |
-| ------ | ------------------------------------------------------- | ----------------- |
-| id     | string                                                  | :heavy_plus_sign: |
-| type   | string                                                  | :heavy_plus_sign: |
-| values | [[AssetsColorGradientPoint](#assetscolorgradientpoint)] | :heavy_plus_sign: |
-| points | [AssetsColorGradientPoints](#assetscolorgradientpoints) | :heavy_plus_sign: |
+| Name   | Type                                                         | Required          |
+| ------ | ------------------------------------------------------------ | ----------------- |
+| id     | string                                                       | :heavy_plus_sign: |
+| type   | string                                                       | :heavy_plus_sign: |
+| values | array of [AssetsColorGradientPoint](#assetscolorgradientpoint) | :heavy_plus_sign: |
+| points | [AssetsColorGradientPoints](#assetscolorgradientpoints)      | :heavy_plus_sign: |
 
 **Enumerated Values**
 
@@ -3340,8 +3340,6 @@ or
     "value": "string",
     "name": "string"
   }
-
-```
 </details>
 
 **Properties** 
@@ -3356,6 +3354,8 @@ or
 <details>
  <summary>Example (click to expand)</summary>
 
+
+```
 ```json
 {
   "data": {
@@ -3532,12 +3532,11 @@ or
 
 **Properties** 
 
-| Name                 | Type             | Required           | Description         |
-| -------------------- | ---------------- | ------------------ | ------------------- |
-| errors               | object           | :heavy_minus_sign: |                     |
-| additionalProperties | array of strings | :heavy_minus_sign: |                     |
-| error_code           | string           | :heavy_minus_sign: | default: base_error |
-| status_code          | integer          | :heavy_minus_sign: | default: 400        |
+| Name        | Type    | Required           | Description                                                  |
+| ----------- | ------- | ------------------ | ------------------------------------------------------------ |
+| errors      | object  | :heavy_minus_sign: | A nested object with dynamic properties. Each key can be any string representing an error type, and the value is an array of `string` messages describing specific errors for that type. |
+| error_code  | string  | :heavy_minus_sign: | A code representing the error type. Defaults to `"base_error"`. |
+| status_code | integer | :heavy_minus_sign: | A numerical HTTP status code representing the error status. Defaults to `400`. |
 
 ### FallbackPlacementVariationCollection
 
@@ -3559,10 +3558,10 @@ or
 
 **Properties** 
 
-| Name         | Type             | Required          |
-| ------------ | ---------------- | ----------------- |
-| developer_id | string           | :heavy_plus_sign: |
-| data         | Array of objects | :heavy_plus_sign: |
+| Name         | Type             | Required          | Description                                                  |
+| ------------ | ---------------- | ----------------- | ------------------------------------------------------------ |
+| developer_id | string           | :heavy_plus_sign: | The ID of the placement where the transaction originated.    |
+| data         | array of objects | :heavy_plus_sign: | An array where each item is an object containing specific data related to fallback placements. |
 
 ### FallbackVariationCollection
 
