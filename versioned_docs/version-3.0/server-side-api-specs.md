@@ -73,7 +73,7 @@ Retrieves the details of an existing end user of your app.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profiles/
+https://api.adapty.io/api/v1/server-side-api/profile/
 ```
 
 #### Method
@@ -116,7 +116,7 @@ Creates a new end user of your app in Adapty.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profiles/
+https://api.adapty.io/api/v1/server-side-api/profile/
 ```
 
 #### Method
@@ -168,7 +168,7 @@ Changes your end user profile attributes.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profiles/
+https://api.adapty.io/api/v1/server-side-api/profile/
 ```
 
 #### Method
@@ -231,7 +231,7 @@ Please be aware that this endpoint does not support bulk deletion, therefore eac
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profiles/
+https://api.adapty.io/api/v1/server-side-api/profile/
 ```
 
 #### Method
