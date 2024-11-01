@@ -23,7 +23,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 | Name           | Type   | Required           | Description                                                  |
 | -------------- | ------ | ------------------ | ------------------------------------------------------------ |
-| AccountingType | string | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
+| AccountingType | string | :heavy_minus_sign: | The type of accounting method. Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
 
 ### ChartMetricsConditions
 
