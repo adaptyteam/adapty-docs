@@ -85,16 +85,15 @@ Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaD
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
-import YandexMobileMetrica
+import AppMetricaCore
 
-YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceId, error in
-    guard let deviceId = deviceId else { return }
-            
-    let builder = AdaptyProfileParameters.Builder()
-        .with(appmetricaDeviceId: deviceId)
-        .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+        
+if let deviceID = AppMetrica.deviceID {
+  let builder = AdaptyProfileParameters.Builder()
+    .with(appmetricaDeviceId: deviceID)
+    .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
 
-        Adapty.updateProfile(params: builder.build())
+  Adapty.updateProfile(params: builder.build())
 }
 ```
 </TabItem>
@@ -128,21 +127,21 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
-AppMetrica.Instance.RequestAppMetricaDeviceID((deviceId, error) => {
-    if (error != null) {
-        // handle error
-        return;
-    }
+import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
-    var builder = new Adapty.ProfileParameters.Builder();
+final deviceId = await AppMetrica.deviceId;
 
-    builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-    builder.SetAppmetricaDeviceId(deviceId);
+if (deviceId != null) {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setAppmetricaDeviceId(deviceId)
+    ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
 
-    Adapty.UpdateProfile(builder.Build(), (error) => {
-        // handle error
-    });
-});
+  try {
+    await adapty.updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle error
+  } catch (e) {}
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
