@@ -10,126 +10,26 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 <details>
  <summary>Example (click to expand)</summary>
+
 ```json
 "revenue"
 
 ```
+
 </details>
 
 
 **Properties**
 
-| Name           | Type   | Required           | Description     |
-| -------------- | ------ | ------------------ | --------------- |
-| AccountingType | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values**
-
-| Property       | Value                                                        |
-| -------------- | ------------------------------------------------------------ |
-| AccountingType | <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
-
-### ChartFilters
-
-<details>
- <summary>Example (click to expand)</summary>
-```json
-{
-  "date": [
-    "2019-08-24",
-    "2019-08-24"
-  ],
-  "compare_date": [
-    "2019-08-24",
-    "2019-08-24"
-  ],
-  "store": [
-    "string"
-  ],
-  "purchase_container_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "audience_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "paywall_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "placement_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "paywalls_group_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "placement_audience_version_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "segment_id": [
-    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-  ],
-  "country": [
-    "string"
-  ],
-  "store_product_id": [
-    "string"
-  ],
-  "duration": [
-    "string"
-  ],
-  "attribution_source": [
-    "string"
-  ],
-  "attribution_status": [
-    "organic"
-  ],
-  "attribution_channel": [
-    "string"
-  ],
-  "attribution_campaign": [
-    "string"
-  ],
-  "attribution_adgroup": [
-    "string"
-  ],
-  "attribution_adset": [
-    "string"
-  ],
-  "attribution_creative": [
-    "string"
-  ]
-}
-```
-</details>
-**Properties**
-
-|Name|Type|Required|
-|---|---|---|
-|date|[string]|:heavy_plus_sign:|
-|compare_date|[string]¦null|:heavy_minus_sign:|
-|store|[string]|:heavy_minus_sign:|
-|purchase_container_id|[string]|:heavy_minus_sign:|
-|audience_id|[string]|:heavy_minus_sign:|
-|paywall_id|[string]|:heavy_minus_sign:|
-|placement_id|[string]|:heavy_minus_sign:|
-|paywalls_group_id|[string]|:heavy_minus_sign:|
-|placement_audience_version_id|[string]|:heavy_minus_sign:|
-|segment_id|[string]|:heavy_minus_sign:|
-|country|[string]|:heavy_minus_sign:|
-|store_product_id|[string]|:heavy_minus_sign:|
-|duration|[string]|:heavy_minus_sign:|
-|attribution_source|[string]|:heavy_minus_sign:|
-|attribution_status|[string]|:heavy_minus_sign:|
-|attribution_channel|[string]|:heavy_minus_sign:|
-|attribution_campaign|[string]|:heavy_minus_sign:|
-|attribution_adgroup|[string]|:heavy_minus_sign:|
-|attribution_adset|[string]|:heavy_minus_sign:|
-|attribution_creative|[string]|:heavy_minus_sign:|
+| Name           | Type   | Required           | Description                                                  |
+| -------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| AccountingType | string | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
 
 ### ChartMetricsConditions
 
 <details>
  <summary>Example (click to expand)</summary>
- 
+
 ```json
 {
   "filters": {
@@ -224,12 +124,12 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**)
 
-| Name            | Type                                                         | Required           | Description     |
-| --------------- | ------------------------------------------------------------ | ------------------ | --------------- |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                 |
-| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | An enumeration. |
-| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | An enumeration. |
-| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | An enumeration. |
+| Name            | Type                                                         | Required           | Description      |
+| --------------- | ------------------------------------------------------------ | ------------------ | ---------------- |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                  |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | Enumerated value |
+| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | Enumerated value |
+| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | Enumerated value |
 
 ### ChartMetricsSegmentation
 
@@ -245,13 +145,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|ChartMetricsSegmentation|string|:heavy_minus_sign:|none|An enumeration.|
-
-**Enumerated Values**
-
-|Property|Value|
-|---|---|
-|ChartMetricsSegmentation|<ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul>|
+|ChartMetricsSegmentation|string|:heavy_minus_sign:|none|Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul>|
 
 ### ChartMetricsType
 
@@ -266,15 +160,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name             | Type   | Required           | Description     |
-| ---------------- | ------ | ------------------ | --------------- |
-| ChartMetricsType | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property         | Value                                                        |
-| ---------------- | ------------------------------------------------------------ |
-| ChartMetricsType | <ul><li> revenue</li><li> mrr</li><li> arr</li><li> arppu</li><li> arpas</li><li> subscriptions_active</li><li> subscriptions_new</li><li> subscriptions_renewal_cancelled</li><li> subscriptions_expired</li><li> trials_active</li><li> trials_new</li><li> trials_renewal_cancelled</li><li> trials_expired</li><li> grace_period</li><li> billing_issue</li><li> refund_events</li><li> refund_money</li><li> refund_rate</li><li> arpu</li><li> installs</li><li> funnel</li><li> retention</li><li> non_subscriptions</li><li> ltv</li><li> unique_subscribers</li><li> unique_paid_subscribers</li><li> purchases</li><li> install_paid</li><li> install_trial</li><li> trial_paid</li><li> from_paid_to_2_period_conversion</li><li> from_2_period_to_3_period_conversion</li><li> from_3_period_to_4_period_conversion</li><li> from_4_period_to_5_period_conversion</li><li> </li><li> from_paid_to_12_months_conversion</li><li> from_paid_to_24_months_conversion</li></ul> |
+| Name             | Type   | Required           | Description                                                  |
+| ---------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| ChartMetricsType | string | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> mrr</li><li> arr</li><li> arppu</li><li> arpas</li><li> subscriptions_active</li><li> subscriptions_new</li><li> subscriptions_renewal_cancelled</li><li> subscriptions_expired</li><li> trials_active</li><li> trials_new</li><li> trials_renewal_cancelled</li><li> trials_expired</li><li> grace_period</li><li> billing_issue</li><li> refund_events</li><li> refund_money</li><li> refund_rate</li><li> arpu</li><li> installs</li><li> funnel</li><li> retention</li><li> non_subscriptions</li><li> ltv</li><li> unique_subscribers</li><li> unique_paid_subscribers</li><li> purchases</li><li> install_paid</li><li> install_trial</li><li> trial_paid</li><li> from_paid_to_2_period_conversion</li><li> from_2_period_to_3_period_conversion</li><li> from_3_period_to_4_period_conversion</li><li> from_4_period_to_5_period_conversion</li><li> </li><li> from_paid_to_12_months_conversion</li><li> from_paid_to_24_months_conversion</li></ul> |
 
 ### CohortMetricsConditions
 
@@ -382,16 +270,16 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties**
 
-| Name            | Type                                                      | Required           | Description     |
-| --------------- | --------------------------------------------------------- | ------------------ | --------------- |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters)       | :heavy_plus_sign:  | none            |
-| period_unit     | [PeriodUnit](client-api-objects#periodunit)               | :heavy_minus_sign: | An enumeration. |
-| period_type     | [RenewalPeriodType](client-api-objects#renewalperiodtype) | :heavy_minus_sign: | An enumeration. |
-| value_type      | [CohortValueType](client-api-objects#cohortvaluetype)     | :heavy_minus_sign: | An enumeration. |
-| value_field     | [CohortValueField](client-api-objects#cohortvaluefield)   | :heavy_minus_sign: | An enumeration. |
-| accounting_type | [AccountingType](client-api-objects#accountingtype)       | :heavy_minus_sign: | An enumeration. |
-| renewal_days    | integer                                                   | :heavy_minus_sign: |                 |
-| format          | [MetricsFormat](client-api-objects#metricsformat)         | :heavy_minus_sign: | An enumeration. |
+| Name            | Type                                                      | Required           | Description      |
+| --------------- | --------------------------------------------------------- | ------------------ | ---------------- |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)       | :heavy_plus_sign:  |                  |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)               | :heavy_minus_sign: | Enumerated value |
+| period_type     | [RenewalPeriodType](client-api-objects#renewalperiodtype) | :heavy_minus_sign: | Enumerated value |
+| value_type      | [CohortValueType](client-api-objects#cohortvaluetype)     | :heavy_minus_sign: | Enumerated value |
+| value_field     | [CohortValueField](client-api-objects#cohortvaluefield)   | :heavy_minus_sign: | Enumerated value |
+| accounting_type | [AccountingType](client-api-objects#accountingtype)       | :heavy_minus_sign: | Enumerated value |
+| renewal_days    | integer                                                   | :heavy_minus_sign: |                  |
+| format          | [MetricsFormat](client-api-objects#metricsformat)         | :heavy_minus_sign: | Enumerated value |
 
 ### CohortValueField
 
@@ -403,15 +291,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 </details>
 **Properties** 
 
-| Name             | Type   | Required           | Description     |
-| ---------------- | ------ | ------------------ | --------------- |
-| CohortValueField | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property         | Value                                                        |
-| ---------------- | ------------------------------------------------------------ |
-| CohortValueField | <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
+| Name             | Type   | Required           | Description                                                  |
+| ---------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| CohortValueField | string | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
 
 ### CohortValueType
 
@@ -427,15 +309,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name            | Type   | Required           | Description     |
-| --------------- | ------ | ------------------ | --------------- |
-| CohortValueType | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property        | Value                                         |
-| --------------- | --------------------------------------------- |
-| CohortValueType | <ul><li> absolute</li><li> relative</li></ul> |
+| Name            | Type   | Required           | Description                                                  |
+| --------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| CohortValueType | string | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
 
 ### ConversionsMetricsRequest
 
@@ -522,20 +398,11 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 | Name         | Type                                            | Required           | Description                                                  |
 | ------------ | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters      | [ChartFilters](client-api-objects#chartfilters) | :heavy_plus_sign:  | none                                                         |
-| segmentation | string                                          | :heavy_minus_sign: | <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li> <li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id` - Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li>  `attribution_source` - Attribution source</li><li>  `attribution_status` - Attribution status</li><li>  `attribution_channel` - Attribution channel</li><li>  `attribution_campaign` - Attribution campaign</li><li>  `attribution_adgroup` - Attribution adgroup</li><li>  `attribution_adset` - Attribution adset</li><li>  `attribution_creative` - Attribution creative</li><li>  `duration` - Duration</li><li>  `day` - Day</li><li>  `week` - Week</li><li>  `month` - Month</li><li>  `year` - Year</li><li> listitem</li></ul> |
-| from_period  | integer¦null                                    | :heavy_minus_sign: | <ul><li> null - from install; </li><li> 0 - from trial;</li><li> 1, 2, 3, 4, ... - from period.</li></ul> |
-| to_period    | string                                          | :heavy_plus_sign:  | <ul><li> 0 - to trial; </li><li> 1, 2, 3, 4, ... - to period;</li><li> 6+, 12+, 24+, ... - to 6+ months, etc</li></ul> |
-| period_unit  | string                                          | :heavy_minus_sign: | <ul><li>  `day` - Day</li><li> `week` - Week</li><li>  `month` - Month</li><li> `quarter` - Quarter</li><li> `year` - Year</li><li> `none` - None</li></ul> |
-
-**Enumerated Values** 
-
-| Property     | Value                                                        |
-| ------------ | ------------------------------------------------------------ |
-| segmentation | <ul><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> day</li><li> week</li><li> month</li><li> year</li></ul> |
-| period_unit  | <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li><li> none</li></ul> |
-
-
+| filters      | [ChartFilters](client-api-objects#chartfilters) | :heavy_plus_sign:  |                                                              |
+| segmentation | string                                          | :heavy_minus_sign: | Possible values are: <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li> <li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id` - Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li>  `attribution_source` - Attribution source</li><li>  `attribution_status` - Attribution status</li><li>  `attribution_channel` - Attribution channel</li><li>  `attribution_campaign` - Attribution campaign</li><li>  `attribution_adgroup` - Attribution adgroup</li><li>  `attribution_adset` - Attribution adset</li><li>  `attribution_creative` - Attribution creative</li><li>  `duration` - Duration</li><li>  `day` - Day</li><li>  `week` - Week</li><li>  `month` - Month</li><li>  `year` - Year</li><li> listitem</li></ul> |
+| from_period  | integer¦null                                    | :heavy_minus_sign: | Possible values are: <ul><li> null - from install; </li><li> 0 - from trial;</li><li> 1, 2, 3, 4, ... - from period.</li></ul> |
+| to_period    | string                                          | :heavy_plus_sign:  | Possible values are: <ul><li> 0 - to trial; </li><li> 1, 2, 3, 4, ... - to period;</li><li> 6+, 12+, 24+, ... - to 6+ months, etc</li></ul> |
+| period_unit  | string                                          | :heavy_minus_sign: | Possible values are: <ul><li>  `day` - Day</li><li> `week` - Week</li><li>  `month` - Month</li><li> `quarter` - Quarter</li><li> `year` - Year</li><li> `none` - None</li></ul> |
 
 ### DateType
 
@@ -552,23 +419,14 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name     | Type   | Required           | Description     |
-| -------- | ------ | ------------------ | --------------- |
-| DateType | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property | Value                |
-| -------- | -------------------- |
-| DateType | purchase_date        |
-| DateType | profile_install_date |
+| Name     | Type   | Required           | Description                                                  |
+| -------- | ------ | ------------------ | ------------------------------------------------------------ |
+| DateType | string | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 
 ### Duration
 
 <details>
  <summary>Example (click to expand)</summary>
-
-
 ```json
 "Weekly"
 
@@ -578,15 +436,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name     | Type   | Required           | Description     |
-| -------- | ------ | ------------------ | --------------- |
-| Duration | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property | Value                                                        |
-| -------- | ------------------------------------------------------------ |
-| Duration | <ul><li> listWeeklytem</li><li> Monthly</li><li> 2 months</li><li> 3 months</li><li> 6 months</li><li> Annual</li><li> Lifetime</li><li> Uncategorized</li></ul> |
+| Name     | Type   | Required           | Description                                                  |
+| -------- | ------ | ------------------ | ------------------------------------------------------------ |
+| Duration | string | :heavy_minus_sign: | Possible values are: <ul><li> listWeeklytem</li><li> Monthly</li><li> 2 months</li><li> 3 months</li><li> 6 months</li><li> Annual</li><li> Lifetime</li><li> Uncategorized</li></ul> |
 
 ### FunnelMetricsConditions
 
@@ -689,13 +541,13 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name            | Type                                                         | Required           | Description     |
-| --------------- | ------------------------------------------------------------ | ------------------ | --------------- |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                 |
-| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | An enumeration. |
-| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | An enumeration. |
-| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | An enumeration. |
-| format          | [MetricsFormat](client-api-objects#metricsformat)            | :heavy_minus_sign: | An enumeration. |
+| Name            | Type                                                         | Required           | Description      |
+| --------------- | ------------------------------------------------------------ | ------------------ | ---------------- |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                  |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | Enumerated value |
+| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | Enumerated value |
+| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | Enumerated value |
+| format          | [MetricsFormat](client-api-objects#metricsformat)            | :heavy_minus_sign: | Enumerated value |
 
 ### FunnelsMetricsRequest
 
@@ -778,14 +630,8 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 | Name         | Type                                            | Required           | Description                                                  |
 | ------------ | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters      | [ChartFilters](client-api-objects#chartfilters) | :heavy_plus_sign:  | none                                                         |
-| segmentation | string                                          | :heavy_minus_sign: | <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li><li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id`- Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li> `attribution_source` - Attribution source</li><li> `attribution_status` - Attribution status</li><li> `attribution_channel` - Attribution channel</li><li> `attribution_campaign` - Attribution campaign</li><li> `attribution_adgroup` - Attribution adgroup</li><li> `attribution_adset` - Attribution adset</li><li> `attribution_creative` - Attribution creative</li><li> `duration` - Duration</li><li> `day` - Day</li><li> `week` - Week</li><li> `month` - Month</li><li> `year` - Year</li></ul> |
-
-**Enumerated Values** 
-
-| Property     | Value                                                        |
-| ------------ | ------------------------------------------------------------ |
-| segmentation | <ul><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> day</li><li> week</li><li> month</li><li> year</li></ul> |
+| filters      | [ChartFilters](client-api-objects#chartfilters) | :heavy_plus_sign:  |                                                              |
+| segmentation | string                                          | :heavy_minus_sign: | Possible values are: <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li><li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id`- Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li> `attribution_source` - Attribution source</li><li> `attribution_status` - Attribution status</li><li> `attribution_channel` - Attribution channel</li><li> `attribution_campaign` - Attribution campaign</li><li> `attribution_adgroup` - Attribution adgroup</li><li> `attribution_adset` - Attribution adset</li><li> `attribution_creative` - Attribution creative</li><li> `duration` - Duration</li><li> `day` - Day</li><li> `week` - Week</li><li> `month` - Month</li><li> `year` - Year</li></ul> |
 
 ### LTVSegmentation
 
@@ -798,15 +644,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name            | Type   | Required           | Description     |
-| --------------- | ------ | ------------------ | --------------- |
-| LTVSegmentation | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property        | Value                                                        |
-| --------------- | ------------------------------------------------------------ |
-| LTVSegmentation | <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
+| Name            | Type   | Required           | Description                                                  |
+| --------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| LTVSegmentation | string | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
 
 ### MetricsFilterField
 
@@ -823,16 +663,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name               | Type   | Required           | Description     |
-| ------------------ | ------ | ------------------ | --------------- |
-| MetricsFilterField | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property           | Value                                                        |
-| ------------------ | ------------------------------------------------------------ |
-| MetricsFilterField | <ul><li> app_id</li><li> country</li><li> store</li><li> audience_id</li><li> paywall_id</li><li> paywalls_group_id</li><li> placement_audience_version_id</li><li> placement_id</li><li> store_product_id</li><li> purchase_container_id</li><li> attribution</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> attribution_source</li><li> state</li></ul> |
---->
+| Name               | Type   | Required           | Description                                                  |
+| ------------------ | ------ | ------------------ | ------------------------------------------------------------ |
+| MetricsFilterField | string | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> country</li><li> store</li><li> audience_id</li><li> paywall_id</li><li> paywalls_group_id</li><li> placement_audience_version_id</li><li> placement_id</li><li> store_product_id</li><li> purchase_container_id</li><li> attribution</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> attribution_source</li><li> state</li></ul> |
 
 ### MetricsFilters
 
@@ -947,11 +780,11 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 | paywalls_group_id             | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
 | paywall_id                    | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
 | placement_audience_version_id | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| state                         | array of [State](client-api-objects#state) | :heavy_minus_sign: | An enumeration.                                              |
+| state                         | array of [State](client-api-objects#state) | :heavy_minus_sign: | Enumerated value                                             |
 | purchase_container_id         | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| country                       | anyOf                    | :heavy_minus_sign: | <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul> |
+| country                       | anyOf                    | :heavy_minus_sign: | Possible values are: <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul> |
 | store_product_id         | array of stings                                 | :heavy_minus_sign: | minItems: 2, maxItems: 2 |
-| duration                 | array of [Duration](client-api-objects#duration) | :heavy_minus_sign: | An enumeration. |
+| duration                 | array of [Duration](client-api-objects#duration) | :heavy_minus_sign: | Enumerated value |
 | attribution_source       | array of stings                           | :heavy_minus_sign: |                 |
 | attribution_status       | array of stings                           | :heavy_minus_sign: |                 |
 | attribution_channel      | array of stings                           | :heavy_minus_sign: |                 |
@@ -962,7 +795,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 | renewal_period           | array of integers                         | :heavy_minus_sign: |                 |
 | subscription_duration    | integer                                           | :heavy_minus_sign: |                 |
 | timezone                 | string                                            | :heavy_minus_sign: |                 |
-| profiles_counting_method | [ProfilesCountingMethod](client-api-objects#profilescountingmethod) | :heavy_minus_sign: | An enumeration. |
+| profiles_counting_method | [ProfilesCountingMethod](client-api-objects#profilescountingmethod) | :heavy_minus_sign: | Enumerated value |
 
 ### MetricsFormat
 
@@ -979,17 +812,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name          | Type   | Required           | Description     |
-| ------------- | ------ | ------------------ | --------------- |
-| MetricsFormat | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property      | Value                                |
-| ------------- | ------------------------------------ |
-| MetricsFormat | <ul><li> json</li><li> csv</li></ul> |
-
-
+| Name          | Type   | Required           | Description                                               |
+| ------------- | ------ | ------------------ | --------------------------------------------------------- |
+| MetricsFormat | string | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul> |
 
 ### PeriodUnit
 
@@ -1006,21 +831,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name       | Type   | Required           | Description     |
-| ---------- | ------ | ------------------ | --------------- |
-| PeriodUnit | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property   | Value   |
-| ---------- | ------- |
-| PeriodUnit | day     |
-| PeriodUnit | week    |
-| PeriodUnit | month   |
-| PeriodUnit | quarter |
-| PeriodUnit | year    |
-
-
+| Name       | Type   | Required           | Description                                                  |
+| ---------- | ------ | ------------------ | ------------------------------------------------------------ |
+| PeriodUnit | string | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 
 ### ProfilesCountingMethod
 
@@ -1037,17 +850,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name                   | Type   | Required           | Description     |
-| ---------------------- | ------ | ------------------ | --------------- |
-| ProfilesCountingMethod | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property               | Value            |
-| ---------------------- | ---------------- |
-| ProfilesCountingMethod | profile_id       |
-| ProfilesCountingMethod | customer_user_id |
-| ProfilesCountingMethod | device_id        |
+| Name                   | Type   | Required           | Description                                                  |
+| ---------------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| ProfilesCountingMethod | string | :heavy_minus_sign: | Possible values are: <ul><li> profile_id</li><li> customer_user_id</li><li> device_id</li></ul> |
 
 ### RenewalPeriodType
 
@@ -1064,16 +869,9 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name              | Type   | Required           | Description     |
-| ----------------- | ------ | ------------------ | --------------- |
-| RenewalPeriodType | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property          | Value    |
-| ----------------- | -------- |
-| RenewalPeriodType | renewals |
-| RenewalPeriodType | days     |
+| Name              | Type   | Required           | Description                                                  |
+| ----------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| RenewalPeriodType | string | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
 
 ### RequestDTO
 
@@ -1179,14 +977,14 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name         | Type                                                      | Required           | Description     |
-| ------------ | --------------------------------------------------------- | ------------------ | --------------- |
-| filters      | [MetricsFilters](client-api-objects#metricsfilters)       | :heavy_plus_sign:  |                 |
-| format       | [MetricsFormat](client-api-objects#metricsformat)         | :heavy_minus_sign: | An enumeration. |
-| period_unit  | [PeriodUnit](client-api-objects#periodunit)               | :heavy_minus_sign: | An enumeration. |
-| period_type  | [RenewalPeriodType](client-api-objects#renewalperiodtype) | :heavy_minus_sign: | An enumeration. |
-| segmentation | [LTVSegmentation](client-api-objects#ltvsegmentation)     | :heavy_minus_sign: | An enumeration. |
-| value_type   | [CohortValueType](client-api-objects#cohortvaluetype)     | :heavy_minus_sign: | An enumeration. |
+| Name         | Type                                                      | Required           | Description      |
+| ------------ | --------------------------------------------------------- | ------------------ | ---------------- |
+| filters      | [MetricsFilters](client-api-objects#metricsfilters)       | :heavy_plus_sign:  |                  |
+| format       | [MetricsFormat](client-api-objects#metricsformat)         | :heavy_minus_sign: | Enumerated value |
+| period_unit  | [PeriodUnit](client-api-objects#periodunit)               | :heavy_minus_sign: | Enumerated value |
+| period_type  | [RenewalPeriodType](client-api-objects#renewalperiodtype) | :heavy_minus_sign: | Enumerated value |
+| segmentation | [LTVSegmentation](client-api-objects#ltvsegmentation)     | :heavy_minus_sign: | Enumerated value |
+| value_type   | [CohortValueType](client-api-objects#cohortvaluetype)     | :heavy_minus_sign: | Enumerated value |
 
 ### RetentionMetricsConditions
 
@@ -1291,15 +1089,15 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name            | Type                                                         | Required           | Description     |
-| --------------- | ------------------------------------------------------------ | ------------------ | --------------- |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                 |
-| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | An enumeration. |
-| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | An enumeration. |
-| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | An enumeration. |
-| use_trial       | boolean                                                      | :heavy_minus_sign: |                 |
-| value_type      | [CohortValueType](client-api-objects#cohortvaluetype)        | :heavy_minus_sign: | An enumeration. |
-| format          | [MetricsFormat](client-api-objects#metricsformat)            | :heavy_minus_sign: | An enumeration. |
+| Name            | Type                                                         | Required           | Description      |
+| --------------- | ------------------------------------------------------------ | ------------------ | ---------------- |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                  |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | Enumerated value |
+| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | Enumerated value |
+| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | Enumerated value |
+| use_trial       | boolean                                                      | :heavy_minus_sign: |                  |
+| value_type      | [CohortValueType](client-api-objects#cohortvaluetype)        | :heavy_minus_sign: | Enumerated value |
+| format          | [MetricsFormat](client-api-objects#metricsformat)            | :heavy_minus_sign: | Enumerated value |
 
 ### RetentionMetricsRequest
 
@@ -1386,14 +1184,8 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 | Name         | Type                                            | Required           | Description                                                  |
 | ------------ | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters      | [ChartFilters](client-api-objects#chartfilters) | :heavy_plus_sign:  | none                                                         |
-| segmentation | string                                          | :heavy_minus_sign: | * `period` - Period * `renewal_status` - Renewal status * `cancellation_reason` - Cancellation reason * `store_product_id` - Store product id * `country` - Country * `store` - Store * `purchase_container_id` - Purchase container id * `paywall_id` - Paywall id * `audience_id` - Audience id * `placement_id` - Placement id * `attribution_source` - Attribution source * `attribution_status` - Attribution status * `attribution_channel` - Attribution channel * `attribution_campaign` - Attribution campaign * `attribution_adgroup` - Attribution adgroup * `attribution_adset` - Attribution adset * `attribution_creative` - Attribution creative * `duration` - Duration * `day` - Day * `week` - Week * `month` - Month * `year` - Year |
+| segmentation | string                                          | :heavy_minus_sign: | Possible values are: <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li> <li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id` - Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li>  `attribution_source` - Attribution source</li><li>  `attribution_status` - Attribution status</li><li>  `attribution_channel` - Attribution channel</li><li>  `attribution_campaign` - Attribution campaign</li><li>  `attribution_adgroup` - Attribution adgroup</li><li>  `attribution_adset` - Attribution adset</li><li>  `attribution_creative` - Attribution creative</li><li>  `duration` - Duration</li><li>  `day` - Day</li><li>  `week` - Week</li><li>  `month` - Month</li><li>  `year` - Year</li></ul> |
 | use_trial    | boolean                                         | :heavy_minus_sign: | none                                                         |
-
-**Enumerated Values** 
-
-| Property     | Value                                                        |
-| ------------ | ------------------------------------------------------------ |
-| segmentation | <ul><li> `period` - Period</li><li> `renewal_status` - Renewal status</li><li> `cancellation_reason` - Cancellation reason</li><li> `store_product_id` - Store product id</li> <li> `country` - Country</li><li> `store` - Store</li><li> `purchase_container_id` - Purchase container id</li><li> `paywall_id` - Paywall id</li><li>  `audience_id` - Audience id</li><li> `placement_id` - Placement id</li><li>  `attribution_source` - Attribution source</li><li>  `attribution_status` - Attribution status</li><li>  `attribution_channel` - Attribution channel</li><li>  `attribution_campaign` - Attribution campaign</li><li>  `attribution_adgroup` - Attribution adgroup</li><li>  `attribution_adset` - Attribution adset</li><li>  `attribution_creative` - Attribution creative</li><li>  `duration` - Duration</li><li>  `day` - Day</li><li>  `week` - Week</li><li>  `month` - Month</li><li>  `year` - Year</li></ul> |
 
 ### State
 
@@ -1410,13 +1202,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 **Properties** 
 
-| Name  | Type   | Required           | Description     |
-| ----- | ------ | ------------------ | --------------- |
-| State | string | :heavy_minus_sign: | An enumeration. |
-
-**Enumerated Values** 
-
-| Property | Value                                                        |
-| -------- | ------------------------------------------------------------ |
-| State    | <ul><li> live</li><li> inactive</li><li> draft</li><li> archived</li></ul> |
-
+| Name  | Type   | Required           | Description                                                  |
+| ----- | ------ | ------------------ | ------------------------------------------------------------ |
+| State | string | :heavy_minus_sign: | <ul><li> live</li><li> inactive</li><li> draft</li><li> archived</li></ul> |
