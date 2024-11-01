@@ -1,5 +1,6 @@
 ---
-title: API Objects for export of analytics
+title: API Objects for exporting analytics data
+toc_max_heading_level: 3
 ---
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
 
@@ -28,8 +29,8 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 }
 ```
 </details>
-
 ### ABTest
+
 **Properties**
 
 | Name           | Type                            | Required          |
@@ -150,8 +151,8 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 | -------------- | ------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | title          | string                                            | :heavy_plus_sign:  |                                                              |
 | goal           | string                                            | :heavy_plus_sign:  |                                                              |
-| paywalls_group | [PaywallsGroupData](#paywallsgroupdata)           | :heavy_minus_sign: | Annotation:    This object is immutable dataset.  @dataclass(frozen=True) |
-| paywalls       | array of [ABTestPaywallData](#aabtestpaywalldata) | :heavy_plus_sign:  | Annotation: This object is immutable dataset.  @dataclass(frozen=True) |
+| paywalls_group | [PaywallsGroupData](#paywallsgroupdata)           | :heavy_minus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
+| paywalls       | array of [ABTestPaywallData](#aabtestpaywalldata) | :heavy_plus_sign:  | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 <details>
  <summary>Example (click to expand)</summary>
@@ -3346,7 +3347,7 @@ or
 
 | Name | Type                              | Required          | Description                                                  |
 | ---- | --------------------------------- | ----------------- | ------------------------------------------------------------ |
-| data | [CustomStoreDTO](#customstoredto) | :heavy_plus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| data | [CustomStoreDTO](#customstoredto) | :heavy_plus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### CustomStoreResponse
 
@@ -3751,9 +3752,9 @@ or
 
 **Properties** 
 
-| Name | Type                                  | Required           | Description                                                  |
-| ---- | ------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| data | [[FontDTOResponse](#fontdtoresponse)] | :heavy_minus_sign: | Annotation: This object is immutable dataset.  @dataclass(frozen=True) |
+| Name | Type                                         | Required           | Description                                                  |
+| ---- | -------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| data | array of [FontDTOResponse](#fontdtoresponse) | :heavy_minus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### FontResponse
 
@@ -3780,7 +3781,7 @@ or
 
 | Name | Type                                | Required           | Description                                                  |
 | ---- | ----------------------------------- | ------------------ | ------------------------------------------------------------ |
-| data | [FontDTOResponse](#fontdtoresponse) | :heavy_minus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| data | [FontDTOResponse](#fontdtoresponse) | :heavy_minus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 | meta | array of strings(uuid)              | :heavy_minus_sign: | none                                                         |
 
 ### FunnelMetricsConditions
@@ -4168,31 +4169,31 @@ or
 
 **Properties** 
 
-| Name                               | Type                            | Required           |
-| ---------------------------------- | ------------------------------- | ------------------ |
-| revenue                            | number                          | :heavy_minus_sign: |
-| proceeds                           | number                          | :heavy_minus_sign: |
-| net_revenue                        | number                          | :heavy_minus_sign: |
-| purchases                          | integer                         | :heavy_minus_sign: |
-| trials                             | integer                         | :heavy_minus_sign: |
-| trials_cancelled                   | integer                         | :heavy_minus_sign: |
-| refunds                            | integer                         | :heavy_minus_sign: |
-| unique_subscribers                 | integer                         | :heavy_minus_sign: |
-| unique_paid_subscribers            | integer                         | :heavy_minus_sign: |
-| views                              | integer                         | :heavy_minus_sign: |
-| unique_profiles_views              | integer                         | :heavy_minus_sign: |
-| in_current_state                   | boolean                         | :heavy_minus_sign: |
-| arppu                              | number                          | :heavy_minus_sign: |
-| arpas                              | number                          | :heavy_minus_sign: |
-| apppu                              | number                          | :heavy_minus_sign: |
-| appas                              | number                          | :heavy_minus_sign: |
-| conversion_rate_purchases          | number                          | :heavy_minus_sign: |
-| conversion_rate_trials             | number                          | :heavy_minus_sign: |
-| conversion_rate_refunds            | number                          | :heavy_minus_sign: |
-| conversion_rate_purchases_by_users | number                          | :heavy_minus_sign: |
-| conversion_rate_trials_by_users    | number                          | :heavy_minus_sign: |
-| items                              | [[InAppMetrics](#inappmetrics)] | :heavy_minus_sign: |
-| title                              | string                          | :heavy_minus_sign: |
+| Name                               | Type                                   | Required           |
+| ---------------------------------- | -------------------------------------- | ------------------ |
+| revenue                            | number                                 | :heavy_minus_sign: |
+| proceeds                           | number                                 | :heavy_minus_sign: |
+| net_revenue                        | number                                 | :heavy_minus_sign: |
+| purchases                          | integer                                | :heavy_minus_sign: |
+| trials                             | integer                                | :heavy_minus_sign: |
+| trials_cancelled                   | integer                                | :heavy_minus_sign: |
+| refunds                            | integer                                | :heavy_minus_sign: |
+| unique_subscribers                 | integer                                | :heavy_minus_sign: |
+| unique_paid_subscribers            | integer                                | :heavy_minus_sign: |
+| views                              | integer                                | :heavy_minus_sign: |
+| unique_profiles_views              | integer                                | :heavy_minus_sign: |
+| in_current_state                   | boolean                                | :heavy_minus_sign: |
+| arppu                              | number                                 | :heavy_minus_sign: |
+| arpas                              | number                                 | :heavy_minus_sign: |
+| apppu                              | number                                 | :heavy_minus_sign: |
+| appas                              | number                                 | :heavy_minus_sign: |
+| conversion_rate_purchases          | number                                 | :heavy_minus_sign: |
+| conversion_rate_trials             | number                                 | :heavy_minus_sign: |
+| conversion_rate_refunds            | number                                 | :heavy_minus_sign: |
+| conversion_rate_purchases_by_users | number                                 | :heavy_minus_sign: |
+| conversion_rate_trials_by_users    | number                                 | :heavy_minus_sign: |
+| items                              | array of [InAppMetrics](#inappmetrics) | :heavy_minus_sign: |
+| title                              | string                                 | :heavy_minus_sign: |
 
 ### InAppMetrics
 
@@ -4487,24 +4488,20 @@ or
 
 </details>
 
-A `ModelSerializer` is just a regular `Serializer`, except that:
+* - A `ModelSerializer` works like a regular `Serializer`, but with some extras:
 
-* A set of default fields are automatically populated.
-* A set of default validators are automatically populated.
-* Default `.create()` and `.update()` implementations are provided.
+    - Default fields are automatically added.
+    - Default validators are also set up for you.
+    - Built-in `.create()` and `.update()` methods are ready to go.
 
-The process of automatically determining a set of serializer fields
-based on the model fields is reasonably complex, but you almost certainly
-don't need to dig into the implementation.
+    It’s a bit complex how `ModelSerializer` figures out which serializer fields match your model fields, but you likely won’t need to dive into the details.
 
-If the `ModelSerializer` class *doesn't* generate the set of fields that
-you need you should either declare the extra/differing fields explicitly on
-the serializer class, or simply use a `Serializer` class.
+    If `ModelSerializer` *doesn’t* create the fields you need, you can either specify the extra or different fields directly in the serializer class or just use a regular `Serializer`.
 
-Included Mixins:
+    Included Mixins:
 
-* A mixin class to enable sparse fieldsets is included
-* A mixin class to enable validation of included resources is included
+    - A mixin to allow sparse fieldsets.
+    - A mixin to validate included resources.
 
 **Properties** 
 
@@ -4590,7 +4587,7 @@ Included Mixins:
 
 | Name | Type                                            | Required          | Description                                                  |
 | ---- | ----------------------------------------------- | ----------------- | ------------------------------------------------------------ |
-| data | [LocaleTranslationData](#localetranslationdata) | :heavy_plus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| data | [LocaleTranslationData](#localetranslationdata) | :heavy_plus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### LocaleTranslationResponse
 
@@ -4618,9 +4615,9 @@ Included Mixins:
 
 **Properties** 
 
-| Name | Type                                              | Required           | Restrictions | Description                                                  |
-| ---- | ------------------------------------------------- | ------------------ | ------------ | ------------------------------------------------------------ |
-| data | [[LocaleTranslationData](#localetranslationdata)] | :heavy_minus_sign: | none         | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| Name | Type                                                     | Required           | Restrictions | Description                                                  |
+| ---- | -------------------------------------------------------- | ------------------ | ------------ | ------------------------------------------------------------ |
+| data | array of [LocaleTranslationData](#localetranslationdata) | :heavy_minus_sign: | none         | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### Localization
 
@@ -5170,12 +5167,12 @@ Included Mixins:
 
 **Properties** 
 
-| Name     | Type                                    | Required           | Description                                                  |
-| -------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| count    | integer                                 | :heavy_minus_sign: |                                                              |
-| next     | string(uri)¦null                        | :heavy_minus_sign: |                                                              |
-| previous | string(uri)¦null                        | :heavy_minus_sign: |                                                              |
-| results  | [[IntegrationEvent](#integrationevent)] | :heavy_minus_sign: | <p>A `ModelSerializer` is just a regular `Serializer`, except that: </p><ul><li> A set of default fields are automatically populated.</li><li> A set of default validators are automatically populated.</li><li> Default `.create()` and `.update()` implementations are provided. </li></ul><p> The process of automatically determining a set of serializer fields based on the model fields is reasonably complex, but you almost certainly don't need to dig into the implementation.  If the `ModelSerializer` class *doesn't* generate the set of fields that you need you should either declare the extra/differing fields explicitly on the serializer class, or simply use a `Serializer` class.   Included Mixins: </p>  <ul><li> A mixin class to enable sparse fieldsets is included</li><li> A mixin class to enable validation of included resources is included</li></ul> |
+| Name     | Type                                           | Required           | Description                                                  |
+| -------- | ---------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| count    | integer                                        | :heavy_minus_sign: |                                                              |
+| next     | string(uri)¦null                               | :heavy_minus_sign: |                                                              |
+| previous | string(uri)¦null                               | :heavy_minus_sign: |                                                              |
+| results  | array of [IntegrationEvent](#integrationevent) | :heavy_minus_sign: | <p>A `ModelSerializer` is just like a regular `Serializer`, but with some built-in extras:</p> <ul>   <li>Default fields are automatically populated.</li>   <li>Default validators are also added.</li>   <li>Ready-to-use `.create()` and `.update()` methods are provided.</li> </ul> <p>Figuring out the serializer fields based on model fields can be complex, but you probably won’t need to worry about the details. If `ModelSerializer` <em>doesn’t</em> create the fields you need, you can either define any additional or different fields directly in the serializer class or just use a `Serializer`.</p> <p>Included Mixins:</p> <ul>   <li>A mixin for enabling sparse fieldsets.</li>   <li>A mixin for validating included resources.</li> </ul> |
 
 ### PaginatedPaginatedResponseList
 
@@ -5199,12 +5196,12 @@ Included Mixins:
 
 **Properties** 
 
-| Name     | Type                                      | Required           |
-| -------- | ----------------------------------------- | ------------------ |
-| count    | integer                                   | :heavy_minus_sign: |
-| next     | string(uri)¦null                          | :heavy_minus_sign: |
-| previous | string(uri)¦null                          | :heavy_minus_sign: |
-| results  | [[PaginatedResponse](#paginatedresponse)] | :heavy_minus_sign: |
+| Name     | Type                                             | Required           |
+| -------- | ------------------------------------------------ | ------------------ |
+| count    | integer                                          | :heavy_minus_sign: |
+| next     | string(uri)¦null                                 | :heavy_minus_sign: |
+| previous | string(uri)¦null                                 | :heavy_minus_sign: |
+| results  | array of [PaginatedResponse](#paginatedresponse) | :heavy_minus_sign: |
 
 ### Pagination
 
@@ -5622,10 +5619,10 @@ Included Mixins:
 | remote_config_legacy   | string                                                       | :heavy_minus_sign: | none         | none                                                         |
 | screenshot_id          | integer                                                      | :heavy_minus_sign: | none         | none                                                         |
 | builder_screenshot_id  | integer                                                      | :heavy_minus_sign: | none         | none                                                         |
-| products               | array of [PaywallProductData](#paywallproductdata)           | :heavy_plus_sign:  | none         | <p>Annotation:     This object is immutable dataset.  @dataclass(frozen=True)</p><p>minItems: 1, uniqueItems: true</p> |
+| products               | array of [PaywallProductData](#paywallproductdata)           | :heavy_plus_sign:  | none         | <p>Annotation: This object is an immutable dataset.  @dataclass(frozen=True)</p><p>minItems: 1, uniqueItems: true</p> |
 | remote_configs         | array of [PaywallRemoteConfigValue](#paywallremoteconfigvalue) | :heavy_minus_sign: | none         | none                                                         |
 | paywall_builder        | [portal__in_app_context__domains__value_objects__paywall_builder_v3_config__PaywallBuilderV3Config](#portal__in_app_context__domains__value_objects__paywall_builder_v3_config__paywallbuilderv3config) | :heavy_minus_sign: | none         | none                                                         |
-| paywall_builder_v3     | [PaywallBuilderV3Data](#paywallbuilderv3data)                | :heavy_minus_sign: | none         | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| paywall_builder_v3     | [PaywallBuilderV3Data](#paywallbuilderv3data)                | :heavy_minus_sign: | none         | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### PaywallDetailMetricsCollection
 
@@ -6417,7 +6414,7 @@ Included Mixins:
 | Name           | Type                                                         | Required          |
 | -------------- | ------------------------------------------------------------ | ----------------- |
 | paywalls_group | [PaywallsGroup](#paywallsgroup)                              | :heavy_plus_sign: |
-| paywalls       | [[PaywallsGroupPaywallAggregate](#paywallsgrouppaywallaggregate)] | :heavy_plus_sign: |
+| paywalls       | array of [PaywallsGroupPaywallAggregate](#paywallsgrouppaywallaggregate) | :heavy_plus_sign: |
 
 ### PaywallsGroupData
 
@@ -7012,7 +7009,7 @@ Included Mixins:
 
 | Name       | Type                                                         | Required          | Description                                                  |
 | ---------- | ------------------------------------------------------------ | ----------------- | ------------------------------------------------------------ |
-| segments   | array of [PlacementAudienceSegment](#placementaudiencesegment) | :heavy_plus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| segments   | array of [PlacementAudienceSegment](#placementaudiencesegment) | :heavy_plus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 | priority   | integer                                                      | :heavy_plus_sign: |                                                              |
 | content_id | anyOf type: string(uuid)                                     | :heavy_plus_sign: |                                                              |
 | content_type | [PlacementContentType](#placementcontenttype) | :heavy_minus_sign: | An enumeration. |
@@ -7097,7 +7094,7 @@ Included Mixins:
 | ------------ | -------------------------------------------------------- | ----------------- | ------------------------------------------------------------ |
 | title        | string                                                   | :heavy_plus_sign: |                                                              |
 | developer_id | string                                                   | :heavy_plus_sign: |                                                              |
-| audiences    | array of [PlacementAudienceData](#placementaudiencedata) | :heavy_plus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| audiences    | array of [PlacementAudienceData](#placementaudiencedata) | :heavy_plus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### PlacementDetailMetricsCollection
 
@@ -8169,7 +8166,7 @@ Included Mixins:
 
 | Name | Type                                                         | Required          | Description                                                  |
 | ---- | ------------------------------------------------------------ | ----------------- | ------------------------------------------------------------ |
-| data | Array of [ReplacePlacementAudiencePaywallData](#replaceplacementaudiencepaywalldata) | :heavy_plus_sign: | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+| data | Array of [ReplacePlacementAudiencePaywallData](#replaceplacementaudiencepaywalldata) | :heavy_plus_sign: | Annotation: This object is an immutable dataset.  @dataclass(frozen=True) |
 
 ### ReplacePlacementAudiencePaywallData
 

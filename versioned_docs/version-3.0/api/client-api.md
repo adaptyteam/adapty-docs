@@ -1,5 +1,6 @@
 ---
 title: Exporting analytics to CSV with API
+toc_max_heading_level: 2
 ---
 
 import Details from '@site/src/components/Details';
@@ -11,7 +12,7 @@ If you need to download analytics into csv file, you can use Adpty API to do so.
 ## Import request collection to Postman
 
 1. In Postman, click the **Import** button.
-2. Drag-and-drop the **client-api.yaml** file into Postman.
+2. Drag-and-drop the [**client-api.yaml**](/api/client-api.yaml) file into Postman.
 3. Select the **Import to Postman collection** radio-button.
 4. Click **Import**.
 
@@ -43,9 +44,9 @@ If you need to download analytics into csv file, you can use Adpty API to do so.
 
 - **Body**: The API expects the request to use the body as JSON.
 
-## Get analytics metrics
+## Retrieve analytics data
 
-Retrieves the metrics of the analytics.
+Retrieves analytics data for insights on user behavior and performance metrics.
 
 ### Endpoint
 
@@ -161,17 +162,13 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|No response body|None|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
 
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
-## Get cohort metrics
+## Retrieve cohort data
 
-Retrieves the metrics of the cohorts.
+Retrieves cohort data for tracking user groups over time.
 
 ### Endpoint
 
@@ -187,10 +184,10 @@ POST
 
 ### Parameters
 
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|format|query|string|false|none|
-|body|body|[CohortMetricsConditions](#schemacohortmetricsconditions)|true|none|
+|Name|In|Type|Required|
+|---|---|---|---|
+|format|query|string|false|
+|body|body|[CohortMetricsConditions](#schemacohortmetricsconditions)|true|
 
 ### Request example
 
@@ -297,17 +294,13 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|No response body|None|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
 
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
+## Retrieve conversion data
 
-## Get conversion metrics
-Retrieves the metrics of the conversion.
+Retrieves conversion data to analyze user actions and measure the effectiveness of marketing efforts over time.
 
 ### Endpoint
 
@@ -421,9 +414,9 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[ConversionsMetricsRequest](#schemaconversionsmetricsrequest)|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[ConversionsMetricsRequest](#schemaconversionsmetricsrequest)|
 
 ### Example responses
 
@@ -504,13 +497,10 @@ POST
 ```
 
 </details>
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
 
-## Get funnel metrics
-Retrieves the metrics of the funnel.
+## Retrieve funnel data
+
+Retrieves funnel data to track user progression through specific stages of a conversion process.
 
 ### Endpoint
 
@@ -626,9 +616,9 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[FunnelsMetricsRequest](#funnelsmetricsrequest)|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[FunnelsMetricsRequest](#funnelsmetricsrequest)|
   <details>
    <summary>Example: 200 Response</summary>
 
@@ -703,13 +693,9 @@ POST
 ```
 </details>
 
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
+## Retrieve Lifetime Value (LTV) data
 
-## Get LTV metrics
-Retrieves the metrics of the LTV.
+Retrieves LTV data to assess the long-term revenue potential of customers over their engagement period.
 
 ### Endpoint
 
@@ -827,17 +813,13 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|No response body|None|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
 
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
+## Retrieve retention data
 
-## Get retention metrics
-Retrieves the metrics of the retention.
+Retrieves the retention data to analyze the ability of a product to keep users engaged over time.
 
 ### Endpoint
 
@@ -958,9 +940,9 @@ POST
 
 ### Responses
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[RetentionMetricsRequest](#retentionmetricsrequest)|
+|Status|Meaning|Object|
+|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[RetentionMetricsRequest](#retentionmetricsrequest)|
 
 <details>
  <summary>200 Response (click to expand)</summary>
