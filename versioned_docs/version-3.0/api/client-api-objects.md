@@ -2,9 +2,9 @@
 title: API Objects for exporting analytics data
 toc_max_heading_level: 3
 ---
-Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
+This page shows the objects you'll need to [export analytics to CSV using the API](client-api). These are JSON objects you can easily integrate it into your code.
 
-All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
+All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format, like "2020-01-15T15:10:36.517975+0000".
 
 ### AccountingType
 

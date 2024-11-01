@@ -7,7 +7,7 @@ import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 
-If you need to download analytics into csv file, you can use Adpty API to do so.
+To download your analytics as a CSV file, just use the Adapty API.
 
 ## Import request collection to Postman
 
