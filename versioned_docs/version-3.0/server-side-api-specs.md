@@ -84,7 +84,7 @@ GET
 
 #### Parameters
 
-None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](server-side-api-specs#authorization).
 
 #### Successful response: 200 - Success
 
@@ -127,7 +127,7 @@ POST
 
 #### Parameters
 
- `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+ `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](server-side-api-specs#authorization).
   <ProfileRequest /> 
 
 #### Example request
@@ -179,7 +179,7 @@ PATCH
 
 #### Parameters
 
-`Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+`Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](server-side-api-specs#authorization).
   <ProfileRequest /> 
 
 
@@ -242,7 +242,7 @@ DELETE
 
 #### Parameters
 
-None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](getting-started-with-server-side-api#authorization).
+None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](server-side-api-specs#authorization).
 
 #### Successful response
 
