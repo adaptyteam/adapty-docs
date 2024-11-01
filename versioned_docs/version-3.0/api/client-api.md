@@ -710,7 +710,7 @@ POST
 
 ### Parameters
 
-[RequestDTO](client-api-objectsclient-api-objects#requestdto) object
+[RequestDTO](client-api-objects#requestdto) object
 
 ### Request example
 

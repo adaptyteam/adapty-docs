@@ -10,13 +10,10 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 <details>
  <summary>Example (click to expand)</summary>
-
-```
 ```json
 "revenue"
 
 ```
-
 </details>
 
 
@@ -132,6 +129,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 <details>
  <summary>Example (click to expand)</summary>
+ 
 ```json
 {
   "filters": {
@@ -221,6 +219,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
   "date_type": "purchase_date",
   "segmentation_by": "app_id"
 }
+```
 </details>
 
 **Properties**)
@@ -237,8 +236,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 <details>
  <summary>Example (click to expand)</summary>
 
-
-```
 ```json
 "app_id"
 ```
@@ -255,8 +252,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 |Property|Value|
 |---|---|
 |ChartMetricsSegmentation|<ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul>|
-
-<!---
 
 ### ChartMetricsType
 
@@ -280,8 +275,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 | Property         | Value                                                        |
 | ---------------- | ------------------------------------------------------------ |
 | ChartMetricsType | <ul><li> revenue</li><li> mrr</li><li> arr</li><li> arppu</li><li> arpas</li><li> subscriptions_active</li><li> subscriptions_new</li><li> subscriptions_renewal_cancelled</li><li> subscriptions_expired</li><li> trials_active</li><li> trials_new</li><li> trials_renewal_cancelled</li><li> trials_expired</li><li> grace_period</li><li> billing_issue</li><li> refund_events</li><li> refund_money</li><li> refund_rate</li><li> arpu</li><li> installs</li><li> funnel</li><li> retention</li><li> non_subscriptions</li><li> ltv</li><li> unique_subscribers</li><li> unique_paid_subscribers</li><li> purchases</li><li> install_paid</li><li> install_trial</li><li> trial_paid</li><li> from_paid_to_2_period_conversion</li><li> from_2_period_to_3_period_conversion</li><li> from_3_period_to_4_period_conversion</li><li> from_4_period_to_5_period_conversion</li><li> </li><li> from_paid_to_12_months_conversion</li><li> from_paid_to_24_months_conversion</li></ul> |
-
---->
 
 ### CohortMetricsConditions
 
@@ -600,7 +593,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 <details>
  <summary>Example (click to expand)</summary>
 
-```
 ```json
 {
   "filters": {
@@ -710,7 +702,6 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 <details>
  <summary>Example (click to expand)</summary>
 
-
 ```json
 {
   "filters": {
@@ -802,6 +793,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
  <summary>Example (click to expand)</summary>
 ```json
 "day"
+```
 </details>
 
 **Properties** 
@@ -1200,6 +1192,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 <details>
  <summary>Example (click to expand)</summary>
+
 ```json
 {
   "filters": {
@@ -1292,6 +1285,8 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
   "value_type": "absolute",
   "format": "json"
 }
+```
+
 </details>
 
 **Properties** 
@@ -1311,7 +1306,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 <details>
  <summary>Example (click to expand)</summary>
 
-```
+
 ```json
 {
   "filters": {
