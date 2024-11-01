@@ -62,7 +62,7 @@ Please note that the moment you click the **Save** button, Adapty will send a ve
 
 ## Choose events to send and map event names
 
-Choose the events you want to receive in your server by enabling the toggle next to it. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
+Choose the events you want to receive in your server by enabling the toggle next to it. If your event IDs differ from those used in Adapty and keep the IDs in your system as is and replace the default Adapty event IDs with yours in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
 
 <Zoom>
@@ -76,8 +76,27 @@ Choose the events you want to receive in your server by enabling the toggle next
 />
 </Zoom>
 
+The event ID can be any string, simply make sure the event ID in your webhook processing server coinside with the one you eneterd in the Adapty Dashboard. You cannot leave the event ID empty for enabled events. If you accidentally removed Adapty event ID and need to restore it, you can always copy it from the table below.
 
-The event name can be any string. You cannot leave the fields empty for enabled events. If you accidentally removed Adapty event name, you can always copy the name from the [Events to send to 3d-party integrations](events) topic.
+| Event Name                         | Default event ID                   | Description                                                  |
+| ---------------------------------- | :--------------------------------- | :----------------------------------------------------------- |
+| Subscription started               | subscription_started               | A user has activated a paid subscription without a trial period i.e. he was billed instantly. |
+| Subscription renewed               | subscription_renewed               | A subscription was renewed and the user was charged. For both trial and non-trial subscriptions, this event is sent starting from the second billing. |
+| Subscription renewal cancelled     | subscription_renewal_cancelled     | A user turned off subscription auto-renewal. A user still has access to the premium features of your app until the end of the paid subscription period. |
+| Subscription renewal reactivated   | subscription_renewal_reactivated   | A user turned on subscription auto-renewal.                  |
+| Subscription expired (churned)     | subscription_expired               | A user has canceled a subscription and it is completely finished. For example, if a user has a subscription till the 31st of December a cancells the subscription on 12th of December, the event will be created on the 31st of December when the subscription expires. |
+| Subscription paused (Android only) | subscription_paused                | User activated [subscription pause](https://developer.android.com/google/play/billing/subs#pause) (Android only). |
+| Non-subscription purchase          | non_subscription_purchase          | Any non-subscription purchase e.g. lifetime access or consumable product such as coins in a game. |
+| Trial started                      | trial_started                      | A user has activated a trial subscription.                   |
+| Trial converted                    | trial_converted                    | A trial period has ended and the user was billed, i.e. first purchase was made. Fro example, if a user has a 2-week trial subscription till the 14th of January and buys a paid subscription on the 7th of January, the event will be created when the user is billed - on the 7th of January. |
+| Trial renewal cancelled            | trial_renewal_cancelled            | A user turned off subscription auto-renewal during the trial. A user still has access to the premium features of your app until the end of the trial period. But the subscription will not start and the user will not be billed. |
+| Trial renewal reactivated          | trial_renewal_reactivated          | A user turned on subscription auto-renewal during the trial period. |
+| Trial expired                      | trial_expired                      | A trial has expired without converting to a subscription.    |
+| Entered grace period               | entered_grace_period               | The payment was not successful and the user entered into a grace period if you have it. The user still has access to the premium features of your app until the grace period is finished. |
+| Billing issue detected             | billing_issue_detected             | An attempt to charge the user was made, but a billing issue happened. Usually, it means the user doesn't have enough card balance. |
+| Subscription refunded              | subscription_refunded              | A subscription was refunded \(e.g. by Apple support\).       |
+| Non-subscription purchase refunded | non_subscription_purchase_refunded | Non-subscription purchase was refunded.                      |
+| Access level updated               | access_level_updated               | User's access level updated.                                 |
 
 ## Adapty's verification request
 
@@ -90,7 +109,7 @@ After you enable webhook integration in the Adapty Dashboard, Adapty will automa
 ```
 
 :::note
-Be sure your endpoint supports **Content-Type**: `application/json` header
+Be sure your endpoint supports **Content-Type**: `application/json` header.
 :::
 
 ## Your server's verification response
@@ -105,7 +124,7 @@ Your server must reply with a 200 or 201 HTTP status code and send the response 
 
 Once Adapty receives the verification response in the correct format, your Adapty webhook integration is fully configured.
 
-From then on, Adapty will send the selected events to your specified URL as they happen. Ensure your server promptly confirms each Adapty event with a response status code in the 200-404 range.
+From then on, Adapty will send the selected events to your specified URL as they happen. Ensure your server promptly confirms each Adapty event with a response status code in the 200-404 range, the `check_string` is not required anymore.
 
 ## Set up your server to process Adapty events
 
@@ -157,71 +176,62 @@ Each event is wrapped into the following structure:
 | **user_attributes**               | JSON                 | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). |
 | **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
 
-:::warning
-Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
-:::
-
-Webhook integration enables the control of sending attribution and user attributes. 
-
-- Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
-- Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
-
 ### Attribution data
 
 If you've chosen to send attribution data, the following data will be sent with the event:
 
 | Field name          | Field type    | Description                                        |
 | :------------------ | :------------ | :------------------------------------------------- |
-| **network_user_id** | str           | ID assigned to the user by the attribution source. |
-| **status**          | str           | Can be `organic`, `non_organic` or `unknown`.      |
+| **network_user_id** | String        | ID assigned to the user by the attribution source. |
+| **status**          | String        | Can be `organic`, `non_organic` or `unknown`.      |
 | **created_at**      | ISO 8601 date | Date and time of attribution record creation.      |
-| **channel**         | str           | Marketing channel name.                            |
-| **campaign**        | str           | Marketing campaign name.                           |
-| **ad_group**        | str           | Attribution ad group.                              |
-| **ad_set**          | str           | Attribution ad set.                                |
-| **creative**        | str           | Attribution creative keyword.                      |
+| **channel**         | String        | Marketing channel name.                            |
+| **campaign**        | String        | Marketing campaign name.                           |
+| **ad_group**        | String        | Attribution ad group.                              |
+| **ad_set**          | String        | Attribution ad set.                                |
+| **creative**        | String        | Attribution creative keyword.                      |
 
 ### Event properties
 
 | Property                      | Type          | Description                                                  |
 | ----------------------------- | ------------- | ------------------------------------------------------------ |
 | **profile_id**                | uuid          | Adapty user ID.                                              |
-| **currency**                  | str           | Local currency (defaults to USD).                            |
+| **currency**                  | String        | Local currency (defaults to USD).                            |
 | **price_usd**                 | float         | Product price before Apple/Google cut. Revenue.              |
 | **proceeds_usd**              | float         | Product price after Apple/Google cut. Net revenue.           |
 | **net_revenue_usd**           | float         | Net revenue (income after Apple/Google cut and taxes) in USD. Can be empty. |
 | **price_local**               | float         | Product price before Apple/Google cut in local currency. Revenue. |
 | **proceeds_local**            | float         | Product price after Apple/Google cut in local currency. Net revenue. |
-| **transaction_id**            | str           | A unique identifier for a transaction such as a purchase or renewal. |
-| **original_transaction_id**   | str           | The transaction identifier of the original purchase.         |
+| **transaction_id**            | String        | A unique identifier for a transaction such as a purchase or renewal. |
+| **original_transaction_id**   | String        | The transaction identifier of the original purchase.         |
 | **purchase_date**             | ISO 8601 date | The date and time of product purchase.                       |
 | **original_purchase_date**    | ISO 8601 date | The date and time of the original purchase.                  |
-| **environment**               | str           | Can be _Sandbox_ or _Production_.                            |
-| **vendor_product_id**         | str           | Product ID in the Apple App Store, Google Play Store, or Stripe. |
-| **base_plan_id**              | str           | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe. |
+| **environment**               | String        | Can be _Sandbox_ or _Production_.                            |
+| **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
+| **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe. |
 | **event_datetime**            | ISO 8601 date | The date and time of the event.                              |
-| **store**                     | str           | Can be _app_store_ or _play_store_.                          |
-| **trial_duration**            | str           | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". |
-| **cancellation_reason**       | str           | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **store**                     | String        | Can be _app_store_ or _play_store_.                          |
+| **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". |
+| **cancellation_reason**       | String        | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
 | **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.  |
 | **consecutive_payments**      | int           | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
 | **rate_after_first_year**     | bool          | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
-| **promotional_offer_id**      | str           | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
-| **store_offer_category**      | str           | Can be _introductory_ or _promotional_.                      |
-| **store_offer_discount_type** | str           | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_.      |
-| **paywall_name**              | str           | Name of the paywall where the transaction originated.        |
+| **promotional_offer_id**      | String        | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
+| **store_offer_category**      | String        | Can be _introductory_ or _promotional_.                      |
+| **store_offer_discount_type** | String        | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_.      |
+| **paywall_name**              | String        | Name of the paywall where the transaction originated.        |
 | **paywall_revision**          | int           | Revision of the paywall where the transaction originated. The value is set to 1. |
-| **developer_id**              | str           | Developer (SDK) ID of the placement where the transaction originated. |
-| **ab_test_name**              | str           | Name of the A/B test where the transaction originated.       |
+| **developer_id**              | String        | Developer (SDK) ID of the placement where the transaction originated. |
+| **ab_test_name**              | String        | Name of the A/B test where the transaction originated.       |
 | **ab_test_revision**          | int           | Revision of the A/B test where the transaction originated. The value is set to 1. |
-| **cohort_name**               | str           | Name of the audience to which the profile belongs to.        |
+| **cohort_name**               | String        | Name of the audience to which the profile belongs to.        |
 | **profile_event_id**          | uuid          | Unique event ID that can be used for deduplication.          |
-| **store_country**             | str           | The country sent to us by the store.                         |
-| **profile_ip_address**        | str           | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
-| **profile_country**           | str           | Determined by Adapty, based on profile IP.                   |
+| **store_country**             | String        | The country sent to us by the store.                         |
+| **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
+| **profile_country**           | String        | Determined by Adapty, based on profile IP.                   |
 | **profile_total_revenue_usd** | float         | Total revenue for the profile, refunds included.             |
 | **variation_id**              | uuid          | Unique ID of the paywall where the purchase was made.        |
-| **access_level_id**           | str           | Paid access level ID                                         |
+| **access_level_id**           | String        | Paid access level ID                                         |
 | **is_active**                 | bool          | Boolean indicating whether paid access level is active for the profile. |
 | **will_renew**                | bool          | Boolean indicating whether paid access level will be renewed. |
 | **is_refund**                 | bool          | Boolean indicating whether transaction is refunded.          |
@@ -233,6 +243,15 @@ If you've chosen to send attribution data, the following data will be sent with 
 | **activated_at**              | ISO 8601 date | Date and time when paid access was activated.                |
 | **billing_issue_detected_at** | ISO 8601 date | Date and time of billing issue.                              |
 | **profile_has_access_level**  | Bool          | A boolean that indicates whether the profile has an active access level. |
+
+:::warning
+Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
+:::
+
+Webhook integration enables the control of sending attribution and user attributes. 
+
+- Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
+- Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
 
 ### Event properties example
 

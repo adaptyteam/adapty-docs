@@ -37,7 +37,7 @@ With webhooks integrated, you can:
 | Data direction             | One-way data transmission: from Adapty to your server       |
 | Adapty integration flow    | Events are sent by the Adapty server once they are received |
 
-## Events
+## Events than can be sent to a webhook
 
 | Event Name                             | Description                                                  |
 | :------------------------------------- | :----------------------------------------------------------- |
