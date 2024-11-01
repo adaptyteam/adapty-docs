@@ -24,7 +24,6 @@ If you need to download analytics into csv file, you can use Adpty API to do so.
 
   1. In the **Authorization** -> **Auth type** field, choose **API Key**.
 
-
 <!--- <Zoom>
   <img
     src={require('https://adapty.io/docs/assets/images/auth-type-a1723d86077bdc8dcca5330f8176f2eb.webp').default}
@@ -62,7 +61,7 @@ POST
 
 ### Parameters
 
-[ChartMetricsConditions](#chartmetricsconditions)  object
+[ChartMetricsConditions](client-api-objects#chartmetricsconditions)  object
 
 ### Request example
 <details>
@@ -164,7 +163,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
+|200|Successful request|None|
 
 ## Retrieve cohort data
 
@@ -187,7 +186,7 @@ POST
 |Name|In|Type|Required|
 |---|---|---|---|
 |format|query|string|false|
-|body|body|[CohortMetricsConditions](#schemacohortmetricsconditions)|true|
+|body|body|[CohortMetricsConditions](client-api-objects#cohortmetricsconditions)|true|
 
 ### Request example
 
@@ -296,7 +295,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
+|200|Successful request|None|
 
 ## Retrieve conversion data
 
@@ -315,7 +314,7 @@ POST
 ```
 
 ### Parameters
-[ChartMetricsConditions](#chartmetricsconditions) object
+[ChartMetricsConditions](client-api-objects#chartmetricsconditions) object
 ### Request example
 
 <details>
@@ -416,7 +415,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[ConversionsMetricsRequest](#schemaconversionsmetricsrequest)|
+|200|Successful request|[ConversionsMetricsRequest](client-api-objects#conversionsmetricsrequest)|
 
 ### Example responses
 
@@ -515,7 +514,7 @@ POST
 ```
 
 ### Parameters
-[FunnelMetricsConditions](#funnelmetricsconditions) object
+[FunnelMetricsConditions](client-api-objects#funnelmetricsconditions) object
 
 ### Request example
 
@@ -618,7 +617,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[FunnelsMetricsRequest](#funnelsmetricsrequest)|
+|200|Successful request|[FunnelsMetricsRequest](client-api-objects#funnelsmetricsrequest)|
   <details>
    <summary>Example: 200 Response</summary>
 
@@ -711,7 +710,7 @@ POST
 
 ### Parameters
 
-[RequestDTO](#schemarequestdto) object
+[RequestDTO](client-api-objectsclient-api-objects#requestdto) object
 
 ### Request example
 
@@ -815,7 +814,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|None|
+|200|Successful request|None|
 
 ## Retrieve retention data
 
@@ -835,7 +834,7 @@ POST
 
 ### Parameters
 
-[RetentionMetricsConditions](#retentionmetricsconditions)
+[RetentionMetricsConditions](client-api-objects#retentionmetricsconditions)
 
 ### Request example
 
@@ -942,7 +941,7 @@ POST
 
 |Status|Meaning|Object|
 |---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|[RetentionMetricsRequest](#retentionmetricsrequest)|
+|200|Successful request|[RetentionMetricsRequest](client-api-objects#retentionmetricsrequest)|
 
 <details>
  <summary>200 Response (click to expand)</summary>
