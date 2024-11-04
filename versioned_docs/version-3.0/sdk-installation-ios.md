@@ -29,10 +29,6 @@ Before releasing your application, make sure to thoroughly review the  [Release 
 <Tabs> 
 <TabItem value="3.0" label="Adapty SDK v3.x+ (current)" default> 
 
-
-
-
-
 ## Install Adapty SDK via Swift Package Manager
 
 In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
@@ -52,8 +48,8 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.0.3'
-   pod 'AdaptyUI', '~> 3.0.3' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.1.0'
+   pod 'AdaptyUI', '~> 3.1.0' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
