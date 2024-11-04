@@ -12,25 +12,13 @@ import Subscription from './reusable/Subscription.md';
 import NonSubscription from './reusable/NonSubscription.md';
 import Offer from './reusable/Offer.md';
 import Price from './reusable/Price.md';
+import InstallationMeta from './reusable/InstallationMeta.md';
 
 ## Objects
 
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
 
 All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
-
-### Profile
-
-Info about the [customer and their subscription](server-side-api-objects#profile)
-
-You can do the following actions with user profiles via Adapty server-side API:
-
-- [Retrieve/get end user's profile](server-side-api-specs#retrieve-profile) with their access levels, subscriptions, non-subscriptions, etc.
-- [Create a new end user profile](server-side-api-specs#create-profile)
-- [Update your end-user profile](server-side-api-specs#update-profile)
-- [Delete your end user](server-side-api-specs#delete-profile)
-
-<ProfileObject />
 
 ### Access level
 
@@ -47,14 +35,16 @@ You can do the following action via Adapty server-side API:
 
 <AccessLevel />
 
-### Subscription
+### Installation Meta
 
-Info about your end user subscription.  You can do the following action via Adapty server-side API:
+Information about installation of the app on a specific device. 
 
-- [Check user's current subscription](server-side-api-specs#retrieve-profile) by retrieving their profile details
-- [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
+You can do the following action via Adapty server-side API:
 
-<Subscription />
+- [Create a profile with spesific installation meta](server-side-api-specs#create-profile)
+- [Update user's installation meta](server-side-api-specs#update-profile)
+
+<InstallationMeta />
 
 ### Non Subscription
 
@@ -89,3 +79,25 @@ You can do the following actions with product price via Adapty server-side API:
 - [Set transaction to your user](server-side-api-specs#set-transaction) and specify its price
 
 <Price />
+
+### Profile
+
+Info about the [customer and their subscription](server-side-api-objects#profile)
+
+You can do the following actions with user profiles via Adapty server-side API:
+
+- [Retrieve/get end user's profile](server-side-api-specs#retrieve-profile) with their access levels, subscriptions, non-subscriptions, etc.
+- [Create a new end user profile](server-side-api-specs#create-profile)
+- [Update your end-user profile](server-side-api-specs#update-profile)
+- [Delete your end user](server-side-api-specs#delete-profile)
+
+<ProfileObject />
+
+### Subscription
+
+Info about your end user subscription.  You can do the following action via Adapty server-side API:
+
+- [Check user's current subscription](server-side-api-specs#retrieve-profile) by retrieving their profile details
+- [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
+
+<Subscription />
