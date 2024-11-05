@@ -75,23 +75,22 @@ We recommend using the default event names provided by Adapty. But you can chang
 Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaDeviceId`.  If not set, Adapty uses your user ID (`customerUserId`). Make sure that the user id you use to send data to AppMetrica from your app is the same one you send to Adapty. These links should help to set up a user id for AppMetrica in your app.
 
 - [Set profile ID](https://appmetrica.yandex.com/docs/mobile-sdk-dg/ios/objective-c/ref/YMMYandexMetrica.html#method_detail__method_setUserProfileID) iOS;
-- [Get device ID](https://yandex.ru/dev/appmetrica/doc/mobile-sdk-dg/ios/swift/ref/YMMYandexMetrica-docpage/#method_detail__method_requestAppMetricaDeviceIDWithCompletionQueue) iOS;
-- [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
-- [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
+- [Get device ID](https://appmetrica.yandex.ru/docs/ru/sdk/react-native/analytics/methods#appmetrica) iOS;
+- [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
+- [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
-import YandexMobileMetrica
+import AppMetricaCore
 
-YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceId, error in
-    guard let deviceId = deviceId else { return }
-            
-    let builder = AdaptyProfileParameters.Builder()
-        .with(appmetricaDeviceId: deviceId)
-        .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+        
+if let deviceID = AppMetrica.deviceID {
+  let builder = AdaptyProfileParameters.Builder()
+    .with(appmetricaDeviceId: deviceID)
+    .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
 
-        Adapty.updateProfile(params: builder.build())
+  Adapty.updateProfile(params: builder.build())
 }
 ```
 </TabItem>
@@ -127,15 +126,19 @@ AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupPa
 ```javascript
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-    ..setAppmetricaDeviceId(await AppMetrica.requestAppMetricaDeviceID())
-    ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
+final deviceId = await AppMetrica.deviceId;
 
-try {
+if (deviceId != null) {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setAppmetricaDeviceId(deviceId)
+    ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+
+  try {
     await adapty.updateProfile(builder.build());
-} on AdaptyError catch (adaptyError) {
+  } on AdaptyError catch (adaptyError) {
     // handle error
-} catch (e) {}
+  } catch (e) {}
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
