@@ -156,16 +156,27 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 <TabItem value="RN" label="React Native (TS)" default>
 ```typescript 
 import { adapty } from 'react-native-adapty';
+import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
 
 // ...
-try {
-  await adapty.updateProfile({
-    appmetricaProfileId: appmetricaProfileId,
-    appmetricaDeviceId: appmetricaDeviceId,
-  });
-} catch (error) {
-  // handle `AdaptyError`
+const startupParamsCallback = async (
+  params?: StartupParams,
+  reason?: StartupParamsReason
+) => {
+  const deviceId = params?.deviceId
+  if (deviceId) {
+    try {
+      await adapty.updateProfile({
+        appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+        appmetricaDeviceId: deviceId,
+      });
+    } catch (error) {
+      // handle `AdaptyError`
+    }
+  }
 }
+
+AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
 ```
 </TabItem>
 </Tabs>
