@@ -99,7 +99,7 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
 
 10. Click **Save**.
 
-## Step 4. Check if the products are available in all regions
+## Step 4. Check if the product availability
 
 1. Open **App Store Connect**. Proceed to [**Monetization** → **Subscriptions**](https://appstoreconnect.apple.com/apps/6477523342/distribution/subscriptions) section in the left-side menu.
 
@@ -159,7 +159,7 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
  </Zoom>
 
 2. Click the subscription group name. The products will be in the table under the **Subscriptions** title.
-   
+
 3. Click the product you test.
     <Zoom>
     <img src={require('./img/click-product.webp').default}
@@ -171,8 +171,9 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
     }}
     />
     </Zoom>
+
 4. Scroll down to the **Subscription Pricing** title and extend the **Current Pricing for New Subscribers**.
- <Zoom>
+    <Zoom>
     <img src={require('./img/check-prices.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
@@ -182,6 +183,7 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
     }}
     />
     </Zoom>
+
 5. Make sure it contains all required prices.
     <Zoom>
     <img src={require('./img/product-pricing.webp').default}
@@ -194,7 +196,7 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
     />
     </Zoom>
 
-### Step 6. Check app paid status and tax forms are active
+    ## Step 6. Check app paid status, back account, and tax forms are active
 
 1. Open **App Store Connect**. Click **Business**.
 
@@ -234,10 +236,3 @@ Make sure you do not test on iOS 18. This is a known issue in the version.
       }}
       />
       </Zoom>
-
-## Step 5. Check if a bank account is attached to the app, so it can be eligible for monetization.
-
-
-
-
-Step 7. .
