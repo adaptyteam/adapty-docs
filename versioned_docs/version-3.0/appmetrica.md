@@ -75,9 +75,9 @@ We recommend using the default event names provided by Adapty. But you can chang
 Use `Adapty.updateProfile()` method to set `appmetricaProfileId` or `appmetricaDeviceId`.  If not set, Adapty uses your user ID (`customerUserId`). Make sure that the user id you use to send data to AppMetrica from your app is the same one you send to Adapty. These links should help to set up a user id for AppMetrica in your app.
 
 - [Set profile ID](https://appmetrica.yandex.com/docs/mobile-sdk-dg/ios/objective-c/ref/YMMYandexMetrica.html#method_detail__method_setUserProfileID) iOS;
-- [Get device ID](https://yandex.ru/dev/appmetrica/doc/mobile-sdk-dg/ios/swift/ref/YMMYandexMetrica-docpage/#method_detail__method_requestAppMetricaDeviceIDWithCompletionQueue) iOS;
-- [Set profile id](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#setUserProfileID-java.lang.String-) Android;
-- [Get device ID](https://appmetrica.yandex.ru/docs/mobile-sdk-dg/android/ref-gen/com/yandex/metrica/YandexMetrica.html#requestAppMetricaDeviceID-com.yandex.metrica.AppMetricaDeviceIDListener-) Android.
+- [Get device ID](https://appmetrica.yandex.ru/docs/ru/sdk/react-native/analytics/methods#appmetrica) iOS;
+- [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
+- [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -97,30 +97,15 @@ YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceI
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```kotlin 
-val startupParamsCallback = object: StartupParamsCallback {
-    override fun onReceive(result: StartupParamsCallback.Result?) {
-        val deviceId = result?.deviceId ?: return
-
-        val params = AdaptyProfileParameters.Builder()
-            .withAppmetricaDeviceId(deviceId)
-            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
-            .build()
-        Adapty.updateProfile(params) { error ->
-            if (error != null) {
-                // handle the error
-            }
-        }
-    }
-
-    override fun onRequestError(
-        reason: StartupParamsCallback.Reason,
-        result: StartupParamsCallback.Result?
-    ) {
-        //handle error
+val params = AdaptyProfileParameters.Builder()
+    .withAppmetricaDeviceId(appmetricaDeviceId)
+    .withAppmetricaProfileId(appmetricaProfileId)
+    .build()
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
     }
 }
-
-AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
