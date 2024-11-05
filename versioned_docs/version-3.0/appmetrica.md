@@ -97,15 +97,30 @@ YMMYandexMetrica.requestAppMetricaDeviceID(withCompletionQueue: .main) { deviceI
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```kotlin 
-val params = AdaptyProfileParameters.Builder()
-    .withAppmetricaDeviceId(appmetricaDeviceId)
-    .withAppmetricaProfileId(appmetricaProfileId)
-    .build()
-Adapty.updateProfile(params) { error ->
-    if (error != null) {
-        // handle the error
+val startupParamsCallback = object: StartupParamsCallback {
+    override fun onReceive(result: StartupParamsCallback.Result?) {
+        val deviceId = result?.deviceId ?: return
+
+        val params = AdaptyProfileParameters.Builder()
+            .withAppmetricaDeviceId(deviceId)
+            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
+            .build()
+        Adapty.updateProfile(params) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+
+    override fun onRequestError(
+        reason: StartupParamsCallback.Reason,
+        result: StartupParamsCallback.Result?
+    ) {
+        //handle error
     }
 }
+
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
