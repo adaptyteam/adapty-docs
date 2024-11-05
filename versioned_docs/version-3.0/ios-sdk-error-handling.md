@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle errors"
+title: "iOS - Handle errors and warnings"
 description: "Learn how to effectively manage errors in iOS development with Adapty SDK's AdaptyError, featuring detailed properties for troubleshooting common issues."
 metadataTitle: "iOS Error Handling: AdaptyError Overview"
 ---
@@ -82,3 +82,12 @@ Adapty.makePurchase(product: product) { result in
 | profileWasChanged    | 3006 | The user profile was changed during the operation.                                                                                             |
 | persistingDataError  | 3100 | It was an error while saving data.                                                                                                             |
 | operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                  |
+
+## Warnings
+
+Warnings do not require to be fixed if they di not result in errors. If you still want to remove them, follow our instructions below:
+
+| Warning                   | Solution                                                     |
+| ------------------------- | ------------------------------------------------------------ |
+| InvalidProductIdentifiers | <p>This warning indicates that some products in the paywall is found in the store but not ready for purchasing. This happens when you did not finish configuration of your products in the App Store.</p><p>If you do not encourage an error, you can ignore the warning. If howevere you want to remove it, follow the steps below to remove it:</p><p></p><p>1. Check if all the products have been added to the Adapty Dashboard.</p><p>2. Ensure that the Bundle ID of your app matches the one from Apple Connect.</p><p>3. Verify that the product identifiers from the app stores match the ones you have added to the Dashboard. Please note that the identifiers should not contain Bundle ID unless it is already included in the store.</p><p>4. Confirm that the app paid status is active in your Apple tax settings. Ensure that your tax information is up-to-date and your certificates are valid.</p><p>5. Check if a bank account is attached to the app, so it can be eligible for monetization.</p><p>6. Check if the products are available in all regions.</p><p></p><p>Also, ensure that your products are in **“Ready to Submit”** state.</p><p>For detailed step-by-step instruction, please see ... section.</p> |
+
