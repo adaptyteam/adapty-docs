@@ -4,6 +4,8 @@ description: ""
 metadataTitle: ""
 ---
 
+import ProvideBundleID from '@site/src/components/reusable/ProvideBundleID.md';
+
 This error indicates that none of the products in the paywall is available in the store.
 
 If you are encountering this error, please follow the steps below to resolve it:
@@ -12,7 +14,9 @@ If you are encountering this error, please follow the steps below to resolve it:
 
 
 
-## Step 2. Ensure that the Bundle ID of your app matches the one from Apple Connect.
+## Step 2. Ensure that the Bundle ID of your app matches the one from Apple Connect
+
+<ProvideBundleID />
 
 ## Step 3. Verify that the product identifiers from the app stores match the ones you have added to the Dashboard. 
 

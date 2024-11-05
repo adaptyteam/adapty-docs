@@ -6,6 +6,7 @@ metadataTitle: "Adapty App Store Integration Configuration"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import ProvideBundleID from '@site/src/components/reusable/ProvideBundleID.md';
 
 This section describes how to establish the connection between the App Store and Adapty for your iOS app. This is required for us to be able to show subscription analytics and validate purchases. You can complete the integration during the initial onboarding or later in the **App Settings** within the Adapty Dashboard.
 
@@ -19,60 +20,7 @@ Configuration changes can be done safely during the Sandbox phase, until your mo
 
 Bundle ID is the unique identifier of your app in the App Store. This is required for the basic functionality of Adapty, such as subscription processing.
 
-1. Open [App Store Connect](https://appstoreconnect.apple.com/apps). Select your app and proceed to **General** → **App Information** section.
-
-2. Copy the **Bundle ID** in the **General Information** sub-section.
-
-   
-
-<Zoom>
-  <img src={require('./img/afd5012-bundle_id_apple.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu.
-
-   
-
-<Zoom>
-  <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-4. Paste the copied value to the **Bundle ID** field.
-
-   
-
-<Zoom>
-  <img src={require('./img/2d64163-bundle_id.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
+<ProvideBundleID />
 
 
 ## Step 2. Provide Issuer ID and Key ID
