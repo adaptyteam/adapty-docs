@@ -87,7 +87,7 @@ Please use the following files as samples for [iOS](https://docs.google.com/spre
 | **attribution_ad_group** | optional | The attribution ad group that brought the transaction |
 | **attribution_ad_set** | optional | The attribution ad set that brought the transaction |
 | **attribution_creative** | optional | Specific visual or textual elements used in an advertisement or marketing campaign that are tracked to determine their effectiveness in driving desired actions, such as clicks, conversions, or installs |
-| **custom_attributes** | optional | Any custom attributes you want. Provide them as a JSON dictionary in a key-value format where: <ul><li>**key**: (string) The name of the custom attribute</li><li> **value**: (string, integer, float, or boolean) The value of the custom attribute in this format:<br/>`"{'string_value': 'some_value', 'float_value': 123.0, 'int_value': 456}"`.<p>Note the use of double and single quotes in the format. Keep in mind that Boolean values will be converted to strings.</p></li></ul> |
+| **custom_attributes** | optional | Any custom attributes you want. Provide them as a JSON dictionary in a key-value format where: <ul><li>**key**: (string) The name of the custom attribute</li><li> **value**: (string, integer, float, or boolean) The value of the custom attribute.</li></ul><p> Format:`"{'string_value': 'some_value', 'float_value': 123.0, 'int_value': 456}"`.</p><p>Note the use of double and single quotes in the format. Keep in mind that Boolean values will be converted to strings.</p> |
 
 
 ### Required Fields
