@@ -42,7 +42,7 @@ To set up the Amplitude integration:
 
     | Field                                      | Description                                                  |
     | ------------------------------------------ | ------------------------------------------------------------ |
-    | **Amplitude iOS/ Android. Stripe API key** | Enter the Amplitude **API Key** for iOS/ Android/ Stripe into Adapty. Locate it under **Project settings** in Amplitude. For help, check [Amplitude docs](https://amplitude.com/docs/apis/authentication). Start with **Sandbox** keys for testing, then switch to **Production** keys after successful tests. |
+    | **Amplitude iOS/ Android/ Stripe API key** | Enter the Amplitude **API Key** for iOS/ Android/ Stripe into Adapty. Locate it under **Project settings** in Amplitude. For help, check [Amplitude docs](https://amplitude.com/docs/apis/authentication). Start with **Sandbox** keys for testing, then switch to **Production** keys after successful tests. |
 
     <Zoom>
       <img src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.webp').default}
