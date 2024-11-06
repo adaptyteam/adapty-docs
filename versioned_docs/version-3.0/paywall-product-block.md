@@ -164,7 +164,7 @@ To add a toggle:
 </Zoom>
 
 2. Add products to both subsections to create views for when the toggle is on or off.
-3. In the **Toggle** element, define whether the toggle should be on or off by default in the paywall by the **Default state** toggle.
+3. In the **Toggle** element, set the **Default state** to choose whether the toggle should start as on or off in the paywall.
 
 <Zoom>
   <img src={require('./img/4127a67-PB_toggle_default_state.webp').default}
