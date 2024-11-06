@@ -7,8 +7,6 @@ metadataTitle: "Adapty Integration: Naming Your Mobile Application"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-\<Блин, все-таки смотрю я на эту статью, помню о том, что мы договорились ее отдельно вынести в Getting Started — но вместе с тем: ей же все-таки не тут место? Она же не про getting started. И вообще все-таки мне кажется, что она просто не нужна. Разберутся люди, как еще один апп добавить> 
-
 Once you create an account on Adapty and give your mobile app's name and category, we automatically set up the app for you on our platform.
 
 ## Add additional mobile apps
@@ -20,6 +18,7 @@ To add the second or any subsequent app:
 1. Click the name of your existing app at the top of the Adapty Dashboard.
 
    
+
 <Zoom>
   <img src={require('./img/cbca917-add_new_app.webp').default}
   style={{
@@ -37,6 +36,7 @@ To add the second or any subsequent app:
 3. In the new window, enter your app's name, and category and upload a file with an icon.
 
    
+
 <Zoom>
   <img src={require('./img/8a64858-name_category.webp').default}
   style={{
@@ -59,6 +59,7 @@ Although you initially configured the name and category of your application, you
 1. Open the [**App settings**](https://app.adapty.io/settings/general) from the Adapty top menu.
 
    
+
 <Zoom>
   <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
   style={{
@@ -89,5 +90,4 @@ Although you initially configured the name and category of your application, you
   }}
 />
 </Zoom>
-
 
