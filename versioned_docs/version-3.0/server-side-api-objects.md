@@ -5,14 +5,14 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-import ProfileObject from './reusable/ProfileObject.md';
-import AccessLevel from './reusable/AccessLevel.md';
-import Purchase from './reusable/Purchase.md';
-import Subscription from './reusable/Subscription.md';
-import NonSubscription from './reusable/NonSubscription.md';
-import Offer from './reusable/Offer.md';
-import Price from './reusable/Price.md';
-import InstallationMeta from './reusable/InstallationMeta.md';
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';
+import AccessLevel from '@site/src/components/reusable/AccessLevel.md';
+import Purchase from '@site/src/components/reusable/Purchase.md';
+import Subscription from '@site/src/components/reusable/Subscription.md';
+import NonSubscription from '@site/src/components/reusable/NonSubscription.md';
+import Offer from '@site/src/components/reusable/Offer.md';
+import Price from '@site/src/components/reusable/Price.md';
+import InstallationMeta from '@site/src/components/reusable/InstallationMeta.md';
 
 ## Objects
 

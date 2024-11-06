@@ -8,30 +8,30 @@ displayed_sidebar: APISidebar
 
 import Details from '@site/src/components/Details';
 
-import ProfileObject from './reusable/ProfileObject.md';import CreateProfileRequestExample from './reusable/CreateProfileRequestExample.md';
-import ProfileRequest from './reusable/ProfileRequest.md';
-import ProfileResponse from './reusable/ProfileResponse.md';
-import ProfileResponseBadRequest from './reusable/ProfileResponseBadRequest.md';
-import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
-import ProfileResponseUnauthorized from './reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from './reusable/responseExample.md';
-import AccessLevel from './reusable/AccessLevel.md';
-import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
-import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
-import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';
-import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsMoreThanExpirationDate.md';
-import Purchase from './reusable/Purchase.md';
-import Subscription from './reusable/Subscription.md';
-import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
-import MissingOfferID from './reusable/MissingOfferID.md'; 
-import BillingIssueDetectedDate from './reusable/BillingIssueDetectedDate.md'; 
-import ExpiresDate from './reusable/ExpiresDate.md'; 
-import FamilySharePrice from './reusable/FamilySharePrice.md'; 
-import GracePeriodBilling from './reusable/GracePeriodBilling.md'; 
-import RefundDate from './reusable/RefundDate.md'; 
-import RefundDateNull from './reusable/RefundDateNull.md'; 
-import RenewStatusChangedDate from './reusable/RenewStatusChangedDate.md'; 
-import StoreTransactionId from './reusable/StoreTransactionId.md'; 
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
+import ProfileRequest from '@site/src/components/reusable/ProfileRequest.md';
+import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
+import ProfileResponseBadRequest from '@site/src/components/reusable/ProfileResponseBadRequest.md';
+import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
+import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import AccessLevel from '@site/src/components/reusable/AccessLevel.md';
+import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLevelProfileNotFound.md';
+import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDoesNotExist.md';
+import AccessLevelNoProfileAccessLevel from '@site/src/components/reusable/AccessLevelNoProfileAccessLevel.md';
+import RevocationDateIsMoreThanExpirationDate from '@site/src/components/reusable/RevocationDateIsMoreThanExpirationDate.md';
+import Purchase from '@site/src/components/reusable/Purchase.md';
+import Subscription from '@site/src/components/reusable/Subscription.md';
+import FreeTrialPrice from '@site/src/components/reusable/FreeTrialPrice.md'; 
+import MissingOfferID from '@site/src/components/reusable/MissingOfferID.md'; 
+import BillingIssueDetectedDate from '@site/src/components/reusable/BillingIssueDetectedDate.md'; 
+import ExpiresDate from '@site/src/components/reusable/ExpiresDate.md'; 
+import FamilySharePrice from '@site/src/components/reusable/FamilySharePrice.md'; 
+import GracePeriodBilling from '@site/src/components/reusable/GracePeriodBilling.md'; 
+import RefundDate from '@site/src/components/reusable/RefundDate.md'; 
+import RefundDateNull from '@site/src/components/reusable/RefundDateNull.md'; 
+import RenewStatusChangedDate from '@site/src/components/reusable/RenewStatusChangedDate.md'; 
+import StoreTransactionId from '@site/src/components/reusable/StoreTransactionId.md'; 
 
 
 Adapty's API lets you access and modify your Adapty data programmatically. We also support [webhooks](webhook), where we notify your server of events as they happen.
@@ -43,13 +43,15 @@ This API enables you to seamlessly integrate Adapty with your existing services.
 ## Authorization
 
 - **Base URL**: https://api.adapty.io/api/v1/server-side-api/
-- **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header with value `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
+- **Authorization header**: API requests must be authenticated by including your API key:
+  - For profile requests, use your secret API key as the **Authorization** header with the value `Api-Key {secret_token}`, like this: `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
 
-- **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/json`.
-- **Header**: One of the following parameters:
-  - **adapty-profile-id**: The ID of your user's profile. You can see it in the **Adapty ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
-  - **adapty-customer-user-id**: The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. It will work only if you [identify the users](identifying-users) in your mobile app code via Adapty SDK.
+  - For access level and transaction requests, you can use either the public or secret API key as the **Authorization** header with the value `Api-Key {secret_token}` or `Api-Key {public_token}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 
+- **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
+- **Header**: Use one of these parameters:
+  - **adapty-profile-id**: The ID of your user’s profile, visible in the **Adapty ID** field in the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+  - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. This works only if you [identify users](identifying-users) in your app code with the Adapty SDK.
 - **Body**:  The API expects the request to use the body as JSON.
 
 ---
@@ -642,7 +644,7 @@ This request requires different authorization parameters:
 
 | Param                  | Type   | Required          | Nullable           | Description                                                  |
 | :--------------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
-| **customer\_user\_id** | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](http://localhost:3000/docs/identifying-users) in your mobile app code via Adapty SDK |
+| **customer\_user\_id** | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK |
 | **stripe\_token**      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
 
 #### Example request
@@ -662,7 +664,6 @@ This request requires different authorization parameters:
     }
   }'
   ```
-
 
 #### Successful response: 200 - Success
 

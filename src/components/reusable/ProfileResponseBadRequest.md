@@ -1,14 +1,14 @@
 <!--- ProfileResponseBadRequest.md --->
 
-The request failed due to some error in a field
+The request failed due to some error in a field.
 
 ###### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Field that caused the error(s)</li><li> **errors**: (list) listed errors</li></ul> |
-| error_code  | String  | Short error name                                             |
-| status_code | Integer | HTTP status, always `400`                                    |
+| errors      | Object  | <ul><li> **source**: (string) Field that caused the error(s)</li><li> **errors**: (list) listed errors.</li></ul> |
+| error_code  | String  | Short error name.                                            |
+| status_code | Integer | HTTP status, always `400`.                                   |
 
 ###### Response example
 

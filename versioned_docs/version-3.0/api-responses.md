@@ -8,31 +8,31 @@ displayed_sidebar: APISidebar
 <!--- api-responses.md --->
 
 import Details from '@site/src/components/Details'; 
-import AccessLevel from './reusable/AccessLevel.md';  
-import Subscription from './reusable/Subscription.md';  
-import NonSubscription from './reusable/NonSubscription.md';  
-import ResponseExample from './reusable/responseExample.md';
-import ProfileObject from './reusable/ProfileObject.md';  
-import ProfileResponseUnauthorized from './reusable/ProfileResponseUnauthorized.md';
-import ProfileResponseBadRequest from './reusable/ProfileResponseBadRequest.md';
-import ProfileResponseNotFound from './reusable/ProfileResponseNotFound.md';
-import AccessLevelProfileNotFound from './reusable/AccessLevelProfileNotFound.md';
-import AccessLevelDoesNotExist from './reusable/AccessLevelDoesNotExist.md';
-import RevocationDateIsMoreThanExpirationDate from './reusable/RevocationDateIsMoreThanExpirationDate.md';
-import AccessLevelNoProfileAccessLevel from './reusable/AccessLevelNoProfileAccessLevel.md';
-import MissingOfferID from './reusable/MissingOfferID.md';
-import FreeTrialPrice from './reusable/FreeTrialPrice.md'; 
-import FamilySharePrice from './reusable/FamilySharePrice.md'; 
-import RefundDateNull from './reusable/RefundDateNull.md'; 
-import RefundDate from './reusable/RefundDate.md';
-import originallyPurchasedDate from './reusable/originallyPurchasedDate.md';
-import StoreTransactionId from './reusable/StoreTransactionId.md';
-import GracePeriodBilling from './reusable/GracePeriodBilling.md';
-import ExpiresDate from './reusable/ExpiresDate.md';
-import RenewStatusChangedDate from './reusable/RenewStatusChangedDate.md';
-import BillingIssueDetectedDate from './reusable/BillingIssueDetectedDate.md';
-import GracePeriodExpiresDate from './reusable/GracePeriodExpiresDate.md';
-import OneTimePurchaseTrial from './reusable/OneTimePurchaseTrial.md';
+import AccessLevel from '@site/src/components/reusable/AccessLevel.md';  
+import Subscription from '@site/src/components/reusable/Subscription.md';  
+import NonSubscription from '@site/src/components/reusable/NonSubscription.md';  
+import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';  
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
+import ProfileResponseBadRequest from '@site/src/components/reusable/ProfileResponseBadRequest.md';
+import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
+import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLevelProfileNotFound.md';
+import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDoesNotExist.md';
+import RevocationDateIsMoreThanExpirationDate from '@site/src/components/reusable/RevocationDateIsMoreThanExpirationDate.md';
+import AccessLevelNoProfileAccessLevel from '@site/src/components/reusable/AccessLevelNoProfileAccessLevel.md';
+import MissingOfferID from '@site/src/components/reusable/MissingOfferID.md';
+import FreeTrialPrice from '@site/src/components/reusable/FreeTrialPrice.md'; 
+import FamilySharePrice from '@site/src/components/reusable/FamilySharePrice.md'; 
+import RefundDateNull from '@site/src/components/reusable/RefundDateNull.md'; 
+import RefundDate from '@site/src/components/reusable/RefundDate.md';
+import originallyPurchasedDate from '@site/src/components/reusable/originallyPurchasedDate.md';
+import StoreTransactionId from '@site/src/components/reusable/StoreTransactionId.md';
+import GracePeriodBilling from '@site/src/components/reusable/GracePeriodBilling.md';
+import ExpiresDate from '@site/src/components/reusable/ExpiresDate.md';
+import RenewStatusChangedDate from '@site/src/components/reusable/RenewStatusChangedDate.md';
+import BillingIssueDetectedDate from '@site/src/components/reusable/BillingIssueDetectedDate.md';
+import GracePeriodExpiresDate from '@site/src/components/reusable/GracePeriodExpiresDate.md';
+import OneTimePurchaseTrial from '@site/src/components/reusable/OneTimePurchaseTrial.md';
 
 
 
@@ -125,7 +125,7 @@ The request is successful, the response will have the following data:
 
 ---
 
-## 401 Unauthorised
+## 401 Unauthorized
 
 <ProfileResponseUnauthorized />
 

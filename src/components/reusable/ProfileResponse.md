@@ -6,7 +6,7 @@
 
 | Name       | Type   | Description                                                  |
 | :--------- | ------ | :----------------------------------------------------------- |
-| Request-Id | String | Request ID, all backend logs have this id<br />Example: 758f01dfd9e74ccfbabb4934241c4966 |
+| Request-Id | String | The Request ID, which is included in all backend logs.<br/>Example: `758f01dfd9e74ccfbabb4934241c4966`. |
 
 ###### Body:
 

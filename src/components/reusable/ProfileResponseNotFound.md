@@ -1,15 +1,15 @@
 <!--- ProfileResponseNotFound.md --->
 
 <p> </p>
-The request failed because the profile defined in the request was not found.
+The request failed because the specified profile wasn’t found.
 
 ###### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: Descriptive name of the error</li></ul> |
-| error_code  | String  | Short error name. Always `not_found`                         |
-| status_code | Integer | HTTP status. Always `404`                                    |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
+| error_code  | String  | Short error name. Always `not_found`.                        |
+| status_code | Integer | HTTP status. Always `404`.                                   |
 
 ###### Response example
 
