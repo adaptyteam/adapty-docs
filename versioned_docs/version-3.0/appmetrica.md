@@ -143,14 +143,18 @@ if (deviceId != null) {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder();
+var deviceId = AppMetrica.GetDeviceId();
 
-builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-builder.SetAppmetricaDeviceId(deviceId);
+if (deviceId != null {
+  var builder = new Adapty.ProfileParameters.Builder();
 
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
-});
+  builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+  builder.SetAppmetricaDeviceId(deviceId);
+
+  Adapty.UpdateProfile(builder.Build(), (error) => {
+      // handle error
+  });
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
