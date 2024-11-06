@@ -15,13 +15,12 @@ Adapty provides a complete set of data that lets you track [subscription events]
 
 ### How to set up Amplitude integration
 
-Within Adapty, you can configure separate flows for production events and test events received from the Apple or Stripe sandbox environment or Google test account. 
+Within Adapty, you can set up separate flows for **production** and **test events** from the Apple or Stripe sandbox environment or Google test account.
 
-For production events, use the **Production** fields by pasting the API keys from the Amplitude dashboard, a separate API key per platform: iOS, Android, Stripe.
+- For production events, enter the **Production** API keys from the Amplitude dashboard, with a unique API key for each platform: iOS, Android, and Stripe.
+- For test events, use the **Sandbox** fields as needed.
 
-For test events, employ the  **Sandbox** fields accordingly.
-
-To set up the webhook integration:
+To set up the Amplitude integration:
 
 1. Open [**Integrations** -> **Amplitude**](https://app.adapty.io/integrations/amplitude) in your Adapty Dashboard.
 
@@ -37,15 +36,13 @@ To set up the webhook integration:
 </Zoom>
 
 
-2. Turn on the toggle to initiate the integration.
+2. Toggle on **Amplitude integration** to enable it.
 
-3. Fill out the integration fields:
+3. Fill in the integration fields:
 
-    | Field                         | Description                                                  |
-    | ----------------------------- | ------------------------------------------------------------ |
-    | **Amplitude iOS API key**     | <p>Enter the Amplitude **API Key** for iOS into Adapty. To find it, open your **Project settings** in Amplitude. In case you need help, refer to [official docs](https://amplitude.com/docs/apis/authentication).</p><p>We recommend to first set up **Sandbox** API keys to test the integration. And after the successful test results, provide the **Production** ones.</p> |
-    | **Amplitude Android API key** | Enter the Amplitude **API Key** for Android into Adapty similar to how it's described for iOS. |
-    | **Amplitude Stripe API key**  | Enter the Amplitude **API Key** for Stripe into Adapty  similar to how it's described for iOS. |
+    | Field                                      | Description                                                  |
+    | ------------------------------------------ | ------------------------------------------------------------ |
+    | **Amplitude iOS/ Android. Stripe API key** | Enter the Amplitude **API Key** for iOS/ Android/ Stripe into Adapty. Locate it under **Project settings** in Amplitude. For help, check [Amplitude docs](https://amplitude.com/docs/apis/authentication). Start with **Sandbox** keys for testing, then switch to **Production** keys after successful tests. |
 
     <Zoom>
       <img src={require('./img/2297782-CleanShot_2023-08-15_at_16.53.512x.webp').default}
@@ -58,22 +55,22 @@ To set up the webhook integration:
     />
     </Zoom>
 
-4. Additional fields and options are not obligatory; use them as needed:
+4. Optional settings for further customization:
 
-5. | Parameter                               | Description                                                  |
+   | Parameter                               | Description                                                  |
    | --------------------------------------- | ------------------------------------------------------------ |
-   | **How the revenue data should be sent** | Define if the gross revenue should be sent or after taxes and commissions. A detailed description is given in the [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) section. |
-   | **Exclude historical events**           | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
-   | **Send User Attributes**                | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors. |
-   | **Always populate user_id**             | Adapty always sends `device_id` as `amplitudeDeviceId`. User_id however can or cannot be sent depending on this parameter. Adapty always tries to send `amplitudeUserId` set by SDK , if it's absent then Adapty tries to send `customer_user_id`. If it's absent as well, Adapty will act in the following way:<ul><li> ON: Adapty will send Adapty `profile_id`.</li><li> OFF:  Adapty will not populate `user_id`.</li></ul> |
+   | **How the revenue data should be sent** | Choose whether to send gross revenue or revenue after taxes and commissions. See [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) for details. |
+   | **Exclude historical events**           | Choose to exclude events before Adapty SDK installation, preventing duplicate data. For example, if a user subscribed on January 10th but installed the Adapty SDK on March 6th, Adapty will only send events from March 6th onward. |
+   | **Send User Attributes**                | Select this option to send user-specific attributes like language preferences. |
+   | **Always populate user_id**             | Adapty automatically sends `device_id` as `amplitudeDeviceId`. For `user_id`, this setting defines behavior: <ul><li>**ON**: Sends Adapty `profile_id` if `amplitudeUserId` or `customer_user_id` aren’t available.</li><li>**OFF**: Leaves `user_id` empty if neither ID is available.</li></ul> |
 
-6. Choose the events you want to receive and [map their names](amplitude#events-and-tags).
+5. Choose the events you want to receive and [map their names](amplitude#events-and-tags).
 
-7. Remember to click the **Save** button to confirm the changes.
+6. Click **Save** to confirm your changes.
 
-Please note that the moment you click the **Save** button, Adapty will start sending events to Amplitude.
+Note: Once you click **Save**, Adapty will start sending events to Amplitude.
 
-Along with events, Adapty also sends the[ subscription status](subscription-status) and subscription product ID to the [Amplitude user properties.](https://help.amplitude.com/hc/en-us/articles/115002380567#h_39e46c92-7b7f-4358-a96f-c82cc3342e3e)
+In addition to events, Adapty sends [subscription status](subscription-status) and the subscription product ID to [Amplitude user properties](https://help.amplitude.com/hc/en-us/articles/115002380567#h_39e46c92-7b7f-4358-a96f-c82cc3342e3e).
 
 ### Events and tags
 
@@ -94,8 +91,12 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ### SDK configuration
 
-Use `Adapty.updateProfile()` method to set `amplitudeDeviceId` or `amplitudeUserId`.  If not set, Adapty uses your user ID (`customerUserId`), or if it's null Adapty ID. If the `customwrUserId`is absent as well, Adapty will or will not set the user_id depending on the **Always populate user_id** checkbox. If selected, Adapty profile_id will be set. If cleared, user_id will not be set at all.
- Make sure that the user ID you use to send data to Amplitude from your app if any is the same one you send to Adapty.
+Use the `Adapty.updateProfile()` method to set either `amplitudeDeviceId` or `amplitudeUserId`. If neither is set, Adapty will default to using your user ID (`customerUserId`). If `customerUserId` is also absent, Adapty will handle `user_id` based on the **Always populate user_id** checkbox:
+
+- **If selected**, Adapty will set `user_id` to the Adapty `profile_id`.
+- **If cleared**, `user_id` will not be set.
+
+Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
