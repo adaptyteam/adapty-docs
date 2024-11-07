@@ -18,14 +18,81 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 ## Step 1. Configure Adapty SDK for EU region
 
 <Tabs> 
-<TabItem value="iOS" label="iOS"> 
-Text 
+<TabItem value="iOS" label="iOS"> <Tabs>
+
+Install Adapty SDK as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
+
+Include the `serverCluster` parameter in your configuration:
+
+<TabItem value="Swift" label="Swift" default>
+
+```swift 
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+    Adapty.Configuration
+        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(observerMode: false)
+        .with(customerUserId: "YOUR_USER_ID")
+        .with(idfaCollectionDisabled: false)
+        .with(ipAddressCollectionDisabled: false)
+        // highlight-next-line
+        .with(serverCluster: .eu)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="SwiftUI" label="SwiftUI" default>
+
+```swift 
+import Adapty
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+        Adapty.Configuration
+          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+          // highlight-next-line
+          .with(serverCluster: .eu)
+  
+        Adapty.activate(with: configurationBuilder) { error in
+          // handle the error
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Parameters:
+
+| Parameter         | Description                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| **serverCluster** | Use the `.eu` value to connect your app to Adapty’s European servers. |
+
+
 </TabItem> 
 
 <TabItem value="Android" label="Android" default> 
 Install Adapty SDK as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
-Include the `.withServerCluster` parameter in your configuration:
+Use the `.withServerCluster` method in your configuration:
 
 <Tabs>
   <TabItem value="Kotlin" label="Kotlin" default>
@@ -69,11 +136,11 @@ public void onCreate() {
   </TabItem>
 </Tabs>
 
-Parameter overview:
+Added method:
 
-| Parameter             | Description                                                  |
+| Method                | Description                                                  |
 | --------------------- | ------------------------------------------------------------ |
-| **withServerCluster** | Set to `AdaptyConfig.ServerCluster.EU` to connect your app to Adapty’s European servers. |
+| **withServerCluster** | Pass the value `AdaptyConfig.ServerCluster.EU` to it to connect your app to Adapty’s European servers. |
 
 </TabItem>
 
