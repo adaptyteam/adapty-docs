@@ -14,6 +14,7 @@ To create a product that will be linked to Adapty:
 1. Open **App Store Connect**. Proceed to [**Monetization** → **Subscriptions**](https://appstoreconnect.apple.com/apps/6477523342/distribution/subscriptions) section in the left-side menu.
 
    
+
 <Zoom>
   <img src={require('./img/148c3b5-subscriptions.webp').default}
   style={{
@@ -33,7 +34,6 @@ To create a product that will be linked to Adapty:
 3. In the opened **Create Subscription Group** window, enter a the new subscription group name in the **Reference Name** field. The reference name is a user-defined label or identifier that helps you distinguish and manage different subscription groups within your app.
 
    The reference name is not visible to users; it's primarily for your internal use and organization. It allows you to easily identify and refer to specific subscription groups when managing them within the App Store Connect interface. This can be particularly useful if you have multiple subscription offerings or want to categorize them in a way that makes sense for your app's structure.
-
 
 <Zoom>
   <img src={require('./img/3f93c44-create_subscription_group.webp').default}
@@ -55,6 +55,7 @@ To create a product that will be linked to Adapty:
 5. The subscription group is created and opened. Now you can create subscriptions in the group. Click the **Create** button under the **Subscriptions** title. If you add a  new subscription to an existing group, then click a **Plus** button next to the **Subscriptions** title.
 
    
+
 <Zoom>
   <img src={require('./img/22fc643-add_subscription.webp').default}
   style={{
@@ -76,6 +77,7 @@ To create a product that will be linked to Adapty:
    The Product ID is a unique alphanumeric identifier essential for accessing your product during the development phase and synchronizing it with Adapty, a service designed to manage in-app subscriptions. Only alphanumeric characters, periods, and underscores are allowed in the Product ID.
 
    
+
 <Zoom>
   <img src={require('./img/04aca55-create_subscription.webp').default}
   style={{
@@ -95,6 +97,7 @@ To create a product that will be linked to Adapty:
 8. The subscription is created and opened. Now select the duration of the subscription in the **Subscription Duration** list. Even if the subscription duration is already indicated in the subscription name, remember to complete the **Subscription Duration** field.
 
    
+
 <Zoom>
   <img src={require('./img/f56cf0f-subscription_duration.webp').default}
   style={{
@@ -114,6 +117,7 @@ To create a product that will be linked to Adapty:
 10. In the opened **Subscription Price** window, select the basic country in the **Country or Region** list and and basic currency in the **Price** list.  Later Apple will automatically calculate the prices for all 175 countries or regions based on this basic price and the most recent foreign exchange rates.
 
     
+
 <Zoom>
   <img src={require('./img/de1cec8-subscription_price.webp').default}
   style={{
@@ -131,6 +135,7 @@ To create a product that will be linked to Adapty:
 11. Click the **Next** button. In the opened **Price by Country or Region** window, you see the automatically recalculated prices for all countries. You can change them if you want.
 
     
+
 <Zoom>
   <img src={require('./img/2a047a6-price_by_country.webp').default}
   style={{
@@ -148,7 +153,6 @@ To create a product that will be linked to Adapty:
 12. After updating regional prices, proceed by clicking the **Next** button at the bottom of the window.
 
 13. In the opened **Confirm Subscription Price?** window, carefully review the final prices. To correct the prices, you can click the **Back** button to return to the **Price by Country or Region** window and update them. When you are ok with the prices, click the **Confirm** button.
-
 
 <Zoom>
   <img src={require('./img/d2b2031-confirm_prices.webp').default}
@@ -169,7 +173,6 @@ To create a product that will be linked to Adapty:
 
 Please consider, that the steps provided so far focus on configuring an Auto-Renewable Subscription. However, if you intend to set up other types of in-app purchases, you can click on the **In-App Purchases** tab in the sidebar, instead of "Subscriptions." This will lead you to the section where you can manage and create various types of in-app purchases.
 
-
 <Zoom>
   <img src={require('./img/5663d85-in-app_purchases.webp').default}
   style={{
@@ -180,8 +183,6 @@ Please consider, that the steps provided so far focus on configuring an Auto-Ren
   }}
 />
 </Zoom>
-
-
 
 
 

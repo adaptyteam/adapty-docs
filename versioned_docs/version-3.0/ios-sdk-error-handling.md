@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle errors"
+title: "iOS - Handle errors and warnings"
 description: "Learn how to effectively manage errors in iOS development with Adapty SDK's AdaptyError, featuring detailed properties for troubleshooting common issues."
 metadataTitle: "iOS Error Handling: AdaptyError Overview"
 ---
@@ -50,7 +50,7 @@ Adapty.makePurchase(product: product) { result in
 | [invalidSignature](https://developer.apple.com/documentation/storekit/skerror/code/invalidsignature) | 12 | This error code indicates that the signature in a payment discount is not valid. |
 | [missingOfferParams](https://developer.apple.com/documentation/storekit/skerror/code/missingofferparams) | 13 | This error code indicates that parameters are missing in a payment discount. |
 | [invalidOfferPrice](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferprice/) | 14 | This error code indicates that the price you specified in App Store Connect is no longer valid. Offers must always represent a discounted price. |
-| noProductIDsFound | 1000 | <p>This error indicates that none of the products in the paywall is available in the store.</p><p>If you are encountering this error, please follow the steps below to resolve it:</p><p></p><p>1. Check if all the products have been added to the Adapty Dashboard.</p><p>2. Ensure that the Bundle ID of your app matches the one from Apple Connect.</p><p>3. Verify that the product identifiers from the app stores match the ones you have added to the Dashboard. Please note that the identifiers should not contain Bundle ID unless it is already included in the store.</p><p>4. Confirm that the app paid status is active in your Apple tax settings. Ensure that your tax information is up-to-date and your certificates are valid.</p><p>5. Check if a bank account is attached to the app, so it can be eligible for monetization.</p><p>6. Check if the products are available in all regions.</p><p></p><p>Also, ensure that your products are in **“Ready to Submit”** state.</p> |
+| noProductIDsFound | 1000 | <p>This error indicates that none of the products you requested on the paywall are available for purchase in the App Store, even though they’re listed there. This error may sometimes come with an `InvalidProductIdentifiers` warning. If the warning appears without an error, ignore it.</p><p>If you’re encountering this error, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |
 | noProductsFound | 1001 | This error indicates that the product requested for purchase is not available in the store. |
 | productRequestFailed | 1002 | Unable to fetch available products at the moment. |
 | cantMakePayments | 1003 | In-app purchases are not allowed on this device. |
@@ -82,3 +82,11 @@ Adapty.makePurchase(product: product) { result in
 | profileWasChanged    | 3006 | The user profile was changed during the operation.                                                                                             |
 | persistingDataError  | 3100 | It was an error while saving data.                                                                                                             |
 | operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                  |
+
+## Warnings
+
+Warnings don’t need to be fixed unless they lead to errors. 
+
+<!--- | Warning                   | Solution                                                     |
+| ------------------------- | ------------------------------------------------------------ |
+| InvalidProductIdentifiers | <p>This warning means that some products on the paywall are available in the store but aren’t ready for purchase. This usually happens if you haven’t completed the configuration of your products in the App Store.</p><p>If this doesn’t cause any errors, you can ignore the warning. However, if you want to remove it, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |--->
