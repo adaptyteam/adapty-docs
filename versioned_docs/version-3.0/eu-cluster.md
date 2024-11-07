@@ -9,22 +9,20 @@ import TabItem from '@theme/TabItem';
 
 If legal requirements mandate EU-based servers, Adapty provides an EU cluster option. Follow these steps:
 
-1. [Configure Adapty SDK for the EU region](step-1-configure-adapty-sdk-for-eu-region).
-2. [Register with Adapty via the EU-specific registration link](eu-cluster#step-2-register-with-eu-cluster).
-3. [Log in to Adapty through the EU-specific login link](eu-cluster#step-3-log-in-with-eu-specific-link).
+1. Configure Adapty SDK for the EU region.
+2. Register with Adapty via the EU-specific registration link.
+3. Log in to Adapty through the EU-specific login link.
 
 After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 
 ## Step 1. Configure Adapty SDK for EU region
 
 <Tabs> 
-<TabItem value="iOS" label="iOS"> 
+<TabItem value="iOS" label="iOS"> <Tabs>
 
 Install Adapty SDK as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Include the `backendBaseUrl` parameter in your configuration:
-
-<Tabs>
 
 <TabItem value="Swift" label="Swift" default>
 
@@ -92,7 +90,7 @@ Parameters:
 </TabItem> 
 
 <TabItem value="Android" label="Android" default> 
-Install Adapty SDK as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
+Install Adapty SDK 3.0.4 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Use the `.withServerCluster` method in your configuration:
 
@@ -154,8 +152,6 @@ To register your company in the EU cluster, use [this link](https://app.adapty.i
 
 ## Step 3: Log in with EU-specific link
 
-Direct your team to log in via `https://app.adapty.io/eu-login`. 
+Direct your team to log in via `https://app.adapty.io/eu-login`. For general dashboard access, continue using `app.adapty.io`.
 
-This should help ensure you’re compliant with EU data regulations while using Adapty! 
-
-For general dashboard access, use `app.adapty.io`.
+This should help ensure you’re compliant with EU data regulations while using Adapty!
