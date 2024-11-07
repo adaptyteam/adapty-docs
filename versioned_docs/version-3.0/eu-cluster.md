@@ -22,7 +22,7 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 
 Install Adapty SDK as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
-Include the `serverCluster` parameter in your configuration:
+Include the `backendBaseUrl` parameter in your configuration:
 
 <TabItem value="Swift" label="Swift" default>
 
@@ -38,7 +38,7 @@ let configurationBuilder =
         .with(idfaCollectionDisabled: false)
         .with(ipAddressCollectionDisabled: false)
         // highlight-next-line
-        .with(serverCluster: .eu)
+        .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
@@ -62,7 +62,7 @@ struct SampleApp: App {
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
           // highlight-next-line
-          .with(serverCluster: .eu)
+          .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
   
         Adapty.activate(with: configurationBuilder) { error in
           // handle the error
@@ -82,9 +82,9 @@ struct SampleApp: App {
 
 Parameters:
 
-| Parameter         | Description                                                  |
-| ----------------- | ------------------------------------------------------------ |
-| **serverCluster** | Use the `.eu` value to connect your app to Adapty’s European servers. |
+| Parameter          | Description                                                  |
+| ------------------ | ------------------------------------------------------------ |
+| **backendBaseUrl** | Use the `URL(string: "https://api-eu.adapty.io/api/v1")!` value to connect your app to Adapty’s European servers. |
 
 
 </TabItem> 
