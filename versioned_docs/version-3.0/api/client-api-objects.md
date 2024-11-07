@@ -404,24 +404,7 @@ All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
 | to_period    | string                                          | :heavy_plus_sign:  | Possible values are: <ul><li> 0 - to trial; </li><li> 1, 2, 3, 4, ... - to period;</li><li> 6+, 12+, 24+, ... - to 6+ months, etc</li></ul> |
 | period_unit  | string                                          | :heavy_minus_sign: | Possible values are: <ul><li>  `day` - Day</li><li> `week` - Week</li><li>  `month` - Month</li><li> `quarter` - Quarter</li><li> `year` - Year</li><li> `none` - None</li></ul> |
 
-### DateType
 
-<details>
- <summary>Example (click to expand)</summary>
-
-
-```json
-"purchase_date"
-
-```
-
-</details>
-
-**Properties** 
-
-| Name     | Type   | Required           | Description                                                  |
-| -------- | ------ | ------------------ | ------------------------------------------------------------ |
-| DateType | string | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 
 ### Duration
 
@@ -812,28 +795,9 @@ All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
 
 **Properties** 
 
-| Name          | Type   | Required           | Description                                               |
-| ------------- | ------ | ------------------ | --------------------------------------------------------- |
-| MetricsFormat | string | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul> |
-
-### PeriodUnit
-
-<details>
- <summary>Example (click to expand)</summary>
-
-
-```json
-"day"
-
-```
-
-</details>
-
-**Properties** 
-
-| Name       | Type   | Required           | Description                                                  |
-| ---------- | ------ | ------------------ | ------------------------------------------------------------ |
-| PeriodUnit | string | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| Name          | Type   | Required           | Description |
+| ------------- | ------ | ------------------ | ----------- |
+| MetricsFormat | string | :heavy_minus_sign: |             |
 
 ### ProfilesCountingMethod
 

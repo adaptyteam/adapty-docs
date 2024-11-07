@@ -61,12 +61,12 @@ POST
 
 ### Parameters
 
-| Name            | Type                                                         | Required           | Description      |
-| --------------- | ------------------------------------------------------------ | ------------------ | ---------------- |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                  |
-| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | Enumerated value |
-| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | Enumerated value |
-| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | Enumerated value |
+| Name            | Type                                                | Required           | Description                                                  |
+| --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
 ### Request example
 <details>
@@ -166,9 +166,7 @@ POST
 
 ### Responses
 
-|Status|Meaning|Object|
-|---|---|---|
-|200|Successful request|None|
+200 - Successful request
 
 ## Retrieve cohort data
 
@@ -188,10 +186,7 @@ POST
 
 ### Parameters
 
-|Name|In|Type|Required|
-|---|---|---|---|
-|format|query|string|false|
-|body|body|[CohortMetricsConditions](client-api-objects#cohortmetricsconditions)|true|
+[CohortMetricsConditions](client-api-objects#cohortmetricsconditions)
 
 ### Request example
 
@@ -319,7 +314,13 @@ POST
 ```
 
 ### Parameters
-[ChartMetricsConditions](client-api-objects#chartmetricsconditions) object
+| Name            | Type                                                | Required           | Description                                                  |
+| --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+
 ### Request example
 
 <details>
@@ -519,7 +520,13 @@ POST
 ```
 
 ### Parameters
-[FunnelMetricsConditions](client-api-objects#funnelmetricsconditions) object
+| Name            | Type                                                | Required           | Description                                                  |
+| --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| format          | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
 
 ### Request example
 
