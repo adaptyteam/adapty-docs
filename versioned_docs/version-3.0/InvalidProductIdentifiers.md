@@ -65,7 +65,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
 
 
 
-## Step 4. Check if the product availability
+## Step 4. Check product availability
 
 1. Go back to **App Store Connect** and open the same **Subscriptions** section.
 
@@ -160,10 +160,12 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
     />
     </Zoom>
 
+    
+
     ## Step 6. Check app paid status, back account, and tax forms are active
 
-    1. In х**App Store Connect**](https://appstoreconnect.apple.com/) homepage, click **Business**.
-    
+    1. In **App Store Connect**](https://appstoreconnect.apple.com/) homepage, click **Business**.
+
     <Zoom>
       <img src={require('./img/business.webp').default}
     style={{
@@ -174,9 +176,9 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
     }}
     />
     </Zoom>
-    
+
     2. Select your company name.
-    
+
     <Zoom>
       <img src={require('./img/business-name.webp').default}
     style={{
@@ -187,9 +189,9 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
     }}
     />
     </Zoom>
-    
+
     3. Scroll down and check that your **Paid Apps Agreement**, **Bank Account**, and **Tax forms** all show as **Active**.
-    
+
     <Zoom>
       <img src={require('./img/appstore-connect-status.webp').default}
     style={{
@@ -200,5 +202,5 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
     }}
     />
     </Zoom>
-    
+
     By following these steps, you should be able to resolve the `InvalidProductIdentifiers` warning and get your products live in the store
