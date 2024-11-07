@@ -69,7 +69,7 @@ public void onCreate() {
   </TabItem>
 </Tabs>
 
-Added option:
+Parameter overview:
 
 | Parameter             | Description                                                  |
 | --------------------- | ------------------------------------------------------------ |
