@@ -183,6 +183,97 @@ To add a toggle:
 />
 </Zoom>
 
+## Switching between product sets by tab
+
+Paywall tabs let you group your plans into a few categories, highlighting all the possible options for your users. They’re especially helpful if:
+
+- Your app offers multiple weekly, monthly, or yearly plans
+- You have different tiers like Plus, Gold, or Premium
+
+You can also add elements like feature lists in tabs to help users see the differences between tiers.
+
+To add tabs:
+
+1. In the **Products** element, set **Products grouping** to **Tabs (for comparing plan groups)**. This will split your products into two initial tab groups.
+
+   <Zoom>
+     <img src={require('./img/paywall-tabs.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. If you need more tabs, click **Add tab group**. 
+
+   <Zoom>
+     <img src={require('./img/add-tab-group.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+3. Organize your products within these tabs. 
+
+   <Zoom>
+     <img src={require('./img/tabs-divided.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+4. Open the first tab group, and in the **Tab title**, enter the name that will appear on the paywall.
+
+   <Zoom>
+     <img src={require('./img/tab-rename.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+5. Give an internal tab name in a separate field for easy reference. This name won’t be visible on the paywall but can help you identify the tab in lists.
+
+   <Zoom>
+     <img src={require('./img/tab-internal-rename.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+6. Repeat steps 4-5 for each tab.
+
+7. Choose which tab will be active when the user opens the paywall. Go to **Tab control** and select the default tab from the **Selected tab** list.
+
+   <Zoom>
+     <img src={require('./img/tab-selected.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
 ## Showing extra plans under a button
 
 To keep things simple on your paywall, you can hide some products under a button (like "View more plans" or any label you prefer). This helps users focus on your top options first, while still allowing them to explore other plans if they want. It's a great way to make the paywall cleaner and improve conversions.
