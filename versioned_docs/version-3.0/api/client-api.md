@@ -61,7 +61,12 @@ POST
 
 ### Parameters
 
-[ChartMetricsConditions](client-api-objects#chartmetricsconditions)  object
+| Name            | Type                                                         | Required           | Description      |
+| --------------- | ------------------------------------------------------------ | ------------------ | ---------------- |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)          | :heavy_plus_sign:  |                  |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)                  | :heavy_minus_sign: | Enumerated value |
+| date_type       | [DateType](client-api-objects#datetype)                      | :heavy_minus_sign: | Enumerated value |
+| segmentation_by | [ChartMetricsSegmentation](client-api-objects#chartmetricssegmentation) | :heavy_minus_sign: | Enumerated value |
 
 ### Request example
 <details>
