@@ -1,5 +1,5 @@
 ---
-title: "Solution for `InvalidProductIdentifiers` warning"
+title: "Fix for Code-1000 `noProductIDsFound` error"
 description: ""
 metadataTitle: ""
 ---
@@ -9,9 +9,9 @@ import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-This warning means that at least one of the products on the paywall isn’t available in the App Store, even though it’s listed there. If none of the products are available, you’ll get a 1000-code error: `noProductIDsFound`. If you don’t see an error, you can safely ignore the warning.
+The 1000-code error, `noProductIDsFound`, indicates that none of the products you requested on the paywall are available for purchase in the App Store, even though they’re listed there. This error may sometimes come with an `InvalidProductIdentifiers` warning. If the warning appears without an error, safely ignore it.
 
-If you are encountering this error, please follow the steps below to resolve it:
+If you’re encountering the `noProductIDsFound` error, follow these steps to resolve it:
 
 ## Step 1. Check your iOS version
 
@@ -38,7 +38,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
 2. Click on the subscription group name. You’ll see your products listed under the **Subscriptions** section.
 
 3. Ensure the product you're testing is marked **Ready to Submit**. If not, follow the instructions on the [Product in App Store](app-store-products) page.
-  <Zoom>
+    <Zoom>
    <img src={require('./img/ready-to-submit.webp').default}
       style={{
         border: '1px solid #727272', /* border width and color */
@@ -47,7 +47,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
         margin: '0 auto' /* center alignment */
       }}
     />
-  </Zoom>
+    </Zoom>
 
 4. Compare the product ID from the table with the one in the [**Products**](https://app.adapty.io/products) tab in the Adapty Dashboard. If the IDs don’t match, copy the product ID from the table and [create a product](create-product) with it in the Adapty Dashboard.
 

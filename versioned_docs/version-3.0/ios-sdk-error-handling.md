@@ -50,7 +50,7 @@ Adapty.makePurchase(product: product) { result in
 | [invalidSignature](https://developer.apple.com/documentation/storekit/skerror/code/invalidsignature) | 12 | This error code indicates that the signature in a payment discount is not valid. |
 | [missingOfferParams](https://developer.apple.com/documentation/storekit/skerror/code/missingofferparams) | 13 | This error code indicates that parameters are missing in a payment discount. |
 | [invalidOfferPrice](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferprice/) | 14 | This error code indicates that the price you specified in App Store Connect is no longer valid. Offers must always represent a discounted price. |
-| noProductIDsFound | 1000 | <p>This error means that none of the products on the paywall are available in the store. You may also see the warning `InvalidProductIdentifiers` in your logs.</p><p>If you’re encountering this error, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |
+| noProductIDsFound | 1000 | <p>This error means that none of the products on the paywall are available in the store. You may also see the warning `InvalidProductIdentifiers` in your logs.</p><p>If you’re encountering this error, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |
 | noProductsFound | 1001 | This error indicates that the product requested for purchase is not available in the store. |
 | productRequestFailed | 1002 | Unable to fetch available products at the moment. |
 | cantMakePayments | 1003 | In-app purchases are not allowed on this device. |
@@ -85,9 +85,8 @@ Adapty.makePurchase(product: product) { result in
 
 ## Warnings
 
-Warnings do not require to be fixed if they did not result in errors. If you still want to remove them, follow our instructions below:
+Warnings don’t need to be fixed unless they lead to errors. 
 
-| Warning                   | Solution                                                     |
+<!--- | Warning                   | Solution                                                     |
 | ------------------------- | ------------------------------------------------------------ |
-| InvalidProductIdentifiers | <p>This warning means that some products on the paywall are available in the store but aren’t ready for purchase. This usually happens if you haven’t completed the configuration of your products in the App Store.</p><p>If this doesn’t cause any errors, you can ignore the warning. However, if you want to remove it, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |
-
+| InvalidProductIdentifiers | <p>This warning means that some products on the paywall are available in the store but aren’t ready for purchase. This usually happens if you haven’t completed the configuration of your products in the App Store.</p><p>If this doesn’t cause any errors, you can ignore the warning. However, if you want to remove it, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |--->
