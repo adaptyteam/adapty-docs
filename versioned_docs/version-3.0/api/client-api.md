@@ -1,5 +1,5 @@
 ---
-itle: Exporting analytics to CSV with API
+title: Exporting analytics to CSV with API
 toc_max_heading_level: 2
 ---
 
@@ -24,6 +24,11 @@ To download your analytics as a CSV file, just use the Adapty API.
 - **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header.
 
   1. In the **Authorization** -> **Auth type** field, choose **API Key**.
+  1. In the **Value** field, enter the API Key in format `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
+
+- **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/json`.
+
+- **Body**: The API expects the request to use the body as JSON.
 
 <!--- <Zoom>
   <img
@@ -37,12 +42,6 @@ To download your analytics as a CSV file, just use the Adapty API.
     }}
   />
 </Zoom>--->
-
-  1. In the **Value** field, enter the API Key in format `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
-
-- **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/json`.
-
-- **Body**: The API expects the request to use the body as JSON.
 
 ## Retrieve analytics data
 
@@ -65,7 +64,7 @@ POST
 | Name            | Type                                                      | Required           | Description                                                  |
 | --------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
-| period_unit     | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit     | String                                                    | :heavy_minus_sign: | A unit of time that a subscription period is specified in. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
