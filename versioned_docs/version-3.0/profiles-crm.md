@@ -39,8 +39,6 @@ In a full table of subscribers, you can filter, sort, and find users. The state 
 | **Billing issue**          | The user can't be charged                                                    |
 | **Grace period**           | A user entered a grace period                                                |
 
-You can group users into Segment to create [Promo Campaigns](promo-campaigns), group analysis, and more.
-
 ## User properties
 
 <Zoom>
