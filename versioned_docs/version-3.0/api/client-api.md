@@ -6,6 +6,7 @@ toc_max_heading_level: 2
 import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 To download your analytics as a CSV file, just use the Adapty API.
 
@@ -63,12 +64,17 @@ POST
 
 | Name            | Type                                                | Required           | Description                                                  |
 | --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| filters         | MetricsFilters object                                        | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
 | period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
+#### MetricsFilters object
+
+<MetricsFilters />
+
 ### Request example
+
 <details>
    <summary>Example request (click to expand)</summary>
 
@@ -186,7 +192,20 @@ POST
 
 ### Parameters
 
-[CohortMetricsConditions](client-api-objects#cohortmetricsconditions)
+| Name            | Type                                                      | Required           | Description                                                  |
+| --------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](client-api-objects#metricsfilters)       | :heavy_plus_sign:  |                                                              |
+| period_unit     | [PeriodUnit](client-api-objects#periodunit)               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_type     | [RenewalPeriodType](client-api-objects#renewalperiodtype) | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
+| value_type      | [CohortValueType](client-api-objects#cohortvaluetype)     | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
+| value_field     | [CohortValueField](client-api-objects#cohortvaluefield)   | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
+| accounting_type | [AccountingType](client-api-objects#accountingtype)       | :heavy_minus_sign: | Enumerated value                                             |
+| renewal_days    | integer                                                   | :heavy_minus_sign: |                                                              |
+| format          | [MetricsFormat](client-api-objects#metricsformat)         | :heavy_minus_sign: | Enumerated value                                             |
+
+#### MetricsFilters object
+
+<MetricsFilters />
 
 ### Request example
 
@@ -293,9 +312,7 @@ POST
 
 ### Responses
 
-|Status|Meaning|Object|
-|---|---|---|
-|200|Successful request|None|
+200 - Successful request
 
 ## Retrieve conversion data
 
@@ -316,10 +333,16 @@ POST
 ### Parameters
 | Name            | Type                                                | Required           | Description                                                  |
 | --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| filters         | MetricsFilters object                                        | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
 | period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+
+
+
+#### MetricsFilters object
+
+<MetricsFilters />
 
 ### Request example
 
@@ -522,11 +545,15 @@ POST
 ### Parameters
 | Name            | Type                                                | Required           | Description                                                  |
 | --------------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api-objects#metricsfilters) | :heavy_plus_sign:  |                                                              |
+| filters         | MetricsFilters object                                        | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
 | period_unit     | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 | format          | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+
+#### MetricsFilters object
+
+<MetricsFilters />
 
 ### Request example
 
@@ -722,7 +749,18 @@ POST
 
 ### Parameters
 
-[RequestDTO](client-api-objects#requestdto) object
+| Name         | Type                                                | Required           | Description                                                  |
+| ------------ | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | MetricsFilters object                                        | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
+| format       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+| period_unit  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_type  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
+| segmentation | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
+| value_type   | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
+
+#### MetricsFilters object
+
+<MetricsFilters />
 
 ### Request example
 
@@ -846,7 +884,21 @@ POST
 
 ### Parameters
 
-[RetentionMetricsConditions](client-api-objects#retentionmetricsconditions)
+| Name            | Type                  | Required           | Description                                                  |
+| --------------- | --------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | MetricsFilters object | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
+| period_unit     | String                | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| date_type       | String                | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| use_trial       | boolean               | :heavy_minus_sign: |                                                              |
+| value_type      | String                | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
+| format          | String                | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+
+
+
+### MetricsFilters object
+
+<MetricsFilters />
 
 ### Request example
 

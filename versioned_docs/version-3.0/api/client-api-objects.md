@@ -666,8 +666,8 @@ All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
     "2019-08-24",
     "2019-08-24"
   ],
-  "date_from": "2019-08-24T14:15:22Z",
-  "date_to": "2019-08-24T14:15:22Z",
+  "date_from": "2019-07-24T14:15:22Z",
+  "date_to": "2019-07-24T14:15:22Z",
   "compare_date_from": "2019-08-24T14:15:22Z",
   "compare_date_to": "2019-08-24T14:15:22Z",
   "store": [
@@ -749,24 +749,23 @@ All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
 
 | Name                          | Type                     | Required          | Description                                                  |
 | ----------------------------- | ------------------------ | ----------------- | ------------------------------------------------------------ |
-| date                          | array of strings(data)   | :heavy_plus_sign: | minItems: 2,  maxItems: 2                                    |
-| compare_date                  | array of strings(data)   | :heavy_minus_sign: | minItems: 2,  maxItems: 2                                    |
-| date_from                     | string(date-time)        | :heavy_plus_sign: |                                                              |
-| date_to                       | string(date-time)        | :heavy_plus_sign: |                                                              |
-| compare_date_from             | string(date-time)        | :heavy_minus_sign: |                                                              |
-| compare_date_to               | string(date-time)        | :heavy_minus_sign: |                                                              |
-| store                         | array of strings         | :heavy_minus_sign: |                                                              |
-| app_id                        | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| placement_id                  | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| audience_id                   | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| ab_test_id                    | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| paywalls_group_id             | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| paywall_id                    | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| placement_audience_version_id | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| state                         | array of [State](client-api-objects#state) | :heavy_minus_sign: | Enumerated value                                             |
-| purchase_container_id         | array of strings(uuid)   | :heavy_minus_sign: |                                                              |
-| country                       | anyOf                    | :heavy_minus_sign: | Possible values are: <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul> |
-| store_product_id         | array of stings                                 | :heavy_minus_sign: | minItems: 2, maxItems: 2 |
+| date                          | array of strings(data)   | :heavy_plus_sign: | <p>If you need to get analytics for 1 date, enter it here. </p><p>If you plan to compare 2 dates, enyter the first date into this parameter and the second one to the `compare_date` parameter. </p><p>Please note that in this parameters you enter an array of the same date.</p> |
+| compare_date                  | array of strings(data)   | :heavy_minus_sign: | If you plan to compare 2 dates, enyter the first date into the `date` parameter and the second one to this parameter. Please note that In both parameters you enter an array of the same date. |
+| date_from                     | string(date-time)        | :heavy_plus_sign: | <p>Enter the start of the period you wanna analytics for.</p><p>If you want to compare 2 periods, the first period is provides with parameters `date_from`and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
+| date_to                       | string(date-time)        | :heavy_plus_sign: | <p>Enter the end of the period you wanna analytics for.</p><p>If you want to compare 2 periods, the first period is provided with parameters `date_from `and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
+| compare_date_from             | string(date-time)        | :heavy_minus_sign: | <p>If you want to compare 2 periods, the first period is provides with parameters `date_from` and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
+| compare_date_to               | string(date-time)        | :heavy_minus_sign: | <p>If you want to compare 2 periods, the first period is provided with parameters `date_from `and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
+| store                         | array of strings         | :heavy_minus_sign: | Filtration by the app stores through which the purchase was made. Possible values are |
+| app_id                        | array of strings(uuid)   | :heavy_minus_sign: | ??? |
+| placement_id                  | array of strings(uuid)   | :heavy_minus_sign: | Filtration with the specific placements. |
+| audience_id                   | array of strings(uuid)   | :heavy_minus_sign: | Filtration with the specific audiences. |
+| ab_test_id                    | array of strings(uuid)   | :heavy_minus_sign: | Filtration with the specific A/B tests. |
+| paywall_id                    | array of strings(uuid)   | :heavy_minus_sign: | Filtration with the specific paywalls. |
+| placement_audience_version_id | array of strings(uuid)   | :heavy_minus_sign: | ??? |
+| state                         | array of strings | :heavy_minus_sign: | Filtration by the paywall status. Possible values: <ul><li> live</li><li> inactive</li><li> draft</li><li> archived</li></ul> |
+| purchase_container_id         | array of strings(uuid)   | :heavy_minus_sign: | ??? |
+| country                       | array of strings    | :heavy_minus_sign: | Filtration by the country of the purchase. Possible values are: <ul><li> type: string, minLength: 2, maxLength: 2</li><li> type: string, minLength: 0, maxLength: 0</li></ul> |
+| store_product_id         | array of stings                                 | :heavy_minus_sign: | ??? minItems: 2, maxItems: 2 |
 | duration                 | array of [Duration](client-api-objects#duration) | :heavy_minus_sign: | Enumerated value |
 | attribution_source       | array of stings                           | :heavy_minus_sign: |                 |
 | attribution_status       | array of stings                           | :heavy_minus_sign: |                 |
@@ -775,10 +774,10 @@ All datetime values follow the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
 | attribution_adgroup      | array of stings                           | :heavy_minus_sign: |                 |
 | attribution_adset        | array of stings                           | :heavy_minus_sign: |                 |
 | attribution_creative     | array of stings                           | :heavy_minus_sign: |                 |
-| renewal_period           | array of integers                         | :heavy_minus_sign: |                 |
-| subscription_duration    | integer                                           | :heavy_minus_sign: |                 |
-| timezone                 | string                                            | :heavy_minus_sign: |                 |
-| profiles_counting_method | [ProfilesCountingMethod](client-api-objects#profilescountingmethod) | :heavy_minus_sign: | Enumerated value |
+| renewal_period           | array of integers                         | :heavy_minus_sign: | Filtration by the ??? |
+| subscription_duration    | integer                                           | :heavy_minus_sign: | Filtration by the length of the subscription. Possible values ???? |
+| timezone                 | string                                            | :heavy_minus_sign: | Filtration by the timezone of the purchase. |
+| profiles_counting_method | string | :heavy_minus_sign: | Define how to count the installs. See [**Installs definition for analytics** parameter](general#4-installs-definition-for-analytics) description for detailed description. Possible values are: <ul><li> profile_id</li><li> customer_user_id</li><li> device_id</li></ul> |
 
 ### MetricsFormat
 
