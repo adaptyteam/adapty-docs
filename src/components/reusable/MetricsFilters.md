@@ -16,7 +16,7 @@
 | state                         | array of String values       | :heavy_minus_sign: | Filtration by the paywall status. Possible values: <ul><li> live</li><li> inactive</li><li> draft</li><li> archived</li></ul> |
 | purchase_container_id         | array of String values(uuid) | :heavy_minus_sign: | ???                                                          |
 | country                       | array of String values       | :heavy_minus_sign: | Filtration by the country of the purchase. Possible values are: <ul><li> type: String, minLength: 2, maxLength: 2</li><li> type: String, minLength: 0, maxLength: 0</li></ul> |
-| store_product_id              | array of String values       | :heavy_minus_sign: | ??? minItems: 2, maxItems: 2                                 |
+| store_product_id              | array of String values       | :heavy_minus_sign: | minItems: 2, maxItems: 2                                     |
 | duration                      | array of String              | :heavy_minus_sign: | Possible values are: <ul><li> listWeeklytem</li><li> Monthly</li><li> 2 months</li><li> 3 months</li><li> 6 months</li><li> Annual</li><li> Lifetime</li><li> Uncategorized</li></ul> |
 | attribution_source            | array of String values       | :heavy_minus_sign: |                                                              |
 | attribution_status            | array of String values       | :heavy_minus_sign: |                                                              |

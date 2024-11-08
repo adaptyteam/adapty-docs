@@ -63,10 +63,10 @@ POST
 
 | Name            | Type                                                      | Required           | Description                                                  |
 | --------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
-| period_unit     | String                                                    | :heavy_minus_sign: | A unit of time that a subscription period is specified in. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| date_type       | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
-| segmentation_by | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| filters         | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit     | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| date_type       | String                                                    | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                                    | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
 #### MetricsFilters object
 
@@ -189,14 +189,14 @@ POST
 
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-1) | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
-| period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| period_type     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
-| value_type      | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
-| value_field     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-1) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_type     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> renewals</li><li> days</li></ul> |
+| value_type      | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
+| value_field     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
 | accounting_type | String                                               | :heavy_minus_sign: | The type of accounting method. Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
-| renewal_days    | Integer                                              | :heavy_minus_sign: |                                                              |
-| format          | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+| renewal_days    | Integer                                              | :heavy_minus_sign: | ???                                                          |
+| format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object
 
@@ -324,10 +324,10 @@ POST
 ### Parameters
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-2) | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-2) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| date_type       | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
-| segmentation_by | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
 
 
@@ -450,11 +450,11 @@ POST
 ### Parameters
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-3) | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-3) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| date_type       | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
-| segmentation_by | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
-| format          | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+| date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object
 
@@ -577,8 +577,8 @@ POST
 
 | Name         | Type                                                | Required           | Description                                                  |
 | ------------ | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-4) | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
-| format       | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-4) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| format       | String                                              | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 | period_unit  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | period_type  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
 | segmentation | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
@@ -706,13 +706,13 @@ POST
 
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-5) | :heavy_plus_sign:  | List of filtration parameters as an object. See its description below this table. |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-5) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| date_type       | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
-| segmentation_by | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
+| date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
+| segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 | use_trial       | boolean                                              | :heavy_minus_sign: |                                                              |
 | value_type      | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
-| format          | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> json</li><li> csv</li></ul>    |
+| format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 
 
