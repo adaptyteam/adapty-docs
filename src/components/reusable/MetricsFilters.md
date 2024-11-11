@@ -1,6 +1,6 @@
 | Name                          | Type                         | Required           | Description                                                  |
 | ----------------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
-| date                          | array of String values(data) | :heavy_plus_sign:  | <p>If you need to get analytics for 1 date, enter it here. </p><p>If you plan to compare 2 dates, enyter the first date into this parameter and the second one to the `compare_date` parameter. </p><p>Please note that in this parameters you enter an array of the same date.</p> |
+| date                          | array of String values(data) | :heavy_plus_sign:  | <p>If you need to get analytics for 1 date, enter it here. </p><p>If you plan to compare 2 dates, enter the first date into this parameter and the second one to the `compare_date` parameter. </p><p>Please note that you enter an array of the same date in this parameter.</p> |
 | compare_date                  | array of String values(data) | :heavy_minus_sign: | If you plan to compare 2 dates, enyter the first date into the `date` parameter and the second one to this parameter. Please note that In both parameters you enter an array of the same date. |
 | date_from                     | String(date-time)            | :heavy_plus_sign:  | <p>Enter the start of the period you wanna analytics for.</p><p>If you want to compare 2 periods, the first period is provides with parameters `date_from`and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
 | date_to                       | String(date-time)            | :heavy_plus_sign:  | <p>Enter the end of the period you wanna analytics for.</p><p>If you want to compare 2 periods, the first period is provided with parameters `date_from `and `date_to` and the second one with the parameters `compare_date_from`and `compare_date_to`.</p> |
@@ -16,16 +16,16 @@
 | state                         | array of String values       | :heavy_minus_sign: | Filtration by the paywall status. Possible values: <ul><li> live</li><li> inactive</li><li> draft</li><li> archived</li></ul> |
 | purchase_container_id         | array of String values(uuid) | :heavy_minus_sign: | ???                                                          |
 | country                       | array of String values       | :heavy_minus_sign: | Filtration by the country of the purchase. Possible values are: <ul><li> type: String, minLength: 2, maxLength: 2</li><li> type: String, minLength: 0, maxLength: 0</li></ul> |
-| store_product_id              | array of String values       | :heavy_minus_sign: | minItems: 2, maxItems: 2                                     |
+| store_product_id              | array of String values       | :heavy_minus_sign: | Unique identifier of a product from the app store. Please note that you enter an array of the same product identifier in this parameter. |
 | duration                      | array of String              | :heavy_minus_sign: | Possible values are: <ul><li> listWeeklytem</li><li> Monthly</li><li> 2 months</li><li> 3 months</li><li> 6 months</li><li> Annual</li><li> Lifetime</li><li> Uncategorized</li></ul> |
-| attribution_source            | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_status            | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_channel           | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_campaign          | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_adgroup           | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_adset             | array of String values       | :heavy_minus_sign: |                                                              |
-| attribution_creative          | array of String values       | :heavy_minus_sign: |                                                              |
-| renewal_period                | array of integers            | :heavy_minus_sign: | Filtration by the ???                                        |
-| subscription_duration         | Integer                      | :heavy_minus_sign: | Filtration by the length of the subscription. Possible values ???? |
+| attribution_source            | array of String values       | :heavy_minus_sign: | The source integration of the attribution, for example, appsflyer. |
+| attribution_status            | array of String values       | :heavy_minus_sign: | organic                                                      |
+| attribution_channel           | array of String values       | :heavy_minus_sign: | The attribution channel that brought the transaction.        |
+| attribution_campaign          | array of String values       | :heavy_minus_sign: | The attribution campaign that brought the transaction.       |
+| attribution_adgroup           | array of String values       | :heavy_minus_sign: | The attribution ad group that brought the transaction        |
+| attribution_adset             | array of String values       | :heavy_minus_sign: | The attribution ad set that brought the transaction          |
+| attribution_creative          | array of String values       | :heavy_minus_sign: | Specific visual or textual elements used in an advertisement or marketing campaign that are tracked to determine their effectiveness in driving desired actions, such as clicks, conversions, or installs |
+| renewal_period                | array of integers            | :heavy_minus_sign: | Filtration by the period of the renewal.                     |
+| subscription_duration         | Integer                      | :heavy_minus_sign: | Filtration by the length of the subscription.                |
 | timezone                      | String                       | :heavy_minus_sign: | Filtration by the timezone of the purchase.                  |
 | profiles_counting_method      | String                       | :heavy_minus_sign: | Define how to count the installs. See [**Installs definition for analytics** parameter](general#4-installs-definition-for-analytics) description for detailed description. Possible values are: <ul><li> profile_id</li><li> customer_user_id</li><li> device_id</li></ul> |
