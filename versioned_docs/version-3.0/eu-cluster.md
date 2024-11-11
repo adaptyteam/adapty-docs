@@ -150,10 +150,16 @@ Added method:
 
 ## Step 2. Register with EU cluster
 
-To register your company in the EU cluster, use [this link](https://app.adapty.io/eu-registration). Once registered, you can [add employees](members-settings#how-to-add-a-member) in the Adapty Dashboard as usual.
+To register your company in the EU cluster, use https://app.adapty.io/eu-registration. Once registered, you can [add employees](members-settings#how-to-add-a-member) in the Adapty Dashboard as usual.
 
 ## Step 3: Log in with EU-specific link
 
-Direct your team to log in via `https://app.adapty.io/eu-login`. For general dashboard access, continue using `app.adapty.io`.
+Direct your team to log in via https://app.adapty.io/eu-login. After logging in, they can use https://app.adapty.io for regular dashboard access.
 
-This should help ensure you’re compliant with EU data regulations while using Adapty!
+:::warning
+
+New users or existing users logging in from a new device must use https://app.adapty.io/eu-login for the first login.
+
+:::
+
+This should help ensure you comply with EU data regulations while using Adapty!
