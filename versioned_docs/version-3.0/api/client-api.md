@@ -64,7 +64,7 @@ POST
 | Name            | Type                                                      | Required           | Description                                                  |
 | --------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                                    | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit     | String                                                    | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                                    | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                                    | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
@@ -88,39 +88,11 @@ POST
       "2019-08-25",
       "2019-08-25"
     ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-09-24T14:15:22Z",
-    "compare_date_from": "2019-08-25T14:15:22Z",
-    "compare_date_to": "2019-09-25T14:15:22Z",
     "store": [
       "string"
     ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
     "state": [
       "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
     ],
     "country": [
       "st"
@@ -159,7 +131,6 @@ POST
       0
     ],
     "subscription_duration": 0,
-    "timezone": "string",
     "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
@@ -187,16 +158,16 @@ POST
 
 ### Parameters
 
-| Name            | Type                                                 | Required           | Description                                                  |
-| --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-1) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| period_type     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> renewals</li><li> days</li></ul> |
-| value_type      | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
-| value_field     | String                                               | :heavy_minus_sign: | ??? Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
-| accounting_type | String                                               | :heavy_minus_sign: | The type of accounting method. Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
-| renewal_days    | Integer                                              | :heavy_minus_sign: | ???                                                          |
-| format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
+| Name            | Type                                                        | Required           | Description                                                  |
+| --------------- | ----------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](client-api#metricsfilters-object-1) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit     | String                                                      | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc.  Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_type     | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> renewals</li><li> days</li></ul> |
+| value_type      | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
+| value_field     | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
+| accounting_type | String                                                      | :heavy_minus_sign: | The type of accounting method. Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
+| renewal_days    | Integer                                                     | :heavy_minus_sign: | ???                                                          |
+| format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object
 
@@ -218,39 +189,8 @@ POST
       "2019-08-24",
       "2019-08-24"
     ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-08-24T14:15:22Z",
-    "compare_date_from": "2019-08-24T14:15:22Z",
-    "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
-      "string"
-    ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "state": [
-      "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+      "app_store"
     ],
     "country": [
       "st"
@@ -289,7 +229,6 @@ POST
       0
     ],
     "subscription_duration": 0,
-    "timezone": "string",
     "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
@@ -300,7 +239,7 @@ POST
   "renewal_days": [
     0
   ],
-  "format": "json"
+  "format": "csv"
 }
 ```
 </details>
@@ -325,7 +264,7 @@ POST
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-2) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit     | String                                               | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 
@@ -357,33 +296,6 @@ POST
     "store": [
       "string"
     ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "state": [
-      "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
     "country": [
       "st"
     ],
@@ -421,7 +333,6 @@ POST
       0
     ],
     "subscription_duration": 0,
-    "timezone": "string",
     "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
@@ -451,7 +362,7 @@ POST
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-3) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit     | String                                               | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 | format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
@@ -475,39 +386,8 @@ POST
       "2019-08-24",
       "2019-08-24"
     ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-08-24T14:15:22Z",
-    "compare_date_from": "2019-08-24T14:15:22Z",
-    "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
-      "string"
-    ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "state": [
-      "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+      "app_store"
     ],
     "country": [
       "st"
@@ -545,8 +425,7 @@ POST
     "renewal_period": [
       0
     ],
-    "subscription_duration": 0,
-    "timezone": "string",
+    "subscription_duration": 3,
     "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
@@ -579,7 +458,7 @@ POST
 | ------------ | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-4) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | format       | String                                              | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
-| period_unit  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit  | String                                              | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | period_type  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
 | segmentation | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
 | value_type   | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
@@ -603,39 +482,8 @@ POST
       "2019-08-24",
       "2019-08-24"
     ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-08-24T14:15:22Z",
-    "compare_date_from": "2019-08-24T14:15:22Z",
-    "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
       "string"
-    ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "state": [
-      "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
     ],
     "country": [
       "st"
@@ -674,10 +522,9 @@ POST
       0
     ],
     "subscription_duration": 0,
-    "timezone": "string",
     "profiles_counting_method": "profile_id"
   },
-  "format": "json",
+  "format": "csv",
   "period_unit": "month",
   "period_type": "renewals",
   "segmentation": "day",
@@ -707,7 +554,7 @@ POST
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-5) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                               | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_unit     | String                                               | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                               | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
 | segmentation_by | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 | use_trial       | boolean                                              | :heavy_minus_sign: |                                                              |
@@ -736,39 +583,8 @@ POST
       "2019-08-24",
       "2019-08-24"
     ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-08-24T14:15:22Z",
-    "compare_date_from": "2019-08-24T14:15:22Z",
-    "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
       "string"
-    ],
-    "app_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "audience_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "ab_test_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywalls_group_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "paywall_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "placement_audience_version_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
-    ],
-    "state": [
-      "live"
-    ],
-    "purchase_container_id": [
-      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
     ],
     "country": [
       "st"
@@ -807,7 +623,6 @@ POST
       0
     ],
     "subscription_duration": 0,
-    "timezone": "string",
     "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
@@ -815,7 +630,7 @@ POST
   "segmentation_by": "app_id",
   "use_trial": false,
   "value_type": "absolute",
-  "format": "json"
+  "format": "csv"
 }
 ```
 </details>
