@@ -4,6 +4,11 @@ description: ""
 metadataTitle: ""
 no_index: true
 ---
+<head>
+  <!-- Will target all robots: Algolia Crawler, Google, Bing, etc... -->
+  <meta name="robots" content="noindex" />
+</head>
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
