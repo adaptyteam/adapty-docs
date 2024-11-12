@@ -56,15 +56,15 @@ To set up dark mode for your paywall:
      />
      </Zoom>
 
-4. Once you’ve switched to dark mode, you can adjust the elements as needed. Dark mode lets you use a different image or video, as well as separate color and background options.
+3. Once you’ve switched to dark mode, you can adjust the elements as needed. Dark mode lets you use a different image or video, as well as separate color and background options.
 
-   <Zoom>
-     <img src={require('./img/dark-mode-done.webp').default}
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-     />
-     </Zoom>
+<Zoom>
+  <img src={require('./img/dark-mode-done.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
