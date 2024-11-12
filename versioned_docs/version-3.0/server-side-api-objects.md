@@ -62,7 +62,7 @@ You can do the following action via Adapty server-side API:
 
 ### Offer
 
-Information on the applied offer. The Offer object is a part of the  [Subscription](server-side-api-objects#subscription), [Access level](server-side-api-objects#access-level) objects.
+Information on the applied offer. The Offer object is a part of the  [Subscription](server-side-api-objects#subscription), and [Access level](server-side-api-objects#access-level) objects.
 
 You can do the following actions with offers via Adapty server-side API:
 
@@ -86,10 +86,10 @@ Info about the [customer and their subscription](server-side-api-objects#profile
 
 You can do the following actions with user profiles via Adapty server-side API:
 
-- [Retrieve/get end user's profile](server-side-api-specs#retrieve-profile) with their access levels, subscriptions, non-subscriptions, etc.
-- [Create a new end user profile](server-side-api-specs#create-profile)
+- [Retrieve/get the end-user's profile](server-side-api-specs#retrieve-profile) with their access levels, subscriptions, non-subscriptions, etc.
+- [Create a new end-user profile](server-side-api-specs#create-profile)
 - [Update your end-user profile](server-side-api-specs#update-profile)
-- [Delete your end user](server-side-api-specs#delete-profile)
+- [Delete your end-user](server-side-api-specs#delete-profile)
 
 <ProfileObject />
 
@@ -97,7 +97,7 @@ You can do the following actions with user profiles via Adapty server-side API:
 
 Info about your end user subscription.  You can do the following action via Adapty server-side API:
 
-- [Check user's current subscription](server-side-api-specs#retrieve-profile) by retrieving their profile details
+- [Check the user's current subscription](server-side-api-specs#retrieve-profile) by retrieving their profile details
 - [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
 
 <Subscription />
