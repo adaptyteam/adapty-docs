@@ -13,9 +13,10 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 
 ## Add and set up localization
 
-1. Switch over to the **Localizations** tab below the **Builder** title. 
+1. Click **Add locale** in the left pane of the new Paywall Builder.
 
    
+
 <Zoom>
   <img src={require('./img/0a6100c-PB_localization.webp').default}
   style={{
@@ -29,9 +30,10 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 
 
 
-2. Click the **Add locale** button, and select all languages you want to have in your app.
+2. In the **Add Localization** window, select all languages you want to have in your app.
 
    
+
 <Zoom>
   <img src={require('./img/4abdb84-add_locale.webp').default}
   style={{
@@ -45,23 +47,31 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 
 
 
+3. Once added, the new locale will appear in the left pane. 
 
-      Once added, the new locale will be pre-filled with values from the default.
+   <Zoom>
+     <img src={require('./img/added_locales.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
 
-   
-<Zoom>
-  <img src={require('./img/0e99ddb-copy_locale.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+4. Choose the locale you want to change and adjust the view of the paywall and texts to fit the needs for this locale.
 
-
-
+   <Zoom>
+     <img src={require('./img/df4b331-locale_options.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
 
 :::note
 Pay attention to the locale code (`en`, `fr` and `it` on the screenshot above). You'll need to pass it to the `getViewConfiguration` method of our SDK to get the correct localization.
@@ -72,16 +82,8 @@ You can learn more about it [here](get-pb-paywalls).
 3. Now you can fill in the translated values for the new locale. There are a few controls in this table that can make it easier (especially if you have many locales).
 
    
-<Zoom>
-  <img src={require('./img/df4b331-locale_options.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+
+
 
 
 
