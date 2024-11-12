@@ -10,13 +10,6 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 To download your analytics as a CSV file, just use the Adapty API.
 
-## Import request collection to Postman
-
-1. In Postman, click the **Import** button.
-2. Drag-and-drop the [**client-api.yaml**](/api/client-api.yaml) file into Postman.
-3. Select the **Import to Postman collection** radio-button.
-4. Click **Import**.
-
 ## Authorization
 
 - **Base URL**: [https://api-admin.adapty.io](http://api-admin.adapty.io/)
@@ -162,11 +155,11 @@ POST
 | --------------- | ----------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-1) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit     | String                                                      | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc.  Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| period_type     | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> renewals</li><li> days</li></ul> |
-| value_type      | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> absolute</li><li> relative</li></ul> |
-| value_field     | String                                                      | :heavy_minus_sign: | ??? Possible values are: <ul><li> revenue</li><li> arppu</li><li> arpu</li><li> arpas</li><li> subscribers</li><li> subscriptions</li></ul> |
-| accounting_type | String                                                      | :heavy_minus_sign: | The type of accounting method. Possible values are: <ul><li> revenue</li><li> proceeds</li><li> net_revenue</li></ul> |
-| renewal_days    | Integer                                                     | :heavy_minus_sign: | ???                                                          |
+| period_type     | String                                                      | :heavy_minus_sign: | <p>Analyze data by renewals or by days. For a detailed description, see [Tracking by renewals or by days](analytics-cohorts#cohorts-by-renewals-or-by-days). </p><p>Possible values are: </p><ul><li> renewals</li><li> days</li></ul> |
+| value_type      | String                                                      | :heavy_minus_sign: | Specify how values are displayed. Possible values are: <ul><li>absolute: as a percentage of the total</li><li>relative: as a percentage from the start, starting at 100% for renewal periods.</li></ul> |
+| value_field     | String                                                      | :heavy_minus_sign: | Specify the type of values displayed. Possible values are: <ul><li>revenue</li><li>arppu</li><li>arpu</li><li>arpas</li><li>subscribers</li><li>subscriptions</li></ul> |
+| accounting_type | String                                                      | :heavy_minus_sign: | The accounting method used. Possible values are: <ul><li>revenue</li><li>proceeds</li><li>net_revenue</li></ul> |
+| renewal_days    | Integer                                                     | :heavy_minus_sign: | Number of days since the start.                              |
 | format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object

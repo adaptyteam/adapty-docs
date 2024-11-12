@@ -144,8 +144,7 @@ In addition to the chart view, Adapty also provides a table view for each chart.
 
 ### CSV data export
 
-If you want to analyze the underlying data used to generate a chart, cohorts analysis, funnels, retentions, or conversion analytics, you can easily export it in CSV format by clicking the **Export** button. This feature allows you to access the raw data used to create the respective analysis. You can manipulate this data in spreadsheet applications or other tools to perform further analysis.
-
+To analyze the raw data behind charts, cohort analyses, funnels, retentions, or conversion analytics, you can export it in CSV format by clicking the **Export** button. 
 
 <Zoom>
   <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.webp').default}
@@ -157,6 +156,10 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
   }}
 />
 </Zoom>
+
+You can also [retrieve the same data via the API](client-api). Regardless of the method, the data file will be identical.
+
+This feature gives you access to the underlying data, which you can further analyze in spreadsheet applications or other tools to gain deeper insights.
 
 ### Store commission and taxes
 
