@@ -67,7 +67,7 @@ It usually takes at least 24 hours for your new service account to become active
 
 
 
-4. In the **Create private key for Your_project_name** window, click the **Create **button. This action will save your private key on your computer as a JSON file. You can use the name of the file provided in the opened **Private key saved to your computer** window to locate it if needed. 
+4. In the **Create private key for Your_project_name** window, click the **Create** button. This action will save your private key on your computer as a JSON file. You can use the name of the file provided in the opened **Private key saved to your computer** window to locate it if needed. 
 
    
 
