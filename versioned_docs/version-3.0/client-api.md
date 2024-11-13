@@ -10,6 +10,113 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 To download your analytics as a CSV file, just use the Adapty API.
 
+With exporting analytics API you can for example:
+
+1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
+   Method: [Retrieve analytics data](client-api#retrieve-analytics-data)
+
+```
+{
+  "filters": {
+    "date": [
+      "2022-01-01",
+      "2022-12-31"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_channel": [
+      "social_media_influencers"
+    ],
+  "period_unit": "week",
+  "date_type": "purchase_date",
+  "segmentation_by": "attribution_campaign"
+}
+```
+
+2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA.
+   Method: [Retrieve cohort data](client-api#retrieve-cohort-data)
+
+```
+{
+  "filters": {
+    "date": [
+      "2024-04-01",
+      "2024-09-30"
+    ],
+    "compare_date": [
+      "2023-04-01",
+      "2023-09-30"
+    ],
+    "store": [
+      "app_store"
+    ],
+    "country": [
+      "us"
+    ],
+    "store_product_id": [
+      [
+        "monthly.premium.599"
+      ]
+    ],
+  },
+  "period_unit": "month",
+  "period_type": "renewals",
+  "value_type": "absolute",
+  "value_field": "subscriptions"
+}
+```
+
+3. **Review Churn Rate**: Monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
+
+   Method: [Retrieve funnel data](client-api#retrieve-funnel-data)
+
+```
+{
+  "filters": {
+    "date": [
+      "2022-01-01",
+      "2022-12-31"
+    ],
+    "compare_date": [
+      "2023-01-01",
+      "2023-12-31"
+    ],
+    "country": [
+      "fr"
+    ],
+    "store_product_id": [
+      [
+        "monthly.premium.599"
+      ]
+    ],
+    "profiles_counting_method": "customer_user_id"
+  },
+  "period_unit": "month",
+  "date_type": "purchase_date",
+  "segmentation_by": "renewal_status"
+}
+```
+
+4. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies.
+
+   Method: [Retrieve retention data](client-api#retrieve-retention-data)
+
+```
+{
+  "filters": {
+    "date": [
+      "2023-04-01",
+      "2023-06-30"
+    ],
+  "period_unit": "month",
+  "date_type": "purchase_date",
+  "segmentation_by": "country",
+  "use_trial": false,
+  "value_type": "absolute"
+}
+```
+
 ## Authorization
 
 - **Base URL**: [https://api-admin.adapty.io](http://api-admin.adapty.io/)
@@ -75,50 +182,47 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-25",
-      "2019-08-25"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "store": [
-      "string"
-    ],
-    "state": [
-      "live"
+      "app_store"
     ],
     "country": [
       "st"
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
@@ -176,11 +280,11 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-24",
-      "2019-08-24"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "store": [
       "app_store"
@@ -190,33 +294,33 @@ POST
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
@@ -276,51 +380,51 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-24",
-      "2019-08-24"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "date_from": "2019-08-24T14:15:22Z",
     "date_to": "2019-08-24T14:15:22Z",
     "compare_date_from": "2019-08-24T14:15:22Z",
     "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
-      "string"
+      "app_store"
     ],
     "country": [
       "st"
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
@@ -373,11 +477,11 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-24",
-      "2019-08-24"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "store": [
       "app_store"
@@ -387,33 +491,33 @@ POST
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
@@ -424,7 +528,7 @@ POST
   "period_unit": "month",
   "date_type": "purchase_date",
   "segmentation_by": "app_id",
-  "format": "json"
+  "format": "csv"
 }
 ```
 </details>
@@ -469,47 +573,47 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-24",
-      "2019-08-24"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "store": [
-      "string"
+      "app_store"
     ],
     "country": [
       "st"
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
@@ -570,47 +674,47 @@ POST
   "filters": {
     "date": [
       "2019-08-24",
-      "2019-08-24"
+      "2019-09-24"
     ],
     "compare_date": [
-      "2019-08-24",
-      "2019-08-24"
+      "2020-08-24",
+      "2020-09-24"
     ],
     "store": [
-      "string"
+      "app_store"
     ],
     "country": [
       "st"
     ],
     "store_product_id": [
       [
-        "string",
-        "string"
+        "monthly.premium.599",
+        "adapty.premium599"
       ]
     ],
     "duration": [
       "Weekly"
     ],
     "attribution_source": [
-      "string"
+      "apple_search_ads"
     ],
     "attribution_status": [
-      "string"
+      "organic"
     ],
     "attribution_channel": [
-      "string"
+      "apple_search_ads_us"
     ],
     "attribution_campaign": [
-      "string"
+      "1234567890"
     ],
     "attribution_adgroup": [
-      "string"
+      "2233445566"
     ],
     "attribution_adset": [
-      "string"
+      "6051234567890"
     ],
     "attribution_creative": [
-      "string"
+      "23812345678901234"
     ],
     "renewal_period": [
       0
