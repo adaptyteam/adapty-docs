@@ -8,9 +8,11 @@ import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
-To download your analytics as a CSV file, just use the Adapty API.
+Exporting your analytics data to CSV gives you the flexibility to dive deeper into your app’s performance metrics, customize reports, and analyze trends over time. With the Adapty API, you can easily pull detailed analytics into a CSV format, making it convenient to track, share, and refine your data insights as needed.
 
-With exporting analytics API you can for example:
+## Getting Started with the API for Analytics Export
+
+With the analytics export API, you can, for example:
 
 1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
    Method: [Retrieve analytics data](client-api#retrieve-analytics-data)
