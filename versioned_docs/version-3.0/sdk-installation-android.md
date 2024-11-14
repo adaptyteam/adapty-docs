@@ -33,6 +33,7 @@ dependencies {
     implementation platform('io.adapty:adapty-bom:3.1.0')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
+    implementation 'io.adapty:android-ui-video' // Required only if using video in Paywall Builder
 }
 ```
 
@@ -45,6 +46,7 @@ dependencies {
     implementation(platform("io.adapty:adapty-bom:3.1.0"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
+    implementation("io.adapty:android-ui-video") // Required only if using video in Paywall Builder
 }
 ```
 
@@ -63,7 +65,7 @@ adaptyBom = "3.1.0"
 adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
 adapty = { module = "io.adapty:android-sdk" }
 adapty-ui = { module = "io.adapty:android-ui" }
-
+adapty-ui-video = { module = "io.adapty:android-ui-video" } # Required only if using video in Paywall Builder
 
 
 //module-level build.gradle.kts
@@ -73,6 +75,7 @@ dependencies {
     implementation(platform(libs.adapty.bom))
     implementation(libs.adapty)
     implementation(libs.adapty.ui)
+    implementation(libs.adapty.ui.video) // Required only if using video in Paywall Builder
 }
 ```
 

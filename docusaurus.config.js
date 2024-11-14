@@ -329,7 +329,7 @@ const config = {
       },
       
       prism: {
-        theme: prismThemes.github,
+        theme: prismThemes.palenight,
         darkTheme: prismThemes.dracula,
         additionalLanguages: [
           "java",
@@ -340,6 +340,8 @@ const config = {
           "diff",
           "javascript",
           "dart", // For Flutter, Dart is the primary language
+          "toml",
+          "groovy",
         ],
       },
 
