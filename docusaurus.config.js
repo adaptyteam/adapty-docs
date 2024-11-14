@@ -329,8 +329,6 @@ const config = {
       },
       
       prism: {
-        theme: prismThemes.palenight,
-        darkTheme: prismThemes.dracula,
         additionalLanguages: [
           "java",
           "kotlin",
