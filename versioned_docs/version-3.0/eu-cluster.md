@@ -25,7 +25,7 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 <Tabs> 
 <TabItem value="iOS" label="iOS"> 
 
-Install Adapty SDK 2.2.0 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
+Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Include the `backendBaseUrl` parameter in your configuration:
 
