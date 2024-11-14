@@ -14,110 +14,17 @@ Exporting your analytics data to CSV gives you the flexibility to dive deeper in
 
 With the analytics export API, you can, for example:
 
-1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
-   Method: [Retrieve analytics data](client-api#retrieve-analytics-data)
+1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking. Use the [Retrieve analytics data](client-api#retrieve-analytics-data) method for this.
 
-```
-{
-  "filters": {
-    "date": [
-      "2022-01-01",
-      "2022-12-31"
-    ],
-    "country": [
-      "us"
-    ],
-    "attribution_channel": [
-      "social_media_influencers"
-    ],
-  "period_unit": "week",
-  "date_type": "purchase_date",
-  "segmentation_by": "attribution_campaign"
-}
-```
+2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA. Use the [Retrieve cohort data](client-api#retrieve-cohort-data) method for this.
 
-2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA.
-   Method: [Retrieve cohort data](client-api#retrieve-cohort-data)
+3. **Evaluate Conversion Rates Across Channels**: Analyze conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spend on high-performing channels. Use the [Retrieve conversion data](client-api#retrieve-conversion-data) method for this.
 
-```
-{
-  "filters": {
-    "date": [
-      "2024-04-01",
-      "2024-09-30"
-    ],
-    "compare_date": [
-      "2023-04-01",
-      "2023-09-30"
-    ],
-    "store": [
-      "app_store"
-    ],
-    "country": [
-      "us"
-    ],
-    "store_product_id": [
-      [
-        "monthly.premium.599"
-      ]
-    ],
-  },
-  "period_unit": "month",
-  "period_type": "renewals",
-  "value_type": "absolute",
-  "value_field": "subscriptions"
-}
-```
+4. **Review Churn Rate**: Monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product. Use the [Retrieve funnel data](client-api#retrieve-funnel-data) method for this.
 
-3. **Review Churn Rate**: Monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
+5. **Assess LTV by User Segment**: Identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies. Use the [Retrieve LTV data](client-api#retrieve-ltv-data) method for this.
 
-   Method: [Retrieve funnel data](client-api#retrieve-funnel-data)
-
-```
-{
-  "filters": {
-    "date": [
-      "2022-01-01",
-      "2022-12-31"
-    ],
-    "compare_date": [
-      "2023-01-01",
-      "2023-12-31"
-    ],
-    "country": [
-      "fr"
-    ],
-    "store_product_id": [
-      [
-        "monthly.premium.599"
-      ]
-    ],
-    "profiles_counting_method": "customer_user_id"
-  },
-  "period_unit": "month",
-  "date_type": "purchase_date",
-  "segmentation_by": "renewal_status"
-}
-```
-
-4. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies.
-
-   Method: [Retrieve retention data](client-api#retrieve-retention-data)
-
-```
-{
-  "filters": {
-    "date": [
-      "2023-04-01",
-      "2023-06-30"
-    ],
-  "period_unit": "month",
-  "date_type": "purchase_date",
-  "segmentation_by": "country",
-  "use_trial": false,
-  "value_type": "absolute"
-}
-```
+6. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies. Use the [Retrieve retention data](client-api#retrieve-retention-data) method for this.
 
 ## Authorization
 
@@ -179,62 +86,24 @@ POST
 <details>
    <summary>Example request (click to expand)</summary>
 
+Below is an example request for measuring the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
+
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
-    ],
-    "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
-    ],
-    "store": [
-      "app_store"
+      "2022-01-01",
+      "2022-12-31"
     ],
     "country": [
-      "st"
-    ],
-    "store_product_id": [
-      [
-        "monthly.premium.599",
-        "adapty.premium599"
-      ]
-    ],
-    "duration": [
-      "Weekly"
-    ],
-    "attribution_source": [
-      "apple_search_ads"
-    ],
-    "attribution_status": [
-      "organic"
+      "us"
     ],
     "attribution_channel": [
-      "apple_search_ads_us"
+      "social_media_influencers"
     ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 0,
-    "profiles_counting_method": "profile_id"
-  },
-  "period_unit": "month",
+  "period_unit": "week",
   "date_type": "purchase_date",
-  "segmentation_by": "app_id"
+  "segmentation_by": "attribution_campaign"
 }
 ```
 </details>
@@ -277,71 +146,39 @@ POST
 <details>
    <summary>Example request (click to expand)</summary>
 
+The example below shows how to track retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA.
+
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
+      "2024-04-01",
+      "2024-09-30"
     ],
     "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
+      "2023-04-01",
+      "2023-09-30"
     ],
     "store": [
       "app_store"
     ],
     "country": [
-      "st"
+      "us"
     ],
     "store_product_id": [
       [
-        "monthly.premium.599",
-        "adapty.premium599"
+        "monthly.premium.599"
       ]
     ],
-    "duration": [
-      "Weekly"
-    ],
-    "attribution_source": [
-      "apple_search_ads"
-    ],
-    "attribution_status": [
-      "organic"
-    ],
-    "attribution_channel": [
-      "apple_search_ads_us"
-    ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 0,
-    "profiles_counting_method": "profile_id"
   },
   "period_unit": "month",
   "period_type": "renewals",
   "value_type": "absolute",
-  "value_field": "revenue",
-  "accounting_type": "revenue",
-  "renewal_days": [
-    0
-  ],
-  "format": "csv"
+  "value_field": "subscriptions"
 }
 ```
 </details>
+
 
 ## Retrieve conversion data
 
@@ -377,66 +214,35 @@ POST
 
 <details>
    <summary>Example request (click to expand)</summary>
+   
+The example below shows how to get conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spend on high-performing channels.
+   
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
+      "2023-01-01",
+      "2023-12-31"
     ],
-    "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
-    ],
-    "date_from": "2019-08-24T14:15:22Z",
-    "date_to": "2019-08-24T14:15:22Z",
-    "compare_date_from": "2019-08-24T14:15:22Z",
-    "compare_date_to": "2019-08-24T14:15:22Z",
     "store": [
-      "app_store"
+      "app_store",
+      "play_store"
     ],
     "country": [
-      "st"
-    ],
-    "store_product_id": [
-      [
-        "monthly.premium.599",
-        "adapty.premium599"
-      ]
-    ],
-    "duration": [
-      "Weekly"
+      "US",
+      "CA"
     ],
     "attribution_source": [
-      "apple_search_ads"
-    ],
-    "attribution_status": [
-      "organic"
+      "appsflyer"
     ],
     "attribution_channel": [
-      "apple_search_ads_us"
-    ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 0,
-    "profiles_counting_method": "profile_id"
+      "social_media",
+      "search"
+    ]
   },
   "period_unit": "month",
   "date_type": "purchase_date",
-  "segmentation_by": "app_id"
+  "segmentation_by": "attribution_channel"
 }
 ```
 </details>
@@ -474,66 +280,37 @@ POST
 
   <details>
    <summary>Example request (click to expand)</summary>
+
+The example below shows how to monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
+
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
+      "2022-01-01",
+      "2022-12-31"
     ],
     "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
-    ],
-    "store": [
-      "app_store"
+      "2023-01-01",
+      "2023-12-31"
     ],
     "country": [
-      "st"
+      "fr"
     ],
     "store_product_id": [
       [
-        "monthly.premium.599",
-        "adapty.premium599"
+        "monthly.premium.599"
       ]
     ],
-    "duration": [
-      "Weekly"
-    ],
-    "attribution_source": [
-      "apple_search_ads"
-    ],
-    "attribution_status": [
-      "organic"
-    ],
-    "attribution_channel": [
-      "apple_search_ads_us"
-    ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 3,
-    "profiles_counting_method": "profile_id"
+    "profiles_counting_method": "customer_user_id"
   },
   "period_unit": "month",
   "date_type": "purchase_date",
-  "segmentation_by": "app_id",
-  "format": "csv"
+  "segmentation_by": "renewal_status"
 }
 ```
 </details>
+
 
 ## Retrieve Lifetime Value (LTV) data
 
@@ -570,65 +347,41 @@ POST
 
   <details>
    <summary>Example request (click to expand)</summary>
+   
+The example below shows how to identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies.
+
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
-    ],
-    "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
+      "2023-01-01",
+      "2023-12-31"
     ],
     "store": [
       "app_store"
     ],
     "country": [
-      "st"
+      "us"
     ],
     "store_product_id": [
-      [
-        "monthly.premium.599",
-        "adapty.premium599"
-      ]
-    ],
-    "duration": [
-      "Weekly"
+      "premium_subscription"
     ],
     "attribution_source": [
-      "apple_search_ads"
+      "appsflyer"
     ],
     "attribution_status": [
       "organic"
     ],
     "attribution_channel": [
-      "apple_search_ads_us"
-    ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 0,
-    "profiles_counting_method": "profile_id"
+      "social_media"
+    ]
   },
-  "format": "csv",
   "period_unit": "month",
   "period_type": "renewals",
-  "segmentation": "day",
+  "segmentation": "audience",
   "value_type": "absolute"
 }
+
 ```
 </details>
 
@@ -671,65 +424,20 @@ POST
 <details>
    <summary>Example request (click to expand)</summary>
 
+The example below shows how to view retention rates by region to identify high-engagement markets and guide localization or regional strategies
+
 ```json
 {
   "filters": {
     "date": [
-      "2019-08-24",
-      "2019-09-24"
+      "2023-04-01",
+      "2023-06-30"
     ],
-    "compare_date": [
-      "2020-08-24",
-      "2020-09-24"
-    ],
-    "store": [
-      "app_store"
-    ],
-    "country": [
-      "st"
-    ],
-    "store_product_id": [
-      [
-        "monthly.premium.599",
-        "adapty.premium599"
-      ]
-    ],
-    "duration": [
-      "Weekly"
-    ],
-    "attribution_source": [
-      "apple_search_ads"
-    ],
-    "attribution_status": [
-      "organic"
-    ],
-    "attribution_channel": [
-      "apple_search_ads_us"
-    ],
-    "attribution_campaign": [
-      "1234567890"
-    ],
-    "attribution_adgroup": [
-      "2233445566"
-    ],
-    "attribution_adset": [
-      "6051234567890"
-    ],
-    "attribution_creative": [
-      "23812345678901234"
-    ],
-    "renewal_period": [
-      0
-    ],
-    "subscription_duration": 0,
-    "profiles_counting_method": "profile_id"
-  },
   "period_unit": "month",
   "date_type": "purchase_date",
-  "segmentation_by": "app_id",
+  "segmentation_by": "country",
   "use_trial": false,
-  "value_type": "absolute",
-  "format": "csv"
+  "value_type": "absolute"
 }
 ```
 </details>
