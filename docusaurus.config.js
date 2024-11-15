@@ -340,6 +340,8 @@ const config = {
           "diff",
           "javascript",
           "dart", // For Flutter, Dart is the primary language
+          "toml",
+          "groovy",
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!
