@@ -158,11 +158,11 @@ Information about the user's non-subscription purchases.
 
 ### AdaptyPurchaseResult
 
-Information about the purchase result.
+The purchase result is provided as an enum with the following possible values:
 
-| Name | Type | Description                                                  |
-| :--- | :--- | :----------------------------------------------------------- |
-| ???  | enum | The result of the purchase. Possible values:<ul><li>`userCancelled`: The user cancelled the purchase. </li><li> `pending`: The purchase is pending some user action.</li><li>`success(profile: [AdaptyProfile](sdk-models#adaptyprofile), transaction: any Sendable)`: The purchase succeeded with a `AdaptyProfile`. `transaction`</li></ul> |
+- `userCancelled`: The user canceled the purchase.
+- `pending`: The purchase is awaiting further user action.
+- `success(profile: [AdaptyProfile](sdk-models#adaptyprofile), transaction: any Transaction)`: The purchase was successful and includes an `AdaptyProfile`. The `transaction` is applicable only on iOS.
 
 ### AdaptySubscriptionUpdateParameters
 
