@@ -65,3 +65,9 @@ With webhooks integrated, you can:
 :::
 
 The events above fully cover the users' state in terms of purchases. Let's look at some examples.
+
+**What's next:**
+
+1. Set up webhook integration
+2. Test webhook integration
+3. 
