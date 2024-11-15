@@ -11,9 +11,11 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 For detailed guidance on presenting paywalls within different frameworks, please refer to the specified topics on each framework:
 
-- [iOS - Present paywalls](ios-present-paywalls)
-- [Android - Present paywalls](android-present-paywalls)
+- [iOS](ios-present-paywalls)
+- [Android](android-present-paywalls)
+- [Flutter](flutter-present-paywalls)
+- [React Native](react-native-present-paywalls)
 
 :::warning
-The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
+The new Paywall Builder is available for iOS (from v3.0), Android (from v3.0), React Native (from v3.0), and Flutter (from v3.2.0) only. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
 :::

@@ -31,59 +31,20 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-
-```swift 
-do {
-    let info = try await Adapty.makePurchase(product: product)
-    if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        // successful purchase
-    }
-} catch {
-    // handle the error
-}
-```
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter          | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| **PurchaseResult** | An [`AdaptyPurchaseResult`](sdk-models#adaptypurchaseresult) object. This model contains info about the purchase result. |
-
-</TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
-
 ```swift 
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
-        if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-            // successful purchase
-        }
+      if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // successful purchase
+      }
     case let .failure(error):
         // handle the error
     }
 }
 ```
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter          | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| **PurchaseResult** | An [`AdaptyPurchaseResult`](sdk-models#adaptypurchaseresult) object. This model contains info about the purchase result. |
-
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
@@ -103,22 +64,8 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
-
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter   | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
-
 </TabItem>
 <TabItem value="java" label="Java" default>
-
 ```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -139,59 +86,23 @@ Adapty.makePurchase(activity, product, result -> {
     }
 });
 ```
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter   | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
-
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+This snippet is valid for v.2.0 or later.
 
 ```javascript 
 try {
-  final purchaseResult = await Adapty().makePurchase(product: product);
-  
-  switch (purchaseResult) {
-    case AdaptyPurchaseResultSuccess(profile: final profile):
-      if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
+  final profile = await Adapty().makePurchase(product: product);
+  if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
         // successful purchase      
-      }
-      break;
-    case AdaptyPurchaseResultUserCancelled():
-        break;
-    case AdaptyPurchaseResultPending():
-        break;
-    default:
-        break;
-    }
-  
+  }
 } on AdaptyError catch (adaptyError) {
     // handle the error
 } catch (e) {
 }
 ```
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter          | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| **PurchaseResult** | An [`AdaptyPurchaseResult`](sdk-models#adaptypurchaseresult) object. This model contains info about the purchase result. |
-
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-
 ```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
@@ -205,21 +116,8 @@ Adapty.MakePurchase(product, (profile, error) => {
   }
 });
 ```
-Request parameters:
-
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
-
-Response parameters:
-
-| Parameter   | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
-
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-
 ```typescript 
 try {
     const profile = await adapty.makePurchase(product);
@@ -233,40 +131,26 @@ try {
 }
 ```
 
+</TabItem>
+</Tabs>
+
 Request parameters:
 
-| Parameter   | Presence | Description                                                  |
-| :---------- | :------- | :----------------------------------------------------------- |
+| Parameter   | Presence | Description                                                                                         |
+| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
 | **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
 
 Response parameters:
 
-| Parameter   | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
+| Parameter | Description |
+|---------|-----------|
 | **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
-
-</TabItem>
-</Tabs>
 
 
 Below is a complete example of making the purchase of the access level `premium`. `Premium` is the default access level, so in most cases, your code will look this way:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-
-```swift
-do {
-    let info = try await Adapty.makePurchase(product: product)
-    if info.profile.accessLevels["premium"]?.isActive ?? false {
-        // grant access to premium features
-    }
-} catch {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
-
 ```swift
 Adapty.makePurchase(product: product) { result in
     switch result {
@@ -281,7 +165,6 @@ Adapty.makePurchase(product: product) { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
