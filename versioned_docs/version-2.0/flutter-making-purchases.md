@@ -8,7 +8,7 @@ To make the purchase, you have to call `.makePurchase()` method:
 
 ```javascript title="Flutter"
 try {
-  final profile = await Adapty().makePurchase(product: product);
+  final result = await Adapty().makePurchase(product: product);
   // successful purchase
 } on AdaptyError catch (adaptyError) {
 	// handle the error
@@ -20,9 +20,9 @@ Request parameters:
 
 - **Product** (required): an [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall.
 
-Response parameters:
+Response parameters: // TODO: Update
 
-- **Profile**: an [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases. Generally, you have to check only access level status to determine whether the user has premium access to the app.
+- **PurchaseResult**: an [`AdaptyPurchaseResult`](sdk-models#adaptypurchaseresult) object. This model contains info about the purchase result. 
 
 :::warning
 Make sure you've added [App Store Shared Secret](app-store-shared-secret) in Adapty Dashboard, without it, we can't validate purchases.

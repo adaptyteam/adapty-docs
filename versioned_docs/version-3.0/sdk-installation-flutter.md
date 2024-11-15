@@ -11,6 +11,8 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 
+// TODO: Check it 
+
 | Adapty SDK version | AdaptyUI SDK version |
 | :----------------- | :------------------- |
 | 2.9.3              | 2.1.0                |
@@ -30,8 +32,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
    ```yaml title="pubspec.yaml"
    dependencies:
-   adapty_flutter: ^2.10.3
-   adapty_ui_flutter: ^2.1.3
+   adapty_flutter: ^3.2.0
    ```
 
 2. Run:
@@ -40,14 +41,43 @@ Before releasing your application, make sure to carefully review the [Release Ch
    flutter pub get
    ```
 
-3. Import Adapty SDKs in your application in the following way:
+## Configure Adapty SDKs
+
+1. Import Adapty SDKs in your application in the following way:
 
    ```dart title="Dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
-   import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
-## Configure Adapty SDKs
+2. Activate Adapty SDK with the following code:
+
+```dart title="Dart"
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+          ..withLogLevel(AdaptyLogLevel.debug)
+          ..withObserverMode(false)
+          ..withCustomerUserId(null)
+          ..withIpAddressCollectionDisabled(false)
+          ..withIdfaCollectionDisabled(false),
+    );
+
+    final mediaCache = AdaptyUIMediaCacheConfiguration(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1, max int value in Dart
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+    );
+
+    await AdaptyUI().activate(
+        configuration: AdaptyUIConfiguration(mediaCache: mediaCache),
+        observer: <AdaptyUIObserver Implementation>,
+    );
+} catch (e) {
+    // handle the error
+}
+```
+
+## TODO: Old: Configure Adapty SDKs
 
 The configuration of the Adapty SDK for Flutter slightly differs depending on the mobile operating system (iOS or Android) you are going to release it for. 
 

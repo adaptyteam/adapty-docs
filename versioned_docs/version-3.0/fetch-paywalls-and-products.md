@@ -253,7 +253,42 @@ Response parameters:
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Products  | List of  [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
 
-## Check intro offer eligibility on iOS
+## Check intro offer eligibility on iOS // TODO: proofread this
+
+By default, the `getPaywallProducts` method determines eligibility for introductory, promotional and winback offers. If you want to display products before the SDK determines eligibility for offers, use the `getPaywallProductsWithoutDeterminingOffer` method. 
+
+:::note
+After displaying the initial products, make sure to call the regular `getPaywallProducts` method to update the products with the correct offer eligibility information.
+:::
+
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let products = try await Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall)
+    // the requested products array without subscriptionOffer
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
+```swift 
+Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
+    switch result {
+    case let .success(products):
+        // the requested products array without subscriptionOffer
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## TODO: get rid of this section
 
 After getting products and before [presenting the paywall](present-remote-config-paywalls), you might want to check if the user qualifies for an introductory offer for an iOS subscription and handle cases where they don't qualify. On iOS, this usually means examining different factors like whether the user is new to the subscription or has already used an introductory offer for it.
 
@@ -400,6 +435,12 @@ try {
 } catch (error) {
     // handle the error
 }
+```
+</TabItem>
+<TabItem value="Dart" label="Flutter" default>
+
+```typescript 
+// TODO: add Dart example
 ```
 </TabItem>
 </Tabs>

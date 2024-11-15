@@ -9,14 +9,14 @@ Paywalls configured with the [Paywall Builder](adapty-paywall-builder-legacy) do
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` methods and register the observer before presenting any screen:
 
 ```javascript title="Flutter"
-AdaptyUI().addObserver(this);
+await AdaptyUI().activate(observer: this)
 ```
 
 ### User-generated events
 
 #### Actions
 
-If a user has performed some action (`close`, `openURL`, `androidSystemBack`, or `custom`, this method will be invoked:
+If a user has performed some action, this method will be invoked:
 
 ```javascript title="Flutter"
 // You have to install url_launcher plugin in order to handle urls:
@@ -24,27 +24,27 @@ If a user has performed some action (`close`, `openURL`, `androidSystemBack`, or
 import 'package:url_launcher/url_launcher_string.dart'; 
 
 void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
-  switch (action.type) {
-    case AdaptyUIActionType.close:
-      view.dismiss();
-      break;
-    case AdaptyUIActionType.openUrl:
-      final urlString = action.value;
-      if (urlString != null) {
-          launchUrlString(urlString);
-      }
-    default:
-      break;
-  }
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        final Uri uri = Uri.parse(url);
+        launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        break;
+      default:
+        break;
+    }
 }
 ```
 
 The following action types are supported:
 
-- `close`
-- `openUrl`
-- `custom`
-- `androidSystemBack`. 
+- `CloseAction`
+- `AndroidSystemBackAction`
+- `OpenUrlAction`
+- `CustomAction`
 
 Note that at the very least you need to implement the reactions to both `close` and `openURL`.
 
@@ -60,7 +60,7 @@ Note that `AdaptyUIAction` has optional value property: look at this in the case
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
 
 ```javascript title="Flutter"
-void paywallViewDidSelectProduct(AdaptyUIView view, AdaptyPaywallProduct product) {
+void paywallViewDidSelectProduct(AdaptyUIView view, String productId) {
 }
 ```
 
@@ -89,7 +89,20 @@ If `Adapty.makePurchase()` succeeds, this method will be invoked:
 ```javascript title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIView view, 
                                   AdaptyPaywallProduct product, 
-                                  AdaptyProfile profile) {
+                                  AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled purchase
+        break;
+      default:
+        break;
+    }
 }
 ```
 
@@ -133,7 +146,7 @@ void paywallViewDidFailRestore(AdaptyUIView view, AdaptyError error) {
 If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by invoking this method:
 
 ```javascript title="Flutter"
-void paywallViewDidFailLoadingProducts(AdaptyUIView view, AdaptyIOSProductsFetchPolicy? fetchPolicy, AdaptyError error) {
+void paywallViewDidFailLoadingProducts(AdaptyUIView view, AdaptyError error) {
 }
 ```
 

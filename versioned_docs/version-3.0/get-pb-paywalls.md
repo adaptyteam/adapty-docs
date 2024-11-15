@@ -101,7 +101,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 
 ```javascript 
 try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
 } on AdaptyError catch (adaptyError) {
   // handle the error

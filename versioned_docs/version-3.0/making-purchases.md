@@ -59,6 +59,7 @@ Adapty.makePurchase(product: product) { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
@@ -78,8 +79,10 @@ Adapty.makePurchase(activity, product) { result ->
     }
 }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -102,12 +105,25 @@ Adapty.makePurchase(activity, product, result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 try {
-  final profile = await Adapty().makePurchase(product: product);
-  if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
+  final purchaseResult = await Adapty().makePurchase(product: product);
+  
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
         // successful purchase      
-  }
+      }
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+        break;
+    case AdaptyPurchaseResultPending():
+        break;
+    default:
+        break;
+    }
+  
 } on AdaptyError catch (adaptyError) {
     // handle the error
 } catch (e) {
@@ -115,6 +131,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
@@ -130,6 +147,7 @@ Adapty.MakePurchase(product, (profile, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 try {
     const profile = await adapty.makePurchase(product);
