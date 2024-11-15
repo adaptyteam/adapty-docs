@@ -156,6 +156,13 @@ Information about the user's non-subscription purchases.
 | isConsumable | boolean | True if the product is consumable |
 | isSandbox | boolean | True if the product was purchased in a sandbox environment |
 
+### AdaptyPurchaseResult
+
+Information about the purchase result.
+
+| Name | Type | Description                                                  |
+| :--- | :--- | :----------------------------------------------------------- |
+| ???  | enum | The result of the purchase. Possible values:<ul><li>`userCancelled`: The user cancelled the purchase. </li><li> `pending`: The purchase is pending some user action.</li><li>`success(profile: [AdaptyProfile](sdk-models#adaptyprofile), transaction: any Sendable)`: The purchase succeeded with a `AdaptyProfile`. `transaction`</li></ul> |
 
 ### AdaptySubscriptionUpdateParameters
 

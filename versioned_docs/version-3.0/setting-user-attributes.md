@@ -39,6 +39,7 @@ do {
     // handle the error
 }
 ```
+</TabItem>
 <TabItem value="Swift-Callback" label="Swift" default>
 
 ```swift 
@@ -86,6 +87,7 @@ Adapty.updateProfile(builder.build()) { error ->
     }
 }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
 
@@ -180,6 +182,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
     }
 });
 ```
+
 </TabItem>
 </Tabs>
 

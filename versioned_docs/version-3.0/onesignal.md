@@ -238,8 +238,11 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 };
 ```
 
-</TabItem> // TODO: update Flutter example
+</TabItem>  
+
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
+<!--- TODO: update Flutter example --->
 
 ```javascript
 OneSignal.shared.setSubscriptionObserver((changes) {
