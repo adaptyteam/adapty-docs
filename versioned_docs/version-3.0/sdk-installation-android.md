@@ -30,7 +30,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.1.0')
+    implementation platform('io.adapty:adapty-bom:3.1.1')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
     implementation 'io.adapty:android-ui-video' // Required only if using video in Paywall Builder
@@ -43,7 +43,7 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.1.0"))
+    implementation(platform("io.adapty:adapty-bom:3.1.1"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
     implementation("io.adapty:android-ui-video") // Required only if using video in Paywall Builder
@@ -58,7 +58,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.1.0"
+adaptyBom = "3.1.1"
 
 [libraries]
 ..
