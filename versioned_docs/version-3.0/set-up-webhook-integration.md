@@ -142,6 +142,8 @@ If you've chosen to send attribution data and if you have them, the data below w
 ```
 
 #### Event properties for all events exept for the Access Level Updated event
+Event properties can differ between events. For example, for Access Level Updated event they differ pretty much, so we've deparated them to a separate section Event properties for Access Level Updated event. Event properties for other events are nearly the same, so we provide them as one table with highlighting if the property belons to some specific event.
+
 
 | Property                      | Type          | Description                                                  |
 | ----------------------------- | ------------- | ------------------------------------------------------------ |
@@ -172,6 +174,7 @@ If you've chosen to send attribution data and if you have them, the data below w
 |net_revenue_local|||
 | **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
 | **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
+| **cancellation_reason**       | String        | <p>A reason why the user canceled a subscription. </p><p></p><p>Can be</p><p>iOS & Android</p><p>voluntarily_cancelled, billing_error, refund</p><p>iOS</p><p>price_increase, product_was_not_available, unknown</p><p>Android</p><p>new_subscription_replace, cancelled_by_developer</p><p>This property is sent only with the following event types</p><ul><li> Subscription expired (churned)</li><li> listitem</li><li> listitem</li></ul> |
 | **consecutive_payments**      | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
 | **store_offer_category**      | String        | Can be _introductory_ or _promotional_.                      |
 | **rate_after_first_year**     | Boolean       | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
@@ -183,7 +186,6 @@ If you've chosen to send attribution data and if you have them, the data below w
 | **profile_total_revenue_usd** | Float         | Total revenue for the profile, refunds included.             |
 
 
-| **cancellation_reason**       | String        | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
 | **promotional_offer_id**      | String        | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
 | **ab_test_name**              | String        | Name of the A/B test where the transaction originated.       |
 | **ab_test_revision**          | Integer       | Revision of the A/B test where the transaction originated. The value is set to 1. |
