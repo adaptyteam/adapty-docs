@@ -88,6 +88,8 @@ Adapty.makePurchase(activity, product, result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+This snippet is valid for v.2.0 or later.
+
 ```javascript 
 try {
   final profile = await Adapty().makePurchase(product: product);

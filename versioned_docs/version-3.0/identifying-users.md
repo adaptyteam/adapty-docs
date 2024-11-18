@@ -48,10 +48,21 @@ If you don't have a user ID in the SDK configuration, you can set it later at an
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift
+do {
+    try await Adapty.identify("YOUR_USER_ID")
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift
 Adapty.identify("YOUR_USER_ID") { error in
-    if error == nil {
-        // successful identify
+    if let error {
+        // handle the error
     }
 }
 ```

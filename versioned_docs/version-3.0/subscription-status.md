@@ -119,6 +119,19 @@ Here is an example for checking for the default "premium" access level:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get(), 

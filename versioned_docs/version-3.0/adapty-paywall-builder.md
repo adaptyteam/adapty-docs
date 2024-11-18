@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
+We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -16,20 +16,24 @@ We’re excited to introduce our **New Paywall Builder**, compatible with Adapty
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
 :::warning
-This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS, Android, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later which is now available for iOS, Android, Flutter, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](./2.0/adapty-paywall-builder-legacy).
 :::
 
 ## Structure of a paywall
 
 In the new Adapty Paywall Builder, a paywall is composed of the following:
 
-- [**Layout**](paywall-layout-and-products): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
+- [**Layout**](https://docs.adapty.io/v3.0/docs/paywall-layout-and-products): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
 - [**Hero Image**](paywall-head-picture): The main picture of the paywall.
 - **Main Area**: Here, you can place various elements like a product block, carousels, images, cards, texts, buttons, and lists.
 - **Footer**: Similar to the main area but it's a container that's always sticking to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to to bottom inside a footer in the same order shown in the left pane.
 - [**Elements**](adapty-paywall-builder#paywall-elements): The building blocks placed in the main area or footer to create your paywall. They are stacked in the order they appear in the left pane, from top to bottom. You can nest elements within each other, combine them into cards, or display them in a carousel.
 
 ## How to start designing a paywall with new Paywall Builder
+
+:::warning
+The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-to-adapty-sdk-v3) for your new paywalls to function properly!
+:::
 
 To use the Adapty Paywall Builder:
 
@@ -142,6 +146,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 - **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.
 
+
 <Zoom>
   <img src={require('./img/210c8e2-simple_elements.webp').default}
   style={{
@@ -153,12 +158,17 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 />
 </Zoom>
 
+
+
+
+
 - **Compound Elements**: These can contain other elements or have their own structure. Examples include:
   - [Product lists](paywall-product-block) with  products
   - [Carousels](paywall-carousel) with child elements
   - [Cards](paywall-card) with child elements
   - Lists with its list items
   - Link blocks with links inside
+
 
 <Zoom>
   <img src={require('./img/8a23be4-compound_elements.webp').default}
@@ -171,6 +181,10 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 />
 </Zoom>
 
+
+
+
+
 **Enhancements** you can add include:
 
 1. [Predefined tag variables for product info](paywall-builder-tag-variables)
@@ -178,7 +192,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 3. [Custom fonts](using-custom-fonts-in-paywall-builder)
 4. [Localization](add-paywall-locale-in-adapty-paywall-builder)
 
-Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
+Once configured, you can  [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
 
 ## Customization Options
 

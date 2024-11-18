@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle errors and warnings"
+title: "iOS - Handle errors"
 description: "Learn how to effectively manage errors in iOS development with Adapty SDK's AdaptyError, featuring detailed properties for troubleshooting common issues."
 metadataTitle: "iOS Error Handling: AdaptyError Overview"
 ---
@@ -23,8 +23,10 @@ Adapty SDK has its own wrapper for all kinds of errors, called `AdaptyError`. Ba
 It's pretty easy to check the error for specific codes and react to them accordingly.
 
 ```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
-    if result.error?.adaptyErrorCode == .paymentCancelled {
+do {
+    let info = try await Adapty.makePurchase(product: product)
+} catch {
+    if error.adaptyErrorCode == .paymentCancelled {
         // purchase was cancelled
         // you can offer discount to your user or remind them later
     }
@@ -90,3 +92,4 @@ Warnings don’t need to be fixed unless they lead to errors.
 <!--- | Warning                   | Solution                                                     |
 | ------------------------- | ------------------------------------------------------------ |
 | InvalidProductIdentifiers | <p>This warning means that some products on the paywall are available in the store but aren’t ready for purchase. This usually happens if you haven’t completed the configuration of your products in the App Store.</p><p>If this doesn’t cause any errors, you can ignore the warning. However, if you want to remove it, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](https://dev-docs.adapty.io/docs/InvalidProductIdentifiers) section.</p> |--->
+| operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                  |
