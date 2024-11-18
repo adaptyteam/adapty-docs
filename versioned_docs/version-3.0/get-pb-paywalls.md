@@ -1,5 +1,5 @@
 ---
-title: "Fetch new Paywall Builder paywalls and their configuration"
+title: "Fetch Paywall Builder paywalls and their configuration"
 description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
 metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
 ---
@@ -10,16 +10,13 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 :::warning
-
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS, Android, and React Native only. Support for Flutter and Unity is coming soon.
-
-- For fetching **Legacy Paywall Builder paywalls**, check out [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls).
-- For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
-
+The new Paywall Builder is available for iOS (from v3.0), Android (from v3.0), React Native (from v3.0), and Flutter (from v3.2.0) only. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
 :::
+
+Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products) topic.
 
 <details>
    <summary>Before you start displaying paywalls in your mobile app (click to expand)</summary>
@@ -40,6 +37,18 @@ To get a paywall, use the `getPaywall` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -52,6 +61,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 import com.adapty.utils.seconds
 
@@ -72,6 +82,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 import com.adapty.utils.TimeInterval;
 
@@ -87,6 +98,31 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
         // handle the error
       
     }
+});
+```
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+
+```javascript 
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+
+```csharp 
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
 });
 ```
 </TabItem>
@@ -193,6 +229,19 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 });
 ```
 </TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript 
+import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createPaywallView(paywall: paywall);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+</TabItem>
 <TabItem value="React Native" label="React Native (TS)" default>
 
 ```typescript 
@@ -207,6 +256,14 @@ if (paywall.hasViewConfiguration) {
 } else {
     //use your custom logic
 }
+```
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+
+```csharp 
+AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
+  // use the view
+});
 ```
 </TabItem>
 </Tabs>
@@ -278,8 +335,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native" default>
-
+<TabItem value="Flutter" label="Flutter" default>
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';
