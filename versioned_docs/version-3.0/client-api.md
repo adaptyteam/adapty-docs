@@ -72,6 +72,7 @@ POST
 
 | Name            | Type                                                      | Required           | Description                                                  |
 | --------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| chart_id        |                                                           |                    | <ul><li> revenue</li><li> mrr</li><li> arr</li><li> arppu</li><li> subscriptions_active</li><li> subscriptions_new </li><li> subscriptions_renewal_cancelled</li><li> subscriptions_expired </li><li> trials_active </li><li> trials_new </li><li> trials_renewal_cancelled </li><li> trials_expired </li><li> grace_period </li><li> listitem</li><li> listitem</li><li> listitem</li><li> listitem</li><li> listitem</li><li> listitem</li></ul> |
 | filters         | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit     | String                                                    | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | date_type       | String                                                    | :heavy_minus_sign: | Determine if analytics are based on installation or purchase date. Possible values are: <ul><li> purchase_date</li><li> profile_install_date</li></ul> |
@@ -214,9 +215,9 @@ POST
 
 <details>
    <summary>Example request (click to expand)</summary>
-   
+
 The example below shows how to get conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spend on high-performing channels.
-   
+
 ```json
 {
   "filters": {
@@ -347,7 +348,7 @@ POST
 
   <details>
    <summary>Example request (click to expand)</summary>
-   
+
 The example below shows how to identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies.
 
 ```json
