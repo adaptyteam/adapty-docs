@@ -30,7 +30,7 @@ To use the Paywall hero video, you’ll need a paid plan: Pro, Pro+, or Enterpri
 
 :::warning
 
-Hero video is supported on Adapty SDK for iOS starting with version 3.1.0 and Android starting with version 3.1.1. Support for React Native, Flutter, and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
+Hero video is supported on Adapty SDK for iOS starting with v3.1.0, Android starting with v3.1.1, and Flutter starting with v3.2.0. Support for React Native and Unity is coming soon. If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
 
 :::
 

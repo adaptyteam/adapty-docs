@@ -205,6 +205,7 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 // PlayerID (pre-v5 OneSignal SDK)
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
@@ -236,8 +237,13 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     });
 };
 ```
-</TabItem>
+
+</TabItem>  
+
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
+<!--- TODO: update Flutter example --->
+
 ```javascript
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
@@ -245,6 +251,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
         final builder = 
             AdaptyProfileParametersBuilder()
                 ..setOneSignalPlayerId(playerId);
+                // ..setOneSignalSubscriptionId(playerId);
         try {
             Adapty().updateProfile(builder.build());
         } on AdaptyError catch (adaptyError) {
@@ -257,6 +264,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp
 using OneSignalSDK;
 
@@ -269,8 +277,10 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
     // handle error
 });
 ```
+
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';

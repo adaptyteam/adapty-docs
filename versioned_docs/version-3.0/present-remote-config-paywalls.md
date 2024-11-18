@@ -17,16 +17,33 @@ Don't forget to [check if a user is eligible for an introductory offer in iOS](f
 
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
+
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    let headerText = paywall.remoteConfig?.dictionary?["header_text"] as? String
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
     let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
 }
 ```
+
 </TabItem>
+
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
@@ -41,8 +58,10 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     }
 }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java
 Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
     if (result instanceof AdaptyResult.Success) {
