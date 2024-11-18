@@ -186,6 +186,7 @@ Different charts can use different types of segmentation:
 - audience_id
 - placement_id
 - duration
+- cancellation_reason
 
 </details>
 
@@ -206,6 +207,7 @@ Different charts can use different types of segmentation:
 - placement_id
 - duration
 </details>
+
 <details>   
 <summary>For installs (click to expand) </summary>
 - country
@@ -218,6 +220,7 @@ Different charts can use different types of segmentation:
 - attribution_creative
 - attribution_source
 </details>
+
 ### MetricsFilters object
 
 Filtration criteria differe for different chats. Please see below the variants:
@@ -318,6 +321,7 @@ POST
 | value_type      | String                                                      | :heavy_minus_sign: | Specify how values are displayed. Possible values are: <ul><li>absolute: as a percentage of the total</li><li>relative: as a percentage from the start, starting at 100% for renewal periods.</li></ul> |
 | value_field     | String                                                      | :heavy_minus_sign: | Specify the type of values displayed. Possible values are: <ul><li>revenue</li><li>arppu</li><li>arpu</li><li>arpas</li><li>subscribers</li><li>subscriptions</li></ul> |
 | accounting_type | String                                                      | :heavy_minus_sign: | The accounting method used. Possible values are: <ul><li>revenue</li><li>proceeds</li><li>net_revenue</li></ul> |
+| renewal_days    | Integer                                                     | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
 | format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object
