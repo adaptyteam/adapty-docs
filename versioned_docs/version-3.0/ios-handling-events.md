@@ -63,9 +63,10 @@ Make sure to implement responses for all [built-in and custom actions](paywall-b
 If a user selects a product for purchase, this method will be invoked:
 
 ```swift title="Swift"
-    func paywallController(_ controller: AdaptyPaywallController,
-                           didSelectProduct product: AdaptyPaywallProduct) {
-    }
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
 ```
 
 #### Started purchase
@@ -80,27 +81,19 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
-#### Canceled purchase
-
-If a user initiates the purchase process but manually interrupts it, the method below will be invoked. This event occurs when the `Adapty.makePurchase()` function completes with a `.paymentCancelled` error:
-
-```swift title="Swift"
-func paywallController(_ controller: AdaptyPaywallController,
-                       didCancelPurchase product: AdaptyPaywallProduct) {
-}
-```
-
-It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)  topic for details.
-
-#### Successful purchase
+#### Successful or canceled purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
 ```swift title="Swift"
-func paywallController(_ controller: AdaptyPaywallController,
-                       didFinishPurchase product: AdaptyPaywallProduct,
-                       purchasedInfo: AdaptyPurchasedInfo) {      
-    controller.dismiss(animated: true)
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true)
+    }
 }
 ```
 
@@ -113,10 +106,11 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
 ```swift title="Swift"
-func paywallController(_ controller: AdaptyPaywallController,
-                       didFailPurchase product: AdaptyPaywallProduct,
-                       error: AdaptyError) {
-}
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
 ```
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
@@ -126,9 +120,10 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
 ```swift title="Swift"
-func paywallController(_ controller: AdaptyPaywallController, 
-                       didFinishRestoreWith profile: AdaptyProfile) {
-}
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
 ```
 
 We recommend dismissing the screen if a the has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
@@ -138,9 +133,10 @@ We recommend dismissing the screen if a the has the required `accessLevel`. Refe
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
 ```swift title="Swift"
-public func paywallController(_ controller: AdaptyPaywallController, 
-                              didFailRestoreWith error: AdaptyError) {
-}
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
 ```
 
 ### Data fetching and rendering
@@ -150,8 +146,10 @@ public func paywallController(_ controller: AdaptyPaywallController,
 If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
 
 ```swift title="Swift"
-public func paywallController(_ controller: AdaptyPaywallController,
-                              didFailLoadingProductsWith error: AdaptyError) -> Bool {
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
     return true
 }
 ```
@@ -163,9 +161,10 @@ If you return `true`, AdaptyUI will repeat the request after 2 seconds.
 If an error occurs during the interface rendering, it will be reported by this method:
 
 ```swift title="Swift"
-public func paywallController(_ controller: AdaptyPaywallController,
-                              didFailRenderingWith error: AdaptyError) {
-}
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
 ```
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
@@ -187,19 +186,16 @@ var body: some View {
               switch action {
                   case .close:
                       paywallPresented = false
-                	case .openURL(url):
-                			// handle opening the URL (incl. for terms and privacy)
-                	case 
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
                   default:
                       // handle other actions
-                      break
               }
           },
           didSelectProduct: { /* Handle the event */  },
           didStartPurchase: { /* Handle the event */ },
           didFinishPurchase: { product, info in /* Handle the event */ },
           didFailPurchase: { product, error in /* Handle the event */ },
-          didCancelPurchase: { /* Handle the event */ },
           didStartRestore: { /* Handle the event */ },
           didFinishRestore: { /* Handle the event */ },
           didFailRestore: { /* Handle the event */ },
@@ -219,9 +215,8 @@ You can register only the closure parameters you need, and omit those you do not
 | :------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **didSelectProduct**       | If a user selects a product for purchase, this parameter will be invoked.                                                                                                                            |
 | **didStartPurchase**       | If a user initiates the purchase process, this parameter will be invoked.                                                                                                                            |
-| **didFinishPurchase**      | If Adapty.makePurchase() succeeds, this parameter will be invoked.                                                                                                                                   |
+| **didFinishPurchase**      | If `Adapty.makePurchase()` succeeds or is cancelled by the user, this parameter will be invoked.                                                                                                                                   |
 | **didFailPurchase**        | If Adapty.makePurchase() fails, this parameter will be invoked.                                                                                                                                      |
-| **didCancelPurchase**      | If a user initiates the purchase process but manually interrupts it, this parameter will be invoked.                                                                                                 |
 | **didStartRestore**        | If a user initiates the purchase restoration, this parameter will be invoked.                                                                                                                        |
 | **didFinishRestore**       | If `Adapty.restorePurchases()` succeeds, this parameter will be invoked.                                                                                                                             |
 | **didFailRestore**         | If `Adapty.restorePurchases()` fails, this parameter will be invoked.                                                                                                                                |

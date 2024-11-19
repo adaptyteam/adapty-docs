@@ -31,20 +31,52 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+
+    switch purchaseResult {
+        case .userCancelled:
+            // handle the user cancelled purchase
+        case .pending:
+            // handle the pending purchase
+        case let .success(profile, transaction):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // successful purchase
+            }
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.makePurchase(product: product) { result in
     switch result {
-    case let .success(info):
-      if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        // successful purchase
-      }
+    case let .success(purchaseResult):
+        switch purchaseResult {
+            case .userCancelled:
+                // handle the user cancelled purchase
+            case .pending:
+                // handle the pending purchase
+            case let .success(profile, transaction):
+                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                    // successful purchase
+                }
+        }
     case let .failure(error):
         // handle the error
     }
 }
 ```
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
@@ -66,6 +98,7 @@ Adapty.makePurchase(activity, product) { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -92,17 +125,29 @@ This snippet is valid for v.2.0 or later.
 
 ```javascript 
 try {
-  final profile = await Adapty().makePurchase(product: product);
-  if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
-        // successful purchase      
-  }
+  final purchaseResult = await Adapty().makePurchase(product: product);
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        if (profile.accessLevels['premium']?.isActive ?? false) {
+          // successful purchase
+        }
+        break;
+      case AdaptyPurchaseResultPending():
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        break;
+      default:
+        break;
+    }
 } on AdaptyError catch (adaptyError) {
     // handle the error
 } catch (e) {
+    // handle the error
 }
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
@@ -118,6 +163,7 @@ Adapty.MakePurchase(product, (profile, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 try {
     const profile = await adapty.makePurchase(product);

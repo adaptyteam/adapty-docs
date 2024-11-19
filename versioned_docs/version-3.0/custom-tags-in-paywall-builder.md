@@ -87,23 +87,51 @@ To use custom tags in your mobile app, create a tagResolver object—a dictionar
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 let tagResolver = [
     "USERNAME": "John",
-]                           
+] 
+  
+let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    tagResolver: tagResolver // or any other AdaptyTagResolver protocol implementation
+)
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
+```
+</TabItem>
+
+<TabItem value="Flutter" label="Flutter" default>
+
+```dart
+final customTags = {
+  'USERNAME': 'John',
+};
+
+try {
+final view = await AdaptyUI().createPaywallView(
+    paywall: paywall,
+    customTags: customTags,
+);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
 ```
 </TabItem>
 

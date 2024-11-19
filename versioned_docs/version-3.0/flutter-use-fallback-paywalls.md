@@ -9,7 +9,6 @@ To use fallback paywalls, call the `.setFallbackPaywalls` method. Pass the path 
 ```javascript title="javascript"
 import 'dart:async' show Future;
 import 'dart:io' show Platform;
-import 'package:flutter/services.dart' show rootBundle;
 
 final assetId = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
 

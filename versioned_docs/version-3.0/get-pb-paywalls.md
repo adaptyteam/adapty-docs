@@ -40,7 +40,7 @@ To get a paywall, use the `getPaywall` method:
 
 ```swift 
 do {
-    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    let paywall = try await Adapty.getPaywall(placementId:"YOUR_PLACEMENT_ID")
     // the requested paywall
 } catch {
     // handle the error
@@ -171,6 +171,7 @@ The result of the `createPaywallView` method can be used only once. If you need 
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 import Adapty
 
@@ -179,17 +180,22 @@ guard paywall.hasViewConfiguration else {
     return
 }
 
-AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
-    switch result {
-    case let .success(viewConfiguration):
-        // use loaded configuration
-    case let .failure(error):
-        // handle the error
+do {
+    guard paywall.hasViewConfiguration else {
+        //  use your custom logic
+        return
     }
+
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    
+    // use loaded configuration
+} catch {
+    // handle the error
 }
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
@@ -211,6 +217,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
@@ -230,6 +237,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
 
@@ -272,7 +280,17 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
 
-Once you have successfully loaded the paywall and its view configuration, you can proceed to presenting the paywall in your mobile app.
+| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                           |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p>                                                                                                                                                                                                                                           |
+| **products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
+| **observerModeResolver** | optional | The  `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                      |
+| **tagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**          | optional | TODO:  |
+
+
+Once you have successfully loaded the paywall and its paywall configuration, you can proceed to presenting the paywall in your mobile app.
 
 ## Speed up paywall fetching with default audience paywall
 

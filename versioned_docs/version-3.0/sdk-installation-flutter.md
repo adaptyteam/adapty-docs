@@ -83,7 +83,7 @@ You can set `logLevel` in your app before configuring Adapty.
 
 ```javascript title="Flutter"
 try {
-	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
+    await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 } on AdaptyError catch (adaptyError) {
 } catch (e) {}
 ```
