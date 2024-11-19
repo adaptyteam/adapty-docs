@@ -16,7 +16,7 @@ With the analytics export API, you can, for example:
 
 1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking. Use the [Retrieve analytics data](client-api#retrieve-analytics-data) method for this.
 
-2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to the App Store, a specific product, and the USA. Use the [Retrieve cohort data](client-api#retrieve-cohort-data) method for this.
+2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA. Use the [Retrieve cohort data](client-api#retrieve-cohort-data) method for this.
 
 3. **Evaluate Conversion Rates Across Channels**: Analyze conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spend on high-performing channels. Use the [Retrieve conversion data](client-api#retrieve-conversion-data) method for this.
 
@@ -31,12 +31,13 @@ With the analytics export API, you can, for example:
 - **Base URL**: [https://api-admin.adapty.io](http://api-admin.adapty.io/)
 
 - **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header.
+
   1. In the **Authorization** -> **Auth type** field, choose **API Key**.
   1. In the **Value** field, enter the API Key in format `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
-  
+
 - **Content-Type** header: The API expects the request to use the **Content-Type** header set to `application/json`.
 
-- **Adapty-Tz** header: (optional) Set the timezone to define how the data is grouped and displayed. Use the **IANA Time Zone Database** format (e.g., `Europe/Berlin`).
+- **Adapty-Tz** header: (optional) Set the timezone to define how the data is grouped and displayed. Use the [IANA Time Zone Database format](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) (e.g., `Europe/Berlin`).
 
 - **Body**: The API expects the request to use the body as JSON.
 
@@ -47,7 +48,7 @@ With the analytics export API, you can, for example:
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
-      display: 'block', /* for center */
+      display: 'block', /* for alignment */
       margin: '0 auto' /* center alignment */
     }}
   />
@@ -76,7 +77,7 @@ POST
 | chart_id     | String                                                    | :heavy_plus_sign:  | <p>define which char you need.</p><p>Possible values are:</p> <ul><li> revenue</li><li> mrr</li><li> arr</li><li> arppu</li><li> subscriptions_active</li><li> subscriptions_new </li><li> subscriptions_renewal_cancelled</li><li> subscriptions_expired </li><li> trials_active </li><li> trials_new </li><li> trials_renewal_cancelled </li><li> trials_expired </li><li> grace_period </li><li> billing_issue  </li><li> refund_events  </li><li> refund_money </li><li> non_subscriptions </li><li> arpu</li><li> installs</li></ul> |
 | filters      | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit  | String                                                    | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| segmentation | String                                                    | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different chats in the Segmentation section below this table |
+| segmentation | String                                                    | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different chats in teh Segmentatiuon table below this table |
 
 #### Segmentation
 
@@ -94,6 +95,7 @@ Different charts can use different types of segmentation:
 - attribution_adset
 - attribution_creative
 - attribution_source
+- period
 
 </details>
 
@@ -123,8 +125,7 @@ Different charts can use different types of segmentation:
 </details>
 
 <details>    
-<summary>For ARPPU (click to expand)</summary>
-
+<summary>For ARRPU (click to expand)</summary>
 
 - country
 - store
@@ -190,7 +191,7 @@ Different charts can use different types of segmentation:
 </details>
 
 <details>   
-<summary>For cancelled subscription renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases (click to expand) </summary>
+<summary>For cancelled subscriptipn renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases (click to expand) </summary>
 - country
 - store
 - attribution_status
@@ -207,7 +208,6 @@ Different charts can use different types of segmentation:
 - duration
 </details>
 
-
 <details>   
 <summary>For installs (click to expand) </summary>
 - country
@@ -223,7 +223,7 @@ Different charts can use different types of segmentation:
 
 ### MetricsFilters object
 
-Filtration criteria differ for different chats. Please see below the variants:
+Filtration criteria differe for different chats. Please see below the variants:
 
 <details>    
   <summary>For ARPU and installs (click to expand)</summary>
@@ -353,7 +353,7 @@ POST
 <details>
    <summary>Example request (click to expand)</summary>
 
-The example below shows how to track retention by cohort to spot drop-off points, revealing trends and key moments where engagement strategies could boost retention. Limited to the App Store, a specific product, and the USA.
+The example below shows how to track retention by cohort to spot drop-off points, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA.
 
 ```json
 {
