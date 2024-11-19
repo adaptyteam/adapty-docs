@@ -42,7 +42,6 @@ You can customize the text before and after the timer to create the desired mess
 
 2. Configure the timer's settings: format and separator, start value, text before and after (if needed), color, font, spacing, etc.
 
-
 <Zoom>
   <img src={require('./img/e83e891-timer.webp').default}
   style={{
@@ -54,3 +53,14 @@ You can customize the text before and after the timer to create the desired mess
 />
 </Zoom>
 
+## Timer mode
+
+You can control how the timer behaves when users see it by using the **Timer mode** parameter. 3 standard modes work out of the box—just select the required option from the dropdown list:
+
+| Mode                                  | Description                                                  |
+| ------------------------------------- | ------------------------------------------------------------ |
+| **Reset timer on every paywall view** | The timer resets every time the user sees the paywall, starting from the initial value each time. |
+| **Reset timer on every app launch**   | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background until the app is restarted. If the user sees the paywall multiple times in the same session, they’ll see the same timer counting down. Once the app is closed, the timer resets, and the next time the app is opened, the timer restarts from the beginning. |
+| **Keep timer across app launches**    | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background, even if the app is closed. The user will see the same timer every time they return to the paywall, regardless of app or paywall restarts. |
+
+You can also create a custom timer by selecting **Custom** in the  **Timer mode** parameter and setting up the timer directly in your mobile app code:
