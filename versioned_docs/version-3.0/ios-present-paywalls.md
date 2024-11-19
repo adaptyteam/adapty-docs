@@ -116,7 +116,9 @@ Closure parameters:
 | **didFailRestore**    | If Adapty.restorePurchases() fails, this callback will be invoked.                |
 | **didFailRendering**  | If an error occurs during the interface rendering, this callback will be invoked. |
 
-Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
+Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters. 
+
+<!---
 
 ## Use custom timers
 
@@ -197,3 +199,5 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the IDs of custom t
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
+--->

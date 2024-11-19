@@ -63,7 +63,7 @@ You can control how the timer behaves when users see it by using the **Timer mod
 | **Reset timer on every app launch**   | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background until the app is restarted. If the user sees the paywall multiple times in the same session, they’ll see the same timer counting down. Once the app is closed, the timer resets, and the next time the app is opened, the timer restarts from the beginning. |
 | **Keep timer across app launches**    | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background, even if the app is closed. The user will see the same timer every time they return to the paywall, regardless of app or paywall restarts. |
 
-You can also create a custom timer by selecting **Custom** in the  **Timer mode** parameter and setting up the timer directly in your mobile app code as described below.
+<!--- You can also create a custom timer by selecting **Custom** in the  **Timer mode** parameter and setting up the timer directly in your mobile app code as described below.
 
 ## How to use custom timers in your mobile app
 
@@ -132,12 +132,12 @@ try {
     }
 ```
 
- </TabItem> <TabItem value="Unity" label="Unity" default> Text </TabItem> <TabItem value="RN" label="React Native (TS)" default> 
+ </TabItem> <TabItem value="Unity" label="Unity" default> 
+ Text 
+ </TabItem> 
+ <TabItem value="RN" label="React Native (TS)" default> 
 
-```
+ </TabItem> 
+ </Tabs>
 
-```
-
- </TabItem> </Tabs>
-
-In this example, `CUSTOM_TIMER_NY` is the ID of the custom timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+In this example, `CUSTOM_TIMER_NY` is the ID of the custom timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time). --->

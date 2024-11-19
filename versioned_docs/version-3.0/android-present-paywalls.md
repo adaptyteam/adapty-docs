@@ -192,15 +192,15 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
 });
 ```
 </TabItem>
-</Tabs>
+</Tabs> 
+<!---
 
 ## Use custom timer
 
 To use custom timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
 
 <Tabs> 
-
-</TabItem> <TabItem value="kotlin" label="Kotlin" default> 
+<TabItem value="kotlin" label="Kotlin" default> 
 
 ```kotlin
 import java.util.Calendar
@@ -217,7 +217,8 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 }
 ```
 
-</TabItem> <TabItem value="java" label="Java" default> 
+</TabItem> 
+<TabItem value="java" label="Java" default> 
 
 ```JAVA
 
@@ -229,7 +230,7 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 
 In this example, `CUSTOM_TIMER_NY` is the ID of the custom timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
 
-
+--->
 
 ## Use custom tags
 

@@ -28,6 +28,8 @@ try {
 }
 ```
 
+<!---
+
 ## Using custom timers
 
 To use custom timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
@@ -54,3 +56,5 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the IDs of custom t
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
+--->
