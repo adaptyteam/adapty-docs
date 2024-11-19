@@ -1,6 +1,6 @@
 | Name                     | Type                         | Required           | Description                                                  |
 | ------------------------ | ---------------------------- | ------------------ | ------------------------------------------------------------ |
-| date                     | array of String values(data) | :heavy_plus_sign:  | <p>If you’re looking for analytics for a single date or period, enter it here as an array.</p><p>For comparing two dates or periods, enter the later one here and the earlier one in the compare_date parameter.</p> |
+| date                     | array of String values(data) | :heavy_plus_sign:  | Enter the date or period for which you want to retrieve chart data. |
 | compare_date             | array of String values(data) | :heavy_minus_sign: | If comparing two dates or periods, enter the earlier one here and the later one in the `date` parameter. |
 | store                    | array of String values       | :heavy_minus_sign: | Filter by the app store where the purchase was made. Possible values include **app_store**, **play_store**, **stripe**, and any custom store ID. If using a custom store, enter its ID as set in the Adapty Dashboard. |
 | country                  | array of String values       | :heavy_minus_sign: | Filter by the 2-letter country code where the purchase took place, using ISO 3166-1 standard codes. |
