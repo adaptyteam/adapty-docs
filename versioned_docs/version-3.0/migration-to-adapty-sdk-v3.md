@@ -198,7 +198,7 @@ dependencies {
 
 ## Remove AdaptyUI SDK
 
-1. AdaptyUI becomes a module in SAdapty SDK, so please remove `adapty_ui_flutter` from your  `pubspec.yaml` file:
+1. Since AdaptyUI is now a module in the Adapty SDK, remove `adapty_ui_flutter` from your `pubspec.yaml` file:
 
    ```diff
    dependencies:
@@ -206,38 +206,26 @@ dependencies {
    - adapty_ui_flutter: ^2.1.3
    ```
 
-2. Run:
+2. Then run:
 
    ```bash title="Bash"
    flutter pub get
    ```
 
-3. Remove import of SDKs form your application:
-
-   ```diff
-   - import 'package:adapty_flutter/adapty_flutter.dart';
-   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
-   ```
-
-   
-
 ## Configure Adapty SDKs
 
-Previously you created a Adapty-Info.plist file and added it to your project and then Adapty SDK configuration used theis file.
-
-Now you do not nee to create additional files. Instead provide all required parameters during activation
-
-You only need to configure the Adapty SDK once, typically early in your app's lifecycle.
+Previously, you needed to create an `Adapty-Info.plist` file and add it to your project for Adapty SDK configuration. Now, there’s no need for additional files. Instead, provide all the required parameters during activation.
 
 ### Activate Adapty module of Adapty SDK
 
-1. Import Adapty SDKs in your application in the following way:
+1. Remove the import for the AdaptyUI SDK from your application, like this:
 
-   ```dart title="Dart"
+   ```diff
    import 'package:adapty_flutter/adapty_flutter.dart';
+   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
-2. Activate Adapty SDK with the following code:
+2. Add the Adapty SDK parameters like this:
 
    ```diff
    try {
@@ -261,7 +249,6 @@ Parameters:
 | ----------------------------------- | -------- | ------------------------------------------------------------ |
 | **PUBLIC_SDK_KEY**                  | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
 | **withLogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| **withObserverMode**                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **withCustomerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **withIpAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
