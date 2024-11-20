@@ -40,7 +40,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift" default>Swift-Callback
 
 ```swift 
 let builder = AdaptyProfileParameters.Builder()
@@ -220,7 +220,7 @@ if #available(iOS 14, macOS 11.0, *) {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift
 if #available(iOS 14, macOS 11.0, *) {

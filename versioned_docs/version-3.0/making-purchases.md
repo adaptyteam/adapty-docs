@@ -52,7 +52,7 @@ do {
 ```
 
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 Adapty.makePurchase(product: product) { result in

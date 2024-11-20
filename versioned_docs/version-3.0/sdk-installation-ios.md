@@ -48,8 +48,8 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.1.0'
-   pod 'AdaptyUI', '~> 3.1.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.0'
+   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -257,6 +257,7 @@ struct SampleApp: App {
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
+          .with(LogLevel: verbose) // optional  
 
         Adapty.activate(with: configurationBuilder) { error in
           // handle the error
@@ -285,6 +286,7 @@ Parameters:
 | **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | **idfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| **LogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 
 
 :::note
@@ -297,23 +299,6 @@ Parameters:
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app. 
 </TabItem> 
 </Tabs>
-
-## Set up the logging system
-
-Adapty logs errors and other crucial information to provide insight into your app's functionality. Available levels:
-
-| Level   | Description                                                                                            |
-| :------ | :----------------------------------------------------------------------------------------------------- |
-| error   | Only errors will be logged.                                                                            |
-| warn    | Logs errors and non-critical messages that warrant attention.                                          |
-| info    | Logs errors, warnings, and significant informational messages, such as module lifecycle events.        |
-| verbose | Logs detailed information that may be useful during debugging, such as function calls and API queries. |
-
-You can set `logLevel` at any time, but it's recommended to do so before configuring Adapty.
-
-```swift title="Swift"
-Adapty.logLevel = .verbose
-```
 
 ## Redirect the logging system messages
 

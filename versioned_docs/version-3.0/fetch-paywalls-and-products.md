@@ -42,7 +42,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -162,7 +162,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 Adapty.getPaywallProducts(paywall: paywall) { result in    

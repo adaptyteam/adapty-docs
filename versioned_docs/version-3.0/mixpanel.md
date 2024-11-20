@@ -99,7 +99,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="iOS (Swift)" default>
+<TabItem value="Swift-Callback" label="iOS (Swift-Callback)" default>
 
 ```swift 
 import Mixpanel

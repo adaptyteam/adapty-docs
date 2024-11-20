@@ -46,26 +46,27 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 2. Activate Adapty SDK with the following code:
 
-```dart title="Dart"
-try {
-    await Adapty().activate(
-        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
-          ..withLogLevel(AdaptyLogLevel.debug)
-          ..withObserverMode(false)
-          ..withCustomerUserId(null)
-          ..withIpAddressCollectionDisabled(false)
-          ..withIdfaCollectionDisabled(false),
-    );
-} catch (e) {
-    // handle the error
-}
-```
+    ```dart title="Dart"
+    try {
+        await Adapty().activate(
+            configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+              ..withLogLevel(AdaptyLogLevel.debug)
+              ..withObserverMode(false)
+              ..withCustomerUserId(null)
+              ..withIpAddressCollectionDisabled(false)
+              ..withIdfaCollectionDisabled(false),
+        );
+    } catch (e) {
+        // handle the error
+    }
+    ```
 
 Parameters:
 
 | Parameter                           | Presence | Description                                                  |
 | ----------------------------------- | -------- | ------------------------------------------------------------ |
 | **PUBLIC_SDK_KEY**                  | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
+| **withLogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 | **withObserverMode**                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **withCustomerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
@@ -102,26 +103,6 @@ Parameters:
 | **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
 | **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
 | **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
-
-## Set up the logging system
-
-Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
-
-| Level   | Description                                                                                                                 |
-| :------ | :-------------------------------------------------------------------------------------------------------------------------- |
-| error   | Only errors will be logged.                                                                                                 |
-| warn    | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.       |
-| info    | Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged. |
-| verbose | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.   |
-
-You can set `logLevel` in your app before configuring Adapty.
-
-```javascript title="Flutter"
-try {
-    await Adapty().setLogLevel(AdaptyLogLevel.verbose);
-} on AdaptyError catch (adaptyError) {
-} catch (e) {}
-```
 
 :::danger
 Read the checklist before releasing your app

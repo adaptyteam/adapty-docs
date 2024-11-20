@@ -120,7 +120,7 @@ Refer to the [iOS - Handling events](ios-handling-events) topic for other closur
 
 ## Use developer-defined timers
 
-To use custom timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
+To use custom timers in your mobile app, create an object that conforms to the `AdaptyTimerResolver` protocol. This object should provide information about how to render each custom timer. Note that the `[String: Date]` structure already conforms to this protocol, so you can simply pass a dictionary. Here’s an example:
 
 ```Swift
 @MainActor
