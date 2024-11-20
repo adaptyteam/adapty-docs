@@ -34,3 +34,14 @@ try {
 }
 
 ```
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+
+```typescript title="React Native (TSX)"
+let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+//and then you can pass it to createPaywallView as follows:
+view = await createPaywallView(paywall, { timerInfo })
+```
+

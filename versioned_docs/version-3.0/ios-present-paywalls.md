@@ -116,4 +116,29 @@ Closure parameters:
 | **didFailRestore**    | If Adapty.restorePurchases() fails, this callback will be invoked.                |
 | **didFailRendering**  | If an error occurs during the interface rendering, this callback will be invoked. |
 
-Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
+Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters. 
+
+## Use developer-defined timers
+
+To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
+
+```Swift
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the IDs of custom timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
