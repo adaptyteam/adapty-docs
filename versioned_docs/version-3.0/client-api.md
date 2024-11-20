@@ -321,30 +321,28 @@ POST
 | value_type      | String                                                      | :heavy_minus_sign: | Specify how values are displayed. Possible values are: <ul><li>absolute: as a percentage of the total</li><li>relative: as a percentage from the start, starting at 100% for renewal periods.</li></ul> |
 | value_field     | String                                                      | :heavy_minus_sign: | Specify the type of values displayed. Possible values are: <ul><li>revenue</li><li>arppu</li><li>arpu</li><li>arpas</li><li>subscribers</li><li>subscriptions</li></ul> |
 | accounting_type | String                                                      | :heavy_minus_sign: | The accounting method used. Possible values are: <ul><li>revenue</li><li>proceeds</li><li>net_revenue</li></ul> |
-| renewal_days    | Integer                                                     | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
+| renewal_days    | Array of Integers                                           | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
 | format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### MetricsFilters object
 
-| Name                     | Type                         | Required           | Description                                                  |
-| ------------------------ | ---------------------------- | ------------------ | ------------------------------------------------------------ |
-| date                     | array of String values(data) | :heavy_plus_sign:  | Enter the date or period for which you want to retrieve chart data. |
-| store                    | array of String values       | :heavy_minus_sign: | Filter by the app store where the purchase was made. Possible values include **app_store**, **play_store**, **stripe**, and any custom store ID. If using a custom store, enter its ID as set in the Adapty Dashboard. |
-| country                  | array of String values       | :heavy_minus_sign: | Filter by the 2-letter country code where the purchase took place, using ISO 3166-1 standard codes. |
-| store_product_id         | array of String values       | :heavy_minus_sign: | Unique identifier of a product from the app store. You can see this ID in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
-| duration                 | array of String              | :heavy_minus_sign: | Specify the subscription duration. Possible values are: <ul><li>Weekly</li><li>Monthly</li><li>2 months</li><li>3 months</li><li>6 months</li><li>Annual</li><li>Lifetime</li><li>Uncategorized</li></ul> |
-| attribution_source       | array of String values       | :heavy_minus_sign: | The source integration for attribution. Possible options:<ul><li>adjust</li><li>airbridge</li><li>apple_search_ads</li><li>appsflyer</li><li>branch</li><li>custom</li></ul> |
-| attribution_status       | array of String values       | :heavy_minus_sign: | Indicates if the attribution is organic or non-organic. Possible values are: <ul><li>organic</li><li>non-organic</li><li>unknown</li></ul> |
-| attribution_channel      | array of String values       | :heavy_minus_sign: | Marketing channel that led to the transaction.               |
-| attribution_campaign     | array of String values       | :heavy_minus_sign: | Marketing campaign that brought the transaction.             |
-| attribution_adgroup      | array of String values       | :heavy_minus_sign: | Attribution ad group that brought the transaction.           |
-| attribution_adset        | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
-| attribution_creative     | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
-| subscription_duration    | Integer                      | :heavy_minus_sign: | Filter by subscription length.                               |
-| profiles_counting_method | String                       | :heavy_minus_sign: | Defines how installs are counted. See [Installs definition for analytics](general#4-installs-definition-for-analytics) for details. Possible values: <ul><li>profile_id</li><li>customer_user_id</li><li>device_id</li></ul> |
-| offer_category           | array of String values       | :heavy_minus_sign: | Specify the offer categories you want to retrieve data for. Possible values are:<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
-| offer_type               | array of String values       | :heavy_minus_sign: | Specify the offer types you want to retrieve data for. Possible values are:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul>. |
-| offer_id                 | array of String values       | :heavy_minus_sign: | Specify the specific offers you want to retrieve data for.   |
+| Name                 | Type                         | Required           | Description                                                  |
+| -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
+| date                 | array of String values(data) | :heavy_plus_sign:  | Enter the date or period for which you want to retrieve chart data. |
+| store                | array of String values       | :heavy_minus_sign: | Filter by the app store where the purchase was made. Possible values include **app_store**, **play_store**, **stripe**, and any custom store ID. If using a custom store, enter its ID as set in the Adapty Dashboard. |
+| country              | array of String values       | :heavy_minus_sign: | Filter by the 2-letter country code where the purchase took place, using ISO 3166-1 standard codes. |
+| store_product_id     | array of String values       | :heavy_minus_sign: | Unique identifier of a product from the app store. You can see this ID in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
+| duration             | array of String              | :heavy_minus_sign: | Specify the subscription duration. Possible values are: <ul><li>Weekly</li><li>Monthly</li><li>2 months</li><li>3 months</li><li>6 months</li><li>Annual</li><li>Lifetime</li><li>Uncategorized</li></ul> |
+| attribution_source   | array of String values       | :heavy_minus_sign: | The source integration for attribution. Possible options:<ul><li>adjust</li><li>airbridge</li><li>apple_search_ads</li><li>appsflyer</li><li>branch</li><li>custom</li></ul> |
+| attribution_status   | array of String values       | :heavy_minus_sign: | Indicates if the attribution is organic or non-organic. Possible values are: <ul><li>organic</li><li>non-organic</li><li>unknown</li></ul> |
+| attribution_channel  | array of String values       | :heavy_minus_sign: | Marketing channel that led to the transaction.               |
+| attribution_campaign | array of String values       | :heavy_minus_sign: | Marketing campaign that brought the transaction.             |
+| attribution_adgroup  | array of String values       | :heavy_minus_sign: | Attribution ad group that brought the transaction.           |
+| attribution_adset    | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
+| attribution_creative | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
+| offer_category       | array of String values       | :heavy_minus_sign: | Specify the offer categories you want to retrieve data for. Possible values are:<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
+| offer_type           | array of String values       | :heavy_minus_sign: | Specify the offer types you want to retrieve data for. Possible values are:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul>. |
+| offer_id             | array of String values       | :heavy_minus_sign: | Specify the specific offers you want to retrieve data for.   |
 
 
 
@@ -504,7 +502,6 @@ The example below shows how to monitor how quickly users are unsubscribing to un
         "monthly.premium.599"
       ]
     ],
-    "profiles_counting_method": "customer_user_id"
   },
   "period_unit": "month",
   "segmentation": "renewal_status"
