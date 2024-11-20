@@ -164,11 +164,11 @@ Please note that AdaptyUI configuration is optional, you can activate AdaptyUI m
 
 Parameters:
 
-| Parameter                   | Presence | Description                                                  |
-| :-------------------------- | :------- | :----------------------------------------------------------- |
-| memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
-| memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
-| diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+| Parameter                       | Presence | Description                                                  |
+| :------------------------------ | :------- | :----------------------------------------------------------- |
+| **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
+| **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
+| **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
 
  </TabItem> 
  <TabItem value="2.x" label="Adapty SDK up to v2.x (legacy)" default> 

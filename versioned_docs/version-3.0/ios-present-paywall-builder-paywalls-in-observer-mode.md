@@ -55,18 +55,35 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.  |
    | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished. |
 
-2. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
+2. Create a paywall configuration object:
+
+   ```swift title="Swift"
+   do {
+       let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+        forPaywall: <paywall object>, 
+        observerModeResolver: <AdaptyObserverModeResolver>
+        )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Request parameters:
+
+   | Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                           |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
+   | **ObserverModeResolver** | required | The  `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                      |
+
+3. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
    ```swift title="Swift"
    import Adapty
    import AdaptyUI
    
    let visualPaywall = AdaptyUI.paywallController(
-       for: <paywall object>,
-       products: <paywall products array>,
-       viewConfiguration: <LocalizedViewConfiguration>,
+       with: <paywall configuration object>,
        delegate: <AdaptyPaywallControllerDelegate>
-       observerModeResolver: <AdaptyObserverModeResolver>
    )
    ```
 
@@ -74,12 +91,8 @@ Request parameters:
 
 | Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                           |
 | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
-| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **ViewConfiguration**    | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                            |
+| **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
 | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
-| **ObserverModeResolver** | required | The  `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                      |
-| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 
 Returns:
 
@@ -108,9 +121,7 @@ var body: some View {
 	Text("Hello, AdaptyUI!")
 			.paywall(
           isPresented: $paywallPresented,
-          paywall: <paywall object>,
-          configuration: <LocalizedViewConfiguration>,
-          observerModeResolver: <AdaptyObserverModeResolver>,
+          paywallConfiguration: <paywall configuration object>,
           didPerformAction: { action in
               switch action {
                   case .close:
@@ -131,9 +142,8 @@ Request parameters:
 
 | Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                              |
-| **Product**              | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                    |
-| **Configuration**        | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                             |
+| **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
 | **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
 | **ObserverModeResolver** | optional | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                        |
 
@@ -160,11 +170,11 @@ Don't forget to [Associate paywalls to purchase transactions](associate-paywalls
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
    1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
-3. [Create products](create-product) in the Adapty Dashboard.
-4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
-5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
-6. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) in your mobile app code.
+1. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+2. [Create products](create-product) in the Adapty Dashboard.
+3. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
+4. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
+5. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) in your mobile app code.
 </details>
 
 <p> </p>

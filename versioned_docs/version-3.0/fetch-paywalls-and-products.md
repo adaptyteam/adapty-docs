@@ -35,7 +35,7 @@ To display the products, you need to obtain a [Paywall](paywalls) from one of yo
 
 ```swift 
 do {
-    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
     // the requested paywall
 } catch {
     // handle the error

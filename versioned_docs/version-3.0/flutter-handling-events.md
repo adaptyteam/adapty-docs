@@ -73,15 +73,6 @@ void paywallViewDidStartPurchase(AdaptyUIView view, AdaptyPaywallProduct product
 }
 ```
 
-#### Canceled purchase
-
-If a user initiates the purchase process but manually interrupts it, the function below will be invoked. Basically, this event occurs when the `Adapty.makePurchase()` function completes with the `.paymentCancelled` error:
-
-```javascript title="Flutter"
-void paywallViewDidCancelPurchase(AdaptyUIView view, AdaptyPaywallProduct product) {
-}
-```
-
 #### Successful purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
@@ -98,7 +89,7 @@ void paywallViewDidFinishPurchase(AdaptyUIView view,
         // purchase is pending
         break;
       case AdaptyPurchaseResultUserCancelled():
-        // user cancelled purchase
+        // user cancelled the purchase
         break;
       default:
         break;

@@ -134,6 +134,17 @@ You can logout the user anytime by calling `.logout()` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift
 Adapty.logout { error in
     if error == nil {
@@ -143,6 +154,7 @@ Adapty.logout { error in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin
 Adapty.logout { error ->
     if (error == null) {
@@ -152,6 +164,7 @@ Adapty.logout { error ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java
 Adapty.logout(error -> {
     if (error == null) {
@@ -161,6 +174,7 @@ Adapty.logout(error -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript
 try {
   await Adapty().logout();
@@ -171,6 +185,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp
 Adapty.Logout((error) => {
   if(error == null) {
@@ -180,6 +195,7 @@ Adapty.Logout((error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript
 try {
     await adapty.logout();

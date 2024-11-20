@@ -23,7 +23,7 @@ To get a remote config of a paywall, access the `remoteConfig` property and extr
 
 ```swift
 do {
-    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
     let headerText = paywall.remoteConfig?.dictionary?["header_text"] as? String
 } catch {
     // handle the error
@@ -34,7 +34,7 @@ do {
 <TabItem value="Swift-Callback" label="Swift" default>
 
 ```swift
-Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
     let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
 }

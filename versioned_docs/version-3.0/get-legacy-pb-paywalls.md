@@ -156,25 +156,28 @@ The result of the `createPaywallView` method can be used only once. If you need 
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 import Adapty
+import AdaptyUI
 
-guard paywall.hasViewConfiguration else {
-    //  use your custom logic
-    return
-}
-
-AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
-    switch result {
-    case let .success(viewConfiguration):
-        // use loaded configuration
-    case let .failure(error):
-        // handle the error
+do {
+    guard paywall.hasViewConfiguration else {
+        //  use your custom logic
+        return
     }
+
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    
+    // use loaded configuration
+} catch {
+    // handle the error
 }
 ```
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
@@ -196,6 +199,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
@@ -215,8 +219,9 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
-import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+import 'package:adapty_ui_flutter/adapty_flutter.dart';
 
 try {
   final view = await AdaptyUI().createPaywallView(paywall: paywall);
@@ -228,6 +233,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
@@ -235,6 +241,7 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
 
