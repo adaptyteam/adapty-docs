@@ -7,9 +7,7 @@ metadataTitle: "Flutter - Adapty SDK Installation and Configuration Guide"
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
-
-Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
+- **AdaptyUI**: This module is required if you’re using the Adapty Paywall Builder—a no-code, user-friendly tool for creating cross-platform paywalls. With a visual constructor right in the dashboard, you can build paywalls that run natively on devices and are designed to deliver high performance with minimal effort. The module is installed automatically with the Adapty SDK, but you can leave it deactivated if you don’t need it.
 
 :::danger
 Go through the release checklist before releasing your app
