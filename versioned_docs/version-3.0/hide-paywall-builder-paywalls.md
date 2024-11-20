@@ -9,7 +9,7 @@ While Paywall Builder seamlessly handles the purchasing process upon clicking "b
 In native iOS and Android SDKs, you have complete control over both presenting and hiding the paywalls. However in Flutter, React Native, and Unity SDKs this works a bit differently. Learn how below.
 
 :::warning
-This guide covers only hiding  **new Paywall Builder paywalls** which requires Adapty SDK v3.0 or later. To learn how to hide **legacy Paywall Builder paywalls**, read the [Hide legacy Paywall Builder paywalls (on cross-platform SDKs)](hide-legacy-paywall-builder-paywalls)
+This guide covers only hiding  **new Paywall Builder paywalls** which require Adapty SDK v3.0  (v3.2.0 for Flutter) or later. To learn how to hide **legacy Paywall Builder paywalls**, read the [Hide legacy Paywall Builder paywalls (on cross-platform SDKs)](hide-legacy-paywall-builder-paywalls)
 :::
 
 ## Dismiss a paywall screen in React Native
