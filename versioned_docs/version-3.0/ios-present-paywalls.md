@@ -21,67 +21,92 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 o
 
 ## Present paywalls in Swift
 
-In order to display the visual paywall on the device screen, you must first configure it. To do this, use the method `.paywallController(for:products:introductoryOffersEligibilities:viewConfiguration:delegate:)`:
+In order to display the visual paywall on the device screen, do the following:
 
-```swift title="Swift"
-import Adapty
-import AdaptyUI
+1. Create a paywall configuration object:
 
-do {
-	let visualPaywall = try AdaptyUI.paywallController(
-			for: <paywall object>,
-			products: <paywall products array>,
-			introductoryOffersEligibilities: <intro offers eligibilities dictionary>,
-			viewConfiguration: <LocalizedViewConfiguration>,
-			delegate: <AdaptyPaywallControllerDelegate>
-	)
-} catch {
-	// handle the error
-}
-```
+     ```swift title="Swift"
+     do {
+         let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+          forPaywall: <paywall object>
+          )
+     } catch {
+         // handle the error
+     }
+     ```
 
-Returns:
+     Request parameters:
 
-| Object                  | Description                                          |
-| :---------------------- | :--------------------------------------------------- |
-| AdaptyPaywallController | An object, representing the requested paywall screen |
+    | Parameter   | Presence | Description                                                  |
+    | :---------- | :------- | :----------------------------------------------------------- |
+    | **Paywall** | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
 
-After the object has been successfully created, you can display it on the screen of the device: 
+3. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-```swift title="Swift"
-present(visualPaywall, animated: true)
-```
+   ```swift title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
+
+    Request parameters:
+
+    | Parameter                | Presence | Description |
+    | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+    | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
+		Returns:
+
+    | Object                  | Description                                          |
+    | :---------------------- | :--------------------------------------------------- |
+    | AdaptyPaywallController | An object, representing the requested paywall screen |
+
+3. After the object has been successfully created, you can display it on the screen of the device: 
+
+    ```swift title="Swift"
+    present(visualPaywall, animated: true)
+    ```
 
 ## Present paywalls in SwiftUI
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift title="SwiftUI"
-@State var paywallPresented = false
 
-var body: some View {
-	Text("Hello, AdaptyUI!")
-			.paywall(
-          isPresented: $paywallPresented,
-          paywall: <paywall object>,
-          viewConfiguration: <LocalizedViewConfiguration>,
-          didPerformAction: { action in
-              switch action {
-                  case .close:
-                      paywallPresented = false
-                  default:
-                      // Handle other actions
-                      break
-              }
-          },
-          didFinishPurchase: { product, profile in paywallPresented = false },
-          didFailPurchase: { product, error in /* handle the error */ },
-          didFinishRestore: { profile in /* check access level and dismiss */  },
-          didFailRestore: { error in /* handle the error */ },
-          didFailRendering: { error in paywallPresented = false }
-      )
-}
-```
+ ```swift title="SwiftUI"
+ @State var paywallPresented = false
+ 
+ var body: some View {
+ 	Text("Hello, AdaptyUI!")
+ 			.paywall(
+           isPresented: $paywallPresented,
+-          paywall: <paywall object>,
+-          configuration: <LocalizedViewConfiguration>,
+-          observerModeResolver: <AdaptyObserverModeResolver>,
++          paywallConfiguration: <paywall configuration object>,
+           didPerformAction: { action in
+               switch action {
+                   case .close:
+                       paywallPresented = false
+                   default:
+                       // Handle other actions
+                       break
+               }
+           },
+           didFinishRestore: { profile in /* check access level and dismiss */  },
+           didFailRestore: { error in /* handle the error */ },
+           didFailRendering: { error in paywallPresented = false }
+       )
+ }
+ ```
+| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
+| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
+| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
 
 Closure parameters:
 
