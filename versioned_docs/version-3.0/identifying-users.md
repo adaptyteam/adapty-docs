@@ -57,7 +57,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift
 Adapty.identify("YOUR_USER_ID") { error in
@@ -143,7 +143,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift
 Adapty.logout { error in

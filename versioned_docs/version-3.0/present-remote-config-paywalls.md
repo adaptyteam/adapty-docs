@@ -31,7 +31,7 @@ do {
 ```
 </TabItem>
 
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in

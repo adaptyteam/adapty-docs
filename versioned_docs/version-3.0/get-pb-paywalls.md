@@ -47,7 +47,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -181,18 +181,52 @@ guard paywall.hasViewConfiguration else {
 }
 
 do {
-    guard paywall.hasViewConfiguration else {
-        //  use your custom logic
-        return
-    }
-
-    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
-    
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products,
+            observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
+            tagResolver: <AdaptyTagResolver>,
+            timerResolver: <AdaptyTimerResolver>
+    )
     // use loaded configuration
 } catch {
     // handle the error
 }
 ```
+Parameters:
+
+| Parameter                | Presence       | Description                                                  |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**          | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **products**             | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **observerModeResolver** | optional       | The  `AdaptyObserverModeResolver` object you've implemented in the previous step |
+| **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
+## Use developer-defined timers
+
+To use custom timers in your mobile app, create an object that conforms to the `AdaptyTimerResolver` protocol. This object should provide information about how to render each custom timer. Note that the `[String: Date]` structure already conforms to this protocol, so you can simply pass a dictionary. Here’s an example:
+
+```Swift
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
@@ -215,6 +249,17 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
+Parameters:
+
+| Parameter                | Presence       | Description                                                  |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**          | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **products**             | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **observerModeResolver** | optional       | The  `AdaptyObserverModeResolver` object you've implemented in the previous step |
+| **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
 </TabItem>
 <TabItem value="java" label="Java" default>
 
@@ -239,16 +284,41 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 <TabItem value="Flutter" label="Flutter" default>
 
 ```javascript 
-import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  final view = await AdaptyUI().createPaywallView(paywall: paywall);
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTags: {
+          'CUSTOM_TAG_NAME': 'John',
+        },
+        customTimers: {
+          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+        preloadProducts: preloadProducts,
+      );
 } on AdaptyError catch (e) {
   // handle the error
 } catch (e) {
   // handle the error
 }
 ```
+Parameters:
+
+| Parameter         | Presence       | Description                                                  |
+| :---------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**       | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**   | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **products**      | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **tagResolver**   | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver** | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
+In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
 </TabItem>
 <TabItem value="React Native" label="React Native (TS)" default>
 
@@ -265,29 +335,22 @@ if (paywall.hasViewConfiguration) {
     //use your custom logic
 }
 ```
-</TabItem>
-<TabItem value="Unity" label="Unity" default>
+Parameters:
 
-```csharp 
-AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
-  // use the view
-});
-```
+| Parameter         | Presence       | Description                                                  |
+| :---------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**       | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**   | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **products**      | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **tagResolver**   | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver** | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
 </TabItem>
 </Tabs>
 
 :::note
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
-
-| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                           |
-| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p>                                                                                                                                                                                                                                           |
-| **products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **observerModeResolver** | optional | The  `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                      |
-| **tagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
-| **timerResolver**          | optional | TODO:  |
 
 
 Once you have successfully loaded the paywall and its paywall configuration, you can proceed to presenting the paywall in your mobile app.
