@@ -192,7 +192,88 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
 });
 ```
 </TabItem>
+</Tabs> 
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
+
+<Tabs> 
+<TabItem value="kotlin" label="Kotlin" default> 
+
+```kotlin
+import java.util.Calendar
+import java.util.Date
+import java.util.TimeZone
+
+...
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to Calendar.getInstance(TimeZone.getDefault()).apply { set(2025, 0, 1) }.time, // New Year 2025
+)
+val timerResolver = AdaptyUiTimerResolver { timerId ->
+    customTimers.getOrElse(timerId, { Date(System.currentTimeMillis() + 3600 * 1000L) /* in 1 hour */ } )
+}
+```
+
+</TabItem> 
+<TabItem value="java" label="Java" default> 
+
+```JAVA
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
+...
+
+Map<String, Date> customTimers = new HashMap<>();
+customTimers.put(
+        "CUSTOM_TIMER_NY",
+        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
+);
+AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
+    @NonNull
+    @Override
+    public Date timerEndAtDate(@NonNull String timerId) {
+        Date date = customTimers.get(timerId);
+        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* in 1 hour */
+    }
+};
+```
+
+</TabItem> 
+
 </Tabs>
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+
+## Use custom tags
+
+To use custom tags in your mobile app, create a `tagResolver` object—a dictionary or map that pairs custom tags with the string values that will replace them when the paywall is rendered. Here's an example:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin 
+val customTags = mapOf("USERNAME" to "John")
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java 
+Map<String, String> customTags = new HashMap<>();
+customTags.put("USERNAME", "John");
+AdaptyUiTagResolver tagResolver = customTags::get;
+```
+
+</TabItem>
+</Tabs>
+
+In this example, `USERNAME` is a custom tag you entered in the Adapty dashboard as `<USERNAME/>`. The `tagResolver` ensures that your app dynamically replaces this custom tag with the specified value—like `John`.
+
+We recommend creating and populating the `tagResolver` right before presenting your paywall. Once it's ready, pass it to the AdaptyUI method you use for presenting the paywall. 
 
 ## Change paywall loading indicator color
 

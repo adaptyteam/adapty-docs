@@ -22,29 +22,28 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 o
 To display a paywall view, simply call the `view.present()` method. If you've already defined a `view` object in a previous step, feel free to use it. In the following snippet, we'll introduce a new `view` for better visibility.
 
 ```typescript title="React Native (TSX)"
-1
 import {createPaywallView} from '@adapty/react-native-ui';
-2
-​
-3
+
 const view = await createPaywallView(paywall);
-4
-​
-5
+
 view.registerEventHandlers(); // handle close press, etc
-6
-​
-7
+
 try {
-8
-  await view.present();
-9
+  await view.present();
 } catch (error) {
-10
-  // handle the error
-11
+  // handle the error
 }
-12
-​
-typescript title="React Native (TSX)"
+
 ```
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+
+```typescript title="React Native (TSX)"
+let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+//and then you can pass it to createPaywallView as follows:
+view = await createPaywallView(paywall, { timerInfo })
+```
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).

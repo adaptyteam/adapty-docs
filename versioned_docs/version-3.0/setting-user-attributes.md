@@ -40,7 +40,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>Swift-Callback
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 let builder = AdaptyProfileParameters.Builder()
