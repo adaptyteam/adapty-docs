@@ -193,11 +193,10 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
 ```
 </TabItem>
 </Tabs> 
-<!---
 
-## Use custom timer
+## Use developer-defined timer
 
-To use custom timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
+To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
 
 <Tabs> 
 <TabItem value="kotlin" label="Kotlin" default> 
@@ -221,16 +220,32 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 <TabItem value="java" label="Java" default> 
 
 ```JAVA
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
+...
+
+Map<String, Date> customTimers = new HashMap<>();
+customTimers.put(
+        "CUSTOM_TIMER_NY",
+        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
+);
+AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
+    @NonNull
+    @Override
+    public Date timerEndAtDate(@NonNull String timerId) {
+        Date date = customTimers.get(timerId);
+        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* in 1 hour */
+    }
+};
 ```
 
 </TabItem> 
 
 </Tabs>
 
-In this example, `CUSTOM_TIMER_NY` is the ID of the custom timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
-
---->
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
 
 ## Use custom tags
 

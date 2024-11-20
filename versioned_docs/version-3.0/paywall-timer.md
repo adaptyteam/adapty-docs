@@ -6,6 +6,8 @@ metadataTitle: "Customizable Paywall Timer for Special Offers"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 The paywall timer is a great tool for promoting special and seasonal offers with a time limit. However, it's important to note that this timer isn't connected to the offer's validity or the campaign's duration. It's simply a standalone countdown that starts from the value you set and decreases to zero. When the timer reaches zero, nothing happens—it just stays at zero.
 
@@ -62,14 +64,11 @@ You can control how the timer behaves when users see it by using the **Timer mod
 | **Reset timer on every paywall view** | The timer resets every time the user sees the paywall, starting from the initial value each time. |
 | **Reset timer on every app launch**   | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background until the app is restarted. If the user sees the paywall multiple times in the same session, they’ll see the same timer counting down. Once the app is closed, the timer resets, and the next time the app is opened, the timer restarts from the beginning. |
 | **Keep timer across app launches**    | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background, even if the app is closed. The user will see the same timer every time they return to the paywall, regardless of app or paywall restarts. |
+| **Developer defined**                 | You can set up any timer you need directly in your mobile app code. Start by entering a **Timer ID**, then use it in your code as explained in the [How to set up developer-defined timers in your mobile app](paywall-timer#how-to-set-up-developer-defined-timers-in-your-mobile-app) section to configure the timer however you like. |
 
-<!--- You can also create a custom timer by selecting **Custom** in the  **Timer mode** parameter and setting up the timer directly in your mobile app code as described below.
+## How to set up developer-defined timers in your mobile app
 
-## How to use custom timers in your mobile app
-
-To use custom timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
-
-
+To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
 
 <Tabs> <TabItem value="Swift" label="Swift" default>
 
@@ -89,6 +88,11 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
 }
 ```
 
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
 </TabItem> <TabItem value="kotlin" label="Kotlin" default> 
 
 ```kotlin
@@ -106,15 +110,37 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 }
 ```
 
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+
 </TabItem> <TabItem value="java" label="Java" default> 
 
 ```JAVA
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
+...
+
+Map<String, Date> customTimers = new HashMap<>();
+customTimers.put(
+        "CUSTOM_TIMER_NY",
+        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
+);
+AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
+    @NonNull
+    @Override
+    public Date timerEndAtDate(@NonNull String timerId) {
+        Date date = customTimers.get(timerId);
+        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* in 1 hour */
+    }
+};
 ```
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
 
 </TabItem> <TabItem value="Flutter" label="Flutter" default> 
 
-```
+```dart
 try {
       final view = await AdaptyUI().createPaywallView(
         paywall: paywall,
@@ -132,12 +158,22 @@ try {
     }
 ```
 
- </TabItem> <TabItem value="Unity" label="Unity" default> 
- Text 
- </TabItem> 
+ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
+</TabItem> 
  <TabItem value="RN" label="React Native (TS)" default> 
+
+```typescript
+let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+//and then you can pass it to createPaywallView as follows:
+view = await createPaywallView(paywall, { timerInfo })
+```
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
 
  </TabItem> 
  </Tabs>
 
-In this example, `CUSTOM_TIMER_NY` is the ID of the custom timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time). --->
