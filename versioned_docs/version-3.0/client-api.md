@@ -1,5 +1,5 @@
 ---
-title: Exporting analytics to CSV with API
+title: Exporting analytics with API
 toc_max_heading_level: 2
 ---
 
@@ -10,7 +10,7 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Exporting your analytics data to CSV gives you the flexibility to dive deeper into your app’s performance metrics, customize reports, and analyze trends over time. With the Adapty API, you can easily pull detailed analytics into a CSV format, making it convenient to track, share, and refine your data insights as needed.
 
-## Getting Started with the API for Analytics Export
+## Getting started with the API for analytics export
 
 With the analytics export API, you can, for example:
 
@@ -78,6 +78,7 @@ POST
 | filters      | [MetricsFilters](client-api#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit  | String                                                    | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | segmentation | String                                                    | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different chats in teh Segmentatiuon table below this table |
+| format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 #### Segmentation
 
@@ -403,7 +404,7 @@ POST
 | filters      | [MetricsFilters](client-api#metricsfilters-object-2) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit  | String                                               | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | segmentation | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
-
+| format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 
 #### MetricsFilters object
