@@ -11,9 +11,10 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 For detailed guidance on presenting paywalls within different frameworks, please refer to the specified topics on each framework:
 
-- [iOS - Present paywalls](ios-present-paywalls)
-- [Android - Present paywalls](android-present-paywalls)
-- [React Native - Present paywalls](react-native-present-paywalls)
+- [iOS](ios-present-paywalls)
+- [Android](android-present-paywalls)
+- [Flutter](flutter-present-paywalls)
+- [React Native](react-native-present-paywalls)
 
 :::warning
 
