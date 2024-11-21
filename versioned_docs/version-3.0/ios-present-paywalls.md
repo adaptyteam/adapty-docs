@@ -60,6 +60,7 @@ In order to display the visual paywall on the device screen, do the following:
     | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
     | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
 
+   
    Returns:
 
     | Object                  | Description                                          |
@@ -76,33 +77,33 @@ In order to display the visual paywall on the device screen, do the following:
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
+```swift title="SwiftUI"
+@State var paywallPresented = false
 
- ```swift title="SwiftUI"
- @State var paywallPresented = false
- 
- var body: some View {
- 	Text("Hello, AdaptyUI!")
- 			.paywall(
-           isPresented: $paywallPresented,
--          paywall: <paywall object>,
--          configuration: <LocalizedViewConfiguration>,
--          observerModeResolver: <AdaptyObserverModeResolver>,
-+          paywallConfiguration: <paywall configuration object>,
-           didPerformAction: { action in
-               switch action {
-                   case .close:
-                       paywallPresented = false
-                   default:
-                       // Handle other actions
-                       break
-               }
-           },
-           didFinishRestore: { profile in /* check access level and dismiss */  },
-           didFailRestore: { error in /* handle the error */ },
-           didFailRendering: { error in paywallPresented = false }
-       )
- }
- ```
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: <paywall object>,
+          viewConfiguration: <LocalizedViewConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
 | Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
