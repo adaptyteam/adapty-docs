@@ -230,7 +230,7 @@ You only need to configure the Adapty SDK once, typically at the start of your a
 
 1. Remove the AdaptyUI SDK import from your application as follows:
 
-   ```dart title="Dart"
+   ```diff
    import 'package:adapty_flutter/adapty_flutter.dart';
    - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
