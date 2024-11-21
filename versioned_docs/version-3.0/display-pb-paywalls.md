@@ -18,8 +18,7 @@ here are two ways to customize a paywall in the Adapty Dashboard:
 :::warning
 This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS, Android, and React Native only. Support for Flutter and Unity is coming soon. 
 
-- For displaying **legacy Paywall Builder paywalls**, check out [Display paywalls designed with legacy Paywall Builder](display-pb-paywalls).
-
+- For displaying **legacy Paywall Builder paywalls**, check out [Display paywalls designed with legacy Paywall Builder](display-legacy-pb-paywalls).
 - For displaying **remote config paywalls**, see [Display remote config paywalls](display-remote-config-paywalls).
   :::
 
