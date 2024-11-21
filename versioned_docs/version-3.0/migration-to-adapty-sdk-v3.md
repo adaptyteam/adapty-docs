@@ -204,7 +204,7 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 ## Remove AdaptyUI SDK
 
-1. AdaptyUI becomes a module in SAdapty SDK, so please remove `adapty_ui_flutter` from your  `pubspec.yaml` file:
+1. AdaptyUI becomes a module in Adapty SDK, so please remove `adapty_ui_flutter` from your  `pubspec.yaml` file:
 
    ```diff
    dependencies:
@@ -218,32 +218,24 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
    flutter pub get
    ```
 
-3. Remove import of SDKs form your application:
-
-   ```diff
-   - import 'package:adapty_flutter/adapty_flutter.dart';
-   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
-   ```
-
-   
-
 ## Configure Adapty SDKs
 
-Previously you created a Adapty-Info.plist file and added it to your project and then Adapty SDK configuration used theis file.
+Previously, you needed to create `Adapty-Info.plist` and `AndroidManifest.xml` files and add them to your project for Adapty SDK configuration.
 
-Now you do not nee to create additional files. Instead provide all required parameters during activation
+Now, there’s no need to create additional files. Instead, you can provide all required parameters during activation.
 
-You only need to configure the Adapty SDK once, typically early in your app's lifecycle.
+You only need to configure the Adapty SDK once, typically at the start of your app’s lifecycle.
 
 ### Activate Adapty module of Adapty SDK
 
-1. Import Adapty SDKs in your application in the following way:
+1. Remove the AdaptyUI SDK import from your application as follows:
 
    ```dart title="Dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
+   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
-2. Activate Adapty SDK with the following code:
+2. Update the Adapty SDK activation like this:
 
    ```diff
    try {
@@ -274,7 +266,7 @@ Parameters:
 
 ### Activate AdaptyUI module of Adapty SDK
 
-You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
+You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls):
 
 ```dart title="Dart"
 try {
