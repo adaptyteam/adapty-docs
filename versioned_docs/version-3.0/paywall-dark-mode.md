@@ -26,7 +26,7 @@ To use the Paywall dark mode, you’ll need a paid plan: Pro, Pro+, or Enterpris
 />
 </Zoom>
 :::warning
-Dark mode is supported on iOS starting with version 3.1.0 and Android starting with version 3.1.1. Support for React Native, Flutter, and Unity is coming soon. Dark mode is also included in fallback paywalls.
+Dark mode is supported on iOS starting with v3.1.0, Android starting with v3.1.1, and Flutter starting with v3.2.0. Support for React Native and Unity is coming soon. Dark mode is also included in fallback paywalls.
 :::
 To set up dark mode for your paywall:
 

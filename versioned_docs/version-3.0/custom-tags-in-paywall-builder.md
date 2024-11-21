@@ -15,6 +15,12 @@ Custom tags are only available on AdaptyUI SDK v.2.1.0 and higher
 
 Custom tags let you avoid creating separate paywalls for different scenarios. Imagine a single paywall that adapts dynamically based on user data. For example, instead of a generic "Hello!", you could greet users personally with "Hello, John!" or "Hello, Ann!"
 
+:::warning
+
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later which is now available for iOS, Android, Flutter, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-paywall-builder).
+
+:::
+
 Here are some ways you can use custom tags:
 
 - Display the user’s name or email on the paywall.
@@ -24,7 +30,7 @@ Here are some ways you can use custom tags:
 Custom tags help you create a flexible paywall that adapts to various situations, making your app's interface more personalized and engaging.
 
 :::warning
-Make sure to add fallbacks for every line with custom tags,.
+Make sure to add fallbacks for every line with custom tags.
 
 Remember to include fallbacks for every line with custom tags.
 
@@ -81,23 +87,51 @@ To use custom tags in your mobile app, create a tagResolver object—a dictionar
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 let tagResolver = [
     "USERNAME": "John",
-]                           
+] 
+  
+let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    tagResolver: tagResolver // or any other AdaptyTagResolver protocol implementation
+)
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
+```
+</TabItem>
+
+<TabItem value="Flutter" label="Flutter" default>
+
+```dart
+final customTags = {
+  'USERNAME': 'John',
+};
+
+try {
+final view = await AdaptyUI().createPaywallView(
+    paywall: paywall,
+    customTags: customTags,
+);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
 ```
 </TabItem>
 

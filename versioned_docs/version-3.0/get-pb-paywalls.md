@@ -1,5 +1,5 @@
 ---
-title: "Fetch new Paywall Builder paywalls and their configuration"
+title: "Fetch Paywall Builder paywalls and their configuration"
 description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
 metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
 ---
@@ -10,16 +10,13 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-After [you designed the visual part for your paywall](adapty-paywall-builder) with Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 :::warning
-
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS, Android, and React Native only. Support for Flutter and Unity is coming soon.
-
-- For fetching **Legacy Paywall Builder paywalls**, check out [Fetch legacy Paywall Builder paywalls and their configuration](get-legacy-pb-paywalls).
-- For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
-
+The new Paywall Builder is available for iOS (from v3.0), Android (from v3.0), React Native (from v3.0), and Flutter (from v3.2.0) only. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
 :::
+
+Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products) topic.
 
 <details>
    <summary>Before you start displaying paywalls in your mobile app (click to expand)</summary>
@@ -40,6 +37,18 @@ To get a paywall, use the `getPaywall` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -52,6 +61,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 import com.adapty.utils.seconds
 
@@ -72,6 +82,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 import com.adapty.utils.TimeInterval;
 
@@ -90,14 +101,26 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 });
 ```
 </TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+
+```javascript 
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
 try {
-    const id = 'YOUR_PLACEMENT_ID';
+    const placementId = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
 
-    const paywall = await adapty.getPaywall(id, locale);
+    const paywall = await adapty.getPaywall(placementId, locale);
   // the requested paywall
 } catch (error) {
     // handle the error
@@ -105,6 +128,8 @@ try {
 ```
 </TabItem>
 </Tabs>
+
+Parameters:
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
@@ -143,24 +168,38 @@ guard paywall.hasViewConfiguration else {
     return
 }
 
-AdaptyUI.getViewConfiguration(forPaywall: paywall) { result in
-    switch result {
-    case let .success(viewConfiguration):
-        // use loaded configuration
-    case let .failure(error):
-        // handle the error
-    }
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products,
+            observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
+            tagResolver: <AdaptyTagResolver>,
+            timerResolver: <AdaptyTimerResolver>
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
 }
 ```
+| Parameter                | Presence       | Description                                                  |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+| **products**             | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **observerModeResolver** | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step |
+| **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
     return
 }
 
-AdaptyUI.getViewConfiguration(paywall) { result ->
+AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
     when(result) {
         is AdaptyResult.Success -> {
             val viewConfiguration = result.value
@@ -173,15 +212,21 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
     }
 }
 ```
+| Parameter       | Presence       | Description                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**     | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout** | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
 }
 
-AdaptyUI.getViewConfiguration(paywall, result -> {
+AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyUI.LocalizedViewConfiguration viewConfiguration =
           ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) result).getValue();
@@ -192,6 +237,49 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
     }
 });
 ```
+| Parameter                | Presence       | Description                                                  |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+
+```javascript 
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTags: {
+          'CUSTOM_TAG_NAME': 'John',
+        },
+        customTimers: {
+          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+        preloadProducts: preloadProducts,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+| Parameter                     | Presence       | Description                                                  |
+| :---------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**                   | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**               | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+| **products**                  | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **androidPersonalizedOffers** | optional       | A map indicating whether the price for a specific product is personalized. The key is a string combining `basePlanId` and `vendorProductId`, separated by a `:`. If `basePlanId` is `null` or empty, only `vendorProductId` is used. <p>**Example**: `basePlanId:vendorProductId` or simply `vendorProductId`.</p><p>For more details, check the [[official Android Developers documentation](https://developer.android.com/google/play/billing/integrate#personalized-price).</p> |
+| **tagResolver**               | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**             | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
+In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
 </TabItem>
 <TabItem value="React Native" label="React Native (TS)" default>
 
@@ -208,6 +296,16 @@ if (paywall.hasViewConfiguration) {
     //use your custom logic
 }
 ```
+
+Parameters:
+
+| Parameter            | Presence | Description                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **customTags**       | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerInfo**        | optional | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+| **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
+
 </TabItem>
 </Tabs>
 
@@ -278,8 +376,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native" default>
-
+<TabItem value="Flutter" label="Flutter" default>
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';

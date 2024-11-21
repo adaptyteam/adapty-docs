@@ -23,7 +23,7 @@ The paywall timer is a great tool for promoting special and seasonal offers with
 
 :::warning
 
-Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 and later, available for iOS, Android, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
+Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later, available for iOS, Android, Flutter, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
 
 :::
 
@@ -68,7 +68,7 @@ You can control how the timer behaves when users see it by using the **Timer mod
 
 ## How to set up developer-defined timers in your mobile app
 
-To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
+To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
 <Tabs> <TabItem value="Swift" label="Swift" default>
 

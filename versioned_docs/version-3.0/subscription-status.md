@@ -31,6 +31,21 @@ To get the access level from the server, use the `.getProfile()` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
+
 ```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get() {
@@ -43,6 +58,7 @@ Adapty.getProfile { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.getProfile { result ->
     when (result) {
@@ -119,6 +135,19 @@ Here is an example for checking for the default "premium" access level:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift" default>
+
 ```swift 
 Adapty.getProfile { result in
     if let profile = try? result.get(), 
@@ -218,16 +247,18 @@ To receive messages from Adapty, you need to make some additional configuration:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
 ```swift 
 Adapty.delegate = self
 
 // To receive subscription updates, extend `AdaptyDelegate` with this method:
-func didLoadLatestProfile(_ profile: AdaptyProfile) {
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
     // handle any changes to subscription state
 }
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to subscription state

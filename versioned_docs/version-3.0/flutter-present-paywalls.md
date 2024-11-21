@@ -11,9 +11,11 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **legacy Paywall Builder paywalls**, which require Adapty SDK up to version 2.x. The [new Paywall Builder](adapty-paywall-builder) requires Adapty SDK 3.0 or later, which is currently not available for Flutter.
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.2.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde and remote config paywalls.
 
-For presenting remote config paywalls, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- For presenting **Legacy Paywall Builder paywalls**, check out [Flutter - Present legacy Paywall Builder paywalls](flutter-present-paywalls-legacy).
+- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+
 :::
 
 To show a paywall, call `view.present()` method. You can use `view` from the previous step, we will introduce a new one for visibility reasons:
