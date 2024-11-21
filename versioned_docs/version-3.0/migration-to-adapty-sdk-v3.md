@@ -208,7 +208,8 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
    ```diff
    dependencies:
-   adapty_flutter: ^3.2.1
+   + adapty_flutter: ^3.2.1
+   - adapty_flutter: ^2.10.3
    - adapty_ui_flutter: ^2.1.3
    ```
 
@@ -220,9 +221,9 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 ## Configure Adapty SDKs
 
-Previously, you needed to create `Adapty-Info.plist` and `AndroidManifest.xml` files and add them to your project for Adapty SDK configuration.
+Previously, you needed to use `Adapty-Info.plist` and `AndroidManifest.xml` files for Adapty SDK configuration.
 
-Now, there’s no need to create additional files. Instead, you can provide all required parameters during activation.
+Now, there’s no need to use additional files. Instead, you can provide all required parameters during activation.
 
 You only need to configure the Adapty SDK once, typically at the start of your app’s lifecycle.
 
