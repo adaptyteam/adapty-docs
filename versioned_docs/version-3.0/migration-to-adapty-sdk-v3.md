@@ -208,7 +208,7 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
    ```diff
    dependencies:
-   adapty_flutter: ^3.2.0
+   adapty_flutter: ^3.2.1
    - adapty_ui_flutter: ^2.1.3
    ```
 
