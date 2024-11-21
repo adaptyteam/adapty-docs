@@ -190,6 +190,31 @@ do {
 | **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
 
+## Set up developer-defined timers
+
+To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
+
+```Swift
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
