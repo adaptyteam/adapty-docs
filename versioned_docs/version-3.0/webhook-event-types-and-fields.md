@@ -7,9 +7,11 @@ toc_max_heading_level: 3
 
 import WebhookEventProperties from '@site/src/components/reusable/WebhookEventProperties.md';
 
+Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
+
 ## Webhook event types
 
-Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
+You can send all event types to your webhook or choose only some of them. You can consult our [Webhook event flows](webhook-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-4-optional-choose-events-to-send-and-map-event-names). There you can also replace Adapty default event IDs with your own if required.
 
 | Event Name                         | Default event ID                   | Description                                                  |
 | ---------------------------------- | :--------------------------------- | :----------------------------------------------------------- |
@@ -30,8 +32,6 @@ Adapty sends webhooks in response to events that occur in your app. Here these e
 | Subscription refunded              | subscription_refunded              | A subscription was refunded \(e.g. by Apple support\).       |
 | Non-subscription purchase refunded | non_subscription_purchase_refunded | Non-subscription purchase was refunded.                      |
 | Access level updated               | access_level_updated               | User's access level updated.                                 |
-
-<WebhookEventProperties />
 
 ## Webhook event structure
 
@@ -63,13 +63,13 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
       "developer_id": "offer_16",
       "paywall_name": "offer_16",
       "proceeds_usd": 4.2315,
-      "variation_id": "a942d149-6545-4bae-33fc-b19e5a158804",
+      "variation_id": "a942d149-6545-4bae-33fc-b19e3a158804",
       "purchase_date": "2024-11-15T10:45:36.181000+0000",
       "store_country": "AR",
       "event_datetime": "2024-11-15T10:45:36.181000+0000",
       "proceeds_local": 4.2415,
       "tax_amount_usd": 0,
-      "transaction_id": "TRA.3365-4326-1333-87868",
+      "transaction_id": "TR.3365-4326-1333-87868",
       "net_revenue_usd": 4.2415,
       "profile_country": "AR",
       "paywall_revision": "1",
@@ -157,7 +157,7 @@ Event properties for most events are nearly the same (except for the  [Access Le
 | :---------------------------- | :------------ | :----------------------------------------------------------- |
 | **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | **currency**                  | String        | Local currency (defaults to USD).                            |
-| **environment**               | String        | Can be _Sandbox_ or _Production_.                            |
+| **environment**               | String        | Possible values are `Sandbox` or `Production`.               |
 | **event_datetime**            | ISO 8601 date | The date and time of the event.                              |
 | **original_purchase_date**    | ISO 8601 date | The date and time of the original purchase.                  |
 | **original_transaction_id**   | String        | The transaction identifier of the original purchase.         |
