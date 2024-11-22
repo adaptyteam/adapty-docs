@@ -1,10 +1,13 @@
 ---
-title: "Event Types and Fields"
+title: "Webhook event types and fields"
 description: ""
 metadataTitle: ""
+toc_max_heading_level: 3
 ---
 
-### Webhook event types
+import WebhookEventProperties from '@site/src/components/reusable/WebhookEventProperties.md';
+
+## Webhook event types
 
 Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
 
@@ -28,11 +31,13 @@ Adapty sends webhooks in response to events that occur in your app. Here these e
 | Non-subscription purchase refunded | non_subscription_purchase_refunded | Non-subscription purchase was refunded.                      |
 | Access level updated               | access_level_updated               | User's access level updated.                                 |
 
-### Webhook event structure
+<WebhookEventProperties />
+
+## Webhook event structure
 
 Adapty will send you only those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the following structure:
+Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields, the list of event properties however will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
 
 ```json title="Json"
 {
@@ -47,40 +52,40 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
   "event_type": "non_subscription_purchase",
   "event_datetime": "2023-02-18T18:40:22.000000+0000",
     "event_properties": {
-    "store": "play_store",
-    "currency": "USD",
-    "price_usd": 4.99,
-    "profile_id": "82a8103e-cb8d-4837-ba43-33c02d628021",
-    "cohort_name": "All Users",
-    "environment": "Production",
-    "price_local": 4.99,
-    "base_plan_id": "b1",
-    "developer_id": "offer_16",
-    "paywall_name": "offer_16",
-    "proceeds_usd": 4.2315,
-    "variation_id": "a942d149-6545-4bae-33fc-b19e5a158804",
-    "purchase_date": "2024-11-15T10:45:36.181000+0000",
-    "store_country": "AR",
-    "event_datetime": "2024-11-15T10:45:36.181000+0000",
-    "proceeds_local": 4.2415,
-    "tax_amount_usd": 0,
-    "transaction_id": "TRA.3365-4326-1333-87868",
-    "net_revenue_usd": 4.2415,
-    "profile_country": "AR",
-    "paywall_revision": "1",
-    "profile_event_id": "2f2a1dc4-463e-4333-8a1b-493c75c9b78f",
-    "tax_amount_local": 0,
-    "net_revenue_local": 4.2415,
-    "vendor_product_id": "weekly_499",
-    "profile_ip_address": "129.62.230.4",
-    "consecutive_payments": 1,
-    "rate_after_first_year": false,
-    "original_purchase_date": "2024-11-15T10:45:36.181000+0000",
-    "original_transaction_id": "TRA.3365-4326-1333-87868",
-    "subscription_expires_at": "2024-11-22T10:44:18.594000+0000",
-    "profile_has_access_level": true,
-    "profile_total_revenue_usd": 4.99
-  },
+      "store": "play_store",
+      "currency": "USD",
+      "price_usd": 4.99,
+      "profile_id": "82a8103e-cb8d-4837-ba43-33c02d628021",
+      "cohort_name": "All Users",
+      "environment": "Production",
+      "price_local": 4.99,
+      "base_plan_id": "b1",
+      "developer_id": "offer_16",
+      "paywall_name": "offer_16",
+      "proceeds_usd": 4.2315,
+      "variation_id": "a942d149-6545-4bae-33fc-b19e5a158804",
+      "purchase_date": "2024-11-15T10:45:36.181000+0000",
+      "store_country": "AR",
+      "event_datetime": "2024-11-15T10:45:36.181000+0000",
+      "proceeds_local": 4.2415,
+      "tax_amount_usd": 0,
+      "transaction_id": "TRA.3365-4326-1333-87868",
+      "net_revenue_usd": 4.2415,
+      "profile_country": "AR",
+      "paywall_revision": "1",
+      "profile_event_id": "2f2a1dc4-463e-4333-8a1b-493c75c9b78f",
+      "tax_amount_local": 0,
+      "net_revenue_local": 4.2415,
+      "vendor_product_id": "weekly_499",
+      "profile_ip_address": "129.62.230.4",
+      "consecutive_payments": 1,
+      "rate_after_first_year": false,
+      "original_purchase_date": "2024-11-15T10:45:36.181000+0000",
+      "original_transaction_id": "TRA.3365-4326-1333-87868",
+      "subscription_expires_at": "2024-11-22T10:44:18.594000+0000",
+      "profile_has_access_level": true,
+      "profile_total_revenue_usd": 4.99
+    },
   "event_api_version": 1,
   "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-733311fe5800", "customer_user_id": "example@gmail.com"}],
    "attributions": {
@@ -100,7 +105,7 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
 }
 ```
 
-#### Event fields
+### Event fields
 
 Event parameters are the same for all event types.
 
@@ -123,7 +128,7 @@ Event parameters are the same for all event types.
 | **attributions**                  | JSON                 | JSON of [attribution data](webhook#attribution-data).        |
 | **user_attributes**               | JSON                 | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). This will include any custom attributes you’ve set up to send from your mobile app. |
 
-#### Attribution data
+### Attribution data
 
 If you've chosen to send attribution data and if you have them, the data below will be sent with the event for every source. The same attribution data is sent to all event types.
 
@@ -138,63 +143,110 @@ If you've chosen to send attribution data and if you have them, the data below w
 | **created_at**      | ISO 8601 date | Date and time of attribution record creation.      |
 | **network_user_id** | String        | ID assigned to the user by the attribution source. |
 
-#### Event properties for all events exept for the Access Level Updated event
+### Event Properties
 
-Event properties can differ between events. For example, for Access Level Updated event they differ pretty much, so we've deparated them to a separate section Event properties for Access Level Updated event. Event properties for other events are nearly the same, so we provide them as one table with highlighting if the property belons to some specific event.
+Event properties can differ between event types and even events of the same type. For example, an event from the App Store will not have Android-specific properties like `base_plan_id`.
 
+For the [Access Level Updated] event event properties differ pretty much as well. So we've separated it into a separate section. Besides, we've separated Revenue and Financial Metrics which belong to several event types only.
 
-| Property                      | Type          | Description                                                  |
-| ----------------------------- | ------------- | ------------------------------------------------------------ |
-| **store**                     | String        | Can be _app_store_ or _play_store_.                          |
+#### For most event types
+
+Event properties for most events are nearly the same (except for the  [Access Level Updated] and  [Subscription renewal reactivated] events which are described separately), so we provide them as one table highlighting if the property belongs to some specific event.
+
+| Field                         | Type          | Description                                                  |
+| :---------------------------- | :------------ | :----------------------------------------------------------- |
+| **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | **currency**                  | String        | Local currency (defaults to USD).                            |
-| **price_usd**                 | Float         | Product price before Apple/Google cut. Revenue.              |
-| **profile_id**                | UUID          | Adapty user ID.                                              |
-| **cohort_name**               | String        | Name of the audience to which the profile belongs to.        |
 | **environment**               | String        | Can be _Sandbox_ or _Production_.                            |
-| **price_local**               | Float         | Product price before Apple/Google cut in local currency. Revenue. |
-| **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)   in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)   in Stripe. |
-| **developer_id**              | String        | Developer (SDK) ID of the placement where the transaction originated. |
-| **paywall_name**              | String        | Name of the paywall where the transaction originated.        |
-| **proceeds_usd**              | Float         | Product price after Apple/Google cut. Net revenue.           |
-| **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.        |
-| **purchase_date**             | ISO 8601 date | The date and time of product purchase.                       |
-| **store_country**             | String        | The country sent to us by the store.                         |
 | **event_datetime**            | ISO 8601 date | The date and time of the event.                              |
-| **proceeds_local**            | Float         | Product price after Apple/Google cut in local currency. Net revenue. |
-| tax_amount_usd                |               |                                                              |
-| **transaction_id**            | String        | A unique identifier for a transaction such as a purchase or renewal. |
-| **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". |
-| **net_revenue_usd**           | Float         | Net revenue (income after Apple/Google cut and taxes) in USD. Can be empty. |
-| **profile_country**           | String        | Determined by Adapty, based on profile IP.                   |
-| **paywall_revision**          | Integer       | Revision of the paywall where the transaction originated. The value is set to 1. |
-| **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.          |
-| tax_amount_local              |               |                                                              |
-| net_revenue_local             |               |                                                              |
-| **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
-| **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
-| **cancellation_reason**       | String        | <p>A reason why the user canceled a subscription. </p><p></p><p>Can be</p><p>iOS & Android</p><p>voluntarily_cancelled, billing_error, refund</p><p>iOS</p><p>price_increase, product_was_not_available, unknown</p><p>Android</p><p>new_subscription_replace, cancelled_by_developer</p><p>This property is sent only with the following event types</p><ul><li> Subscription expired (churned)</li><li> listitem</li><li> listitem</li></ul> |
-| **consecutive_payments**      | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
-| **store_offer_category**      | String        | Can be _introductory_ or _promotional_.                      |
-| **rate_after_first_year**     | Boolean       | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
 | **original_purchase_date**    | ISO 8601 date | The date and time of the original purchase.                  |
 | **original_transaction_id**   | String        | The transaction identifier of the original purchase.         |
-| **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.  |
-| **store_offer_discount_type** | String        | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_.      |
+| **profile_country**           | String        | Determined by Adapty, based on profile IP.                   |
+| **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**  | Boolean       | A boolean that indicates whether the profile has an active access level. |
+| **profile_id**                | UUID          | Adapty user ID.                                              |
+| **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). |
 | **profile_total_revenue_usd** | Float         | Total revenue for the profile, refunds included.             |
+| **purchase_date**             | ISO 8601 date | The date and time of product purchase.                       |
+| **store**                     | String        | Can be _app_store_ or _play_store_.                          |
+| **store_country**             | String        | The country sent to us by the store.                         |
+| **transaction_id**            | String        | Unique identifier for a transaction.                         |
+| **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
+| **cancellation_reason**       | String        | <p>Present in the following event types:</p><ul><li>subscription_cancelled</li><li>subscription_refunded</li><li>trial_cancelled</li></ul> |
+| **ab_test_name**              | String        |                                                              |
+| **cohort_name**               | String        | Name of the audience to which the profile belongs to.        |
+| **developer_id**              | String        | Developer (SDK) ID of the placement where the transaction originated. |
+| **paywall_name**              | String        | Name of the paywall where the transaction originated.        |
+| **paywall_revision**          | Integer       | Revision of the paywall where the transaction originated. The value is set to 1. |
+| **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.        |
+| **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days" , for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`. |
+| **store_offer_category**      | String        |                                                              |
+| **store_offer_discount_type** | String        |                                                              |
 
+##### Additional tax and revenue event properties
 
-| **promotional_offer_id**      | String        | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
-| **ab_test_name**              | String        | Name of the A/B test where the transaction originated.       |
-| **ab_test_revision**          | Integer       | Revision of the A/B test where the transaction originated. The value is set to 1. |
-| **access_level_id**           | String        | Paid access level ID                                         |
-| **will_renew**                | Boolean       | Boolean indicating whether paid access level will be renewed. |
-| **is_lifetime**               | Boolean       | Boolean indicating whether paid access level is lifetime.    |
-| **is_in_grace_period**        | Boolean       | Boolean indicating whether profile is in grace period.       |
-| **starts_at**                 | ISO 8601 date | Date and time when paid access level starts for the user.    |
-| **renewed_at**                | ISO 8601 date | Date and time when paid access will be renewed.              |
-| **activated_at**              | ISO 8601 date | Date and time when paid access was activated.                |
-| **billing_issue_detected_at** | ISO 8601 date | Date and time of billing issue.                              |
+The event properties connected to taxes and revenue below are additional fields belong only to several event types.  This means that the listed even types contain the Event properties for the most event types and in addition the fields listed below.
+
+Event types that have the tax and revenue event properties:
+
+- `subscription_renewed`
+- `subscription_initial_purchase`
+- `subscription_refunded`
+- `non_subscription_purchase`
+
+| Field                 | Type  | Description                                                  |
+  | :-------------------- | :---- | :----------------------------------------------------------- |
+  | **net_revenue_local** | Float | Net revenue (income after Apple/Google cut and taxes) in local currency. |
+  | **net_revenue_usd**   | Float | Net revenue (income after Apple/Google cut and taxes) in USD. |
+  | **proceeds_local**    | Float | Product price after Apple/Google cut in local currency. Net revenue. |
+  | **proceeds_usd**      | Float | Product price after Apple/Google cut. Net revenue.           |
+  | **tax_amount_local**  | Float | Tax amount deducted in local currency.                       |
+  | **tax_amount_usd**    | Float | Tax amount deducted in USD.                                  |
+
+#### For Access Level Updated event
+
+Access level updated event type is an specific Webhook event that is created only if the Webhook integration is activated and this type is enabled for it. If enabled, it is sent to the Webhook integration and appears in the **Event Feed**. If not, the event is not created at all.
+
+| Property                           | Type          | Description                                                  |
+| ---------------------------------- | ------------- | ------------------------------------------------------------ |
+| **ab_test_name**                   | Unknown       | Extra property not documented.                               |
+| **access_level_id**                | String        | Access level ID.                                             |
+| **activated_at**                   | ISO 8601 date | Date and time when the access was activated.                 |
+| **active_introductory_offer_type** | String        | Type of introductory offer applied.                          |
+| **base_plan_id**                   | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
+| **billing_issue_detected_at**      | ISO 8601 date | Date and time of billing issue.                              |
+| **cancellation_reason**            | String        | Reason for subscription cancellation.                        |
+| **cohort_name**                    | String        | Name of the audience to which the profile belongs to.        |
+| **currency**                       | String        | Local currency (defaults to USD).                            |
+| **developer_id**                   | String        | Developer (SDK) ID of the placement where the transaction originated. |
+| **environment**                    | String        | Can be _Sandbox_ or _Production_.                            |
+| **event_datetime**                 | ISO 8601 date | The date and time of the event.                              |
+| **expires_at**                     | ISO 8601 date | Date and time when paid access will expire.                  |
+| **is_active**                      | Boolean       | Boolean indicating whether paid access level is active.      |
+| **is_in_grace_period**             | Boolean       | Boolean indicating whether profile is in grace period.       |
+| **is_lifetime**                    | Boolean       | Boolean indicating whether paid access level is lifetime.    |
+| **is_refund**                      | Boolean       | Boolean indicating whether the transaction is refunded.      |
+| **original_purchase_date**         | ISO 8601 date | The date and time of the original purchase.                  |
+| **original_transaction_id**        | String        | The transaction identifier of the original purchase.         |
+| **paywall_name**                   | String        | Name of the paywall where the transaction originated.        |
+| **paywall_revision**               | Integer       | Revision of the paywall where the transaction originated. The value is set to 1. |
+| **profile_country**                | String        | Determined by Adapty, based on profile IP.                   |
+| **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
+| **profile_has_access_level**       | Boolean       | Boolean indicating whether the profile has an active access level. |
+| **profile_id**                     | UUID          | Adapty user profile ID.                                      |
+| **profile_ip_address**             | String        | Profile IP address of the user.                              |
+| **profile_total_revenue_usd**      | Float         | Total revenue for the profile, refunds included.             |
+| **profiles_sharing_access_level**  | Unknown       | Extra property not documented.                               |
+| **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
+| **renewed_at**                     | ISO 8601 date | Date and time when paid access will be renewed.              |
+| **store**                          | String        | Can be _app_store_ or _play_store_.                          |
+| **store_country**                  | String        | Country sent to Adapty by the store.                         |
+| **subscription_expires_at**        | ISO 8601 date | Expiration date of the subscription.                         |
+| **transaction_id**                 | String        | Unique identifier for a transaction.                         |
+| **trial_duration**                 | String        | Duration of a trial period in days (e.g., "7 days").         |
+| **variation_id**                   | UUID          | Unique ID of the paywall where the purchase was made.        |
+| **vendor_product_id**              | String        | Product ID in the store (Apple/Google/Stripe).               |
+| **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
 :::warning
 Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
@@ -204,35 +256,4 @@ Webhook integration enables the control of sending attribution and user attribut
 
 - Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
 - Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
-
-#### Event properties for Access Level Updated event
-
-| Property                      | Type          | Description                                                  |
-| ----------------------------- | ------------- | ------------------------------------------------------------ |
-| **store**                     | String        | Can be _app_store_ or _play_store_.                          |
-| **currency**                  | String        | Local currency (defaults to USD).                            |
-| **is_active**                 | Boolean       | Boolean indicating whether paid access level is active for the profile. AL |
-| **is_refund**                 | Boolean       | Boolean indicating whether transaction is refunded.    AL    |
-| **expires_at**                | ISO 8601 date | Date and time when paid access will expire.              AL  |
-| **profile_id**                | UUID          | Adapty user ID.                                              |
-| **renewed_at**                | ISO 8601 date | Date and time when paid access will be renewed.              |
-| **will_renew**                | Boolean       | Boolean indicating whether paid access level will be renewed. |
-| **environment**               | String        | Can be _Sandbox_ or _Production_.                            |
-| **is_lifetime**               | Boolean       | Boolean indicating whether paid access level is lifetime.    |
-| **activated_at**              | ISO 8601 date | Date and time when paid access was activated.                |
-| **purchase_date**             | ISO 8601 date | The date and time of product purchase.                       |
-| **store_country**             | String        | The country sent to us by the store.                         |
-| **event_datetime**            | ISO 8601 date | The date and time of the event.                              |
-| **transaction_id**            | String        | A unique identifier for a transaction such as a purchase or renewal. |
-| **access_level_id**           | String        | Paid access level ID                                         |
-| **profile_country**           | String        | Determined by Adapty, based on profile IP.                   |
-| **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.          |
-| **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
-| **is_in_grace_period**        | Boolean       | Boolean indicating whether profile is in grace period.       |
-| **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes. |
-| **original_purchase_date**    | ISO 8601 date | The date and time of the original purchase.                  |
-| **original_transaction_id**   | String        | The transaction identifier of the original purchase.         |
-| **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.  |
-| **profile_has_access_level**  | Boolean       | A boolean that indicates whether the profile has an active access level. |
-| **profile_total_revenue_usd** | Float         | Total revenue for the profile, refunds included.             |
 
