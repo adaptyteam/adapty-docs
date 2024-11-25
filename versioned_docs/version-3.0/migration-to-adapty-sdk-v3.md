@@ -70,7 +70,7 @@ import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
@@ -96,7 +96,7 @@ import AdaptyUI // Only if you are going to use AdaptyUI
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional

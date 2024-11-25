@@ -38,7 +38,7 @@ Include the `backendBaseUrl` parameter in your configuration:
 import Adapty
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
@@ -62,7 +62,7 @@ import Adapty
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
@@ -167,4 +167,4 @@ New users or existing users logging in from a new device must use https://app.ad
 
 :::
 
-This should help ensure you comply with EU data regulations while using Adapty!
+This should help ensure you comply with EU data regulations while using Adapty!x
