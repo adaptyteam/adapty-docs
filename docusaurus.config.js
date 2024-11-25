@@ -340,7 +340,21 @@ const config = {
           "diff",
           "javascript",
           "dart", // For Flutter, Dart is the primary language
+          "toml",
+          "groovy",
         ],
+        magicComments: [
+        // Remember to extend the default highlight class name as well!
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: {start: 'highlight-start', end: 'highlight-end'},
+        },
+        {
+          className: 'code-block-error-line',
+          line: 'This will error',
+        },
+      ],
       },
 
       // Configure the color mode to default to light and disable the dark mode switch

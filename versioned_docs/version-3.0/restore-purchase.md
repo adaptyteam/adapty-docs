@@ -19,11 +19,25 @@ To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-bui
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+```swift 
+do {
+    let profile = try await Adapty.restorePurchases()
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // successful access restore
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
+
 ```swift 
 Adapty.restorePurchases { [weak self] result in
     switch result {
         case let .success(profile):
-            if info.profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
                 // successful access restore
             }
         case let .failure(error):
@@ -33,6 +47,7 @@ Adapty.restorePurchases { [weak self] result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin 
 Adapty.restorePurchases { result ->
     when (result) {
@@ -52,6 +67,7 @@ Adapty.restorePurchases { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -72,6 +88,7 @@ Adapty.restorePurchases(result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 try {
   final profile = await Adapty().restorePurchases();
@@ -85,25 +102,27 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
-      return;
-  }
+        return;
+    }
   
-  var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
-  if (accessLevel != null && accessLevel.IsActive) {
-      // restore access
-  }
+    var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+    if (accessLevel != null && accessLevel.IsActive) {
+        // restore access
+    }
 });
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 try {
     const profile = await adapty.restorePurchases();
-  const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
     if (isSubscribed) {
         // restore access

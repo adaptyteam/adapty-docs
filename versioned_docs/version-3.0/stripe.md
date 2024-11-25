@@ -174,6 +174,12 @@ At the moment Adapty only supports **Flat rate** ($9.99/month) or **Package pric
 
 ### 3\. Add Stripe products to Adapty
 
+:::warning
+
+Products are required! Be sure to create your Stripe products in the Adapty Dashboard. Adapty only tracks events for transactions linked to these products, so don’t skip this step—otherwise, transaction events won’t be created.
+
+:::
+
 We treat Stripe the same way as App Store and Google Play: it is just another store where you sell your digital products. So it is configured similarly: simply add Stripe products (namely their `product_id` and `price_id`) to the Products section of Adapty:
 
 <Zoom>
@@ -199,12 +205,6 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
   }}
 />
 </Zoom>
-
-:::warning
-
-Products are required! Be sure to create your Stripe products in the Adapty Dashboard. Adapty only tracks events for transactions linked to these products, so don’t skip this step—otherwise, transaction events won’t be created.
-
-:::
 
 After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
 

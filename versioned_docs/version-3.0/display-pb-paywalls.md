@@ -10,17 +10,14 @@ import Details from '@site/src/components/Details';
 
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.
 
-here are two ways to customize a paywall in the Adapty Dashboard: 
-
-- The simple, no-code tool called the [**Paywall Builder**](adapty-paywall-builder) 
-- The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file containing the data needed to render the paywall on the device
-
 :::warning
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS and Android, as it requires SDK v3.0, which is available for iOS, Android, and React Native only. Support for Flutter and Unity is coming soon. 
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS, Android, React Native, and Flutter as it requires SDK v3.0 (v3.2.0 for Flutter), which is not yet available for Unity. Support for Unity is coming soon.
 
 - For displaying **legacy Paywall Builder paywalls**, check out [Display paywalls designed with legacy Paywall Builder](display-legacy-pb-paywalls).
+
 - For displaying **remote config paywalls**, see [Display remote config paywalls](display-remote-config-paywalls).
-  :::
+
+:::
 
 If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder), you don’t need to worry about rendering it in your app’s code. The paywall itself handles what to display, how to display it, and how to process user actions like purchases. Additionally, it automatically logs the paywall view event, so you don’t need to ensure analytics receives the data. 
 

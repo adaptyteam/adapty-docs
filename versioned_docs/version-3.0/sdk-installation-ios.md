@@ -48,8 +48,8 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.1.0'
-   pod 'AdaptyUI', '~> 3.1.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.0'
+   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -103,8 +103,8 @@ struct SampleApp: App {
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
 
-        Adapty.activate(with: configurationBuilder) { error in
-          // handle the error
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
         }
     }
 
@@ -147,27 +147,28 @@ You need to configure the AdaptyUI module only if you plan to use [Paywall Build
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 // After calling Adapty.activate()
-        let adaptyUIConfiguration = AdaptyUI.Configuration(
-            mediaCacheConfiguration: .init(
-                memoryStorageTotalCostLimit: 100 * 1024 * 1024,
-                memoryStorageCountLimit: .max,
-                diskStorageSizeLimit: 100 * 1024 * 1024
-            )
-        )
-        AdaptyUI.activate(
-            configuration: adaptyUIConfiguration
-        )
+let adaptyUIConfiguration = AdaptyUI.Configuration(
+    mediaCacheConfiguration: .init(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024,
+        memoryStorageCountLimit: .max,
+        diskStorageSizeLimit: 100 * 1024 * 1024
+    )
+)
+
+try await AdaptyUI.activate(
+    configuration: adaptyUIConfiguration
+)
 ```
 
 Please note that AdaptyUI configuration is optional, you can activate AdaptyUI module without its config. However, if you use the config, all parameters are required in it.
 
 Parameters:
 
-| Parameter                   | Presence | Description                                                  |
-| :-------------------------- | :------- | :----------------------------------------------------------- |
-| memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
-| memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
-| diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+| Parameter                       | Presence | Description                                                  |
+| :------------------------------ | :------- | :----------------------------------------------------------- |
+| **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
+| **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
+| **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
 
  </TabItem> 
  <TabItem value="2.x" label="Adapty SDK up to v2.x (legacy)" default> 
@@ -256,6 +257,7 @@ struct SampleApp: App {
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
+          .with(LogLevel: verbose) // optional  
 
         Adapty.activate(with: configurationBuilder) { error in
           // handle the error
@@ -284,6 +286,7 @@ Parameters:
 | **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | **idfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| **LogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 
 
 :::note
@@ -297,29 +300,12 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 </TabItem> 
 </Tabs>
 
-## Set up the logging system
-
-Adapty logs errors and other crucial information to provide insight into your app's functionality. Available levels:
-
-| Level   | Description                                                                                            |
-| :------ | :----------------------------------------------------------------------------------------------------- |
-| error   | Only errors will be logged.                                                                            |
-| warn    | Logs errors and non-critical messages that warrant attention.                                          |
-| info    | Logs errors, warnings, and significant informational messages, such as module lifecycle events.        |
-| verbose | Logs detailed information that may be useful during debugging, such as function calls and API queries. |
-
-You can set `logLevel` at any time, but it's recommended to do so before configuring Adapty.
-
-```swift title="Swift"
-Adapty.logLevel = .verbose
-```
-
 ## Redirect the logging system messages
 
-If you need to send Adapty's log messages to your system or save them to a file, you can override the default behavior:
+If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
 
 ```swift title="Swift"
-Adapty.setLogHandler { level, message in
-    writeToLocalFile("Adapty \(level): \(message)")
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
 }
 ```

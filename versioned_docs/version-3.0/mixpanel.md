@@ -85,6 +85,22 @@ Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
+```swift 
+import Mixpanel
+
+let builder = AdaptyProfileParameters.Builder()
+            .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
+
+do {
+    try await Adapty.updateProfile(params: builder.build())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Swift-Callback" label="iOS (Swift-Callback)" default>
+
 ```swift 
 import Mixpanel
 
@@ -95,10 +111,12 @@ Adapty.updateProfile(params: builder.build())
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 val params = AdaptyProfileParameters.Builder()
     .withMixpanelUserId(mixpanelAPI.distinctId)
     .build()
+
 Adapty.updateProfile(params) { error ->
     if (error != null) {
         // handle the error
@@ -107,6 +125,7 @@ Adapty.updateProfile(params) { error ->
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```javascript
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
@@ -117,15 +136,17 @@ final builder = AdaptyProfileParametersBuilder()
           await mixpanel.getDistinctId(),
         );
 
-    try {
-        await Adapty().updateProfile(builder.build());
-    } on AdaptyError catch (adaptyError) {
-        // handle error
-    } catch (e) {}
+try {
+    await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
-```csharp var builder = new Adapty.ProfileParameters.Builder();
+
+```csharp 
+var builder = new Adapty.ProfileParameters.Builder();
 builder.SetMixpanelUserId(Mixpanel.DistinctId);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
@@ -134,6 +155,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty } from 'react-native-adapty';
 import { Mixpanel } from 'mixpanel-react-native';

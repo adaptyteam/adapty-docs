@@ -96,19 +96,22 @@ It's important to note that certain charts may not support every type of filteri
 
 In Advanced Analytics, you have access to the following filtering and grouping options, empowering you to refine your data analysis:
 
-|                      | Filtering | Grouping | Description                                                                                                                          |
-| :------------------- | :-------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| Attribution          | ✅         | ✅        | Filter or group metrics by Attribution fields like Status, Channel, Campaign, Adgroup, Adset, and Creative.                          |
-| Renewal Status       | ❌         | ✅        | Group metrics by the product's renewal status, which indicates whether or not the subscription will be renewed in the next period.   |
-| Period               | ❌         | ✅        | Group metrics by the period.                                                                                                         |
-| Country              | ✅         | ✅        | Filter or group metrics by user's store country (if available, otherwise country is inferred using currency code or device's IP).    |
-| Paywall (Deprecated) | ✅         | ✅        | Filter or group metrics by paywalls that are associated with purchases. ( Deprecated legacy option)                                  |
-| Paywall              | ✅         | ✅        | Filter or group metrics by [paywalls ](paywalls)that are associated with purchases.                                              |
-| A/B Test             | ✅         | ❌        | Filter or group metrics by [A/B tests](ab-tests)that are associated with purchases.                      |
-| Placement            | ✅         | ✅        | Filter or group metrics by [placement](placements)that are associated with purchases.                    |
-| Store                | ✅         | ✅        | Filter or group metrics by store (iOS/Android).                                                                                      |
+|                      | Filtering | Grouping | Description                                                  |
+| :------------------- | :-------- | :------- | :----------------------------------------------------------- |
+| Attribution          | ✅         | ✅        | Filter or group metrics by Attribution fields like Status, Channel, Campaign, Adgroup, Adset, and Creative. |
+| Renewal Status       | ❌         | ✅        | Group metrics by the product's renewal status, which indicates whether or not the subscription will be renewed in the next period. |
+| Period               | ❌         | ✅        | Group metrics by the period.                                 |
+| Country              | ✅         | ✅        | Filter or group metrics by user's store country (if available, otherwise country is inferred using currency code or device's IP). |
+| Offer Type           | ✅         | ❌        | Filter metrics by the type of applied offer. Available offer types include: <ul><li>**Introductory**: A paid introductory offer giving a discount on the initial subscription period. Includes App Store Introductory Offers and Play Store paid offers (applied to initial subscription periods), but does **not** include free trial periods.</li><li>**Promotional**: A promotional offer applied to the subscription, such as App Store Promotional Offers.</li><li>**Offer Code**: A promo code the customer enters to receive a discount or free trial (depending on the offer and store). Includes promo codes from both the App Store and Play Store.</li><li>**No Offer**: Indicates no offer was applied to the transaction.</li></ul> |
+| Offer ID             | ✅         | ❌        | Filter metrics by a specific offer ID.                       |
+| Offer Discount Type  | ✅         | ❌        | Filter metrics by the type of offer discount applied. Options include **Free Trial**, **Pay As You Go**, and **Pay Up Front**. |
+| Paywall (Deprecated) | ✅         | ✅        | Filter or group metrics by paywalls that are associated with purchases. ( Deprecated legacy option) |
+| Paywall              | ✅         | ✅        | Filter or group metrics by [paywalls ](paywalls)that are associated with purchases. |
+| A/B Test             | ✅         | ❌        | Filter or group metrics by [A/B tests](ab-tests) that are associated with purchases. |
+| Placement            | ✅         | ✅        | Filter or group metrics by [placement](placements) that are associated with purchases. |
+| Store                | ✅         | ✅        | Filter or group metrics by store (iOS/Android).              |
 | Product              | ✅         | ✅        | Filter or group metrics by [product](product) (both subscriptions and one-time purchases are available). |
-| Duration             | ✅         | ✅        | Filter or group metrics by product's duration.                                                                                       |
+| Duration             | ✅         | ✅        | Filter or group metrics by product's duration.               |
 
 <Zoom>
   <img src={require('./img/84f2f49-CleanShot_2023-09-12_at_15.15.152x.webp').default}
@@ -144,8 +147,7 @@ In addition to the chart view, Adapty also provides a table view for each chart.
 
 ### CSV data export
 
-If you want to analyze the underlying data used to generate a chart, cohorts analysis, funnels, retentions, or conversion analytics, you can easily export it in CSV format by clicking the **Export** button. This feature allows you to access the raw data used to create the respective analysis. You can manipulate this data in spreadsheet applications or other tools to perform further analysis.
-
+To analyze the raw data behind charts, cohort analyses, funnels, retentions, or conversion analytics, you can export it in CSV format by clicking the **Export** button. 
 
 <Zoom>
   <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.webp').default}
@@ -157,6 +159,10 @@ If you want to analyze the underlying data used to generate a chart, cohorts ana
   }}
 />
 </Zoom>
+
+You can also [retrieve the same data via the API](client-api). Regardless of the method, the data file will be identical.
+
+This feature gives you access to the underlying data, which you can further analyze in spreadsheet applications or other tools to gain deeper insights.
 
 ### Store commission and taxes
 

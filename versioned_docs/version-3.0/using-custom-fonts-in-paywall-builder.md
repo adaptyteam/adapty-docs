@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 Consistency in visuals is key to great design. When building no-code paywalls, you might want to use a custom font to match the rest of your app. Here, we'll discuss how to customize fonts and how you can use them.
 
 :::warning
-This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 and later which is now available for iOS and Android only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom fonts in legacy Paywall Builder](using-custom-fonts-in-legacy-paywall-builder).
+This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later which is now available for iOS, Android, Flutter, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom fonts in legacy Paywall Builder](using-custom-fonts-in-legacy-paywall-builder).
 :::
 
 ##

@@ -11,7 +11,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde, remote config paywalls, and [Observer mode](observer-vs-full-mode).
 
 - For presenting **Legacy Paywall Builder paywalls**, check out [iOS - Present legacy Paywall Builder paywalls](ios-present-paywalls-legacy).
 - For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
@@ -21,48 +21,39 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. 
 
 ## Present paywalls in Swift
 
-In order to display the visual paywall on the device screen, you must first configure it. To do this, use the method `.paywallController(for:products:introductoryOffersEligibilities:viewConfiguration:delegate:)`:
+In order to display the visual paywall on the device screen, do the following:
 
-```swift title="Swift"
-import Adapty
-import AdaptyUI
+1. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-do {
-	let visualPaywall = try AdaptyUI.paywallController(
-			for: <paywall object>,
-			products: <paywall products array>,
-			introductoryOffersEligibilities: <intro offers eligibilities dictionary>,
-			viewConfiguration: <LocalizedViewConfiguration>,
-			delegate: <AdaptyPaywallControllerDelegate>
-	)
-} catch {
-	// handle the error
-}
-```
+   ```swift title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
 
-Request parameters:
+    Request parameters:
 
-| Parameter                           | Presence | Description                                                                                                                                                                                                                                                                                                           |
-| :---------------------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**                         | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
-| **Products**                        | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **IntroductoryOffersEligibilities** | optional | Provide the dictionary of offers eligibilities to optimize the display timing of offers eligibilities on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary offers eligibilities.                                                                                                        |
-| **ViewConfiguration**               | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                            |
-| **Delegate**                        | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
-| **TagResolver**                     | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
-| **TimerResolver**                   | optional | Pass the resolver here if you are going to use custom timer functionality.                                                                                                                                                                                                                                            |
+    | Parameter                | Presence | Description |
+    | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+    | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
 
-Returns:
 
-| Object                  | Description                                          |
-| :---------------------- | :--------------------------------------------------- |
-| AdaptyPaywallController | An object, representing the requested paywall screen |
+   Returns:
+   
+    | Object                  | Description                                          |
+    | :---------------------- | :--------------------------------------------------- |
+    | **AdaptyPaywallController** | An object, representing the requested paywall screen |
 
-After the object has been successfully created, you can display it on the screen of the device: 
+2. After the object has been successfully created, you can display it on the screen of the device: 
 
-```swift title="Swift"
-present(visualPaywall, animated: true)
-```
+    ```swift title="Swift"
+    present(visualPaywall, animated: true)
+    ```
 
 ## Present paywalls in SwiftUI
 
@@ -95,16 +86,12 @@ var body: some View {
 }
 ```
 
-Request parameters:
+Parameters:
 
-| Parameter                           | Presence | Description                                                                                                                                                                                                                                                                                                            |
-| :---------------------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**                         | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                              |
-| **Product**                         | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                    |
-| **IntroductoryOffersEligibilities** | optional | Provide the dictionary of offers eligibilities to optimize the display timing of offers eligibilities on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary offers eligibilities.                                                                                                         |
-| **Configuration**                   | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                             |
-| **TagResolver**                     | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
-| **TimerResolver**                   | optional | Pass the resolver here if you are going to use custom timer functionality.                                                                                                                                                                                                                                             |
+| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
+| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
 
 Closure parameters:
 
@@ -116,4 +103,5 @@ Closure parameters:
 | **didFailRestore**    | If Adapty.restorePurchases() fails, this callback will be invoked.                |
 | **didFailRendering**  | If an error occurs during the interface rendering, this callback will be invoked. |
 
-Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
+Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters. 
+

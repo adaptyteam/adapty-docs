@@ -2,6 +2,7 @@
 title: "React Native - Present new Paywall Builder paywalls"
 description: ""
 metadataTitle: ""
+
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -11,7 +12,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
 - For presenting **legacy Paywall Builder paywalls**, check out [React Native - Present Paywall Builder paywalls](react-native-present-paywalls-legacy).
 - For presenting **remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
@@ -34,3 +35,15 @@ try {
 }
 
 ```
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+
+```typescript title="React Native (TSX)"
+let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+//and then you can pass it to createPaywallView as follows:
+view = await createPaywallView(paywall, { timerInfo })
+```
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).

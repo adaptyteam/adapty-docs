@@ -30,9 +30,10 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.0.3')
+    implementation platform('io.adapty:adapty-bom:3.1.1')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
+    implementation 'io.adapty:android-ui-video' // Required only if using video in Paywall Builder
 }
 ```
 
@@ -42,9 +43,10 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.0.3"))
+    implementation(platform("io.adapty:adapty-bom:3.1.1"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
+    implementation("io.adapty:android-ui-video") // Required only if using video in Paywall Builder
 }
 ```
 
@@ -56,14 +58,14 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.0.3"
+adaptyBom = "3.1.1"
 
 [libraries]
 ..
 adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
 adapty = { module = "io.adapty:android-sdk" }
 adapty-ui = { module = "io.adapty:android-ui" }
-
+adapty-ui-video = { module = "io.adapty:android-ui-video" } # Required only if using video in Paywall Builder
 
 
 //module-level build.gradle.kts
@@ -73,6 +75,7 @@ dependencies {
     implementation(platform(libs.adapty.bom))
     implementation(libs.adapty)
     implementation(libs.adapty.ui)
+    implementation(libs.adapty.ui.video) // Required only if using video in Paywall Builder
 }
 ```
 
@@ -174,7 +177,7 @@ Configurational options:
 | **PUBLIC_SDK_KEY**              | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
 | **observerMode**                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| **IpAddressCollectionDisabled** | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| **ipAddressCollectionDisabled** | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
 
 :::note
 **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
