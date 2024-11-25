@@ -40,7 +40,7 @@ When the subscription renewal date comes, the subscription is renewed. In this c
 
 ### Subscription Cancellation Flow
 
-When a user cancels their subscription, a **Subscription renewal cancelled** event is created, which means the subscription will stay active until the end of the period and the user will lose their access at the end of the subscription period. Once the subscription ends:
+When a user cancels their subscription, a **Subscription renewal canceled** event is created, which means the subscription will stay active until the end of the period and the user will lose their access at the end of the subscription period. Once the subscription ends:
 
 - the **Subscription expired (churned)** event is triggered, revoking access 
 - The **Access level updated** event is created to remove the user’s access.
@@ -106,18 +106,16 @@ The **Access level updated** events will be created twice:
 
 ### Subscription Pause Flow (Android only)
 
-This flow applies if a user pauses and then resumes a subscription on Android. Subscription pause is not an immediate action, even if a user pauses the subscription in the middle of a subscription period, the subscription will stay active and the user will keep their access till the end of the subscription period.
+This flow applies when a user pauses and later resumes a subscription on Android. Pausing a subscription is not an immediate action. Even if the user pauses it during an active subscription period, the subscription will remain active, and the user will retain access until the end of that period.
 
-The subscription is actually paused at the moment of the subscription's end. At this moment the user looses their access and stays as is till the user resumes the subscription.
+The subscription is officially paused at the end of the subscription period. At this point, the user loses access and remains without it until they choose to resume the subscription.
 
-Therefore, no events are created at the moment when the user pauses the subscription.
-
-At the moment of the subscription end, the following events are created:
+No events are triggered when the user pauses the subscription. However, the following events are created at the end of the subscription period:
 
 - **Subscription paused (Android only)**
 - **Access level updated** to revoke the user's access
 
-While at the moment the the user resumes the subscription, the following events will be created:
+When the user resumes the subscription, the following events are triggered:
 
 - **Subscription renewed**
 - **Access level updated** to restore the user's access.
@@ -197,7 +195,7 @@ In this flow, a user starts a trial with a payment method on file. A **Trial sta
 
 ### Trial without Successful Conversion Flow
 
-If a user cancels the trial before it converts to a subscription, a **Trial renewal cancelled** event is triggered at the time of cancellation. The user will have access until the end of the trial, when the following events are created:
+If a user cancels the trial before it converts to a subscription, a **Trial renewal cancelled** event is triggered at the time of cancellation. The user will have access until the end of the trial when the following events are created:
 
 - **Trial expired**
 - **Access level updated** to revoke the user's access.
@@ -214,16 +212,17 @@ If a user cancels the trial before it converts to a subscription, a **Trial rene
 
 ### Trial Billing Issue Outcome Flow
 
-If a user doesn’t cancel the trial but a billing issue occurs at the conversion point, the flow depends on the grace period, although. 
+If a user doesn’t cancel their trial but a billing issue occurs at the conversion point, the flow varies depending on whether a grace period is enabled. 
 
-With a grace period, at the moment of the first payment failure, the following events are created:
+**With a Grace Period:**
+When the first payment fails, the following events are triggered:
 
 - **Billing issue detected**
 - **Entered grace period** since the grace periood is enabled
 
-If the payment succeeds later, the trial converts to a subscription (triggering **Trial converted**). 
+If the payment succeeds during the grace period, the trial converts to a subscription, triggering the **Trial converted** event.
 
-If it never succeeds, the following events are created at the end of the grace period:
+If the payment never succeeds, the following events occur at the end of the grace period:
 
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
 - **Access level updated** to revoke the user's access.
@@ -238,7 +237,8 @@ If it never succeeds, the following events are created at the end of the grace p
 />
 </Zoom>
 
-Without a grace period, the trial ends immediately, neither grace period, not subscription is started, and access is revoked:
+**Without a Grace Period:**
+If no grace period is enabled, the trial ends immediately. No grace period or subscription is started, and access is revoked. The following events are triggered:
 
 - **Billing issue detected**
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
@@ -281,7 +281,7 @@ This section covers any adjustments made to active subscriptions, such as upgrad
 
 After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
 
-- the access level is changed  and 2 **Access level updated** events are created
+- the access level is changed  and 2 **Access level updated** events are created:
   1. to remove the access to the first product 
   2. to give access to the second product
 
@@ -342,7 +342,7 @@ When a [Customer User ID](identifying-users#setting-customer-user-id-on-configur
 
 ###  Transfer Access to New User Flow
 
-The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. So only 2 Access level updated events will be created:
+The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. So only 2 **Access level updated** events will be created:
 
 1. to remove the first user's access
 2. to give access to the second user
@@ -359,7 +359,7 @@ The recommended option is to transfer the access level to the new user. This pre
 
 ###  Shared Access Between Users Flow
 
-This option allows multiple users to share the same access level, though it’s a bit risky since it may lead to multiple users accessing the same content. While the access level is shared, all transactions are logged under the original Customer User ID to maintain complete transaction history and analytics.
+This option allows multiple users to share the same access level, though it’s a bit risky since it may lead to multiple users accessing the same content. While the access level is shared, all transactions are logged under the original [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) to maintain complete transaction history and analytics.
 
 Therefore, only 1 event will be created: **Access level updated** to grant access to the second user.
 
@@ -375,7 +375,7 @@ Therefore, only 1 event will be created: **Access level updated** to grant acces
 
 ###  Access Not Shared Between Users Flow
 
-With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single Customer User ID. 
+With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single [Customer User ID](identifying-users#setting-customer-user-id-on-configuration). 
 
 <Zoom>
   <img src={require('./img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp').default}
