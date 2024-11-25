@@ -39,53 +39,53 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
 
 ```json title="Json"
 {
-  "profile_id": "772204ce-ebf6-4ed9-83b0-d8633ab62b01",
-  "customer_user_id": "john.doe",
+  "profile_id": "InternalUniqueUserProfileIdentifier",
+  "customer_user_id": "UserIdInYourSystem",
   "idfv": "00000000-0000-0000-0000-000000000000",
   "idfa": "00000000-0000-0000-0000-000000000000",
   "advertising_id": "00000000-0000-0000-0000-000000000000",
-  "profile_install_datetime": "2020-02-18T18:40:22.000000+0000",
-  "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "profile_install_datetime": "2000-01-31T00:00:00.000000+0000",
+  "user_agent": "ExampleUserAgent/1.0 (Device; OS Version) Browser/Engine",
   "email": "john.doe@company.com",
-  "event_type": "non_subscription_purchase",
-  "event_datetime": "2023-02-18T18:40:22.000000+0000",
+  "event_type": "Subscription started",
+  "event_datetime": "2000-01-31T00:00:00.000000+0000",
     "event_properties": {
       "store": "play_store",
       "currency": "USD",
       "price_usd": 4.99,
-      "profile_id": "82a8103e-cb8d-4837-ba43-33c02d628021",
+      "profile_id": "InternalUniqueUserProfileIdentifier",
       "cohort_name": "All Users",
       "environment": "Production",
       "price_local": 4.99,
       "base_plan_id": "b1",
-      "developer_id": "offer_16",
-      "paywall_name": "offer_16",
+      "developer_id": "PaywallPlacementId",
+      "paywall_name": "UsedPaywall",
       "proceeds_usd": 4.2315,
-      "variation_id": "a942d149-6545-4bae-33fc-b19e3a158804",
+      "variation_id": "00000000-0000-0000-0000-000000000000",
       "purchase_date": "2024-11-15T10:45:36.181000+0000",
       "store_country": "AR",
-      "event_datetime": "2024-11-15T10:45:36.181000+0000",
+      "event_datetime": "2000-01-31T00:00:00.000000+0000",
       "proceeds_local": 4.2415,
       "tax_amount_usd": 0,
-      "transaction_id": "TR.3365-4326-1333-87868",
+      "transaction_id": "UniqueTransactionIdentifier",
       "net_revenue_usd": 4.2415,
       "profile_country": "AR",
       "paywall_revision": "1",
-      "profile_event_id": "2f2a1dc4-463e-4333-8a1b-493c75c9b78f",
+      "profile_event_id": "UniqueIdentifierOfEvent",
       "tax_amount_local": 0,
       "net_revenue_local": 4.2415,
-      "vendor_product_id": "weekly_499",
-      "profile_ip_address": "129.62.230.4",
+      "vendor_product_id": "onemonth_no_trial",
+      "profile_ip_address": "192.0.2.1,",
       "consecutive_payments": 1,
       "rate_after_first_year": false,
-      "original_purchase_date": "2024-11-15T10:45:36.181000+0000",
-      "original_transaction_id": "TRA.3365-4326-1333-87868",
-      "subscription_expires_at": "2024-11-22T10:44:18.594000+0000",
+      "original_purchase_date": "2000-01-31T00:00:00.000000+0000",
+      "original_transaction_id": "UniqueTransactionIdentifier",
+      "subscription_expires_at": "2000-01-31T00:00:00.000000+0000",
       "profile_has_access_level": true,
       "profile_total_revenue_usd": 4.99
     },
   "event_api_version": 1,
-  "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-733311fe5800", "customer_user_id": "example@gmail.com"}],
+  "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-733311fe5800", "customer_user_id": "UserIdInYourSystem"}],
    "attributions": {
     "appsflyer": {
       "ad_set": "Keywords 1.12",
@@ -94,12 +94,12 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
       "ad_group": null,
       "campaign": "Social media influencers - Rest of the world",
       "creative": null,
-      "created_at": "2024-11-15T10:44:20.991232+0000",
-      "network_user_id": "1731667450897-7022533399482074397"
+      "created_at": "2000-01-31T00:00:00.000000+0000",
+      "network_user_id": "UniqueIdentifierAssignedByAdNetwork"
     }
   },
-  "user_attributes": {"attribute_name1": "attribute_value1", "attribute_name2": "attribute_value2", ...}
-  "integration_ids": {"firebase_app_instance_id": "val1", "branch_id": "val2", "one_signal_player_id": "val3", ... }
+  "user_attributes": {"Favourite_color": "Violet", "Pet_name": "Fluffy"}
+  "integration_ids": {"firebase_app_instance_id": "val1", "branch_id": "val2", "one_signal_player_id": "val3"}
 }
 ```
 
