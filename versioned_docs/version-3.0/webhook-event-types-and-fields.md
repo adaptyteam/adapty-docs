@@ -5,31 +5,13 @@ metadataTitle: ""
 toc_max_heading_level: 3
 ---
 
+import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
+
 Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Webhook event flows](webhook-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-4-optional-choose-events-to-send-and-map-event-names). There you can also replace Adapty default event IDs with your own if required.
-
-| Event Name                         | Default event ID                   | Description                                                  |
-| ---------------------------------- | :--------------------------------- | :----------------------------------------------------------- |
-| Subscription started               | subscription_started               | A user has activated a paid subscription without a trial period i.e. he was billed instantly. |
-| Subscription renewed               | subscription_renewed               | A subscription was renewed and the user was charged. For both trial and non-trial subscriptions, this event is sent starting from the second billing. |
-| Subscription renewal cancelled     | subscription_renewal_cancelled     | A user turned off subscription auto-renewal. A user still has access to the premium features of your app until the end of the paid subscription period. |
-| Subscription renewal reactivated   | subscription_renewal_reactivated   | A user turned on subscription auto-renewal.                  |
-| Subscription expired (churned)     | subscription_expired               | A user has canceled a subscription and it is completely finished. For example, if a user has a subscription till the 31st of December a cancells the subscription on 12th of December, the event will be created on the 31st of December when the subscription expires. |
-| Subscription paused (Android only) | subscription_paused                | User activated [subscription pause](https://developer.android.com/google/play/billing/subs#pause) (Android only). |
-| Non-subscription purchase          | non_subscription_purchase          | Any non-subscription purchase e.g. lifetime access or consumable product such as coins in a game. |
-| Trial started                      | trial_started                      | A user has activated a trial subscription.                   |
-| Trial converted                    | trial_converted                    | A trial period has ended and the user was billed, i.e. first purchase was made. Fro example, if a user has a 2-week trial subscription till the 14th of January and buys a paid subscription on the 7th of January, the event will be created when the user is billed - on the 7th of January. |
-| Trial renewal cancelled            | trial_renewal_cancelled            | A user turned off subscription auto-renewal during the trial. A user still has access to the premium features of your app until the end of the trial period. But the subscription will not start and the user will not be billed. |
-| Trial renewal reactivated          | trial_renewal_reactivated          | A user turned on subscription auto-renewal during the trial period. |
-| Trial expired                      | trial_expired                      | A trial has expired without converting to a subscription.    |
-| Entered grace period               | entered_grace_period               | The payment was not successful and the user entered into a grace period if you have it. The user still has access to the premium features of your app until the grace period is finished. |
-| Billing issue detected             | billing_issue_detected             | An attempt to charge the user was made, but a billing issue happened. Usually, it means the user doesn't have enough card balance. |
-| Subscription refunded              | subscription_refunded              | A subscription was refunded \(e.g. by Apple support\).       |
-| Non-subscription purchase refunded | non_subscription_purchase_refunded | Non-subscription purchase was refunded.                      |
-| Access level updated               | access_level_updated               | User's access level updated.                                 |
+<WebhookEvents />
 
 ## Webhook event structure
 
@@ -109,7 +91,7 @@ Event parameters are the same for all event types.
 
 | Field                             | Type                 | Description                                                  |
 | :-------------------------------- | :------------------- | :----------------------------------------------------------- |
-| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> You can see them in the  **Default event ID** of the [Web hook events](set-up-webhook-integration#webhook-events) table. Standard flows with events that are created and sent to webhook are described on the [Webhook event flows](webhook-flows) page.</p> |
+| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> You can see them in the  **Default event ID** of the [Web hook events](webhook#events-than-can-be-sent-to-a-webhook) table. Standard flows with events that are created and sent to webhook are described on the [Webhook event flows](webhook-flows) page.</p> |
 | **idfv**                          | String               | The identifier for vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. You can find it in the **IDFV** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **idfa**                          | String               | The identifier for advertisers (IDFA) is a random device identifier assigned by Apple to a user's device. You can find it in the **IDFA** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **email**                         | String               | E-mail of your user. You can find it in the **Email** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
@@ -117,7 +99,7 @@ Event parameters are the same for all event types.
 | **user_agent**                    | String               | User-agent used by the browser on the device.                |
 | **advertising_id**                | String               | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device. Used for Android only. |
 | **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html) : starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
-| **event_properties**              | JSON                 | JSON of [event properties](set-up-webhook-integration#event-properties). |
+| **event_properties**              | JSON                 | JSON of [event properties](webhook-event-types-and-fields#event-properties). |
 | **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
 | **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
@@ -143,7 +125,7 @@ To send the attribution, enable the **Send Attribution** option in the [**Integr
 | **created_at**      | ISO 8601 date | Date and time of attribution record creation.      |
 | **network_user_id** | String        | ID assigned to the user by the attribution source. |
 
-### Event Properties
+### Event properties
 
 Event properties can differ between event types and even events of the same type. For example, an event from the App Store will not have Android-specific properties like `base_plan_id`.
 
