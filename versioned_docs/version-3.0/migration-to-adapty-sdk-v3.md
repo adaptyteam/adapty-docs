@@ -47,8 +47,8 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 
 2. ```shell title="Podfile"
-   pod 'Adapty', '~> 3.0.1'
-   pod 'AdaptyUI', '~> 3.0.1' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.0'
+   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
    ```
 
 3. Run:
@@ -70,7 +70,7 @@ import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
@@ -96,7 +96,7 @@ import AdaptyUI // Only if you are going to use AdaptyUI
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
