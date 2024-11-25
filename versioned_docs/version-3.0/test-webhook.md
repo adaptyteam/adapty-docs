@@ -17,7 +17,7 @@ After you set up your integration, it's time to test it. You can test both your 
 
 Before you start testing an integration, make sure you have already:
 
-1. Set up the webhook integration as described in the [Set up webhook integration](set-up-webhook-integration) topic.
+1. Set up the webhook integration as described in the [Webhook integration configuration](webhook#webhook-integration-configuration) topic.
 2. Set up the environment as described in the [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) topics. Make sure you built your test app in the sandbox environment rather than in the production one.
 
 To test the integration:
@@ -65,5 +65,4 @@ In case of successful integration, an event will appear in the **Last sent event
   }}
 />
 </Zoom>
-
 
