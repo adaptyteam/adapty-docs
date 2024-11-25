@@ -47,8 +47,8 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 
 2. ```shell title="Podfile"
-   pod 'Adapty', '~> 3.0.1'
-   pod 'AdaptyUI', '~> 3.0.1' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.0'
+   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
    ```
 
 3. Run:
