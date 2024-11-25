@@ -28,7 +28,7 @@ With the analytics export API, you can, for example:
 
 ## Authorization
 
-- **Base URL**: [https://api-admin.adapty.io](http://api-admin.adapty.io/)
+- **Base URL**: [https://api-admin.adapty.io](https://api-admin.adapty.io/)
 
 - **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header.
 
