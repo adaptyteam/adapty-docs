@@ -232,7 +232,7 @@ try {
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
   
   let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
       .Builder(withAPIKey: "PUBLIC_SDK_KEY")
       .with(customerUserId: "YOUR_USER_ID") // optionally add your internal user id
 

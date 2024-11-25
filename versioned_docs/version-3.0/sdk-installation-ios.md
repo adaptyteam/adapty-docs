@@ -74,7 +74,7 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 import Adapty
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
@@ -96,7 +96,7 @@ import Adapty
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
@@ -229,7 +229,7 @@ You only need to configure the Adapty SDK once, typically early in your applicat
 // In your AppDelegate class:
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false) // optional
         .with(customerUserId: "YOUR_USER_ID") // optional
@@ -251,7 +251,7 @@ import Adapty
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
