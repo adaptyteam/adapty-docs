@@ -48,6 +48,7 @@ Accept: application/json
 ```
 </TabItem> 
 <TabItem value="javascript" label="Javascript" default>  
+
 ```javascript
 const inputBody = '{
   "status": "organic",
@@ -232,16 +233,16 @@ Any of the following objects:
 
 ##### AttributionDataCustomerUserId object
 
-| Name                | Type                                          | Required           | Description     |
-| ------------------- | --------------------------------------------- | ------------------ | --------------- |
-| status              | [AttributionStatus](#schemaattributionstatus) | :heavy_plus_sign:  | An enumeration. |
-| attribution_user_id | string                                        | :heavy_minus_sign: | none            |
-| channel             | string                                        | :heavy_minus_sign: | none            |
-| campaign            | string                                        | :heavy_minus_sign: | none            |
-| ad_group            | string                                        | :heavy_minus_sign: | none            |
-| ad_set              | string                                        | :heavy_minus_sign: | none            |
-| creative            | string                                        | :heavy_minus_sign: | none            |
-| customer_user_id    | string                                        | :heavy_plus_sign:  | none            |
+| Name                | Type   | Required           | Description                                                  |
+| ------------------- | ------ | ------------------ | ------------------------------------------------------------ |
+| status              | String | :heavy_plus_sign:  | <p>Indicates if the attribution is organic or non-organic.</p><p>Possible values are:</p><ul><li> organic</li><li> non-organic</li><li> unknown</li></ul> |
+| attribution_user_id | string | :heavy_minus_sign: | ID assigned to the user by the attribution source.           |
+| channel             | string | :heavy_minus_sign: | Marketing channel name.                                      |
+| campaign            | string | :heavy_minus_sign: | Marketing campaign name.                                     |
+| ad_group            | string | :heavy_minus_sign: | Attribution ad group.                                        |
+| ad_set              | string | :heavy_minus_sign: | Attribution ad set.                                          |
+| creative            | string | :heavy_minus_sign: | Attribution creative keyword.                                |
+| customer_user_id    | string | :heavy_plus_sign:  | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 
 > Example responses
 
@@ -275,23 +276,25 @@ Any of the following objects:
 To perform this operation, you must be authenticated by means of one of the following methods:
 tokenAuth
 </aside>
+## Paywall
 
-<h1 id="adapty-api-paywall">Paywall</h1>
+### Create paywall
 
-## web_api_paywall_create
+<Tabs> 
+<TabItem value="shell" label="Shell" default>  
 
-<a id="opIdweb_api_paywall_create"></a>
+ ```shell
+-# You can also use wget
+-curl -X POST http://localhost:8000/api/v1/web-api/paywall/ \
+-  -H 'Content-Type: application/json' \
+-  -H 'Accept: application/json' \
+-  -H 'Authorization: Bearer {access-token}'
++
+ 
+ ```
 
-> Code samples
-
-```shell
-# You can also use wget
-curl -X POST http://localhost:8000/api/v1/web-api/paywall/ \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  -H 'Authorization: Bearer {access-token}'
-
-```
+</TabItem>  
+<TabItem value="http" label="HTTP" default>
 
 ```http
 POST http://localhost:8000/api/v1/web-api/paywall/ HTTP/1.1
@@ -300,6 +303,8 @@ Content-Type: application/json
 Accept: application/json
 
 ```
+</TabItem>  
+<TabItem value="javascript" label="Javascript" default>
 
 ```javascript
 const inputBody = '{
@@ -328,6 +333,9 @@ fetch('http://localhost:8000/api/v1/web-api/paywall/',
 
 ```
 
+</TabItem>
+<TabItem value="ruby" label="Ruby" default>
+
 ```ruby
 require 'rest-client'
 require 'json'
@@ -346,6 +354,9 @@ p JSON.parse(result)
 
 ```
 
+</TabItem>  
+<TabItem value="python" label="Python" default>
+
 ```python
 import requests
 headers = {
@@ -359,6 +370,9 @@ r = requests.post('http://localhost:8000/api/v1/web-api/paywall/', headers = hea
 print(r.json())
 
 ```
+
+</TabItem>  
+<TabItem value="php" label="PHP" default>
 
 ```php
 <?php
@@ -393,6 +407,9 @@ try {
 
 ```
 
+</TabItem>  
+<TabItem value="java" label="Java" default>
+
 ```java
 URL obj = new URL("http://localhost:8000/api/v1/web-api/paywall/");
 HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -409,6 +426,9 @@ in.close();
 System.out.println(response.toString());
 
 ```
+
+</TabItem>  
+<TabItem value="go" label="Go" default>
 
 ```go
 package main
@@ -436,6 +456,10 @@ func main() {
 }
 
 ```
+
+</TabItem>  
+</Tabs>
+
 
 `POST /api/v1/web-api/paywall/`
 
