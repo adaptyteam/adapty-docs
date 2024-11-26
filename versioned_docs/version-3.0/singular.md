@@ -15,7 +15,7 @@ Adapty can send all subscription events which are configured in your integration
 
 ## How to set up Singular integration
 
-To set up the integration with AppsFlyer, go to [Integrations > Singular](https://app.adapty.io/integrations/singular) in your Adapty Dashboard, turn on a toggle, and fill out the fields.
+To set up the integration with Singular, go to [Integrations > Singular](https://app.adapty.io/integrations/singular) in your Adapty Dashboard, turn on a toggle, and fill out the fields.
 
 For this integration to work, the Singular SDK Key is required. It can be found in Singular dashboard: Developer tools -> SDK Keys -> SDK Key (**not** SDK Secret):
 
