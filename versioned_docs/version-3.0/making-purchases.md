@@ -378,7 +378,16 @@ Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 ```typescript 
-// TODO: add example
+try {
+    const profile = await adapty.makePurchase(product, params);
+    const isSubscribed = profile?.accessLevels['premium']?.isActive;
+  
+    if (isSubscribed) {
+        // grant access to premium features
+    }
+} catch (error) {
+    // handle the error
+}
 ```
 </TabItem>
 </Tabs>
