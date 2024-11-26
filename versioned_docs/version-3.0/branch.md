@@ -116,6 +116,7 @@ Branch.getInstance().setIdentity("YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 // login and update attribution
 Branch.getAutoInstance(this)
@@ -146,11 +147,13 @@ Branch.setIdentity("your user id");
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import branch from 'react-native-branch';
 
 branch.setIdentity('YOUR_USER_ID');
 ```
+
 </TabItem>
 </Tabs>
 
@@ -163,12 +166,11 @@ Next, pass the attribution you receive from the initializing method of Branch iO
 class YourBranchImplementation {
 	func initializeBranch() {
 		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-		Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-	    if let data = data?.toSendableDict() {
-	        Adapty.updateAttribution(data, source: .branch)
-	    }
-		}
-	}
+    Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+        if let data = data?.toSendableDict() {
+            Adapty.updateAttribution(data, source: .branch)
+        }
+    }
 }
 
 extension [AnyHashable: Any] {
@@ -208,6 +210,7 @@ extension [AnyHashable: Any] {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```javascript
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
@@ -221,6 +224,7 @@ FlutterBranchSdk.initSession().listen((data) async {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
     string attributionString = JsonUtility.ToJson(parameters);
@@ -231,6 +235,7 @@ Branch.initSession(delegate(Dictionary<string, object> parameters, string error)
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty, AttributionSource } from 'react-native-adapty';
 import branch from 'react-native-branch';

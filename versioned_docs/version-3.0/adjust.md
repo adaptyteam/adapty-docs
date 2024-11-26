@@ -192,17 +192,23 @@ For Adjust version 5.0 or later, use the following:
 class AdjustModuleImplementation {
 
 func updateAdjustAttribution() {
-	Adjust.attribution { attribution in
-		guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+    Adjust.attribution { attribution in
+        guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { 
+            return
+        }
 
-    Adjust.adid { adid in
-        guard let adid else { return }
+        Adjust.adid { adid in
+            guard let adid else { return }
 
-        Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
-            // handle the error
+            Adapty.updateAttribution(
+              attributionDictionary, 
+              source: .adjust, 
+              networkUserId: adid
+            ) { error in
+                // handle the error
+            }
         }
     }
-	}
 }
 
 extension [AnyHashable: Any] {

@@ -28,23 +28,22 @@ Update your mobile app code in the following way. The final code example you can
 For Adjust version 5.0 or later, use the following:
 
 ```diff
-- Adjust.attribution { attribution in
--    guard let attributionDictionary = attribution?.dictionary() else { return }
-+ class AdjustModuleImplementation {
+class AdjustModuleImplementation {
+    func updateAdjustAttribution() {
+        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary() else { return }
++            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
 
-+ func updateAdjustAttribution() {
-+	Adjust.attribution { attribution in
-+		guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+            Adjust.adid { adid in
+                guard let adid else { return }
 
-    Adjust.adid { adid in
-        guard let adid else { return }
-
-        Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
-            // handle the error
+                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+                    // handle the error
+                }
+            }
         }
     }
-+	  }
-+ }
+}
 
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
@@ -52,7 +51,7 @@ For Adjust version 5.0 or later, use the following:
 +
 +        for (key, value) in self {
 +            guard let stringKey = key as? String else { continue }
-
++
 +            switch value {
 +            case let boolValue as Bool:
 +                result[stringKey] = boolValue
@@ -70,10 +69,10 @@ For Adjust version 5.0 or later, use the following:
 +                break
 +            }
 +        }
-
++
 +        return result
 +    }
-}
++}
 ```
 
 </TabItem>
@@ -83,17 +82,17 @@ For Adjust version 5.0 or later, use the following:
 For Adjust version 4.x or earlier, use the following:
 
 ```diff
-+ class YourAdjustDelegateImplementation {
-	// Find your implementation of AdjustDelegate 
-	// and update adjustAttributionChanged method:
- func adjustAttributionChanged(_ attribution: ADJAttribution?) {
--    if let attribution = attribution?.dictionary() {
-+	    if let attribution = attribution?.dictionary()?.toSendableDict() {
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary() {
++       if let attribution = attribution?.dictionary()?.toSendableDict() {
 	        Adapty.updateAttribution(attribution, source: .adjust)
-+	    }
-+ 	}
-+ }
-+
+        }
+    }
+}
+
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
 +        var result = [String: any Sendable]()
@@ -120,8 +119,8 @@ For Adjust version 4.x or earlier, use the following:
 +       }
 +
 +        return result
-    }
-}
++    }
++}
 ```
 
 </TabItem>
@@ -132,22 +131,22 @@ For Adjust version 4.x or earlier, use the following:
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
 ```diff
-+ class YourAppsFlyerLibDelegateImplementation {
-	// Find your implementation of AppsFlyerLibDelegate 
-	// and update onConversionDataSuccess method:
-	func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
-    // It's important to include the network user ID
--    Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())    
-+    let uid = AppsFlyerLib.shared().getAppsFlyerUID()
-+
-+    Adapty.updateAttribution(
-+            conversionInfo.toSendableDict(),
-+            source: .appsflyer,
-+            networkUserId: uid
-+		 )
-+	 }
-+ }
-+
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+        // It's important to include the network user ID
+        let networkUserId = AppsFlyerLib.shared().getAppsFlyerUID()
+
+        Adapty.updateAttribution(
+-           conversionInfo,
++           conversionInfo.toSendableDict(),
+            source: .appsflyer,
+            networkUserId: networkUserId
+        )
+    }
+}
+
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
 +        var result = [String: any Sendable]()
@@ -183,17 +182,18 @@ Update your mobile app code in the following way. The final code example you can
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
-+ class YourBranchImplementation {
-+ 	func initializeBranch() {
-		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-		Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
--		  if let data = data {
-+	    if let data = data?.toSendableDict() {
-	        Adapty.updateAttribution(data, source: .branch)
-+	     }
-+	 	}
-+ 	}
-+ }
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-               if let data = data {
++               if let data = data?.toSendableDict() {
+                    Adapty.updateAttribution(data, source: .branch)
+                }
+            }
+        }
+    }
+}
 
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
@@ -221,6 +221,6 @@ Update your mobile app code in the following way. The final code example you can
 +        }
 +
 +        return result
-    }
-}
++    }
++}
 ```

@@ -185,6 +185,7 @@ It's very important to send AppsFlyer attribution data from the device to Adapty
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift
 class YourAppsFlyerLibDelegateImplementation {
 	// Find your implementation of AppsFlyerLibDelegate 
@@ -194,11 +195,14 @@ class YourAppsFlyerLibDelegateImplementation {
     let uid = AppsFlyerLib.shared().getAppsFlyerUID()
 
     Adapty.updateAttribution(
-            conversionInfo.toSendableDict(),
-            source: .appsflyer,
-            networkUserId: uid
-		)
-	}
+        conversionInfo.toSendableDict(),
+        source: .appsflyer,
+        networkUserId: uid
+    ) { error in
+        if let error = error {
+            // handle the error
+        }
+    }
 }
 
 extension [AnyHashable: Any] {
@@ -251,6 +255,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```javascript 
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
@@ -277,6 +282,7 @@ appsflyerSdk.initSdk(
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 using AppsFlyerSDK;
 
@@ -294,6 +300,7 @@ void onConversionDataSuccess(string conversionData) {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
