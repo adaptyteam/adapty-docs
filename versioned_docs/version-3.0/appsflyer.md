@@ -185,16 +185,58 @@ It's very important to send AppsFlyer attribution data from the device to Adapty
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift
-// Find your implementation of AppsFlyerLibDelegate 
-// and update onConversionDataSuccess method:
-func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
+class YourAppsFlyerLibDelegateImplementation {
+	// Find your implementation of AppsFlyerLibDelegate 
+	// and update onConversionDataSuccess method:
+	func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
     // It's important to include the network user ID
-    Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
+    let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
+    Adapty.updateAttribution(
+        conversionInfo.toSendableDict(),
+        source: .appsflyer,
+        networkUserId: uid
+    ) { error in
+        if let error = error {
+            // handle the error
+        }
+    }
+}
+
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
+    }
 }
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
@@ -213,6 +255,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```javascript 
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
@@ -239,6 +282,7 @@ appsflyerSdk.initSdk(
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 using AppsFlyerSDK;
 
@@ -256,6 +300,7 @@ void onConversionDataSuccess(string conversionData) {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
@@ -275,3 +320,4 @@ appsFlyer.initSdk(/*...*/);
 ```
 </TabItem>
 </Tabs>
+
