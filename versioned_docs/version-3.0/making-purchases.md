@@ -330,8 +330,15 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     }
 }
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -346,8 +353,15 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     }
 });
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 try {
   final result = await adapty.makePurchase(
@@ -362,8 +376,15 @@ try {
   // handle the error
 }
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
@@ -375,8 +396,15 @@ Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
 });
 ```
 
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 try {
     const profile = await adapty.makePurchase(product, params);
@@ -389,14 +417,14 @@ try {
     // handle the error
 }
 ```
-</TabItem>
-</Tabs>
-
 Additional request parameter:
 
-| Parameter                    | Presence | Description                                                                                          |
-| :--------------------------- | :------- | :--------------------------------------------------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+| Parameter  | Presence | Description                                                  |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
+
+</TabItem>
+</Tabs>
 
 You can read more about subscriptions and proration modes in the Google Developer documentation:
 
