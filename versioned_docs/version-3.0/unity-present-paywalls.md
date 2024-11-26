@@ -18,6 +18,10 @@ For presenting remote config paywalls, see [Render paywall designed by remote co
 
 To display a paywall view, simply call the `view.present()` method. If you've already defined a `view` object in a previous step, feel free to use it. In the following snippet, we'll introduce a new `view` for better visibility.
 
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
 ```csharp title="Unity"
 view.Present((error) => {
   // handle the error
