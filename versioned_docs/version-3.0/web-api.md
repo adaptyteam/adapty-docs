@@ -99,7 +99,7 @@ p JSON.parse(result)
 ```
 
 </TabItem> 
-<TabItem value="python" label="Python" default> Text 
+<TabItem value="python" label="Python" default> 
 ```python
 import requests
 headers = {
@@ -914,8 +914,8 @@ ABTestData
 |---|---|---|---|---|
 |title|string|true|none|none|
 |goal|string|true|none|none|
-|paywalls_group|[PaywallsGroupData](#schemapaywallsgroupdata)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
-|paywalls|[[ABTestPaywallData](#schemaabtestpaywalldata)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|paywalls_group|[PaywallsGroupData](#schemapaywallsgroupdata)|false|none|Annotation:    This object is immutable dataset.  @dataclass(frozen=True)|
+|paywalls|[[ABTestPaywallData](#schemaabtestpaywalldata)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 |placement_id|string(uuid)|false|none|none|
 |audience_id|string(uuid)|false|none|none|
 
@@ -3079,19 +3079,19 @@ AttributionRequestData
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|AttributionRequestData|any|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|AttributionRequestData|any|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 anyOf
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[AttributionDataProfileId](#schemaattributiondataprofileid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[AttributionDataProfileId](#schemaattributiondataprofileid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 or
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[AttributionDataCustomerUserId](#schemaattributiondatacustomeruserid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[AttributionDataCustomerUserId](#schemaattributiondatacustomeruserid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_AttributionStatus">AttributionStatus</h2>
 <!-- backwards compatibility -->
@@ -4435,10 +4435,10 @@ CohortValueType
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |filters|[ChartFilters](#schemachartfilters)|true|none|none|
-|segmentation|string|false|none|* `period` - Period<br>* `renewal_status` - Renewal status<br>* `cancellation_reason` - Cancellation reason<br>* `store_product_id` - Store product id<br>* `country` - Country<br>* `store` - Store<br>* `purchase_container_id` - Purchase container id<br>* `paywall_id` - Paywall id<br>* `audience_id` - Audience id<br>* `placement_id` - Placement id<br>* `attribution_source` - Attribution source<br>* `attribution_status` - Attribution status<br>* `attribution_channel` - Attribution channel<br>* `attribution_campaign` - Attribution campaign<br>* `attribution_adgroup` - Attribution adgroup<br>* `attribution_adset` - Attribution adset<br>* `attribution_creative` - Attribution creative<br>* `duration` - Duration<br>* `offer_category` - Offer category<br>* `offer_type` - Offer type<br>* `offer_id` - Offer id<br>* `day` - Day<br>* `week` - Week<br>* `month` - Month<br>* `year` - Year|
-|from_period|integer¦null|false|none|null - from install;<br>            0 - from trial;<br>            1, 2, 3, 4, ... - from period.|
-|to_period|string|true|none|0 - to trial;<br>        1, 2, 3, 4, ... - to period;<br>        6+, 12+, 24+, ... - to 6+ months and etc|
-|period_unit|string|false|none|* `day` - Day<br>* `week` - Week<br>* `month` - Month<br>* `quarter` - Quarter<br>* `year` - Year<br>* `none` - None|
+|segmentation|string|false|none|* `period` - Period * `renewal_status` - Renewal status * `cancellation_reason` - Cancellation reason * `store_product_id` - Store product id * `country` - Country * `store` - Store * `purchase_container_id` - Purchase container id * `paywall_id` - Paywall id * `audience_id` - Audience id * `placement_id` - Placement id * `attribution_source` - Attribution source * `attribution_status` - Attribution status * `attribution_channel` - Attribution channel * `attribution_campaign` - Attribution campaign * `attribution_adgroup` - Attribution adgroup * `attribution_adset` - Attribution adset * `attribution_creative` - Attribution creative * `duration` - Duration * `offer_category` - Offer category * `offer_type` - Offer type * `offer_id` - Offer id * `day` - Day * `week` - Week * `month` - Month * `year` - Year|
+|from_period|integer¦null|false|none|null - from install;             0 - from trial;             1, 2, 3, 4, ... - from period.|
+|to_period|string|true|none|0 - to trial;         1, 2, 3, 4, ... - to period;         6+, 12+, 24+, ... - to 6+ months and etc|
+|period_unit|string|false|none|* `day` - Day * `week` - Week * `month` - Month * `quarter` - Quarter * `year` - Year * `none` - None|
 
 #### Enumerated Values
 
@@ -4639,7 +4639,7 @@ CustomStoreRequest
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[CustomStoreDTO](#schemacustomstoredto)|true|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[CustomStoreDTO](#schemacustomstoredto)|true|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_CustomStoreResponse">CustomStoreResponse</h2>
 <!-- backwards compatibility -->
@@ -5262,7 +5262,7 @@ FontListResponse
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[[FontDTOResponse](#schemafontdtoresponse)]|false|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|data|[[FontDTOResponse](#schemafontdtoresponse)]|false|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_FontResponse">FontResponse</h2>
 <!-- backwards compatibility -->
@@ -5293,7 +5293,7 @@ FontResponse
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[FontDTOResponse](#schemafontdtoresponse)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[FontDTOResponse](#schemafontdtoresponse)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 |meta|[string]|false|none|none|
 
 <h2 id="tocS_FunnelMetricsConditions">FunnelMetricsConditions</h2>
@@ -5509,7 +5509,7 @@ FunnelMetricsConditions
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |filters|[ChartFilters](#schemachartfilters)|true|none|none|
-|segmentation|string|false|none|* `period` - Period<br>* `renewal_status` - Renewal status<br>* `cancellation_reason` - Cancellation reason<br>* `store_product_id` - Store product id<br>* `country` - Country<br>* `store` - Store<br>* `purchase_container_id` - Purchase container id<br>* `paywall_id` - Paywall id<br>* `audience_id` - Audience id<br>* `placement_id` - Placement id<br>* `attribution_source` - Attribution source<br>* `attribution_status` - Attribution status<br>* `attribution_channel` - Attribution channel<br>* `attribution_campaign` - Attribution campaign<br>* `attribution_adgroup` - Attribution adgroup<br>* `attribution_adset` - Attribution adset<br>* `attribution_creative` - Attribution creative<br>* `duration` - Duration<br>* `offer_category` - Offer category<br>* `offer_type` - Offer type<br>* `offer_id` - Offer id<br>* `day` - Day<br>* `week` - Week<br>* `month` - Month<br>* `year` - Year|
+|segmentation|string|false|none|* `period` - Period * `renewal_status` - Renewal status * `cancellation_reason` - Cancellation reason * `store_product_id` - Store product id * `country` - Country * `store` - Store * `purchase_container_id` - Purchase container id * `paywall_id` - Paywall id * `audience_id` - Audience id * `placement_id` - Placement id * `attribution_source` - Attribution source * `attribution_status` - Attribution status * `attribution_channel` - Attribution channel * `attribution_campaign` - Attribution campaign * `attribution_adgroup` - Attribution adgroup * `attribution_adset` - Attribution adset * `attribution_creative` - Attribution creative * `duration` - Duration * `offer_category` - Offer category * `offer_type` - Offer type * `offer_id` - Offer id * `day` - Day * `week` - Week * `month` - Month * `year` - Year|
 
 #### Enumerated Values
 
@@ -6234,7 +6234,7 @@ LocaleTranslationRequest
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[LocaleTranslationData](#schemalocaletranslationdata)|true|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[LocaleTranslationData](#schemalocaletranslationdata)|true|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_LocaleTranslationResponse">LocaleTranslationResponse</h2>
 <!-- backwards compatibility -->
@@ -6265,7 +6265,7 @@ LocaleTranslationResponse
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[[LocaleTranslationData](#schemalocaletranslationdata)]|false|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|data|[[LocaleTranslationData](#schemalocaletranslationdata)]|false|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_Localization">Localization</h2>
 <!-- backwards compatibility -->
@@ -7072,7 +7072,7 @@ OfferType
 |count|integer|false|none|none|
 |next|string(uri)¦null|false|none|none|
 |previous|string(uri)¦null|false|none|none|
-|results|[[IntegrationEvent](#schemaintegrationevent)]|false|none|[A `ModelSerializer` is just a regular `Serializer`, except that:<br><br>* A set of default fields are automatically populated.<br>* A set of default validators are automatically populated.<br>* Default `.create()` and `.update()` implementations are provided.<br><br>The process of automatically determining a set of serializer fields<br>based on the model fields is reasonably complex, but you almost certainly<br>don't need to dig into the implementation.<br><br>If the `ModelSerializer` class *doesn't* generate the set of fields that<br>you need you should either declare the extra/differing fields explicitly on<br>the serializer class, or simply use a `Serializer` class.<br><br><br>Included Mixins:<br><br>* A mixin class to enable sparse fieldsets is included<br>* A mixin class to enable validation of included resources is included]|
+|results|[[IntegrationEvent](#schemaintegrationevent)]|false|none|[A `ModelSerializer` is just a regular `Serializer`, except that:  * A set of default fields are automatically populated. * A set of default validators are automatically populated. * Default `.create()` and `.update()` implementations are provided.  The process of automatically determining a set of serializer fields based on the model fields is reasonably complex, but you almost certainly don't need to dig into the implementation.  If the `ModelSerializer` class *doesn't* generate the set of fields that you need you should either declare the extra/differing fields explicitly on the serializer class, or simply use a `Serializer` class.   Included Mixins:  * A mixin class to enable sparse fieldsets is included * A mixin class to enable validation of included resources is included]|
 
 <h2 id="tocS_PaginatedPaginatedResponseList">PaginatedPaginatedResponseList</h2>
 <!-- backwards compatibility -->
@@ -7333,8 +7333,8 @@ ProfileData
 |store_country|string|false|none|none|
 |store|string|false|none|none|
 |analytics_disabled|boolean|false|none|none|
-|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|installation_meta|[ProfileMetaData](#schemaprofilemetadata)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|installation_meta|[ProfileMetaData](#schemaprofilemetadata)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_Paywall">Paywall</h2>
 <!-- backwards compatibility -->
@@ -7607,10 +7607,10 @@ PaywallData
 |remote_config_legacy|string|false|none|none|
 |screenshot_id|integer|false|none|none|
 |builder_screenshot_id|integer|false|none|none|
-|products|[[PaywallProductData](#schemapaywallproductdata)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|products|[[PaywallProductData](#schemapaywallproductdata)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 |remote_configs|[[PaywallRemoteConfigValue](#schemapaywallremoteconfigvalue)]|false|none|none|
 |paywall_builder|[portal__in_app_context__domains__value_objects__paywall_builder_v3_config__PaywallBuilderV3Config](#schemaportal__in_app_context__domains__value_objects__paywall_builder_v3_config__paywallbuilderv3config)|false|none|none|
-|paywall_builder_v3|[PaywallBuilderV3Data](#schemapaywallbuilderv3data)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|paywall_builder_v3|[PaywallBuilderV3Data](#schemapaywallbuilderv3data)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_PaywallDataCustomerUserId">PaywallDataCustomerUserId</h2>
 <!-- backwards compatibility -->
@@ -8403,19 +8403,19 @@ PaywallRequestData
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|PaywallRequestData|any|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|PaywallRequestData|any|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 anyOf
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[PaywallDataCustomerUserId](#schemapaywalldatacustomeruserid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[PaywallDataCustomerUserId](#schemapaywalldatacustomeruserid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 or
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[PaywallDataProfileId](#schemapaywalldataprofileid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[PaywallDataProfileId](#schemapaywalldataprofileid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_PaywallResponseData">PaywallResponseData</h2>
 <!-- backwards compatibility -->
@@ -8466,7 +8466,7 @@ PaywallResponseData
 |paywall_id|string(uuid)|true|none|none|
 |ab_test_name|string|false|none|none|
 |paywall_name|string|true|none|none|
-|products|[[VariationProduct](#schemavariationproduct)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|products|[[VariationProduct](#schemavariationproduct)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 |remote_config|[VariationRemoteConfigData](#schemavariationremoteconfigdata)|false|none|none|
 
 <h2 id="tocS_PaywallState">PaywallState</h2>
@@ -8611,19 +8611,19 @@ PaywallVisitRequestData
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|PaywallVisitRequestData|any|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|PaywallVisitRequestData|any|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 anyOf
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[PaywallVisitDataCustomerUserId](#schemapaywallvisitdatacustomeruserid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[PaywallVisitDataCustomerUserId](#schemapaywallvisitdatacustomeruserid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 or
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[PaywallVisitDataProfileId](#schemapaywallvisitdataprofileid)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|*anonymous*|[PaywallVisitDataProfileId](#schemapaywallvisitdataprofileid)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_PaywallsGroup">PaywallsGroup</h2>
 <!-- backwards compatibility -->
@@ -9330,7 +9330,7 @@ PlacementAudienceData
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|segments|[[PlacementAudienceSegment](#schemaplacementaudiencesegment)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|segments|[[PlacementAudienceSegment](#schemaplacementaudiencesegment)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 |priority|integer|true|none|none|
 |content_id|any|true|none|none|
 
@@ -9436,7 +9436,7 @@ PlacementData
 |---|---|---|---|---|
 |title|string|true|none|none|
 |developer_id|string|true|none|none|
-|audiences|[[PlacementAudienceData](#schemaplacementaudiencedata)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|audiences|[[PlacementAudienceData](#schemaplacementaudiencedata)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_PlacementDetailMetricsCollection">PlacementDetailMetricsCollection</h2>
 <!-- backwards compatibility -->
@@ -10383,10 +10383,10 @@ ProfileDTO
 |total_revenue_usd|number|false|none|none|
 |segment_hash|string|true|none|none|
 |timestamp|integer|true|none|none|
-|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|access_levels|[[ProfilePaidAccessLevelDTO](#schemaprofilepaidaccessleveldto)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|subscriptions|[[ProfileSubscriptionDTO](#schemaprofilesubscriptiondto)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|non_subscriptions|[[ProfileNonSubscriptionDTO](#schemaprofilenonsubscriptiondto)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|access_levels|[[ProfilePaidAccessLevelDTO](#schemaprofilepaidaccessleveldto)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|subscriptions|[[ProfileSubscriptionDTO](#schemaprofilesubscriptiondto)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|non_subscriptions|[[ProfileNonSubscriptionDTO](#schemaprofilenonsubscriptiondto)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_ProfileData">ProfileData</h2>
 <!-- backwards compatibility -->
@@ -10447,8 +10447,8 @@ ProfileData
 |store_country|string|false|none|none|
 |store|string|false|none|none|
 |analytics_disabled|boolean|false|none|none|
-|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|installation_meta|[ProfileMetaData](#schemaprofilemetadata)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|custom_attributes|[[CustomAttribute](#schemacustomattribute)]|false|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|installation_meta|[ProfileMetaData](#schemaprofilemetadata)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_ProfileIntegrationIdentifiersData">ProfileIntegrationIdentifiersData</h2>
 <!-- backwards compatibility -->
@@ -10628,7 +10628,7 @@ ProfilePaidAccessLevelDTO
 |store_base_plan_id|string|false|none|none|
 |store_transaction_id|string|true|none|none|
 |store_original_transaction_id|string|true|none|none|
-|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 |starts_at|string(date-time)|false|none|none|
 |purchased_at|string(date-time)|true|none|none|
 |originally_purchased_at|string(date-time)|true|none|none|
@@ -10730,7 +10730,7 @@ ProfileResponse
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[ProfileDTO](#schemaprofiledto)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[ProfileDTO](#schemaprofiledto)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_ProfileSegment">ProfileSegment</h2>
 <!-- backwards compatibility -->
@@ -10768,7 +10768,7 @@ ProfileSegment
 |---|---|---|---|---|
 |title|string|true|none|none|
 |description|string|false|none|none|
-|filters|[[ProfileSegmentFilter](#schemaprofilesegmentfilter)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|filters|[[ProfileSegmentFilter](#schemaprofilesegmentfilter)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 |segment_id|string(uuid)|true|none|none|
 |created_at|string(date-time)|true|none|none|
 |updated_at|string(date-time)|true|none|none|
@@ -10954,9 +10954,9 @@ ProfileSegmentFilterMeta
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |field_settings_map|object|true|none|none|
-|» **additionalProperties**|[FilterField](#schemafilterfield)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|» **additionalProperties**|[FilterField](#schemafilterfield)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 |operator_settings_map|object|true|none|none|
-|» **additionalProperties**|[FilterOperator](#schemafilteroperator)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|» **additionalProperties**|[FilterOperator](#schemafilteroperator)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_ProfileSegmentFilterValueData">ProfileSegmentFilterValueData</h2>
 <!-- backwards compatibility -->
@@ -11072,8 +11072,8 @@ ProfileSegmentFilterValueResponseList
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[[ProfileSegmentFilterValueData](#schemaprofilesegmentfiltervaluedata)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
-|meta|[ProfileSegmentFilterMeta](#schemaprofilesegmentfiltermeta)|true|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[[ProfileSegmentFilterValueData](#schemaprofilesegmentfiltervaluedata)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
+|meta|[ProfileSegmentFilterMeta](#schemaprofilesegmentfiltermeta)|true|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_ProfileSegmentRequest">ProfileSegmentRequest</h2>
 <!-- backwards compatibility -->
@@ -11108,7 +11108,7 @@ ProfileSegmentRequest
 |---|---|---|---|---|
 |title|string|true|none|none|
 |description|string|false|none|none|
-|filters|[[ProfileSegmentFilter](#schemaprofilesegmentfilter)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|filters|[[ProfileSegmentFilter](#schemaprofilesegmentfilter)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_ProfileSegmentResponse">ProfileSegmentResponse</h2>
 <!-- backwards compatibility -->
@@ -11146,7 +11146,7 @@ ProfileSegmentResponse
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[ProfileSegment](#schemaprofilesegment)|true|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|data|[ProfileSegment](#schemaprofilesegment)|true|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_ProfileSegmentResponseList">ProfileSegmentResponseList</h2>
 <!-- backwards compatibility -->
@@ -11186,7 +11186,7 @@ ProfileSegmentResponseList
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[[ProfileSegment](#schemaprofilesegment)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|data|[[ProfileSegment](#schemaprofilesegment)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_ProfileSubscriptionDTO">ProfileSubscriptionDTO</h2>
 <!-- backwards compatibility -->
@@ -11230,7 +11230,7 @@ ProfileSubscriptionDTO
 |store_base_plan_id|string|false|none|none|
 |store_transaction_id|string|true|none|none|
 |store_original_transaction_id|string|true|none|none|
-|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 |environment|[Environment](#schemaenvironment)|true|none|An enumeration.|
 |purchased_at|string(date-time)|true|none|none|
 |originally_purchased_at|string(date-time)|true|none|none|
@@ -11468,7 +11468,7 @@ ReplaceInPlacementData
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|data|[[ReplacePlacementAudiencePaywallData](#schemareplaceplacementaudiencepaywalldata)]|true|none|[Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)]|
+|data|[[ReplacePlacementAudiencePaywallData](#schemareplaceplacementaudiencepaywalldata)]|true|none|[Annotation:     This object is immutable dataset.  @dataclass(frozen=True)]|
 
 <h2 id="tocS_ReplacePlacementAudiencePaywallData">ReplacePlacementAudiencePaywallData</h2>
 <!-- backwards compatibility -->
@@ -11837,7 +11837,7 @@ RetentionMetricsConditions
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |filters|[ChartFilters](#schemachartfilters)|true|none|none|
-|segmentation|string|false|none|* `period` - Period<br>* `renewal_status` - Renewal status<br>* `cancellation_reason` - Cancellation reason<br>* `store_product_id` - Store product id<br>* `country` - Country<br>* `store` - Store<br>* `purchase_container_id` - Purchase container id<br>* `paywall_id` - Paywall id<br>* `audience_id` - Audience id<br>* `placement_id` - Placement id<br>* `attribution_source` - Attribution source<br>* `attribution_status` - Attribution status<br>* `attribution_channel` - Attribution channel<br>* `attribution_campaign` - Attribution campaign<br>* `attribution_adgroup` - Attribution adgroup<br>* `attribution_adset` - Attribution adset<br>* `attribution_creative` - Attribution creative<br>* `duration` - Duration<br>* `offer_category` - Offer category<br>* `offer_type` - Offer type<br>* `offer_id` - Offer id<br>* `day` - Day<br>* `week` - Week<br>* `month` - Month<br>* `year` - Year|
+|segmentation|string|false|none|* `period` - Period * `renewal_status` - Renewal status * `cancellation_reason` - Cancellation reason * `store_product_id` - Store product id * `country` - Country * `store` - Store * `purchase_container_id` - Purchase container id * `paywall_id` - Paywall id * `audience_id` - Audience id * `placement_id` - Placement id * `attribution_source` - Attribution source * `attribution_status` - Attribution status * `attribution_channel` - Attribution channel * `attribution_campaign` - Attribution campaign * `attribution_adgroup` - Attribution adgroup * `attribution_adset` - Attribution adset * `attribution_creative` - Attribution creative * `duration` - Duration * `offer_category` - Offer category * `offer_type` - Offer type * `offer_id` - Offer id * `day` - Day * `week` - Week * `month` - Month * `year` - Year|
 |use_trial|boolean|false|none|none|
 
 #### Enumerated Values
@@ -12159,6 +12159,7 @@ SegmentFilterOperator
 
 #### Enumerated Values
 
+<!---
 |Property|Value|
 |---|---|
 |SegmentFilterOperator|IS NULL|
@@ -12170,6 +12171,7 @@ SegmentFilterOperator
 |SegmentFilterOperator|<|
 |SegmentFilterOperator|<=|
 |SegmentFilterOperator|BETWEEN|
+--->
 
 <h2 id="tocS_ServerSideErrors">ServerSideErrors</h2>
 <!-- backwards compatibility -->
@@ -12931,7 +12933,7 @@ VariationProduct
 |introductory_offer_eligibility|boolean|false|none|none|
 |promotional_offer_eligibility|boolean|false|none|none|
 |base_plan_id|string|false|none|none|
-|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:<br>    This object is immutable dataset.  @dataclass(frozen=True)|
+|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
 
 <h2 id="tocS_VariationRemoteConfigData">VariationRemoteConfigData</h2>
 <!-- backwards compatibility -->
