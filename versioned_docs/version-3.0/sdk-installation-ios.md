@@ -42,6 +42,12 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
 
 ## Install SDKs via CocoaPods
 
+:::info
+
+CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager).
+
+:::
+
 1. Add Adapty to your `Podfile`. Choose the modules you need:
 
    1. **Adapty** is the mandatory module.
@@ -194,6 +200,12 @@ Before releasing your application, make sure to carefully review the [Release Ch
 :::
 
 ## Install SDKs via CocoaPods
+
+:::info
+
+CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager).
+
+:::
 
 1. Add Adapty to your `Podfile`:
 
