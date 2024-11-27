@@ -7,9 +7,52 @@ metadataTitle: ""
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
+Adapty iOS SDK 3.2.0 is a major release that brought some improvements which however may require some migration steps from you.
+
+1. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
+2. Remove the `getProductsIntroductoryOfferEligibility` method
+3. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+
+## Update handling of promotional in-app purchases from App Store
+
+Update how you handle promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method, as shown in the example below:
+
+```swift title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+
+
+## Remove getProductsIntroductoryOfferEligibility method
+
+Before Adapty iOS SDK 3.2.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
+
+If you still want to view offers for users who are not eligible, refer to `sk1Product` and `sk2Product`.
 
 ## Update 3d-party integration SDK configuration
+
+Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
 To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described:
 
@@ -17,7 +60,7 @@ To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update
 - [Appsflyer](migration-integrations-to-iOS320#appsflyer)
 - [Branch](migration-integrations-to-iOS320#branch)
 
-## Adjust
+### Adjust
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
@@ -28,23 +71,22 @@ Update your mobile app code in the following way. The final code example you can
 For Adjust version 5.0 or later, use the following:
 
 ```diff
-- Adjust.attribution { attribution in
--    guard let attributionDictionary = attribution?.dictionary() else { return }
-+ class AdjustModuleImplementation {
+class AdjustModuleImplementation {
+    func updateAdjustAttribution() {
+        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary() else { return }
++            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
 
-+ func updateAdjustAttribution() {
-+	Adjust.attribution { attribution in
-+		guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+            Adjust.adid { adid in
+                guard let adid else { return }
 
-    Adjust.adid { adid in
-        guard let adid else { return }
-
-        Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
-            // handle the error
+                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+                    // handle the error
+                }
+            }
         }
     }
-+	  }
-+ }
+}
 
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
@@ -52,7 +94,7 @@ For Adjust version 5.0 or later, use the following:
 +
 +        for (key, value) in self {
 +            guard let stringKey = key as? String else { continue }
-
++
 +            switch value {
 +            case let boolValue as Bool:
 +                result[stringKey] = boolValue
@@ -70,10 +112,10 @@ For Adjust version 5.0 or later, use the following:
 +                break
 +            }
 +        }
-
++
 +        return result
 +    }
-}
++}
 ```
 
 </TabItem>
@@ -83,17 +125,17 @@ For Adjust version 5.0 or later, use the following:
 For Adjust version 4.x or earlier, use the following:
 
 ```diff
-+ class YourAdjustDelegateImplementation {
-	// Find your implementation of AdjustDelegate 
-	// and update adjustAttributionChanged method:
- func adjustAttributionChanged(_ attribution: ADJAttribution?) {
--    if let attribution = attribution?.dictionary() {
-+	    if let attribution = attribution?.dictionary()?.toSendableDict() {
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary() {
++       if let attribution = attribution?.dictionary()?.toSendableDict() {
 	        Adapty.updateAttribution(attribution, source: .adjust)
-+	    }
-+ 	}
-+ }
-+
+        }
+    }
+}
+
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
 +        var result = [String: any Sendable]()
@@ -120,34 +162,34 @@ For Adjust version 4.x or earlier, use the following:
 +       }
 +
 +        return result
-    }
-}
++    }
++}
 ```
 
 </TabItem>
 </Tabs>
 
-## AppsFlyer
+### AppsFlyer
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
 ```diff
-+ class YourAppsFlyerLibDelegateImplementation {
-	// Find your implementation of AppsFlyerLibDelegate 
-	// and update onConversionDataSuccess method:
-	func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
-    // It's important to include the network user ID
--    Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())    
-+    let uid = AppsFlyerLib.shared().getAppsFlyerUID()
-+
-+    Adapty.updateAttribution(
-+            conversionInfo.toSendableDict(),
-+            source: .appsflyer,
-+            networkUserId: uid
-+		 )
-+	 }
-+ }
-+
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+        // It's important to include the network user ID
+        let networkUserId = AppsFlyerLib.shared().getAppsFlyerUID()
+
+        Adapty.updateAttribution(
+-           conversionInfo,
++           conversionInfo.toSendableDict(),
+            source: .appsflyer,
+            networkUserId: networkUserId
+        )
+    }
+}
+
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
 +        var result = [String: any Sendable]()
@@ -178,22 +220,23 @@ Update your mobile app code in the following way. The final code example you can
 }
 ```
 
-## Branch
+### Branch
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
-+ class YourBranchImplementation {
-+ 	func initializeBranch() {
-		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-		Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
--		  if let data = data {
-+	    if let data = data?.toSendableDict() {
-	        Adapty.updateAttribution(data, source: .branch)
-+	     }
-+	 	}
-+ 	}
-+ }
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-               if let data = data {
++               if let data = data?.toSendableDict() {
+                    Adapty.updateAttribution(data, source: .branch)
+                }
+            }
+        }
+    }
+}
 
 + extension [AnyHashable: Any] {
 +    func toSendableDict() -> [String: any Sendable] {
@@ -221,6 +264,6 @@ Update your mobile app code in the following way. The final code example you can
 +        }
 +
 +        return result
-    }
-}
++    }
++}
 ```

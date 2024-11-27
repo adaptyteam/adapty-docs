@@ -198,16 +198,15 @@ Below is a complete example of making the purchase of the access level `premium`
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 ```swift
-Adapty.makePurchase(product: product) { result in
-    switch result {
-    case let .success(info):
-        if info.profile.accessLevels["premium"]?.isActive ?? false {
-            // grant access to premium features
-        }
-    case let .failure(error):
-        // handle the error
+do {
+    let info = try await Adapty.makePurchase(product: product)
+    if info.profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
     }
+} catch {
+    // handle the error
 }
+
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
