@@ -59,4 +59,4 @@ Troubleshooting
 
 ## Troubleshooting
 
-If the integration with Adapty isn't working despite the correct setup, ensure the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [**App Settings** -> **Apple Search Ads** tab.
+If the integration with Adapty isn't working despite the correct setup, ensure the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads).

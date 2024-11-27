@@ -57,7 +57,7 @@ To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrat
 
 
 
-To get the value for the **Branch Key**,  open your Branch [Account Settings](https://dashboard.branch.io/account-settings/profile) and find the **Branch Key** field. Use it for the **Key test** or **Key live** field in the Adapty Dashboard. In Branch, switch between Live and Tests environments for the appropriate key.
+To get the value for the **Branch Key**,  open your Branch [Account Settings](https://dashboard.branch.io/account-settings/profile) and find the **Branch Key** field. Use it for the **Key test** (for Sandbox) or **Key live** (fo Production) field in the Adapty Dashboard. In Branch, switch between Live and Tests environments for the appropriate key.
 
 
 <Zoom>

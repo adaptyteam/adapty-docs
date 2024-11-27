@@ -68,7 +68,7 @@ To set up the Amplitude integration:
 
 6. Click **Save** to confirm your changes.
 
-Note: Once you click **Save**, Adapty will start sending events to Amplitude.
+Once you click **Save**, Adapty will start sending events to Amplitude.
 
 In addition to events, Adapty sends [subscription status](subscription-status) and the subscription product ID to [Amplitude user properties](https://help.amplitude.com/hc/en-us/articles/115002380567#h_39e46c92-7b7f-4358-a96f-c82cc3342e3e).
 

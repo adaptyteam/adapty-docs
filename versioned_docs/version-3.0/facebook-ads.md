@@ -37,7 +37,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 
 
 
-1. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in section **General**, and find **Apple ID** in the left bottom part of the screen.
+1. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in **General** section, and find **Apple ID** in the left bottom part of the screen.
 2. You need an application on [Facebook Developers](https://developers.facebook.com/) platform. Log in to your app and then find advanced settings. You can find the **App ID** in the header.
 
 
@@ -78,7 +78,7 @@ Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-Ap
 
 
 
-You can use this integration with Android apps as well. If you set up Android SDK configuration in the App Settings, setting up the Facebook App ID is enough.
+You can use this integration with Android apps as well. If you set up Android SDK configuration in the **App Settings**, setting up the **Facebook App ID** is enough.
 
 ## Events and tags
 

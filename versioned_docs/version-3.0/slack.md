@@ -21,7 +21,7 @@ You'll need to:
 
 ### 1\. Create an app in Slack
 
-Go to [Slack API dashboard](https://api.slack.com/apps) and create an app like so:
+1. Go to [Slack API dashboard](https://api.slack.com/apps) and create an app like so:
 
 
 <Zoom>
@@ -55,7 +55,7 @@ Go to [Slack API dashboard](https://api.slack.com/apps) and create an app like s
 
 
 
-Give it any name ("Adapty" for example) and add it to your workspace:
+2. Give it any name (`Adapty` for example) and add it to your workspace:
 
 
 <Zoom>
@@ -75,7 +75,9 @@ Give it any name ("Adapty" for example) and add it to your workspace:
 
 ### 2\. Give permission to post and get a token for your app
 
-You'll be redirected to your app's page in Slack. Scroll down and press Permissions:
+You'll be redirected to your app's page in Slack. 
+
+1. Scroll down and click **Permissions**:
 
 
 <Zoom>
@@ -93,7 +95,7 @@ You'll be redirected to your app's page in Slack. Scroll down and press Permissi
 
 
 
-After the redirect, scroll down to Scopes and press "Add an OAuth Scope":
+2. After the redirect, scroll down to **Scopes** and click **Add an OAuth Scope**:
 
 
 <Zoom>
@@ -111,7 +113,7 @@ After the redirect, scroll down to Scopes and press "Add an OAuth Scope":
 
 
 
-Give `chat:write`, `chat:write.public` and `chat:write.customize` permissions. Those are needed to post in your channels and customize the messages:
+3. Give `chat:write`, `chat:write.public` and `chat:write.customize` permissions. Those are needed to post in your channels and customize the messages:
 
 
 <Zoom>
@@ -129,7 +131,7 @@ Give `chat:write`, `chat:write.public` and `chat:write.customize` permissions. T
 
 
 
-Scroll back to the top of the page and press "Install to Workspace":
+4. Scroll back to the top of the page and click **Install to Workspace**:
 
 
 <Zoom>
@@ -147,7 +149,7 @@ Scroll back to the top of the page and press "Install to Workspace":
 
 
 
-Press "Allow" here:
+5. Click **Allow** here:
 
 
 <Zoom>
@@ -185,7 +187,7 @@ After this, you'll be redirected to the same page, but you'll have an OAuth Toke
 
 ### 3\. Configure the integration in Adapty
 
-Go to [**Integrations** → **Slack**](https://app.adapty.io/integrations/slack):
+1. Go to [**Integrations** → **Slack**](https://app.adapty.io/integrations/slack):
 
 
 <Zoom>
@@ -203,13 +205,13 @@ Go to [**Integrations** → **Slack**](https://app.adapty.io/integrations/slack)
 
 
 
-Paste the `xoxb-...` token from the previous step and choose which channels the app will post to. You can set up the integration to receive events only on production, sandbox or both. You can also choose which currency to post in (original or converted to USD).
+2. Paste the `xoxb-...` token from the previous step and choose which channels the app will post to. You can set up the integration to receive events only on production, sandbox or both. You can also choose which currency to post in (original or converted to USD).
 
-:::note
-Note that if you'd like to post messages from Adapty in a private channel, you'll need to manually add the "Adapty" app you've created in Slack to that channel. Otherwise it would not work.
-:::
+  :::note
+  Note that if you'd like to post messages from Adapty in a private channel, you'll need to manually add the `Adapty` app you've created in Slack to that channel. Otherwise, it would not work.
+  :::
 
- Finally, you can choose which events you'd like to receive under "Events":
+3. Finally, you can choose which events you'd like to receive under **Events**:
 
 
 <Zoom>
@@ -227,11 +229,11 @@ Note that if you'd like to post messages from Adapty in a private channel, you'l
 
 
 
-:::info
+
 You're all set!
 
 The events will be sent to the channels you've specified. You'll be able to see the revenue where applicable and view the customer profile in Adapty:
-:::
+
 
 
 <Zoom>
@@ -244,5 +246,4 @@ The events will be sent to the channels you've specified. You'll be able to see 
   }}
 />
 </Zoom>
-
 
