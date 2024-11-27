@@ -162,6 +162,7 @@ The result of the `createPaywallView` method can be used only once. If you need 
 <TabItem value="Swift" label="Swift" default>
 ```swift 
 import Adapty
+import AdaptyUI
 
 guard paywall.hasViewConfiguration else {
     //  use your custom logic
