@@ -44,8 +44,9 @@ To setup the integration with AppsFlyer:
 
 2. Turn on the toggle to enable the integration.
 
-3. The next step of the integration is to set credentials. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in section **General**, and find **Apple ID** in the left bottom part of the screen.
-
+3. The next step of the integration is to set credentials. 
+   For iOS, find App ID in the copy **Apple ID** in the App Store Connect (to do it, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in **General** section, and find **Apple ID** in the left bottom part of the screen).
+   
    
 
 <Zoom>
@@ -62,7 +63,7 @@ To setup the integration with AppsFlyer:
 
 
 
-4. Paste the copied **Apple ID** to the **iOS App ID** in the Adapty Dashboard.
+3.2. Paste the copied **Apple ID** to the **iOS App ID** in the Adapty Dashboard.
 
    
 
@@ -79,10 +80,13 @@ To setup the integration with AppsFlyer:
 
 
 
+:::warning
 
-   > 🚧 If you use AppsFlyer API 2, you need to switch to API 3, since the previous version will be deprecated by AppsFlyer soon. To do so, in the **AppsFlyer S2S API** list, select **API 3**.
+If you use AppsFlyer API 2, you need to switch to API 3, since the previous version will be deprecated by AppsFlyer soon. To do so, in the **AppsFlyer S2S API** list, select **API 3**.
 
-5. Open the [AppsFlyer site](https://appsflyer.com/home) and log in. 
+:::
+
+5. For both iOS and Android, open the [AppsFlyer site](https://appsflyer.com/home) and log in. 
 
 6. Click **Your account name** -> **Security Center** in the top-right corner of the dashboard.
 
@@ -149,7 +153,11 @@ To setup the integration with AppsFlyer:
 
 
 14. Click the **Save** button to save the changes.
-    > 📘 AppsFlyer doesn't have a Sandbox mode for server2server integration. So you need a different application/account in AppsFlyer for Sandbox Dev Key. If you want to send sandbox events to the same app, just use the same key for production and sandbox.
+    
+    :::info
+    
+    AppsFlyer doesn't have a Sandbox mode for server2server integration. So you need a different application/account in AppsFlyer for Sandbox Dev Key. If you want to send sandbox events to the same app, just use the same key for production and sandbox.
+    :::
 
 Adapty maps some events to AppsFlyer [standard events](https://support.appsflyer.com/hc/en-us/articles/115005544169-Rich-in-app-events-for-Android-and-iOS#event-types) by default. With such a configuration, AppsFlyer can then forward events to each ad network that you use without additional setup.
 
