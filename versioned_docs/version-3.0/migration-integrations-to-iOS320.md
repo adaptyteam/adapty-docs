@@ -7,9 +7,52 @@ metadataTitle: ""
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
+Adapty iOS SDK 3.2.0 is a major release that brought some improvements which however may require some migration steps from you.
+
+1. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
+2. Remove the `getProductsIntroductoryOfferEligibility` method
+3. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+
+## Update handling of promotional in-app purchases from App Store
+
+Update how you handle promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method, as shown in the example below:
+
+```swift title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+
+
+## Remove getProductsIntroductoryOfferEligibility method
+
+Before Adapty iOS SDK 3.2.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
+
+If you still want to view offers for users who are not eligible, refer to `sk1Product` and `sk2Product`.
 
 ## Update 3d-party integration SDK configuration
+
+Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
 To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described:
 
@@ -17,7 +60,7 @@ To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update
 - [Appsflyer](migration-integrations-to-iOS320#appsflyer)
 - [Branch](migration-integrations-to-iOS320#branch)
 
-## Adjust
+### Adjust
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
@@ -126,7 +169,7 @@ class YourAdjustDelegateImplementation {
 </TabItem>
 </Tabs>
 
-## AppsFlyer
+### AppsFlyer
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
@@ -177,7 +220,7 @@ class YourAppsFlyerLibDelegateImplementation {
 }
 ```
 
-## Branch
+### Branch
 
 Update your mobile app code in the following way. The final code example you can find the in the [SDK configuration for Branch integration](branch#sdk-configuration).
 
