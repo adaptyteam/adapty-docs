@@ -55,12 +55,12 @@ First of all set credentials to build a connection between Amazon S3 and Adapty 
 
 In the Adapty Dashboard, the following fields are needed to set up the connection:
 
-| Field                        | Description                                                                                                                                                                                                                                                  |
-| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Access Key ID**            | A unique identifier that is used to authenticate a user or application's access to an AWS service.  Find this ID in the downloaded [csv file](s3-exports#how-to-create-amazon-s3-credentials) .                                  |
+| Field                        | Description                                                  |
+| :--------------------------- | :----------------------------------------------------------- |
+| **Access Key ID**            | A unique identifier that is used to authenticate a user or application's access to an AWS service.  Find this ID in the downloaded [csv file](s3-exports#how-to-create-amazon-s3-credentials) . |
 | **Secret Access Key**        | A private key that is used in conjunction with the Access Key ID to authenticate a user or application's access to an AWS service. Find this Key in the downloaded  [csv file](s3-exports#how-to-create-amazon-s3-credentials) . |
-| **S3 Bucket Name **          | A globally unique name that identifies a specific S3 bucket within the AWS cloud. S3 buckets are a simple storage service that allows users to store and retrieve data objects, such as files and images, in the cloud.                                      |
-| **Folder Inside the Bucker** | The  name of the folder that you want to have inside the selected S3 bucket. Please note that S3 simulates folders using object key prefixes, which are essentially folder names.                                                                            |
+| **S3 Bucket Name**           | A globally unique name that identifies a specific S3 bucket within the AWS cloud. S3 buckets are a simple storage service that allows users to store and retrieve data objects, such as files and images, in the cloud. |
+| **Folder Inside the Bucker** | The  name of the folder that you want to have inside the selected S3 bucket. Please note that S3 simulates folders using object key prefixes, which are essentially folder names. |
 
 ## How to create Amazon S3 credentials
 
@@ -392,5 +392,4 @@ Below the credentials, there are three groups of events you can export, send, an
   }}
 />
 </Zoom>
-
 

@@ -108,17 +108,17 @@ try {
 
 ## Custom network codes
 
-| Error                | Code    | Description                                                  |
-| :------------------- | :------ | :----------------------------------------------------------- |
-| notActivated         | 2002    | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative#configure-adapty-sdks). |
-| badRequest           | 2003    | Bad request.                                                 |
-| serverError          | 2004    | Server error.                                                |
-| networkFailed        | 2005    | The network request failed.                                  |
-| decodingFailed       | 2006    | This error indicates that response decoding failed.          |
-| encodingFailed       | 2009    | This error indicates that request encoding failed.           |
-| analyticsDisabled    | 3000??? | We can't handle analytics events, since you've opted it out. Refer to the [Analytics integration](analytics-integration) topic for details. |
-| wrongParam           | 3001    | This error indicates that some of your parameters are not correct: blank when it cannot be blank or wrong type, etc. |
-| activateOnceError    | 3005    | It is not possible to call `.activate` method more than once. |
-| profileWasChanged    | 3006    | The user profile was changed during the operation.           |
-| fetchTimeoutError    | 3101    | This error means that the paywall could not be fetched within the set limit. To avoid this situation, [set up local fallbacks](fetch-paywalls-and-products). |
-| operationInterrupted | 9000    | This operation was interrupted by the system.                |
+| Error                | Code | Description                                                  |
+| :------------------- | :--- | :----------------------------------------------------------- |
+| notActivated         | 2002 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative#configure-adapty-sdks). |
+| badRequest           | 2003 | Bad request.                                                 |
+| serverError          | 2004 | Server error.                                                |
+| networkFailed        | 2005 | The network request failed.                                  |
+| decodingFailed       | 2006 | This error indicates that response decoding failed.          |
+| encodingFailed       | 2009 | This error indicates that request encoding failed.           |
+| analyticsDisabled    | 3000 | We can't handle analytics events, since you've opted it out. Refer to the [Analytics integration](analytics-integration) topic for details. |
+| wrongParam           | 3001 | This error indicates that some of your parameters are not correct: blank when it cannot be blank or wrong type, etc. |
+| activateOnceError    | 3005 | It is not possible to call `.activate` method more than once. |
+| profileWasChanged    | 3006 | The user profile was changed during the operation.           |
+| fetchTimeoutError    | 3101 | This error means that the paywall could not be fetched within the set limit. To avoid this situation, [set up local fallbacks](fetch-paywalls-and-products). |
+| operationInterrupted | 9000 | This operation was interrupted by the system.                |

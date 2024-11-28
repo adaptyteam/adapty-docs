@@ -132,54 +132,6 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 Bear in mind, that SDK calls must be made after calling **`.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-<Tabs>
-<TabItem value="Swift" label="iOS" default>
-```swift 
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER
-```
-</TabItem>
-<TabItem value="kotlin" label="Android" default>
-```kotlin 
-override fun onCreate() {
-    super.onCreate()
-    Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
-}
-```
-</TabItem>
-<TabItem value="Flutter" label="Flutter - info.plist" default>
-```xml 
-<dict>
-    ...
-    <key>AdaptyPublicSdkKey</key>
-    <string>PUBLIC_SDK_KEY</string>
-</dict>
-```
-</TabItem>
-<TabItem value="Unity" label="Flutter - AndroidManifest.xml" default>
-```xml 
-<application ...>
-       ...
-       <meta-data
-              android:name="AdaptyPublicSdkKey"
-              android:value="PUBLIC_SDK_KEY" />
-</application>
-```
-</TabItem>
-<TabItem value="RN" label="React Native - /src/App.tsx" default>
-```typescript 
-import { activateAdapty } from 'react-native-adapty';
-
-const App: React.FC = () => {
-  // ...
-  useEffect(() => {
-    activateAdapty({ sdkKey: 'PUBLIC_SDK_KEY' });
-  }, []);
-  // ...
-}
-```
-</TabItem>
-</Tabs>
-
 Follow these guides for more info on:
 
 - [Displaying paywalls & products](display-pb-paywalls)

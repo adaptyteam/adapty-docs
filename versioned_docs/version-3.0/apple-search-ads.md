@@ -54,7 +54,7 @@ Locate the pre-generated public key (Adapty provides a key pair for you) and cop
 </Zoom>
 
 :::note
-Note: If you're using an alternative service or your own solution for Apple Search Ads attribution, you can upload your own private key.
+If you're using an alternative service or your own solution for Apple Search Ads attribution, you can upload your own private key.
 :::
 
 ### Step 3: Configure User Management on Apple Search Ads
@@ -72,7 +72,7 @@ In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings 
 />
 </Zoom>
 
-#### Step 4: Generate API Credentials
+### Step 4: Generate API Credentials
 
 As a next step, log in to the newly added account in Apple Search Ads. Navigate to Settings -> API in the Apple Search Ads interface. Paste the previously copied public key into the designated field. Generate new API credentials.
 
@@ -121,7 +121,7 @@ openssl ec -in private-key.pem -pubout -out public-key.pem
 
 You can use this public key in your Apple Search Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.
 
-## Disabling Apple Search Ads attribution 
+## Disabling Apple Search Ads attribution
 
 Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
 

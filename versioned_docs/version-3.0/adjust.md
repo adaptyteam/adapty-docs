@@ -58,7 +58,7 @@ The next step of the integration is to set credentials.
 
 
 
-1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token **during the integration process for your iOS and Android apps.
+1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token** during the integration process for your iOS and Android apps.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
 
 

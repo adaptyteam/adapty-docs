@@ -9,9 +9,36 @@ import TabItem from '@theme/TabItem';
 
 Adapty iOS SDK 3.2.0 is a major release that brought some improvements which however may require some migration steps from you.
 
-1. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
-2. Remove the `getProductsIntroductoryOfferEligibility` method
-3. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+1. Rename the `getViewConfiguration` method to `getPaywallConfiguration`.
+2. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
+3. Remove the `getProductsIntroductoryOfferEligibility` method
+4. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+
+## Rename getViewConfiguration method to getPaywallConfiguration
+
+Update the method name to fetch the paywall's `viewConfiguration`:
+
+```diff
+import Adapty
+import AdaptyUI
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+-    let paywallConfiguration = try await AdaptyUI.getViewConfiguration(
++    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+For more details about the method, check out [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)..
 
 ## Update handling of promotional in-app purchases from App Store
 
