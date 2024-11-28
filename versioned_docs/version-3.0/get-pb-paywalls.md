@@ -415,6 +415,14 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
+```typescript
+...
+```
+</TabItem>
+
+<TabItem value="RN" label="React Native" default>
+
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -426,7 +434,9 @@ try {
     // handle the error
 }
 ```
+
 </TabItem>
+
 </Tabs>
 
 :::note
@@ -435,8 +445,9 @@ The `getPaywallForDefaultAudience` method is available starting from these versi
 - iOS: 2.11.2
 - Android: 2.11.3
 - React Native: 2.11.2
+- Flutter: 3.2.0
 
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+The method is not yet supported in Unity, but support will be added soon.
 :::
 
 | Parameter | Presence | Description |

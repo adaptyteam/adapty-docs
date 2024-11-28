@@ -223,7 +223,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 In Flutter SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
 :::warning
-The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `"AdaptyUIError.viewAlreadyPresented"` error.
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```javascript 
@@ -243,7 +243,7 @@ try {
 In Unity SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
 :::warning
-The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `"AdaptyUIError.viewAlreadyPresented"` error.
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```csharp 
@@ -257,7 +257,7 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 In React Native SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
 :::warning
-The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `"AdaptyUIError.viewAlreadyPresented"` error.
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```typescript 
@@ -377,7 +377,7 @@ The `getPaywallForDefaultAudience` method is available starting from these versi
 - Android: 2.11.3
 - React Native: 2.11.2
 
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+This method isn’t supported in Unity yet, but it’s coming soon. Flutter support is available starting with v3.2.0. You can find more details in the [section about speeding up paywall fetching with the new Paywall Builder](https://chatgpt.com/c/get-pb-paywalls#speed-up-paywall-fetching-with-default-audience-paywall).
 :::
 
 | Parameter | Presence | Description |
