@@ -39,7 +39,6 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 
 2. Sign in to your App Store Connect account, choose the app, and go to the **App Information** page in section **General**. Use the **URL from Adapty** for both **Production** and **Sandbox** notifications, and save the changes. 
 
-
 <Zoom>
   <img src={require('./img/9638538-CleanShot_2023-08-25_at_11.47.322x.webp').default}
   style={{
@@ -51,12 +50,7 @@ This URL is specific to each of your apps. So if you have multiple apps, you nee
 />
 </Zoom>
 
-
-
-
-
-Adapty supports both **Version 1** and **Version 2** Notifications. You can choose whichever version best suits your needs. To learn more about the differences between the two versions, please refer to this [link](https://developer.apple.com/documentation/appstoreservernotifications/app_store_server_notifications_changelog). You can also check out [our tutorial ](https://adapty.io/blog/storekit-2-api-tutorial/)to learn details about the version.
-
+Adapty supports both **Version 1** and **Version 2** App Store Server Notifications, but we strongly recommend using Version 2. Version 2 provides more complete and accurate data, resulting in better analytics in Adapty. To learn more about the differences between the versions, check out this [guide from Apple](https://developer.apple.com/documentation/appstoreservernotifications/app_store_server_notifications_changelog). For detailed instructions, take a look at [our tutorial](https://adapty.io/blog/storekit-2-api-tutorial/).
 
 <Zoom>
   <img src={require('./img/dd65995-CleanShot_2023-03-24_at_11.19.532x.webp').default}
@@ -68,10 +62,6 @@ Adapty supports both **Version 1** and **Version 2** Notifications. You can choo
   }}
 />
 </Zoom>
-
-
-
-
 
 Please note that to use **Version 2** Notifications, it is necessary to configure the In-App Purchase API details as described in [the documentation.](in-app-purchase-api-storekit-2) This step is essential for ensuring that Version 2 Notifications work correctly.
 
@@ -90,5 +80,4 @@ Sometimes, you might still want to receive raw S2S events from Apple. To continu
   }}
 />
 </Zoom>
-
 
