@@ -151,7 +151,7 @@ After fetching the paywall, check if it includes a `viewConfiguration`, which in
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-For paywalls with a `viewConfiguration`, use the `getViewConfiguration` method to load the view configuration.
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```swift 
 import Adapty
@@ -198,7 +198,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-For paywalls with a `viewConfiguration`, use the `getViewConfiguration` method to load the view configuration.
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```java 
 if (!paywall.hasViewConfiguration()) {
