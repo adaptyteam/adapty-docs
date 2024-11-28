@@ -174,7 +174,7 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-For paywalls with a `viewConfiguration`, use the `getViewConfiguration` method to load the view configuration.
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
