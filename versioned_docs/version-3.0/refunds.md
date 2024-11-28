@@ -1,13 +1,26 @@
 ---
-title: "Auto-managed refunds: Simplify handling refund requests"
-description: ""
-metadataTitle: ""
+title: "Auto-managed refunds"
+description: "Simplify refund management with Adapty’s Auto-managed refunds feature. Automate App Store refund requests, save up to 60% of revenue, and stay compliant with Apple’s guidelines."
+metadataTitle: "Auto-Managed Refunds for App Store: Save Time and Protect Revenue"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 The Auto-managed refunds feature helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
+
+<Zoom>
+  <img src={require('./img/refunds-chart.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+##
 
 :::info
 
@@ -82,9 +95,15 @@ Using Adapty’s Auto-managed refunds provides several advantages:
      - Include a data-sharing clause in your Terms of Service, stating that users agree to data sharing by accepting the terms.
      - Clearly outline how users can revoke consent (opt-out).
 
-Example...
+Below is an example clause for the opt-out approach, including the types of data you might share. This is only a sample to guide you in crafting your own text. You are responsible for ensuring your final version complies with all applicable laws and Apple’s requirements.
+
+*"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
 ## Limitations
 
 The Auto-managed refunds feature only works for refund requests made to Apple’s App Store. Google Play does not support consumption data analysis for refund requests. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user
+
+
+
+
 
