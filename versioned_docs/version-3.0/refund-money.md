@@ -7,11 +7,10 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The refund money chart displays the amount of money that was refunded for the selected period of time. Adapty attributes refund money to the moment when the refund was issued and the revenue decreases in the period when the refund occured.
-
+The refund money chart displays the amount of money that was refunded for the selected period of time. Adapty attributes refund money to the moment when the refund was issued and the revenue decreases in the period when the refund occurred.
 
 <Zoom>
-  <img src={require('./img/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.webp').default}
+  <img src={require('./img/refunds-chart.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -20,10 +19,6 @@ The refund money chart displays the amount of money that was refunded for the se
   }}
 />
 </Zoom>
-
-
-
-
 
 ### Calculation
 
@@ -41,6 +36,12 @@ You can find more information about the available controls, filters, grouping op
 ### Refund Money chart usage
 
 The Refund money chart in Adapty helps businesses track the financial impact of refunds on their revenue. By monitoring refund amounts over time, you can identify patterns in customer behavior and make informed decisions to improve your revenue and reduce refund requests. With the refund money chart, you have a powerful tool to make data-driven decisions that optimize your business's bottom line.
+
+## Refund request management
+
+The Auto-managed refunds feature helps Adapty users handle refund requests from Apple’s App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple’s guidelines.
+
+For more details, check out the [Auto-managed refunds](https://chatgpt.com/c/refunds) page.
 
 ### Similar metrics
 
