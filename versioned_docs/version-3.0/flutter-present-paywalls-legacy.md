@@ -19,10 +19,11 @@ This guide is for **legacy Paywall Builder paywalls**, which require Adapty SDK 
  .
 :::
 
-To show a paywall, call `view.present()` method. You can use `view` from the previous step, we will introduce a new one for visibility reasons.
+To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
 
 :::warning
-The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+
+Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```typescript title="Flutter"

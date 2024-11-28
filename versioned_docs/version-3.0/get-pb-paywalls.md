@@ -155,7 +155,7 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration.
+For paywalls with a `ViewConfiguration`, use the `getPaywallConfiguration` method to load the view configuration.
 
 ```swift 
 import Adapty
