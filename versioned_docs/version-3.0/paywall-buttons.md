@@ -69,23 +69,7 @@ Now let's configure them in your mobile app code.
 
 <Tabs> <TabItem value="Swift" label="Swift" default>
 
-    func paywallController(_ controller: AdaptyPaywallController,
-                           didPerform action: AdaptyUI.Action) {
-    
-        switch action {
-            case let .openURL(url):
-          			// handle URL opens (incl. terms and privacy links)
-                UIApplication.shared.open(url, options: [:])
-            case let .custom(id):
-                if id == "Login" {
-                   // implement login flow 
-                },
-                if id == "Restore" {
-                   // ???
-                }
-                break
-        }
-    }
+    ...
 </TabItem> 
 
 <TabItem value="swiftui" label="SwiftUI" default>
