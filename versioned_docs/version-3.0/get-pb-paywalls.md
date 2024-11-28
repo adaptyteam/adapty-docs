@@ -417,7 +417,13 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 <TabItem value="Flutter" label="Flutter" default>
 
 ```typescript
-...
+try {
+    final paywall = await adapty.getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
 ```
 </TabItem>
 
