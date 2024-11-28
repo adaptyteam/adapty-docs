@@ -418,7 +418,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 
 ```typescript
 try {
-    final paywall = await adapty.getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 } on AdaptyError catch (adaptyError) {
     // handle error
 } catch (e) {
