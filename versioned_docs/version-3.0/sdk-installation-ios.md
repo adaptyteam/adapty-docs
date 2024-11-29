@@ -100,7 +100,7 @@ import Adapty
 
 @main
 struct SampleApp: App {
-    init() 
+    init() {
       let configurationBuilder =
         AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
