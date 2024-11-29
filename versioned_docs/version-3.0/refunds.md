@@ -1,5 +1,5 @@
 ---
-title: "Auto-managed refunds"
+title: "Refund saver"
 description: "Simplify refund management with Adapty’s Auto-managed refunds feature. Automate App Store refund requests, save up to 60% of revenue, and stay compliant with Apple’s guidelines."
 metadataTitle: "Auto-Managed Refunds for App Store: Save Time and Protect Revenue"
 ---
@@ -7,7 +7,7 @@ metadataTitle: "Auto-Managed Refunds for App Store: Save Time and Protect Revenu
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Auto-managed refunds feature helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
+The Refund saver helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
 
 <Zoom>
   <img src={require('./img/refunds-chart.webp').default}
@@ -20,11 +20,11 @@ The Auto-managed refunds feature helps Adapty users efficiently manage refund re
 />
 </Zoom>
 
-## What is Auto-managed refunds?
+## What is the Refund saver?
 
 When users request refunds on the App Store, Apple evaluates consumption data related to the in-app purchase to decide whether to approve or deny the request. For example, if a user buys a subscription, uses it heavily for most of the subscription period, and then requests a refund, Apple is likely to approve it unless you provide usage data to show the subscription was actively consumed. Apple [encourages developers](https://developer.apple.com/documentation/storekit/in-app_purchase/original_api_for_in-app_purchase/handling_refund_notifications) to share this data to ensure refund decisions are fair.
 
-Adapty’s Auto-managed refunds feature automates this process while remaining fully compliant with App Store [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information).
+Adapty’s Refund saver automates this process while remaining fully compliant with App Store [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information).
 
 Here’s how it works:
 
@@ -36,11 +36,11 @@ This automation reduces the chance of unnecessary refunds while saving you time 
 
 :::info
 
-With Auto-managed refunds, you can save up to 60% of the revenue from refund requests.
+With Refund saver, you can save up to 60% of the revenue from refund requests.
 
 :::
 
-## Requirements to use Auto-managed refunds
+## Requirements to use Refund saver
 
 To use this feature, ensure you’ve met the following prerequisites:
 
@@ -51,11 +51,11 @@ To use this feature, ensure you’ve met the following prerequisites:
 3. **Enable Server Notifications V2:**
    Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide
 
-## How to enable Auto-managed refunds in Adapty
+## How to enable Refund saver in Adapty
 
-1. Open the [**Auto-managed refunds**](https://app.adapty.io/refunds) section in the Adapty Dashboard.
+1. Open the [**Refund saver**](https://app.adapty.io/refunds) section in the Adapty Dashboard.
 
-<Zoom>
+<!--- <Zoom>
   <img src={require('./img/refund-off.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
@@ -64,9 +64,9 @@ To use this feature, ensure you’ve met the following prerequisites:
     margin: '0 auto' /* center alignment */
   }}
 />
-</Zoom>
+</Zoom> --->
 
-2. Click **Turn on auto-managed refunds** to activate the feature.
+2. Click **Turn on Refund saver** to activate the feature.
 
 ## Obtain user consent
 
@@ -80,9 +80,9 @@ Below is an example clause for the opt-out approach, including the types of data
 
 ## Limitations
 
-- **Apple’s App Store only:** Auto-managed refunds are only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
-- **Requires Server Notifications V2:** Auto-managed refunds are not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
-- **Not for consumables:** Auto-managed refunds do not apply to consumable products.
+- **Apple’s App Store only:** Refund saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
+- **Requires Server Notifications V2:** Refund saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
+- **Not for consumables:** Refund saver does not apply to consumable products.
 
 
 

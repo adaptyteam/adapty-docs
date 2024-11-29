@@ -37,9 +37,9 @@ You can find more information about the available controls, filters, grouping op
 
 The Refund money chart in Adapty helps businesses track the financial impact of refunds on their revenue. By monitoring refund amounts over time, you can identify patterns in customer behavior and make informed decisions to improve your revenue and reduce refund requests. With the refund money chart, you have a powerful tool to make data-driven decisions that optimize your business's bottom line.
 
-## Refund request management
+### Refund request management
 
-The Auto-managed refunds feature helps Adapty users handle refund requests from Apple’s App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple’s guidelines.
+The Refund saver helps Adapty users handle refund requests from Apple’s App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple’s guidelines.
 
 For more details, check out the [Auto-managed refunds](https://chatgpt.com/c/refunds) page.
 
