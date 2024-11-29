@@ -1,5 +1,5 @@
 ---
-title: "Updating integration configurations for Adapty iOS SDK 3.2.0"
+title: "Migration guide to Adapty iOS SDK 3.2.x"
 description: ""
 metadataTitle: ""
 ---
