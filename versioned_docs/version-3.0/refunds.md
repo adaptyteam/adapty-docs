@@ -44,10 +44,12 @@ With Auto-managed refunds, you can save up to 60% of the revenue from refund req
 
 To use this feature, ensure you’ve met the following prerequisites:
 
-1. **Enable Server Notifications V2:**
-   Activate Server Notifications V2 in your Apple Developer account and set them up in Adapty. Follow the instructions in the [Enable App Store server notifications](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide.
-2. **Obtain user consent for data sharing**:
-   Apple insists that you must obtain valid consent from the user before sharing their personal data with Apple. You, the developer, are solely responsible for obtaining valid consent because you’re sharing with Apple the data that you collected from the user. See Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151) for more details.
+1. **Update your Privacy Policy in App Store Connect:**
+   Your app’s Privacy Policy must disclose the collection and use of consumption data. This ensures users understand your app’s privacy practices before downloading it. Refer to [Apple’s App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/) for guidance
+2. **Obtain user consent for data sharing in your app**:
+   Apple insists that you must obtain valid consent from the user before sharing their personal data with Apple. As the developer, you’re responsible for obtaining this consent since you’ll be sharing user data with Apple. See Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151) for more details.
+3. **Enable Server Notifications V2:**
+   Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide
 
 ## How to enable Auto-managed refunds in Adapty
 
@@ -70,7 +72,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 
 How you collect user consent for data sharing is up to you, but Apple requires valid user consent before sharing any personal data with them. Apple recommends using an **opt-in approach**, which involves in-app prompts that explain how data will be used and require explicit user action to provide consent. If a user ignores or denies the prompt, they are not considered to have consented. For more details, refer to Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151).
 
-If explicit consent isn’t practical for your app, you can consider an **opt-out approach**. This involves including a data-sharing clause in your Terms of Service, explaining that users agree to data sharing by accepting the terms. Be sure to clearly outline how users can revoke their consent. For more details, see [Apple’s App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/).
+If explicit consent isn’t practical for your app, you can consider an **opt-out approach**. This involves including a data-sharing clause in your Terms of Service, explaining that users agree to data sharing by accepting the terms. Be sure to clearly outline how users can revoke their consent. 
 
 Below is an example clause for the opt-out approach, including the types of data you might share. This is only a sample to guide you in crafting your own text. You are responsible for ensuring your final version complies with all applicable laws and Apple’s requirements.
 
