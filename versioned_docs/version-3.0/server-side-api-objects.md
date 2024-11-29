@@ -4,8 +4,19 @@ description: ""
 metadataTitle: ""
 ---
 
+<<<<<<< HEAD
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+=======
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';
+import AccessLevel from '@site/src/components/reusable/AccessLevel.md';
+import Purchase from '@site/src/components/reusable/Purchase.md';
+import Subscription from '@site/src/components/reusable/Subscription.md';
+import NonSubscription from '@site/src/components/reusable/NonSubscription.md';
+import Offer from '@site/src/components/reusable/Offer.md';
+import Price from '@site/src/components/reusable/Price.md';
+import InstallationMeta from '@site/src/components/reusable/InstallationMeta.md';
+>>>>>>> ADP-1386-Custom-stores-server-side-api
 
 ## Objects
 
@@ -13,6 +24,7 @@ Adapty API has JSON objects so you can understand a response structure and wrap 
 
 All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
 
+<<<<<<< HEAD
 ### Profile
 
 Info about the [customer and his subscription.  ](server-side-api-objects#profile)
@@ -32,6 +44,9 @@ Info about the [customer and his subscription.  ](server-side-api-objects#profil
 Info about customer’s [access level](access-level).
 
 Configure which products unlock premium \(paid\) features in your app using the Adapty Dashboard. Then, check in the app for the access level available for a user, for example  in the way below \(in Swift \)
+=======
+### Access level
+>>>>>>> ADP-1386-Custom-stores-server-side-api
 
 ```swift title="Swift"
 if (profile.paidAccessLevels["premium"]?.isActive == true) {
@@ -58,8 +73,9 @@ if (profile.paidAccessLevels["premium"]?.isActive == true) {
 | **active\_introductory\_offer\_type** | str           | ✅        | ✅        | The type of active [introductory offer](https://developer.apple.com/app-store/subscriptions/#offering-introductory-prices). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period |
 | **active\_promotional\_offer\_type**  | str           | ✅        | ✅        | The type of active [promotional offer](https://developer.apple.com/app-store/subscriptions/#subscription-offers). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period |
 
-### Subscription
+### Installation Meta
 
+<<<<<<< HEAD
 Info about vendor subscription. You don’t have to use this object in most cases, **CustomerPaidAccessLevel** is the preferred way to work with access to the app. When using this object, you need to implement processing logic for each subscription period \(a week, a month, a year, lifetime\).  
 
 | Param                                 | Type          | Required | Nullable | Description                                                  |
@@ -82,11 +98,22 @@ Info about vendor subscription. You don’t have to use this object in most case
 | **active\_introductory\_offer\_type** | str           | ✅        | ✅        | The type of active [introductory offer](https://developer.apple.com/app-store/subscriptions/#offering-introductory-prices). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period |
 | **active\_promotional\_offer\_type**  | str           | ✅        | ✅        | The type of active [promotional offer](https://developer.apple.com/app-store/subscriptions/#subscription-offers). Possible values are: **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. If the value is not null it means that the offer was applied during the current subscription period |
 | **is\_sandbox**                       | bool          | ✅        | ❌        | Boolean indicating whether the product was purchased in the sandbox or production environment |
+=======
+Information about installation of the app on a specific device. 
+
+You can do the following action via Adapty server-side API:
+
+- [Create a profile with spesific installation meta](server-side-api-specs#create-profile)
+- [Update user's installation meta](server-side-api-specs#update-profile)
+
+<InstallationMeta />
+>>>>>>> ADP-1386-Custom-stores-server-side-api
 
 ### Non Subscription
 
 Info about non-subscription purchases. These can be one-time \(consumable\) products, unlocks \(like new map unlock in the game\), etc.  
 
+<<<<<<< HEAD
 | Param                                 | Type          | Required | Nullable | Description                                                  |
 | :------------------------------------ | :------------ | :------- | :------- | :----------------------------------------------------------- |
 | **purchase\_id**                      | str           | ✅        | ❌        | Identifier of the purchase in Adapty. You can use it to ensure that you’ve already processed this purchase, for example tracking one-time products |
@@ -97,3 +124,56 @@ Info about non-subscription purchases. These can be one-time \(consumable\) prod
 | **purchased\_at**                     | ISO 8601 date | ✅        | ❌        | The datetime when the product was purchased                  |
 | **is\_one\_time**                     | bool          | ✅        | ❌        | Boolean indicating whether the product should only be processed once. For example, if a user purchased 500 coins in a game. If true, the purchase will be returned by Adapty API one time only |
 | **is\_sandbox**                       | bool          | ✅        | ❌        | Boolean indicating whether the product was purchased in a sandbox or production environment. |
+=======
+You can do the following action via Adapty server-side API:
+
+- [Check user's current non-subscriptions](server-side-api-specs#retrieve-profile) by retrieving their profile details
+
+<NonSubscription />
+
+### One-Time Purchase
+
+<Purchase />
+
+### Offer
+
+Information on the applied offer. The Offer object is a part of the  [Subscription](server-side-api-objects#subscription), and [Access level](server-side-api-objects#access-level) objects.
+
+You can do the following actions with offers via Adapty server-side API:
+
+- [Apply offer](server-side-api-specs#set-transaction) when setting a transaction to your user
+
+<Offer />
+
+### Price
+
+Information about the cost of your product in local currency. The Price object is a part of the  [Subscription](server-side-api-objects#subscription) and Purchase objects.
+
+You can do the following actions with product price via Adapty server-side API:
+
+- [Set transaction to your user](server-side-api-specs#set-transaction) and specify its price
+
+<Price />
+
+### Profile
+
+Info about the [customer and their subscription](server-side-api-objects#profile)
+
+You can do the following actions with user profiles via Adapty server-side API:
+
+- [Retrieve/get the end-user's profile](server-side-api-specs#retrieve-profile) with their access levels, subscriptions, non-subscriptions, etc.
+- [Create a new end-user profile](server-side-api-specs#create-profile)
+- [Update your end-user profile](server-side-api-specs#update-profile)
+- [Delete your end-user](server-side-api-specs#delete-profile)
+
+<ProfileObject />
+
+### Subscription
+
+Info about your end user subscription.  You can do the following action via Adapty server-side API:
+
+- [Check the user's current subscription](server-side-api-specs#retrieve-profile) by retrieving their profile details
+- [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
+
+<Subscription />
+>>>>>>> ADP-1386-Custom-stores-server-side-api

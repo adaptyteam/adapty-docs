@@ -170,6 +170,7 @@ To add a toggle:
 </Zoom>
 
 2. Add products to both subsections to create views for when the toggle is on or off.
+
 3. In the **Toggle** element, set the **Default state** to choose whether the toggle should start as on or off in the paywall.
 
 <Zoom>
