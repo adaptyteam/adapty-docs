@@ -285,7 +285,7 @@ tokenAuth
 
 <PaywallObject />
 
-### Create paywall
+### Retrieve paywall
 
 <Tabs> 
 <TabItem value="shell" label="Shell" default>  
