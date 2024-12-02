@@ -36,7 +36,7 @@ This automation reduces the chance of unnecessary refunds while saving you time 
 
 :::info
 
-With Refund saver, you can save up to 60% of the revenue from refund requests.
+With Refund saver, you can save up to 40% of the revenue from refund requests.
 
 :::
 
