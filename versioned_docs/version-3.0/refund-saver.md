@@ -53,7 +53,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 
 ## How to enable Refund saver in Adapty
 
-1. Open the [**Refund saver**](https://app.adapty.io/refunds) section in the Adapty Dashboard.
+1. Open the [**Refund saver**](https://app.adapty.io/[refund-saver](https://app.adapty.io/refund-saver)) section in the Adapty Dashboard.
 
 <!--- <Zoom>
   <img src={require('./img/refund-off.webp').default}
