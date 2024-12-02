@@ -1,21 +1,5 @@
 <!--- PaywallRequestData --->
 
-<h2 id="tocS_PaywallRequestData">PaywallRequestData</h2>
-
-```json
-{
-  "store": "adapty",
-  "locale": "string",
-  "placement_id": "string",
-  "customer_user_id": "string"
-}
-
-```
-
-PaywallRequestData
-
-### Properties
-
 | Name             | Required | Description                                                  |
 | ---------------- | -------- | ------------------------------------------------------------ |
 | store            | true     | The app store                                                |
@@ -23,3 +7,15 @@ PaywallRequestData
 | placement_id     | true     | The identifier of the [Placement](https://adapty.io/docs/placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | customer_user_id | true*    | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
 | profile_id       | true*    | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
+
+**Example**
+
+```
+{
+  "store": "adapty",
+  "locale": "string",
+  "placement_id": "string",
+  "customer_user_id": "string"
+}
+```
+
