@@ -17,7 +17,10 @@ headingLevel: 2
 
 ---
 
-import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem'; 
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
+import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
+import PaywallRequestData from '@site/src/components/reusable/PaywallRequestData.md';
 
 ## Authentication
 
@@ -265,18 +268,22 @@ Any of the following objects:
 
 <h3 id="web_api_attribution_create-responses">Responses</h3>
 
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|No response body|None|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|none|[Errors](#schemaerrors)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|none|[Errors](#schemaerrors)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|none|[Errors](#schemaerrors)|
+|Status|Meaning|Schema|
+|---|---|---|
+|201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|None|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|[Errors](#schemaerrors)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|[Errors](#schemaerrors)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|[Errors](#schemaerrors)|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
 tokenAuth
 </aside>
 ## Paywall
+
+### Paywall object
+
+<PaywallObject />
 
 ### Create paywall
 
@@ -460,10 +467,19 @@ func main() {
 </TabItem>  
 </Tabs>
 
+#### Endpoint
 
-`POST /api/v1/web-api/paywall/`
+```text
+https://api-admin.adapty.io/api/v1/web-api/paywall/
+```
 
-> Body parameter
+#### Method
+
+```text
+POST
+```
+
+#### Request example
 
 ```json
 {
@@ -474,11 +490,9 @@ func main() {
 }
 ```
 
-<h3 id="web_api_paywall_create-parameters">Parameters</h3>
+#### Parameters
 
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|body|body|[PaywallRequestData](#schemapaywallrequestdata)|false|none|
+<PaywallRequestData />
 
 > Example responses
 
@@ -527,13 +541,10 @@ func main() {
 To perform this operation, you must be authenticated by means of one of the following methods:
 tokenAuth
 </aside>
+### Record paywall view
 
-## web_api_paywall_visit_create
-
-<a id="opIdweb_api_paywall_visit_create"></a>
-
-> Code samples
-
+<Tabs> 
+<TabItem value="shell" label="Shell" default>  
 ```shell
 # You can also use wget
 curl -X POST http://localhost:8000/api/v1/web-api/paywall/visit/ \
@@ -542,15 +553,17 @@ curl -X POST http://localhost:8000/api/v1/web-api/paywall/visit/ \
   -H 'Authorization: Bearer {access-token}'
 
 ```
-
-```http
+</TabItem>  
+<TabItem value="http" label="HTTP" default>  
+ ```http
 POST http://localhost:8000/api/v1/web-api/paywall/visit/ HTTP/1.1
 Host: localhost:8000
 Content-Type: application/json
 Accept: application/json
 
-```
-
+ ```
+</TabItem>  
+<TabItem value="javascript" label="Javascript" default>   
 ```javascript
 const inputBody = '{
   "visited_at": "2019-08-24T14:15:22Z",
@@ -577,7 +590,8 @@ fetch('http://localhost:8000/api/v1/web-api/paywall/visit/',
 });
 
 ```
-
+</TabItem>  
+<TabItem value="ruby" label="Ruby" default>
 ```ruby
 require 'rest-client'
 require 'json'
@@ -596,6 +610,8 @@ p JSON.parse(result)
 
 ```
 
+</TabItem>  
+<TabItem value="python" label="Python" default>
 ```python
 import requests
 headers = {
@@ -609,7 +625,8 @@ r = requests.post('http://localhost:8000/api/v1/web-api/paywall/visit/', headers
 print(r.json())
 
 ```
-
+</TabItem>  
+<TabItem value="php" label="PHP" default>
 ```php
 <?php
 
@@ -643,6 +660,8 @@ try {
 
 ```
 
+</TabItem>  
+<TabItem value="java" label="Java" default>
 ```java
 URL obj = new URL("http://localhost:8000/api/v1/web-api/paywall/visit/");
 HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -659,7 +678,8 @@ in.close();
 System.out.println(response.toString());
 
 ```
-
+</TabItem>  
+<TabItem value="go" label="Go" default>
 ```go
 package main
 
@@ -686,10 +706,21 @@ func main() {
 }
 
 ```
+</TabItem>  </Tabs>
 
-`POST /api/v1/web-api/paywall/visit/`
+#### Endpoint
 
-> Body parameter
+```text
+https://api-admin.adapty.io/api/v1/web-api/paywall/visit/
+```
+
+#### Method
+
+```text
+POST
+```
+
+#### Request example
 
 ```json
 {
@@ -700,7 +731,7 @@ func main() {
 }
 ```
 
-<h3 id="web_api_paywall_visit_create-parameters">Parameters</h3>
+#### Parameters
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -12919,12 +12950,24 @@ Type
 |Type|linear-gradient|
 |Type|font|
 
-<h2 id="tocS_VariationProduct">VariationProduct</h2>
-<!-- backwards compatibility -->
-<a id="schemavariationproduct"></a>
-<a id="schema_VariationProduct"></a>
-<a id="tocSvariationproduct"></a>
-<a id="tocsvariationproduct"></a>
+### VariationProduct
+
+
+
+#### Properties
+
+| Name                           | Type                        | Required | Restrictions | Description                                                  |
+| ------------------------------ | --------------------------- | -------- | ------------ | ------------------------------------------------------------ |
+| title                          | string                      | false    | none         | none                                                         |
+| is_consumable                  | boolean                     | true     | none         | none                                                         |
+| adapty_product_id              | string(uuid)                | false    | none         | none                                                         |
+| vendor_product_id              | string                      | true     | none         | none                                                         |
+| introductory_offer_eligibility | boolean                     | false    | none         | none                                                         |
+| promotional_offer_eligibility  | boolean                     | false    | none         | none                                                         |
+| base_plan_id                   | string                      | false    | none         | none                                                         |
+| offer                          | [OfferDTO](#schemaofferdto) | false    | none         | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
+
+Example
 
 ```json
 {
@@ -12944,22 +12987,10 @@ Type
 
 ```
 
-VariationProduct
 
-### Properties
 
-|Name|Type|Required|Restrictions|Description|
-|---|---|---|---|---|
-|title|string|false|none|none|
-|is_consumable|boolean|true|none|none|
-|adapty_product_id|string(uuid)|false|none|none|
-|vendor_product_id|string|true|none|none|
-|introductory_offer_eligibility|boolean|false|none|none|
-|promotional_offer_eligibility|boolean|false|none|none|
-|base_plan_id|string|false|none|none|
-|offer|[OfferDTO](#schemaofferdto)|false|none|Annotation:     This object is immutable dataset.  @dataclass(frozen=True)|
+### VariationRemoteConfigData
 
-<h2 id="tocS_VariationRemoteConfigData">VariationRemoteConfigData</h2>
 <!-- backwards compatibility -->
 <a id="schemavariationremoteconfigdata"></a>
 <a id="schema_VariationRemoteConfigData"></a>
@@ -12976,7 +13007,7 @@ VariationProduct
 
 VariationRemoteConfigData
 
-### Properties
+#### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
