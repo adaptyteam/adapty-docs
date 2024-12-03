@@ -33,7 +33,7 @@ import Adapty
 let configurationBuilder =
 -        Adapty.Configuration
 +        AdaptyConfiguration
-          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false)
           .with(customerUserId: "YOUR_USER_ID")
           .with(idfaCollectionDisabled: false)
