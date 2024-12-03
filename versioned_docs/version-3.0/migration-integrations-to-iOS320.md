@@ -11,7 +11,7 @@ Adapty iOS SDK 3.2.0 is a major release that brought some improvements which how
 
 1. Rename `Adapty.Configuration` to `AdaptyConfiguration`.
 2. Rename the `getViewConfiguration` method to `getPaywallConfiguration`.
-3. Remove several paywall builder events.
+3. Change parameters in SwiftUI: remove `didCancelPurchase` and `paywall` parameters, and rename `viewConfiguration` parameter to `paywallConfiguration` from SwiftUI.
 4. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
 5. Remove the `getProductsIntroductoryOfferEligibility` method
 6. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
@@ -101,9 +101,40 @@ do {
 
 For more details about the method, check out [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)..
 
+## Change parameters in SwiftUI
 
+The `didCancelPurchase` parameter has been removed from SwiftUI. Use `didFinishPurchase` instead. Update your code like this:
 
-## Remove some paywall builder events
+```diff
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
 
 
 
@@ -133,8 +164,6 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
-
-
 
 ## Remove getProductsIntroductoryOfferEligibility method
 
