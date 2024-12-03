@@ -1,5 +1,5 @@
 ---
-title: "Updating integration configurations for Adapty iOS SDK 3.2.0"
+title: "Migration guide to Adapty iOS SDK 3.2.x"
 description: ""
 metadataTitle: ""
 ---
@@ -9,10 +9,74 @@ import TabItem from '@theme/TabItem';
 
 Adapty iOS SDK 3.2.0 is a major release that brought some improvements which however may require some migration steps from you.
 
-1. Rename the `getViewConfiguration` method to `getPaywallConfiguration`.
-2. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
-3. Remove the `getProductsIntroductoryOfferEligibility` method
-4. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+1. Rename `Adapty.Configuration` to `AdaptyConfiguration`.
+2. Rename the `getViewConfiguration` method to `getPaywallConfiguration`.
+3. Remove the `didCancelPurchase` and `paywall` parameters from SwiftUI, and rename the `viewConfiguration` parameter to `paywallConfiguration`.
+4. Update how you process promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method.
+5. Remove the `getProductsIntroductoryOfferEligibility` method.
+6. Update integration configurations for: 
+   - [Adjust](migration-integrations-to-iOS320#adjust)
+   - [Appsflyer](migration-integrations-to-iOS320#appsflyer)
+   - [Branch](migration-integrations-to-iOS320#branch)
+
+## Rename Adapty.Configuration to AdaptyConfiguration
+
+Update the code of Adapty iOS SDK activation in the following way:
+
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+
+```diff
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false)
+          .with(customerUserId: "YOUR_USER_ID")
+          .with(idfaCollectionDisabled: false)
+          .with(ipAddressCollectionDisabled: false)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="SwiftUI" label="SwiftUI" default>
+
+```diff
+import Adapty
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
 
 ## Rename getViewConfiguration method to getPaywallConfiguration
 
@@ -40,6 +104,43 @@ do {
 
 For more details about the method, check out [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)..
 
+## Change parameters in SwiftUI
+
+The `didCancelPurchase` parameter has been removed from SwiftUI. Use `didFinishPurchase` instead. Update your code like this:
+
+```diff
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
+
+
+
 ## Update handling of promotional in-app purchases from App Store
 
 Update how you handle promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method, as shown in the example below:
@@ -66,8 +167,6 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
-
-
 
 ## Remove getProductsIntroductoryOfferEligibility method
 

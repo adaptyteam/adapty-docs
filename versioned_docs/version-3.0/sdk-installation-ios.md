@@ -81,7 +81,7 @@ import Adapty
 
 let configurationBuilder =
     AdaptyConfiguration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
         .with(idfaCollectionDisabled: false)
@@ -103,7 +103,7 @@ struct SampleApp: App {
     init() {
       let configurationBuilder =
         AdaptyConfiguration
-          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional

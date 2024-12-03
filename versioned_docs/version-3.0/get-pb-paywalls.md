@@ -244,7 +244,8 @@ AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-Use the `getViewConfiguration` method to load the view configuration.
+Use the `getViewConfiguration` method to load the view configuration. 
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
