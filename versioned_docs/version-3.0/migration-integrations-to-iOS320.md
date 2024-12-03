@@ -11,10 +11,13 @@ Adapty iOS SDK 3.2.0 is a major release that brought some improvements which how
 
 1. Rename `Adapty.Configuration` to `AdaptyConfiguration`.
 2. Rename the `getViewConfiguration` method to `getPaywallConfiguration`.
-3. Change parameters in SwiftUI: remove `didCancelPurchase` and `paywall` parameters, and rename `viewConfiguration` parameter to `paywallConfiguration` from SwiftUI.
-4. Update how you handle promotional in-app purchases from the App Store (remove the `defermentCompletion` parameter from the `AdaptyDelegate` method)
-5. Remove the `getProductsIntroductoryOfferEligibility` method
-6. Update integration configuration: [Adjust](migration-integrations-to-iOS320#adjust), [Appsflyer](migration-integrations-to-iOS320#appsflyer), [Branch](migration-integrations-to-iOS320#branch)
+3. Remove the `didCancelPurchase` and `paywall` parameters from SwiftUI, and rename the `viewConfiguration` parameter to `paywallConfiguration`.
+4. Update how you process promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method.
+5. Remove the `getProductsIntroductoryOfferEligibility` method.
+6. Update integration configurations for: 
+   - [Adjust](migration-integrations-to-iOS320#adjust)
+   - [Appsflyer](migration-integrations-to-iOS320#appsflyer)
+   - [Branch](migration-integrations-to-iOS320#branch)
 
 ## Rename Adapty.Configuration to AdaptyConfiguration
 

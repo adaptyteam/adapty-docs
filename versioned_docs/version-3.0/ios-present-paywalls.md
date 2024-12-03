@@ -89,20 +89,21 @@ Parameters:
 
 | Parameter          | Presentce | Description                                                  |
 | :------------------------- | --------- | :----------------------------------------------------------- |
-| **isPresented**            | required  | Binding that controls the paywall screen presentation.       |
-| **fullScreen**             | optional  | Controls if the paywall occupies 100% or is shown as a modal screen. True by default |
+| **isPresented**            | required  | A binding that manages whether the paywall screen is displayed. |
+| **fullScreen**             | optional  | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`. |
 | **paywallConfiguration**             | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.|
-| **didPerformAction**       | optional  | If the user performs an action (close paywall, click button or URL), this action is invoked. |
+| **didPerformAction**       | optional  | Invoked when a product is selected for purchase by the user or the system. |
 | **didSelectProduct**       | optional  | If the product was selected for purchase (by a user or by the system), this callback will be invoked. |
-| **didStartPurchase**       | optional  | If the user initiates the purchase process, this callback will be invoked. |
-| **didFinishPurchase**      | optional  | If `Adapty.makePurchase()` succeeds, this callback will be invoked. |
-| **didFailPurchase**        | required  | If `Adapty.makePurchase()` fails, this callback will be invoked. |
-| **didFinishRestore**       | required  | If `Adapty.restorePurchases()` succeeds, this callback will be invoked. |
-| **didFailRestore**         | required  | If `Adapty.restorePurchases()` fails, this callback will be invoked. |
-| **didStartRestore**        | optional  | If user initiates the restore process, this method will be invoked. |
-| **didFailRendering**       | required  | If an error occurs during the interface rendering, this callback will be invoked. |
-| **didFailLoadingProducts** | optional  | This method is invoked in case of errors during the products loading process. Return `true` if you want to retry the loading. |
-| **showAlertItem**          | optional  | Binding that controls alert items showing above the paywall. |
-| **showAlertBuilder**       | optional  | Function that renders the alert view.                        |
+| **didStartPurchase**       | optional  | Invoked when the user begins the purchase process. |
+| **didFinishPurchase**      | optional  | Invoked when `Adapty.makePurchase()` completes successfully. |
+| **didFailPurchase**        | required  | Invoked when `Adapty.makePurchase()` fails. |
+| **didFinishRestore**       | required  | Invoked when `Adapty.restorePurchases()` completes successfully. |
+| **didFailRestore**         | required  | Invoked when `Adapty.restorePurchases()` fails. |
+| **didStartRestore**        | optional  | Invoked when the user starts the restore process. |
+| **didFailRendering**       | required  | Invoked if an error occurs while rendering the interface. |
+| **didFailLoadingProducts** | optional  | Invoked when errors occur during product loading. Return `true` to retry loading. |
+| **showAlertItem**          | optional  | A binding that manages the display of alert items above the paywall. |
+| **showAlertBuilder**       | optional  | A function for rendering the alert view. |
+
 
 Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters. 
