@@ -7,19 +7,13 @@ toc_max_heading_level: 4
 
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 
-### Offer
-
-<!-- backwards compatibility -->
-<a id="schemaofferdto"></a>
-<a id="schema_OfferDTO"></a>
-<a id="tocSofferdto"></a>
-<a id="tocsofferdto"></a>
+## Offer object
 
 ```json
 {
   "category": "no_offer",
   "type": "free_trial",
-  "id": "string"
+  "id": "StoreOfferId"
 }
 
 ```
@@ -28,65 +22,48 @@ OfferDTO
 
 ### Properties
 
-| Name     | Type                                  | Required | Restrictions | Description     |
-| -------- | ------------------------------------- | -------- | ------------ | --------------- |
-| category | [OfferCategory](#schemaoffercategory) | true     | none         | An enumeration. |
-| type     | any                                   | true     | none         | none            |
-
-anyOf
-
-| Name          | Type                          | Required | Restrictions | Description     |
-| ------------- | ----------------------------- | -------- | ------------ | --------------- |
-| » *anonymous* | [OfferType](#schemaoffertype) | false    | none         | An enumeration. |
-
-or
-
-| Name          | Type   | Required | Restrictions | Description |
-| ------------- | ------ | -------- | ------------ | ----------- |
-| » *anonymous* | string | false    | none         | none        |
-
-continued
-
-| Name | Type   | Required | Restrictions | Description |
-| ---- | ------ | -------- | ------------ | ----------- |
-| id   | string | false    | none         | none        |
+| Name     | Type   | Required          | Description                                                  |
+| -------- | ------ | ----------------- | ------------------------------------------------------------ |
+| category | String | :heavy_plus_sign: | Applied offer category. Possible values are `introductory`, `promotional`, `winback`. |
+| type     | String | :heavy_plus_sign: | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
+| Id       | String | :heavy_plus_sign: | ID of the applied offer as [indicated in the Product section](create-offer) of the Adapty Dashboard |
 
 ## Paywall object
 
 <PaywallObject />
 
-## VariationProduct
+## Products object
 
+Contains information on a product in Adapty.
 
+### Properties
 
-#### Properties
+| Name                           | Type                     | Required | Restrictions | Description                                                  |
+| ------------------------------ | ------------------------ | -------- | ------------ | ------------------------------------------------------------ |
+| title                          | string                   | false    | none         | none                                                         |
+| is_consumable                  | boolean                  | true     | none         | none                                                         |
+| adapty_product_id              | string(uuid)             | false    | none         | none                                                         |
+| vendor_product_id              | string                   | true     | none         | none                                                         |
+| introductory_offer_eligibility | boolean                  | false    | none         | none                                                         |
+| promotional_offer_eligibility  | boolean                  | false    | none         | none                                                         |
+| base_plan_id                   | string                   | false    | none         | none                                                         |
+| offer                          | [Offer](#schemaofferdto) | false    | none         | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
 
-| Name                           | Type                        | Required | Restrictions | Description                                                  |
-| ------------------------------ | --------------------------- | -------- | ------------ | ------------------------------------------------------------ |
-| title                          | string                      | false    | none         | none                                                         |
-| is_consumable                  | boolean                     | true     | none         | none                                                         |
-| adapty_product_id              | string(uuid)                | false    | none         | none                                                         |
-| vendor_product_id              | string                      | true     | none         | none                                                         |
-| introductory_offer_eligibility | boolean                     | false    | none         | none                                                         |
-| promotional_offer_eligibility  | boolean                     | false    | none         | none                                                         |
-| base_plan_id                   | string                      | false    | none         | none                                                         |
-| offer                          | [OfferDTO](#schemaofferdto) | false    | none         | Annotation:     This object is immutable dataset.  @dataclass(frozen=True) |
-
-Example
+### Example
 
 ```json
 {
-  "title": "string",
+  "title": "Monthly Subscription w/o Trial",
   "is_consumable": true,
-  "adapty_product_id": "6414dbe0-1fa8-4590-a838-ec1ead8ab951",
-  "vendor_product_id": "string",
+  "adapty_product_id": "InternalProductId",
+  "vendor_product_id": "onemonth_no_trial",
   "introductory_offer_eligibility": false,
-  "promotional_offer_eligibility": false,
-  "base_plan_id": "string",
+  "promotional_offer_eligibility": true,
+  "base_plan_id": "B1",
   "offer": {
-    "category": "no_offer",
-    "type": "free_trial",
-    "id": "string"
+    "category": "promotional",
+    "type": "pay_up_front",
+    "id": "StoreOfferId"
   }
 }
 
@@ -94,30 +71,22 @@ Example
 
 
 
-### VariationRemoteConfigData
-
-<!-- backwards compatibility -->
-<a id="schemavariationremoteconfigdata"></a>
-<a id="schema_VariationRemoteConfigData"></a>
-<a id="tocSvariationremoteconfigdata"></a>
-<a id="tocsvariationremoteconfigdata"></a>
+### RemoteConfig object
 
 ```json
 {
-  "lang": "string",
-  "data": "string"
+  "lang": "en",
+  "data": "JSON"
 }
 
 ```
 
-VariationRemoteConfigData
+### Properties
 
-#### Properties
-
-| Name | Type   | Required | Restrictions | Description |
-| ---- | ------ | -------- | ------------ | ----------- |
-| lang | string | true     | none         | none        |
-| data | string | true     | none         | none        |
+| Name | Type   | Required          | Description                                                  |
+| ---- | ------ | ----------------- | ------------------------------------------------------------ |
+| lang | String | :heavy_plus_sign: | <p>The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| data | String | :heavy_plus_sign: | none                                                         |
 
 <h2 id="tocS_ABPredict">ABPredict</h2>
 

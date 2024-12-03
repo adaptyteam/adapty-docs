@@ -7,12 +7,13 @@ toc_max_heading_level: 4
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 import PaywallRequestData from '@site/src/components/reusable/PaywallRequestData.md';
 
 ## Attribution
 
-### Add attribution to profile
+### Add attribution
 
 Adds attribution data to a profile.
 
@@ -356,10 +357,17 @@ POST
 }
 ```
 
-> Example responses
+#### Responses
 
-> 200 Response
+| Status | Meaning            |
+| ------ | ------------------ |
+| 200    | Successful request |
+| 400    | Bad Request        |
+| 401    | Unauthorized       |
+| 404    | Not Found          |
 
+<details>
+   <summary>200 Response example (click to expand) (click to expand)</summary>
 ```json
 {
   "placement_id": "PaywallPlacementId",
@@ -389,23 +397,10 @@ POST
   }
 }
 ```
-
-<h3 id="web_api_paywall_create-responses">Responses</h3>
-
-| Status | Meaning                                                      | Description | Schema                                            |
-| ------ | ------------------------------------------------------------ | ----------- | ------------------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)      | none        | [PaywallResponseData](#schemapaywallresponsedata) |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1) | none        | [Errors](#schemaerrors)                           |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1) | none        | [Errors](#schemaerrors)                           |
-| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4) | none        | [Errors](#schemaerrors)                           |
-
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
+</details>
 
 ### Record paywall view
-
+Adapty assists you in measuring the performance of your paywalls. However logging paywall views needs your input because only you know when a customer sees a paywall. Use this request to log a paywall view.
 
 
 <Tabs> 
@@ -547,10 +542,10 @@ POST
 
 ```json
 {
-  "visited_at": "2019-08-24T14:15:22Z",
+  "visited_at": "2024-08-24T14:15:22Z",
   "store": "app_store",
-  "variation_id": "5130138e-590b-4f7e-8df9-63af0004262c",
-  "customer_user_id": "string"
+  "variation_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem"
 }
 ```
 
@@ -575,14 +570,10 @@ POST
 
 <h3 id="web_api_paywall_visit_create-responses">Responses</h3>
 
-| Status | Meaning                                                      | Description      | Schema                  |
-| ------ | ------------------------------------------------------------ | ---------------- | ----------------------- |
-| 201    | [Created](https://tools.ietf.org/html/rfc7231#section-6.3.2) | No response body | None                    |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1) | none             | [Errors](#schemaerrors) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1) | none             | [Errors](#schemaerrors) |
-| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4) | none             | [Errors](#schemaerrors) |
+| Status | Meaning               |
+| ------ | --------------------- |
+| 201    | Successfullly created |
+| 400    | Bad request           |
+| 401    | Unauthorized          |
+| 404    | Not Found             |
 
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-tokenAuth
-</aside>
