@@ -55,17 +55,17 @@ In order to display the visual paywall on the device screen, do the following:
 
     Request parameters:
 
-    | Parameter                | Presence | Description |
-    | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-    | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
-    | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
-
+   | Parameter                | Presence | Description |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **paywall configuration**         | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
+   | **delegate**            | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.
    
-   Returns:
 
-    | Object                  | Description                                          |
-    | :---------------------- | :--------------------------------------------------- |
-    | AdaptyPaywallController | An object, representing the requested paywall screen |
+Returns:    
+
+   | Object                  | Description                                          |
+   | :---------------------- | :--------------------------------------------------- |
+   | AdaptyPaywallController | An object, representing the requested paywall screen |
 
 3. After the object has been successfully created, you can display it on the screen of the device: 
 
@@ -84,8 +84,7 @@ var body: some View {
 	Text("Hello, AdaptyUI!")
 			.paywall(
           isPresented: $paywallPresented,
-          paywall: <paywall object>,
-          viewConfiguration: <LocalizedViewConfiguration>,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
           didPerformAction: { action in
               switch action {
                   case .close:
@@ -104,21 +103,23 @@ var body: some View {
 }
 ```
 
-| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
-| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
-| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
+Parameters:
 
-Closure parameters:
-
-| Closure parameter     | Description                                                                       |
-| :-------------------- | :-------------------------------------------------------------------------------- |
-| **didFinishPurchase** | If Adapty.makePurchase() succeeds, this callback will be invoked.                 |
-| **didFailPurchase**   | If Adapty.makePurchase() fails, this callback will be invoked.                    |
-| **didFinishRestore**  | If Adapty.restorePurchases() succeeds, this callback will be invoked.             |
-| **didFailRestore**    | If Adapty.restorePurchases() fails, this callback will be invoked.                |
-| **didFailRendering**  | If an error occurs during the interface rendering, this callback will be invoked. |
-
-Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters. 
-
+| Parameter          | Presentce | Description                                                  |
+| :------------------------- | --------- | :----------------------------------------------------------- |
+| **isPresented**            | required  | Binding that controls the paywall screen presentation.       |
+| **fullScreen**             | optional  | Controls if the paywall occupies 100% or is shown as a modal screen. True by default |
+| **paywallConfiguration**             | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.|
+| **didPerformAction**       | optional  | If the user performs an action (close paywall, click button or URL), this action is invoked. |
+| **didSelectProduct**       | optional  | If the product was selected for purchase (by a user or by the system), this callback will be invoked. |
+| **didStartPurchase**       | optional  | If the user initiates the purchase process, this callback will be invoked. |
+| **didFinishPurchase**      | optional  | If `Adapty.makePurchase()` succeeds, this callback will be invoked. |
+| **didFailPurchase**        | required  | If `Adapty.makePurchase()` fails, this callback will be invoked. |
+| **didFinishRestore**       | required  | If `Adapty.restorePurchases()` succeeds, this callback will be invoked. |
+| **didFailRestore**         | required  | If `Adapty.restorePurchases()` fails, this callback will be invoked. |
+| **didStartRestore**        | optional  | If user initiates the restore process, this method will be invoked. |
+| **didFailRendering**       | required  | If an error occurs during the interface rendering, this callback will be invoked. |
+| **didFailLoadingProducts** | optional  | This method is invoked in case of errors during the products loading process. Return `true` if you want to retry the loading. |
+| **showAlertItem**          | optional  | Binding that controls alert items showing above the paywall. |
+| **showAlertBuilder**       | optional  | Function that renders the alert view.                        |
+Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters. 

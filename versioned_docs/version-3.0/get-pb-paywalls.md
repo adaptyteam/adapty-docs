@@ -155,7 +155,7 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-For paywalls with a `ViewConfiguration`, use the getPaywallConfiguration method to load the view configuration. 
+Use the `getPaywallConfiguration` method to load the view configuration. 
 
 ```swift 
 import Adapty
@@ -191,7 +191,7 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. 
+Use the `getViewConfiguration` method to load the view configuration. 
 
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
@@ -220,7 +220,7 @@ AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. 
+Use the `getViewConfiguration` method to load the view configuration. 
 
 ```java 
 if (!paywall.hasViewConfiguration()) {
