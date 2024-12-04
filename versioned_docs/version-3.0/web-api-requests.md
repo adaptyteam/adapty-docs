@@ -9,7 +9,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
-import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
+import ResponseExampleNew from '@site/src/components/reusable/ResponseExample-new.md';
 
 ## Attribution
 
@@ -193,9 +193,9 @@ POST
 
 <PaywallObject />
 
-### Retrieve paywall
+### Get paywall
 
-Retrives paywall data.
+Receives the paywall from the provided placement.
 
 <Tabs> 
 <TabItem value="shell" label="Shell" default>  
@@ -547,4 +547,4 @@ POST
 
 #### Response example
 
-<ResponseExample />
+<ResponseExampleNew />
