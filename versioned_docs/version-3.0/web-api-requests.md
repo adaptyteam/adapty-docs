@@ -9,7 +9,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
-import PaywallRequestData from '@site/src/components/reusable/PaywallRequestData.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
 ## Attribution
 
@@ -183,22 +183,9 @@ POST
 | 401    | Unauthorized         |
 | 404    | Not Found            |
 
-#### Example response
+#### Response example
 
-```json
-{
-  "errors": {
-    "property1": [
-      "string"
-    ],
-    "property2": [
-      "string"
-    ]
-  },
-  "error_code": "base_error",
-  "status_code": 400
-}
-```
+<PaywallObject /> 
 
 ## Paywall
 
@@ -549,31 +536,15 @@ POST
 }
 ```
 
-> Example responses
-
-> 400 Response
-
-```json
-{
-  "errors": {
-    "property1": [
-      "string"
-    ],
-    "property2": [
-      "string"
-    ]
-  },
-  "error_code": "base_error",
-  "status_code": 400
-}
-```
-
 <h3 id="web_api_paywall_visit_create-responses">Responses</h3>
 
-| Status | Meaning               |
-| ------ | --------------------- |
-| 201    | Successfullly created |
-| 400    | Bad request           |
-| 401    | Unauthorized          |
-| 404    | Not Found             |
+| Status | Meaning              |
+| ------ | -------------------- |
+| 201    | Successfully created |
+| 400    | Bad request          |
+| 401    | Unauthorized         |
+| 404    | Not Found            |
 
+#### Response example
+
+<ResponseExample />

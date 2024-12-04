@@ -342,6 +342,10 @@ const config = {
           "dart", // For Flutter, Dart is the primary language
           "toml",
           "groovy",
+          "json",
+          "php",
+          "HTTP",
+          "ruby",
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!
