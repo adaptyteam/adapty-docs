@@ -13,6 +13,7 @@ With the API, you can:
 2. Activate a user's subscription with an [access level](access-level).
 3. Retrieve user attributes.
 4. Set user attributes.
+5. Record a transaction from your web app and link it to the used paywall.
 
 <Zoom>
   <img src={require('./img/server.webp').default}
@@ -76,7 +77,7 @@ These custom attributes can be used to create segments and run A/B tests.
 
 For more details, visit the [API Specs](server-side-api-specs).
 
-## Case 5: Record a transaction done in a custom store and link it to the used paywall
+## Case 5: Record a transaction from your web app and link it to the used paywall
 
 Let's say you sell products in your web app. You need to display a paywall to your users, let them purchase a product, and then add the transaction details to Adapty. It’s essential to link these transactions to the specific paywalls through which the user made the purchase so that your analytics reflect accurate data. This can be easily accomplished using the Adapty API
 
