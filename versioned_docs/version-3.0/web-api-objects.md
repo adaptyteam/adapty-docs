@@ -15,7 +15,7 @@ This object contains details about the applied offer.
 {
   "category": "no_offer",
   "type": "free_trial",
-  "id": "StoreOfferId"
+  "id": "Offer Name"
 }
 
 ```
@@ -26,7 +26,7 @@ This object contains details about the applied offer.
 | -------- | ------ | ----------------- | ------------------------------------------------------------ |
 | category | String | :heavy_plus_sign: | Category of the applied offer. Possible values: `introductory`, `promotional`, `winback`. |
 | type     | String | :heavy_plus_sign: | Type of the applied offer. Possible values: `free_trial`, `pay_as_you_go`, `pay_up_front`. |
-| Id       | String | :heavy_plus_sign  | The **Offer name** of the applied offer as specified in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
+| Id       | String | :heavy_plus_sign: | The **Offer name** of the applied offer as specified in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
 
 ## Paywall object
 
