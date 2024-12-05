@@ -49,9 +49,13 @@ This API enables you to seamlessly integrate Adapty with your existing services.
   - For access level and transaction requests, you can use either the public or secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 
 - **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
-- **Header**: Use one of these parameters:
-  - **adapty-profile-id**: The ID of your user’s profile, visible in the **Adapty ID** field in the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
-  - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. This works only if you [identify users](identifying-users) in your app code with the Adapty SDK.
+- **Header**: 
+  - **adapty-platform**: Use this header to specify the app's platform. Possible options include:
+    `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
+  - Use one of the following to identify the user profile:
+    - **adapty-profile-id**: The user’s Adapty profile ID, visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+    - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+      ⚠️ This works only if you [identify users](identifying-users) in your app code using the Adapty SDK.
 - **Body**:  The API expects the request to use the body as JSON.
 
 ---
@@ -62,7 +66,7 @@ Info about your customer and their subscription.
 
 ### Profile object
 
-Object that contains details about your customer and their subscription.
+The object that contains details about your customer and their subscription.
 
 <ProfileObject />
 
@@ -294,9 +298,35 @@ https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
 POST
 ```
 
-#### Parameters
+Varies based on whether the purchase is a **subscription** or a **one-time purchase**.
 
-Either the [One-time purchase](server-side-api-specs#one-time-purchase-object) or [Subscription](server-side-api-specs#subscription-object) object.
+##### For subscription
+
+| Parameter                     | Type          | Required in request | Nullable in request    | Description                                                  |
+| :---------------------------- | :------------ | :------------------ | :--------------------- | :----------------------------------------------------------- |
+| purchase_type                 | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | The type of product purchased. Possible value: `subscription`. |
+| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Store where the product was bought. Options include **app_store**, **play_store**, **stripe**, or the name of your [custom store](initial-custom). |
+| environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:     | Environment where the transaction took place. Options are `Sandbox` or `Production`. |
+| store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | ID of the product in the app store (like App Store, Google Play, Stripe) that unlocked this access level. |
+| store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
+| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | <p>For subscriptions, this ID links to the first transaction in a renewal chain. Each renewal is connected to this original transaction.</p><br /><p>If there’s no renewal, store_original_transaction_id matches store_transaction_id.</p> |
+| offer                         | Object        | :heavy_plus_sign:   | :heavy_minus_sign:     | The offer used in the purchase, provided as an [Offer](server-side-api-objects#offer) object. |
+| is_family_shared              | Boolean       | :heavy_minus_sign:  | :heavy_minus_sign:     | A Boolean value indicating whether the product supports family sharing in App Store Connect. iOS only. Always `false` for iOS below 14.0 and macOS below 11.0. |
+| price                         | Object        | :heavy_plus_sign:   | :heavy_minus_sign:     | Price of the subscription or purchase as a [Price](server-side-api-objects#price) object. An initial subscription purchase with zero cost is a free trial; a renewal with zero cost is a free renewal. |
+| purchased_at                  | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:     | The datetime of the most recent access level purchase.       |
+| refunded_at                   | ISO 8601 date | :heavy_minus_sign:  | :heavy_minus_sign:     | The datetime when the subscription was refunded, if applicable. |
+| cancellation_reason           | String        | :heavy_plus_sign:   | :heavy_plus_sign:      | Possible reasons for cancellation include: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded`, or `unknown`. |
+| variation_id                  | String        | :heavy_minus_sign:  | :heavy_minus_sign:     | The variation ID used to trace purchases to the specific paywall they were made from. |
+| originally_purchased_at       | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:     | For subscription chains, this is the purchase date of the original transaction, linked by `store_original_transaction_id`. |
+| expires_at                    | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:      | The datetime when the access level expires. It may be in the past and may be `null` for lifetime access. |
+| renew_status                  | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:     | Indicates if the subscription auto-renewal is enabled.       |
+| renew_status_changed_at       | ISO 8601 date | :heavy_minus_sign:  | **:heavy_minus_sign:** | The datetime when auto-renewal when auto-renewal was either enabled or disabled. |
+| billing_issue_detected_at     | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:      | The datetime when a billing issue was detected (e.g., a failed card charge). Subscription might still be active. This is cleared if the payment goes through. |
+| grace_period_expires_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_minus_sign:     | The datetime when the [grace period](https://developer.apple.com/news/?id=09122019c) will end, if the subscription is currently in one. |
+
+##### For one-time purchase
+
+<Purchase />
 
 #### Request example
 
