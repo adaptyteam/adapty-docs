@@ -341,6 +341,7 @@ const config = {
           "diff",
           "javascript",
           "dart", // For Flutter, Dart is the primary language
+          "json",
         ],
       },
 

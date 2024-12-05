@@ -211,12 +211,10 @@ PATCH
 <summary>**400 - Bad request** (click to expand)</summary> 
 <ProfileResponseBadRequest />  
 </details>
-
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -265,7 +263,6 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -446,7 +443,6 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
   <p> </p>
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
   <p> </p>
@@ -499,7 +495,7 @@ POST
 
 <details>    
 <summary>Example request (click to expand)</summary>
-  ```json title="JSON"
+  ```json
 {
   "access_level_id": "premium",
   "starts_at": "2022-10-12T09:42:50.000000+0000",
@@ -578,7 +574,7 @@ POST
 <details>    
 <summary>Example request (click to expand)</summary>
 
-```json title="JSON"
+```json
 {
   "access_level_id": "premium",
   "revoke_at": "2024-10-12T09:42:50.000000+0000"
