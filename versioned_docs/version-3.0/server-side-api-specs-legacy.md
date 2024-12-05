@@ -7,6 +7,12 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+:::warning
+
+You are reading the guide for the legacy server-side API. For the new version, see the [Server-side API V2](server-side-api-specs#authorization) and Migration guide to Server-side API v2.
+
+:::
+
 **Base URL**: `https://api.adapty.io/api/v1/sdk`
 
 ## Authorization
