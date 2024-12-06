@@ -2,7 +2,7 @@
 title: "Webhook event types and fields"
 description: ""
 metadataTitle: ""
-toc_max_heading_level: 3
+toc_max_heading_level: 4
 ---
 
 Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
@@ -13,33 +13,33 @@ You can send all event types to your webhook or choose only some of them. You ca
 
 | Event Name                         | Default event ID                   | Description                                                  |
 | ---------------------------------- | :--------------------------------- | :----------------------------------------------------------- |
-| Subscription started               | subscription_started               | A user has activated a paid subscription without a trial period i.e. he was billed instantly. |
-| Subscription renewed               | subscription_renewed               | A subscription was renewed and the user was charged. For both trial and non-trial subscriptions, this event is sent starting from the second billing. |
-| Subscription renewal cancelled     | subscription_renewal_cancelled     | A user turned off subscription auto-renewal. A user still has access to the premium features of your app until the end of the paid subscription period. |
-| Subscription renewal reactivated   | subscription_renewal_reactivated   | A user turned on subscription auto-renewal.                  |
-| Subscription expired (churned)     | subscription_expired               | A user has canceled a subscription and it is completely finished. For example, if a user has a subscription till the 31st of December a cancells the subscription on 12th of December, the event will be created on the 31st of December when the subscription expires. |
-| Subscription paused (Android only) | subscription_paused                | User activated [subscription pause](https://developer.android.com/google/play/billing/subs#pause) (Android only). |
-| Non-subscription purchase          | non_subscription_purchase          | Any non-subscription purchase e.g. lifetime access or consumable product such as coins in a game. |
-| Trial started                      | trial_started                      | A user has activated a trial subscription.                   |
-| Trial converted                    | trial_converted                    | A trial period has ended and the user was billed, i.e. first purchase was made. Fro example, if a user has a 2-week trial subscription till the 14th of January and buys a paid subscription on the 7th of January, the event will be created when the user is billed - on the 7th of January. |
-| Trial renewal cancelled            | trial_renewal_cancelled            | A user turned off subscription auto-renewal during the trial. A user still has access to the premium features of your app until the end of the trial period. But the subscription will not start and the user will not be billed. |
-| Trial renewal reactivated          | trial_renewal_reactivated          | A user turned on subscription auto-renewal during the trial period. |
-| Trial expired                      | trial_expired                      | A trial has expired without converting to a subscription.    |
-| Entered grace period               | entered_grace_period               | The payment was not successful and the user entered into a grace period if you have it. The user still has access to the premium features of your app until the grace period is finished. |
-| Billing issue detected             | billing_issue_detected             | An attempt to charge the user was made, but a billing issue happened. Usually, it means the user doesn't have enough card balance. |
-| Subscription refunded              | subscription_refunded              | A subscription was refunded \(e.g. by Apple support\).       |
-| Non-subscription purchase refunded | non_subscription_purchase_refunded | Non-subscription purchase was refunded.                      |
-| Access level updated               | access_level_updated               | User's access level updated.                                 |
+| Subscription started               | subscription_started               | Triggered when a user activates a paid subscription without a trial period, meaning they are billed instantly. |
+| Subscription renewed               | subscription_renewed               | Occurs when a subscription is renewed and the user is charged. This event starts from the second billing, whether it's a trial or non-trial subscription. |
+| Subscription renewal cancelled     | subscription_renewal_cancelled     | A user has turned off subscription auto-renewal. The user retains access to premium features until the end of the paid subscription period. |
+| Subscription renewal reactivated   | subscription_renewal_reactivated   | Triggered when a user reactivates subscription auto-renewal. |
+| Subscription expired (churned)     | subscription_expired               | Triggered when a subscription fully ends after being canceled. For instance, if a user cancels a subscription on December 12th but it runs until December 31st, the event is recorded on December 31st when the subscription expires. |
+| Subscription paused (Android only) | subscription_paused                | Occurs when a user activates [subscription pause](https://developer.android.com/google/play/billing/subs#pause) (Android only). |
+| Non-subscription purchase          | non_subscription_purchase          | Any non-subscription purchase, such as lifetime access or consumable products like in-game coins. |
+| Trial started                      | trial_started                      | Triggered when a user activates a trial subscription.        |
+| Trial converted                    | trial_converted                    | Occurs when a trial ends and the user is billed (first purchase). For example, if a user has a trial until January 14th but is billed on January 7th, this event is recorded on January 7th. |
+| Trial renewal cancelled            | trial_renewal_cancelled            | A user turned off subscription auto-renewal during the trial period. The user retains access to premium features until the trial ends but will not be billed or start a subscription. |
+| Trial renewal reactivated          | trial_renewal_reactivated          | Occurs when a user reactivates subscription auto-renewal during the trial period. |
+| Trial expired                      | trial_expired                      | Triggered when a trial ends without converting to a subscription. |
+| Entered grace period               | entered_grace_period               | Occurs when a payment attempt fails, and the user enters a grace period (if enabled). The user retains premium access during this time. |
+| Billing issue detected             | billing_issue_detected             | Triggered when a billing issue occurs during a charge attempt (e.g., insufficient card balance). |
+| Subscription refunded              | subscription_refunded              | Triggered when a subscription is refunded (e.g., by Apple Support). |
+| Non-subscription purchase refunded | non_subscription_purchase_refunded | Triggered when a non-subscription purchase is refunded.      |
+| Access level updated               | access_level_updated               | Occurs when a user's access level is updated.                |
 
 ## Webhook event structure
 
 Adapty will send you only those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields, the list of event properties however will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
+Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields, the list of event properties however will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
 
 ```json title="Json"
 {
-  "profile_id": "InternalUniqueUserProfileIdentifier",
+  "profile_id": "00000000-0000-0000-0000-000000000000",
   "customer_user_id": "UserIdInYourSystem",
   "idfv": "00000000-0000-0000-0000-000000000000",
   "idfa": "00000000-0000-0000-0000-000000000000",
@@ -47,18 +47,18 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
   "profile_install_datetime": "2000-01-31T00:00:00.000000+0000",
   "user_agent": "ExampleUserAgent/1.0 (Device; OS Version) Browser/Engine",
   "email": "john.doe@company.com",
-  "event_type": "Subscription started",
+  "event_type": "subscription_started",
   "event_datetime": "2000-01-31T00:00:00.000000+0000",
     "event_properties": {
       "store": "play_store",
       "currency": "USD",
       "price_usd": 4.99,
-      "profile_id": "InternalUniqueUserProfileIdentifier",
+      "profile_id": "00000000-0000-0000-0000-000000000000",
       "cohort_name": "All Users",
       "environment": "Production",
       "price_local": 4.99,
       "base_plan_id": "b1",
-      "developer_id": "PaywallPlacementId",
+      "developer_id": "onboarding_placement",
       "paywall_name": "UsedPaywall",
       "proceeds_usd": 4.2315,
       "variation_id": "00000000-0000-0000-0000-000000000000",
@@ -67,7 +67,7 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
       "event_datetime": "2000-01-31T00:00:00.000000+0000",
       "proceeds_local": 4.2415,
       "tax_amount_usd": 0,
-      "transaction_id": "UniqueTransactionIdentifier",
+      "transaction_id": "tra.123456789-123456789",
       "net_revenue_usd": 4.2415,
       "profile_country": "AR",
       "paywall_revision": "1",
@@ -79,13 +79,13 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
       "consecutive_payments": 1,
       "rate_after_first_year": false,
       "original_purchase_date": "2000-01-31T00:00:00.000000+0000",
-      "original_transaction_id": "UniqueTransactionIdentifier",
+      "original_transaction_id": "tra.123456789-123456780",
       "subscription_expires_at": "2000-01-31T00:00:00.000000+0000",
       "profile_has_access_level": true,
       "profile_total_revenue_usd": 4.99
     },
   "event_api_version": 1,
-  "profiles_sharing_access_level": [{"profile_id": "f9e83cb0-0cf3-4e92-b1a4-733311fe5800", "customer_user_id": "UserIdInYourSystem"}],
+  "profiles_sharing_access_level": [{"profile_id": "00000000-0000-0000-0000-000000000000", "customer_user_id": "UserIdInYourSystem"}],
    "attributions": {
     "appsflyer": {
       "ad_set": "Keywords 1.12",
@@ -109,20 +109,20 @@ Event parameters are the same for all event types.
 
 | Field                             | Type                 | Description                                                  |
 | :-------------------------------- | :------------------- | :----------------------------------------------------------- |
-| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> You can see them in the  **Default event ID** of the [Web hook events](webhook-event-types-and-fields#webhook-event-types) table. Standard flows with events that are created and sent to webhook are described on the [Webhook event flows](webhook-flows) page.</p> |
-| **idfv**                          | String               | The identifier for vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. You can find it in the **IDFV** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **idfa**                          | String               | The identifier for advertisers (IDFA) is a random device identifier assigned by Apple to a user's device. You can find it in the **IDFA** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> You can see them in the  **Default event ID** of the [Webhook events](webhook-event-types-and-fields#webhook-event-types) table. Standard flows with events that are created and sent to Webhook are described on the [Webhook event flows](webhook-flows) page.</p> |
+| **idfv**                          | UUID                 | The identifier for vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. You can find it in the **IDFV** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **idfa**                          | UUID                 | The identifier for advertisers (IDFA) is a random device identifier assigned by Apple to a user's device. You can find it in the **IDFA** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **email**                         | String               | E-mail of your user. You can find it in the **Email** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **profile_id**                    | String               | The ID of the profile in Adapty. You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **profile_id**                    | UUID                 | The ID of the profile in Adapty. You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **user_agent**                    | String               | User-agent used by the browser on the device.                |
-| **advertising_id**                | String               | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device. Used for Android only. |
-| **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html) : starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
+| **advertising_id**                | UUID                 | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device. Used for Android only. |
+| **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **event_properties**              | JSON                 | JSON of [event properties](webhook-event-types-and-fields#event-properties). |
 | **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
 | **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
 | **profile_install_datetime**      | ISO 8601 date & time | Installation date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
-| **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID4) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
+| **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **attributions**                  | JSON                 | JSON of [attribution data](webhook-event-types-and-fields#attribution-data). To send the attribution, enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page. |
 | **user_attributes**               | JSON                 | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). This will include any custom attributes you’ve set up to send from your mobile app. To send it, enable the **Send User Attributes** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page. |
 
@@ -145,13 +145,13 @@ To send the attribution, enable the **Send Attribution** option in the [**Integr
 
 ### Event Properties
 
-Event properties can differ between event types and even events of the same type. For example, an event from the App Store will not have Android-specific properties like `base_plan_id`.
+Event properties can vary depending on the event type and even between events of the same type. For instance, an event originating from the App Store won’t include Android-specific properties like `base_plan_id`.
 
-For the [Access Level Updated] event event properties differ pretty much as well. So we've separated it into a separate section. Besides, we've separated Revenue and Financial Metrics which belong to several event types only.
+The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updated-event) event has distinct properties, so we’ve dedicated a separate section to it. Similarly, we’ve separated [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties), as they are specific to only certain event types.
 
 #### For most event types
 
-Event properties for most events are nearly the same (except for the  [Access Level Updated] and  [Subscription renewal reactivated] events which are described separately), so we provide them as one table highlighting if the property belongs to some specific event.
+The event properties for most event types are consistent (except for **Access Level Updated** event, which is described in its own section). Below is a comprehensive table highlighting properties and indicating if they belong to specific events.
 
 | Field                         | Type          | Description                                                  |
 | :---------------------------- | :------------ | :----------------------------------------------------------- |
@@ -164,7 +164,7 @@ Event properties for most events are nearly the same (except for the  [Access Le
 | **profile_country**           | String        | Determined by Adapty, based on profile IP.                   |
 | **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**  | Boolean       | A boolean that indicates whether the profile has an active access level. |
-| **profile_id**                | UUID          | Adapty user ID.                                              |
+| **profile_id**                | UUID          | Adapty internal user ID.                                     |
 | **profile_ip_address**        | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). |
 | **profile_total_revenue_usd** | Float         | Total revenue for the profile, refunds included.             |
 | **purchase_date**             | ISO 8601 date | The date and time of the product purchase.                   |
@@ -183,9 +183,9 @@ Event properties for most events are nearly the same (except for the  [Access Le
 | **store_offer_category**      | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`. |
 | **store_offer_discount_type** | String        | Applied offer type.. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
 
-##### Additional tax and revenue event properties
+#### Additional tax and revenue event properties
 
-The event properties connected to taxes and revenue below are additional fields belong only to several event types.  This means that the listed even types contain the Event properties for the most event types and in addition the fields listed below.
+The event properties connected to taxes and revenue below are additional fields that belong only to several event types.  This means that the listed even types contain the [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types) and in addition the fields listed below.
 
 Event types that have the tax and revenue event properties:
 
@@ -205,7 +205,7 @@ Event types that have the tax and revenue event properties:
 
 #### For Access Level Updated event
 
-Access level updated event type is an specific Webhook event that is created only if the Webhook integration is activated and this type is enabled for it. If enabled, it is sent to the Webhook integration and appears in the **Event Feed**. If not, the event is not created at all.
+The **Access Level Updated** event is a specific webhook event generated only when the Webhook integration is active, and this event type is enabled. If enabled, it is sent to the configured Webhook and appears in the **Event Feed**. If not enabled, the event will not be created.
 
 | Property                           | Type          | Description                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
@@ -233,10 +233,10 @@ Access level updated event type is an specific Webhook event that is created onl
 | **profile_country**                | String        | Determined by Adapty, based on profile IP.                   |
 | **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**       | Boolean       | Boolean indicating whether the profile has an active access level. |
-| **profile_id**                     | UUID          | Adapty user profile ID.                                      |
+| **profile_id**                     | UUID          | Adapty internal user profile ID.                             |
 | **profile_ip_address**             | String        | Profile IP address of the user.                              |
 | **profile_total_revenue_usd**      | Float         | Total revenue for the profile, refunds included.             |
-| **profiles_sharing_access_level**  | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID4) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
+| **profiles_sharing_access_level**  | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
 | **renewed_at**                     | ISO 8601 date | Date and time when the access will be renewed.               |
 | **store**                          | String        | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**. |
