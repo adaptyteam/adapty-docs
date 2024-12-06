@@ -27,7 +27,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
    ```yaml title="pubspec.yaml"
    dependencies:
-   adapty_flutter: ^3.2.1
+   adapty_flutter: ^3.2.3
    ```
 
 2. Run:
