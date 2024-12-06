@@ -18,7 +18,12 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.2.0
 
 :::
 
-To show a paywall, call `view.present()` method. You can use `view` from the previous step, we will introduce a new one for visibility reasons:
+To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
+
+:::warning
+
+Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```typescript title="Flutter"
 try {

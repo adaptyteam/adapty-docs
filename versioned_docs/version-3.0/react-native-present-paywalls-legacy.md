@@ -15,7 +15,12 @@ This guide is for **legacy Paywall Builder paywalls** only which require SDK v2.
 
 :::
 
-To display a paywall view, simply call the `view.present()` method. If you've already defined a `view` object in a previous step, feel free to use it. In the following snippet, we'll introduce a new `view` for better visibility.
+To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
+
+:::warning
+
+Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```typescript title="React Native (TSX)"
 import {createPaywallView} from '@adapty/react-native-ui';

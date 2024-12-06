@@ -148,14 +148,10 @@ Response parameters:
 
 After fetching the paywall, check if it includes a `viewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `viewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
-For paywalls with a `viewConfiguration`, use the `getViewConfiguration` method to load the view configuration. In cross-platform SDKs, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
-
-:::warning
-The result of the `createPaywallView` method can be used only once. If you need to reuse it, call the `createPaywallView` method again.
-:::
-
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```swift 
 import Adapty
@@ -177,6 +173,8 @@ do {
 
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
+
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
@@ -200,6 +198,8 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
+Use the `getViewConfiguration` method to load the view configuration.
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
@@ -220,6 +220,12 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
+In Flutter SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
 ```javascript 
 import 'package:adapty_ui_flutter/adapty_flutter.dart';
 
@@ -234,6 +240,12 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
+In Unity SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
 ```csharp 
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
@@ -241,6 +253,12 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
+In React Native SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
@@ -359,7 +377,7 @@ The `getPaywallForDefaultAudience` method is available starting from these versi
 - Android: 2.11.3
 - React Native: 2.11.2
 
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+This method isn’t supported in Unity yet, but it’s coming soon. Flutter support is available starting with v3.2.0. You can find more details in the [section about speeding up paywall fetching with the new Paywall Builder](https://chatgpt.com/c/get-pb-paywalls#speed-up-paywall-fetching-with-default-audience-paywall).
 :::
 
 | Parameter | Presence | Description |

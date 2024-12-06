@@ -155,8 +155,7 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-Use the `getPaywallConfiguration` method to load the view configuration. 
-
+Use the `getPaywallConfiguration` method to load the view configuration.
 ```swift 
 import Adapty
 import AdaptyUI
@@ -191,7 +190,7 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-Use the `getViewConfiguration` method to load the view configuration. 
+Use the `getViewConfiguration` method to load the view configuration.
 
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
@@ -247,7 +246,11 @@ AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-In Flutter SDK, directly call the `createPaywallView` method without manually fetching the view configuration first. 
+In Flutter SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```javascript 
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -288,6 +291,10 @@ In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID
 <TabItem value="React Native" label="React Native (TS)" default>
 
 In React Native SDK, directly call the `createPaywallView` method without manually fetching the view configuration first. 
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
@@ -383,6 +390,20 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
+```typescript
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+</TabItem>
+
+<TabItem value="RN" label="React Native" default>
+
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -394,7 +415,9 @@ try {
     // handle the error
 }
 ```
+
 </TabItem>
+
 </Tabs>
 
 :::note
@@ -403,8 +426,9 @@ The `getPaywallForDefaultAudience` method is available starting from these versi
 - iOS: 2.11.2
 - Android: 2.11.3
 - React Native: 2.11.2
+- Flutter: 3.2.0
 
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+The method is not yet supported in Unity, but support will be added soon.
 :::
 
 | Parameter | Presence | Description |

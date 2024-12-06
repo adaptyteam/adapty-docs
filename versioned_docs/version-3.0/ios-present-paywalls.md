@@ -99,7 +99,7 @@ Parameters:
 | **didFinishRestore**       | required  | Invoked when `Adapty.restorePurchases()` completes successfully. |
 | **didFailRestore**         | required  | Invoked when `Adapty.restorePurchases()` fails. |
 | **didStartRestore**        | optional  | Invoked when the user starts the restore process. |
-| **didFailRendering**       | required  | Invoked if an error occurs while rendering the interface. |
+| **didFailRendering**       | required  | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io). |
 | **didFailLoadingProducts** | optional  | Invoked when errors occur during product loading. Return `true` to retry loading. |
 | **showAlertItem**          | optional  | A binding that manages the display of alert items above the paywall. |
 | **showAlertBuilder**       | optional  | A function for rendering the alert view. |
