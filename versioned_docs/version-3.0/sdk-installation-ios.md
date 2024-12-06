@@ -54,8 +54,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.2.0'
-   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.1'
+   pod 'AdaptyUI', '~> 3.2.1' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
