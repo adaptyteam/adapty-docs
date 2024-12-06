@@ -1,5 +1,5 @@
 ---
-title: "API objects"
+title: "Legacy server-side API objects"
 description: ""
 metadataTitle: ""
 ---
@@ -8,6 +8,13 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 ## Objects
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
 

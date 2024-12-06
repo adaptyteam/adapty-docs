@@ -267,6 +267,8 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
 </details>
+---
+
 ## Transactions
 
 ### One-time purchase object
@@ -276,6 +278,8 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 ### Subscription object
 
 <Subscription />
+
+---
 
 ### Set transaction
 

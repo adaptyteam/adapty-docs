@@ -1,5 +1,5 @@
 ---
-title: "API specs"
+title: "Legacy server-side API specs"
 description: ""
 metadataTitle: ""
 ---
@@ -7,23 +7,24 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-:::warning
-
-You are reading the guide for the legacy server-side API. For the new version, see the [Server-side API V2](server-side-api-specs#authorization) and Migration guide to Server-side API v2.
-
-:::
-
 **Base URL**: `https://api.adapty.io/api/v1/sdk`
 
 ## Authorization
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 Each API request must be signed with the [Secret Key](general).
 
 When calling API:
 
-- You must set **Authorization** header with value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
+- You must set **Authorization** header with the value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
 - Use JSON payload in the request body for POST and PATCH requests
-- All request must set header **Content-Type**: application/json
+- All requests must set header **Content-Type**: application/json
 
 ## Working with customer user ID
 
