@@ -199,7 +199,7 @@ In version 1, you could only update user attributes. With v2, you can modify a w
 
 :::info
 
-For a detailed description, refer to the [Delete profile](server-side-api-specs#delete-profile) request .
+For a detailed description, refer to the [Delete profile](server-side-api-specs#delete-profile) request.
 
 :::
 
