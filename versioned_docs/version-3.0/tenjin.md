@@ -69,16 +69,16 @@ Where
 | **platform**                  | String           | The platform of the device (e.g., ios, android, windows, amazon). |
 | **quantity**                  | Integer          | The number of units purchased.                               |
 | **bundle_id**                 | String           | The bundle identifier of the app (e.g., `com.example.app`).  |
-| **ip_address**                | String (IPv4)    | The user’s IP address. Used to lookup the country.           |
+| **ip_address**                | String (IPv4)    | The user’s IP address. Used to look up the country.          |
 | **os_version**                | String           | The OS version of the device. For Android: `String.valueOf(Build.VERSION.SDK_INT)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
 | **product_id**                | String           | Unique identifier for the product purchased.                 |
 | **app_version**               | Float, Decimal   | The version of the app. For Android: `context.getPackageManager().getPackageInfo()`. For iOS: `[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]`. |
-| **sdk_version**               | String           | The version of the SDK being used. For example, `“server”`.  |
+| **sdk_version**               | String           | The SDK version in use, always set to `server`.              |
 | **device_model**              | String           | The model of the device. For Android: `Build.MODEL`. For iOS: `sysctl("hw.machine")`. |
 | **advertising_id**            | UUID             | The advertising ID of the device. Required for Android. For iOS, it can be empty or all zeros. |
 | **os_version_release**        | String           | The OS version release. For Android: `String.valueOf(Build.VERSION.RELEASE)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
 | **developer_device_id**       | UUID             | The identifier for the vendor (iOS only).                    |
-| **analytics_installation_id** | UUID             | Required analytics installation ID. Refer to the documentation at `https://docs.tenjin.com`. |
+| **analytics_installation_id** | UUID             | Analytics installation ID. For details, refer to the documentation at `https://docs.tenjin.com`. |
 
 ## Setting up Tenjin integration
 
@@ -135,13 +135,15 @@ Where
    Tenjin doesn’t have a specific Sandbox mode for server-to-server integration. Use a separate Tenjin app or the same key for both production and sandbox events.
    :::
 
-10. Click **Save** to finalize the setup.
+10. (optional) Adjust the **How the revenue data should be sent** section if needed. For a detailed explanation of its settings, refer to the [Integration settings](configuration#integration-settings).
+
+11. Click **Save** to finalize the setup.
 
 Adapty will now send purchase events to Tenjin and receive attribution data. You can adjust event sharing in the **Events names** section.
 
 ## Events and tags
 
-Tenjin only accepts purchase events. In the **Events names** section, select which events to share with Tenjin to align with your tracking goals.
+Tenjin only accepts purchase and **Trial started** events. In the **Events names** section, select which events to share with Tenjin to align with your tracking goals.
 
 - `non_subscription_purchase`
 - `non_subscription_refunded`
@@ -152,7 +154,7 @@ Tenjin only accepts purchase events. In the **Events names** section, select whi
 - `trial_started`
 
 <Zoom>
-  <img src={require('./img/tenjin-copy-sdk-key.webp').default}
+  <img src={require('./img/tenjin-events.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
