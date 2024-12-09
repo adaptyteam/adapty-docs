@@ -133,7 +133,7 @@ const config = {
             ],
           },*/
           {
-            label: "API Reference",
+            label: "API",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
@@ -342,6 +342,7 @@ const config = {
           "dart", // For Flutter, Dart is the primary language
           "toml",
           "groovy",
+          "json",
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!
