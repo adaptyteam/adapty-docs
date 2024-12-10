@@ -15,7 +15,7 @@ There are 2 types of offers:
     An introductory offer is a special welcome for users who are exploring a subscription-based app for the first time. It's a promotion that you can set up to provide new subscribers with a discounted price, a free trial, or other enticing deals for a certain period. 
 - **Promotional offer**  
   A promotional offer is a friendly invitation for users who are already familiar with a subscription-based app. It's a special deal or discount that you can create to engage existing or past subscribers. With promotional offers, you can provide discounted prices, free trials, or other enticing deals to encourage users to renew or re-subscribe.
-- **Win-back offer**
+- **Win-back offer**  
   A win-back offer is a strategic deal aimed at re-engaging users who have previously canceled or let their subscriptions lapse. This type of offer helps you reconnect with churned subscribers by providing exclusive discounts or promotions, enticing them to return and resubscribe. Winback offers are a great way to reduce churn and regain lost users
 
 :::note
