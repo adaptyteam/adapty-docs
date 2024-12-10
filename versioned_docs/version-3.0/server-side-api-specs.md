@@ -51,10 +51,13 @@ This API enables you to seamlessly integrate Adapty with your existing services.
   - Public API key as the **Authorization** header with the value `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 - **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
 - **Header**: 
-  - Use **adapty-platform**: The platform of your app. Possible options are:  `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
-  - Use one of these parameters:
-    - **adapty-profile-id**: The ID of your user’s profile, visible in the **Adapty ID** field in the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
-    - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. This works only if you [identify users](identifying-users) in your app code with the Adapty SDK.
+  
+    - **adapty-platform**: Use this header to specify the app's platform. Possible options include:
+      `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
+    - Use one of the following to identify the user profile:
+      - **adapty-profile-id**: The user’s Adapty profile ID, visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+        - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+          ⚠️ This works only if you [identify users](identifying-users) in your app code using the Adapty SDK.
 
 - **Body**:  The API expects the request to use the body as JSON.
 
@@ -67,7 +70,7 @@ Info about your customer and their subscription.
 ### Profile object
 
 Object that contains details about your customer and their subscription.
-
+The object that contains details about your customer and their subscription.
 <ProfileObject />
 
 ---
@@ -223,12 +226,24 @@ Public or secret API Key
 <summary>**400 - Bad request** (click to expand)</summary> 
 <ProfileResponseBadRequest />  
 </details>
-
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
 
+<details>    
+<summary>**404 - Not found** (click to expand)</summary> 
+<ProfileResponseNotFound />  
+</details>
+
+___
+
+### Delete profile
+
+<details>    
+<summary>**401 - Unauthorized** (click to expand)</summary> 
+<ProfileResponseUnauthorized />  
+</details>
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -281,7 +296,6 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -685,6 +699,12 @@ Creates a new transaction for an end user of your app in Adapty and provides acc
 
 This method is recommended over the [Grant access level](server-side-api-specs#grant-access-level) one.
 
+:::warning
+
+Before setting a transaction, make sure the product is [created in Adapty](create-product). Without this step, the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. However, the user won’t get access in the mobile app since no access level will be assigned.
+
+:::
+
 #### Endpoint
 
 ```
@@ -705,6 +725,10 @@ Secret API Key
 
 Depends on whether the purchase is a subscription or a one-time-purchase.
 
+
+Varies based on whether the purchase is a **subscription** or a **one-time purchase**.
+
+>>>>>>> ADP-1849-ios-330
 ##### For subscription
 
 | Parameter                     | Type          | Required in request | Nullable in request    | Description                                                  |
@@ -851,7 +875,6 @@ Depends on whether the purchase is a subscription or a one-time-purchase.
   <p> </p>
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
   <p> </p>
@@ -907,7 +930,7 @@ Secret API Key
 
 <details>    
 <summary>Example request (click to expand)</summary>
-  ```json title="JSON"
+  ```json
 {
   "access_level_id": "premium",
   "starts_at": "2022-10-12T09:42:50.000000+0000",
@@ -990,7 +1013,7 @@ Secret API Key
 <details>    
 <summary>Example request (click to expand)</summary>
 
-```json title="JSON"
+```json
 {
   "access_level_id": "premium",
   "revoke_at": "2024-10-12T09:42:50.000000+0000"
@@ -1148,8 +1171,6 @@ Contain a list of errors with parameters.
   ]
 }
 ```
-
----
 
 ## Integration
 
@@ -1405,4 +1426,3 @@ Public API Key
 #### Response example
 
 <PaywallObject /> 
-

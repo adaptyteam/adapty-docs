@@ -136,11 +136,13 @@ import FirebaseAnalytics
 FirebaseApp.configure()
         
 if let appInstanceId = Analytics.appInstanceID() {            
-    let builder = AdaptyProfileParameters.Builder()
-        .with(firebaseAppInstanceId: appInstanceId)
-            
-    Adapty.updateProfile(params: builder.build()) { error in
-                // handle error
+    do {
+        try await Adapty.setIntegrationIdentifier(
+            key: "firebase_app_instance_id", 
+            value: appInstanceId
+        )
+    } catch {
+        // handle the error
     }
 }
 ```

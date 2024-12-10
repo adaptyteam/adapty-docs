@@ -1,5 +1,5 @@
 ---
-title: "API specs"
+title: "Legacy server-side API specs"
 description: ""
 metadataTitle: ""
 ---
@@ -11,14 +11,22 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 ## Authorization
 
-Each API request must be signed with the [Secret Key](general).
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 When calling API:
 
 - You must set **Authorization** header with value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
 - Use JSON payload in the request body for POST and PATCH requests
 - All request must set header **Content-Type**: application/json
-
+=======
+- You must set **Authorization** header with the value "Api-Key \{secret\_token\}" \(without quotes\) to each request, for example `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
+- Use JSON payload in the request body for POST and PATCH requests
+- All requests must set header **Content-Type**: application/json
 ## Working with customer user ID
 
 Most server-side API requests allow passing `customer_user_id` as a URL parameter. This makes it easy for you to query/update data in Adapty, without having to store Adapty's `profile_id`.  In most cases, you should pass `customer_user_id` as is, without any modifications.
@@ -52,8 +60,8 @@ Path parameters:
 | Param                              | Type | Required | Nullable | Description                                                     |
 | :--------------------------------- | :--- | :------- | :------- | :-------------------------------------------------------------- |
 | **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID                    |
-| **access_level**                   | str  | ✅        | ❌        | ID \(slug\) of a paid access level. Find it in Adapty Dashboard |
-
+| Param                              | Type | Required | Nullable | Description                                                  |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID
 Request parameters:
 
 | Param | Type | Required | Nullable | Description |
@@ -72,6 +80,23 @@ Request parameters:
 | **price_locale** | str | ❌ | ❌ | The currency of the transaction in the [three-letter](https://en.wikipedia.org/wiki/ISO_4217) format. `USD` is used by default. |
 | **proceeds** | float | ❌ | ❌ | Proceeds \(price that is reduced due to stores' fee\) of the subscription/purchase to save in [transaction](server-side-api-specs#transaction). |
 | **is_sandbox** | bool | ❌ | ❌ | Boolean indicating whether the product was purchased in the sandbox or production environment. |
+=======
+| Param                              | Type          | Required      | Nullable | Description                                                  |
+| ---------------------------------- | ------------- | ------------- | -------- | ------------------------------------------------------------ |
+| **expires_at**                     | ISO 8601 date | ✅\* see below | ❌        | Subscription deadline                                        |
+| **duration_days**                  | int           | ✅\* see below | ❌        | Additional days to a current subscription\*\*                |
+| **is_lifetime**                    | bool          | ✅\* see below | ❌        | If set true, then a user will forever have a paid access level forever |
+| **starts_at**                      | ISO 8601 date | ❌             | ❌        | If the start time of the action is in the future, then you can transfer it. If the start time and the period are indicated, the period will be counted from the indicated time |
+| **vendor_product_id**              | str           | ❌             | ❌        | When posting a transaction, include the product ID that triggers the subscription renewal. If you're granting an access level without a transaction, skip this parameter, and **adapty_server_side_product** will be used by default. |
+| **base_plan_id**                   | str           | ❌             | ❌        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
+| **vendor_original_transaction_id** | str           | ❌             | ❌        | ID of the original transaction in the subscription renewal chain in a vendor environment. |
+| **vendor_transaction_id**          | str           | ❌             | ❌        | <p>Transaction ID in a vendor environment.</p><p>If it is the same as **vendor_original_transaction_id** or if **vendor_original_transaction_id** is absent, Adapty considers it the first subscription purchase. If it differs from **vendor_original_transaction_id**, Adapty considers the purchase the subscription renewal.</p> |
+| **store**                          | str           | ❌             | ❌        | A store where users purchased a product, such as **app\_store** and **play\_store**, can be custom. Default is **adapty** |
+| **introductory_offer_type**        | str           | ❌             | ❌        | A type of introduction offer. Available values are **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. |
+| **price**                          | float         | ❌             | ❌        | <p>Price of the subscription/purchase to save in [transaction](server-side-api-specs#transaction).</p><p>The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal.</p><p></p><p>If you provide price, provide `price_locale` as well.</p> |
+| **price_locale**                   | str           | ❌             | ❌        | The currency of the transaction in the [three-letter](https://en.wikipedia.org/wiki/ISO_4217) format. `USD` is used by default. |
+| **proceeds**                       | float         | ❌             | ❌        | Proceeds \(price that is reduced due to stores' fee\) of the subscription/purchase to save in [transaction](server-side-api-specs#transaction). |
+| **is_sandbox**                     | bool          | ❌             | ❌        | Boolean indicating whether the product was purchased in the sandbox or production environment. |
 
 
 #### Paid access level
@@ -219,8 +244,9 @@ Path parameters:
 | Param                              | Type | Required | Nullable | Description                                                   |
 | :--------------------------------- | :--- | :------- | :------- | :------------------------------------------------------------ |
 | **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID                  |
-| **access_level**                   | str  | ✅        | ❌        | ID (slug) of a paid access level. Find it in Adapty Dashboard |
-
+| Param                              | Type | Required | Nullable | Description                                                  |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID
+\| **access_level**                   \| str  \| ✅        \| ❌        \| ID (slug) of a paid access level. Find it in Adapty Dashboard \| |
 Request parameters:
 
 | Param          | Type | Required | Nullable | Description                                          |
@@ -244,8 +270,8 @@ Request parameters:
 | Param                  | Type | Required | Nullable | Description                                                                                                                                            |
 | :--------------------- | :--- | :------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **customer\_user\_id** | str  | ✅        | ❌        | Developer's internal customer ID                                                                                                                       |
-| **stripe\_token**      | str  | ✅        | ❌        | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
-
+| Param                  | Type | Required | Nullable | Description                                                  |
+| **customer\_user\_id** | str  | ✅        | ❌        | Developer's internal customer ID |
 Sample request:
 
 ```json title="CURL"
@@ -305,7 +331,25 @@ To get an extended response, add Key **"extended"** with any value to Query Para
 | **appmetrica_profile_id** | str           | ✅        | ✅        | User profile ID from AppMetrica.                                                                                                                  |
 | **appmetrica_device_id**  | str           | ✅        | ✅        | AppMetrica Device Id.                                                                                                                             |
 | **facebook_anonymous_id** | str           | ✅        | ✅        | Facebook Anonymous ID.                                                                                                                            |
-
+| **created_at**            | ISO 8601 date | ✅        | ❌        | The date when the profile was created, usually equals the installation date |
+| **email**                 | str           | ✅        | ✅        | User's email                                                 |
+| **phone_number**          | str           | ✅        | ✅        | User's phone number                                          |
+| **att_status**            | str           | ✅        | ✅        |                                                              |
+| **first_name**            | str           | ✅        | ✅        | User's first name                                            |
+| **last_name**             | str           | ✅        | ✅        | User's last name                                             |
+| **username**              | str           | ✅        | ✅        | Username                                                     |
+| **gender**                | str           | ✅        | ✅        | User's gender                                                |
+| **birthday**              | ISO 8601 date | ✅        | ✅        | User's birthday                                              |
+| **idfa**                  | str           | ✅        | ✅        | The Identifier for Advertisers, assigned by Apple to a user's device. |
+| **idfv**                  | str           | ✅        | ✅        | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
+| **advertising_id**        | str           | ✅        | ✅        | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
+| **appsflyer_id**          | str           | ✅        | ✅        | An AppsFlyer ID, automatically created id by AppsFlyer for every new install of an app. |
+| **amplitude_user_id**     | str           | ✅        | ✅        | The Amplitude User Id property specified and OneSignal's External User Id property needs to be set for message data of that device to be tracked. |
+| **amplitude_device_id**   | str           | ✅        | ✅        | The Amplitude Device ID, directly comes from your users' devices. |
+| **mixpanel_user_id**      | str           | ✅        | ✅        | User ID from Mixpanel.                                       |
+| **appmetrica_profile_id** | str           | ✅        | ✅        | User profile ID from AppMetrica.                             |
+| **appmetrica_device_id**  | str           | ✅        | ✅        | AppMetrica Device Id.                                        |
+| **facebook_anonymous_id** | str           | ✅        | ✅        | Facebook Anonymous ID.                                       |
 ### Create a user
 
 ```text title="Text"
@@ -360,7 +404,23 @@ If you'd like to set custom attributes, you can pass them in `custom_attributes`
 | :------------------- | :--------- | :------- | :------- | :------------------------------------------------------------------------------------------------------------------------ |
 | **attribute\_key**   | str        | ✅        | ❌        | Only letters, numbers, dashes, points, and underscores are allowed. The attribute key must be no more than 30 characters. |
 | **attribute\_value** | str\|float | ✅        | ✅        | The attribute value must be no more than 30 characters. Send an empty value or null to delete the attribute.              |
+=======
+| Param        | Type | Required | Nullable | Description                                                  |
+| :----------- | :--- | :------- | :------- | :----------------------------------------------------------- |
+| ip_country   | str  | ❌        | ✅        | Country code in the [two-letter](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format, eg. US. |
+| email        | str  | ❌        | ✅        |                                                              |
+| phone_number | str  | ❌        | ✅        |                                                              |
+| first_name   | str  | ❌        | ✅        |                                                              |
+| last_name    | str  | ❌        | ✅        |                                                              |
+| gender       | str  | ❌        | ✅        | User's gender                                                |
+| birthday     | date | ❌        | ✅        | Date in YYYY-MM-DD format, eg. 1990-10-31.                   |
 
+If you'd like to set custom attributes, you can pass them in `custom_attributes` dictionary. A maximum of 10 custom attributes for the profile are allowed to be set. Only strings and floats are allowed as values, booleans will be converted to floats.
+
+| Param                | Type       | Required | Nullable | Description                                                  |
+| :------------------- | :--------- | :------- | :------- | :----------------------------------------------------------- |
+| **attribute\_key**   | str        | ✅        | ❌        | Only letters, numbers, dashes, points, and underscores are allowed. The attribute key must be no more than 30 characters. |
+| **attribute\_value** | str\|float | ✅        | ✅        | The attribute value must be no more than 30 characters. Send an empty value or null to delete the attribute. |
 Sample request:
 
 ```json title="Json"
@@ -391,4 +451,5 @@ Calling this endpoint enables the deletion of a user's profile and all related d
 
 Should another profile make a purchase from the device with the same Apple ID (or when subscription is restored), the profile history will be reassigned to the new profile, and integration events will be reissued.
 
+Please be aware that this endpoint does not support bulk deletion, therefore each request must be handled individually. For managing a substantial number of users, it is advisable to execute requests concurrently.
 Please be aware that this endpoint does not support bulk deletion, therefore each request must be handled individually. For managing a substantial number of users, it is advisable to execute requests concurrently.

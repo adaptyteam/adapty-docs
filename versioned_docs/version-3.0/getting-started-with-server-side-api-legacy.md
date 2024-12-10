@@ -1,10 +1,15 @@
 ---
-title: "Getting started with server-side API"
+title: "Getting started with legacy server-side API"
 description: ""
 metadataTitle: ""
 ---
 
-With API you can:
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 1. Get user's subscription status.
 2. Activate a subscription for a user with an [access level](access-level).

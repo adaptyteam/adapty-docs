@@ -132,11 +132,11 @@ Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make s
 ```swift 
 import FacebookCore
 
-let builder = AdaptyProfileParameters.Builder()
-    .with(facebookAnonymousId: AppEvents.shared.anonymousID)
-
 do {
-    try Adapty.updateProfile(params: builder.build())
+    try await Adapty.setIntegrationIdentifier(
+        key: "facebook_anonymous_id", 
+        value: AppEvents.shared.anonymousID
+    )
 } catch {
     // handle the error
 }

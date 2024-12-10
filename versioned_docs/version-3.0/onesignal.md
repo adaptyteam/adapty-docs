@@ -143,52 +143,30 @@ Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on 
 
 Here is how you can link Adapty with OneSignal with either `playerId` or `subscriptionId`:
 
+<Tabs> 
+
+<TabItem value="v5+" label="v5+ OneSignal SDK (New)" default> 
+
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
-// PlayerID (pre-v5 OneSignal SDK)
-// in your OSSubscriptionObserver implementation
-func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
-    if let playerId = stateChanges.to.userId {
-          let params = AdaptyProfileParameters.Builder()
-              .with(oneSignalPlayerId: playerId)
-              .build()
-
-          Adapty.updateProfile(params:params) { error in
-              // check error
-          }
-    }
-}
-
-// SubscriptionID (v5+ OneSignal SDK)
+// SubscriptionID
 OneSignal.Notifications.requestPermission({ accepted in
-    let id = OneSignal.User.pushSubscription.id
-
-    let builder = AdaptyProfileParameters.Builder()
-        .with(oneSignalSubscriptionId: id)
-
-    Adapty.updateProfile(params: builder.build())
+    Task {
+        try await Adapty.setIntegrationIdentifier(
+            key: "one_signal_subscription_id", 
+            value: OneSignal.User.pushSubscription.id
+        )
+    }
 }, fallbackToSettings: true)
 ```
+
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
-// PlayerID (pre-v5 OneSignal SDK)
-val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
-    stateChanges?.to?.userId?.let { playerId ->
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalPlayerId(playerId)
-            .build()
-      
-        Adapty.updateProfile(params) { error ->
-            if (error != null) {
-                // handle the error
-            }
-        }
-    }
-}
 
-// SubscriptionID (v5+ OneSignal SDK)
+```kotlin 
+// SubscriptionID
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
         val params = AdaptyProfileParameters.Builder()
@@ -203,29 +181,12 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     }
 }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java 
-// PlayerID (pre-v5 OneSignal SDK)
-OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
-    OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
-    String playerId = to != null ? to.getUserId() : null;
-    
-    if (playerId != null) {
-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
-                .withOneSignalPlayerId(playerId)
-                .build();
-        
-        Adapty.updateProfile(params1, error -> {
-            if (error != null) {
-                // handle the error
-            }
-        });
-    }
-};
-
-// SubscriptionID (v5+ OneSignal SDK)
+// SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
             .withOneSignalSubscriptionId(state.getCurrent().getId())
@@ -262,6 +223,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
     }
 });
 ```
+
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
@@ -293,8 +255,140 @@ OneSignal.addSubscriptionObserver(event => {
   });
 });
 ```
+
 </TabItem>
 </Tabs>
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="pre-v5 OneSignal SDK) (Previous)" default> 
+
+<Tabs>
+<TabItem value="Swift" label="iOS (Swift)" default>
+
+```swift 
+// PlayerID
+// in your OSSubscriptionObserver implementation
+func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+    if let playerId = stateChanges.to.userId {
+        Task {
+            try await Adapty.setIntegrationIdentifier(
+                key: "one_signal_player_id", 
+                value: playerId
+            )
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```kotlin 
+// PlayerID
+val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+    stateChanges?.to?.userId?.let { playerId ->
+        val params = AdaptyProfileParameters.Builder()
+            .withOneSignalPlayerId(playerId)
+            .build()
+      
+        Adapty.updateProfile(params) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java 
+// PlayerID
+OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+    OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+    String playerId = to != null ? to.getUserId() : null;
+    
+    if (playerId != null) {
+        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
+                .withOneSignalPlayerId(playerId)
+                .build();
+        
+        Adapty.updateProfile(params1, error -> {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+};
+```
+
+</TabItem>  
+
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+
+<!--- TODO: update Flutter example --->
+
+```javascript
+OneSignal.shared.setSubscriptionObserver((changes) {
+    final playerId = changes.to.userId;
+    if (playerId != null) {
+        final builder = 
+            AdaptyProfileParametersBuilder()
+                ..setOneSignalPlayerId(playerId);
+                // ..setOneSignalSubscriptionId(playerId);
+        try {
+            Adapty().updateProfile(builder.build());
+        } on AdaptyError catch (adaptyError) {
+            // handle error
+        } catch (e) {
+            // handle error
+        }
+    }
+});
+```
+
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+
+```csharp
+using OneSignalSDK;
+
+var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+var builder = new Adapty.ProfileParameters.Builder();
+builder.SetOneSignalPlayerId(pushUserId);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    // handle error
+});
+```
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+
+```typescript 
+import { adapty } from 'react-native-adapty';
+import OneSignal from 'react-native-onesignal';
+
+OneSignal.addSubscriptionObserver(event => {
+  const playerId = event.to.userId;
+  
+  adapty.updateProfile({
+    oneSignalPlayerId: playerId,
+  });
+});
+```
+
+</TabItem>
+</Tabs>
+
+ </TabItem> 
+
+</Tabs>
+
+
 
 Read more about `OSSubscriptionObserver` in [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
 

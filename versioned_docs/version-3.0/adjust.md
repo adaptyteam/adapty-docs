@@ -191,53 +191,24 @@ For Adjust version 5.0 or later, use the following:
 ```swift 
 class AdjustModuleImplementation {
 
-func updateAdjustAttribution() {
-    Adjust.attribution { attribution in
-        guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { 
-            return
-        }
+func updateAdjustAdid() {
+    Adjust.adid { adid in
+        guard let adid else { return }
 
-        Adjust.adid { adid in
-            guard let adid else { return }
-
-            Adapty.updateAttribution(
-              attributionDictionary, 
-              source: .adjust, 
-              networkUserId: adid
-            ) { error in
-                // handle the error
-            }
-        }
+        Adapty.setIntegrationIdentifier(key: "adjust", value: adid)
     }
 }
 
-extension [AnyHashable: Any] {
-    func toSendableDict() -> [String: any Sendable] {
-        var result = [String: any Sendable]()
-
-        for (key, value) in self {
-            guard let stringKey = key as? String else { continue }
-
-            switch value {
-            case let boolValue as Bool:
-                result[stringKey] = boolValue
-            case let stringValue as String:
-                result[stringKey] = stringValue
-            case let stringArrayValue as [String]:
-                result[stringKey] = stringArrayValue
-            case let intValue as Int:
-                result[stringKey] = intValue
-            case let intArrayValue as [Int]:
-                result[stringKey] = intArrayValue
-            case let dictValue as [AnyHashable: Any]:
-                result[stringKey] = dictValue.toSendableDict()
-            default:
-                break
-            }
+func updateAdjustAttribution() {
+    Adjust.attribution { attribution in
+        guard let attribution = attribution?.dictionary() else { 
+            return
         }
-
-        return result
+        
+        Adapty.updateAttribution(attribution, source: "adjust")
     }
+}
+
 }
 ```
 
@@ -378,38 +349,9 @@ class YourAdjustDelegateImplementation {
 	// and update adjustAttributionChanged method:
 	func adjustAttributionChanged(_ attribution: ADJAttribution?) {
 	    if let attribution = attribution?.dictionary()?.toSendableDict() {
-	        Adapty.updateAttribution(attribution, source: .adjust)
+	        Adapty.updateAttribution(attribution, source: "adjust")
 	    }
 	}
-}
-
-extension [AnyHashable: Any] {
-    func toSendableDict() -> [String: any Sendable] {
-        var result = [String: any Sendable]()
-
-        for (key, value) in self {
-            guard let stringKey = key as? String else { continue }
-
-            switch value {
-            case let boolValue as Bool:
-                result[stringKey] = boolValue
-            case let stringValue as String:
-                result[stringKey] = stringValue
-            case let stringArrayValue as [String]:
-                result[stringKey] = stringArrayValue
-            case let intValue as Int:
-                result[stringKey] = intValue
-            case let intArrayValue as [Int]:
-                result[stringKey] = intArrayValue
-            case let dictValue as [AnyHashable: Any]:
-                result[stringKey] = dictValue.toSendableDict()
-            default:
-                break
-            }
-        }
-
-        return result
-    }
 }
 ```
 

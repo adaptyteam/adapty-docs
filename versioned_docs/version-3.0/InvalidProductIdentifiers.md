@@ -13,14 +13,11 @@ The 1000-code error, `noProductIDsFound`, indicates that none of the products yo
 
 If you’re encountering the `noProductIDsFound` error, follow these steps to resolve it:
 
-## Step 1. Check your iOS version
-
-Make sure you're not testing on iOS 18 — there’s a known issue in that version.
-## Step 2. Check bundle ID
+## Step 1. Check bundle ID {#step-2-check-bundle-id}
 
 <ProvideBundleID />
 
-## Step 3. Check products
+## Step 2. Check products {#step-3-check-products}
 
 1. Go to **App Store Connect** and navigate to [**Monetization** → **Subscriptions**](https://appstoreconnect.apple.com/apps/6477523342/distribution/subscriptions) in the left-hand menu.
 
@@ -65,7 +62,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
 
 
 
-## Step 4. Check product availability
+## Step 3. Check product availability {#step-4-check-product-availability}
 
 1. Go back to **App Store Connect** and open the same **Subscriptions** section.
 
@@ -107,7 +104,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
      />
      </Zoom>
 
-## Step 5. Check product prices
+## Step 4. Check product prices {#step-5-check-product-prices}
 
 1. Again, head to the **Monetization** → **Subscriptions** section in **App Store Connect**.
 
@@ -162,7 +159,7 @@ Make sure you're not testing on iOS 18 — there’s a known issue in that versi
 
     
 
-    ## Step 6. Check app paid status, back account, and tax forms are active
+    ## Step 5. Check app paid status, back account, and tax forms are active
 
     1. In **App Store Connect**](https://appstoreconnect.apple.com/) homepage, click **Business**.
 

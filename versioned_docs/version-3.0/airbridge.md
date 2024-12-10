@@ -110,10 +110,14 @@ For the integration, you should pass `airbridge_device_id` to profile builder an
 ```swift 
 import AirBridge
 
-let builder = AdaptyProfileParameters.Builder()
-            .with(airbridgeDeviceId: AirBridge.deviceUUID())
-
-Adapty.updateProfile(params: builder.build())
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "airbridge_device_id", 
+        value: AirBridge.deviceUUID()
+    )
+} catch {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
