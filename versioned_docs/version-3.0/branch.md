@@ -111,8 +111,15 @@ To connect the Branch and Adapty user, make sure you provide your `customerUserI
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
-// login
-Branch.getInstance().setIdentity("YOUR_USER_ID")
+class YourBranchImplementation {
+	func initializeBranch() {
+		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+    Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+        if let data {
+            Adapty.updateAttribution(data, source: "branch")
+        }
+    }
+}
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>

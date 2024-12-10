@@ -16,13 +16,11 @@ After the preliminary configuration is done, you need to associate the transacti
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 ```swift 
-let variationId = paywall.variationId
-
-// There are two overloads: for StoreKit 1 and StoreKit 2
-Adapty.setVariationId(variationId, forPurchasedTransaction: transaction) { error in
-    if error == nil {
-        // successful binding
-    }    
+do {
+    // every time when calling transasction.finish()
+    try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
+} catch {
+    // handle the error
 }
 ```
 </TabItem>

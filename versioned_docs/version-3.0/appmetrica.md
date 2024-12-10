@@ -84,15 +84,21 @@ If these aren’t set, Adapty will default to using your user ID (`customerUserI
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
-import AppMetricaCore
+import AppMetricaCore 
 
-        
 if let deviceID = AppMetrica.deviceID {
-  let builder = AdaptyProfileParameters.Builder()
-    .with(appmetricaDeviceId: deviceID)
-    .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
-
-  Adapty.updateProfile(params: builder.build())
+    do {
+        try await Adapty.setIntegrationIdentifier(
+            key: "appmetrica_device_id", 
+            value: deviceID
+        )
+        try await Adapty.setIntegrationIdentifier(
+            key: "appmetrica_profile_id", 
+            value: "YOUR_ADAPTY_CUSTOMER_USER_ID"
+        )
+    } catch {
+        // handle the error
+    }
 }
 ```
 </TabItem>

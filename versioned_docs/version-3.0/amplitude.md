@@ -100,17 +100,25 @@ Make sure that any user ID you use to send data to Amplitude from your app match
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
-```Text 
+```swift
 import Amplitude 
 
-let builder = AdaptyProfileParameters.Builder()
-            .with(amplitudeUserId: Amplitude.instance().userId)
-            .with(amplitudeDeviceId: Amplitude.instance().deviceId)
-
-Adapty.updateProfile(params: builder.build())
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "amplitude_user_id", 
+        value: Amplitude.instance().userId
+    )
+    try await Adapty.setIntegrationIdentifier(
+        key: "amplitude_device_id", 
+        value: Amplitude.instance().deviceId
+    )
+} catch {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 //for Amplitude maintenance SDK (obsolete)
 val amplitude = Amplitude.getInstance()
