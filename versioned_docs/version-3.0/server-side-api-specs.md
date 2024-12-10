@@ -287,6 +287,12 @@ Creates a new transaction for an end user of your app in Adapty and provides acc
 
 This method is recommended over the [Grant access level](server-side-api-specs#grant-access-level) one.
 
+:::warning
+
+Before setting a transaction, make sure the product is [created in Adapty](create-product). Without this step, the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. However, the user won’t get access in the mobile app since no access level will be assigned.
+
+:::
+
 #### Endpoint
 
 ```
