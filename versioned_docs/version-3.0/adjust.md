@@ -348,7 +348,7 @@ class YourAdjustDelegateImplementation {
 	// Find your implementation of AdjustDelegate 
 	// and update adjustAttributionChanged method:
 	func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-	    if let attribution = attribution?.dictionary()?.toSendableDict() {
+	    if let attribution = attribution?.dictionary() {
 	        Adapty.updateAttribution(attribution, source: "adjust")
 	    }
 	}

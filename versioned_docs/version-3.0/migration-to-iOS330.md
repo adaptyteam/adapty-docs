@@ -54,7 +54,7 @@ struct SampleApp: App {
       let configurationBuilder =
 -        Adapty.Configuration
 +        AdaptyConfiguration
-          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional
@@ -104,7 +104,13 @@ For more details about the method, check out [Fetch the view configuration of pa
 
 ## Change parameters in SwiftUI
 
-The `didCancelPurchase` parameter has been removed from SwiftUI. Use `didFinishPurchase` instead. Update your code like this:
+The following updates have been made to SwiftUI:
+
+1. The `didCancelPurchase` parameter has been removed. Use `didFinishPurchase` instead.
+2. The `.paywall()` method no longer accepts a paywall object.
+3. The `paywallConfiguration` parameter has replaced the `viewConfiguration` parameter.
+
+Update your code like this:
 
 ```diff
 @State var paywallPresented = false
@@ -233,8 +239,9 @@ class YourAdjustDelegateImplementation {
     // Find your implementation of AdjustDelegate 
     // and update adjustAttributionChanged method:
     func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-        if let attribution = attribution?.dictionary()?.toSendableDict() {
+-       if let attribution = attribution?.dictionary()?.toSendableDict() {
 -           Adapty.updateAttribution(attribution, source: .adjust)
++       if let attribution = attribution?.dictionary() {
 +           Adapty.updateAttribution(attribution, source: "adjust")
         }
     }

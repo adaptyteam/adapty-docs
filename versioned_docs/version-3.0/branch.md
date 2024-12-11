@@ -170,43 +170,16 @@ Next, pass the attribution you receive from the initializing method of Branch iO
 
 ```swift 
 class YourBranchImplementation {
-	func initializeBranch() {
-		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-    Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-        if let data = data?.toSendableDict() {
-            Adapty.updateAttribution(data, source: .branch)
-        }
-    }
-}
-
-extension [AnyHashable: Any] {
-    func toSendableDict() -> [String: any Sendable] {
-        var result = [String: any Sendable]()
-
-        for (key, value) in self {
-            guard let stringKey = key as? String else { continue }
-
-            switch value {
-            case let boolValue as Bool:
-                result[stringKey] = boolValue
-            case let stringValue as String:
-                result[stringKey] = stringValue
-            case let stringArrayValue as [String]:
-                result[stringKey] = stringArrayValue
-            case let intValue as Int:
-                result[stringKey] = intValue
-            case let intArrayValue as [Int]:
-                result[stringKey] = intArrayValue
-            case let dictValue as [AnyHashable: Any]:
-                result[stringKey] = dictValue.toSendableDict()
-            default:
-                break
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+            if let data {
+                Adapty.updateAttribution(data, source: .branch)
             }
         }
-
-        return result
     }
 }
+
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
