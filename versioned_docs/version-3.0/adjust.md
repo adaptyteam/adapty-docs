@@ -195,7 +195,7 @@ func updateAdjustAdid() {
     Adjust.adid { adid in
         guard let adid else { return }
 
-        Adapty.setIntegrationIdentifier(key: "adjust", value: adid)
+        Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
     }
 }
 

@@ -200,7 +200,7 @@ class YourAppsFlyerLibDelegateImplementation {
 	// and update onConversionDataSuccess method:
 	func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
-        Adapty.setIntegrationIdentifier(key: "appsflyer", value: uid)
+        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
         Adapty.updateAttribution(conversionInfo, source: "appsflyer")
     }
 }

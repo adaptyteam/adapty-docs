@@ -15,7 +15,7 @@ Adapty iOS SDK 3.3.0 is a major release that brought some improvements which how
 4. Update how you process promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method.
 5. Remove the `getProductsIntroductoryOfferEligibility` method.
 6. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-7. Update Observer mode implementation
+7. Update Observer mode implementation.
 
 ## Rename Adapty.Configuration to AdaptyConfiguration
 
@@ -208,7 +208,7 @@ class AdjustModuleImplementation {
 +        Adjust.adid { adid in
 +            guard let adid else { return }
 +
-+            Adapty.setIntegrationIdentifier(key: "adjust", value: adid)
++            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
 +        }
 +    }
 +
@@ -347,7 +347,7 @@ class YourAppsFlyerLibDelegateImplementation {
 -        )
 +    func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
 +        let uid = AppsFlyerLib.shared().getAppsFlyerUID()
-+        Adapty.setIntegrationIdentifier(key: "appsflyer", value: uid)
++        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
 +        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
     }
 }
@@ -528,6 +528,12 @@ Update your mobile app code as shown below. For the complete code example, check
 ## Update Observer mode implemetation
 
 Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
+
+:::warning
+
+Don't forget to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, won't grant access levels, won't include it in analytics, and won't send it to integrations. This step is essential!
+
+:::
 
 ```diff
 - let variationId = paywall.variationId

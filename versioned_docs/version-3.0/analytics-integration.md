@@ -27,7 +27,7 @@ Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll c
 
 ### Setting the profile's identifier
 
-Set the profile's identifier for the selected analytics using [`.updateProfile()`](setting-user-attributes#setting-user-attributes) method. For example, for Amplitude integration, you can set either `amplitudeUserId` or `amplitudeDeviceId`. For Mixpanel integration, you have to set `mixpanelUserId`. When these identifiers are not set, Adapty will use `customerUserId` instead. If the `customerUserId` is not set, we will use our internal profile ID.
+Set the profile's identifier for the selected analytics using [`.setIntegrationIdentifier`](setting-user-attributes#setting-user-attributes) method. For example, for Amplitude integration, you can set either `amplitudeUserId` or `amplitudeDeviceId`. For Mixpanel integration, you have to set `mixpanelUserId`. When these identifiers are not set, Adapty will use `customerUserId` instead. If the `customerUserId` is not set, we will use our internal profile ID.
 
 :::warning
 Avoiding duplication
