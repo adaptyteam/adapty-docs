@@ -4,12 +4,17 @@ description: ""
 metadataTitle: ""
 ---
 
-- The second version of the Server-Side API gives you more flexibility and features when working with Adapty:
-  - **Grant access without transactions:** You can now assign access levels to users without providing transaction details. This is useful for compensations, bonuses, or other non-transactional reasons.
-  - **Enhanced transaction details:** Include more data with transactions, like refunds, billing issues, cancellation reasons, renewals, and more.
-  - **Profile updates:** Instead of just adding attributes, you can update a user’s profile. For instance, you can add installation metadata or disable external analytics if needed.
+Adapty's Server-Side API v2 introduces new capabilities and improvements to help you manage access levels, transactions, and user profiles more effectively.
 
 ## Why Migrate?
+
+The second version of the Server-Side API gives you more flexibility and features when working with Adapty:
+
+- **Separate access level management and transaction recording**:
+  - **Grant access without transactions**: Assign access levels to users without requiring transaction details, making it easier to handle compensations, bonuses, or other non-transactional scenarios.
+  - **Record one-time purchases without granting access**: Log transactions for consumable product purchases without affecting the user's access level.
+- **Enhanced transaction details:** Include more data with transactions, like refunds, billing issues, cancellation reasons, renewals, and more.
+- **Profile updates:** Instead of just adding attributes, you can update a user’s profile. For instance, you can add installation metadata or disable external analytics if needed.
 
 Although v1 is still supported, we recommend moving to v2 for expanded functionality and ongoing updates.
 
