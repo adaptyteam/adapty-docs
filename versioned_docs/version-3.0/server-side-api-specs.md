@@ -42,7 +42,7 @@ This API enables you to seamlessly integrate Adapty with your existing services.
 
 ## Authorization
 
-- **Base URL**: https://api.adapty.io/api/v1/server-side-api/
+- **Base URL**: https://api.adapty.io/api/v2/server-side-api/
 - **Authorization header**: API requests must be authenticated by including your API key:
   - For profile requests, use either the public or secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
 
@@ -79,7 +79,7 @@ Retrieves the details of an existing end user of your app.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -122,7 +122,7 @@ Creates a new end user of your app in Adapty.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -174,7 +174,7 @@ Changes your end user profile attributes.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -235,7 +235,7 @@ Please be aware that this endpoint does not support bulk deletion, therefore eac
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -296,7 +296,7 @@ Before setting a transaction, make sure the product is [created in Adapty](creat
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
+https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/
 ```
 
 #### Method
@@ -484,7 +484,7 @@ To grant access and simultaneously provide the transaction details, please use t
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/grant/access-level/
+https://api.adapty.io/api/v2/server-side-api/grant/access-level/
 ```
 
 #### Method
@@ -564,7 +564,7 @@ Removes an access level from an end user of your app in Adapty.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/
+https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/
 ```
 
 #### Method
@@ -657,7 +657,7 @@ Profile events are generated along the way and imported transactions are counted
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/stripe/token/validate/
+https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/
 ```
 
 #### Method
