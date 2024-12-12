@@ -7,13 +7,13 @@ metadataTitle: "Implement Multi-Language Support: Adding Paywall Locale in Remot
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-In a world with many cultures, it's important to adapt your product for each country. You can do this by using paywall localizations. For each paywall, make versions in different languages —each one catering to a specific language—to match the needs of specific local markets.
+Adapting your paywalls for different languages is essential in a world with diverse cultures. Localization allows you to create tailored experiences for users in specific regions. For each paywall, you can add versions in various languages, ensuring that your product resonates with local audiences.
 
-If you've [designed a paywall with the remote config](customize-paywall-with-remote-config), use the remote config as well to add localizations. Whether you're using a table view or JSON format, you can easily tweak settings for different languages. For example, you can translate String keys from English to Italian or set different Boolean values like TRUE for English and FALSE for Italian. You can even change background images based on the language. Basically, you keep the same setup but customize values for each language, making sure users get a personalized experience.
+If you’ve [designed a paywall using remote config](customize-paywall-with-remote-config), you can use the same remote config to set up localizations. Whether in table view or JSON format, you can easily adjust settings for each language. For example, translate string keys, toggle Boolean values (e.g., `TRUE` for English, `FALSE` for Italian), or even swap out background images. With this flexibility, you keep your core setup while tailoring the user experience for different languages.
 
-How to set up a localization for a paywall customized using remote config:
+## Setting up localization for remote configured paywalls
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it and click the **3-dot** button next to the product and select the **Edit** option.
+1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in Adapty, select the **Paywall** tab, and click the **3-dot** button next to the paywall to choose **Edit**.
 
    
 
@@ -31,7 +31,7 @@ How to set up a localization for a paywall customized using remote config:
 
 
 
-2. In the **Paywalls / Your paywall** window, switch to the **Remote config** tab.
+2. In the paywall editor, navigate to the **Remote config** tab.
 
    
 
