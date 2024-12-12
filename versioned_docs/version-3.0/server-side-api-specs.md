@@ -44,9 +44,9 @@ This API enables you to seamlessly integrate Adapty with your existing services.
 
 - **Base URL**: https://api.adapty.io/api/v1/server-side-api/
 - **Authorization header**: API requests must be authenticated by including your API key:
-  - For profile requests, use your secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}`, like this: `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
+  - For profile requests, use either the public or secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
 
-  - For access level and transaction requests, you can use either the public or secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
+  - For access level and transaction requests, you can secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}`, like this: `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 
 - **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
 - **Header**: 
