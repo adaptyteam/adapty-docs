@@ -1,59 +1,77 @@
 ---
-title: "Getting started with legacy server-side API"
-description: ""
-metadataTitle: ""
+title: "Server-side API"
+description: "Explore Adapty's server-side API for managing user subscriptions, syncing subscribers across platforms, updating user attributes, and granting access levels. Learn how to integrate payments from web stores and customize user attributes for better segmentation and A/B testing."
+metadataTitle: "Unlock Subscription and User Management with Adapty's Server-Side API"
 ---
 
-:::warning
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
-**You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+With the API, you can:
 
-:::
+1. Check a user's subscription status.
+2. Activate a user's subscription with an [access level](access-level).
+3. Retrieve user attributes.
+4. Set user attributes.
 
-With API you can:
+<Zoom>
+  <img src={require('./img/server.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-1. Get the user's subscription status.
-2. Activate a subscription for a user with an [access level](access-level).
-3. Get the user's attributes.
-4. Set user's attributes.
+<p> </p>
 
 :::note
-You can't get subscription events via API, but you can use [Webhook](webhook) or direct integration with a service that you're using.
+
+To track subscription events, use [Webhook](webhook) integration in Adapty or integrate directly with your existing service.
+
 :::
 
-To correctly work with API you need to use a unique ID for your users. This may be an email, a phone number, your internal ID. Without such an ID it's impossible to identify the same user on multiple platforms.
+To use the API effectively, you need a unique ID for your users. This could be an email, phone number, or your internal ID. Without it, you won’t be able to identify the same user across multiple platforms.
 
 ## Case 1: Syncing subscribers between web and mobile
 
-Whenever Web payment providers you use such as Stripe, ChargeBee, or any other, you can sync subscribers. For that:
-
-1. _Use a unique ID for your users_. For example, email or phone number.
-2. Check subscription status via API.
-3. If a user is freemium, show him a paywall on the Web.
-4. After successful payment, update subscription status in Adapty via API.
-5. Your subscribers will be automatically in sync with mobile. 
+1. If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
+   1. [Assign a unique ID to each user](identifying-users).
+   2. [Check their subscription status](server-side-api-specs#retrieve-profile) using the API.
+   3. If a user is on a freemium plan, display a paywall on your website.
+   4. After a successful payment, [update the subscription status](server-side-api-specs#set-transaction) in Adapty via API.
+   5. Your subscribers will automatically stay in sync with your mobile app.
 
 ## Case 2: Grant a subscription
 
 :::note
 Due to security reasons, you can't grant a subscription via mobile SDK.
-:::
+::: 
 
-Imagine a case, when you run a promotional campaign with offers 7 days of a trial and you want to sync in with mobile experience. To do that:
+If you're selling through your own online store, Amazon Appstore, Microsoft Store, or any other platform besides Google Play and App Store, you’ll need to sync those transactions with Adapty to provide access and track the transaction in analytics.
 
-1. Get a unique ID for a user.
-2. Set premium access via paid access level with API with a duration of 7 days.
+1. [Assign a unique ID to each user](identifying-users).
+2. [Set up a custom store for your products in the Adapty Dashboard](initial-custom).
+3. Sync the transaction to Adapty using the [Set transaction](server-side-api-specs#set-transaction) API request.
 
-After 7 days users who won't subscribe will be downgraded to the free tier.
+## Case 3: Grant an access level
 
-## Case 3: Syncing users' attributes and custom properties
+Let’s say you're running a promotion offering a 7-day free trial and you want the experience to be consistent across platforms. To sync this with the mobile app:
 
-You may have custom attributes for your users, other than defaults such as IDFA, device model, etc. For example, in a language learning service, you may want to save the number of words a student has learned. To do that:
+1. [Assign a unique ID to each user](identifying-users).
+2. Use the API to [grant premium access](server-side-api-specs#grant-access-level) for 7 days.
 
-1. Get a unique ID for a user.
-2. Update attribute with API or SDK.
+After the 7 days, users who don’t subscribe will be downgraded to the free tier.
 
-With such attributes you can, for example, create a segment and run an A/B test. 
+## Case 4: Syncing users' attributes and custom properties
 
-To learn more about S2S API go to [API Specs](server-side-api-specs).
+If you have custom attributes for your users—such as the number of words learned in a language learning app—you can sync them as well.
+
+1. [Assign a unique ID to each user](identifying-users).
+2. [Update the attribute](server-side-api-specs#update-profile) via API or SDK.
+
+These custom attributes can be used to create segments and run A/B tests.
+
+For more details, visit the [API Specs](server-side-api-specs).
