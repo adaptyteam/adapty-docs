@@ -15,20 +15,6 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in Adapty, select the **Paywall** tab, and click the **3-dot** button next to the paywall to choose **Edit**.
 
-   
-
-<Zoom>
-  <img src={require('./img/deaa5f0-paywalls_edit.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
 
 
 2. In the paywall editor, navigate to the **Remote config** tab.
@@ -36,7 +22,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
    
 
 <Zoom>
-  <img src={require('./img/68e80c5-switch_to_remote_config.webp').default}
+  <img src={require('./img/switch_to_remote_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -49,12 +35,12 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 
 
-3. In the **Remote config** tab, click the **Add locale** button and select all languages you want to have in your app in the **Locales** window.
+3. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
 
    
 
 <Zoom>
-  <img src={require('./img/eea8027-add_locale.webp').default}
+  <img src={require('./img/add_locale.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -64,19 +50,19 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 />
 </Zoom>
 
-After you click **Save**, the **Locales** window closes, and the chosen languages are added to the paywall. Now you can translate the content. This can be done manually, or automatically with ChatGPT or you can export the localization file and pass them to external translators or translating agencies.
+Now, you can translate the content manually, use AI like ChatGPT, or export the localization file for external translators.
 
 ## Translating paywalls with AI
 
-With the current development level of AI, AI translation is a perfect option to get a fast, qualitative localization fast and free.
+AI-powered translation is a quick and efficient way to localize your paywall.
 
 :::note
 
-To use the paywall automatic translation with ChatGPT, you’ll need a paid plan: Pro, Pro+, or Enterprise.
+To use AI for paywall translation, you’ll need a Pro, Pro+, or Enterprise plan.
 
 :::
 
-You can both translate **String** and **List** values, all of them are selected by default (you can see them marked violet). If some lines have been already translated, they are marked green and will not be added to the new localization by default. Not translated and not chosen for translation lines are grey.
+You can translate both **String** and **List** values. By default, all lines are selected (highlighted in violet). Lines that have already been translated are marked in green and won’t be included in the new translation by default. Lines that are not selected or translated appear in gray.
 
 <Zoom>
   <img src={require('./img/localization-table.webp').default}
@@ -100,10 +86,9 @@ You can both translate **String** and **List** values, all of them are selected 
 />
 </Zoom>
 
-1. Choose which lines should or should not be translated. If some lines should not be translated, unselect them by clicking the violet mark. A violet mark above all lines works as select/clear all. 
-   We recommend unchecking lines with IDs, URLs, and variables, otherwise ChatGPT may translate them as well.
-
-3. Choose the languages to which you want to translate automatically.
+1. Select the lines to translate. It's a good idea to uncheck lines with IDs, URLs, and variables to prevent AI from translating them.
+   
+3. Select the languages for translation.
 
    <Zoom>
      <img src={require('./img/localization-table-language.webp').default}
@@ -116,15 +101,13 @@ You can both translate **String** and **List** values, all of them are selected 
    />
    </Zoom>
 
-4. After you finalized what to translate, click Translate. Translation for the selected lines will be added to the remote config. The translated lines will be marked green. 
+4. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.. 
 
-Sometimes localization is nopt only the translation of lines, but also using different pictures or even design for different locations. Do not forget to make additional changes if required.
+## Exporting localization files for external translation
 
-## Export of localization files for external translation
+While AI-powered localization is becoming a popular trend, you might prefer a more reliable method, like using professional human translators or a translation agency with a strong track record. If that’s the case, you can export localization files to share with your translators and then import the translated results back into Adapty.
 
-Although the AI is a modenrn tendency in localization, you may prefer a proven-qualitative way to translate your app and paywalls in it - human professional translators or a translation agency with translation base. In this case, you may export the localization files to transfer them to your translators and then import the result.
-
-Export extracts all languages as separate .json files joined to a single archve file. If you want to extract one file, you can do that from the language personal menu.
+Exporting creates individual `.json` files for each language, bundled into a single archive. If you only need one file, you can export it directly from the language-specific menu.
 
 <Zoom>
   <img src={require('./img/localization-table-language.webp').default}
@@ -137,13 +120,14 @@ Export extracts all languages as separate .json files joined to a single archve 
 />
 </Zoom>
 
-After you receive the translated files, import them with the **Import** button in a balk or one by one. Adapty will validate the imported files to make sure they match the format and paywall remote config structure.
+Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format and paywall remote config structure.
 
 ### Import file format
 
-For successful import, the import file should match several requirements:
+- To ensure a successful import, the import file must meet the following requirements:
 
-- It should be named as the locale it belongs to and have .json extension. You can always check and copy the locale name in the Adapty Dashboard. If the name id not recognized, the import will fail.
+  - **File Name and Extension:**
+    The file name must match the locale it represents and have a `.json` extension. You can verify and copy the locale name in the Adapty Dashboard. If the name is not recognized, the import will fail.
 
   <Zoom>
     <img src={require('./img/locale-name.webp').default}
@@ -156,11 +140,14 @@ For successful import, the import file should match several requirements:
   />
   </Zoom>
 
-- It should be a valid JSON. If it is not, the import will fail.
+- **Valid JSON:**
+  The file must be a valid JSON. If it is not, the import will fail.
 
-- It should not contain any additional keys that are not in the current remote config.
+  **No Additional Keys:**
+  The file should not contain any keys that are not in the current remote config. Extra keys will result in errors.
 
-- It should contain all elements of the current remote config. If it does not, the import will succeed with some errors which will be shown in the table view of the remote config. Hover over it to learn the issue and refer to the table below for recomendations on how to solve.
+  **All Required Elements:**
+  The file must include all elements present in the current remote config. If any are missing, the import will succeed with errors, which will be displayed in the remote config table view. Hover over the error to see the issue, and refer to the table below for recommendations on resolving it.
 
   <Zoom>
     <img src={require('./img/localization-error.webp').default}
@@ -173,19 +160,17 @@ For successful import, the import file should match several requirements:
   />
   </Zoom>
 
-| Issue                                      | Solution                                                     |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| Invalid JSON file                          | The import file is not a valid JSON. Validate it, make su not comma is missed and extra, etc. |
-| Some of the languages are not in the table | <p>This means that at least one of the import files have the name that does not correcpond the locale name. To fix it, check that all files are called with the locale name. The locale names are shown in the remote config..</p><p>Another reason is that you try to import an absolutely different file.</p> |
-| Some of the keys are not in the table      | <p>This means that the import file contains at least one key that is not present in the currecnt remote config. This may happen if you removed some keys from the remote config after you exported it for the localization or if there is a typo in them. In this case, review the import file and remove any extra keys.</p><p>Another reason is that you try to import an absolutely incorrect file. Open it and check.</p> |
+  | **Issue**                               | **Solution**                                                 |
+  | --------------------------------------- | ------------------------------------------------------------ |
+  | **Invalid JSON file**                   | The file is not a valid JSON. Validate it to ensure it meets JSON formatting standards (e.g., check for missing or extra commas). |
+  | **Some languages are not in the table** | <p>At least one file name does not match a locale name. Ensure all files are named correctly, as shown in the localization table. Locale names must match exactly.</p><p>Another possible reason is attempting to import an unrelated file. Verify the file’s contents.</p> |
+  | **Some keys are not in the table**      | The file contains keys not present in the current remote config. This may occur if keys were removed from the remote config after exporting for localization or if there are typos in the file. Review the file and remove any extra. |
 
+## Manual localization
 
+Sometimes, you might want to tweak translations, add different images for specific locales, or even adjust remote configurations directly.
 
-## Manual translation
-
-Although the AI is a great way to translate your paywall, you still may want to tune the AI-translations or make them from scratch. In this case, 
-
-1. Click on the element you want to translate and enter a new value. You can both translate **String** and **List** values and replace pictures with those more appropriate for the locale. 
+1. Select the element you want to translate and enter a new value. You can update both **String** and **List** values or replace images with those better suited for the locale.
 
 
 
@@ -202,13 +187,13 @@ Although the AI is a great way to translate your paywall, you still may want to 
 
 
 
+2. Take advantage of the context menu in the English locale to resolve localization issues efficiently:
 
-Feel free to use the context menu of the English locale to fix localization issues:
+   - **Copy this value to all locales**: Overwrites any changes made in non-English locales for the selected row, replacing them with the value from the English locale.
 
-- Use the **Push this value to all locales** menu to overwrite any changes made in the row for non-English locales, replacing them with the values from the English locale.
-- Use the **Revert all row changes to original values** menu to cancel all changes made in the current session, reverting them to the last saved values.
+   - **Revert all row changes to original values**: Discards any changes made during the current session and restores the values to their last saved state.
 
-  
+
 
 <Zoom>
   <img src={require('./img/d7e70f1-remote_confi_loc_table_options.webp').default}
@@ -221,7 +206,4 @@ Feel free to use the context menu of the English locale to fix localization issu
 />
 </Zoom>
 
-
-
-
-Once you add locales to a paywall, learn to [correctly work with locale codes in your app's code](localizations-and-locale-codes).
+After adding locales to a paywall, make sure to [implement locale codes correctly in your app's code](localizations-and-locale-codes).
