@@ -124,21 +124,21 @@ Once you’ve received the translated files, use the **Import** button to upload
 
 ### Import file format
 
-- To ensure a successful import, the import file must meet the following requirements:
+To ensure a successful import, the import file must meet the following requirements:
 
-  - **File Name and Extension:**
-    The file name must match the locale it represents and have a `.json` extension. You can verify and copy the locale name in the Adapty Dashboard. If the name is not recognized, the import will fail.
+- **File Name and Extension:**
+  The file name must match the locale it represents and have a `.json` extension. You can verify and copy the locale name in the Adapty Dashboard. If the name is not recognized, the import will fail.
 
-  <Zoom>
-    <img src={require('./img/locale-name.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
+<Zoom>
+  <img src={require('./img/locale-name.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 - **Valid JSON:**
   The file must be a valid JSON. If it is not, the import will fail.
