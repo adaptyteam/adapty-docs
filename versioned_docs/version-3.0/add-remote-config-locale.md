@@ -16,6 +16,7 @@ How to set up a localization for a paywall customized using remote config:
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it and click the **3-dot** button next to the product and select the **Edit** option.
 
    
+
 <Zoom>
   <img src={require('./img/deaa5f0-paywalls_edit.webp').default}
   style={{
@@ -33,6 +34,7 @@ How to set up a localization for a paywall customized using remote config:
 2. In the **Paywalls / Your paywall** window, switch to the **Remote config** tab.
 
    
+
 <Zoom>
   <img src={require('./img/68e80c5-switch_to_remote_config.webp').default}
   style={{
@@ -47,9 +49,10 @@ How to set up a localization for a paywall customized using remote config:
 
 
 
-3. In the **Remote config** tab, click the **Add locale** button and select all languages you want to have in your app.
+3. In the **Remote config** tab, click the **Add locale** button and select all languages you want to have in your app in the **Locales** window.
 
    
+
 <Zoom>
   <img src={require('./img/eea8027-add_locale.webp').default}
   style={{
@@ -61,12 +64,41 @@ How to set up a localization for a paywall customized using remote config:
 />
 </Zoom>
 
+After you click **Save**, the **Locales** window closes, and the chosen languages are added to the paywall. Now you can translate the content. This can be done manually, or automatically with ChatGPT or you can export the localization file and pass them to external translators or translating agencies.
+
+## Translating paywalls with ChatGPT
+
+With the current development level of AI, it's easy to translate your paywalls into many languages with ChatGPT. Although, GhatGPT is still developing, for many languages, it's a perfect option to get a fast, qualitative localization fast and free.
+
+:::note
+
+To use the paywall automatic translation with ChatGPT, you’ll need a paid plan: Pro, Pro+, or Enterprise.
+
+:::
+
+You can both translate **String** and **List** values, all of them are selected by default (you can see them marked violet). 
+
+1. Choose which lines should or should not be translated. If some lines should not be translated, unselect them by clicking the violet mark. We recommend unchecking lines with IDs, URLs, and variables, otherwise ChatGPT will translate them as well.
+
+<Zoom>
+  <img src={require('./img/eea8027-add_locale.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. After you finalized which lines to tranlate, click the To
+
+## Manual translation
+
+1. Click on the element you want to translate and enter a new value. You can both translate **String** and **List** values and replace pictures with those more appropriate for the locale. 
 
 
 
-4. Click on the element you want to translate and enter a new value. You can both translate **String** and **List** values and replace pictures with those more appropriate for the locale. 
-
-   
 <Zoom>
   <img src={require('./img/032b429-remote_config_localization.webp').default}
   style={{
@@ -87,6 +119,7 @@ Feel free to use the context menu of the English locale to fix localization issu
 - Use the **Revert all row changes to original values** menu to cancel all changes made in the current session, reverting them to the last saved values.
 
   
+
 <Zoom>
   <img src={require('./img/d7e70f1-remote_confi_loc_table_options.webp').default}
   style={{
