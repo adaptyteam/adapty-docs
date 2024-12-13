@@ -89,11 +89,11 @@ Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty
 ```swift 
 import Mixpanel
 
-let builder = AdaptyProfileParameters.Builder()
-            .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
-
 do {
-    try await Adapty.updateProfile(params: builder.build())
+    try await Adapty.setIntegrationIdentifier(
+        key: "mixpanel_user_id", 
+        value: Mixpanel.mainInstance().distinctId
+    )
 } catch {
     // handle the error
 }

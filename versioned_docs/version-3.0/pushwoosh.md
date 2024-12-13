@@ -124,11 +124,12 @@ To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
-let params = AdaptyProfileParameters.Builder()
-    .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
-    .build()
-
-Adapty.updateProfile(params: params) { error in
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "pushwoosh_hwid", 
+        value: Pushwoosh.sharedInstance().getHWID()
+    )
+} catch {
     // handle the error
 }
 ```

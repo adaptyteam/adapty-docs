@@ -17,7 +17,7 @@ Adapty supports the integration with the following 3d-party analytics services:
 - [AppMetrica](appmetrica)
 - [Firebase and Google Analytics](firebase-and-google-analytics)
 - [Mixpanel](mixpanel)
-- [Slack](slack)
+- [SplitMetrics Acquire](splitmetrics)
 
 :::note
 Don't see your analytics provider?
@@ -27,7 +27,7 @@ Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll c
 
 ### Setting the profile's identifier
 
-Set the profile's identifier for the selected analytics using [`.updateProfile()`](setting-user-attributes#setting-user-attributes) method. For example, for Amplitude integration, you can set either `amplitudeUserId` or `amplitudeDeviceId`. For Mixpanel integration, you have to set `mixpanelUserId`. When these identifiers are not set, Adapty will use `customerUserId` instead. If the `customerUserId` is not set, we will use our internal profile ID.
+Set the profile's identifier for the selected analytics using [`.setIntegrationIdentifier`](setting-user-attributes#setting-user-attributes) method. For example, for Amplitude integration, you can set either `amplitudeUserId` or `amplitudeDeviceId`. For Mixpanel integration, you have to set `mixpanelUserId`. When these identifiers are not set, Adapty will use `customerUserId` instead. If the `customerUserId` is not set, we will use our internal profile ID.
 
 :::warning
 Avoiding duplication
@@ -39,7 +39,7 @@ Don't forget to turn off sending subscription events from devices and your serve
 
 You may want to stop sending analytics events for a specific customer. This is useful if you have an option in your app to opt-out of analytics services.
 
-To disable external analytics for a customer, use `updateProfile()` method. Create `AdaptyProfileParameters.Builder` object and set corresponding value to it.  
+To disable external analytics for a customer, use `updateProfile()` method. Create `AdaptyProfileParameters.Builder` object and set the corresponding value to it.  
 When external analytics is blocked, Adapty won't be sending any events to any integrations for the specific user. If you want to disable an integration for all users of your app, just turn it off in Adapty Dashboard.
 
 <Tabs>
