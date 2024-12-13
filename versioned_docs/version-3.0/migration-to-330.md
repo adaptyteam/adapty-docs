@@ -576,9 +576,28 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 
 ## Update method for providing fallback paywalls
 
-Previously, the method required the `assetId` pointing to a JSON file. Now, it requires the `paywallId` instead.
+Previously, the method required the fallback paywall as a JSON string (`jsonString`), but now it takes the path to the local fallback file (`assetId`) instead.
 
+```diff
+ import 'dart:async' show Future;
+ import 'dart:io' show Platform;
+-import 'package:flutter/services.dart' show rootBundle;
 
+-final filePath = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
+-final jsonString = await rootBundle.loadString(filePath);
++final assetId = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
+
+ try {
+-  await adapty.setFallbackPaywalls(jsonString);
++  await adapty.setFallbackPaywalls(assetId);
+ } on AdaptyError catch (adaptyError) {
+   // handle the error
+ } catch (e) {
+ }
+
+```
+
+d
 
 ## Update 3d-party integration SDK configuration
 
@@ -593,7 +612,47 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="v5" label="Adjust 5.x+" default>
 
 ```diff
+ import 'package:adjust_sdk/adjust.dart';
+ import 'package:adjust_sdk/adjust_config.dart';
 
+ try {
+   final adid = await Adjust.getAdid();
+
+   if (adid == null) {
+     // handle the error
+   }
+
++   await Adapty().setIntegrationIdentifier(
++     key: "adjust_device_id", 
++     value: adid,
++   );
+
+   final attributionData = await Adjust.getAttribution();
+
+   var attribution = Map<String, String>();
+
+   if (attributionData.trackerToken != null) attribution['trackerToken'] = attributionData.trackerToken!;
+   if (attributionData.trackerName != null) attribution['trackerName'] = attributionData.trackerName!;
+   if (attributionData.network != null) attribution['network'] = attributionData.network!;
+   if (attributionData.adgroup != null) attribution['adgroup'] = attributionData.adgroup!;
+   if (attributionData.creative != null) attribution['creative'] = attributionData.creative!;
+   if (attributionData.clickLabel != null) attribution['clickLabel'] = attributionData.clickLabel!;
+   if (attributionData.costType != null) attribution['costType'] = attributionData.costType!;
+   if (attributionData.costAmount != null) attribution['costAmount'] = attributionData.costAmount!.toString();
+   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
+   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
+
+-   Adapty().updateAttribution(
+-     attribution,
+-     source: AdaptyAttributionSource.adjust,
+-     networkUserId: adid,
+-   );
++   await Adapty().updateAttribution(attribution, source: "adjust");
+ } catch (e) {
+   // handle the error
+   } on AdaptyError catch (adaptyError) {
+   // handle the error
+ }
 ```
 
 </TabItem>
@@ -621,9 +680,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -
 - try {
 -     await Adapty().updateProfile(builder.build());
-- } on AdaptyError catch (adaptyError) {
--     // handle error
-- } catch (e) {}
 
 + final deviceUUID = await Airbridge.state.deviceUUID;
 +
@@ -632,11 +688,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "airbridge_device_id", 
 +         value: deviceUUID,
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+     // handle the error
+  } catch (e) {
+     // handle the error
+  }
 ```
 
 ### Amplitude
@@ -654,9 +710,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -
 - try {
 -      await adapty.updateProfile(builder.build());
-- } on AdaptyError catch (adaptyError) {
--      // handle error
-- } catch (e) {}
 
 + try {
 +     await Adapty().setIntegrationIdentifier(
@@ -667,11 +720,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "amplitude_device_id", 
 +         value: amplitude.getDeviceId(),
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
 ```
 
 ### AppMetrica
@@ -690,9 +743,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -
 -   try {
 -     await adapty.updateProfile(builder.build());
--   } on AdaptyError catch (adaptyError) {
--     // handle error
--   } catch (e) {}
 +   try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "appmetrica_device_id", 
@@ -702,11 +752,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "appmetrica_profile_id", 
 +         value: "YOUR_ADAPTY_CUSTOMER_USER_ID",
 +     );
-+   } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+   } catch (e) {
-+     // handle the error
-+   }
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } catch (e) {
+      // handle the error
+    }
  }
 ```
 
@@ -721,9 +771,8 @@ Update your mobile app code as shown below. For the complete code example, check
  
  appsflyerSdk.onInstallConversionData((data) async {
      try {
--         // It's important to include the network user ID
-+         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
--         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
+         // It's important to include the network user ID
+         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
 -         await Adapty().updateAttribution(
 -           data,
 -           source: AdaptyAttributionSource.appsflyer,
@@ -737,10 +786,10 @@ Update your mobile app code as shown below. For the complete code example, check
 +         await Adapty().updateAttribution(data, source: "appsflyer");
      } on AdaptyError catch (adaptyError) {
          // handle the error
--     } catch (e) {}
-+     } catch (e) {
-+         // handle the error
-+     }
+
+      } catch (e) {
+          // handle the error
+      }
  });
 
  appsflyerSdk.initSdk(
@@ -760,33 +809,18 @@ Update your mobile app code as shown below. For the complete code example, check
 - FlutterBranchSdk.initSession().listen((data) async {
 -     try {
 -         await Adapty().updateAttribution(data, source: AdaptyAttributionSource.branch);
--     } on AdaptyError catch (adaptyError) {
--         // handle error
--     } catch (e) {}
-- });
 
 + try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "branch_id", 
 +         value: <BRANCH_IDENTITY_ID>,
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
-
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  });
 ```
-
-### Facebook Ads
-
-Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
-
-```diff
-.
-```
-
-
 
 ### Firebase and Google Analytics
 
@@ -802,9 +836,6 @@ Update your mobile app code as shown below. For the complete code example, check
         
 - try {
 -     await adapty.updateProfile(builder.build());
-- } on AdaptyError catch (adaptyError) {
--     // handle error
-- } catch (e) {}
 
 + final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
 
@@ -813,11 +844,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "firebase_app_instance_id", 
 +         value: appInstanceId,
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
 ```
 
 ### Mixpanel
@@ -836,9 +867,6 @@ Update your mobile app code as shown below. For the complete code example, check
 
 - try {
 -     await Adapty().updateProfile(builder.build());
-- } on AdaptyError catch (adaptyError) {
--     // handle error
-- } catch (e) {}
 
 + final distinctId = await mixpanel.getDistinctId();
 
@@ -847,11 +875,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "mixpanel_user_id", 
 +         value: distinctId,
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
 ```
 
 ### OneSignal
@@ -868,21 +896,16 @@ Update your mobile app code as shown below. For the complete code example, check
 -                 // ..setOneSignalSubscriptionId(playerId);
 -         try {
 -             Adapty().updateProfile(builder.build());
--         } on AdaptyError catch (adaptyError) {
--             // handle error
--         } catch (e) {
--             // handle error
--         }
 +         try {
 +             await Adapty().setIntegrationIdentifier(
 +                 key: "one_signal_player_id", 
 +                 value: playerId,
 +             );
-+         } on AdaptyError catch (adaptyError) {
-+             // handle error
-+         } catch (e) {
-+             // handle error
-+         }
+          } on AdaptyError catch (adaptyError) {
+              // handle error
+          } catch (e) {
+              // handle error
+          }
      }
  });
 ```
@@ -900,9 +923,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -         );
 - try {
 -     await adapty.updateProfile(builder.build());
-- } on AdaptyError catch (adaptyError) {
--     // handle error
-- } catch (e) {}
 
 + final hwid = await Pushwoosh.getInstance.getHWID;
 
@@ -911,11 +931,11 @@ Update your mobile app code as shown below. For the complete code example, check
 +         key: "pushwoosh_hwid", 
 +         value: hwid,
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
 ```
 
 ## Update Observer mode implemetation
@@ -934,10 +954,6 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 
 - try {
 -   await Adapty().setVariationId('transaction_id', variationId);
-- } on AdaptyError catch (adaptyError) {
--   // handle the error
-- } catch (e) {
-- }
 
 + try {
 +     // every time when calling transaction.finish()
@@ -945,16 +961,14 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 +         "YOUR_TRANSACTION_ID", 
 +         variationId: "PAYWALL_VARIATION_ID", // optional
 +     );
-+ } on AdaptyError catch (adaptyError) {
-+     // handle the error
-+ } catch (e) {
-+     // handle the error
-+ }
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
 ```
 
- 
 
-##
 
 </TabItem> 
 
