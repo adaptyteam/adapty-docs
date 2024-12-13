@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
 
 
-A webhook is a convenient and fast way to get notifications about [events](webhook-event-types-and-fields#webhook-event-types). For example, if a new trial is started, a subscription is renewed, or a billing issue happens. The webhook mechanism works through a callback function. You set up a URL (called Endpoint URL) to which an HTTP request is sent when an event occurs. 
+A webhook is a convenient and fast way to get notifications about [events](webhook-event-types-and-fields#webhook-event-types). For example, if a new trial is started, a subscription is renewed, or a billing issue occurs. The webhook mechanism works through a callback function. You set up a URL (called Endpoint URL) to which an HTTP request is sent when an event occurs. 
 
 <Zoom>
   <img src={require('./img/e5dce30-image_3.webp').default}
@@ -41,7 +41,7 @@ With webhooks integrated, you can:
 
 ## Events than can be sent to a webhook
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Webhook event flows](webhook-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-4-optional-choose-events-to-send-and-map-event-names). There you can also replace Adapty default event IDs with your own if required.
+You can send all event types to your webhook or choose only some of them. You can consult our [Webhook event flows](webhook-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-4-optional-choose-events-to-send-and-map-event-names). There you can also replace the Adapty default event IDs with your own if required.
 
 <WebhookEvents />
 
@@ -71,7 +71,7 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 Adapty will send to your webhook endpoint 2 types of requests:
 
-1. [**Verification request**](webhook#step-11-set-up-receiving-adaptys-verification-request-by-your-server): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with a [verification response](webhook#step12-set-up-your-servers-verification-response).
+1. [**Verification request**](webhook#step-11-set-up-receiving-adaptys-verification-request-by-your-server): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the [verification response](webhook#step12-set-up-your-servers-verification-response).
 2. [**Usual event**](webhook#step-2-set-up-processing-of-adapty-standard-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
 
 ### Step 1.1. Set up receiving Adapty's verification request by your server
@@ -168,14 +168,10 @@ If your event IDs differ from those used in Adapty and keep the IDs in your syst
 />
 </Zoom>
 
-The event ID can be any string, simply make sure the event ID in your webhook processing server coinside with the one you eneterd in the Adapty Dashboard. You cannot leave the event ID empty for enabled events. If you accidentally removed Adapty event ID and need to restore it, you can always copy it from the **Webhook events** table below.
-
-### Webhook events
-
-<WebhookEvents />
+The event ID can be any string; simply make sure the event ID in your webhook processing server coincides with the one you entered in the Adapty Dashboard. You cannot leave the event ID empty for enabled events. If you accidentally removed Adapty event ID and need to restore it, you can always copy it from the **Webhook events** table below.
 
 ## Step 5. Handle webhook events
 
-Webhooks are typically delivered within 5 to 60 seconds of the event occurring. Cancellation events, however, may take up to 2 hours to be delivered after a user cancels their subscription.
+Webhooks are typically delivered within 5 to 60 seconds after the event occurs. Cancellation events, however, may take up to 2 hours to be delivered after a user cancels their subscription.
 
 If your server's response status code is outside the 200-404 range, Adapty will retry sending the event up to 9 times over 24 hours with exponential backoff. We suggest you set up your webhook to do only basic validation of the event body from Adapty before responding. If your server can't process the event and you don't want Adapty to retry, use a status code within the 200-404 range. Also, handle any time-consuming tasks asynchronously and respond to Adapty quickly. If Adapty doesn't receive a response within 10 seconds, it will consider the attempt a failure and will retry
