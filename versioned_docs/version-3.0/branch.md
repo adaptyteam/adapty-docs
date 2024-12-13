@@ -191,15 +191,16 @@ class YourBranchImplementation {
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
 ```javascript
-import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
-
-FlutterBranchSdk.initSession().listen((data) async {
-    try {
-        await Adapty().updateAttribution(data, source: AdaptyAttributionSource.branch);
-    } on AdaptyError catch (adaptyError) {
-        // handle error
-    } catch (e) {}
-});
+try {
+    await Adapty().setIntegrationIdentifier(
+        key: "branch_id", 
+        value: <BRANCH_IDENTITY_ID>,
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>

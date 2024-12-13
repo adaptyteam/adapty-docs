@@ -154,15 +154,20 @@ import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
 
-final builder = AdaptyProfileParametersBuilder()
-     ..setAmplitudeDeviceId(await amplitude.getDeviceId())
-     ..setAmplitudeUserId(await amplitude.getUserId());
-
 try {
-     await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "amplitude_user_id", 
+        value: amplitude.getUserId(),
+    );
+    await Adapty().setIntegrationIdentifier(
+        key: "amplitude_device_id", 
+        value: amplitude.getDeviceId(),
+    );
 } on AdaptyError catch (adaptyError) {
-     // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>

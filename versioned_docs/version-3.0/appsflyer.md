@@ -231,18 +231,22 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
+
 appsflyerSdk.onInstallConversionData((data) async {
     try {
-        // It's important to include the network user ID
         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
-        await Adapty().updateAttribution(
-          data,
-          source: AdaptyAttributionSource.appsflyer,
-          networkUserId: appsFlyerUID,
+        
+        await Adapty().setIntegrationIdentifier(
+          key: "appsflyer_id", 
+          value: appsFlyerUID,
         );
+        
+        await Adapty().updateAttribution(data, source: "appsflyer");
     } on AdaptyError catch (adaptyError) {
-        // handle error
-    } catch (e) {}
+        // handle the error
+    } catch (e) {
+        // handle the error
+    }
 });
 
 appsflyerSdk.initSdk(

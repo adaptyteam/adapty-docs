@@ -164,15 +164,18 @@ Adapty.updateProfile(params, error -> {
 ```javascript
 import 'package:pushwoosh/pushwoosh.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setPushwooshHWID(
-          await Pushwoosh.getInstance.getHWID,
-        );
+final hwid = await Pushwoosh.getInstance.getHWID;
+
 try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "pushwoosh_hwid", 
+        value: hwid,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>

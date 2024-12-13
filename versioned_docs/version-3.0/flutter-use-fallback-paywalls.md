@@ -13,7 +13,7 @@ import 'dart:io' show Platform;
 final assetId = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
 
 try {
-  await adapty.setFallbackPaywalls(assetId);
+  await Adapty.setFallbackPaywalls(assetId);
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {

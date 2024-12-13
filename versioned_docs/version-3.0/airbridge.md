@@ -142,16 +142,18 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
 ```javascript
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setAirbridgeDeviceId(
-          await Airbridge.state.deviceUUID,
-        );
+final deviceUUID = await Airbridge.state.deviceUUID;
 
 try {
-    await Adapty().updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "airbridge_device_id", 
+        value: deviceUUID,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
