@@ -5,7 +5,7 @@ metadataTitle: ""
 toc_max_heading_level: 4
 ---
 
-Adapty sends webhooks in response to events that occur in your app. Here these event types are defined, as well as the data contained in each webhook.
+Adapty sends webhooks in response to events that occur in your app. This section defines these event types and the data contained in each webhook.
 
 ## Webhook event types
 
@@ -17,7 +17,7 @@ You can send all event types to your webhook or choose only some of them. You ca
 | Subscription renewed               | subscription_renewed               | Occurs when a subscription is renewed and the user is charged. This event starts from the second billing, whether it's a trial or non-trial subscription. |
 | Subscription renewal cancelled     | subscription_renewal_cancelled     | A user has turned off subscription auto-renewal. The user retains access to premium features until the end of the paid subscription period. |
 | Subscription renewal reactivated   | subscription_renewal_reactivated   | Triggered when a user reactivates subscription auto-renewal. |
-| Subscription expired (churned)     | subscription_expired               | Triggered when a subscription fully ends after being canceled. For instance, if a user cancels a subscription on December 12th but it runs until December 31st, the event is recorded on December 31st when the subscription expires. |
+| Subscription expired (churned)     | subscription_expired               | Triggered when a subscription fully ends after being canceled. For instance, if a user cancels a subscription on December 12th but it remains active until December 31st, the event is recorded on December 31st when the subscription expires. |
 | Subscription paused (Android only) | subscription_paused                | Occurs when a user activates [subscription pause](https://developer.android.com/google/play/billing/subs#pause) (Android only). |
 | Non-subscription purchase          | non_subscription_purchase          | Any non-subscription purchase, such as lifetime access or consumable products like in-game coins. |
 | Trial started                      | trial_started                      | Triggered when a user activates a trial subscription.        |
@@ -35,7 +35,7 @@ You can send all event types to your webhook or choose only some of them. You ca
 
 Adapty will send you only those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields, the list of event properties however will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
+Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields; however, the list of event properties will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
 
 ```json title="Json"
 {
@@ -119,7 +119,7 @@ Event parameters are the same for all event types.
 | **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **event_properties**              | JSON                 | JSON of [event properties](webhook-event-types-and-fields#event-properties). |
 | **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
-| **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. If not set, this field will be null. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
 | **profile_install_datetime**      | ISO 8601 date & time | Installation date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
@@ -181,11 +181,11 @@ The event properties for most event types are consistent (except for **Access Le
 | **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.        |
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`. |
 | **store_offer_category**      | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`. |
-| **store_offer_discount_type** | String        | Applied offer type.. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
+| **store_offer_discount_type** | String        | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
 
 #### Additional tax and revenue event properties
 
-The event properties connected to taxes and revenue below are additional fields that belong only to several event types.  This means that the listed even types contain the [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types) and in addition the fields listed below.
+The event properties related to taxes and revenue below are additional fields that apply only to certain event types. This means that the listed event types include the [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types), along with the extra fields listed below.
 
 Event types that have the tax and revenue event properties:
 
@@ -249,5 +249,5 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
 :::warning
-Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
+Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on specific fields rather than the entire structure.
 :::

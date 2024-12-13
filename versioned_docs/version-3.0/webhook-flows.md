@@ -11,7 +11,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 In Adapty, you'll receive various webhook events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
-Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and be sent to the webhook, but it won’t be shared with other integrations.
+Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
 
 If a webhook integration isn’t configured or this event type isn’t enabled, the **Access level updated** event won’t be created and won’t appear in the [**Event Feed**](https://app.adapty.io/event-feed).
 
@@ -55,7 +55,7 @@ When a user cancels their subscription, a **Subscription renewal canceled** even
 />
 </Zoom>
 
-If a refund is approved, an additional **Subscription refunded** event occurs at the moment of the approval which is usually does not coincide with any of other events.
+If a refund is approved, an additional **Subscription refunded** event occurs at the moment of approval, which usually does not coincide with any other events.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp').default}
@@ -71,7 +71,7 @@ For Stripe, a subscription can be canceled immediately, skipping the remaining p
 
 - **Subscription renewal cancelled** 
 - **Subscription expired (churned)**
-- **Access Level updated** to remove the  the user’s access 
+- **Access Level updated** to remove the user’s access 
 
 If a refund is approved, a **Subscription refunded** event is also triggered when it’s approved.
 
@@ -113,7 +113,7 @@ The subscription is officially paused at the end of the subscription period. At 
 No events are triggered when the user pauses the subscription. However, the following events are created at the end of the subscription period:
 
 - **Subscription paused (Android only)**
-- **Access level updated** to revoke the user's access
+- **Access level updated** to revoke the user's access.
 
 When the user resumes the subscription, the following events are triggered:
 
@@ -136,14 +136,14 @@ These subscriptions will belong to the same transaction chain, linked with the s
 
 If attempts to renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled. 
 
-With a grace period, if the payment succeeds, the subscription renews. If it fails, the subscription expires, the subscription will end and the user will loose their access..
+With a grace period, if the payment succeeds, the subscription renews.If it fails, the subscription expires, and the user will lose their access.
 
 Therefore, at the moment of the billing issue, the following events are created in Adapty:
 
 - **Billing issue detected**
-- **Enterd grace period** (if the grace period is enabled)
+- **Entered grace period** (if the grace period is enabled)
 
-If the payment succeeds later, the Subscription renewed event is created and the user does not loose their access.
+If the payment succeeds later, the **Subscription renewed** event is created, and the user does not lose their access.
 
 If the payment never succeeds till the end of the grace period, the following events are created:
 
@@ -179,7 +179,7 @@ If you use trials in your app, you’ll receive additional trial-related events.
 
 ### Trial with Successful Conversion Flow
 
-The most standard flow is the trial with a successful conversion when a user starts a trial, provides a credit card, and at the moment of the trial expiration, the payment is successful and the trial is converted to a standard subscription. In this situation, the **Trial started** event is created at the moment when the user starts it and the **Trial converted** event is created after the payment and when the standard subscription starts.
+The most common flow occurs when a user starts a trial, provides a credit card, and successfully converts to a standard subscription at the end of the trial period. In this situation, the **Trial started** event is created at the moment when the user starts it and the **Trial converted** event is created after the payment and when the standard subscription starts.
 
 In this flow, a user starts a trial with a payment method on file. A **Trial started** event is triggered when the trial begins.  If the payment succeeds at the end of the trial, it's followed by a **Trial converted** event after the successful payment, marking the start of a standard subscription.
 
@@ -342,7 +342,7 @@ When a [Customer User ID](identifying-users#setting-customer-user-id-on-configur
 
 ###  Transfer Access to New User Flow
 
-The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. So only 2 **Access level updated** events will be created:
+The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. Only 2 **Access level updated** events will be created:
 
 1. to remove the first user's access
 2. to give access to the second user
