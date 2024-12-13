@@ -4,12 +4,17 @@ description: ""
 metadataTitle: ""
 ---
 
-- The second version of the Server-Side API gives you more flexibility and features when working with Adapty:
-  - **Grant access without transactions:** You can now assign access levels to users without providing transaction details. This is useful for compensations, bonuses, or other non-transactional reasons.
-  - **Enhanced transaction details:** Include more data with transactions, like refunds, billing issues, cancellation reasons, renewals, and more.
-  - **Profile updates:** Instead of just adding attributes, you can update a user’s profile. For instance, you can add installation metadata or disable external analytics if needed.
+Adapty's Server-Side API v2 introduces new capabilities and improvements to help you manage access levels, transactions, and user profiles more effectively.
 
 ## Why Migrate?
+
+The second version of the Server-Side API gives you more flexibility and features when working with Adapty:
+
+- **Separate access level management and transaction recording**:
+  - **Grant access without transactions**: Assign access levels to users without requiring transaction details, making it easier to handle compensations, bonuses, or other non-transactional scenarios.
+  - **Record one-time purchases without granting access**: Log transactions for consumable product purchases without affecting the user's access level.
+- **Enhanced transaction details:** Include more data with transactions, like refunds, billing issues, cancellation reasons, renewals, and more.
+- **Profile updates:** Instead of just adding attributes, you can update a user’s profile. For instance, you can add installation metadata or disable external analytics if needed.
 
 Although v1 is still supported, we recommend moving to v2 for expanded functionality and ongoing updates.
 
@@ -18,7 +23,7 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
 ### General Changes
 
 1. **Base URL Update:**
-   - Change from `https://api.adapty.io/api/v1/sdk/` to `https://api.adapty.io/api/v1/server-side-api/`.
+   - Change from `https://api.adapty.io/api/v1/sdk/` to `https://api-admin.adapty.io/api/v1/server-side-api/`.
 2. **Endpoint Changes:** Refer to the updated endpoints for each specific request.
 3. **Authorization Updates:**
    - Move `{profile_id_or_customer_user_id}` from the endpoint to a header.
@@ -51,7 +56,7 @@ For a detailed description, refer to the [Grant access level](server-side-api-sp
 
 Grant or extend access for a user without tying it to a transaction.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/grant/access-level/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/grant/access-level/`
 - Parameters to keep:
   - **access_level_id**: Previously in the endpoint. Required.
   - **starts_at**: Now nullable.
@@ -67,7 +72,7 @@ For a detailed description, refer to the [Revoke access level](server-side-api-s
 
 Revoke or shorten a user’s access.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/`
 - Parameters to keep:
   - **access_level_id**: Required.
   - **expires_at**: Nullable unless access is revoked immediately.
@@ -82,7 +87,7 @@ For a detailed description, refer to the [Set transaction](server-side-api-specs
 
 Submit a transaction to Adapty, separate from granting or revoking access.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/purchase/set/transaction/`
 - **Details:** Parameters depend on whether the purchase is a subscription or one-time product. See specific guidelines for each.
 
 ##### For Subscription
@@ -154,7 +159,7 @@ For a detailed description, refer to the [Revoke access level](server-side-api-s
 
 In version 1, you used the [Revoke subscription from a user](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately remove access. Now, use the [Revoke access level](server-side-api-specs#revoke-access-level) request to either immediately remove access or shorten it.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/`
 - **New Option:** Specify a future revoke date (`revoke_at`) if immediate revocation isn’t needed.
 
 ### Validate a purchase from Stripe, provide access level to a customer, and import his transaction history from Stripe
@@ -171,7 +176,7 @@ For a detailed description, refer to the [Retrieve profile](server-side-api-spec
 
 Retrieve complete user profile data without additional parameters.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/profile/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/profile/`
 - **Change:** The User Profile ID or Customer User ID is now passed via headers, and no additional parameters are needed. The **extended** parameter is no longer needed as the complete profile data is always returned.
 
 ### Set the user's attribute
@@ -184,7 +189,7 @@ For a detailed description, refer to the [Update profile](server-side-api-specs#
 
 In version 1, you could only update user attributes. With v2, you can modify a wider range of profile fields, such as installation metadata or analytics settings.
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/profile/`.
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/profile/`.
 
 | **Parameter**        | **Change** | **Type**              | **Required**       | **Nullable**                            | **Description Change**                                       |
 | -------------------- | ---------- | --------------------- | ------------------ | --------------------------------------- | ------------------------------------------------------------ |
@@ -203,5 +208,5 @@ For a detailed description, refer to the [Delete profile](server-side-api-specs#
 
 :::
 
-- **Endpoint:** `https://api.adapty.io/api/v1/server-side-api/profile/`
+- **Endpoint:** `https://api-admin.adapty.io/api/v1/server-side-api/profile/`
 - **Change:** The User Profile ID or Customer User ID is now passed via headers, and no additional parameters are needed.
