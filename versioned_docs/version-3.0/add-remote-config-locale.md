@@ -107,10 +107,10 @@ You can translate both **String** and **List** values. By default, all lines are
 
 While AI-powered localization is becoming a popular trend, you might prefer a more reliable method, like using professional human translators or a translation agency with a strong track record. If that’s the case, you can export localization files to share with your translators and then import the translated results back into Adapty.
 
-Exporting creates individual `.json` files for each language, bundled into a single archive. If you only need one file, you can export it directly from the language-specific menu.
+Exporting by the **Export** button creates individual `.json` files for each language, bundled into a single archive. If you only need one file, you can export it directly from the language-specific menu.
 
 <Zoom>
-  <img src={require('./img/localization-table-language.webp').default}
+  <img src={require('./img/localization-single-export.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -143,10 +143,10 @@ To ensure a successful import, the import file must meet the following requireme
 - **Valid JSON:**
   The file must be a valid JSON. If it is not, the import will fail.
 
-  **No Additional Keys:**
+- **No Additional Keys:**
   The file should not contain any keys that are not in the current remote config. Extra keys will result in errors.
 
-  **All Required Elements:**
+- **All Required Elements:**
   The file must include all elements present in the current remote config. If any are missing, the import will succeed with errors, which will be displayed in the remote config table view. Hover over the error to see the issue, and refer to the table below for recommendations on resolving it.
 
   <Zoom>
@@ -159,7 +159,7 @@ To ensure a successful import, the import file must meet the following requireme
     }}
   />
   </Zoom>
-
+  
   | **Issue**                               | **Solution**                                                 |
   | --------------------------------------- | ------------------------------------------------------------ |
   | **Invalid JSON file**                   | The file is not a valid JSON. Validate it to ensure it meets JSON formatting standards (e.g., check for missing or extra commas). |
@@ -170,7 +170,7 @@ To ensure a successful import, the import file must meet the following requireme
 
 Sometimes, you might want to tweak translations, add different images for specific locales, or even adjust remote configurations directly.
 
-1. Select the element you want to translate and enter a new value. You can update both **String** and **List** values or replace images with those better suited for the locale.
+1. Choose the element you want to translate and type in a new value. You can update both **String** and **List** values or replace images with those better suited for the locale.
 
 
 
