@@ -78,14 +78,16 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 :::
 
 ```javascript
-final transactionId = transaction.transactionIdentifier
-final variationId = paywall.variationId
-
 try {
-  await Adapty().setVariationId('transaction_id', variationId);
+    // every time when calling transasction.finish()
+    await Adapty().reportTransaction(
+        "YOUR_TRANSACTION_ID", 
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
 } on AdaptyError catch (adaptyError) {
-  // handle the error
+    // handle the error
 } catch (e) {
+    // handle the error
 }
 ```
 </TabItem>

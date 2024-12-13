@@ -183,16 +183,18 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
 ```javascript
 import 'package:firebase_analytics/firebase_analytics.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setFirebaseAppInstanceId(
-          await FirebaseAnalytics.instance.appInstanceId,
-        );
-        
+final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
+
 try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "firebase_app_instance_id", 
+        value: appInstanceId,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>

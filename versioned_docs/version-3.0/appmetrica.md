@@ -137,15 +137,20 @@ import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 final deviceId = await AppMetrica.deviceId;
 
 if (deviceId != null) {
-  final builder = AdaptyProfileParametersBuilder()
-    ..setAppmetricaDeviceId(deviceId)
-    ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-
   try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_device_id", 
+        value: deviceId,
+    );
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_profile_id", 
+        value: "YOUR_ADAPTY_CUSTOMER_USER_ID",
+    );
   } on AdaptyError catch (adaptyError) {
-    // handle error
-  } catch (e) {}
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
 }
 ```
 </TabItem>

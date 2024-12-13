@@ -328,22 +328,45 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-<!--- TODO: update Flutter example --->
-
 ```javascript
+// PlayerID (pre-v5 OneSignal SDK)
+// in your OSSubscriptionObserver implementation
+func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+    if let playerId = stateChanges.to.userId {
+        Task {
+            try await Adapty.setIntegrationIdentifier(
+                key: "one_signal_player_id", 
+                value: playerId
+            )
+        }
+    }
+}
+
+// SubscriptionID (v5+ OneSignal SDK)
+OneSignal.Notifications.requestPermission({ accepted in
+    Task {
+        try await Adapty.setIntegrationIdentifier(
+            key: "one_signal_subscription_id", 
+            value: OneSignal.User.pushSubscription.id
+        )
+    }
+}, fallbackToSettings: true)
+
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
+    
     if (playerId != null) {
-        final builder = 
-            AdaptyProfileParametersBuilder()
-                ..setOneSignalPlayerId(playerId);
-                // ..setOneSignalSubscriptionId(playerId);
         try {
-            Adapty().updateProfile(builder.build());
+            await Adapty().setIntegrationIdentifier(
+                key: "one_signal_player_id", 
+                value: playerId,
+            );
+            
+            // or set "one_signal_subscription_id"
         } on AdaptyError catch (adaptyError) {
-            // handle error
+            // handle the error
         } catch (e) {
-            // handle error
+            // handle the error
         }
     }
 });

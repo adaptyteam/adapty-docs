@@ -130,17 +130,18 @@ Adapty.updateProfile(params) { error ->
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
-
-final builder = AdaptyProfileParametersBuilder()
-        ..setMixpanelUserId(
-          await mixpanel.getDistinctId(),
-        );
+final distinctId = await mixpanel.getDistinctId();
 
 try {
-    await Adapty().updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "mixpanel_user_id", 
+        value: distinctId,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
