@@ -78,6 +78,30 @@ Below is an example clause for the opt-out approach, including the types of data
 
 *"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
+## Refund saver preference
+
+By default, we assume you want Apple to reject as many refunds as possible. However, you can set your preferences for how often Apple should grant refunds. Keep in mind that these are only recommendations—Apple may or may not follow them.
+
+1. To change your preference, click **Edit refund preference**.
+   <Zoom>
+     <img src={require('./img/refund-saver-preference.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. In the **Edit refund preference** window, choose your preferred option:
+
+   | Option         | Description                                                  |
+   | -------------- | ------------------------------------------------------------ |
+   | Always decline | This is the default option and delivers the best results for minimizing refunds. |
+   | No preference  | If you feel that Apple rejects too many refunds and it's affecting user satisfaction or your app's rating, you can choose this milder option. With it, Apple grants refunds less often. |
+   | Always refund  | If you want to recommend Apple approve every refund request, select this option. |
+
 ## Limitations
 
 - **Apple’s App Store only:** Refund saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
