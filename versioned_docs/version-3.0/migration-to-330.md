@@ -532,7 +532,7 @@ Update your mobile app code as shown below. For the complete code example, check
 + }
 ```
 
-## Update Observer mode implemetation
+## Update Observer mode implementation
 
 Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
 
