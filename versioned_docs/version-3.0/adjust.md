@@ -382,27 +382,39 @@ Adjust.onCreate(config)
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
-AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandbox);
-      config.attributionCallback = (data) async {
-        var attribution = Map<String, String>();
-        if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
-        if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
-        if (data.network != null) attribution['network'] = data.network!;
-        if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
-        if (data.creative != null) attribution['creative'] = data.creative!;
-        if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
-        if (data.adid != null) attribution['adid'] = data.adid!;
-        if (data.costType != null) attribution['costType'] = data.costType!;
-        if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
-        if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
-        if (data.fbInstallReferrer != null) attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
+try {
+  final adid = await Adjust.getAdid();
 
-        try {
-          await Adapty().updateAttribution(attribution, source: AdaptyAttributionSource.adjust);
-        } on AdaptyError catch (adaptyError) {
-          // handle error
-        } catch (e) {}
-      };
+  if (adid == null) {
+    // handle the error
+  }
+  
+  await Adapty().setIntegrationIdentifier(
+    key: "adjust_device_id", 
+    value: adid,
+  );
+    
+  final attributionData = await Adjust.getAttribution();
+
+  var attribution = Map<String, String>();
+
+  if (attributionData.trackerToken != null) attribution['trackerToken'] = attributionData.trackerToken!;
+  if (attributionData.trackerName != null) attribution['trackerName'] = attributionData.trackerName!;
+  if (attributionData.network != null) attribution['network'] = attributionData.network!;
+  if (attributionData.adgroup != null) attribution['adgroup'] = attributionData.adgroup!;
+  if (attributionData.creative != null) attribution['creative'] = attributionData.creative!;
+  if (attributionData.clickLabel != null) attribution['clickLabel'] = attributionData.clickLabel!;
+  if (attributionData.costType != null) attribution['costType'] = attributionData.costType!;
+  if (attributionData.costAmount != null) attribution['costAmount'] = attributionData.costAmount!.toString();
+  if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
+  if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
+
+  await Adapty().updateAttribution(attribution, source: "adjust");
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
 ```
 
 </TabItem>
