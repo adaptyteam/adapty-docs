@@ -66,7 +66,7 @@ You can control how the timer behaves when users see it by using the **Timer mod
 | **Keep timer across app launches**    | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background, even if the app is closed. The user will see the same timer every time they return to the paywall, regardless of app or paywall restarts. |
 | **Developer defined**                 | You can set up any timer you need directly in your mobile app code. Start by entering a **Timer ID**, then use it in your code as explained in the [How to set up developer-defined timers in your mobile app](paywall-timer#how-to-set-up-developer-defined-timers-in-your-mobile-app) section to configure the timer however you like. |
 
-## What Happens When the Timer Ends?
+## What happens when the timer ends?
 
 You can customize what happens when the timer runs out. Should it display another screen with a new opportunity? Or maybe show a different paywall? Setting it up is a breeze.
 
