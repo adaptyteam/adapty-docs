@@ -68,7 +68,7 @@ You can control how the timer behaves when users see it by using the **Timer mod
 
 ## What happens when the timer ends?
 
-You can customize what happens when the timer runs out. Should it display another screen with a new opportunity? Or maybe show a different paywall? Setting it up is a breeze.
+You can customize what happens when the timer runs out. Should it display another screen with a new opportunity? Or maybe show a different paywall? It requires some coding, but with our docs, you'll handle it.
 
 1. Turn on the **Trigger custom action when the timer runs out** toggle.
 
