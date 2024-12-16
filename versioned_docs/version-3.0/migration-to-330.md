@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
-<Tabs> 
+<Tabs groupId="migration-to-330"> 
 
 <TabItem value="iOS" label="iOS" default> 
 
@@ -597,7 +597,7 @@ Previously, the method required the fallback paywall as a JSON string (`jsonStri
 
 ```
 
-d
+
 
 ## Update 3d-party integration SDK configuration
 
@@ -606,6 +606,10 @@ To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update
 ### Adjust
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
+
+<Tabs>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
 
 ```diff
  import 'package:adjust_sdk/adjust.dart';
@@ -650,6 +654,17 @@ Update your mobile app code as shown below. For the complete code example, check
    // handle the error
  }
 ```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff
+...
+```
+
+</TabItem>
+</Tabs>
 
 ### AirBridge
 
