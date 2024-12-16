@@ -49,6 +49,6 @@ Once the purchase is complete, [validate the test purchase](validate-test-purcha
 
 :::note
 
-Please keep in mind that the renewal rate is accelerated in TestFlight. Each subscription is renewed daily, up to 6 times within one week, regardless of the subscription's duration. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-a-beta-version/subscription-renewal-rate-in-testflight).
+Please keep in mind that the subscription renewal rate is accelerated in TestFlight. Each subscription is renewed daily, up to 6 times within one week, regardless of the subscription's duration. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-a-beta-version/subscription-renewal-rate-in-testflight).
 
 :::
