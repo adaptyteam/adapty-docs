@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
-- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
+- **Core Adapty**: This essential module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is required if you’re using the Adapty Paywall Builder—a no-code, user-friendly tool for creating cross-platform paywalls. With a visual constructor right in the dashboard, you can build paywalls that run natively on devices and are designed to deliver high performance with minimal effort. 
   The module is installed automatically with the Adapty SDK, but you can leave it deactivated if you don’t need it.
 
@@ -21,7 +21,7 @@ Go through the release checklist before releasing your app
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
-## Install Adapty SDKs
+## Install Adapty SDK
 
 1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
 
@@ -36,7 +36,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
    flutter pub get
    ```
 
-## Configure Adapty SDKs
+## Configure Adapty SDK
 
 You only need to configure the Adapty SDK once, typically early in your app's lifecycle.
 
@@ -123,9 +123,9 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.10.1             | 2.1.2                |
 | 2.10.3             | 2.1.3                |
 
-## Install Adapty SDKs
+## Install Adapty SDK
 
-1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
+1. Add the Adapty and AdaptyUI modules to your `pubspec.yaml` file:
 
    ```yaml title="pubspec.yaml"
    dependencies:
@@ -139,18 +139,18 @@ Please consult the compatibility table below to choose the correct pair of Adapt
    flutter pub get
    ```
 
-3. Import Adapty SDKs in your application in the following way:
+3. Import Adapty modules in your application in the following way:
 
    ```dart title="Dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
    import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
-## Configure Adapty SDKs
+## Configure Adapty SDK
 
 The configuration of the Adapty SDK for Flutter slightly differs depending on the mobile operating system (iOS or Android) you are going to release it for. 
 
-### Configure Adapty SDKs for iOS
+### Configure Adapty SDK for iOS
 
 Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
 
@@ -171,7 +171,7 @@ Parameters:
 | **AdaptyObserverMode**     | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. At any purchase or restore in your application, you'll need to call `.restorePurchases()` method to record the action in Adapty. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **idfaCollectionDisabled** | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)  section.</p> |
 
-### Configure Adapty SDKs for Android
+### Configure Adapty SDK for Android
 
 1. Add the `AdaptyPublicSdkKey` flag into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
 
