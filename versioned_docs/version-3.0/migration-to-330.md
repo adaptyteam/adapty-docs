@@ -597,7 +597,7 @@ Previously, the method required the fallback paywall as a JSON string (`jsonStri
 
 ```
 
-
+For the complete code example, check out the [Use fallback paywalls](flutter-use-fallback-paywalls) page.
 
 ## Update 3d-party integration SDK configuration
 

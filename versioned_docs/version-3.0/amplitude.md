@@ -98,7 +98,7 @@ Use the `Adapty.updateProfile()` method to set either `amplitudeDeviceId` or `am
 
 Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
 
-<Tabs>
+<Tabs groupId="amplitude">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift
 import Amplitude 

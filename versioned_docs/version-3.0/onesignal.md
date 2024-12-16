@@ -147,7 +147,7 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 
 <TabItem value="v5+" label="v5+ OneSignal SDK (New)" default> 
 
-<Tabs>
+<Tabs groupId="onesignal">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
@@ -202,8 +202,6 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 </TabItem>  
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-
-<!--- TODO: update Flutter example --->
 
 ```javascript
 OneSignal.shared.setSubscriptionObserver((changes) {

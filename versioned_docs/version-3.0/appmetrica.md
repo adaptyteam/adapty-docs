@@ -81,7 +81,7 @@ If these aren’t set, Adapty will default to using your user ID (`customerUserI
 - [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
 - [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
-<Tabs>
+<Tabs groupId="appmetrica">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 import AppMetricaCore 

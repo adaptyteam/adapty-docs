@@ -2,6 +2,7 @@
 title: "Adjust"
 description: ""
 metadataTitle: ""
+
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -42,7 +43,6 @@ To setup the integration with Adjust go to [Integrations > Adjust](https://app.a
 
 The next step of the integration is to set credentials.
 
-
 <Zoom>
   <img src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.webp').default}
   style={{
@@ -60,7 +60,6 @@ The next step of the integration is to set credentials.
 
 1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token** during the integration process for your iOS and Android apps.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
-
 
 <Zoom>
   <img src={require('./img/e9ee52e-image_52.webp').default}
@@ -82,7 +81,6 @@ You may have different Adjust applications for iOS and Android, so in Adapty you
 :::
 
 You will need to copy **App Token** and paste it to Adapty.
-
 
 <Zoom>
   <img src={require('./img/4b1601c-image_36.webp').default}
@@ -107,7 +105,6 @@ Adjust works a bit differently from other platforms. You need to manually create
 
 So first step here is to find event tokens for all events that you want Adapty to send. To do that go to All Settings in your Adjust dashboard.
 
-
 <Zoom>
   <img src={require('./img/6c6b9a0-image_83.webp').default}
   style={{
@@ -123,7 +120,6 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 
-
 <Zoom>
   <img src={require('./img/4d4f40d-image_9.webp').default}
   style={{
@@ -134,7 +130,6 @@ So first step here is to find event tokens for all events that you want Adapty t
   }}
 />
 </Zoom>
-
 
 
 
@@ -157,7 +152,6 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjsut from Adapty. Check the full list of the events offered by Adapty [here](events).
 
-
 <Zoom>
   <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.webp').default}
   style={{
@@ -179,7 +173,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-<Tabs>
+<Tabs groupId="adjust">
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 
@@ -191,24 +185,53 @@ For Adjust version 5.0 or later, use the following:
 ```swift 
 class AdjustModuleImplementation {
 
-func updateAdjustAdid() {
-    Adjust.adid { adid in
-        guard let adid else { return }
-
-        Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
-    }
-}
-
 func updateAdjustAttribution() {
     Adjust.attribution { attribution in
-        guard let attribution = attribution?.dictionary() else { 
+        guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { 
             return
         }
-        
-        Adapty.updateAttribution(attribution, source: "adjust")
+
+        Adjust.adid { adid in
+            guard let adid else { return }
+
+            Adapty.updateAttribution(
+              attributionDictionary, 
+              source: .adjust, 
+              networkUserId: adid
+            ) { error in
+                // handle the error
+            }
+        }
     }
 }
 
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
+    }
 }
 ```
 
@@ -261,12 +284,7 @@ try {
   if (adid == null) {
     // handle the error
   }
-  
-  await Adapty().setIntegrationIdentifier(
-    key: "adjust_device_id", 
-    value: adid,
-  );
-    
+
   final attributionData = await Adjust.getAttribution();
 
   var attribution = Map<String, String>();
@@ -282,9 +300,11 @@ try {
   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
 
-  await Adapty().updateAttribution(attribution, source: "adjust");
-} on AdaptyError catch (adaptyError) {
-  // handle the error
+  Adapty().updateAttribution(
+    attribution,
+    source: AdaptyAttributionSource.adjust,
+    networkUserId: adid,
+  );
 } catch (e) {
   // handle the error
 }
@@ -351,10 +371,39 @@ class YourAdjustDelegateImplementation {
 	// Find your implementation of AdjustDelegate 
 	// and update adjustAttributionChanged method:
 	func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-	    if let attribution = attribution?.dictionary() {
-	        Adapty.updateAttribution(attribution, source: "adjust")
+	    if let attribution = attribution?.dictionary()?.toSendableDict() {
+	        Adapty.updateAttribution(attribution, source: .adjust)
 	    }
 	}
+}
+
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
+    }
 }
 ```
 
@@ -382,39 +431,27 @@ Adjust.onCreate(config)
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
-try {
-  final adid = await Adjust.getAdid();
+AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandbox);
+      config.attributionCallback = (data) async {
+        var attribution = Map<String, String>();
+        if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
+        if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
+        if (data.network != null) attribution['network'] = data.network!;
+        if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
+        if (data.creative != null) attribution['creative'] = data.creative!;
+        if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
+        if (data.adid != null) attribution['adid'] = data.adid!;
+        if (data.costType != null) attribution['costType'] = data.costType!;
+        if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
+        if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
+        if (data.fbInstallReferrer != null) attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
 
-  if (adid == null) {
-    // handle the error
-  }
-  
-  await Adapty().setIntegrationIdentifier(
-    key: "adjust_device_id", 
-    value: adid,
-  );
-    
-  final attributionData = await Adjust.getAttribution();
-
-  var attribution = Map<String, String>();
-
-  if (attributionData.trackerToken != null) attribution['trackerToken'] = attributionData.trackerToken!;
-  if (attributionData.trackerName != null) attribution['trackerName'] = attributionData.trackerName!;
-  if (attributionData.network != null) attribution['network'] = attributionData.network!;
-  if (attributionData.adgroup != null) attribution['adgroup'] = attributionData.adgroup!;
-  if (attributionData.creative != null) attribution['creative'] = attributionData.creative!;
-  if (attributionData.clickLabel != null) attribution['clickLabel'] = attributionData.clickLabel!;
-  if (attributionData.costType != null) attribution['costType'] = attributionData.costType!;
-  if (attributionData.costAmount != null) attribution['costAmount'] = attributionData.costAmount!.toString();
-  if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
-  if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
-
-  await Adapty().updateAttribution(attribution, source: "adjust");
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
+        try {
+          await Adapty().updateAttribution(attribution, source: AdaptyAttributionSource.adjust);
+        } on AdaptyError catch (adaptyError) {
+          // handle error
+        } catch (e) {}
+      };
 ```
 
 </TabItem>
