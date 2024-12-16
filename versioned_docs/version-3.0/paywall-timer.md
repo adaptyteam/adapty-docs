@@ -66,7 +66,39 @@ You can control how the timer behaves when users see it by using the **Timer mod
 | **Keep timer across app launches**    | The timer starts the first time the user sees the paywall and keeps counting in the foreground or background, even if the app is closed. The user will see the same timer every time they return to the paywall, regardless of app or paywall restarts. |
 | **Developer defined**                 | You can set up any timer you need directly in your mobile app code. Start by entering a **Timer ID**, then use it in your code as explained in the [How to set up developer-defined timers in your mobile app](paywall-timer#how-to-set-up-developer-defined-timers-in-your-mobile-app) section to configure the timer however you like. |
 
-## How to set up developer-defined timers in your mobile app
+## What Happens When the Timer Ends?
+
+You can customize what happens when the timer runs out. Should it display another screen with a new opportunity? Or maybe show a different paywall? Setting it up is a breeze.
+
+1. Turn on the **Trigger custom action when the timer runs out** toggle.
+
+   <Zoom>
+     <img src={require('./img/timer-action-on.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Enter the ID of the action you want to trigger in the **Timer action ID** field.
+
+   <Zoom>
+     <img src={require('./img/timer-action-id.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+   
+3. Use this action ID in your app to define what should happen when the timer ends. Treat it like any other custom action, as explained in our **Handling Events: Actions** guide for [iOS](ios-handling-events#actions) and [Android](android-handling-events#actions).
+
+## How to set up developer-defined timers in your mobile app?
 
 To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
