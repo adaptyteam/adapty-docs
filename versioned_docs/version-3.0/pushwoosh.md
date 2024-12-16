@@ -121,7 +121,7 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-<Tabs>
+<Tabs groupId="pushwoosh">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 do {

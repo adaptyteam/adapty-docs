@@ -83,7 +83,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-<Tabs>
+<Tabs groupId="mixpanel">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 

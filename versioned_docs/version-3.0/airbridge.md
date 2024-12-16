@@ -105,7 +105,7 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
 
-<Tabs>
+<Tabs groupId="airbridge">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 import AirBridge
