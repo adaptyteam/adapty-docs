@@ -198,16 +198,15 @@ Below is a complete example of making the purchase of the access level `premium`
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 ```swift
-Adapty.makePurchase(product: product) { result in
-    switch result {
-    case let .success(info):
-        if info.profile.accessLevels["premium"]?.isActive ?? false {
-            // grant access to premium features
-        }
-    case let .failure(error):
-        // handle the error
+do {
+    let info = try await Adapty.makePurchase(product: product)
+    if info.profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
     }
+} catch {
+    // handle the error
 }
+
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -330,8 +329,15 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     }
 }
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
@@ -346,8 +352,15 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     }
 });
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
 ```javascript 
 try {
   final result = await adapty.makePurchase(
@@ -362,8 +375,15 @@ try {
   // handle the error
 }
 ```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
+
 ```csharp 
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
@@ -375,19 +395,35 @@ Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
 });
 ```
 
-</TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
-```typescript 
-// TODO: add example
-```
-</TabItem>
-</Tabs>
-
 Additional request parameter:
 
-| Parameter                    | Presence | Description                                                                                          |
-| :--------------------------- | :------- | :--------------------------------------------------------------------------------------------------- |
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+
+```typescript 
+try {
+    const profile = await adapty.makePurchase(product, params);
+    const isSubscribed = profile?.accessLevels['premium']?.isActive;
+  
+    if (isSubscribed) {
+        // grant access to premium features
+    }
+} catch (error) {
+    // handle the error
+}
+```
+Additional request parameter:
+
+| Parameter  | Presence | Description                                                  |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
+
+</TabItem>
+</Tabs>
 
 You can read more about subscriptions and proration modes in the Google Developer documentation:
 

@@ -75,8 +75,6 @@ If you have custom attributes for your users—such as the number of words learn
 
 These custom attributes can be used to create segments and run A/B tests.
 
-For more details, visit the [API Specs](server-side-api-specs).
-
 ## Case 5: Record a transaction from your web app and link it to the used paywall
 
 Let's say you sell products in your web app. You need to display a paywall to your users, let them purchase a product, and then add the transaction details to Adapty. It’s essential to link these transactions to the specific paywalls through which the user made the purchase so that your analytics reflect accurate data. This can be easily accomplished using the Adapty API
@@ -93,3 +91,5 @@ Let's say you sell products in your web app. You need to display a paywall to yo
 2. **Record the paywall view:** Log the paywall view with Adapty to ensure your analytics accurately reflect the event.
 3. **Record the purchase:** If the user completes a purchase, send the transaction details to Adapty using the Adapty API. Include the **variation ID** in this request to link the transaction to the specific paywall displayed. For guidance, check out our page on [associating paywalls with transactions in mobile apps](associate-paywalls-to-transactions)—the same approach applies to web apps.
 4. **Add attribution data (if applicable):** If you have any attribution data (e.g., campaign or ad details), merge it into the user profile to enrich the analytics and improve insights.
+
+For more details, visit the [API Specs](server-side-api-specs).

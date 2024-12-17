@@ -320,3 +320,62 @@ Here’s how:
    </Zoom>
 
 By mastering these customization options, you can create a compelling, visually appealing product list that guides users towards making a purchase effortlessly.
+## Showing extra plans in a bottom sheet
+
+To simplify your paywall, you can hide some products and display them only when users click a button (like "View More Plans" or any label you choose). This action opens a sliding bottom sheet with the hidden products. This setup helps users focus on your main options first, while still giving them the flexibility to explore additional plans if they’re interested. It’s a effective way to declutter the paywall and potentially boost conversions.
+
+Here’s how:
+
+1. In the **Products** element, set the **Products grouping** option to **Bottom Sheet (for more alternative plans)**. This will split your products into two groups: **Shown** and **More plans**.
+
+<Zoom>
+  <img src={require('./img/bottom-sheet.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Distribute your products between these groups. **Shown** is for products you want displayed right away. **More plans** is for products first hidden, shown only when users click the button.
+
+   <Zoom>
+     <img src={require('./img/bottom-sheet-divided-plans.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+3. Customize the text and layout of the button in the **View More Plans** element to fit your design and messaging.
+
+   <Zoom>
+     <img src={require('./img/bottom-sheet-button.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+4. The bottom sheet will automatically use the same product list display format as your main paywall, whether products are separate purchase buttons or each product acts as a button. You can customize the bottom sheet’s layout, text, style, and default product selection.
+
+<Zoom>
+  <img src={require('./img/bottom-sheet-layout.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+By mastering these customization options, you can create a visually appealing and user-friendly product list that makes purchasing simple and intuitive.

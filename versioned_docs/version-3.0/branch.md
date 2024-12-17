@@ -57,7 +57,7 @@ To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrat
 
 
 
-To get the value for the **Branch Key**,  open your Branch [Account Settings](https://dashboard.branch.io/account-settings/profile) and find the **Branch Key** field. Use it for the **Key test** or **Key live** field in the Adapty Dashboard. In Branch, switch between Live and Tests environments for the appropriate key.
+To get the value for the **Branch Key**,  open your Branch [Account Settings](https://dashboard.branch.io/account-settings/profile) and find the **Branch Key** field. Use it for the **Key test** (for Sandbox) or **Key live** (fo Production) field in the Adapty Dashboard. In Branch, switch between Live and Tests environments for the appropriate key.
 
 
 <Zoom>
@@ -109,12 +109,14 @@ To connect the Branch and Adapty user, make sure you provide your `customerUserI
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
 // login
 Branch.getInstance().setIdentity("YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 // login and update attribution
 Branch.getAutoInstance(this)
@@ -145,11 +147,13 @@ Branch.setIdentity("your user id");
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import branch from 'react-native-branch';
 
 branch.setIdentity('YOUR_USER_ID');
 ```
+
 </TabItem>
 </Tabs>
 
@@ -157,21 +161,56 @@ Next, pass the attribution you receive from the initializing method of Branch iO
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift 
-// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-    if let data = data {
-        Adapty.updateAttribution(data, source: .branch)
+class YourBranchImplementation {
+	func initializeBranch() {
+		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+    Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+        if let data = data?.toSendableDict() {
+            Adapty.updateAttribution(data, source: .branch)
+        }
+    }
+}
+
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
     }
 }
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```kotlin 
 //everything is in the above snippet for Android
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
+
 ```javascript
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
@@ -185,6 +224,7 @@ FlutterBranchSdk.initSession().listen((data) async {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
+
 ```csharp 
 Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
     string attributionString = JsonUtility.ToJson(parameters);
@@ -195,6 +235,7 @@ Branch.initSession(delegate(Dictionary<string, object> parameters, string error)
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty, AttributionSource } from 'react-native-adapty';
 import branch from 'react-native-branch';

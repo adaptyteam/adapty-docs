@@ -22,13 +22,13 @@ With the analytics export API, you can, for example:
 
 4. **Review Churn Rate**: Monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product. Use the [Retrieve funnel data](client-api#retrieve-funnel-data) method for this.
 
-5. **Assess LTV by User Segment**: Identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies. Use the [Retrieve LTV data](client-api#retrieve-ltv-data) method for this.
+5. **Assess LTV by User Segment**: Identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies. Use the [Retrieve LTV data](client-api#retrieve-lifetime-value-ltv-data) method for this.
 
 6. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies. Use the [Retrieve retention data](client-api#retrieve-retention-data) method for this.
 
 ## Authorization
 
-- **Base URL**: [https://api-admin.adapty.io](http://api-admin.adapty.io/)
+- **Base URL**: [https://api-admin.adapty.io](https://api-admin.adapty.io/)
 
 - **Authorization header**: API requests must be authenticated by including your secret API key as an **Authorization** header.
 

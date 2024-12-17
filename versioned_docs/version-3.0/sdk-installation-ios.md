@@ -42,14 +42,20 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
 
 ## Install SDKs via CocoaPods
 
+:::info
+
+CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager).
+
+:::
+
 1. Add Adapty to your `Podfile`. Choose the modules you need:
 
    1. **Adapty** is the mandatory module.
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.2.0'
-   pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.2.1'
+   pod 'AdaptyUI', '~> 3.2.1' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -74,8 +80,8 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 import Adapty
 
 let configurationBuilder =
-    Adapty.Configuration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
         .with(idfaCollectionDisabled: false)
@@ -94,10 +100,10 @@ import Adapty
 
 @main
 struct SampleApp: App {
-    init() 
+    init() {
       let configurationBuilder =
-        Adapty.Configuration
-          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
+        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional
@@ -193,7 +199,21 @@ Go through release checklist before releasing your app
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
+## Install SDKs via Swift Package Manager
+
+1. In Xcode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
+2. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
+3. Choose the version, and click the **Add package** button. Xcode will add the package dependency to your project, and you can import it.
+4. In the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list. 
+5. Repeat steps 2-3 for AdaptyUI SDK URL: `https://github.com/adaptyteam/AdaptyUI-iOS.git`.
+
 ## Install SDKs via CocoaPods
+
+:::info
+
+CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager).
+
+:::
 
 1. Add Adapty to your `Podfile`:
 
@@ -210,14 +230,6 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.
 
-## Install SDKs via Swift Package Manager
-
-1. In Xcode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
-2. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
-3. Choose the version, and click the **Add package** button. Xcode will add the package dependency to your project, and you can import it.
-4. In the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list. 
-5. Repeat steps 2-3 for AdaptyUI SDK URL: `https://github.com/adaptyteam/AdaptyUI-iOS.git`.
-
 ## Configure Adapty SDK
 
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
@@ -229,7 +241,7 @@ You only need to configure the Adapty SDK once, typically early in your applicat
 // In your AppDelegate class:
 
 let configurationBuilder =
-    Adapty.Configuration
+    AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false) // optional
         .with(customerUserId: "YOUR_USER_ID") // optional
@@ -251,7 +263,7 @@ import Adapty
 struct SampleApp: App {
     init() 
       let configurationBuilder =
-        Adapty.Configuration
+        AdaptyConfiguration
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional

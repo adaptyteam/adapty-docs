@@ -11,7 +11,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-With Adapty, you can create and run paywalls and A/B tests at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called [Placements](placements). A placement in your app can manage multiple paywalls or [A/B tests](ab-tests) at a time, each made for a certain group of users, which we call [Audiences](audience). Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version. The only thing you hardcode in the mobile app is the placement ID.
+With Adapty, you can create and run paywalls and A/B tests at different points in your mobile app user's journey, such as Onboarding, Settings, etc. These points are called [Placements](placements). A placement in your app can manage multiple paywalls or [A/B tests](ab-tests) at a time, each made for a certain group of users, which we call [Audiences](audience). Moreover, you can experiment with paywalls, replacing one with another over time without releasing a new app version. The only thing you hardcode in the mobile app is the placement ID.
 
 <Zoom>
   <img src={require('./img/audience.jpg').default}
@@ -27,6 +27,12 @@ With Adapty, you can create and run paywalls and A/B tests at different points i
 The Adapty plugin keeps your paywall updated with the latest products from your Adapty Dashboard. It [fetches the product data](ff-action-flow) and [shows it on your paywall](ff-add-variables-to-paywalls), [handles purchases](ff-make-purchase), and [checks the user’s access level](ff-check-subscription-status) to see if they should get paid content.
 
 To get started, just [add the Adapty Plugin](ff-getting-started#add-the-adapty-plugin-as-a-dependency) to your FlutterFlow project and [initiate it](ff-getting-started#initiate-adapty-plugin) as shown below.
+
+:::warning
+
+The Adapty Plugin for FlutterFlow doesn’t support web apps. Avoid compiling web apps with it.
+
+:::
 
 ## Add the Adapty plugin as a dependency
 

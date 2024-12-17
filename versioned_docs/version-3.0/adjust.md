@@ -58,7 +58,7 @@ The next step of the integration is to set credentials.
 
 
 
-1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token **during the integration process for your iOS and Android apps.
+1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token** during the integration process for your iOS and Android apps.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
 
 
@@ -189,15 +189,54 @@ For Adjust version 5.0 or later, use the following:
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
-Adjust.attribution { attribution in
-    guard let attributionDictionary = attribution?.dictionary() else { return }
+class AdjustModuleImplementation {
 
-    Adjust.adid { adid in
-        guard let adid else { return }
-
-        Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
-            // handle the error
+func updateAdjustAttribution() {
+    Adjust.attribution { attribution in
+        guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { 
+            return
         }
+
+        Adjust.adid { adid in
+            guard let adid else { return }
+
+            Adapty.updateAttribution(
+              attributionDictionary, 
+              source: .adjust, 
+              networkUserId: adid
+            ) { error in
+                // handle the error
+            }
+        }
+    }
+}
+
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
     }
 }
 ```
@@ -334,11 +373,42 @@ For Adjust version 4.x or earlier, use the following:
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
-// Find your implementation of AdjustDelegate 
-// and update adjustAttributionChanged method:
-func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-    if let attribution = attribution?.dictionary() {
-        Adapty.updateAttribution(attribution, source: .adjust)
+class YourAdjustDelegateImplementation {
+	// Find your implementation of AdjustDelegate 
+	// and update adjustAttributionChanged method:
+	func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+	    if let attribution = attribution?.dictionary()?.toSendableDict() {
+	        Adapty.updateAttribution(attribution, source: .adjust)
+	    }
+	}
+}
+
+extension [AnyHashable: Any] {
+    func toSendableDict() -> [String: any Sendable] {
+        var result = [String: any Sendable]()
+
+        for (key, value) in self {
+            guard let stringKey = key as? String else { continue }
+
+            switch value {
+            case let boolValue as Bool:
+                result[stringKey] = boolValue
+            case let stringValue as String:
+                result[stringKey] = stringValue
+            case let stringArrayValue as [String]:
+                result[stringKey] = stringArrayValue
+            case let intValue as Int:
+                result[stringKey] = intValue
+            case let intArrayValue as [Int]:
+                result[stringKey] = intArrayValue
+            case let dictValue as [AnyHashable: Any]:
+                result[stringKey] = dictValue.toSendableDict()
+            default:
+                break
+            }
+        }
+
+        return result
     }
 }
 ```
@@ -438,3 +508,4 @@ Adjust.create(adjustConfig);
 
 </TabItem>
 </Tabs>
+

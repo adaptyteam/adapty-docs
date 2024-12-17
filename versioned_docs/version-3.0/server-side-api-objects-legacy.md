@@ -1,5 +1,5 @@
 ---
-title: "API objects"
+title: "Legacy server-side API objects"
 description: ""
 metadataTitle: ""
 ---
@@ -9,7 +9,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 ## Objects
 
-Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
 
@@ -19,13 +24,13 @@ Info about the [customer and his subscription.  ](server-side-api-objects#profil
 
 | Param                    | Type  | Required | Nullable | Description                                                                                                                                                                                                                                         |
 | :----------------------- | :---- | :------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **profile\_id**          | UUID  | ✅        | ❌        | Adapty profile ID                                                                                                                                                                                                                                   |
-| **customer\_user\_id**   | str   | ✅        | ✅        | User ID in developer’s \(your\) system.                                                                                                                                                                                                             |
-| **paid\_access\_levels** | dict  | ✅        | ✅        | Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [CustomerAccessLevel](#customeraccesslevel) objects. Can be null if the customer has no access levels                     |
-| **subscriptions**        | dict  | ✅        | ✅        | Dictionary where the keys are vendor product IDs. Values are [Subscription](#subscription) objects. Can be null if the customer has no subscriptions                                                                                                |
-| **non\_subscriptions**   | dict  | ✅        | ✅        | Dictionary where the keys are vendor product ids. Values are an array of [Non-Subscription](#non-subscription) objects. Can be null if the customer has no purchases.                                                                               |
+| **profile\_id**          | UUID  | ✅        | ❌        | Adapty profile ID                                            |
+| **customer\_user\_id**   | str   | ✅        | ✅        | User ID in developer’s \(your\) system.                      |
+| **paid\_access\_levels** | dict  | ✅        | ✅        | Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [CustomerAccessLevel](#customeraccesslevel) objects. Can be null if the customer has no access levels |
+| **subscriptions**        | dict  | ✅        | ✅        | Dictionary where the keys are vendor product IDs. Values are [Subscription](#subscription) objects. Can be null if the customer has no subscriptions |
+| **non\_subscriptions**   | dict  | ✅        | ✅        | Dictionary where the keys are vendor product ids. Values are an array of [Non-Subscription](#non-subscription) objects. Can be null if the customer has no purchases. |
 | **custom\_attributes**   | dict  | ✅        | ✅        | The dictionary that collects the profile's all custom attributes about its own users. A maximum of 10 custom attributes for the profile are allowed to be set. Only strings and floats are allowed as values, booleans will be converted to floats. |
-| **total\_revenue\_usd**  | float | ✅        | ❌        | Float value, it is equal to all total revenue USD which earned the profile.                                                                                                                                                                         |
+| **total\_revenue\_usd**  | float | ✅        | ❌        | Float value, it is equal to all total revenue USD which earned the profile. |
 
 ### CustomerAccessLevel
 

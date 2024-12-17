@@ -45,16 +45,22 @@ This API enables you to seamlessly integrate Adapty with your existing services.
 
 ## Authorization
 
-- **Authorization header**: API requests must be authenticated by including your API key. Which exactly API key is used, private or secret, is described for every request:
-  - Secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}`, like this: `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
+- **Base URL**: https://api.adapty.io/api/v2/server-side-api/
+- **Authorization header**: API requests must be authenticated by including your API key:
+  - For profile requests, use either the public or secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. You can find your secret API key in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general). Remember, this key is secret, so keep it private.
+
+  - For access level and transaction requests, you can secret API key as the **Authorization** header with the value `Api-Key {YOUR_SECRET_API_KEY}`, like this: `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 
   - Public API key as the **Authorization** header with the value `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`. Find these keys in the [Adapty Dashboard -> **App Settings** -> **General** tab -> **API keys** section](https://app.adapty.io/settings/general).
 - **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
-- **Header**: 
-  - Use **adapty-platform**: The platform of your app. Possible options are:  `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
-  - Use one of these parameters:
-    - **adapty-profile-id**: The ID of your user’s profile, visible in the **Adapty ID** field in the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
-    - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. This works only if you [identify users](identifying-users) in your app code with the Adapty SDK.
+- **Headers**: 
+
+    - **adapty-platform**: Use this header to specify the app's platform. Possible options include:
+      `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
+    - Use one of the following to identify the user profile:
+      - **adapty-profile-id**: The user’s Adapty profile ID, visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+        - **adapty-customer-user-id**: The user’s ID in your system, visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
+          ⚠️ This works only if you [identify users](identifying-users) in your app code using the Adapty SDK.
 
 - **Body**:  The API expects the request to use the body as JSON.
 
@@ -66,7 +72,7 @@ Info about your customer and their subscription.
 
 ### Profile object
 
-Object that contains details about your customer and their subscription.
+The object that contains details about your customer and their subscription.
 
 <ProfileObject />
 
@@ -79,7 +85,7 @@ Retrieves the details of an existing end user of your app.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -126,7 +132,7 @@ Creates a new end user of your app in Adapty.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -182,7 +188,7 @@ Changes your end user profile attributes.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -223,12 +229,10 @@ Public or secret API Key
 <summary>**400 - Bad request** (click to expand)</summary> 
 <ProfileResponseBadRequest />  
 </details>
-
 <details>    
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -249,7 +253,7 @@ Please be aware that this endpoint does not support bulk deletion, therefore eac
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/profile/
+https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
 #### Method
@@ -281,7 +285,6 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 <summary>**401 - Unauthorized** (click to expand)</summary> 
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
 <ProfileResponseNotFound />  
@@ -685,10 +688,16 @@ Creates a new transaction for an end user of your app in Adapty and provides acc
 
 This method is recommended over the [Grant access level](server-side-api-specs#grant-access-level) one.
 
+:::warning
+
+Before setting a transaction, make sure the product is [created in Adapty](create-product). Without this step, the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. However, the user won’t get access in the mobile app since no access level will be assigned.
+
+:::
+
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/set/transaction/
+https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/
 ```
 
 #### Method
@@ -703,7 +712,7 @@ Secret API Key
 
 #### Parameters
 
-Depends on whether the purchase is a subscription or a one-time-purchase.
+Varies based on whether the purchase is a **subscription** or a **one-time purchase**.
 
 ##### For subscription
 
@@ -851,7 +860,6 @@ Depends on whether the purchase is a subscription or a one-time-purchase.
   <p> </p>
 <ProfileResponseUnauthorized />  
 </details>
-
 <details>    
 <summary>**404 - Not found** (click to expand)</summary> 
   <p> </p>
@@ -882,7 +890,7 @@ To grant access and simultaneously provide the transaction details, please use t
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/grant/access-level/
+https://api.adapty.io/api/v2/server-side-api/grant/access-level/
 ```
 
 #### Method
@@ -907,7 +915,7 @@ Secret API Key
 
 <details>    
 <summary>Example request (click to expand)</summary>
-  ```json title="JSON"
+  ```json
 {
   "access_level_id": "premium",
   "starts_at": "2022-10-12T09:42:50.000000+0000",
@@ -966,7 +974,7 @@ Removes an access level from an end user of your app in Adapty.
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/profile/revoke/access-level/
+https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/
 ```
 
 #### Method
@@ -990,7 +998,7 @@ Secret API Key
 <details>    
 <summary>Example request (click to expand)</summary>
 
-```json title="JSON"
+```json
 {
   "access_level_id": "premium",
   "revoke_at": "2024-10-12T09:42:50.000000+0000"
@@ -1063,7 +1071,7 @@ Profile events are generated along the way and imported transactions are counted
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v1/server-side-api/purchase/stripe/token/validate/
+https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/
 ```
 
 #### Method
@@ -1405,4 +1413,3 @@ Public API Key
 #### Response example
 
 <PaywallObject /> 
-

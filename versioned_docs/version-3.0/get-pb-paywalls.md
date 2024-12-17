@@ -47,7 +47,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="Swift-Callback" label="Swift-Callback" default>
 
 ```swift 
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -152,16 +152,13 @@ Response parameters:
 
 After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
-For paywalls with a `ViewConfiguration`, use the `getViewConfiguration` method to load the view configuration. In cross-platform SDKs, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
-
-:::warning
-The result of the `createPaywallView` method can be used only once. If you need to reuse it, call the `createPaywallView` method again.
-:::
-
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
+
+Use the `getPaywallConfiguration` method to load the view configuration.
 ```swift 
 import Adapty
+import AdaptyUI
 
 guard paywall.hasViewConfiguration else {
     //  use your custom logic
@@ -218,6 +215,8 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s o
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
+Use the `getViewConfiguration` method to load the view configuration.
+
 ```kotlin 
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
@@ -245,6 +244,8 @@ AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
+Use the `getViewConfiguration` method to load the view configuration. 
+
 ```java 
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
@@ -269,6 +270,12 @@ AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
 
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
+In Flutter SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```javascript 
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -307,6 +314,12 @@ In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID
 
 </TabItem>
 <TabItem value="React Native" label="React Native (TS)" default>
+
+In React Native SDK, directly call the `createPaywallView` method without manually fetching the view configuration first. 
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
 ```typescript 
 import {createPaywallView} from '@adapty/react-native-ui';
@@ -402,6 +415,20 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
+
+```typescript
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+</TabItem>
+
+<TabItem value="RN" label="React Native" default>
+
 ```typescript
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -413,7 +440,9 @@ try {
     // handle the error
 }
 ```
+
 </TabItem>
+
 </Tabs>
 
 :::note
@@ -422,8 +451,9 @@ The `getPaywallForDefaultAudience` method is available starting from these versi
 - iOS: 2.11.2
 - Android: 2.11.3
 - React Native: 2.11.2
+- Flutter: 3.2.0
 
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+The method is not yet supported in Unity, but support will be added soon.
 :::
 
 | Parameter | Presence | Description |

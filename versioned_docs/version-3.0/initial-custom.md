@@ -38,7 +38,7 @@ To mark a product as sold via a custom app store, select the app store when crea
 2. Choose the app store you want to sell through. If it’s not listed, click the **Create Custom Store** button.
 
    <Zoom>
-     <img src={require('./img/create_custom-appstore.png').default}
+     <img src={require('./img/create_custom-appstore.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */

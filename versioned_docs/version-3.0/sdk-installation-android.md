@@ -20,7 +20,7 @@ Go through the release checklist before releasing your app
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
-<Tabs> <TabItem value="2.x" label="Adapty SDK v3.x+ (current)" default> 
+<Tabs> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
 
 ## Install via Gradle
 
@@ -30,10 +30,9 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.1.1')
+    implementation platform('io.adapty:adapty-bom:3.1.2')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
-    implementation 'io.adapty:android-ui-video' // Required only if using video in Paywall Builder
 }
 ```
 
@@ -43,10 +42,9 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.1.1"))
+    implementation(platform("io.adapty:adapty-bom:3.1.2"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
-    implementation("io.adapty:android-ui-video") // Required only if using video in Paywall Builder
 }
 ```
 
@@ -58,14 +56,13 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.1.1"
+adaptyBom = "3.1.2"
 
 [libraries]
 ..
 adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
 adapty = { module = "io.adapty:android-sdk" }
 adapty-ui = { module = "io.adapty:android-ui" }
-adapty-ui-video = { module = "io.adapty:android-ui-video" } # Required only if using video in Paywall Builder
 
 
 //module-level build.gradle.kts
@@ -75,7 +72,6 @@ dependencies {
     implementation(platform(libs.adapty.bom))
     implementation(libs.adapty)
     implementation(libs.adapty.ui)
-    implementation(libs.adapty.ui.video) // Required only if using video in Paywall Builder
 }
 ```
 
@@ -136,11 +132,6 @@ override fun onCreate() {
           .withIpAddressCollectionDisabled(false) //default false
           .build()
     )  
-      
-    //OR 
-    //the method is deprecated since Adapty SDK v2.10.5
-    
-    Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
 
@@ -159,11 +150,6 @@ public void onCreate() {
           .withIpAddressCollectionDisabled(false) //default false
           .build()
     );
-  
-    //OR
-    //the method is deprecated since Adapty SDK v2.10.5
-  
-    Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", false, "YOUR_USER_ID");
 }
 ```
 
@@ -185,7 +171,7 @@ Configurational options:
 
  </TabItem> 
 
-<TabItem value="3.x" label="Up to v2.x (legacy)" default> 
+<TabItem value="2.x" label="Up to v2.x (legacy)" default> 
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 

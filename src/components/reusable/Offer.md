@@ -1,7 +1,5 @@
 <!--- Offer.md --->
 
-
-
 | Parameter | Type   | Required in request | Nullable in request | Description                                                  |
 | --------- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |
 | category  | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The category of the applied offer. Options are: **introductory**, **promotional**, **offer_code**, **win_back**. |

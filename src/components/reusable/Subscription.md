@@ -1,7 +1,5 @@
 <!---Subscription.md--->
 
-
-
 | Parameter                     | Type          | Required in request | Nullable in request | Description                                                  |
 | :---------------------------- | :------------ | :------------------ | :------------------ | :----------------------------------------------------------- |
 | purchase_type                 | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The type of product purchased. Possible value: `subscription`. |
@@ -20,14 +18,8 @@
 | variation_id                  | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | The variation ID used to trace purchases to the specific paywall they were made from. |
 | originally_purchased_at       | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:  | For subscription chains, this is the purchase date of the original transaction, linked by `store_original_transaction_id`. |
 | expires_at                    | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:   | The datetime when the access level expires. It may be in the past and may be `null` for lifetime access. |
-|renew_status|||||
+|renew_status|Boolean|:heavy_plus_sign:|:heavy_minus_sign:|Indicates if subscription auto-renewal is enabled.|
 | renew_cancelled_at          | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:   | The datetime when auto-renewal was canceled. The subscription can still be active; it just won’t renew automatically. Set to `null` if the user reactivates. |
 | billing_issue_detected_at     | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:   | The datetime when a billing issue was detected (e.g., a failed card charge). Subscription might still be active. This is cleared if the payment goes through. |
 | is_in_grace_period            | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates if the auto-renewable subscription is currently in a [grace period](https://developer.apple.com/news/?id=09122019c). |
 | grace_period_expires_at | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates if the auto-renewable subscription is currently in a [grace period](https://developer.apple.com/news/?id=09122019c). |
-
-
-
-<!--- 
-| starts_at                     | ISO 8601 date | :heavy_plus_sign:   | :heavy_plus_sign:   | The datetime when the access level becomes active. Could be in the future. |
---->
