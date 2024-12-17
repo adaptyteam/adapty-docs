@@ -101,7 +101,7 @@ Adapty supports setting this preference, but we will use the same value for ever
    | Option         | Description                                                  |
    | -------------- | ------------------------------------------------------------ |
    | Always decline | This is the default option and usually yields the best results for minimizing refunds. |
-   | No preference  | If you feel that Apple rejects too many refunds you can choose this milder option. With it, Apple usually grants refunds less often. |
+   | No preference  | If you feel that Apple rejects too many refundsб you can choose this milder option. With it, Apple usually grants refunds less often. |
    | Always refund  | If you want to recommend Apple approve every refund request, select this option. |
 
 ## Limitations
