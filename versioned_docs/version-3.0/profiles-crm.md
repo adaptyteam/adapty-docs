@@ -136,6 +136,16 @@ Here is an example of a non-original profile. Notice the absence of events in th
 />
 </Zoom>
 
+## Event timestamps with future dates
+
+Why do events show future timestamps in profiles? Event timestamps may appear with future dates in profiles because Apple sends renewal events in advance.
+
+- **Why it happens**: Apple does this to ensure subscriptions renew automatically before expiring, preventing user service interruptions. For more details, check Apple’s Developer Forum: [Server Notifications for Subscriptions](Server Notifications for Subscriptions).
+- **Event types affected**: Typically, this applies to subscription renewals and trial-to-paid conversions. These events may have future timestamps because Apple notifies systems about them ahead of time.
+  All other events—like additional in-app purchases or subscription plan changes—are recorded with their actual timestamps since they cannot be predicted in advance.
+- **Impact on Analytics and Event Feed**: These events will only appear in **Analytics** and the **Event Feed** once their timestamps have passed. Events with future timestamps are not shown in either section.
+- **Impact on Integrations**: Only events that have passed are sent to integrations. 
+
 ## Sharing access levels between profiles
 
 When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
