@@ -198,7 +198,7 @@ It's very important to send AppsFlyer attribution data from the device to Adapty
 class YourAppsFlyerLibDelegateImplementation {
     // Find your implementation of AppsFlyerLibDelegate 
     // and update onConversionDataSuccess method:
-    func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
+    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
         Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
         Adapty.updateAttribution(conversionInfo, source: "appsflyer")
