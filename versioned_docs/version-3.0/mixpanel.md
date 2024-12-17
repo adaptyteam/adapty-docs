@@ -113,11 +113,7 @@ Adapty.updateProfile(params: builder.build())
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-val params = AdaptyProfileParameters.Builder()
-    .withMixpanelUserId(mixpanelAPI.distinctId)
-    .build()
-
-Adapty.updateProfile(params) { error ->
+ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
     if (error != null) {
         // handle the error
     }
