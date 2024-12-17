@@ -11,6 +11,8 @@ For the latest version, refer to the [Server-side API V2](server-side-api-specs#
 
 :::
 
+With API you can:
+
 1. Get user's subscription status.
 2. Activate a subscription for a user with an [access level](access-level).
 3. Get user's attributes.
@@ -54,4 +56,4 @@ You may have custom attributes for your users, other than defaults such as IDFA,
 
 With such attributes you can, for example, create a segment and run an A/B test. 
 
-To learn more about S2S API go to [API Specs](server-side-api-specs).
+To learn more about legacy S2S API go to [API Specs](server-side-api-specs-legacy).

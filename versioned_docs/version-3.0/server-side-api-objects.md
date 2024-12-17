@@ -13,7 +13,7 @@ import NonSubscription from '@site/src/components/reusable/NonSubscription.md';
 import Offer from '@site/src/components/reusable/Offer.md';
 import Price from '@site/src/components/reusable/Price.md';
 import InstallationMeta from '@site/src/components/reusable/InstallationMeta.md';
-import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
+import PaywallObject from '@site/src/components/reusable/PaywallObject.md'
 
 ## Objects
 
