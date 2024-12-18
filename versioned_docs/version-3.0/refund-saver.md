@@ -78,6 +78,32 @@ Below is an example clause for the opt-out approach, including the types of data
 
 *"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
+## Refund preference
+
+Apple allows developers to specify a preferential outcome for each refund request when responding to it. The purpose of this setting is to find the right balance between declining and accepting refund requests so that only fair refunds are provided. Note that this setting is only used to influence an outcome, but ultimately the decision is still up to Apple.
+
+Adapty supports setting this preference, but we will use the same value for every refund request.
+
+1. To change your preference, click **Edit refund preference**.
+   <Zoom>
+     <img src={require('./img/refund-saver-preference.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. In the **Edit refund preference** window, choose your preferred option:
+
+   | Option         | Description                                                  |
+   | -------------- | ------------------------------------------------------------ |
+   | Always decline | This is the default option and usually yields the best results for minimizing refunds. |
+   | No preference  | If you feel that Apple rejects too many refundsб you can choose this milder option. With it, Apple usually grants refunds less often. |
+   | Always refund  | If you want to recommend Apple approve every refund request, select this option. |
+
 ## Limitations
 
 - **Apple’s App Store only:** Refund saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
