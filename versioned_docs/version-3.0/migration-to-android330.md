@@ -9,15 +9,145 @@ import TabItem from '@theme/TabItem';
 
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
-1. Update the method for providing fallback paywalls.
-2. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-3. Update Observer mode implementation.
+1. Update the making purchase in the paywalls designed without Paywall Builder. Remove processing of error codes `USER_CANCELLED` and `PENDING_PURCHASE`.
+2. For Paywall Builder paywalls: Replace the `onPurchaseCanceled` and `onPurchaseSuccess` paywall builder events with the `onPurchaseFinished` event. Because a canceled purchase is not treated as an error anymore and is added to a non-error purchase result.
+3. For Paywall Builder paywalls: Change the method signature of  `onAwaitingSubscriptionUpdateParams`.
+4. Update the method for providing fallback paywalls.
+5. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 
+## Update making purchase
 
+Previously canceled and pending purchases were considered errors and returned the `USER_CANCELED` and `PENDING_PURCHASE` codes, respectively.  
 
-## Update 3d-party integration SDK configuration
+Now a new `AdaptyPurchaseResult` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
-To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
+~~~diff title="Kotlin"
+ Adapty.makePurchase(activity, product) { result ->
+     when (result) {
+         is AdaptyResult.Success -> {
+-            val info = result.value
+-            //NOTE: info is null in case of cross-grade with DEFERRED proration mode
+-            val profile = info?.profile
+-        
+-            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
+-                // grant access to premium features
++            when (val purchaseResult = result.value) {
++                is AdaptyPurchaseResult.Success -> {
++                    val profile = purchaseResult.profile
++                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
++                        // grant access to premium features
++                    }
++                }
++
++                is AdaptyPurchaseResult.UserCanceled -> {
++                    // user canceled the purchase flow
++                }
++
++                is AdaptyPurchaseResult.Pending -> {
++                    // the purchase has not been finished yet, e.g. user will pay offline by cash
++                }
++            }
+         }
+         is AdaptyResult.Error -> {
+             val error = result.error
+             // handle the error
+         }
+     }
+ }
+~~~
+
+## Add canceled purchase to non-error result
+
+1. Add `onPurchaseFinished` event:
+
+   ```diff
+   + public override fun onPurchaseFinished(
+   +     purchaseResult: AdaptyPurchaseResult,
+   +     product: AdaptyPaywallProduct,
+   +     context: Context,
+   + ) {
+   +    when (purchaseResult) {
+   +        is AdaptyPurchaseResult.Success -> {
+   +            // success
+   +        }
+   +        is AdaptyPurchaseResult.UserCanceled -> {
+   +            // user canceled the purchase flow
+   +        }
+   +        is AdaptyPurchaseResult.Pending -> {
+   +            // pending purchase
+   +        }
+   +    }
+   + }
+   ```
+
+2. Remove processing of the `onPurchaseCancelled` event:
+
+   ```diff
+   - public override fun onPurchaseCanceled(
+   -     product: AdaptyPaywallProduct,
+   -     context: Context,
+   - ) {}
+   ```
+
+3. Remove  `onPurchaseSuccess`:
+
+   ```diff
+   
+   - public override fun onPurchaseSuccess(
+   -     profile: AdaptyProfile?,
+   -     product: AdaptyPaywallProduct,
+   -   context: Context,
+   - ) {
+   -     // your logic on successful purchase
+   - }
+   ```
+
+## Change the signature of  onAwaitingSubscriptionUpdateParams method
+
+Now if a new subscription is purchased while another is still active, call `onSubscriptionUpdateParamsReceived(...)` either with `AdaptySubscriptionUpdateParameters` instance if the new subscription should replace a currently active subscription or with `null` if the active subscription should remain active and the new one should be added separately:
+
+ ```diff
+ public override fun onAwaitingSubscriptionUpdateParams(
+     product: AdaptyPaywallProduct,
+     context: Context,
+-): AdaptySubscriptionUpdateParameters? {
+-    return AdaptySubscriptionUpdateParameters(...)
++    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
++) {
++    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+ }
+ ```
+
+See the [Upgrade subscription](android-handling-events#upgrade-subscription) doc section for the final code example.
+
+## Update providing fallback paywalls
+
+If you pass file Uri to provide fallback paywalls, update how you do it in the following way:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff
+val fileUri: Uri = //get Uri for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback)
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback)
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff
+Uri fileUri = //get Uri for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback);
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
+```
+
+</TabItem>
+</Tabs>
+
+## Update third-party integration SDK configuration
+
+To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
 ### Adjust
 

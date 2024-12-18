@@ -9,4 +9,5 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 See our detailed migration guides per platforms:
 
 - [iOS](migration-to-ios330)
+- [Android](migration-to-android330)
 - [Flutter](migration-to-flutter330)
