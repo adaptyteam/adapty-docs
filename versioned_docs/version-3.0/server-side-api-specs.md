@@ -484,7 +484,7 @@ To grant access and simultaneously provide the transaction details, please use t
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v2/server-side-api/grant/access-level/
+https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/
 ```
 
 #### Method
