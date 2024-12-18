@@ -158,7 +158,35 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="v5" label="Adjust 5.x+" default>
 
 ```diff
- ...
+ - Adjust.getAttribution { attribution ->
+-     if (attribution == null) return@getAttribution
+-
+-     Adjust.getAdid { adid ->
+-         if (adid == null) return@getAdid
+-
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
+-             // handle the error
+-         }
+-     }
+- }
+
++ Adjust.getAdid { adid ->
++     if (adid == null) return@getAdid
++
++     Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
++         if (error != null) {
++             // handle the error
++         }
++     }
++ }
++
++ Adjust.getAttribution { attribution ->
++     if (attribution == null) return@getAttribution
++
++     Adapty.updateAttribution(attribution, "adjust") { error ->
++         // handle the error
++     }
++ }
 ```
 
 </TabItem>
@@ -166,7 +194,18 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="v4" label="Adjust 4.x" default>
 
 ```diff
-...
+ val config = AdjustConfig(context, adjustAppToken, environment)
+ config.setOnAttributionChangedListener { attribution ->
+     attribution?.let { attribution ->
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
++         Adapty.updateAttribution(attribution, "adjust") { error ->
+             if (error != null) {
+                 //handle error
+             }
+         }
+     }
+ }
+ Adjust.onCreate(config)
 ```
 
 </TabItem>
@@ -177,7 +216,30 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
 ```diff
-.
+- override fun onSuccess(result: String) {
+-     val params = AdaptyProfileParameters.Builder()
+-         .withAirbridgeDeviceId(result)
+-         .build()
+-     Adapty.updateProfile(params) { error ->
+-         if (error != null) {
+-             // handle the error
+-         }
+-     }
+- }
+- override fun onFailure(throwable: Throwable) {
+- }
+
++ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
++     override fun onSuccess(result: String) {
++         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
++             if (error != null) {
++                 // handle the error
++             }
++         }
++     }
++     override fun onFailure(throwable: Throwable) {
++     }
++ })
 ```
 
 ### Amplitude
@@ -185,7 +247,44 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
 ```diff
-.
+ //for Amplitude maintenance SDK (obsolete)
+ val amplitude = Amplitude.getInstance()
+ val amplitudeDeviceId = amplitude.getDeviceId()
+ val amplitudeUserId = amplitude.getUserId()
+
+ //for actual Amplitude Kotlin SDK
+ val amplitude = Amplitude(
+     Configuration(
+         apiKey = AMPLITUDE_API_KEY,
+         context = applicationContext
+     )
+ )
+ val amplitudeDeviceId = amplitude.store.deviceId
+ val amplitudeUserId = amplitude.store.userId
+
+ //
+
+- val params = AdaptyProfileParameters.Builder()
+-     .withAmplitudeDeviceId(amplitudeDeviceId)
+-     .withAmplitudeUserId(amplitudeUserId)
+-     .build()
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
++     if (error != null) {
++         // handle the error
++     }
++ }
+
++ Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
++     if (error != null) {
++         // handle the error
++     }
++ }
 ```
 
 ### AppMetrica
@@ -193,7 +292,42 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
 ```diff
-.
+ val startupParamsCallback = object: StartupParamsCallback {
+     override fun onReceive(result: StartupParamsCallback.Result?) {
+         val deviceId = result?.deviceId ?: return
+
+-        val params = AdaptyProfileParameters.Builder()
+-            .withAppmetricaDeviceId(deviceId)
+-            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
+-            .build()
+-        Adapty.updateProfile(params) { error ->
+-            if (error != null) {
+-                // handle the error
+-            }
+-        }
+
++        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
++            if (error != null) {
++                // handle the error
++            }
++        }
++        
++        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
++            if (error != null) {
++                // handle the error
++            }
++        }
+     }
+
+     override fun onRequestError(
+         reason: StartupParamsCallback.Reason,
+         result: StartupParamsCallback.Result?
+     ) {
+         //handle error
+     }
+ }
+
+ AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
 ```
 
 ### AppsFlyer
@@ -201,7 +335,32 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
 ```diff
-.
+ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
+     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
+-        // It's important to include the network user ID
+-        Adapty.updateAttribution(
+-            conversionData,
+-            AdaptyAttributionSource.APPSFLYER,
+-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
+-        ) { error ->
+-            if (error != null) {
+-                //handle error
+-            }
+-        }
+
++        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
++        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
++            if (error != null) {
++                // handle the error
++            }
++        }
++        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
++            if (error != null) {
++                //handle error
++            }
++        }
+     }
+ }
 ```
 
 ### Branch
@@ -209,16 +368,66 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
-.
+ // login and update attribution
+ Branch.getAutoInstance(this)
+-    .setIdentity("YOUR_USER_ID") { referringParams, error ->
+-        referringParams?.let { params ->
+-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
+-                            if (error != null) {
+-                                //handle error
+-                            }
+-                        }
+-        }
+-    }
++    .setIdentity("YOUR_USER_ID") { referringParams, error ->
++        referringParams?.let { data ->
++            Adapty.updateAttribution(data, "branch") { error ->
++                if (error != null) {
++                    //handle error
++                }
++            }
++        }
++    }
+
+ // logout
+ Branch.getAutoInstance(context).logout()
 ```
 
 ### Firebase and Google Analytics
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
 ```diff
+ //after Adapty.activate()
+
+ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
+-    Adapty.updateProfile(
+-        AdaptyProfileParameters.Builder()
+-            .withFirebaseAppInstanceId(appInstanceId)
+-            .build()
+-    ) {
+-        //handle error
+-    }
++    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
++        if (error != null) {
++            // handle the error
++        }
++    }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```
 .
 ```
+
+</TabItem>
+</Tabs>
 
 ### Mixpanel
 
