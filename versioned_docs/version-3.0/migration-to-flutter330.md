@@ -112,17 +112,13 @@ Update your mobile app code as shown below. For the complete code example, check
 ```diff
  import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
-- final builder = AdaptyProfileParametersBuilder()
--         ..setAirbridgeDeviceId(
--           await Airbridge.state.deviceUUID,
--         );
--
-- try {
+  final deviceUUID = await Airbridge.state.deviceUUID;
+  
+  try {
+-     final builder = AdaptyProfileParametersBuilder()
+-         ..setAirbridgeDeviceId(deviceUUID);  
 -     await Adapty().updateProfile(builder.build());
 
-+ final deviceUUID = await Airbridge.state.deviceUUID;
-+
-+ try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "airbridge_device_id", 
 +         value: deviceUUID,
@@ -143,21 +139,22 @@ Update your mobile app code as shown below. For the complete code example, check
 
  final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
 
-- final builder = AdaptyProfileParametersBuilder()
--      ..setAmplitudeDeviceId(await amplitude.getDeviceId())
--      ..setAmplitudeUserId(await amplitude.getUserId());
--
-- try {
--      await adapty.updateProfile(builder.build());
+ final deviceId = await amplitude.getDeviceId();
+ final userId = await amplitude.getUserId();
 
-+ try {
+ try {
+-  final builder = AdaptyProfileParametersBuilder()
+-     ..setAmplitudeDeviceId(deviceId)
+-     ..setAmplitudeUserId(userId);
+-     await adapty.updateProfile(builder.build());
+
 +     await Adapty().setIntegrationIdentifier(
 +         key: "amplitude_user_id", 
-+         value: amplitude.getUserId(),
++         value: userId,
 +     );
 +     await Adapty().setIntegrationIdentifier(
 +         key: "amplitude_device_id", 
-+         value: amplitude.getDeviceId(),
++         value: deviceId,
 +     );
   } on AdaptyError catch (adaptyError) {
       // handle the error
@@ -176,13 +173,13 @@ Update your mobile app code as shown below. For the complete code example, check
  final deviceId = await AppMetrica.deviceId;
 
  if (deviceId != null) {
+   try {
 -   final builder = AdaptyProfileParametersBuilder()
 -     ..setAppmetricaDeviceId(deviceId)
 -     ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
 -
--   try {
 -     await adapty.updateProfile(builder.build());
-+   try {
+   
 +     await Adapty().setIntegrationIdentifier(
 +         key: "appmetrica_device_id", 
 +         value: deviceId,
@@ -210,7 +207,6 @@ Update your mobile app code as shown below. For the complete code example, check
  
  appsflyerSdk.onInstallConversionData((data) async {
      try {
-         // It's important to include the network user ID
          final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
 -         await Adapty().updateAttribution(
 -           data,
@@ -243,22 +239,22 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
- import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
+import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
-- FlutterBranchSdk.initSession().listen((data) async {
--     try {
--         await Adapty().updateAttribution(data, source: AdaptyAttributionSource.branch);
-
-+ try {
+FlutterBranchSdk.initSession().listen((data) async {
+  try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "branch_id", 
 +         value: <BRANCH_IDENTITY_ID>,
 +     );
+-    await Adapty().updateAttribution(data, source: AdaptyAttributionSource.branch);
++    await Adapty().updateAttribution(data, source: "branch");
   } on AdaptyError catch (adaptyError) {
       // handle the error
   } catch (e) {
       // handle the error
-  });
+  }
+);
 ```
 
 ### Firebase and Google Analytics
@@ -266,28 +262,24 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
 ```diff
- import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
-- final builder = AdaptyProfileParametersBuilder()
--         ..setFirebaseAppInstanceId(
--           await FirebaseAnalytics.instance.appInstanceId,
--         );
-        
-- try {
--     await adapty.updateProfile(builder.build());
+final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
 
-+ final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
+try {
+-  final builder = AdaptyProfileParametersBuilder()
+-         ..setFirebaseAppInstanceId(appInstanceId);
+-  await adapty.updateProfile(builder.build());
 
-+ try {
-+     await Adapty().setIntegrationIdentifier(
++  await Adapty().setIntegrationIdentifier(
 +         key: "firebase_app_instance_id", 
 +         value: appInstanceId,
-+     );
-  } on AdaptyError catch (adaptyError) {
-      // handle the error
-  } catch (e) {
-      // handle the error
-  }
++  );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 
 ### Mixpanel
@@ -295,30 +287,25 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
 ```diff
- import 'package:mixpanel_flutter/mixpanel_flutter.dart';
+import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
- final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
+final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
+final distinctId = await mixpanel.getDistinctId();
 
-- final builder = AdaptyProfileParametersBuilder()
--         ..setMixpanelUserId(
--           await mixpanel.getDistinctId(),
--         );
-
-- try {
+try {
+-   final builder = AdaptyProfileParametersBuilder()
+-      ..setMixpanelUserId(distinctId);
 -     await Adapty().updateProfile(builder.build());
 
-+ final distinctId = await mixpanel.getDistinctId();
-
-+ try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "mixpanel_user_id", 
 +         value: distinctId,
 +     );
-  } on AdaptyError catch (adaptyError) {
-      // handle the error
-  } catch (e) {
-      // handle the error
-  }
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 
 ### OneSignal
@@ -333,9 +320,9 @@ Update your mobile app code as shown below. For the complete code example, check
 -             AdaptyProfileParametersBuilder()
 -                 ..setOneSignalPlayerId(playerId);
 -                 // ..setOneSignalSubscriptionId(playerId);
--         try {
+          try {
 -             Adapty().updateProfile(builder.build());
-+         try {
+
 +             await Adapty().setIntegrationIdentifier(
 +                 key: "one_signal_player_id", 
 +                 value: playerId,
@@ -354,18 +341,15 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
 ```diff
- import 'package:pushwoosh/pushwoosh.dart';
+import 'package:pushwoosh/pushwoosh.dart';
+
+final hwid = await Pushwoosh.getInstance.getHWID;
 
 - final builder = AdaptyProfileParametersBuilder()
--         ..setPushwooshHWID(
--           await Pushwoosh.getInstance.getHWID,
--         );
-- try {
+-         ..setPushwooshHWID(hwid);
+  try {
 -     await adapty.updateProfile(builder.build());
 
-+ final hwid = await Pushwoosh.getInstance.getHWID;
-
-+ try {
 +     await Adapty().setIntegrationIdentifier(
 +         key: "pushwoosh_hwid", 
 +         value: hwid,
