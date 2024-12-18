@@ -211,12 +211,13 @@ class YourAppsFlyerLibDelegateImplementation {
 ```kotlin 
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
-        // It's important to include the network user ID
-        Adapty.updateAttribution(
-            conversionData,
-            AdaptyAttributionSource.APPSFLYER,
-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
-        ) { error ->
+        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
+        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
             if (error != null) {
                 //handle error
             }

@@ -152,12 +152,10 @@ if let appInstanceId = Analytics.appInstanceID() {
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
-    Adapty.updateProfile(
-        AdaptyProfileParameters.Builder()
-            .withFirebaseAppInstanceId(appInstanceId)
-            .build()
-    ) {
-        //handle error
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
+        if (error != null) {
+            // handle the error
+        }
     }
 }
 ```
@@ -167,11 +165,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-        .withFirebaseAppInstanceId(appInstanceId)
-        .build();
-    
-    Adapty.updateProfile(params, error -> {
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
         if (error != null) {
             // handle the error
         }

@@ -124,10 +124,7 @@ do {
 ```kotlin 
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
-        val params = AdaptyProfileParameters.Builder()
-            .withAirbridgeDeviceId(result)
-            .build()
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
             if (error != null) {
                 // handle the error
             }

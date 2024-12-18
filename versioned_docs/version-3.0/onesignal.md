@@ -166,14 +166,21 @@ OneSignal.Notifications.requestPermission({ accepted in
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-// SubscriptionID
+// PlayerID (pre-v5 OneSignal SDK)
+val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+    stateChanges?.to?.userId?.let { playerId ->
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+}
+
+// SubscriptionID (v5+ OneSignal SDK)
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.current.id)
-            .build()
-        
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -183,15 +190,26 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 ```
 
 </TabItem>
-<TabItem value="java" label="Java" default>
+<TabItem value="java" label="(Android) Java" default>
 
 ```java 
-// SubscriptionID
+// PlayerID (pre-v5 OneSignal SDK)
+OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+    OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+    String playerId = to != null ? to.getUserId() : null;
+    
+    if (playerId != null) {
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+};
+
+// SubscriptionID (v5+ OneSignal SDK)
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.getCurrent().getId())
-            .build();
-    Adapty.updateProfile(params, error -> {
+    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
         if (error != null) {
             // handle the error
         }

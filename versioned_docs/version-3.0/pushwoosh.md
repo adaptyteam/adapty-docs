@@ -136,24 +136,16 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```kotlin 
-val params = AdaptyProfileParameters.Builder()
-    .withPushwooshHwid(Pushwoosh.getInstance().hwid)
-    .build()
-  
-Adapty.updateProfile(params) { error ->
+Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
     if (error != null) {
         // handle the error
     }
 }
 ```
 </TabItem>
-<TabItem value="java" label="Java" default>
+<TabItem value="java" label="Android (Java)" default>
 ```java 
-AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-    .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
-    .build();
-
-Adapty.updateProfile(params, error -> {
+Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
     if (error != null) {
         // handle the error
     }

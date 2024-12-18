@@ -239,15 +239,21 @@ extension [AnyHashable: Any] {
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
+Adjust.getAdid { adid ->
+    if (adid == null) return@getAdid
+
+    Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+
 Adjust.getAttribution { attribution ->
     if (attribution == null) return@getAttribution
 
-    Adjust.getAdid { adid ->
-        if (adid == null) return@getAdid
-
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
-            // handle the error
-        }
+    Adapty.updateAttribution(attribution, "adjust") { error ->
+        // handle the error
     }
 }
 ```
@@ -257,15 +263,21 @@ Adjust.getAttribution { attribution ->
 <TabItem value="java" label="Android (Java)" default>
 
 ```java
+Adjust.getAdid(adid -> {
+    if (adid == null) return;
+
+    Adapty.setIntegrationIdentifier("adjust_device_id", adid, error -> {
+        if (error != null) {
+            // handle the error
+        }
+    });
+});
+
 Adjust.getAttribution(attribution -> {
     if (attribution == null) return;
 
-    Adjust.getAdid(adid -> {
-        if (adid == null) return;
-
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid, error -> {
-            // handle the error
-        });
+    Adapty.updateAttribution(attribution, "adjust", error -> {
+        // handle the error
     });
 });
 ```
@@ -414,7 +426,7 @@ extension [AnyHashable: Any] {
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
+        Adapty.updateAttribution(attribution, "adjust") { error ->
             if (error != null) {
                 //handle error
             }
