@@ -346,7 +346,7 @@ final hwid = await Pushwoosh.getInstance.getHWID;
   }
 ```
 
-## Update Observer mode implemetation
+## Update Observer mode implementation
 
 Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
 
@@ -357,13 +357,9 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 :::
 
 ```diff
-- final transactionId = transaction.transactionIdentifier
-- final variationId = paywall.variationId
+ try {
+-     await Adapty().setVariationId("YOUR_TRANSACTION_ID", "PAYWALL_VARIATION_ID");
 
-- try {
--   await Adapty().setVariationId('transaction_id', variationId);
-
-+ try {
 +     // every time when calling transaction.finish()
 +     await Adapty().reportTransaction(
 +         "YOUR_TRANSACTION_ID", 
