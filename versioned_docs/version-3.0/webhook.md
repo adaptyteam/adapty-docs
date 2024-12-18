@@ -85,7 +85,7 @@ After you enable webhook integration in the Adapty Dashboard, Adapty will automa
 ```
 Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
 
-### Step1.2. Set up your server's verification response
+### Step 1.2. Set up your server's verification response
 
 Your server must reply with a 200 or 201 HTTP status code and send the response outlined below with the identical `check_string`. 
 
@@ -99,7 +99,7 @@ Once Adapty receives the verification response in the correct format, your Adapt
 
 From then on, Adapty will send the selected events to your specified URL as they happen. Ensure your server promptly confirms each Adapty event with a response status code in the 200-404 range, the `check_string` is not required anymore.
 
-## Step 2. Set up processing of Adapty standard events
+## Step 2. Set up the processing of Adapty standard events
 
 Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
 
