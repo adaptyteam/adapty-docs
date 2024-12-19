@@ -174,7 +174,7 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 
 ## Remove getProductsIntroductoryOfferEligibility method
 
-Before Adapty iOS SDK 3.2.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
 Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
 
@@ -182,9 +182,9 @@ If you still want to view offers for users who are not eligible, refer to `sk1Pr
 
 ## Update 3d-party integration SDK configuration
 
-Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
+Starting with Adapty iOS SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
-To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described in the sections below.
+To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below.
 
 ### Adjust
 
