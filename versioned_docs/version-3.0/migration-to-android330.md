@@ -57,6 +57,8 @@ Adapty.makePurchase(activity, product) { result ->
  }
 ~~~
 
+For the complete code example, check out the [Make purchases in mobile app](making-purchases#make-purchase) page. 
+
 ## Add canceled purchase to non-error result
 
 1. Add `onPurchaseFinished` event:
@@ -80,6 +82,8 @@ Adapty.makePurchase(activity, product) { result ->
    +    }
    + }
    ```
+
+   For the complete code example, check out the [Successful or canceled purchase](android-handling-events#successful-or-canceled-purchase) event description.
 
 2. Remove processing of the `onPurchaseCancelled` event:
 
