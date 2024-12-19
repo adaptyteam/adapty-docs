@@ -22,7 +22,7 @@ Previously canceled and pending purchases were considered errors and returned th
 Now a new `AdaptyPurchaseResult` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
 ~~~diff
- Adapty.makePurchase(activity, product) { result ->
+Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
 -            val info = result.value
@@ -31,6 +31,7 @@ Now a new `AdaptyPurchaseResult` class is used to process canceled, successful, 
 -        
 -            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
 -                // grant access to premium features
+-            }
 +            when (val purchaseResult = result.value) {
 +                is AdaptyPurchaseResult.Success -> {
 +                    val profile = purchaseResult.profile
