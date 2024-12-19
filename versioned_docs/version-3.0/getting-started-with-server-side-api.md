@@ -33,8 +33,6 @@ To track subscription events, use [Webhook](webhook) integration in Adapty or in
 
 :::
 
-To use the API effectively, you need a unique ID for your users. This could be an email, phone number, or your internal ID. Without it, you won’t be able to identify the same user across multiple platforms.
-
 ## Case 1: Syncing subscribers between web and mobile
 
 1. If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
