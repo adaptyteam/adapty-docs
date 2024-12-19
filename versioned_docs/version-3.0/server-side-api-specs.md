@@ -657,7 +657,7 @@ Profile events are generated along the way and imported transactions are counted
 #### Endpoint
 
 ```
-https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/
+https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/
 ```
 
 #### Method
@@ -678,7 +678,7 @@ This request requires different authorization parameters:
 
 :::
 
-| Param                  | Type   | Required          | Nullable           | Description                                                  |
+| Parameter              | Type   | Required          | Nullable           | Description                                                  |
 | :--------------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
 | **customer\_user\_id** | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK |
 | **stripe\_token**      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
