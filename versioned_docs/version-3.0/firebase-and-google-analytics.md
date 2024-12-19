@@ -210,7 +210,7 @@ Firebase.Analytics
                 builder.SetFirebaseAppInstanceId(firebaseId);
 
                 Adapty.UpdateProfile(builder.Build(), (error) => {
-                    // handle error
+                    // handle the error
                 });
             });
 ```

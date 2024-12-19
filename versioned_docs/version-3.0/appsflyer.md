@@ -219,7 +219,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
         }
         Adapty.updateAttribution(conversionData, "appsflyer") { error ->
             if (error != null) {
-                //handle error
+                //handle the error
             }
         }
     }
@@ -287,7 +287,7 @@ appsFlyer.onInstallConversionData(installData => {
         const networkUserId = appsFlyer.getAppsFlyerUID();
         adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
     } catch (error) {
-        // handle error
+        // handle the error
     }
 });
 

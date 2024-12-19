@@ -125,7 +125,7 @@ val startupParamsCallback = object: StartupParamsCallback {
         reason: StartupParamsCallback.Reason,
         result: StartupParamsCallback.Result?
     ) {
-        //handle error
+        //handle the error
     }
 }
 
@@ -167,7 +167,7 @@ if (deviceId != null {
   builder.SetAppmetricaDeviceId(deviceId);
 
   Adapty.UpdateProfile(builder.Build(), (error) => {
-      // handle error
+      // handle the error
   });
 }
 ```

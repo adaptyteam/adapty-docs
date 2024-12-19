@@ -176,7 +176,7 @@ var builder = new Adapty.ProfileParameters.Builder();
 builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+    // handle the error
 });
 ```
 </TabItem>
