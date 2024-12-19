@@ -133,7 +133,7 @@ const config = {
             ],
           },*/
           {
-            label: "API",
+            label: "Server API",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
