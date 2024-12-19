@@ -105,14 +105,20 @@ Adapty will send subscription events to Branch using a server-to-server integrat
 
 It's very important to send Branch attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-To connect the Branch and Adapty user, make sure you provide your `customerUserId` as Branch Identity id. If you prefer not to use `customerUserId` in Branch, use `networkUserId` param in attribution method to specify the Branch user ID to attach to.
+To connect the Branch and Adapty user, make sure you provide your `customerUserId` to Branch. If you prefer not to use `customerUserId` in Branch, use the `setIntegrationIdentifier method to specify the Branch user ID.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
-// login
-Branch.getInstance().setIdentity("YOUR_USER_ID")
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "branch_id", 
+        value: <BRANCH_IDENTITY_ID>
+    )
+} catch {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
@@ -164,43 +170,16 @@ Next, pass the attribution you receive from the initializing method of Branch iO
 
 ```swift 
 class YourBranchImplementation {
-	func initializeBranch() {
-		// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-    Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-        if let data = data?.toSendableDict() {
-            Adapty.updateAttribution(data, source: .branch)
-        }
-    }
-}
-
-extension [AnyHashable: Any] {
-    func toSendableDict() -> [String: any Sendable] {
-        var result = [String: any Sendable]()
-
-        for (key, value) in self {
-            guard let stringKey = key as? String else { continue }
-
-            switch value {
-            case let boolValue as Bool:
-                result[stringKey] = boolValue
-            case let stringValue as String:
-                result[stringKey] = stringValue
-            case let stringArrayValue as [String]:
-                result[stringKey] = stringArrayValue
-            case let intValue as Int:
-                result[stringKey] = intValue
-            case let intArrayValue as [Int]:
-                result[stringKey] = intArrayValue
-            case let dictValue as [AnyHashable: Any]:
-                result[stringKey] = dictValue.toSendableDict()
-            default:
-                break
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+            if let data {
+                Adapty.updateAttribution(data, source: .branch)
             }
         }
-
-        return result
     }
 }
+
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>

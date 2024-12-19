@@ -18,6 +18,7 @@ Please choose below the service that you need to integrate and follow the instru
 - [Braze](braze)
 - [OneSignal](onesignal)
 - [Pushwoosh](pushwoosh)
+- [Slack](slack)
 
 :::note
 Don't see your attribution provider?

@@ -189,56 +189,19 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 ## SDK configuration
 
-It's very important to send AppsFlyer attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift
 class YourAppsFlyerLibDelegateImplementation {
-	// Find your implementation of AppsFlyerLibDelegate 
-	// and update onConversionDataSuccess method:
-	func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
-    // It's important to include the network user ID
-    let uid = AppsFlyerLib.shared().getAppsFlyerUID()
-
-    Adapty.updateAttribution(
-        conversionInfo.toSendableDict(),
-        source: .appsflyer,
-        networkUserId: uid
-    ) { error in
-        if let error = error {
-            // handle the error
-        }
-    }
-}
-
-extension [AnyHashable: Any] {
-    func toSendableDict() -> [String: any Sendable] {
-        var result = [String: any Sendable]()
-
-        for (key, value) in self {
-            guard let stringKey = key as? String else { continue }
-
-            switch value {
-            case let boolValue as Bool:
-                result[stringKey] = boolValue
-            case let stringValue as String:
-                result[stringKey] = stringValue
-            case let stringArrayValue as [String]:
-                result[stringKey] = stringArrayValue
-            case let intValue as Int:
-                result[stringKey] = intValue
-            case let intArrayValue as [Int]:
-                result[stringKey] = intArrayValue
-            case let dictValue as [AnyHashable: Any]:
-                result[stringKey] = dictValue.toSendableDict()
-            default:
-                break
-            }
-        }
-
-        return result
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+        let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
+        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
     }
 }
 ```
