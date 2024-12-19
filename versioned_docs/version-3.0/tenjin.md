@@ -187,6 +187,19 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.an
 ```
 
 </TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+
+```java 
+Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.getAnalyticsInstallationId(), error -> {
+    if (error != null) {
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
 ```javascript 
