@@ -279,11 +279,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 // PlayerID
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalPlayerId(playerId)
-            .build()
-      
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -302,11 +298,7 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     String playerId = to != null ? to.getUserId() : null;
     
     if (playerId != null) {
-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
-                .withOneSignalPlayerId(playerId)
-                .build();
-        
-        Adapty.updateProfile(params1, error -> {
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
             if (error != null) {
                 // handle the error
             }

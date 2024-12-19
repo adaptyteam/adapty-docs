@@ -471,43 +471,110 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
+<Tabs> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+<Tabs> 
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
 ```diff
- // PlayerID (pre-v5 OneSignal SDK)
- // in your OSSubscriptionObserver implementation
- func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
-     if let playerId = stateChanges.to.userId {
--         let params = AdaptyProfileParameters.Builder()
--             .with(oneSignalPlayerId: playerId)
--             .build()
--
--         Adapty.updateProfile(params:params) { error in
--             // check error
--         }
-+         Task {
-+             try await Adapty.setIntegrationIdentifier(
-+                 key: "one_signal_player_id", 
-+                 value: playerId
-+             )
-+         }
+ // SubscriptionID 
+ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
+     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.current.id)
+-            .build()
+-        
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
+             if (error != null) {
+                 // handle the error
+             }
+-        }
      }
  }
-
- // SubscriptionID (v5+ OneSignal SDK)
- OneSignal.Notifications.requestPermission({ accepted in
--     let id = OneSignal.User.pushSubscription.id
--
--     let builder = AdaptyProfileParameters.Builder()
--         .with(oneSignalSubscriptionId: id)
--
--     Adapty.updateProfile(params: builder.build())
-+     Task {
-+         try await Adapty.setIntegrationIdentifier(
-+             key: "one_signal_subscription_id", 
-+             value: OneSignal.User.pushSubscription.id
-+         )
-+     }
- }, fallbackToSettings: true)
 ```
+
+</TabItem>
+<TabItem value="java" label="(Android) Java" default>
+
+```diff
+ // SubscriptionID 
+ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
+-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.getCurrent().getId())
+-            .build();
+-    Adapty.updateProfile(params, error -> {
++    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
+         if (error != null) {
+             // handle the error
+         }
+     });
+ };
+```
+
+</TabItem>  
+</Tabs>
+
+</TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
+
+<Tabs>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```diff
+ // PlayerID 
+ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+     stateChanges?.to?.userId?.let { playerId ->
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalPlayerId(playerId)
+-            .build()
+-      
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
+             if (error != null) {
+                 // handle the error
+             }
+-        }
+     }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java 
+ // PlayerID 
+ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+     String playerId = to != null ? to.getUserId() : null;
+     
+     if (playerId != null) {
+-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
+-                .withOneSignalPlayerId(playerId)
+-                .build();
+-        
+-        Adapty.updateProfile(params1, error -> {
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
+             if (error != null) {
+                 // handle the error
+             }
+-        });
+     }
+ };
+```
+
+</TabItem> 
+
+</Tabs>
+
+ </TabItem> 
+
+</Tabs> 
 
 ### Pushwoosh
 
@@ -538,7 +605,7 @@ Update how you link paywalls to transactions. Previously, you used the `setVaria
 
 :::warning
 
-Don't forget to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, won't grant access levels, won't include it in analytics, and won't send it to integrations. This step is essential!
+Remember to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, grant access levels, include it in analytics, or send it to integrations. This step is essential!
 
 :::
 
@@ -560,4 +627,3 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 + }
 ```
 
- 
