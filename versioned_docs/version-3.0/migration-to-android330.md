@@ -221,7 +221,8 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
 ```diff
-- override fun onSuccess(result: String) {
+ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
+     override fun onSuccess(result: String) {
 -     val params = AdaptyProfileParameters.Builder()
 -         .withAirbridgeDeviceId(result)
 -         .build()
@@ -230,21 +231,15 @@ Update your mobile app code as shown below. For the complete code example, check
 -             // handle the error
 -         }
 -     }
-- }
-- override fun onFailure(throwable: Throwable) {
-- }
-
-+ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
-+     override fun onSuccess(result: String) {
 +         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
 +             if (error != null) {
 +                 // handle the error
 +             }
 +         }
-+     }
-+     override fun onFailure(throwable: Throwable) {
-+     }
-+ })
+     }
+     override fun onFailure(throwable: Throwable) {
+     }
+ })
 ```
 
 ### Amplitude
