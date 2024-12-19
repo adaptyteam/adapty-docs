@@ -87,8 +87,8 @@ You can translate both **String** and **List** values. By default, all lines are
 </Zoom>
 
 1. Select the lines to translate. It's a good idea to uncheck lines with IDs, URLs, and variables to prevent AI from translating them.
-   
-3. Select the languages for translation.
+
+2. Select the languages for translation.
 
    <Zoom>
      <img src={require('./img/localization-table-language.webp').default}
@@ -101,7 +101,9 @@ You can translate both **String** and **List** values. By default, all lines are
    />
    </Zoom>
 
-4. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.. 
+3. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
+
+<!---
 
 ## Exporting localization files for external translation
 
@@ -166,7 +168,9 @@ To ensure a successful import, the import file must meet the following requireme
   | **Some languages are not in the table** | <p>At least one file name does not match a locale name. Ensure all files are named correctly, as shown in the localization table. Locale names must match exactly.</p><p>Another possible reason is attempting to import an unrelated file. Verify the file’s contents.</p> |
   | **Some keys are not in the table**      | The file contains keys not present in the current remote config. This may occur if keys were removed from the remote config after exporting for localization or if there are typos in the file. Review the file and remove any extra. |
 
-### Manual localization
+--->
+
+## Manual localization
 
 Sometimes, you might want to tweak translations, add different images for specific locales, or even adjust remote configurations directly.
 
