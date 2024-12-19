@@ -11,3 +11,55 @@ PostHog is an analytics platform that provides tools for tracking user behavior,
 Integrating PostHog with Adapty enables seamless tracking of subscription-related events, such as trial starts, renewals, and cancellations. By sending these events to PostHog, you can analyze how subscription changes affect user behavior, evaluate paywall performance, and gain deeper insights into your monetization strategies—all within your existing analytics workflow.
 
 ### How to set up PostHog integration
+
+
+
+
+
+## SDK configuration
+
+<Tabs groupId="posthog"> 
+
+<TabItem value="Swift" label="Swift" default> 
+
+Text 
+
+</TabItem> 
+
+<TabItem value="kotlin" label="Kotlin" default> 
+
+```Kotlin
+Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
+    if (error != null) {
+        // handle the error
+    }
+
+```
+
+ </TabItem> 
+
+<TabItem value="java" label="Java" default>
+
+ Text 
+
+</TabItem> 
+
+<TabItem value="Flutter" label="Flutter" default> 
+
+Text 
+
+</TabItem> 
+
+<TabItem value="Unity" label="Unity" default> 
+
+Text 
+
+</TabItem> 
+
+<TabItem value="RN" label="React Native (TS)" default>
+
+ Text 
+
+</TabItem> 
+
+</Tabs>
