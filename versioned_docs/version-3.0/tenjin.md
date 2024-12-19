@@ -179,7 +179,11 @@ It's very important to send Tenjin attribution data from the device to Adapty us
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-...
+Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.analyticsInstallationId) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
 ```
 
 </TabItem>
