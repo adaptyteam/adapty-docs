@@ -145,7 +145,7 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 
 <Tabs> 
 
-<TabItem value="v5+" label="v5+ OneSignal SDK (New)" default> 
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
 <Tabs groupId="onesignal">
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -169,11 +169,7 @@ OneSignal.Notifications.requestPermission({ accepted in
 // SubscriptionID
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.current.id)
-            .build()
-        
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -183,15 +179,12 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 ```
 
 </TabItem>
-<TabItem value="java" label="Java" default>
+<TabItem value="java" label="(Android) Java" default>
 
 ```java 
 // SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.getCurrent().getId())
-            .build();
-    Adapty.updateProfile(params, error -> {
+    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
         if (error != null) {
             // handle the error
         }
@@ -259,7 +252,7 @@ OneSignal.addSubscriptionObserver(event => {
 
  </TabItem> 
 
-<TabItem value="pre-v5" label="pre-v5 OneSignal SDK) (Previous)" default> 
+<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -286,11 +279,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 // PlayerID
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalPlayerId(playerId)
-            .build()
-      
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -309,11 +298,7 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     String playerId = to != null ? to.getUserId() : null;
     
     if (playerId != null) {
-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
-                .withOneSignalPlayerId(playerId)
-                .build();
-        
-        Adapty.updateProfile(params1, error -> {
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
             if (error != null) {
                 // handle the error
             }
@@ -339,35 +324,6 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
         }
     }
 }
-
-// SubscriptionID (v5+ OneSignal SDK)
-OneSignal.Notifications.requestPermission({ accepted in
-    Task {
-        try await Adapty.setIntegrationIdentifier(
-            key: "one_signal_subscription_id", 
-            value: OneSignal.User.pushSubscription.id
-        )
-    }
-}, fallbackToSettings: true)
-
-OneSignal.shared.setSubscriptionObserver((changes) {
-    final playerId = changes.to.userId;
-    
-    if (playerId != null) {
-        try {
-            await Adapty().setIntegrationIdentifier(
-                key: "one_signal_player_id", 
-                value: playerId,
-            );
-            
-            // or set "one_signal_subscription_id"
-        } on AdaptyError catch (adaptyError) {
-            // handle the error
-        } catch (e) {
-            // handle the error
-        }
-    }
-});
 ```
 
 </TabItem>

@@ -77,30 +77,18 @@ public override fun onPurchaseStarted(
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
-#### Canceled purchase
-
-If a user initiates the purchase process but manually interrupts it afterward, the method below will be invoked. This event occurs when the `Adapty.makePurchase()` function completes with the `USER_CANCELED` error:
-
-```kotlin title="Kotlin"
-public override fun onPurchaseCanceled(
-    product: AdaptyPaywallProduct,
-    context: Context,
-) {}
-```
-
-The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
-
-#### Successful purchase
+#### Successful or canceled purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
 ```kotlin title="Kotlin"
-public override fun onPurchaseSuccess(
-    profile: AdaptyProfile?,
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
     product: AdaptyPaywallProduct,
     context: Context,
 ) {
-    (context as? Activity)?.onBackPressed()
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
 }
 ```
 
@@ -148,14 +136,15 @@ public override fun onRestoreFailure(
 
 #### Upgrade subscription
 
-If a new subscription is purchased while another one is still active, override this method to replace the current subscription with the new one. If the active subscription should remain active and the new one is added separately, return `null`:
+If a new subscription is purchased while another is still active, override this method to replace the current one with the new one. If the active subscription should remain active and the new one is added separately, call `onSubscriptionUpdateParamsReceived(null)`:
 
 ```kotlin title="Kotlin"
 public override fun onAwaitingSubscriptionUpdateParams(
     product: AdaptyPaywallProduct,
     context: Context,
-): AdaptySubscriptionUpdateParameters? {
-    return AdaptySubscriptionUpdateParameters(...)
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
 }
 ```
 

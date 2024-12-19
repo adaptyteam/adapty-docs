@@ -145,12 +145,12 @@ do {
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin
-val builder = AdaptyProfileParameters.Builder()
-    .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
-  
-Adapty.updateProfile(builder.build()) { error ->
-    if (error == null) {
-        // successful update
+Adapty.setIntegrationIdentifier(
+    "facebook_anonymous_id",
+    AppEventsLogger.getAnonymousAppDeviceGUID(context)
+) { error ->
+    if (error != null) {
+        // handle the error
     }
 }
 ```

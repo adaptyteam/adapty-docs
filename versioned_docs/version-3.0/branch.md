@@ -124,15 +124,15 @@ do {
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-// login and update attribution
+// login and update attribution and identifier
 Branch.getAutoInstance(this)
     .setIdentity("YOUR_USER_ID") { referringParams, error ->
-        referringParams?.let { params ->
-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
-                            if (error != null) {
-                                //handle error
-                            }
-                        }
+        referringParams?.let { data ->
+            Adapty.updateAttribution(data, "branch") { error ->
+                if (error != null) {
+                    //handle error
+                }
+            }
         }
     }
 

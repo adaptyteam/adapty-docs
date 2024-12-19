@@ -26,6 +26,10 @@ val location = FileLocation.fromAsset("android_fallback.json")
 //if you put the 'android_fallback.json' file to the 'res/raw' directory
 val location = FileLocation.fromResId(context, R.raw.android_fallback)
 
+//you can also pass a file URI
+val fileUri: Uri = //get Uri for the file with fallback paywalls
+val location = FileLocation.fromFileUri(fileUri)
+
 //pass the file location
 Adapty.setFallbackPaywalls(location, callback)
 ```
@@ -39,6 +43,10 @@ FileLocation location = FileLocation.fromAsset("android_fallback.json");
 //if you put the 'android_fallback.json' file to the 'res/raw' directory
 FileLocation location = FileLocation.fromResId(context, R.raw.android_fallback);
 
+//you can also pass a file URI
+Uri fileUri = //get Uri for the file with fallback paywalls
+FileLocation location = FileLocation.fromFileUri(fileUri);
+
 //pass the file location
 Adapty.setFallbackPaywalls(location, callback);
 ```
@@ -50,46 +58,3 @@ Parameters:
 | Parameter    | Description                                                                                                               |
 | :----------- | :------------------------------------------------------------------------------------------------------------------------ |
 | **location** | The [FileLocation](https://kotlin.adapty.io/adapty/com.adapty.utils/-file-location/)  for the file with fallback paywalls |
-
-Alternatively, you can use a URI instead of the file location. here is an example of how to do so:
-
-<Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
-val fileUri: Uri = //get Uri for the file with fallback paywalls
-// for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
-// you can obtain the Uri as follows:
-//
-// val fileUri = Uri.Builder()
-//    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-//    .authority(yourAuthority) //usually your applicationId
-//    .appendPath("${R.raw.android_fallback}")
-//    .build()
-
-Adapty.setFallbackPaywalls(fileUri, callback)
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java 
-Uri fileUri = //get Uri for the file with fallback paywalls
-// for example, if you put the 'android_fallback.json' file to 'res/raw' directory,
-// you can obtain the Uri as follows:
-//
-// Uri fileUri = new Uri.Builder()
-//    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-//    .authority(yourAuthority) //usually your applicationId
-//    .appendPath(String.valueOf(R.raw.android_fallback))
-//    .build();
-
-Adapty.setFallbackPaywalls(fileUri, callback);
-```
-</TabItem>
-</Tabs>
-
-
-
-Parameters:
-
-| Parameter   | Description                                                                                            |
-| :---------- | :----------------------------------------------------------------------------------------------------- |
-| **fileUri** | The [Uri](https://developer.android.com/reference/android/net/Uri) for the file with fallback paywalls |

@@ -137,11 +137,13 @@ val amplitudeUserId = amplitude.store.userId
 
 //
 
-val params = AdaptyProfileParameters.Builder()
-    .withAmplitudeDeviceId(amplitudeDeviceId)
-    .withAmplitudeUserId(amplitudeUserId)
-    .build()
-Adapty.updateProfile(params) { error ->
+Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+
+Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
     if (error != null) {
         // handle the error
     }
