@@ -207,9 +207,9 @@ OneSignal.shared.setSubscriptionObserver((changes) {
         try {
             Adapty().updateProfile(builder.build());
         } on AdaptyError catch (adaptyError) {
-            // handle error
+            // handle the error
         } catch (e) {
-            // handle error
+            // handle the error
         }
     }
 });
@@ -338,7 +338,7 @@ var builder = new Adapty.ProfileParameters.Builder();
 builder.SetOneSignalPlayerId(pushUserId);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+    // handle the error
 });
 ```
 

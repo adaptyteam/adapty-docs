@@ -30,18 +30,18 @@ Adapty.makePurchase(activity, product) { result ->
 -            val profile = info?.profile
 -        
 -            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
--                // grant access to premium features
+-                // grant access to paid features
 -            }
 +            when (val purchaseResult = result.value) {
 +                is AdaptyPurchaseResult.Success -> {
 +                    val profile = purchaseResult.profile
 +                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
-+                        // grant access to premium features
++                        // grant access to paid features
 +                    }
 +                }
 +
 +                is AdaptyPurchaseResult.UserCanceled -> {
-+                    // user canceled the purchase flow
++                    // user canceled the purchase
 +                }
 +
 +                is AdaptyPurchaseResult.Pending -> {
@@ -112,15 +112,19 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 Now if a new subscription is purchased while another is still active, call `onSubscriptionUpdateParamsReceived(...)` either with `AdaptySubscriptionUpdateParameters` instance if the new subscription should replace a currently active subscription or with `null` if the active subscription should remain active and the new one should be added separately:
 
  ```diff
- public override fun onAwaitingSubscriptionUpdateParams(
-     product: AdaptyPaywallProduct,
-     context: Context,
--): AdaptySubscriptionUpdateParameters? {
--    return AdaptySubscriptionUpdateParameters(...)
-+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
-+) {
-+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
- }
+- public override fun onAwaitingSubscriptionUpdateParams(
+-     product: AdaptyPaywallProduct,
+-     context: Context,
+- ): AdaptySubscriptionUpdateParameters? {
+-     return AdaptySubscriptionUpdateParameters(...)
+- }
++ public override fun onAwaitingSubscriptionUpdateParams(
++     product: AdaptyPaywallProduct,
++     context: Context,
++     onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
++ ) {
++     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
++ }
  ```
 
 See the [Upgrade subscription](android-handling-events#upgrade-subscription) doc section for the final code example.
@@ -205,7 +209,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
 +         Adapty.updateAttribution(attribution, "adjust") { error ->
              if (error != null) {
-                 //handle error
+                 //handle the error
              }
          }
      }
@@ -223,14 +227,14 @@ Update your mobile app code as shown below. For the complete code example, check
 ```diff
  Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
      override fun onSuccess(result: String) {
--     val params = AdaptyProfileParameters.Builder()
--         .withAirbridgeDeviceId(result)
--         .build()
--     Adapty.updateProfile(params) { error ->
--         if (error != null) {
--             // handle the error
+-         val params = AdaptyProfileParameters.Builder()
+-             .withAirbridgeDeviceId(result)
+-             .build()
+-         Adapty.updateProfile(params) { error ->
+-             if (error != null) {
+-                 // handle the error
+-             }
 -         }
--     }
 +         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
 +             if (error != null) {
 +                 // handle the error
@@ -323,7 +327,7 @@ Update your mobile app code as shown below. For the complete code example, check
          reason: StartupParamsCallback.Reason,
          result: StartupParamsCallback.Result?
      ) {
-         //handle error
+         //handle the error
      }
  }
 
@@ -337,7 +341,6 @@ Update your mobile app code as shown below. For the complete code example, check
 ```diff
  val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
      override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
--        // It's important to include the network user ID
 -        Adapty.updateAttribution(
 -            conversionData,
 -            AdaptyAttributionSource.APPSFLYER,
@@ -356,7 +359,7 @@ Update your mobile app code as shown below. For the complete code example, check
 +        }
 +        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
 +            if (error != null) {
-+                //handle error
++                //handle the error
 +            }
 +        }
      }
@@ -368,26 +371,22 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
- // login and update attribution
+// login and update attribution
  Branch.getAutoInstance(this)
--    .setIdentity("YOUR_USER_ID") { referringParams, error ->
--        referringParams?.let { params ->
+   .setIdentity("YOUR_USER_ID") { referringParams, error ->
+       referringParams?.let { params ->
 -            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
 -                            if (error != null) {
--                                //handle error
+-                                //handle the error
 -                            }
 -                        }
--        }
--    }
-+    .setIdentity("YOUR_USER_ID") { referringParams, error ->
-+        referringParams?.let { data ->
 +            Adapty.updateAttribution(data, "branch") { error ->
 +                if (error != null) {
-+                    //handle error
++                    //handle the error
 +                }
 +            }
-+        }
-+    }
+       }
+   }
 
  // logout
  Branch.getAutoInstance(context).logout()
@@ -398,16 +397,23 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
 
 ```diff
-- AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
--     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
--     .build();
--
-- Adapty.updateProfile(params, error -> {
-+ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
-     if (error != null) {
-         // handle the error
-     }
-  });
+- val builder = AdaptyProfileParameters.Builder()
+-     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
+-   
+- Adapty.updateProfile(builder.build()) { error ->
+-     if (error == null) {
+-         // successful update
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier(
++     "facebook_anonymous_id",
++     AppEventsLogger.getAnonymousAppDeviceGUID(context)
++ ) { error ->
++     if (error != null) {
++        // handle the error
++     }
++ }
 ```
 
 ### Firebase and Google Analytics
@@ -426,7 +432,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -            .withFirebaseAppInstanceId(appInstanceId)
 -            .build()
 -    ) {
--        //handle error
+-        //handle the error
 -    }
 +    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
 +        if (error != null) {
@@ -440,20 +446,27 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="java" label="Java" default>
 
 ```diff
- //after Adapty.activate()
+//after Adapty.activate()
 
- FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
--    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
--        .withFirebaseAppInstanceId(appInstanceId)
--        .build();
-    
--    Adapty.updateProfile(params, error -> {
-+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
-         if (error != null) {
-             // handle the error
-         }
-     });
- });
+- FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
+-     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-         .withFirebaseAppInstanceId(appInstanceId)
+-         .build();
+-     
+-     Adapty.updateProfile(params, error -> {
+-         if (error != null) {
+-             // handle the error
+-         }
+-     });
+- });
+
++ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
++     Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
++        if (error != null) {
++            // handle the error
++         }
++     });
++ });
 ```
 
 </TabItem>
@@ -506,7 +519,7 @@ Update your mobile app code as shown below. For the complete code example, check
              if (error != null) {
                  // handle the error
              }
--        }
+        }
      }
  }
 ```

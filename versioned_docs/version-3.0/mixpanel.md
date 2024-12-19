@@ -147,7 +147,7 @@ var builder = new Adapty.ProfileParameters.Builder();
 builder.SetMixpanelUserId(Mixpanel.DistinctId);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+    // handle the error
 });
 ```
 </TabItem>

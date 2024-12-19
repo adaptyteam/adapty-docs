@@ -130,7 +130,7 @@ Branch.getAutoInstance(this)
         referringParams?.let { data ->
             Adapty.updateAttribution(data, "branch") { error ->
                 if (error != null) {
-                    //handle error
+                    //handle the error
                 }
             }
         }
