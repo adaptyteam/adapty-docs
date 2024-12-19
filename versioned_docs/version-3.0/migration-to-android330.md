@@ -485,14 +485,16 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-<Tabs>
+<Tabs> 
 
-<TabItem value="v5" label="OneSignal SDK v5+ (current)" default>
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
-<Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
+<Tabs> 
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```diff
+ // SubscriptionID 
  val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
      override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
 -        val params = AdaptyProfileParameters.Builder()
@@ -500,23 +502,20 @@ Update your mobile app code as shown below. For the complete code example, check
 -            .build()
 -        
 -        Adapty.updateProfile(params) { error ->
--            if (error != null) {
--                // handle the error
--            }
--        }
 +        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
-+            if (error != null) {
-+                // handle the error
-+            }
-+        }
+             if (error != null) {
+                 // handle the error
+             }
+-        }
      }
  }
 ```
 
-</TabItem> <TabItem value="java" label="Java" default>
+</TabItem>
+<TabItem value="java" label="(Android) Java" default>
 
 ```diff
- // SubscriptionID (v5+ OneSignal SDK)
+ // SubscriptionID 
  IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 -    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
 -            .withOneSignalSubscriptionId(state.getCurrent().getId())
@@ -530,33 +529,66 @@ Update your mobile app code as shown below. For the complete code example, check
  };
 ```
 
-</TabItem> 
-
+</TabItem>  
 </Tabs>
 
-</TabItem>
+</TabItem> 
 
-<TabItem value="v4" label=" OneSignal SDK v. up to 4.x (legacy)" default>
+<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
 
 <Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```diff
-.
+ // PlayerID 
+ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+     stateChanges?.to?.userId?.let { playerId ->
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalPlayerId(playerId)
+-            .build()
+-      
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
+             if (error != null) {
+                 // handle the error
+             }
+-        }
+     }
+ }
 ```
 
-</TabItem> <TabItem value="java" label="Java" default>
+</TabItem>
+<TabItem value="java" label="Java" default>
 
 ```diff
-.
+ // PlayerID 
+ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+     String playerId = to != null ? to.getUserId() : null;
+     
+     if (playerId != null) {
+-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
+-                .withOneSignalPlayerId(playerId)
+-                .build();
+-        
+-        Adapty.updateProfile(params1, error -> {
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
+             if (error != null) {
+                 // handle the error
+             }
+-        });
+     }
+ };
 ```
 
 </TabItem> 
 
 </Tabs>
 
-</TabItem>
-</Tabs>
+ </TabItem> 
+
+</Tabs> 
 
 ### Pushwoosh
 
