@@ -1,5 +1,5 @@
 ---
-title: "Add paywall locale in remote config"
+title: "Remote config paywall localization"
 description: "Expand your paywall's reach across diverse markets by configuring locales in remote config. Learn how to optimize localization and cater to specific regional preferences"
 metadataTitle: "Implement Multi-Language Support: Adding Paywall Locale in Remote Config"
 ---
@@ -7,17 +7,22 @@ metadataTitle: "Implement Multi-Language Support: Adding Paywall Locale in Remot
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-In a world with many cultures, it's important to adapt your product for each country. You can do this by using paywall localizations. For each paywall, make versions in different languages —each one catering to a specific language—to match the needs of specific local markets.
+Adapting your paywalls for different languages is essential in a world with diverse cultures. Localization allows you to create tailored experiences for users in specific regions. For each paywall, you can add versions in various languages, ensuring that your product resonates with local audiences.
 
-If you've [designed a paywall with the remote config](customize-paywall-with-remote-config), use the remote config as well to add localizations. Whether you're using a table view or JSON format, you can easily tweak settings for different languages. For example, you can translate String keys from English to Italian or set different Boolean values like TRUE for English and FALSE for Italian. You can even change background images based on the language. Basically, you keep the same setup but customize values for each language, making sure users get a personalized experience.
+If you’ve [designed a paywall using remote config](customize-paywall-with-remote-config), you can use the same remote config to set up localizations. Whether in table view or JSON format, you can easily adjust settings for each language. For example, translate string keys, toggle Boolean values (e.g., `TRUE` for English, `FALSE` for Italian), or even swap out background images. With this flexibility, you keep your core setup while tailoring the user experience for different languages.
 
-How to set up a localization for a paywall customized using remote config:
+## Setting up localization for remote configured paywalls
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it and click the **3-dot** button next to the product and select the **Edit** option.
+1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in Adapty, select the **Paywall** tab, and click the **3-dot** button next to the paywall to choose **Edit**.
+
+
+
+2. In the paywall editor, navigate to the **Remote config** tab.
 
    
+
 <Zoom>
-  <img src={require('./img/deaa5f0-paywalls_edit.webp').default}
+  <img src={require('./img/switch_to_remote_config.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,11 +35,12 @@ How to set up a localization for a paywall customized using remote config:
 
 
 
-2. In the **Paywalls / Your paywall** window, switch to the **Remote config** tab.
+3. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
 
    
+
 <Zoom>
-  <img src={require('./img/68e80c5-switch_to_remote_config.webp').default}
+  <img src={require('./img/add_locale.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -44,14 +50,22 @@ How to set up a localization for a paywall customized using remote config:
 />
 </Zoom>
 
+Now, you can translate the content manually, use AI like ChatGPT, or export the localization file for external translators.
 
+## Translating paywalls with AI
 
+AI-powered translation is a quick and efficient way to localize your paywall.
 
-3. In the **Remote config** tab, click the **Add locale** button and select all languages you want to have in your app.
+:::note
 
-   
+To use AI for paywall translation, you’ll need a Pro, Pro+, or Enterprise plan.
+
+:::
+
+You can translate both **String** and **List** values. By default, all lines are selected (highlighted in violet). Lines that have already been translated are marked in green and won’t be included in the new translation by default. Lines that are not selected or translated appear in gray.
+
 <Zoom>
-  <img src={require('./img/eea8027-add_locale.webp').default}
+  <img src={require('./img/localization-table.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -61,12 +75,105 @@ How to set up a localization for a paywall customized using remote config:
 />
 </Zoom>
 
+<Zoom>
+  <img src={require('./img/localization-json.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-
-
-4. Click on the element you want to translate and enter a new value. You can both translate **String** and **List** values and replace pictures with those more appropriate for the locale. 
-
+1. Select the lines to translate. It's a good idea to uncheck lines with IDs, URLs, and variables to prevent AI from translating them.
    
+3. Select the languages for translation.
+
+   <Zoom>
+     <img src={require('./img/localization-table-language.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+4. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.. 
+
+## Exporting localization files for external translation
+
+While AI-powered localization is becoming a popular trend, you might prefer a more reliable method, like using professional human translators or a translation agency with a strong track record. If that’s the case, you can export localization files to share with your translators and then import the translated results back into Adapty.
+
+Exporting by the **Export** button creates individual `.json` files for each language, bundled into a single archive. If you only need one file, you can export it directly from the language-specific menu.
+
+<Zoom>
+  <img src={require('./img/localization-single-export.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format and paywall remote config structure.
+
+### Import file format
+
+To ensure a successful import, the import file must meet the following requirements:
+
+- **File Name and Extension:**
+  The file name must match the locale it represents and have a `.json` extension. You can verify and copy the locale name in the Adapty Dashboard. If the name is not recognized, the import will fail.
+
+<Zoom>
+  <img src={require('./img/locale-name.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+- **Valid JSON:**
+  The file must be a valid JSON. If it is not, the import will fail.
+
+- **No Additional Keys:**
+  The file should not contain any keys that are not in the current remote config. Extra keys will result in errors.
+
+- **All Required Elements:**
+  The file must include all elements present in the current remote config. If any are missing, the import will succeed with errors, which will be displayed in the remote config table view. Hover over the error to see the issue, and refer to the table below for recommendations on resolving it.
+
+  <Zoom>
+    <img src={require('./img/localization-error.webp').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
+  
+  | **Issue**                               | **Solution**                                                 |
+  | --------------------------------------- | ------------------------------------------------------------ |
+  | **Invalid JSON file**                   | The file is not a valid JSON. Validate it to ensure it meets JSON formatting standards (e.g., check for missing or extra commas). |
+  | **Some languages are not in the table** | <p>At least one file name does not match a locale name. Ensure all files are named correctly, as shown in the localization table. Locale names must match exactly.</p><p>Another possible reason is attempting to import an unrelated file. Verify the file’s contents.</p> |
+  | **Some keys are not in the table**      | The file contains keys not present in the current remote config. This may occur if keys were removed from the remote config after exporting for localization or if there are typos in the file. Review the file and remove any extra. |
+
+### Manual localization
+
+Sometimes, you might want to tweak translations, add different images for specific locales, or even adjust remote configurations directly.
+
+1. Choose the element you want to translate and type in a new value. You can update both **String** and **List** values or replace images with those better suited for the locale.
+
+
+
 <Zoom>
   <img src={require('./img/032b429-remote_config_localization.webp').default}
   style={{
@@ -80,13 +187,14 @@ How to set up a localization for a paywall customized using remote config:
 
 
 
+2. Take advantage of the context menu in the English locale to resolve localization issues efficiently:
 
-Feel free to use the context menu of the English locale to fix localization issues:
+   - **Copy this value to all locales**: Overwrites any changes made in non-English locales for the selected row, replacing them with the value from the English locale.
 
-- Use the **Push this value to all locales** menu to overwrite any changes made in the row for non-English locales, replacing them with the values from the English locale.
-- Use the **Revert all row changes to original values** menu to cancel all changes made in the current session, reverting them to the last saved values.
+   - **Revert all row changes to original values**: Discards any changes made during the current session and restores the values to their last saved state.
 
-  
+
+
 <Zoom>
   <img src={require('./img/d7e70f1-remote_confi_loc_table_options.webp').default}
   style={{
@@ -98,7 +206,4 @@ Feel free to use the context menu of the English locale to fix localization issu
 />
 </Zoom>
 
-
-
-
-Once you add locales to a paywall, learn to [correctly work with locale codes in your app's code](localizations-and-locale-codes).
+After adding locales to a paywall, make sure to [implement locale codes correctly in your app's code](localizations-and-locale-codes).
