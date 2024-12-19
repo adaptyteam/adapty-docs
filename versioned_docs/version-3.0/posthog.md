@@ -40,7 +40,13 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 <TabItem value="java" label="Java" default>
 
- Text 
+```java
+Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
+    if (error != null) {
+        // handle the error
+    }
+});
+```
 
 </TabItem> 
 
