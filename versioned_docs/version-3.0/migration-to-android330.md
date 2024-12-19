@@ -21,7 +21,7 @@ Previously canceled and pending purchases were considered errors and returned th
 
 Now a new `AdaptyPurchaseResult` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
-~~~diff title="Kotlin"
+~~~diff
  Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
@@ -393,6 +393,23 @@ Update your mobile app code as shown below. For the complete code example, check
  Branch.getAutoInstance(context).logout()
 ```
 
+### Facebook Ads
+
+Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
+
+```diff
+- AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
+-     .build();
+-
+- Adapty.updateProfile(params, error -> {
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
+     if (error != null) {
+         // handle the error
+     }
+  });
+```
+
 ### Firebase and Google Analytics
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
@@ -422,8 +439,21 @@ Update your mobile app code as shown below. For the complete code example, check
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```
-.
+```diff
+ //after Adapty.activate()
+
+ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
+-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-        .withFirebaseAppInstanceId(appInstanceId)
+-        .build();
+    
+-    Adapty.updateProfile(params, error -> {
++    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
+         if (error != null) {
+             // handle the error
+         }
+     });
+ });
 ```
 
 </TabItem>
@@ -433,33 +463,136 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-## OneSignal
+```diff
+- val params = AdaptyProfileParameters.Builder()
+-     .withMixpanelUserId(mixpanelAPI.distinctId)
+-     .build()
+-
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
++     if (error != null) {
++         // handle the error
++     }
++ }
+```
+
+### OneSignal
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
+
+<Tabs>
+
+<TabItem value="v5" label="OneSignal SDK v5+ (current)" default>
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff
+ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
+     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.current.id)
+-            .build()
+-        
+-        Adapty.updateProfile(params) { error ->
+-            if (error != null) {
+-                // handle the error
+-            }
+-        }
++        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
++            if (error != null) {
++                // handle the error
++            }
++        }
+     }
+ }
+```
+
+</TabItem> <TabItem value="java" label="Java" default>
+
+```diff
+ // SubscriptionID (v5+ OneSignal SDK)
+ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
+-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.getCurrent().getId())
+-            .build();
+-    Adapty.updateProfile(params, error -> {
++    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
+         if (error != null) {
+             // handle the error
+         }
+     });
+ };
+```
+
+</TabItem> 
+
+</Tabs>
+
+</TabItem>
+
+<TabItem value="v4" label=" OneSignal SDK v. up to 4.x (legacy)" default>
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
 
 ```diff
 .
 ```
+
+</TabItem> <TabItem value="java" label="Java" default>
+
+```diff
+.
+```
+
+</TabItem> 
+
+</Tabs>
+
+</TabItem>
+</Tabs>
 
 ### Pushwoosh
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-```diff
-.
-```
-
-## Update Observer mode implemetation
-
-Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
-
-:::warning
-
-Don't forget to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, won't grant access levels, won't include it in analytics, and won't send it to integrations. This step is essential!
-
-:::
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
 
 ```diff
-.
+- val params = AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
+-     .build()
+  
+- Adapty.updateProfile(params) { error ->
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
+     if (error != null) {
+         // handle the error
+     }
+  }
 ```
 
+</TabItem> <TabItem value="java" label="Java" default>
+
+```diff
+- AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
+-     .build();
+-
+- Adapty.updateProfile(params, error -> {
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
+     if (error != null) {
+         // handle the error
+     }
+  });
+```
+
+</TabItem> 
+
+</Tabs>

@@ -145,7 +145,7 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 
 <Tabs> 
 
-<TabItem value="v5+" label="v5+ OneSignal SDK (New)" default> 
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
 <Tabs groupId="onesignal">
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -166,18 +166,7 @@ OneSignal.Notifications.requestPermission({ accepted in
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-// PlayerID (pre-v5 OneSignal SDK)
-val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
-    stateChanges?.to?.userId?.let { playerId ->
-        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
-            if (error != null) {
-                // handle the error
-            }
-        }
-    }
-}
-
-// SubscriptionID (v5+ OneSignal SDK)
+// SubscriptionID
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
         Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
@@ -193,21 +182,7 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 <TabItem value="java" label="(Android) Java" default>
 
 ```java 
-// PlayerID (pre-v5 OneSignal SDK)
-OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
-    OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
-    String playerId = to != null ? to.getUserId() : null;
-    
-    if (playerId != null) {
-        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
-            if (error != null) {
-                // handle the error
-            }
-        });
-    }
-};
-
-// SubscriptionID (v5+ OneSignal SDK)
+// SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
         if (error != null) {
@@ -277,7 +252,7 @@ OneSignal.addSubscriptionObserver(event => {
 
  </TabItem> 
 
-<TabItem value="pre-v5" label="pre-v5 OneSignal SDK) (Previous)" default> 
+<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -357,35 +332,6 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
         }
     }
 }
-
-// SubscriptionID (v5+ OneSignal SDK)
-OneSignal.Notifications.requestPermission({ accepted in
-    Task {
-        try await Adapty.setIntegrationIdentifier(
-            key: "one_signal_subscription_id", 
-            value: OneSignal.User.pushSubscription.id
-        )
-    }
-}, fallbackToSettings: true)
-
-OneSignal.shared.setSubscriptionObserver((changes) {
-    final playerId = changes.to.userId;
-    
-    if (playerId != null) {
-        try {
-            await Adapty().setIntegrationIdentifier(
-                key: "one_signal_player_id", 
-                value: playerId,
-            );
-            
-            // or set "one_signal_subscription_id"
-        } on AdaptyError catch (adaptyError) {
-            // handle the error
-        } catch (e) {
-            // handle the error
-        }
-    }
-});
 ```
 
 </TabItem>
