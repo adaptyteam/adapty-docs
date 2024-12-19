@@ -172,7 +172,36 @@ It's very important to send Tenjin attribution data from the device to Adapty us
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift
-...
+import TenjinSDK
+
+func updateTenjinId() {
+    guard let tenjinId = TenjinSDK.getAnalyticsInstallationId() else { return }
+
+    do {
+        try await Adapty.setIntegrationIdentifier(
+            key: "tenjin_analytics_installation_id",
+            value: tenjinId
+        )
+    } catch {
+        // handle the error
+    }
+}
+
+func updateTenjinAttribution() {
+    let instance = TenjinSDK.getInstance("<YOUR_TENJIN_API_TOKEN>")
+        
+    instance?.getAttributionInfo { info, _ in
+        guard let info else { return }
+
+        Task {
+            do {
+                try await Adapty.updateAttribution(info, source: "tenjin")
+            } catch {
+                // handle the error
+            }
+        }
+    }
+}
 ```
 
 </TabItem>
