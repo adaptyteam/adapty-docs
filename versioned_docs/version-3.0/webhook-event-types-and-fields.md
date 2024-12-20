@@ -9,7 +9,7 @@ Adapty sends webhooks in response to events that occur in your app. This section
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Webhook event flows](webhook-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-4-optional-choose-events-to-send-and-map-event-names). There you can also replace Adapty default event IDs with your own if required.
+You can send all event types to your webhook or choose only some of them. You can consult our [vent flows](event-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](webhook#step-3-configure-webhook-integration-in-the-adapty-dashboard). There you can also replace Adapty default event IDs with your own if required.
 
 | Event Name                         | Default event ID                   | Description                                                  |
 | ---------------------------------- | :--------------------------------- | :----------------------------------------------------------- |
