@@ -61,7 +61,7 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 5. After the Adapty server receives the verification response in the expected format, it's ready to send standard event requests.
 
-After that, we recommend testing your webhook integration.
+After that, we recommend [testing your webhook integration](test-webhook).
 
 ## Step 1. Set up your server to process Adapty requests
 
@@ -105,11 +105,7 @@ For the webhook event structure and detailed description of its fields, see the 
 
 Within Adapty, you can configure separate flows for production events and test events received from the Apple or Stripe sandbox environment or Google test account. 
 
-For production events, use the **Production endpoint URL** field specifying the URL to which the callbacks will be sent. Additionally, configure the **Authorization header value for production endpoint** field - the header for your server to authenticate Adapty events. Note that we'll use the value specified in the **Authorization header value for production endpoint** field as the `Authorization` header exactly as provided, without any changes or additions.
 
-For test events, employ the  **Sandbox endpoint URL** and **Authorization header value for sandbox endpoint** fields accordingly.
-
-To set up the webhook integration:
 
 Open [**Integrations** -> **Webhook**](https://app.adapty.io/integrations/customwebhook) in your Adapty Dashboard.
 
@@ -129,17 +125,17 @@ Open [**Integrations** -> **Webhook**](https://app.adapty.io/integrations/custom
 
 2. Fill out the integration fields:
 
-| Field                                                  | Description                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------ |
-| **Production endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in production. |
-| **Authorization header value for production endpoint** | <p>The header that your server will use to authenticate requests from Adapty in production. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
+   | Field                                                  | Description                                                  |
+    | ------------------------------------------------------ | ------------------------------------------------------------ |
+   | **Production endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in production. |
+   | **Authorization header value for production endpoint** | <p>The header that your server will use to authenticate requests from Adapty in production. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
 
    Additionally, for your testing needs in the sandbox environment, two other fields are available:
 
-| Testing field                                       | Description                                                  |
-| --------------------------------------------------- | ------------------------------------------------------------ |
-| **Sandbox endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in the sandbox environment. |
-| **Authorization header value for sandbox endpoint** | <p>The header that your server will use to authenticate requests from Adapty during testing in the sandbox environment. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
+   | Testing field                                       | Description                                                  |
+   | --------------------------------------------------- | ------------------------------------------------------------ |
+   | **Sandbox endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in the sandbox environment. |
+   | **Authorization header value for sandbox endpoint** | <p>The header that your server will use to authenticate requests from Adapty during testing in the sandbox environment. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
 
 3. Choose the events you want to receive and map their names. Consult our [Event flows](event-flows) to decide which events are required or not.
 
