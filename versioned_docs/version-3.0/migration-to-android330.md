@@ -26,32 +26,32 @@ Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
 -            val info = result.value
--            //NOTE: info is null in case of cross-grade with DEFERRED proration mode
+-            // NOTE: info is null in case of cross-grade with DEFERRED proration mode
 -            val profile = info?.profile
 -        
 -            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
--                // grant access to paid features
+-                // Grant access to the paid features
 -            }
 +            when (val purchaseResult = result.value) {
 +                is AdaptyPurchaseResult.Success -> {
 +                    val profile = purchaseResult.profile
 +                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
-+                        // grant access to paid features
++                        // Grant access to the paid features
 +                    }
 +                }
 +
 +                is AdaptyPurchaseResult.UserCanceled -> {
-+                    // user canceled the purchase
++                    // Handle the case where the user canceled the purchase
 +                }
 +
 +                is AdaptyPurchaseResult.Pending -> {
-+                    // the purchase has not been finished yet, e.g. user will pay offline by cash
++                    // Handle deferred purchases (e.g., the user will pay offline with cash
 +                }
 +            }
          }
          is AdaptyResult.Error -> {
              val error = result.error
-             // handle the error
+             // Handle the error
          }
      }
  }
@@ -71,13 +71,13 @@ For the complete code example, check out the [Make purchases in mobile app](maki
    + ) {
    +    when (purchaseResult) {
    +        is AdaptyPurchaseResult.Success -> {
-   +            // success
+   +            // Grant access to the paid features
    +        }
    +        is AdaptyPurchaseResult.UserCanceled -> {
-   +            // user canceled the purchase flow
+   +            // Handle the case where the user canceled the purchase
    +        }
    +        is AdaptyPurchaseResult.Pending -> {
-   +            // pending purchase
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash
    +        }
    +    }
    + }
@@ -103,7 +103,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
    -     product: AdaptyPaywallProduct,
    -   context: Context,
    - ) {
-   -     // your logic on successful purchase
+   -     // Your logic on successful purchase
    - }
    ```
 
@@ -137,7 +137,7 @@ If you pass file Uri to provide fallback paywalls, update how you do it in the f
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```diff
-val fileUri: Uri = //get Uri for the file with fallback paywalls
+val fileUri: Uri = // Get the URI for the file with fallback paywalls
 - Adapty.setFallbackPaywalls(fileUri, callback)
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback)
 ```
@@ -146,7 +146,7 @@ val fileUri: Uri = //get Uri for the file with fallback paywalls
 <TabItem value="java" label="Java" default>
 
 ```diff
-Uri fileUri = //get Uri for the file with fallback paywalls
+Uri fileUri = // Get the URI for the file with fallback paywalls
 - Adapty.setFallbackPaywalls(fileUri, callback);
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
 ```
@@ -174,7 +174,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -         if (adid == null) return@getAdid
 -
 -         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
--             // handle the error
+-             // Handle the error
 -         }
 -     }
 - }
@@ -184,7 +184,7 @@ Update your mobile app code as shown below. For the complete code example, check
 +
 +     Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
 +         if (error != null) {
-+             // handle the error
++             // Handle the error
 +         }
 +     }
 + }
@@ -193,7 +193,7 @@ Update your mobile app code as shown below. For the complete code example, check
 +     if (attribution == null) return@getAttribution
 +
 +     Adapty.updateAttribution(attribution, "adjust") { error ->
-+         // handle the error
++         // Handle the error
 +     }
 + }
 ```
@@ -209,7 +209,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
 +         Adapty.updateAttribution(attribution, "adjust") { error ->
              if (error != null) {
-                 //handle the error
+                 // Handle the error
              }
          }
      }
@@ -232,12 +232,12 @@ Update your mobile app code as shown below. For the complete code example, check
 -             .build()
 -         Adapty.updateProfile(params) { error ->
 -             if (error != null) {
--                 // handle the error
+-                 // Handle the error
 -             }
 -         }
 +         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
 +             if (error != null) {
-+                 // handle the error
++                 // Handle the error
 +             }
 +         }
      }
@@ -251,7 +251,7 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
 ```diff
- //for Amplitude maintenance SDK (obsolete)
+ // For Amplitude maintenance SDK (obsolete)
  val amplitude = Amplitude.getInstance()
  val amplitudeDeviceId = amplitude.getDeviceId()
  val amplitudeUserId = amplitude.getUserId()
@@ -274,19 +274,19 @@ Update your mobile app code as shown below. For the complete code example, check
 -     .build()
 - Adapty.updateProfile(params) { error ->
 -     if (error != null) {
--         // handle the error
+-         // Handle the error
 -     }
 - }
 
 + Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
 +     if (error != null) {
-+         // handle the error
++         // Handle the error
 +     }
 + }
 
 + Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
 +     if (error != null) {
-+         // handle the error
++         // Handle the error
 +     }
 + }
 ```
@@ -306,19 +306,19 @@ Update your mobile app code as shown below. For the complete code example, check
 -            .build()
 -        Adapty.updateProfile(params) { error ->
 -            if (error != null) {
--                // handle the error
+-                // Handle the error
 -            }
 -        }
 
 +        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
 +            if (error != null) {
-+                // handle the error
++                // Handle the error
 +            }
 +        }
 +        
 +        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
 +            if (error != null) {
-+                // handle the error
++                // Handle the error
 +            }
 +        }
      }
@@ -327,7 +327,7 @@ Update your mobile app code as shown below. For the complete code example, check
          reason: StartupParamsCallback.Reason,
          result: StartupParamsCallback.Result?
      ) {
-         //handle the error
+         // Handle the error
      }
  }
 
@@ -347,19 +347,19 @@ Update your mobile app code as shown below. For the complete code example, check
 -            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
 -        ) { error ->
 -            if (error != null) {
--                //handle error
+-                // Handle the error
 -            }
 -        }
 
 +        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
 +        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
 +            if (error != null) {
-+                // handle the error
++                // Handle the error
 +            }
 +        }
 +        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
 +            if (error != null) {
-+                //handle the error
++                // Handle the error
 +            }
 +        }
      }
@@ -371,24 +371,24 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
-// login and update attribution
+// Login and update attribution
  Branch.getAutoInstance(this)
    .setIdentity("YOUR_USER_ID") { referringParams, error ->
        referringParams?.let { params ->
 -            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
 -                            if (error != null) {
--                                //handle the error
+-                                // Handle the error
 -                            }
 -                        }
 +            Adapty.updateAttribution(data, "branch") { error ->
 +                if (error != null) {
-+                    //handle the error
++                    // Handle the error
 +                }
 +            }
        }
    }
 
- // logout
+ // Logout
  Branch.getAutoInstance(context).logout()
 ```
 
@@ -402,7 +402,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -   
 - Adapty.updateProfile(builder.build()) { error ->
 -     if (error == null) {
--         // successful update
+-         // Successful update
 -     }
 - }
 
@@ -411,7 +411,7 @@ Update your mobile app code as shown below. For the complete code example, check
 +     AppEventsLogger.getAnonymousAppDeviceGUID(context)
 + ) { error ->
 +     if (error != null) {
-+        // handle the error
++        // Handle the error
 +     }
 + }
 ```
@@ -424,7 +424,7 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```diff
- //after Adapty.activate()
+ // After Adapty.activate()
 
  FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
 -    Adapty.updateProfile(
@@ -432,11 +432,11 @@ Update your mobile app code as shown below. For the complete code example, check
 -            .withFirebaseAppInstanceId(appInstanceId)
 -            .build()
 -    ) {
--        //handle the error
+-        // Handle the error
 -    }
 +    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
 +        if (error != null) {
-+            // handle the error
++            // Handle the error
 +        }
 +    }
  }
@@ -446,7 +446,7 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="java" label="Java" default>
 
 ```diff
-//after Adapty.activate()
+// After Adapty.activate()
 
 - FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
 -     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
@@ -455,7 +455,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -     
 -     Adapty.updateProfile(params, error -> {
 -         if (error != null) {
--             // handle the error
+-             // Handle the error
 -         }
 -     });
 - });
@@ -463,7 +463,7 @@ Update your mobile app code as shown below. For the complete code example, check
 + FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
 +     Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
 +        if (error != null) {
-+            // handle the error
++            // Handle the error
 +         }
 +     });
 + });
@@ -483,13 +483,13 @@ Update your mobile app code as shown below. For the complete code example, check
 -
 - Adapty.updateProfile(params) { error ->
 -     if (error != null) {
--         // handle the error
+-         // Handle the error
 -     }
 - }
 
 + Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
 +     if (error != null) {
-+         // handle the error
++         // Handle the error
 +     }
 + }
 ```
@@ -517,7 +517,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -        Adapty.updateProfile(params) { error ->
 +        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
              if (error != null) {
-                 // handle the error
+                 // Handle the error
              }
         }
      }
@@ -536,7 +536,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -    Adapty.updateProfile(params, error -> {
 +    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
          if (error != null) {
-             // handle the error
+             // Handle the error
          }
      });
  };
@@ -564,7 +564,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -        Adapty.updateProfile(params) { error ->
 +        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
              if (error != null) {
-                 // handle the error
+                 // Handle the error
              }
 -        }
      }
@@ -588,7 +588,7 @@ Update your mobile app code as shown below. For the complete code example, check
 -        Adapty.updateProfile(params1, error -> {
 +        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
              if (error != null) {
-                 // handle the error
+                 // Handle the error
              }
 -        });
      }
@@ -618,7 +618,7 @@ Update your mobile app code as shown below. For the complete code example, check
 - Adapty.updateProfile(params) { error ->
 + Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
      if (error != null) {
-         // handle the error
+         // Handle the error
      }
   }
 ```
@@ -633,7 +633,7 @@ Update your mobile app code as shown below. For the complete code example, check
 - Adapty.updateProfile(params, error -> {
 + Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
      if (error != null) {
-         // handle the error
+         // Handle the error
      }
   });
 ```
