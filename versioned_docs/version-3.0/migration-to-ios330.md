@@ -17,6 +17,19 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 6. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 7. Update Observer mode implementation.
 
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
 ## Rename Adapty.Configuration to AdaptyConfiguration
 
 Update the code of Adapty iOS SDK activation in the following way:
