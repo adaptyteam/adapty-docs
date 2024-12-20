@@ -1,5 +1,5 @@
 ---
-title: "Webhook event flows"
+title: "Event flows"
 description: "Discover detailed schemes of webhook event flows in Adapty. Learn how subscription events are generated and sent to webhook integrations, helping you track key moments in your customers’ journeys."
 metadataTitle: "Understanding Webhook Event Flows in Adapty: Schemes and Scenarios"
 ---
@@ -11,9 +11,13 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 In Adapty, you'll receive various webhook events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
+:::warning
+
 Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
 
 If a webhook integration isn’t configured or this event type isn’t enabled, the **Access level updated** event won’t be created and won’t appear in the [**Event Feed**](https://app.adapty.io/event-feed).
+
+:::
 
 ## Subscription Lifecycle
 
@@ -26,12 +30,13 @@ This flow happens when a customer buys a subscription for the first time without
 - **Subscription started**
 - **Access level updated** to grant access to the user
 
-When the subscription renewal date comes, the subscription is renewed. In this case, the **Subscription renewal** event is created. Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](webhook-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](webhook-flows#subscription-cancellation-flow) respectively.
+When the subscription renewal date comes, the subscription is renewed. In this case, the **Subscription renewal** event is created. Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) respectively.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Initial_Purchase_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -48,7 +53,8 @@ When a user cancels their subscription, a **Subscription renewal canceled** even
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -60,7 +66,8 @@ If a refund is approved, an additional **Subscription refunded** event occurs at
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -78,7 +85,8 @@ If a refund is approved, a **Subscription refunded** event is also triggered whe
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -92,12 +100,13 @@ If a user cancels a subscription, it expires, and they later repurchase the same
 The **Access level updated** events will be created twice: 
 
 - at the subscription end to revoke the user's access
-- at the subscription repurchase to grant the access.
+- at the subscription repurchase to grant access.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Rejoin_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -125,7 +134,8 @@ These subscriptions will belong to the same transaction chain, linked with the s
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Paused_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -154,7 +164,8 @@ If the payment never succeeds till the end of the grace period, the following ev
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -166,7 +177,8 @@ Without a grace period, the **Subscription expired (churned)** event is created 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -186,7 +198,8 @@ In this flow, a user starts a trial with a payment method on file. A **Trial sta
 <Zoom>
   <img src={require('./img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -203,7 +216,8 @@ If a user cancels the trial before it converts to a subscription, a **Trial rene
 <Zoom>
   <img src={require('./img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -230,7 +244,8 @@ If the payment never succeeds, the following events occur at the end of the grac
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period_trial.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -247,7 +262,8 @@ If no grace period is enabled, the trial ends immediately. No grace period or su
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_Without_Grace_Period_trial.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -266,7 +282,8 @@ Even with a gap between the trial and subscription, Adapty links the two using *
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -292,7 +309,8 @@ After a user changes a product, it can be changed in the system immediately befo
 <Zoom>
   <img src={require('./img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -311,7 +329,8 @@ If a user downgrades the subscription, most probably the first subscription will
 <Zoom>
   <img src={require('./img_webhook_flows/Delayed_Product_Change_Downgrade.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -329,7 +348,8 @@ There is also a variant when a user changes the product at the moment of the sub
 <Zoom>
   <img src={require('./img_webhook_flows/Product_Change_on_Renewal_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -350,7 +370,8 @@ The recommended option is to transfer the access level to the new user. This pre
 <Zoom>
   <img src={require('./img_webhook_flows/Transfer_Access_to_New_User_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -366,7 +387,8 @@ Therefore, only 1 event will be created: **Access level updated** to grant acces
 <Zoom>
   <img src={require('./img_webhook_flows/Share_Access_Between_Users_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -380,7 +402,8 @@ With this option, only the first user profile to receive the access level retain
 <Zoom>
   <img src={require('./img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp').default}
   style={{
-    border: 'none', /* border width and color 
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
