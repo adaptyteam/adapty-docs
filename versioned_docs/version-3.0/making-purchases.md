@@ -38,16 +38,16 @@ do {
 
     switch purchaseResult {
         case .userCancelled:
-            // handle the user cancelled purchase
+            // Handle the case where the user canceled the purchase
         case .pending:
-            // handle the pending purchase
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
         case let .success(profile, transaction):
             if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-            // successful purchase
+            // Grant access to the paid features
             }
     }
 } catch {
-    // handle the error
+    // Handle the error
 }
 ```
 
@@ -60,16 +60,16 @@ Adapty.makePurchase(product: product) { result in
     case let .success(purchaseResult):
         switch purchaseResult {
             case .userCancelled:
-                // handle the user cancelled purchase
+                // Handle the case where the user canceled the purchase
             case .pending:
-                // handle the pending purchase
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
             case let .success(profile, transaction):
                 if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-                    // successful purchase
+                    // Grant access to the paid features
                 }
         }
     case let .failure(error):
-        // handle the error
+        // Handle the error
     }
 }
 ```
@@ -85,22 +85,22 @@ Adapty.makePurchase(activity, product) { result ->
                 is AdaptyPurchaseResult.Success -> {
                     val profile = purchaseResult.profile
                     if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
-                        // grant access to premium features
+                        // Grant access to the paid features
                     }
                 }
 
                 is AdaptyPurchaseResult.UserCanceled -> {
-                    // user canceled the purchase flow
+                    // Handle the case where the user canceled the purchase
                 }
 
                 is AdaptyPurchaseResult.Pending -> {
-                    // the purchase has not been finished yet, e.g. user will pay offline by cash
+                    // Handle deferred purchases (e.g., the user will pay offline with cash)
                 }
             }
         }
         is AdaptyResult.Error -> {
             val error = result.error
-            // handle the error
+            // Handle the error
         }
     }
 }
@@ -118,16 +118,16 @@ Adapty.makePurchase(activity, product, result -> {
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
 
             if (premium != null && premium.isActive()) {
-                // successful purchase
+                // Grant access to the paid features
             }
         } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
-            // user canceled the purchase flow
+            // Handle the case where the user canceled the purchase
         } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
-            // the purchase has not been finished yet, e.g. user will pay offline by cash
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
         }
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
+        // Handle the error
     }
 });
 ```
@@ -141,7 +141,7 @@ try {
     switch (purchaseResult) {
       case AdaptyPurchaseResultSuccess(profile: final profile):
         if (profile.accessLevels['premium']?.isActive ?? false) {
-          // successful purchase
+          // Grant access to the paid features
         }
         break;
       case AdaptyPurchaseResultPending():
@@ -152,9 +152,9 @@ try {
         break;
     }
 } on AdaptyError catch (adaptyError) {
-    // handle the error
+    // Handle the error
 } catch (e) {
-    // handle the error
+    // Handle the error
 }
 ```
 </TabItem>
@@ -163,13 +163,13 @@ try {
 ```csharp 
 Adapty.MakePurchase(product, (profile, error) => {
   if(error != null) {
-      // handle error
+      // Handle the error
       return;
   }
   
   var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
   if (accessLevel != null && accessLevel.IsActive) {
-      // grant access to features
+      // Grant access to the paid features
   }
 });
 ```
@@ -182,10 +182,10 @@ try {
   const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
     if (isSubscribed) {
-        // grant access to features in accordance with access level
+        // Grant access to the paid features
     }
 } catch (error) {
-    // handle the error
+    // Handle the error
 }
 ```
 
@@ -241,7 +241,7 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
         }
         is AdaptyResult.Error -> {
             val error = result.error
-            // handle the error
+            // Handle the error
         }
     }
 }
@@ -271,7 +271,7 @@ Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
         }
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
+        // Handle the error
     }
 });
 ```
@@ -293,9 +293,9 @@ try {
   
   // successful cross-grade
 } on AdaptyError catch (adaptyError) {
-  // handle the error
+  // Handle the error
 } catch (e) {
-  // handle the error
+  // Handle the error
 }
 ```
 Additional request parameter:
@@ -310,7 +310,7 @@ Additional request parameter:
 ```csharp 
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
-      // handle error
+      // Handle the error
       return;
   }
   
@@ -336,7 +336,7 @@ try {
         // grant access to premium features
     }
 } catch (error) {
-    // handle the error
+    // Handle the error
 }
 ```
 Additional request parameter:
