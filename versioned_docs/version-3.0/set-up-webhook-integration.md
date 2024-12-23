@@ -91,17 +91,17 @@ Open [**Integrations** -> **Webhook**](https://app.adapty.io/integrations/custom
 
 2. Fill out the integration fields:
 
-| Field                                                  | Description                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------ |
-| **Production endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in production. |
-| **Authorization header value for production endpoint** | <p>The header that your server will use to authenticate requests from Adapty in production. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
+   | Field                                                  | Description                                                  |
+   | ------------------------------------------------------ | ------------------------------------------------------------ |
+   | **Production endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in production. |
+   | **Authorization header value for production endpoint** | <p>The header that your server will use to authenticate requests from Adapty in production. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
 
    Additionally, for your testing needs in the sandbox environment, two other fields are available:
 
-| Testing field                                       | Description                                                  |
-| --------------------------------------------------- | ------------------------------------------------------------ |
-| **Sandbox endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in the sandbox environment. |
-| **Authorization header value for sandbox endpoint** | <p>The header that your server will use to authenticate requests from Adapty during testing in the sandbox environment. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
+   | Testing field                                       | Description                                                  |
+   | --------------------------------------------------- | ------------------------------------------------------------ |
+   | **Sandbox endpoint URL**                            | The URL Adapty uses to send HTTP POST requests for events in the sandbox environment. |
+   | **Authorization header value for sandbox endpoint** | <p>The header that your server will use to authenticate requests from Adapty during testing in the sandbox environment. Note that we'll use the value specified in this field as the `Authorization` header exactly as provided, without any changes or additions.</p><p></p><p>Although not mandatory, it's strongly recommended for enhanced security.</p> |
 
 3. Choose the events you want to receive and map their names. Consult our [Event flows](event-flows) to decide which events are required or not.
 
@@ -120,11 +120,19 @@ Open [**Integrations** -> **Webhook**](https://app.adapty.io/integrations/custom
 
    The event ID can be any string; simply make sure the event ID in your webhook processing server coincides with the one you entered in the Adapty Dashboard. You cannot leave the event ID empty for enabled events. If you accidentally removed the Adapty event ID and need to restore it, you can always copy it from the [Webhook event types](webhook-event-types-and-fields#webhook-event-types) table.
 
-4. Additional fields and options are not obligatory; use them as needed. 
+4. Additional fields and options are not obligatory; use them as needed:
+
+   | Setting                            | Description                                                  |
+   | :--------------------------------- | :----------------------------------------------------------- |
+   | **Send Trial Price**               | When enabled, Adapty will include the subscription price in the `price_local` and `price_usd` fields for the **Trial Started** event. |
+   | **Exclude Historical Events**      | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
+   | **Send user attributes**           | Enable this option to send user-specific attributes, such as language preferences. These attributes will appear in the `user_attributes` field. See [Event fields](webhook-event-types-and-fields#event-fields) for more information. |
+   | **Send attribution**               | Turn on this option to include attribution information (e.g., AppsFlyer data) in the `attributions` field. Refer to the [Attribution data](webhook-event-types-and-fields#attribution-data) section for details. |
+   | **Send Play Store purchase token** | Turn on this option to receive the Play Store token required for purchase revalidation, if needed. Enabling it will add the `play_store_purchase_token` parameter to the event. For details on its content, refer to the [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token) section. |
 
 5. Remember to click the **Save** button to confirm the changes.
 
-Please note that the moment you click the **Save** button, Adapty will send a verification request and will wait for your server verification response.
+The moment you click the **Save** button, Adapty will send a verification request and will wait for your server verification response.
 
 ## Step 4. Handle webhook events
 
