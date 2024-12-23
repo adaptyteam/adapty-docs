@@ -378,6 +378,47 @@ The recommended option is to transfer the access level to the new user. This pre
 />
 </Zoom>
 
+Here’s a breakdown of the fields related to access level assignment and transferring in the events generated in this scenario:
+
+- **User A: Access level updated (sent when User A purchases a subscription in the app)**
+
+  ```json
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User A: Access level updated (sent when the app is reinstalled and User B logs in, revoking User A's access)**
+
+  ```json
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User B: Access level updated (sent when User B logs in and access is granted)**
+
+  ```json
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
 ###  Shared Access Between Users Flow
 
 This option allows multiple users to share the same access level, though it’s a bit risky since it may lead to multiple users accessing the same content. While the access level is shared, all transactions are logged under the original [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) to maintain complete transaction history and analytics.
@@ -394,6 +435,39 @@ Therefore, only 1 event will be created: **Access level updated** to grant acces
   }}
 />
 </Zoom>
+
+Here’s a breakdown of the fields related to access level assignment and sharing in the events generated in this scenario:
+
+- **User A: Access level updated (sent when User A purchases a subscription in the app)**
+
+  ```json
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User B: Access level updated (sent when User B logs in and access is granted)**
+
+  ```json
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
 
 ###  Access Not Shared Between Users Flow
 
