@@ -179,6 +179,12 @@ Parameters:
  </TabItem> 
  <TabItem value="2.x" label="Adapty SDK up to v2.x (legacy)" default> 
 
+:::warning
+
+If you use Adapty iOS SDK below 3.0, do not upgrade to XCode 16.
+
+:::
+
  Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 
 | Adapty SDK version                   | AdaptyUI SDK version |
@@ -201,7 +207,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install SDKs via Swift Package Manager
 
-1. In Xcode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
+1. In XCode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
 2. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
 3. Choose the version, and click the **Add package** button. Xcode will add the package dependency to your project, and you can import it.
 4. In the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list. 
