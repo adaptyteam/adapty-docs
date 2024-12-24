@@ -1,4 +1,4 @@
-```json title="JSON"
+```json
 {
   "first_name": "Jane",
   "last_name": "Doe",

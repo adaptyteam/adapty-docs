@@ -2,7 +2,7 @@
 
 <p> </p>
 
-The request failed due to missing or incorrect authorization. Check the [Authorization](server-side-api-specs#authorization) page, paying close attention to the **Authorization header**.
+The request failed due to missing or incorrect authorization. Check the [Authorization](ss-authorization) page, paying close attention to the **Authorization header**.
 
 The request also failed because the specified profile wasn’t found.
 
@@ -30,3 +30,5 @@ The request also failed because the specified profile wasn’t found.
   "status_code": 401
 }
 ```
+
+ 

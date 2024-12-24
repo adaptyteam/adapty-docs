@@ -14,6 +14,7 @@ You can manually adjust the access level for a particular customer right in the 
 1. Open the **[Profiles and Segments](https://app.adapty.io/placements)** section from the Adapty main menu, then select the **Profiles** tab.
 
    
+
 <Zoom>
   <img src={require('./img/444f659-profiles_list.webp').default}
   style={{
@@ -31,6 +32,7 @@ You can manually adjust the access level for a particular customer right in the 
 2. In the **Profiles** window, click on the customer you want to grant access to. 
 
    
+
 <Zoom>
   <img src={require('./img/96d0abf-add_access_level_to_customer.webp').default}
   style={{
@@ -48,6 +50,7 @@ You can manually adjust the access level for a particular customer right in the 
 3. In the opened window, click the **Add access level** button.
 
    
+
 <Zoom>
   <img src={require('./img/2379036-add_access_level_to_customer1.webp').default}
   style={{
@@ -68,4 +71,4 @@ You can manually adjust the access level for a particular customer right in the 
 
 ## Give access level to a specific customer via API
 
-You also have the option to give a customer an access level from your server using the Adapty API. This comes in handy if you have bonuses for referrals or other events related to your products. Find additional details in the [API Specs](server-side-api-specs#prolonggrant-a-subscription-for-a-user) section.
+You also have the option to give a customer an access level from your server using the Adapty API. This comes in handy if you have bonuses for referrals or other events related to your products. Find additional details on the [Grant access level with server-side API](ss-grant-access-level) page.

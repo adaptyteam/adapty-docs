@@ -9,8 +9,6 @@ displayed_sidebar: APISidebar
 
 import Details from '@site/src/components/Details'; 
 import AccessLevel from '@site/src/components/reusable/AccessLevel.md';  
-import Subscription from '@site/src/components/reusable/Subscription.md';  
-import NonSubscription from '@site/src/components/reusable/NonSubscription.md';  
 import ResponseExample from '@site/src/components/reusable/responseExample.md';
 import ProfileObject from '@site/src/components/reusable/ProfileObject.md';  
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';

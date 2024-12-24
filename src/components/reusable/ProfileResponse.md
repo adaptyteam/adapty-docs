@@ -10,4 +10,4 @@
 
 ###### Body:
 
-[Profile object](server-side-api-specs#profile-object)
+[Profile object](server-side-api-objects#profile)

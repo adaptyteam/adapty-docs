@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 With the API, you can:
 
 1. Check a user's subscription status.
-2. Activate a user's subscription with an [access level](access-level).
+2. Activate a user's subscription with an access level.
 3. Retrieve user attributes.
 4. Set user attributes.
 
@@ -37,9 +37,9 @@ To track subscription events, use [Webhook](webhook) integration in Adapty or in
 
 1. If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
    1. [Assign a unique ID to each user](identifying-users).
-   2. [Check their subscription status](server-side-api-specs#retrieve-profile) using the API.
+   2. [Check their subscription status](ss-get-profile) using the API.
    3. If a user is on a freemium plan, display a paywall on your website.
-   4. After a successful payment, [update the subscription status](server-side-api-specs#set-transaction) in Adapty via API.
+   4. After a successful payment, [update the subscription status](ss-set-transaction) in Adapty via API.
    5. Your subscribers will automatically stay in sync with your mobile app.
 
 ## Case 2: Grant a subscription
@@ -52,14 +52,14 @@ If you're selling through your own online store, Amazon Appstore, Microsoft Stor
 
 1. [Assign a unique ID to each user](identifying-users).
 2. [Set up a custom store for your products in the Adapty Dashboard](initial-custom).
-3. Sync the transaction to Adapty using the [Set transaction](server-side-api-specs#set-transaction) API request.
+3. Sync the transaction to Adapty using the [Set transaction](ss-set-transaction) API request.
 
 ## Case 3: Grant an access level
 
 Let’s say you're running a promotion offering a 7-day free trial and you want the experience to be consistent across platforms. To sync this with the mobile app:
 
 1. [Assign a unique ID to each user](identifying-users).
-2. Use the API to [grant premium access](server-side-api-specs#grant-access-level) for 7 days.
+2. Use the API to [grant premium access](ss-grant-access-level) for 7 days.
 
 After the 7 days, users who don’t subscribe will be downgraded to the free tier.
 
@@ -68,8 +68,14 @@ After the 7 days, users who don’t subscribe will be downgraded to the free tie
 If you have custom attributes for your users—such as the number of words learned in a language learning app—you can sync them as well.
 
 1. [Assign a unique ID to each user](identifying-users).
-2. [Update the attribute](server-side-api-specs#update-profile) via API or SDK.
+2. [Update the attribute](ss-update-profile) via API or SDK.
 
 These custom attributes can be used to create segments and run A/B tests.
 
-For more details, visit the [API Specs](server-side-api-specs).
+---
+
+**What's next:**
+
+- Proceed with [authorization for server-side API](ss-authorization)
+- Proceed with [API requests](server-side-api-specs).
+
