@@ -100,13 +100,13 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 :::
 
 ```csharp 
-Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
-    if(error != null) {
-        // handle the error
-        return;
-    }
+// every time when calling transasction.finish()
 
-    // successful binding
+Adapty.ReportTransaction(
+  "YOUR_TRANSACTION_ID", 
+  "PAYWALL_VARIATION_ID", // optional
+  (error) => {
+  // handle the error
 });
 ```
 </TabItem>

@@ -205,9 +205,15 @@ FlutterBranchSdk.initSession().listen((data) async {
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
+using AdaptySDK;
+
 Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
     string attributionString = JsonUtility.ToJson(parameters);
-    Adapty.UpdateAttribution(attributionString, AttributionSource.Branch, (error) => {
+    
+    Adapty.UpdateAttribution(
+      attributionString, 
+      "branch", 
+      (error) => {
         // handle the error
     });
 });

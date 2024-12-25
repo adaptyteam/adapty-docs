@@ -13,7 +13,7 @@ import Details from '@site/src/components/Details';
 After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 :::warning
-The new Paywall Builder is available for iOS (from v3.0), Android (from v3.0), React Native (from v3.0), and Flutter (from v3.2.0) only. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
+The new Paywall Builder works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. For presenting paywalls in Adapty SDK v2 designed with the legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
 :::
 
 Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products) topic.
@@ -127,7 +127,14 @@ try {
 }
 ```
 </TabItem>
-</Tabs>
+
+<TabItem value="Unity" label="Unity" default>
+
+```csharp
+.
+```
+
+</TabItem></Tabs>
 
 Parameters:
 
@@ -345,6 +352,13 @@ Parameters:
 | **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
 
 </TabItem>
+
+<TabItem value="Unity" label="Unity" default>
+
+.
+
+</TabItem>
+
 </Tabs>
 
 :::note
@@ -439,6 +453,25 @@ try {
 } catch (error) {
     // handle the error
 }
+```
+
+</TabItem>
+
+<TabItem value="Unity" label="Unity" default>
+
+```c#
+using AdaptySDK;
+
+Adapty.GetPaywallForDefaultAudience(
+  "YOUR_PLACEMENT_ID", 
+  (paywall, error) => {
+  
+  if (error != null) {
+    // handle the error
+  }
+  
+  // use the requested paywall
+});
 ```
 
 </TabItem>

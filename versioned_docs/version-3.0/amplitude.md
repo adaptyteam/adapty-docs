@@ -167,16 +167,25 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
-builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+using AdaptySDK;
 
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+Adapty.SetIntegrationIdentifier(
+  "amplitude_user_id", 
+  "AMPLITUDE_USER_ID", 
+  (error) => {
+  // handle the error
+});
+
+Adapty.SetIntegrationIdentifier(
+  "amplitude_device_id", 
+  amplitude.getDeviceId(), 
+  (error) => {
+  // handle the error
 });
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 import { adapty } from 'react-native-adapty';
 

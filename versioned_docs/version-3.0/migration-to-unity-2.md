@@ -222,3 +222,11 @@ In this article, we have listed the most significant changes introduced in the n
 You can find the complete list of changes on the [release page](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/2.2.0). 
 
 Stay tuned for more updates!
+
+
+
+---
+
+**What's next:**
+
+- [Migrate to Adapty Unity SDK 3.3.x](migration-to-unity330)

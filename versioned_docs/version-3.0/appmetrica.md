@@ -151,16 +151,23 @@ if (deviceId != null) {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
+using AdaptySDK;
+
 var deviceId = AppMetrica.GetDeviceId();
 
 if (deviceId != null {
-  var builder = new Adapty.ProfileParameters.Builder();
-
-  builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-  builder.SetAppmetricaDeviceId(deviceId);
-
-  Adapty.UpdateProfile(builder.Build(), (error) => {
-      // handle error
+  Adapty.SetIntegrationIdentifier(
+    "appmetrica_device_id", 
+    deviceId, 
+    (error) => {
+    // handle the error
+  });
+  
+  Adapty.SetIntegrationIdentifier(
+    "appmetrica_profile_id", 
+    "YOUR_ADAPTY_CUSTOMER_USER_ID", 
+    (error) => {
+    // handle the error
   });
 }
 ```

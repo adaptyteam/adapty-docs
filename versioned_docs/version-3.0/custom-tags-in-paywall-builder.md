@@ -9,15 +9,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-:::note
-Custom tags are only available on AdaptyUI SDK v.2.1.0 and higher
-:::
-
 Custom tags let you avoid creating separate paywalls for different scenarios. Imagine a single paywall that adapts dynamically based on user data. For example, instead of a generic "Hello!", you could greet users personally with "Hello, John!" or "Hello, Ann!"
 
 :::warning
 
-This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later which is now available for iOS, Android, Flutter, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-paywall-builder).
+This section describes the new Paywall Builder, compatible with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-paywall-builder).
 
 :::
 

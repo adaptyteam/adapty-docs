@@ -228,15 +228,16 @@ OneSignal.shared.setSubscriptionObserver((changes) {
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp
+using AdaptySDK;
 using OneSignalSDK;
 
 var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetOneSignalPlayerId(pushUserId);
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+Adapty.SetIntegrationIdentifier(
+  "one_signal_player_id", 
+  pushUserId, 
+  (error) => {
+  // handle the error
 });
 ```
 

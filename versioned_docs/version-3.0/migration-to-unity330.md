@@ -20,12 +20,13 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
    - Adapty.ProfileParameters -> AdaptyProfileParameters
    - ProfileGender -> AdaptyProfileGender
    - Error -> AdaptyError
-
 3. From now on, the `SetLogLevel` method accepts a callback as an argument.
 4. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
 5. Remove the `GetProductsIntroductoryOfferEligibility` method.
-6. изменилась сигнатура `UpdateAttribution` - будет отдельный коммент по этой части как для флаттера
-7. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+6. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
+7. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh. изменилась сигнатура `UpdateAttribution` - будет отдельный коммент по этой части как для флаттера
+
+## Upgrade Adapty Unity SDK to 3.3.x
 
 ## Renamings
 
@@ -47,6 +48,41 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 ```diff
 - Adapty.PresentCodeRedemptionSheet();
 + Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
+```
+
+## Remove the `GetProductsIntroductoryOfferEligibility` method
+
+Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
+
+## Update method for providing fallback paywalls
+
+Up to this version, the fallback paywalls were passed as a serialized JSON. Starting from v 3.3.0, the mechanism is changed:
+
+1. Save fallback paywalls to files in `/Assets/StreamingAssets/`, 1 file for Android and another for iOS.
+2. Pass the file names to the `SetFallbackPaywalls` method.
+
+Your code will change this way:
+
+```diff
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // handle the error
+  });
+}
 ```
 
 

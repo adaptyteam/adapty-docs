@@ -23,7 +23,7 @@ The paywall timer is a great tool for promoting special and seasonal offers with
 
 :::warning
 
-Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later, available for iOS, Android, Flutter, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
+Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
 
 :::
 
