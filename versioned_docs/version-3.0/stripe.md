@@ -263,7 +263,7 @@ Adapty has to tie a purchase to a [customer profile](profiles-crm) for it to be 
 You can configure which ID you would like to use in [App Settings → Stripe](https://app.adapty.io/settings/stripe).
 
 :::warning
-**Note:** if a particular transaction from Stripe does not contain the specified ID, we will not create a profile at all. This transaction will remain anonymous until it gets picked up by some profile (for example, if you use [S2S validate](server-side-api-specs#validate-a-purchase-from-stripe-provide-access-level-to-a-customer-and-import-his-transaction-history-from-stripe) afterwards and tell us about this transaction manually).
+**Note:** if a particular transaction from Stripe does not contain the specified ID, we will not create a profile at all. This transaction will remain anonymous until it gets picked up by some profile (for example, if you use [S2S validate](ss-purchase-in-stripe) afterwards and tell us about this transaction manually).
 
 It will show up in Analytics but not in the sections that rely on counting profiles (LTV, Cohorts, Conversions, etc) and you won't be able to see it in Event feed.
 :::

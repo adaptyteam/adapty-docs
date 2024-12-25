@@ -133,7 +133,7 @@ const config = {
             ],
           },*/
           {
-            label: "API",
+            label: "Server API",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
@@ -343,6 +343,7 @@ const config = {
           "toml",
           "groovy",
           "json",
+          "bash"
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!
