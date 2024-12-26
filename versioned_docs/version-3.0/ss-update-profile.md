@@ -1,5 +1,5 @@
 ---
-title: "  Update profilewith server-side API"
+title: "  Update profile with server-side API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar

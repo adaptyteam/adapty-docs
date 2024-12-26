@@ -63,7 +63,7 @@ Let’s say you're running a promotion offering a 7-day free trial and you want 
 
 After the 7 days, users who don’t subscribe will be downgraded to the free tier.
 
-## Case 4: Syncing users' attributes and custom properties
+## Case 4: Syncing users' properties and custom attributes 
 
 If you have custom attributes for your users—such as the number of words learned in a language learning app—you can sync them as well.
 
