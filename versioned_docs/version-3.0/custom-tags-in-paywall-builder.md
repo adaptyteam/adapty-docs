@@ -131,6 +131,24 @@ final view = await AdaptyUI().createPaywallView(
 ```
 </TabItem>
 
+<TabItem value="Unity" label="Unity (C#)" default>
+
+```
+var parameters = new AdaptyUICreateViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetCustomTags(
+    new Dictionary<string, string> {
+      { "CUSTOM_TAG_NAME", "John Appleseed" }
+    }
+  )
+
+AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+</TabItem>
+
 <TabItem value="rn" label="React Native" default>
 
 ```typescript

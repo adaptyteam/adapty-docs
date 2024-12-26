@@ -288,40 +288,6 @@ try {
 ```
 
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
-
-```csharp 
-using AdaptySDK;
-using AdjustSdk;
-
-Adjust.GetAdid((adid) => {
-  if (adid != null) {
-    Adapty.SetIntegrationIdentifier(
-      "adjust_device_id", 
-      adid, 
-      (error) => {
-        // handle the error
-    });
-  }
-});
-
-Adjust.GetAttribution((attribution) => {
-  Dictionary<String, object> data = new Dictionary<String, object>();
-
-  data["network"] = attribution.Network;
-  data["campaign"] = attribution.Campaign;
-  data["adgroup"] = attribution.Adgroup;
-  data["creative"] = attribution.Creative;
-
-  String attributionString = JsonUtility.ToJson(data);
-    
-  Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
-    // handle the error
-  });
-});
-```
-
-</TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
