@@ -355,7 +355,44 @@ Parameters:
 
 <TabItem value="Unity" label="Unity" default>
 
-.
+In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
+
+:::warning
+The result of the `CreateView` method can only be used once. If you need to use it again, call the `CreateView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```csharp
+var parameters = new AdaptyUICreateViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetCustomTags(
+    new Dictionary<string, string> {
+      { "CUSTOM_TAG_NAME", "John Appleseed" }
+    }
+  )
+  .SetCustomTimers(
+    new Dictionary<string, DateTime> { 
+      { "CUSTOM_TIMER_1M", DateTime.Now.AddSeconds(60) }
+    }
+  )
+  .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+| Parameter                     | Presence       | Description                                                  |
+| :---------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**                   | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **LoadTimeout**               | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+| **products**                  | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **androidPersonalizedOffers** | optional       | A map indicating whether the price for a specific product is personalized. The key is a string combining `basePlanId` and `vendorProductId`, separated by a `:`. If `basePlanId` is `null` or empty, only `vendorProductId` is used. <p>**Example**: `basePlanId:vendorProductId` or simply `vendorProductId`.</p><p>For more details, check the [[official Android Developers documentation](https://developer.android.com/google/play/billing/integrate#personalized-price).</p> |
+| **tagResolver**               | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**             | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
+In this example, `CUSTOM_TIMER_1M` is the **Timer ID** of the developer-defined timer you set in the Adapty Dashboard. The `CustomTimers` ensures your app dynamically updates the timer with the correct value. For example:
+
+- `CUSTOM_TIMER_1m`: The time left in a 1-month period that started when the user opened the paywall.
 
 </TabItem>
 
@@ -365,7 +402,7 @@ Parameters:
 If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
 
-Once you have successfully loaded the paywall and its view configuration, you can proceed to presenting the paywall in your mobile app.
+Once you have successfully loaded the paywall and its view configuration, you can present it in your mobile app.
 
 ## Speed up paywall fetching with default audience paywall
 

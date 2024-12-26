@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
-2. Rename:
+2. Rename in Adapty SDK:
    - Adapty.sdkVersion -> Adapty.SDKVersion
    - Adapty.LogLevel -> AdaptyLogLevel
    - Adapty.Paywall -> AdaptyPaywall
@@ -20,11 +20,21 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
    - Adapty.ProfileParameters -> AdaptyProfileParameters
    - ProfileGender -> AdaptyProfileGender
    - Error -> AdaptyError
-3. From now on, the `SetLogLevel` method accepts a callback as an argument.
-4. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
-5. Remove the `GetProductsIntroductoryOfferEligibility` method.
-6. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
-7. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh. изменилась сигнатура `UpdateAttribution` - будет отдельный коммент по этой части как для флаттера
+3. Rename in AdaptyUI module:
+   - `CreatePaywallView` -> `CreateView`
+     1. Все дополнительные параметры вынесены в структуру `AdaptyUICreateViewParameters`
+
+   - `PresentPaywallView` -> `PresentView`
+   - `DismissPaywallView` -> `DismissView`
+   - AdaptyUIEventListener merged into AdaptyEventListener
+   - `AdaptyUI.View` -> `AdaptyUIView`
+   - `AdaptyUI.Action` -> `AdaptyUIUserAction`
+
+4. From now on, the `SetLogLevel` method accepts a callback as an argument.
+5. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
+6. Remove the `GetProductsIntroductoryOfferEligibility` method.
+7. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
+8. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh. изменилась сигнатура `UpdateAttribution` - будет отдельный коммент по этой части как для флаттера
 
 ## Upgrade Adapty Unity SDK to 3.3.x
 
