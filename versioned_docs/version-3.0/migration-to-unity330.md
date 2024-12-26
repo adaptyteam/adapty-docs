@@ -10,14 +10,28 @@ import TabItem from '@theme/TabItem';
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
+
 2. Renamed multiple classes, properties, and methods in the Adapty and AdaptyUI modules of Adapty SDK.
+
 3. From now on, the `SetLogLevel` method accepts a callback as an argument.
-4. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
-5. Remove the `GetProductsIntroductoryOfferEligibility` method.
-6. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
-7. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh. изменилась сигнатура `UpdateAttribution` - будет отдельный коммент по этой части как для флаттера
+
+4. 
+
+5. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
+
+6. Remove the `GetProductsIntroductoryOfferEligibility` method.
+
+7. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
+
+8. Update making purchase
+
+9. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+
+10. Update Observer mode implementation.
 
 ## Upgrade Adapty Unity SDK to 3.3.x
+
+.
 
 ## Renamings
 
@@ -63,7 +77,7 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 + Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
 ```
 
-## Remove the `GetProductsIntroductoryOfferEligibility` method
+## Remove the GetProductsIntroductoryOfferEligibility method
 
 Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
@@ -98,13 +112,44 @@ void SetFallBackPaywalls() {
 }
 ```
 
+## Update making purchase
+
+Previously canceled and pending purchases were considered errors and returned the `USER_CANCELED` and `pendingPurchase` codes, respectively.
+
+Now a new `AdaptyPurchaseResultType` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
+
+```diff
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // handle successfull purchase
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // handle pending purchase
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // handle purchase cancellation
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // handle successfull purchase
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
 
 
 ## Update 3d-party integration SDK configuration
 
-Starting with Adapty iOS SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
+Starting with Adapty Unity SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
-To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below.
+To ensure integrations work properly with Adapty Unity SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below.
 
 ### Adjust
 
@@ -416,3 +461,27 @@ Update your mobile app code as shown below. For the complete code example, check
 +   // handle the error
 + });
 ```
+
+## Update Observer mode implementation
+
+Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
+
+```diff
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+

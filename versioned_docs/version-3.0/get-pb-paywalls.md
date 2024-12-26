@@ -478,25 +478,9 @@ try {
 ```
 </TabItem>
 
-<TabItem value="RN" label="React Native" default>
-
-```typescript
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
-  // the requested paywall
-} catch (error) {
-    // handle the error
-}
-```
-
-</TabItem>
-
 <TabItem value="Unity" label="Unity" default>
 
-```c#
+```csharp
 using AdaptySDK;
 
 Adapty.GetPaywallForDefaultAudience(
@@ -509,6 +493,22 @@ Adapty.GetPaywallForDefaultAudience(
   
   // use the requested paywall
 });
+```
+
+</TabItem>
+
+<TabItem value="RN" label="React Native" default>
+
+```typescript
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
 ```
 
 </TabItem>
