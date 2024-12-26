@@ -17,7 +17,7 @@ To present remote config paywalls, see [Render paywalls designed with remote con
 
 :::
 
-To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
+To display a paywall, use the `view.present()` method on the `view` created by the `PresentView` method. Each `view` can only be used once. If you need to display the paywall again, call `createView` one more to create a new `view` instance. 
 
 :::warning
 

@@ -82,7 +82,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder()
+var builder = new AdaptyProfileParameters.Builder()
     .SetAnalyticsDisabled(true);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {

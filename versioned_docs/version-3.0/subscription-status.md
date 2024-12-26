@@ -283,7 +283,7 @@ Adapty().didUpdateProfileStream.listen((profile) {
 ```csharp 
 // Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-  public void OnLoadLatestProfile(Adapty.Profile profile) {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
     // handle any changes to subscription state
   }
 }

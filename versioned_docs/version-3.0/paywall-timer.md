@@ -196,6 +196,29 @@ try {
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem> 
+
+<TabItem value="Unity" label="Unity (C#)" default> 
+
+```
+var parameters = new AdaptyUICreateViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetCustomTimers(
+    new Dictionary<string, DateTime> { 
+      { "CUSTOM_TIMER_1M", DateTime.Now.AddSeconds(60) }
+    }
+  )
+
+AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+ In this example, `CUSTOM_TIMER_M1` is the **Timer ID** of developer-defined timers you set in the Adapty Dashboard. Your app will dynamically update the timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time left in a 1-month period that started when the user opened the paywall.
+
+</TabItem> 
+
  <TabItem value="RN" label="React Native (TS)" default> 
 
 ```typescript

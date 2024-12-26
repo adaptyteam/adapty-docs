@@ -10,28 +10,27 @@ import TabItem from '@theme/TabItem';
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
-
 2. Renamed multiple classes, properties, and methods in the Adapty and AdaptyUI modules of Adapty SDK.
-
 3. From now on, the `SetLogLevel` method accepts a callback as an argument.
-
-4. 
-
-5. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
-
+4. From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
+5. Change how the paywall view is created
 6. Remove the `GetProductsIntroductoryOfferEligibility` method.
-
 7. Save fallback paywalls to separate files (one per platform) in `Assets/StreamingAssets/` and pass the file names to the `SetFallbackPaywalls` method.
-
 8. Update making purchase
-
-9. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-
-10. Update Observer mode implementation.
+9. Update handling of Paywall Builder events.
+10. Update handling of Paywall Builder paywall errors.
+11. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+13. Update Observer mode implementation.
 
 ## Upgrade Adapty Unity SDK to 3.3.x
 
-.
+Up to this version, Adapty SDK was the code and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
+
+Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged to Adapty SDK as an optional module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
+
+1. Remove both **AdaptySDK** and **AdaptyUISDK** package dependencies from your project.
+2. Delete the **AdaptySDK** and **AdaptyUISDK** folders.
+3. Import the AdaptySDK package again as described in the [Adapty SDK installation & configuration for Unity](sdk-installation-unity) page.
 
 ## Renamings
 
@@ -77,6 +76,24 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 + Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
 ```
 
+## Change how the paywall view is created
+
+For the complete code example, check out the [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) section.
+
+```diff
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // use the view
+});
+```
+
 ## Remove the GetProductsIntroductoryOfferEligibility method
 
 Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
@@ -114,7 +131,7 @@ void SetFallBackPaywalls() {
 
 ## Update making purchase
 
-Previously canceled and pending purchases were considered errors and returned the `USER_CANCELED` and `pendingPurchase` codes, respectively.
+Previously canceled and pending purchases were considered errors and returned the `PaymentCancelled` and `PendingPurchase` codes, respectively.
 
 Now a new `AdaptyPurchaseResultType` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
@@ -134,7 +151,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 +       break;
 +     case AdaptyPurchaseResultType.Success:
 +       var profile = result.Profile;
-+       // handle successfull purchase
++       // handle successful purchase
 +       break;
 +     default:
 +       break;
@@ -143,6 +160,136 @@ void MakePurchase(AdaptyPaywallProduct product) {
 }
 ```
 
+## Update handling of Paywall Builder events
+
+Canceled and pending purchases are not considered to be errors any more, all these cases are processed with the `PaywallViewDidFinishPurchase` method.
+
+1. Delete processing of the [Canceled purchase](unity-handling-events-legacy#canceled-purchase) event.
+
+2. Update handling of the Successful purchase event in the following way:
+
+   ```diff
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. Update handling of actions:
+
+   ```diff
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // handle other events
+           break;
+       }
+   }
+   ```
+
+4. Update handling of started purchase:
+
+   ```diff
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. Update handling of failed purchase:
+
+   ```diff
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. Update handling of successful restore event:
+
+   ```diff
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+## Update handling of Paywall Builder paywall errors
+
+The handling of errors is changed as well, please update your code according to the guidance below.
+
+1. Update the handling of the product loading errors:
+
+   ```diff
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. Update the handling of the rendering errors:
+
+   ```diff
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+   
 
 
 ## Update 3d-party integration SDK configuration
@@ -154,10 +301,6 @@ To ensure integrations work properly with Adapty Unity SDK 3.3.0 and later, upda
 ### Adjust
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
-
-<Tabs>
-
-<TabItem value="v5" label="Adjust 5.x+" default>
 
 ```diff
 - using static AdaptySDK.Adapty;
@@ -202,17 +345,6 @@ Update your mobile app code as shown below. For the complete code example, check
    });
  });
 ```
-
-</TabItem>
-
-<TabItem value="v4" label="Adjust 4.x" default>
-
-```diff
-.
-```
-
-</TabItem>
-</Tabs>
 
 ### Amplitude
 
