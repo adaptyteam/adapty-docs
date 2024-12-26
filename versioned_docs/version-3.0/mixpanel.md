@@ -143,12 +143,18 @@ try {
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetMixpanelUserId(Mixpanel.DistinctId);
+using AdaptySDK;
 
-Adapty.UpdateProfile(builder.Build(), (error) => {
+var distinctId = Mixpanel.DistinctId;
+
+if (distinctId != null) {
+  Adapty.SetIntegrationIdentifier(
+    "mixpanel_user_id", 
+    distinctId, 
+    (error) => {
     // handle the error
-});
+  });
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>

@@ -19,7 +19,7 @@ We’re thrilled to introduce our [**New Paywall Builder**](adapty-paywall-build
 
 Adapty offers two versions of the Paywall Builder simultaneously:
 
-- **Beta Version of the New Paywall Builder**: Located under the **Builder** tab of the paywall in the Adapty Dashboard, this version is the most recent and versatile. Paywalls created here require Adapty SDK v3.0 or later.
+- **New Paywall Builder**: Located under the **Builder** tab of the paywall in the Adapty Dashboard, this version is the most recent and versatile. Paywalls created here require iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher.
 - **Legacy Paywall Builder**: Found under the **Legacy Builder** tab, this outdated version should only be used to support older app versions with SDKs below v3.x.x. We recommend avoiding it for new paywalls as it will be deprecated soon.
 
 ## Migrating Paywalls to the New Builder
@@ -34,6 +34,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
 2. Open the **Builder** tab.
 
    
+
 <Zoom>
   <img src={require('./img/3f4d4c2-PB_migrate_paywall.webp').default}
   style={{
@@ -53,6 +54,7 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
 6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
 
    
+
 <Zoom>
   <img src={require('./img/78f63f0-PB_hughlighted_issues.webp').default}
   style={{

@@ -284,3 +284,9 @@ In this article, we have listed the most significant changes introduced in the n
 You can find the complete list of changes on the [release page](https://github.com/adaptyteam/AdaptySDK-iOS/releases/tag/2.0.2). 
 
 Stay tuned for more updates!
+
+---
+
+**What's next:**
+
+- [Migrate to Adapty SDK 3.0.x](migration-to-adapty-sdk-v3)

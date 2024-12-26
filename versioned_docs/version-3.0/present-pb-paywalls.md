@@ -15,7 +15,8 @@ For detailed guidance on presenting paywalls within different frameworks, please
 - [Android](android-present-paywalls)
 - [Flutter](flutter-present-paywalls)
 - [React Native](react-native-present-paywalls)
+- [Unity](unity-present-paywalls)
 
 :::warning
-The new Paywall Builder is available for iOS (from v3.0), Android (from v3.0), React Native (from v3.0), and Flutter (from v3.2.0) only. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
+The new Paywall Builder works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. For presenting paywalls in Adapty SDK v2 designed with the legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](present-pb-paywalls).
 :::

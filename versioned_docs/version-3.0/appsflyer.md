@@ -198,7 +198,7 @@ It's very important to send AppsFlyer attribution data from the device to Adapty
 class YourAppsFlyerLibDelegateImplementation {
     // Find your implementation of AppsFlyerLibDelegate 
     // and update onConversionDataSuccess method:
-    func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
+    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
         Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
         Adapty.updateAttribution(conversionInfo, source: "appsflyer")
@@ -260,6 +260,7 @@ appsflyerSdk.initSdk(
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
+using AdaptySDK;
 using AppsFlyerSDK;
 
 // before SDK initialization
@@ -267,9 +268,19 @@ AppsFlyer.getConversionData(this.name);
 
 // in your IAppsFlyerConversionData
 void onConversionDataSuccess(string conversionData) {
-    // It's important to include the network user ID
     string appsFlyerId = AppsFlyer.getAppsFlyerId();
-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
+    
+    Adapty.SetIntegrationIdentifier(
+      "appsflyer_id", 
+      appsFlyerId, 
+      (error) => {
+        // handle the error
+    });
+    
+    Adapty.UpdateAttribution(
+      conversionData, 
+      "appsflyer",
+      (error) => {
         // handle the error
     });
 }

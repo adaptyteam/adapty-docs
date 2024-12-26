@@ -17,6 +17,18 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 6. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 7. Update Observer mode implementation.
 
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
 ## Rename Adapty.Configuration to AdaptyConfiguration
 
 Update the code of Adapty iOS SDK activation in the following way:
@@ -174,7 +186,7 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 
 ## Remove getProductsIntroductoryOfferEligibility method
 
-Before Adapty iOS SDK 3.2.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
 Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
 
@@ -182,10 +194,9 @@ If you still want to view offers for users who are not eligible, refer to `sk1Pr
 
 ## Update 3d-party integration SDK configuration
 
-Starting with Adapty iOS SDK 3.2.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
+Starting with Adapty iOS SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
-To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described in the sections below.
-
+To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below.
 ### Adjust
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
@@ -343,17 +354,14 @@ Update your mobile app code as shown below. For the complete code example, check
 class YourAppsFlyerLibDelegateImplementation {
     // Find your implementation of AppsFlyerLibDelegate 
     // and update onConversionDataSuccess method:
--    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
--        // It's important to include the network user ID
--        let networkUserId = AppsFlyerLib.shared().getAppsFlyerUID()
--
+     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
 -        Adapty.updateAttribution(
 -           conversionInfo.toSendableDict(),
 -            source: .appsflyer,
--            networkUserId: networkUserId
+-            networkUserId: uid
 -        )
-+    func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
-+        let uid = AppsFlyerLib.shared().getAppsFlyerUID()
 +        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
 +        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
     }
@@ -538,7 +546,7 @@ Update how you link paywalls to transactions. Previously, you used the `setVaria
 
 :::warning
 
-Don't forget to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, won't grant access levels, won't include it in analytics, and won't send it to integrations. This step is essential!
+Remember to record the transaction using the `reportTransaction` method. Skipping this step means Adapty won't recognize the transaction, grant access levels, include it in analytics, or send it to integrations. This step is essential!
 
 :::
 
@@ -559,5 +567,3 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 +     // handle the error
 + }
 ```
-
- 

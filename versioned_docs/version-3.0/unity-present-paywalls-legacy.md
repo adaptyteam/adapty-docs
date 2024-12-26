@@ -1,5 +1,5 @@
 ---
-title: "Unity - Present new Paywall Builder paywalls"
+title: "Unity - Present legacy Paywall Builder paywalls"
 description: ""
 metadataTitle: ""
 ---
@@ -11,10 +11,9 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide covers the **new Paywall Builder**, which requires Adapty SDK 3.3.0 or later. If you're using the legacy Paywall Builder (compatible with Adapty SDK version 2.x and earlier), check out [Present legacy Paywall Builder paywalls in Unity](unity-present-paywalls-legacy).
+This guide is for **legacy Paywall Builder paywalls**, which require Adapty SDK up to version 2.x. The [new Paywall Builder](adapty-paywall-builder) requires Adapty SDK 3.0 or later, which is currently not available for Unity.
 
-To present remote config paywalls, see [Render paywalls designed with remote config](present-remote-config-paywalls).
-
+For presenting remote config paywalls, see [Render paywall designed by remote config](present-remote-config-paywalls).
 :::
 
 To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
@@ -25,7 +24,7 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 ```csharp title="Unity"
-AdaptyUI.PresentView(view, (error) => {
+view.Present((error) => {
   // handle the error
 });
 ```

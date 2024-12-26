@@ -21,4 +21,4 @@ For detailed guidance on presenting paywalls within different frameworks, please
 - [Android - Present paywalls](android-present-paywalls)
 - [Flutter - Present paywalls](flutter-present-paywalls)
 - [React Native - Present paywalls](react-native-present-paywalls)
-- [Unity - Present paywalls](unity-present-paywalls)
+- [Unity - Present paywalls](unity-present-paywalls-legacy)
