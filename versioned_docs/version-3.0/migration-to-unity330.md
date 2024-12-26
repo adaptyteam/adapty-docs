@@ -129,6 +129,8 @@ void SetFallBackPaywalls() {
 }
 ```
 
+Check out the final code example in the [Use fallback paywalls in Unity](unity-use-fallback-paywalls) page.
+
 ## Update making purchase
 
 Previously canceled and pending purchases were considered errors and returned the `PaymentCancelled` and `PendingPurchase` codes, respectively.
@@ -159,6 +161,8 @@ void MakePurchase(AdaptyPaywallProduct product) {
   });
 }
 ```
+
+Check out the final code example in the [Make purchases in mobile app](making-purchases) page.
 
 ## Update handling of Paywall Builder events
 
@@ -256,6 +260,8 @@ Canceled and pending purchases are not considered to be errors any more, all the
    + ) { }
    
    ```
+
+Check out the final code example in the [Handle paywall events](unity-handling-events) page.
 
 ## Update handling of Paywall Builder paywall errors
 

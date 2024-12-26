@@ -1,5 +1,5 @@
 ---
-title: "Handle paywall events"
+title: "Handle legacy Paywall Builder paywall events"
 description: ""
 metadataTitle: ""
 ---
