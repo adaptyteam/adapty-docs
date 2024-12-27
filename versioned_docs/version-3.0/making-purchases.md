@@ -469,16 +469,27 @@ Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="Flutter" label="Flutter" default>
 
-Text 
+```javascript
+try {
+  await Adapty().presentCodeRedemptionSheet();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
 
 </TabItem> 
 
 <TabItem value="Unity" label="Unity" default>
 
- Text 
-
+```csharp
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
 </TabItem>
 
 <TabItem value="RN" label="React Native (TS)" default>
