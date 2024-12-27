@@ -50,7 +50,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 />
 </Zoom>
 
-Now, you can translate the content manually, use AI like ChatGPT, or export the localization file for external translators.
+Now, you can translate the content manually, use AI, or export the localization file for external translators.
 
 ## Translating paywalls with AI
 
@@ -102,8 +102,6 @@ You can translate both **String** and **List** values. By default, all lines are
    </Zoom>
 
 3. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
-
-<!---
 
 ## Exporting localization files for external translation
 
@@ -167,8 +165,6 @@ To ensure a successful import, the import file must meet the following requireme
   | **Invalid JSON file**                   | The file is not a valid JSON. Validate it to ensure it meets JSON formatting standards (e.g., check for missing or extra commas). |
   | **Some languages are not in the table** | <p>At least one file name does not match a locale name. Ensure all files are named correctly, as shown in the localization table. Locale names must match exactly.</p><p>Another possible reason is attempting to import an unrelated file. Verify the file’s contents.</p> |
   | **Some keys are not in the table**      | The file contains keys not present in the current remote config. This may occur if keys were removed from the remote config after exporting for localization or if there are typos in the file. Review the file and remove any extra. |
-
---->
 
 ## Manual localization
 
