@@ -17,7 +17,7 @@ To present remote config paywalls, see [Render paywalls designed with remote con
 
 :::
 
-To display a paywall, use the `view.present()` method on the `view` created by the `PresentView` method. Each `view` can only be used once. If you need to display the paywall again, call `createView` one more to create a new `view` instance. 
+To display a paywall, use the `view.Present()` method on the `view` created by the `CreateView` method. Each `view` can only be used once. If you need to display the paywall again, call `createView` one more to create a new `view` instance. 
 
 :::warning
 
@@ -25,7 +25,7 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 ```csharp title="Unity"
-AdaptyUI.PresentView(view, (error) => {
+view.Present((error) => {
   // handle the error
 });
 ```

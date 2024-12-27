@@ -46,7 +46,7 @@ The following action types are supported:
 - `Close`
 - `OpenUrl`
 - `Custom`
-- `AndroidSystemBack`. 
+- `SystemBack`. 
 
  At the very least you need to implement the reactions to both `close` and `openURL`.
 
