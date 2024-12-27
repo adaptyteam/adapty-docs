@@ -171,7 +171,7 @@ using AdaptySDK;
 
 Adapty.SetIntegrationIdentifier(
   "amplitude_user_id", 
-  "AMPLITUDE_USER_ID", 
+  "YOUR_AMPLITUDE_USER_ID", 
   (error) => {
   // handle the error
 });

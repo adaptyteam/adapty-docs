@@ -133,9 +133,8 @@ final view = await AdaptyUI().createPaywallView(
 
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```
+```csharp
 var parameters = new AdaptyUICreateViewParameters()
-  .SetPreloadProducts(preloadProducts)
   .SetCustomTags(
     new Dictionary<string, string> {
       { "CUSTOM_TAG_NAME", "John Appleseed" }

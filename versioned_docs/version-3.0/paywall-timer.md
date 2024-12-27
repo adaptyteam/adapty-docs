@@ -199,12 +199,12 @@ try {
 
 <TabItem value="Unity" label="Unity (C#)" default> 
 
-```
+```csharp
 var parameters = new AdaptyUICreateViewParameters()
-  .SetPreloadProducts(preloadProducts)
   .SetCustomTimers(
-    new Dictionary<string, DateTime> { 
-      { "CUSTOM_TIMER_1M", DateTime.Now.AddSeconds(60) }
+    new Dictionary<string, DateTime> {
+      { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) }, // 6 hours
+      { "CUSTOM_TIMER_NY", new DateTime(2025, 1, 1) } // New Year 2025
     }
   )
 
@@ -213,9 +213,10 @@ AdaptyUI.CreateView(paywall, parameters, (view, error) => {
 });
 ```
 
- In this example, `CUSTOM_TIMER_M1` is the **Timer ID** of developer-defined timers you set in the Adapty Dashboard. Your app will dynamically update the timer with the correct value. For example:
+-  In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
 
-- `CUSTOM_TIMER_NY`: The time left in a 1-month period that started when the user opened the paywall.
+  - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+  - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem> 
 

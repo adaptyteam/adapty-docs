@@ -149,17 +149,26 @@ try {
 <TabItem value="Unity" label="Unity" default>
 
 ```csharp 
-Adapty.MakePurchase(product, (profile, error) => {
-  if(error != null) {
-      // handle error
-      return;
-  }
-  
-  var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
-  if (accessLevel != null && accessLevel.IsActive) {
-      // grant access to features
-  }
-});
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
@@ -459,7 +468,21 @@ Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a
 Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
+
+<TabItem value="Flutter" label="Flutter" default> 
+
+Text 
+
+</TabItem> 
+
+<TabItem value="Unity" label="Unity" default>
+
+ Text 
+
+</TabItem>
+
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 adapty.presentCodeRedemptionSheet();
 ```

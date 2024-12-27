@@ -189,7 +189,7 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 
 Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
-Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility — if an offer is present, the user is eligible.
 
 If you still want to view offers for users who are not eligible, refer to `sk1Product` and `sk2Product`.
 

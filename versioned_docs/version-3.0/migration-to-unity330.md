@@ -24,9 +24,9 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 
 ## Upgrade Adapty Unity SDK to 3.3.x
 
-Up to this version, Adapty SDK was the code and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
+Up to this version, Adapty SDK was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
 
-Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged to Adapty SDK as an optional module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
+Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged to Adapty SDK as a module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
 
 1. Remove both **AdaptySDK** and **AdaptyUISDK** package dependencies from your project.
 2. Delete the **AdaptySDK** and **AdaptyUISDK** folders.
@@ -98,7 +98,7 @@ For the complete code example, check out the [Fetch the view configuration of pa
 
 Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
-Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility—if an offer is present, the user is eligible.
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility — if an offer is present, the user is eligible.
 
 ## Update method for providing fallback paywalls
 
@@ -357,19 +357,18 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
 ```diff
+using AdaptySDK;
 - var builder = new Adapty.ProfileParameters.Builder();
-- builder.SetAmplitudeUserId("AMPLITUDE_USER_ID");
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
 - builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
 
 - Adapty.UpdateProfile(builder.Build(), (error) => {
 -     // handle error
 - });
 
-+ using AdaptySDK;
-
 + Adapty.SetIntegrationIdentifier(
 +   "amplitude_user_id", 
-+   "AMPLITUDE_USER_ID", 
++   "YOUR_AMPLITUDE_USER_ID", 
 +   (error) => {
 +   // handle the error
 + });
@@ -387,6 +386,8 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
 ```diff
+using AdaptySDK;
+
 - var deviceId = AppMetrica.GetDeviceId();
 
 - if (deviceId != null {
@@ -399,8 +400,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -       // handle error
 -   });
 - }
-
-+ using AdaptySDK;
 
 + var deviceId = AppMetrica.GetDeviceId();
 
@@ -463,6 +462,8 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
 ```diff
+using AdaptySDK;
+
 - class YourBranchImplementation {
 -     func initializeBranch() {
 -         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
@@ -472,8 +473,6 @@ Update your mobile app code as shown below. For the complete code example, check
 -         }
 -     }
 - }
-
-+ using AdaptySDK;
 
 + Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
 +     string attributionString = JsonUtility.ToJson(parameters);
@@ -527,14 +526,14 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
 ```diff
+using AdaptySDK;
+
 - var builder = new Adapty.ProfileParameters.Builder();
 - builder.SetMixpanelUserId(Mixpanel.DistinctId);
 
 - Adapty.UpdateProfile(builder.Build(), (error) => {
 -     // handle error
 - });
-
-+ using AdaptySDK;
 
 + var distinctId = Mixpanel.DistinctId;
 
@@ -553,6 +552,8 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
 ```diff
+using AdaptySDK;
+
 - using OneSignalSDK;
 
 - var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
@@ -563,8 +564,6 @@ Update your mobile app code as shown below. For the complete code example, check
 - Adapty.UpdateProfile(builder.Build(), (error) => {
 -     // handle error
 - });
-
-+ using AdaptySDK;
 
 + var distinctId = Mixpanel.DistinctId;
 
@@ -583,14 +582,14 @@ Update your mobile app code as shown below. For the complete code example, check
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
 ```diff
+using AdaptySDK;
+
 - var builder = new Adapty.ProfileParameters.Builder();
 - builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
 
 - Adapty.UpdateProfile(builder.Build(), (error) => {
 -     // handle error
 - });
-
-+ using AdaptySDK;
 
 + Adapty.SetIntegrationIdentifier(
 +   "pushwoosh_hwid", 
