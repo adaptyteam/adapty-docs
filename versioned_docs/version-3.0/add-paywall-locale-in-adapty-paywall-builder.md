@@ -13,11 +13,12 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 
 ## Add and set up localization
 
-1. Switch over to the **Localizations** tab below the **Builder** title. 
+1. Click the **Add locale** menu, and select all languages you want to have in your app.
 
-   
+
+
 <Zoom>
-  <img src={require('./img/0a6100c-PB_localization.webp').default}
+  <img src={require('./img/add_locale.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -27,13 +28,10 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 />
 </Zoom>
 
+2. Click the Localization menu to see all added localizations. The new locales will be pre-filled with values from the default.
 
-
-2. Click the **Add locale** button, and select all languages you want to have in your app.
-
-   
 <Zoom>
-  <img src={require('./img/4abdb84-add_locale.webp').default}
+  <img src={require('./img/localization.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -43,12 +41,8 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 />
 </Zoom>
 
-
-
-
-      Once added, the new locale will be pre-filled with values from the default.
-
-   
+:::note
+Pay attention to the locale code (`en`, `fr` and `it` on the screenshot above). You'll need to pass it to the `getViewConfiguration` method of our SDK to get the correct localization.
 <Zoom>
   <img src={require('./img/0e99ddb-copy_locale.webp').default}
   style={{
@@ -60,18 +54,13 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 />
 </Zoom>
 
-
-
-
-:::note
-Pay attention to the locale code (`en`, `fr` and `it` on the screenshot above). You'll need to pass it to the `getViewConfiguration` method of our SDK to get the correct localization.
-
 You can learn more about it [here](get-pb-paywalls).
 :::
 
 3. Now you can fill in the translated values for the new locale. There are a few controls in this table that can make it easier (especially if you have many locales).
 
    
+
 <Zoom>
   <img src={require('./img/df4b331-locale_options.webp').default}
   style={{
