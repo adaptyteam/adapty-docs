@@ -10,3 +10,4 @@ See our detailed migration guides per platforms:
 
 - [iOS](migration-to-ios330)
 - [Android](migration-to-android330)
+- [Flutter](migration-to-flutter330)
