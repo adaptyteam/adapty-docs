@@ -83,7 +83,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-<Tabs>
+<Tabs groupId="mixpanel">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
@@ -113,11 +113,7 @@ Adapty.updateProfile(params: builder.build())
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
-val params = AdaptyProfileParameters.Builder()
-    .withMixpanelUserId(mixpanelAPI.distinctId)
-    .build()
-
-Adapty.updateProfile(params) { error ->
+Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
     if (error != null) {
         // handle the error
     }
@@ -130,17 +126,18 @@ Adapty.updateProfile(params) { error ->
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
-
-final builder = AdaptyProfileParametersBuilder()
-        ..setMixpanelUserId(
-          await mixpanel.getDistinctId(),
-        );
+final distinctId = await mixpanel.getDistinctId();
 
 try {
-    await Adapty().updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "mixpanel_user_id", 
+        value: distinctId,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
@@ -150,7 +147,7 @@ var builder = new Adapty.ProfileParameters.Builder();
 builder.SetMixpanelUserId(Mixpanel.DistinctId);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+    // handle the error
 });
 ```
 </TabItem>

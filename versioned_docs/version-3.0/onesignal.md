@@ -145,9 +145,9 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 
 <Tabs> 
 
-<TabItem value="v5+" label="v5+ OneSignal SDK (New)" default> 
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
-<Tabs>
+<Tabs groupId="onesignal">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift 
@@ -169,11 +169,7 @@ OneSignal.Notifications.requestPermission({ accepted in
 // SubscriptionID
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.current.id)
-            .build()
-        
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -183,15 +179,12 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 ```
 
 </TabItem>
-<TabItem value="java" label="Java" default>
+<TabItem value="java" label="(Android) Java" default>
 
 ```java 
 // SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-            .withOneSignalSubscriptionId(state.getCurrent().getId())
-            .build();
-    Adapty.updateProfile(params, error -> {
+    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
         if (error != null) {
             // handle the error
         }
@@ -202,8 +195,6 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 </TabItem>  
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-
-<!--- TODO: update Flutter example --->
 
 ```javascript
 OneSignal.shared.setSubscriptionObserver((changes) {
@@ -216,9 +207,9 @@ OneSignal.shared.setSubscriptionObserver((changes) {
         try {
             Adapty().updateProfile(builder.build());
         } on AdaptyError catch (adaptyError) {
-            // handle error
+            // handle the error
         } catch (e) {
-            // handle error
+            // handle the error
         }
     }
 });
@@ -261,7 +252,7 @@ OneSignal.addSubscriptionObserver(event => {
 
  </TabItem> 
 
-<TabItem value="pre-v5" label="pre-v5 OneSignal SDK) (Previous)" default> 
+<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -288,11 +279,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 // PlayerID
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
-        val params = AdaptyProfileParameters.Builder()
-            .withOneSignalPlayerId(playerId)
-            .build()
-      
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -311,11 +298,7 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     String playerId = to != null ? to.getUserId() : null;
     
     if (playerId != null) {
-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
-                .withOneSignalPlayerId(playerId)
-                .build();
-        
-        Adapty.updateProfile(params1, error -> {
+        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
             if (error != null) {
                 // handle the error
             }
@@ -328,25 +311,19 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-<!--- TODO: update Flutter example --->
-
 ```javascript
-OneSignal.shared.setSubscriptionObserver((changes) {
-    final playerId = changes.to.userId;
-    if (playerId != null) {
-        final builder = 
-            AdaptyProfileParametersBuilder()
-                ..setOneSignalPlayerId(playerId);
-                // ..setOneSignalSubscriptionId(playerId);
-        try {
-            Adapty().updateProfile(builder.build());
-        } on AdaptyError catch (adaptyError) {
-            // handle error
-        } catch (e) {
-            // handle error
+// PlayerID (pre-v5 OneSignal SDK)
+// in your OSSubscriptionObserver implementation
+func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+    if let playerId = stateChanges.to.userId {
+        Task {
+            try await Adapty.setIntegrationIdentifier(
+                key: "one_signal_player_id", 
+                value: playerId
+            )
         }
     }
-});
+}
 ```
 
 </TabItem>
@@ -361,7 +338,7 @@ var builder = new Adapty.ProfileParameters.Builder();
 builder.SetOneSignalPlayerId(pushUserId);
 
 Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+    // handle the error
 });
 ```
 

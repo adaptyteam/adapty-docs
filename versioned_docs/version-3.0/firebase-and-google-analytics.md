@@ -127,7 +127,7 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the`firebase_app_instance_id` to Adapty. Here you can see an example of the code which can be used to integrate Firebase SDK and Adapty SDK.
 
-<Tabs>
+<Tabs groupId="firebase-and-google-analytics">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 import FirebaseCore
@@ -152,12 +152,10 @@ if let appInstanceId = Analytics.appInstanceID() {
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
-    Adapty.updateProfile(
-        AdaptyProfileParameters.Builder()
-            .withFirebaseAppInstanceId(appInstanceId)
-            .build()
-    ) {
-        //handle error
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
+        if (error != null) {
+            // handle the error
+        }
     }
 }
 ```
@@ -167,11 +165,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-        .withFirebaseAppInstanceId(appInstanceId)
-        .build();
-    
-    Adapty.updateProfile(params, error -> {
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
         if (error != null) {
             // handle the error
         }
@@ -183,16 +177,18 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
 ```javascript
 import 'package:firebase_analytics/firebase_analytics.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setFirebaseAppInstanceId(
-          await FirebaseAnalytics.instance.appInstanceId,
-        );
-        
+final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
+
 try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "firebase_app_instance_id", 
+        value: appInstanceId,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
@@ -214,7 +210,7 @@ Firebase.Analytics
                 builder.SetFirebaseAppInstanceId(firebaseId);
 
                 Adapty.UpdateProfile(builder.Build(), (error) => {
-                    // handle error
+                    // handle the error
                 });
             });
 ```

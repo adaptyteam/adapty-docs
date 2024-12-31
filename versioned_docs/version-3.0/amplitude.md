@@ -98,7 +98,7 @@ Use the `Adapty.updateProfile()` method to set either `amplitudeDeviceId` or `am
 
 Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
 
-<Tabs>
+<Tabs groupId="amplitude">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift
 import Amplitude 
@@ -137,11 +137,13 @@ val amplitudeUserId = amplitude.store.userId
 
 //
 
-val params = AdaptyProfileParameters.Builder()
-    .withAmplitudeDeviceId(amplitudeDeviceId)
-    .withAmplitudeUserId(amplitudeUserId)
-    .build()
-Adapty.updateProfile(params) { error ->
+Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+
+Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
     if (error != null) {
         // handle the error
     }
@@ -154,15 +156,20 @@ import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
 
-final builder = AdaptyProfileParametersBuilder()
-     ..setAmplitudeDeviceId(await amplitude.getDeviceId())
-     ..setAmplitudeUserId(await amplitude.getUserId());
-
 try {
-     await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "amplitude_user_id", 
+        value: amplitude.getUserId(),
+    );
+    await Adapty().setIntegrationIdentifier(
+        key: "amplitude_device_id", 
+        value: amplitude.getDeviceId(),
+    );
 } on AdaptyError catch (adaptyError) {
-     // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>

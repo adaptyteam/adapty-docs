@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 In Observer mode, Adapty SDK cannot determine the source of purchases as you are the one processing them. Therefore, if you intend to use paywalls and/or A/B tests in Observer mode, you need to report the transaction coming from your app store and associate it with the corresponding paywall in your mobile app code. This is important to get right before releasing your app, otherwise it will lead to errors in analytics.
 
-<Tabs>
+<Tabs groupId="associate-paywalls-to-transactions">
 <TabItem value="Swift" label="Swift" default>
 
 Include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
@@ -78,14 +78,16 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 :::
 
 ```javascript
-final transactionId = transaction.transactionIdentifier
-final variationId = paywall.variationId
-
 try {
-  await Adapty().setVariationId('transaction_id', variationId);
+    // every time when calling transasction.finish()
+    await Adapty().reportTransaction(
+        "YOUR_TRANSACTION_ID", 
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
 } on AdaptyError catch (adaptyError) {
-  // handle the error
+    // handle the error
 } catch (e) {
+    // handle the error
 }
 ```
 </TabItem>
