@@ -198,6 +198,18 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
+## Add Kotlin Plugin
+
+If you are using Paywall Builder, add Kotlin Plugin.
+
+:::warning
+
+Skipping this step may result in crashing your mobile app at the moment of the paywall showing.
+
+:::
+
+
+
 </TabItem> 
 
 <TabItem value="old" label="Adapty SDK up to v2.x (legacy)" default> 
