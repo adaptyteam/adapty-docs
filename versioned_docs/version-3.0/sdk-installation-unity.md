@@ -198,17 +198,53 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
-## Add Kotlin Plugin
+## Add Kotlin Plugin to your project
 
-If you are using Paywall Builder, add Kotlin Plugin.
+If you're using the Paywall Builder, make sure to add the Kotlin Plugin.
 
 :::warning
 
-Skipping this step may result in crashing your mobile app at the moment of the paywall showing.
+Skipping this step can cause your mobile app to crash when the paywall is displayed.
 
 :::
 
+1. In **Player Settings**, ensure that the **Custom Launcher Grader Template** and **Custom Base Grade Template** options are selected.
+   <Zoom>
+     <img src={require('./img/kotlin-plugin1.webp').default}
+     style={{
+       border: 'none', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
 
+2. Add the following line to `/Assets/Plugins/Android/launcherTemplate.gradle`:
+
+   ```groovy
+   apply plugin: 'com.android.application'
+   // highlight-next-line
+   apply plugin: 'kotlin-android'
+   apply from: 'setupSymbols.gradle'
+   apply from: '../shared/keepUnitySymbols.gradle'
+   ```
+
+3. Add the following line to `/Assets/Plugins/Android/baseProjectTemplate.gradle`:
+
+   ```groovy
+   plugins {
+       // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+       // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+       // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+       // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+       id 'com.android.application' version '8.3.0' apply false
+       id 'com.android.library' version '8.3.0' apply false
+   // highlight-next-line
+       id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+       **BUILD_SCRIPT_DEPS**
+   }
+   ```
 
 </TabItem> 
 
