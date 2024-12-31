@@ -13,7 +13,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is required if you’re using the Adapty Paywall Builder—a no-code, user-friendly tool for creating cross-platform paywalls. With a visual constructor right in the dashboard, you can build paywalls that run natively on devices and are designed to deliver high performance with minimal effort. 
-  The module is installed automatically with the Adapty SDK, but you can leave it deactivated if you don’t need it.
+  The module is installed and activated automatically with the Adapty SDK, but you can deactivate it if you don’t need it.
 
 :::danger
 Go through the release checklist before releasing your app
@@ -76,36 +76,21 @@ Parameters:
 | **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **withIpAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
 
-### Activate AdaptyUI module of Adapty SDK
+### Activation and configuration of AdaptyUI module of Adapty SDK
 
-You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
+The module is activated automatically with the Adapty SDK.
 
-```dart title="Dart"
-try {
-    final mediaCache = AdaptyUIMediaCacheConfiguration(
-        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
-        memoryStorageCountLimit: 2147483647, // 2^31 - 1, max int value in Dart
-        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
-    );
-
-    await AdaptyUI().activate(
-        configuration: AdaptyUIConfiguration(mediaCache: mediaCache),
-        observer: <AdaptyUIObserver Implementation>,
-    );
-} catch (e) {
-    // handle the error
-}
-```
-
-Please note that AdaptyUI configuration is optional, you can activate AdaptyUI module without its config. However, if you use the config, all parameters are required in it.
+You can configure AdaptyUI by passing `AdaptyUIMediaCacheConfiguration` to the `withMediaCacheConfiguration` method while building the `AdaptyConfiguration` object. Note that AdaptyUI configuration is optional, and you can proceed without it. However, if you use the configuration, all parameters must be included.
 
 Parameters:
 
 | Parameter                       | Presence | Description                                                  |
 | :------------------------------ | :------- | :----------------------------------------------------------- |
-| **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
+| **memoryStorageTotalCostLimit** | required | The total cost limit of the storage in bytes.                |
 | **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
 | **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+
+If you do not use the Paywall Builder and want to deactivate the AdaptyUI module, pass `withActivateUI(false)` during activation.
 
  </TabItem> <TabItem value="2" label="Up to v2.x (legacy)" default> 
 
