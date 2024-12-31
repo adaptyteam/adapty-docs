@@ -1,5 +1,5 @@
 ---
-title: "Handle paywall events"
+title: "Handle legacy Paywall Builder paywall events"
 description: ""
 metadataTitle: ""
 ---
@@ -18,5 +18,5 @@ In the framework-specific sections, we'll dive into details of effective managem
 - [Android - Handling events](android-handling-events)
 - [Flutter - Handling events](flutter-handling-events)
 - [React Native - Handling events](react-native-handling-events-1)
-- [Unity - Handling events](unity-handling-events)
+- [Unity - Handling events](unity-handling-events-legacy)
 

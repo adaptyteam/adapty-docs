@@ -23,7 +23,7 @@ The paywall timer is a great tool for promoting special and seasonal offers with
 
 :::warning
 
-Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which is compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later, available for iOS, Android, Flutter, and React Native. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
+Paywall timers are only available in the [new Paywall Builder](adapty-paywall-builder), which works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. The legacy Paywall Builder with Adapty SDK v2.x or earlier does not support paywall timer functionality.
 
 :::
 
@@ -196,6 +196,30 @@ try {
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem> 
+
+<TabItem value="Unity" label="Unity (C#)" default> 
+
+```csharp
+var parameters = new AdaptyUICreateViewParameters()
+  .SetCustomTimers(
+    new Dictionary<string, DateTime> {
+      { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) }, // 6 hours
+      { "CUSTOM_TIMER_NY", new DateTime(2025, 1, 1) } // New Year 2025
+    }
+  )
+
+AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+-  In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+
+  - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+  - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
+</TabItem> 
+
  <TabItem value="RN" label="React Native (TS)" default> 
 
 ```typescript

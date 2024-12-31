@@ -260,6 +260,7 @@ appsflyerSdk.initSdk(
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
+using AdaptySDK;
 using AppsFlyerSDK;
 
 // before SDK initialization
@@ -267,9 +268,19 @@ AppsFlyer.getConversionData(this.name);
 
 // in your IAppsFlyerConversionData
 void onConversionDataSuccess(string conversionData) {
-    // It's important to include the network user ID
     string appsFlyerId = AppsFlyer.getAppsFlyerId();
-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
+    
+    Adapty.SetIntegrationIdentifier(
+      "appsflyer_id", 
+      appsFlyerId, 
+      (error) => {
+        // handle the error
+    });
+    
+    Adapty.UpdateAttribution(
+      conversionData, 
+      "appsflyer",
+      (error) => {
         // handle the error
     });
 }

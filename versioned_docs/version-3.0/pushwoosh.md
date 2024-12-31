@@ -172,11 +172,13 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+using AdaptySDK;
 
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle the error
+Adapty.SetIntegrationIdentifier(
+  "pushwoosh_hwid", 
+  Pushwoosh.Instance.HWID, 
+  (error) => {
+  // handle the error
 });
 ```
 </TabItem>

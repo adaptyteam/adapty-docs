@@ -11,7 +11,7 @@ import Details from '@site/src/components/Details';
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.
 
 :::warning
-This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder is currently supported only on iOS, Android, React Native, and Flutter as it requires SDK v3.0 (v3.2.0 for Flutter), which is not yet available for Unity. Support for Unity is coming soon.
+This guide covers the process for **new Paywall Builder paywalls** only. The new Paywall Builder works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher.
 
 - For displaying **legacy Paywall Builder paywalls**, check out [Display paywalls designed with legacy Paywall Builder](display-legacy-pb-paywalls).
 

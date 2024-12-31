@@ -193,26 +193,29 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
+using AdaptySDK;
+
 // We suppose FirebaseAnalytics Unity Plugin is already installed
 
 Firebase.Analytics
-            .FirebaseAnalytics
-            .GetAnalyticsInstanceIdAsync()
-            .ContinueWithOnMainThread((task) => {
-                if (!task.IsCompletedSuccessfully)
-                {
-                    // handle error
-                    return;
-                }
+  .FirebaseAnalytics
+  .GetAnalyticsInstanceIdAsync()
+  .ContinueWithOnMainThread((task) => {
+    if (!task.IsCompletedSuccessfully) {
+      // handle error
+      return;
+    }
 
-                var firebaseId = task.Result
-                var builder = new Adapty.ProfileParameters.Builder();
-                builder.SetFirebaseAppInstanceId(firebaseId);
-
-                Adapty.UpdateProfile(builder.Build(), (error) => {
-                    // handle the error
-                });
-            });
+    var firebaseId = task.Result
+    var builder = new Adapty.ProfileParameters.Builder();
+    
+    Adapty.SetIntegrationIdentifier(
+      "firebase_app_instance_id", 
+      firebaseId, 
+      (error) => {
+        // handle the error
+    });
+  });
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>

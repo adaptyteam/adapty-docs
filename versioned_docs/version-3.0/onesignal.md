@@ -219,15 +219,16 @@ OneSignal.shared.setSubscriptionObserver((changes) {
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp
+using AdaptySDK;
 using OneSignalSDK;
 
 var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetOneSignalPlayerId(pushUserId);
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+Adapty.SetIntegrationIdentifier(
+  "one_signal_player_id", 
+  pushUserId, 
+  (error) => {
+  // handle the error
 });
 ```
 
@@ -327,24 +328,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 ```
 
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
-
-```csharp
-using OneSignalSDK;
-
-var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
-
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetOneSignalPlayerId(pushUserId);
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle the error
-});
-```
-
-</TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-
 ```typescript 
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';

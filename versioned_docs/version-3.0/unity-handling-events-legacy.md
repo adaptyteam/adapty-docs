@@ -11,8 +11,14 @@ import 'react-medium-image-zoom/dist/styles.css';
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
-This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](http://localhost:3000/docs/react-native-handling-events-legacy).
+This guide is for **legacy Paywall Builder paywalls**, which require Adapty SDK up to version 2.x. The [new Paywall Builder](adapty-paywall-builder) requires Adapty SDK 3.0 or later, which is currently not available for Unity.
 :::
+
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIEventListener` methods and register the observer before presenting any screen:
+
+```csharp title="Unity"
+AdaptyUI.SetEventListener(this);
+```
 
 ### User-generated events
 
@@ -21,15 +27,12 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 If a user has performed some action, this method will be invoked:
 
 ```csharp title="Unity"
-public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
-  AdaptyUIUserAction action
-) {
+public void OnPerformAction(AdaptyUI.View view, AdaptyUI.Action action) {
   switch (action.Type) {
-    case AdaptyUIUserActionType.Close:
+    case AdaptyUI.ActionType.Close:
       view.Dismiss(null);
       break;
-    case AdaptyUIUserActionType.OpenUrl:
+    case AdaptyUI.ActionType.OpenUrl:
       var urlString = action.Value;
       if (urlString != null {
       	Application.OpenURL(urlString); 
@@ -46,12 +49,12 @@ The following action types are supported:
 - `Close`
 - `OpenUrl`
 - `Custom`
-- `SystemBack`. 
+- `AndroidSystemBack`. 
 
  At the very least you need to implement the reactions to both `close` and `openURL`.
 
 For example, if a user taps the close button, the action `Close` will occur and you are supposed to dismiss the paywall.  
-Note that `AdaptyUIUserAction` has optional value property: look at this in the case of `OpenUrl` and `Custom`.
+Note that `AdaptyUI.Action` has optional value property: look at this in the case of `OpenUrl` and `Custom`.
 
 > 💡 Login Action
 > 
@@ -62,10 +65,8 @@ Note that `AdaptyUIUserAction` has optional value property: look at this in the 
 If a product was selected for purchase (by a user or by the system), this method will be invoked.
 
 ```csharp title="Unity"
-public void PaywallViewDidSelectProduct(
-  AdaptyUIView view, 
-  string productId
-) { }
+public void OnSelectProduct(AdaptyUI.View view, Adapty.PaywallProduct product) {
+}
 ```
 
 #### Started purchase
@@ -73,22 +74,28 @@ public void PaywallViewDidSelectProduct(
 If a user initiates the purchase process, this method will be invoked.
 
 ```csharp title="Unity"
-public void PaywallViewDidStartPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product
-) { }
+public void OnStartPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) {
+}
 ```
 
-#### Successful or canceled purchase
+#### Canceled purchase
 
-If `Adapty.MakePurchase()` succeeds, the user cancels their purchase or the purchase appears to be pending, this method will be invoked:
+If a user initiates the purchase process but manually interrupts it, this method will be invoked. This event occurs when the `Adapty.MakePurchase()` function completes with a `.paymentCancelled` error:
 
 ```csharp title="Unity"
-public void PaywallViewDidFinishPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product, 
-  AdaptyPurchaseResult purchasedResult
-) { }
+public void OnCancelPurchase(AdaptyUI.View view, Adapty.PaywallProduct product) {
+}
+```
+
+#### Successful purchase
+
+If `Adapty.MakePurchase()` succeeds, this method will be invoked:
+
+```csharp title="Unity"
+public void OnFinishPurchase(AdaptyUI.View view, 
+                             Adapty.PaywallProduct product, 
+                             Adapty.Profile profile) {
+}
 ```
 
 We recommend dismissing the screen in that case.
@@ -98,11 +105,10 @@ We recommend dismissing the screen in that case.
 If `Adapty.MakePurchase()` fails, this method will be invoked:
 
 ```csharp title="Unity"
-public void PaywallViewDidFailPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product, 
-  AdaptyError error
-) { }
+public void OnFailPurchase(AdaptyUI.View view, 
+                           Adapty.PaywallProduct product, 
+                           Adapty.Error error) {
+}
 ```
 
 #### Successful restore
@@ -110,10 +116,8 @@ public void PaywallViewDidFailPurchase(
 If `Adapty.RestorePurchases()` succeeds, this method will be invoked:
 
 ```csharp title="Unity"
-public void PaywallViewDidFinishRestore(
-  AdaptyUIView view, 
-  AdaptyProfile profile
-) { }
+public void OnFinishRestore(AdaptyUI.View view, Adapty.Profile profile) {
+}
 ```
 
 We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
@@ -123,10 +127,8 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 If `Adapty.RestorePurchases()` fails, this method will be invoked:
 
 ```csharp title="Unity"
-public void PaywallViewDidFailRestore(
-  AdaptyUIView view, 
-  AdaptyError error
-) { }
+public void OnFailRestore(AdaptyUI.View view, Adapty.Error error) {
+}
 ```
 
 ### Data fetching and rendering
@@ -136,10 +138,8 @@ public void PaywallViewDidFailRestore(
 If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. In this case, this operation may fail, and AdaptyUI will report the error by invoking this method:
 
 ```csharp title="Unity"
-public void PaywallViewDidFailLoadingProducts(
-  AdaptyUIView view, 
-  AdaptyError error
-) { }
+public void OnFailLoadingProducts(AdaptyUI.View view, Adapty.Error error) {
+}
 ```
 
 #### Rendering errors
@@ -147,10 +147,8 @@ public void PaywallViewDidFailLoadingProducts(
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
 ```csharp title="Unity"
-public void PaywallViewDidFailRendering(
-  AdaptyUIView view, 
-  AdaptyError error
-) { }
+public void OnFailRendering(AdaptyUI.View view, Adapty.Error error) {
+}
 ```
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.

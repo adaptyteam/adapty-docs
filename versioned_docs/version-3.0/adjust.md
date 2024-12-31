@@ -323,30 +323,6 @@ try {
 ```
 
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
-
-```csharp 
-using static AdaptySDK.Adapty;
-using AdjustSdk;
-
-Adjust.GetAdid((adid) => {
-  Adjust.GetAttribution((attribution) => {
-    Dictionary<String, object> data = new Dictionary<String, object>();
-
-    data["network"] = attribution.Network;
-    data["campaign"] = attribution.Campaign;
-    data["adgroup"] = attribution.Adgroup;
-    data["creative"] = attribution.Creative;
-
-    String attributionString = JsonUtility.ToJson(data);
-    Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
-      // handle the error
-    });
-  });
-});
-```
-
-</TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
