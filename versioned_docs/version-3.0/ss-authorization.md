@@ -5,7 +5,7 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-- **Base URL**: https://api.adapty.io/api/v2/server-side-api/
+- **Base URL**: `https://api.adapty.io/api/v2/server-side-api/`
 - **Authorization header**: API requests must be authenticated with your API key:
   - Your public or secret API key as the **Authorization** header is required. You can find your API keys in the [**App Settings**](https://app.adapty.io/settings/general). 
 
