@@ -37,7 +37,7 @@ Adapty sends selected events to Tenjin as configured in the **Events names** sec
 ```json title="Json"
 {
   "price": 99.0,
-  "locale": "ru-RU",
+  "locale": "en-US",
   "country": "ME",
   "postcut": "false",
   "currency": "USD",
@@ -232,23 +232,65 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.ge
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
 ```javascript 
-...
+try {
+    final tenjinId = await TenjinSDK.instance.getAnalyticsInstallationId();
+    
+    if (tenjinId != null) {
+        await Adapty().setIntegrationIdentifier(
+            key: 'tenjin_analytics_installation_id', 
+            value: tenjinId,
+        );
+    }
+
+    final attribution = await TenjinSDK.instance.getAttributionInfo();
+    if (attribution != null) {
+        await Adapty().updateAttribution(attribution, source: 'tenjin');
+    }
+} catch (e) {
+    // handle the error
+}
 ```
 
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
-...
+using AdaptySDK;
+using System.Linq;
+
+BaseTenjin instance = Tenjin.getInstance("<SDK_KEY>");
+var tenjinId = instance.GetAnalyticsInstallationId();
+
+Adapty.SetIntegrationIdentifier(
+    "tenjin_analytics_installation_id",
+    tenjinId,
+    (error) => {
+        // handle the error
+    });
+
+instance.GetAttributionInfo((attribution) => {
+    var dynamicAttribution = attribution.ToDictionary(
+        kvp => kvp.Key,
+        kvp => (dynamic)kvp.Value
+    );
+                
+Adapty.UpdateAttribution(
+    dynamicAttribution,
+    "tenjin",
+    (error) => {
+        // handle the error
+    });
+});
 ```
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+
+<!--- <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
 ...
 ```
 
-</TabItem>
+</TabItem> --->
 </Tabs>
 
