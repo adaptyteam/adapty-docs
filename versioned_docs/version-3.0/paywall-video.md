@@ -36,7 +36,7 @@ Hero video is supported on Adapty SDK:
 - Android: starting with v3.1.1
 - Flutter: starting with v3.2.0
 - React Native: starting with v3.1.0
-- Unity: starting with v3.0.0
+- Unity: starting with v3.3.0
 
 If the video isn't supported or in fallback cases, the first frame of the video will be shown instead.
 

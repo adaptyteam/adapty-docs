@@ -208,7 +208,7 @@ Skipping this step can cause your mobile app to crash when the paywall is displa
 
 :::
 
-1. In **Player Settings**, ensure that the **Custom Launcher Grader Template** and **Custom Base Grade Template** options are selected.
+1. In **Player Settings**, ensure that the **Custom Launcher Gradle Template** and **Custom Base Gradle Template** options are selected.
    <Zoom>
      <img src={require('./img/kotlin-plugin1.webp').default}
      style={{
