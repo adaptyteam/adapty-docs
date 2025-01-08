@@ -50,7 +50,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 />
 </Zoom>
 
-Now, you can translate the content manually, use AI like ChatGPT, or export the localization file for external translators.
+Now, you can translate the content manually, use AI, or export the localization file for external translators.
 
 ## Translating paywalls with AI
 
