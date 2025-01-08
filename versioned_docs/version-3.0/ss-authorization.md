@@ -6,13 +6,16 @@ displayed_sidebar: APISidebar
 ---
 
 - **Base URL**: https://api.adapty.io/api/v2/server-side-api/
-- **Authorization header**: API requests must be authenticated with your API key:
-  - Your public or secret API key as the **Authorization** header is required. You can find your API keys in the [**App Settings**](https://app.adapty.io/settings/general). 
-
-  - For access level and transaction requests, use your secret API key. For other requests, use either the public or secret API key. Remember to keep your secret key private.
-
-  - Format of the value is `Api-Key {YOUR_SECRET_API_KEY}` or `Api-Key {YOUR_PUBLIC_API_KEY}`, for example, `Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6`.
-
+- **Authorization header**: API requests must be authenticated with your secret API key. You can find it in the [**App Settings**](https://app.adapty.io/settings/general). 
+  
+  Format of the value is `Api-Key {YOUR_SECRET_API_KEY}`, for example, `Api-Key secret_live_Pj1P1xzM.3CvSvE3IalQRFjsWy3csBVNpH71atnod`.
+  
+  :::note
+  
+  A sample test API key is included in all the examples here. To test requests using your account, replace the sample API key with your actual API key
+  
+  :::
+  
 - **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
 - **Header**: Use one of the following to identify the user profile
   - **adapty-profile-id**: The user’s Adapty profile ID, visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page.
