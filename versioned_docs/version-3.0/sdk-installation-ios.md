@@ -86,6 +86,7 @@ let configurationBuilder =
         .with(customerUserId: "YOUR_USER_ID")
         .with(idfaCollectionDisabled: false)
         .with(ipAddressCollectionDisabled: false)
+        .with(LogLevel: verbose) // optional 
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
@@ -108,7 +109,8 @@ struct SampleApp: App {
           .with(customerUserId: "YOUR_USER_ID") // optional
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
-
+          .with(LogLevel: verbose) // optional 
+      
         Task {
             try await Adapty.activate(with: configurationBuilder)
         }
@@ -134,6 +136,7 @@ Parameters:
 | **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | **idfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| **LogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 
 
 :::note
@@ -247,6 +250,7 @@ let configurationBuilder =
         .with(customerUserId: "YOUR_USER_ID") // optional
         .with(idfaCollectionDisabled: false) // optional
         .with(ipAddressCollectionDisabled: false) // optional
+        .with(LogLevel: verbose) // optional 
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
