@@ -34,7 +34,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
 --header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
---header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --data-raw '{
   "first_name": "Jane",
   "last_name": "Doe",
@@ -74,12 +74,67 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 <TabItem value="python" label="Python" default> 
 
 ```python
+import requests
+import json
+
+url = "https://api.adapty.io/api/v2/server-side-api/profile/"
+
+payload = json.dumps({
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "gender": "f",
+  "email": "jane.dow@example.com",
+  "phone_number": "+1234567890",
+  "birthday": "2000-12-31",
+  "ip_country": "FR",
+  "store_country": "US",
+  "store": "app_store",
+  "analytics_disabled": True,
+  "custom_attributes": [
+    {
+      "key": "favourite_sport",
+      "value": "yoga"
+    }
+  ],
+  "installation_meta": {
+    "device_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "device": "string",
+    "locale": "en",
+    "os": "string",
+    "platform": "iOS",
+    "timezone": "Europe/Rome",
+    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
+    "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
+    "idfv": "E9D48DA5-3930-4B41-8521-D953AECD2F33",
+    "advertising_id": "",
+    "android_id": "",
+    "android_app_set_id": ""
+  }
+})
+headers = {
+  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
+  'adapty-platform': 'iOS',
+  'Content-Type': 'application/json',
+  'adapty-profile-id': '<YOUR_USER_PROFILE_ID>',
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+```
+
+</TabItem> 
+
+<TabItem value="js" label="JavaScript" default> 
+
+```javascript
 const myHeaders = new Headers();
-myHeaders.append("adapty-customer-user-id", "YOUR_CUSTOMER_USER_ID");
+myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
 myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
-myHeaders.append("adapty-profile-id", "YOUR_USER_PROFILE_ID");
-myHeaders.append("Authorization", "Api-Key YOUR_SECRET_API_KEY");
+myHeaders.append("adapty-profile-id", "<YOUR_USER_PROFILE_ID>");
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
 const raw = JSON.stringify({
   "first_name": "Jane",
@@ -129,61 +184,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 </TabItem> 
 
-<TabItem value="js" label="JavaScript" default> 
-
-```javascript
-import requests
-import json
-
-url = "https://api.adapty.io/api/v2/server-side-api/profile/"
-
-payload = json.dumps({
-  "first_name": "Jane",
-  "last_name": "Doe",
-  "gender": "f",
-  "email": "jane.dow@example.com",
-  "phone_number": "+1234567890",
-  "birthday": "2000-12-31",
-  "ip_country": "FR",
-  "store_country": "US",
-  "store": "app_store",
-  "analytics_disabled": True,
-  "custom_attributes": [
-    {
-      "key": "favourite_sport",
-      "value": "yoga"
-    }
-  ],
-  "installation_meta": {
-    "device_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "device": "string",
-    "locale": "en",
-    "os": "string",
-    "platform": "iOS",
-    "timezone": "Europe/Rome",
-    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
-    "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
-    "idfv": "E9D48DA5-3930-4B41-8521-D953AECD2F33",
-    "advertising_id": "",
-    "android_id": "",
-    "android_app_set_id": ""
-  }
-})
-headers = {
-  'adapty-customer-user-id': 'YOUR_CUSTOMER_USER_ID',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
-  'adapty-profile-id': 'YOUR_USER_PROFILE_ID',
-  'Authorization': 'Api-Key YOUR_SECRET_API_KEY'
-}
-
-response = requests.request("POST", url, headers=headers, data=payload)
-
-print(response.text)
-```
-
-</TabItem> 
-
 </Tabs>
 
 ## Parameters
@@ -198,12 +198,33 @@ print(response.text)
 
 <ProfileResponse />
 
-## Successful response example
-<ResponseExample />  
+### Successful response example
+
+```json
+{
+    "data": {
+        "app_id": "14c3d623-2f3a-455a-aa86-ef83dff6913b",
+        "profile_id": "3286abd3-48b0-4e9c-a5f6-ac0a006804a6",
+        "customer_user_id": "Jane.doe@example.com",
+        "total_revenue_usd": 0.0,
+        "segment_hash": "8f45947bad31ab0c",
+        "timestamp": 1736425645861,
+        "custom_attributes": [
+            {
+                "key": "favourite_sport",
+                "value": "yoga"
+            }
+        ],
+        "access_levels": [],
+        "subscriptions": [],
+        "non_subscriptions": []
+    }
+}
+```
+
+<!--- <ResponseExample />  --->
 
 ---
-
-
 
 ## Errors
 

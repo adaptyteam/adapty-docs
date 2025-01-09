@@ -43,6 +43,32 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/
 
 Varies based on whether the purchase is a **subscription** or a **one-time purchase**.
 
+## Example request
+
+<Tabs>  
+<TabItem value="curl" label="cURL" default>  
+
+```bash 
+.
+```
+
+</TabItem>  
+<TabItem value="python" label="Python" default>  
+
+```python
+. 
+```
+
+</TabItem>  
+<TabItem value="js" label="JavaScript" default>  
+
+```javascript 
+. 
+```
+
+</TabItem>  
+</Tabs>
+
 ### For subscription
 
 | Parameter                     | Type          | Required in request | Nullable in request    | Description                                                  |

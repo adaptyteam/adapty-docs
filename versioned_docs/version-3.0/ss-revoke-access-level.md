@@ -20,9 +20,85 @@ Removes an access level from an end user of your app in Adapty.
 
 ## Method and endpoint
 
-```
+```http
 POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/
 ```
+
+## Example request
+
+<Tabs>  
+<TabItem value="curl" label="cURL" default>  
+
+```bash 
+curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/' \
+--header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
+--header 'adapty-platform: iOS' \
+--header 'Content-Type: application/json' \
+--header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--data '{
+  "access_level_id": "premium",
+  "revoke_at": "2024-10-12T09:42:50.000000+0000"
+}'
+```
+
+</TabItem>  
+<TabItem value="python" label="Python" default>  
+
+```python
+import requests
+import json
+
+url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/"
+
+payload = json.dumps({
+  "access_level_id": "premium",
+  "revoke_at": "2024-10-12T09:42:50.000000+0000"
+})
+headers = {
+  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
+  'adapty-platform': 'iOS',
+  'Content-Type': 'application/json',
+  'adapty-profile-id': '<YOUR_USER_PROFILE_ID>',
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+```
+
+</TabItem>  
+<TabItem value="js" label="JavaScript" default>  
+
+```javascript 
+const myHeaders = new Headers();
+myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
+myHeaders.append("adapty-platform", "iOS");
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("adapty-profile-id", "<YOUR_USER_PROFILE_ID>");
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+
+const raw = JSON.stringify({
+  "access_level_id": "premium",
+  "revoke_at": "2024-10-12T09:42:50.000000+0000"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+```
+
+</TabItem>  
+</Tabs>
 
 ## Parameters
 
@@ -30,15 +106,6 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access
 | --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
 | access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard |
 | revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
-
-## Request example
-
-```json
-{
-  "access_level_id": "premium",
-  "revoke_at": "2024-10-12T09:42:50.000000+0000"
-}
-```
 
 ---
 
