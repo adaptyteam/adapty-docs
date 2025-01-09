@@ -5,7 +5,8 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
@@ -19,7 +20,7 @@ Please be aware that this endpoint does not support bulk deletion, therefore eac
 
 ## Method and endpoint
 
-```
+```http
 DELETE https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
@@ -93,6 +94,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 No parameters
 
 ## Successful response
+
+**204 No Content** with an empty body is a successful response. 
 
 ---
 

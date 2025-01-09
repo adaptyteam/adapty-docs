@@ -344,7 +344,8 @@ const config = {
           "groovy",
           "json",
           "python",
-          "bash"
+          "bash",
+          "http"
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!
