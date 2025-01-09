@@ -5,7 +5,8 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
@@ -37,7 +38,7 @@ Before setting a transaction, make sure the product is [created in Adapty](creat
 
 ## Method and endpoint
 
-```
+```http
 POST https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/
 ```
 
@@ -49,21 +50,113 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 <TabItem value="curl" label="cURL" default>  
 
 ```bash 
-.
+curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/' \
+--header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
+--header 'adapty-platform: iOS' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--data '{
+  "purchase_type": "subscription",
+  "store": "app_store",
+  "environment": "Production",
+  "store_product_id": "1year.premium",
+  "store_transaction_id": "30002109551456",
+  "store_original_transaction_id": "30002109551456",
+  "is_family_shared": false,
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d",
+  "originally_purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "renew_status": true,
+  "expires_at":  "2026-10-12T09:42:50.000000+0000"
+}'
 ```
 
 </TabItem>  
 <TabItem value="python" label="Python" default>  
 
 ```python
-. 
+import requests
+import json
+
+url = "https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/"
+
+payload = json.dumps({
+  "purchase_type": "subscription",
+  "store": "app_store",
+  "environment": "Production",
+  "store_product_id": "1year.premium",
+  "store_transaction_id": "30002109551456",
+  "store_original_transaction_id": "30002109551456",
+  "is_family_shared": False,
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d",
+  "originally_purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "renew_status": True,
+  "expires_at": "2026-10-12T09:42:50.000000+0000"
+})
+headers = {
+  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
+  'adapty-platform': 'iOS',
+  'Content-Type': 'application/json',
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
 ```
 
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
 ```javascript 
-. 
+const myHeaders = new Headers();
+myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
+myHeaders.append("adapty-platform", "iOS");
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+
+const raw = JSON.stringify({
+  "purchase_type": "subscription",
+  "store": "app_store",
+  "environment": "Production",
+  "store_product_id": "1year.premium",
+  "store_transaction_id": "30002109551456",
+  "store_original_transaction_id": "30002109551456",
+  "is_family_shared": false,
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d",
+  "originally_purchased_at": "2022-10-12T09:42:50.000000+0000",
+  "renew_status": true,
+  "expires_at": "2026-10-12T09:42:50.000000+0000"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
 ```
 
 </TabItem>  
@@ -97,41 +190,44 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 
 <Purchase />
 
-## Request example
+## Successful response example
 
-```json 
+<!--- <ResponseExample />  --->
+
+```json
 {
-  "purchase_type": "one_time_purchase",
-  "store": "app_store",
-  "environment": "Production",
-  "store_product_id": "1year.premium",
-  "store_transaction_id": "30002109551456",
-  "store_original_transaction_id": "30002109461269",
-  "offer": {
-    "category": "introductory",
-    "type": "free_trial",
-    "id": "annual_free_trial"
-  },
-  "is_family_shared": false,
-  "price": {
-    "country": "US",
-    "currency": "USD",
-    "value": 0
-  },
-  "purchased_at": "2022-10-12T09:42:50.000000+0000",
-  "refunded_at": "2022-10-12T09:42:50.000000+0000",
-  "cancellation_reason": "voluntarily_cancelled",
-  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d"
+    "data": {
+        "app_id": "14c3d623-2f3a-455a-aa86-ef83dff6913b",
+        "profile_id": "3286abd3-48b0-4e9c-a5f6-ac0a006804a6",
+        "customer_user_id": "Jane.doe@example.com",
+        "total_revenue_usd": 0.0,
+        "segment_hash": "8f45947bad31ab0c",
+        "timestamp": 1736436751469,
+        "custom_attributes": [
+            {
+                "key": "favourite_sport",
+                "value": "yoga"
+            }
+        ],
+        "access_levels": [],
+        "subscriptions": [
+          {
+                "purchase_id": "5a7ab471-2299-45f7-ad69-1d395c1256e3",
+                "store": "app_store",
+                "store_product_id": "1year.premium",
+                "store_base_plan_id": null,
+                "store_transaction_id": "30002109551456",
+                "store_original_transaction_id": "30002109551456",
+                "purchased_at": "2022-10-12T09:42:50+00:00",
+                "environment": "Production",
+                "is_refund": false,
+                "is_consumable": false
+            }
+        ],
+        "non_subscriptions": []
+    }
 }
 ```
-
-
-## Successful response
-
-<ProfileResponse />
-
-## Successful response example
-<ResponseExample />  
 
 ## Errors
 

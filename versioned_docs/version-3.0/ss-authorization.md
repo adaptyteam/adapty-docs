@@ -3,6 +3,7 @@ title: "Server-side API Authorization"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
+toc_max_heading_level: 2
 ---
 
 - **Base URL**: https://api.adapty.io/api/v2/server-side-api/
@@ -25,6 +26,22 @@ displayed_sidebar: APISidebar
 - **adapty-platform header**: Use this header to specify the app's platform. Possible options include:
   `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`.
 - **Body**:  The API expects the request to use the body as JSON.
+
+## Postman collection and environment
+
+- To simplify using our server-side API, we've prepared a Postman collection and an environment file you can download and import into Postman.
+  - **Request Collection**: Includes all requests available in the Adapty server-side API. Note that it uses variables that you can define in the environment.
+  - **Environment**: Contains a list of variables where you can define values once. After making this environment active, Postman will automatically substitute the defined variable values in your requests.
+
+### Variables Used:
+
+| Variable                | Description                                                  | Example Value                                           |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| secret_api_key          | You can find it in the **Secret key** field in the [**App settings**](https://app.adapty.io/settings/general). | `secret_live_Pj1P1xzM.2CvSvE1IalQRFjsWy6csBVNpH33atnod` |
+| adapty-customer-user-id | The user ID used in your system. In the Adapty Dashboard, you can find it in the **Customer user ID** field of the Profile. | `John.dow@example.com`                                  |
+| adapty-profile-id       | The user ID assigned in Adapty. In the Adapty Dashboard, you can find it in the **Adapty ID** field of the Profile. | `3286abd3-48b0-4e9c-a5f6-ac0a006333a6`                  |
+| adapty-platform         | The platform used by the user for your app. Possible values: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. | `iOS`                                                   |
+| stripe_token            | Token of a Stripe object representing a unique purchase, such as a Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). | `sub_1JY8xLLy6P12345a`                                  |
 
 ---
 
