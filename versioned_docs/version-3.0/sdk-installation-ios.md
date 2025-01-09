@@ -54,8 +54,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell title="Podfile"
-   pod 'Adapty', '~> 3.2.1'
-   pod 'AdaptyUI', '~> 3.2.1' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.3.1'
+   pod 'AdaptyUI', '~> 3.3.1' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -86,7 +86,7 @@ let configurationBuilder =
         .with(customerUserId: "YOUR_USER_ID")
         .with(idfaCollectionDisabled: false)
         .with(ipAddressCollectionDisabled: false)
-        .with(LogLevel: verbose) // optional 
+        .with(loglevel: .verbose) // optional 
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error
@@ -250,7 +250,6 @@ let configurationBuilder =
         .with(customerUserId: "YOUR_USER_ID") // optional
         .with(idfaCollectionDisabled: false) // optional
         .with(ipAddressCollectionDisabled: false) // optional
-        .with(LogLevel: verbose) // optional 
 
 Adapty.activate(with: configurationBuilder) { error in
   // handle the error

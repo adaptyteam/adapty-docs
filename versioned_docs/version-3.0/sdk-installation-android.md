@@ -56,7 +56,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.1.2"
+adaptyBom = "3.3.0"
 
 [libraries]
 ..
