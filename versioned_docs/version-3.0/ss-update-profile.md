@@ -5,7 +5,8 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 import ProfileObject from '@site/src/components/reusable/ProfileObject.md';import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
 import ProfileRequest from '@site/src/components/reusable/ProfileRequest.md';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
@@ -24,15 +25,43 @@ Changes your end user profile attributes.
 PATCH https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
+
+## Example request
+
+<Tabs> 
+
+<TabItem value="curl" label="cURL" default> 
+
+```bash
+.
+```
+
+</TabItem> 
+
+<TabItem value="python" label="Python" default> 
+
+```python
+.
+```
+
+</TabItem> 
+
+<TabItem value="js" label="JavaScript" default> 
+
+```javascript
+.
+```
+
+</TabItem> 
+
+</Tabs>
+
+<!--- <CreateProfileRequestExample /> --->
+
 ## Parameters
 
 `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](ss-authorization).
   <ProfileRequest /> 
-
-
-## Example request
-
-<CreateProfileRequestExample /> 
 
 ## Successful response
 

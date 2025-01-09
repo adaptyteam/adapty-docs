@@ -22,10 +22,6 @@ Creates a new end user of your app in Adapty.
 POST https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
-## Parameters
-
-  <ProfileRequest /> 
-
 ## Example request
 
 <Tabs> 
@@ -34,10 +30,10 @@ POST https://api.adapty.io/api/v2/server-side-api/profile/
 
 ```bash
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
---header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
+--header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
---header 'adapty-profile-id: YOUR_USER_PROFILE_ID' \
+--header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
 --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
 --data-raw '{
   "first_name": "Jane",
@@ -189,6 +185,10 @@ print(response.text)
 </TabItem> 
 
 </Tabs>
+
+## Parameters
+
+  <ProfileRequest /> 
 
 <!--- <CreateProfileRequestExample /> --->
 
