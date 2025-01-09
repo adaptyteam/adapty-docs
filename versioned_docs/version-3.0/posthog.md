@@ -46,8 +46,8 @@ Adapty sends selected events to PostHog as configured in the **Events names** se
       "os": "iOS"
     },
     "timezone": "America/New_York",
-    "ip_address": "192.168.1.1",
-    "*": "{{everything_else}}"
+    "ip_address": "10.168.1.1",
+    "*": "{{other_event_properties}}"
   }
 }
 ```
@@ -58,16 +58,12 @@ Where
 | ------------------- | ------------- | ------------------------------------------------------------ |
 | **distinct_id**     | String        | Unique identifier for the user (e.g., `profile.posthog_distinct_user_id`, `customer_user_id`, or `profile_id`). |
 | **event**           | String        | The name of the event as you defined it in the Events names section of the [**PostHog configuration**](https://app.adapty.io/integrations/posthog). |
-| **properties**      | Object        | Contains all the event-specific properties.                  |
-| **properties.$set** | Object        | Contains person properties to be set or updated in the user's profile. |
-| **email**           | String        | User's email address.                                        |
-| **first_name**      | String        | User's first name.                                           |
-| **last_name**       | String        | User's last name.                                            |
-| **birthday**        | String (Date) | User's date of birth.                                        |
-| **gender**          | String        | User's gender.                                               |
-| **os**              | String        | Operating system of the user's device.                       |
-| **timezone**        | String        | User's time zone in format `$geoip_time_zone`.               |
-| **ip_address**      | String (IPv4) | User's IP address.                                           |
+| **properties**      | Object        | Contains all the event-specific properties. Every property is optional and may not be sent to PostHog if missing. |
+| **properties.$set** | Object        | Contains personal properties to be set or updated in the user's profile: `email`, `first_name`, `last_name`, `birthday`, `gender`, and `os`. |
+| **timezone**        | String        | User's time zone in format `$geoip_time_zone`. Optional      |
+| **ip_address**      | String (IPv4) | User's IP address. Optional                                  |
+
+`other_event_properties` is a placeholder representing the list of [event properties](events#properties) that might be included with the event. All properties are optional.
 
 ## Setting up PostHog integration
 
