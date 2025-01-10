@@ -41,7 +41,47 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 />
 </Zoom>
 
-Now, you can translate the content manually, or export the localization file for external translators.
+Now, you can translate the content manually, use AI, or export the localization file for external translators.
+
+## Translating paywalls with AI
+
+AI-powered translation is a quick and efficient way to localize your paywall.
+
+:::note
+
+To use AI for paywall translation, you’ll need a Pro, Pro+, or Enterprise plan.
+
+:::
+
+You can translate both **String** and **List** values. By default, all lines are selected (highlighted in violet). Lines that have already been translated are marked in green and won’t be included in the new translation by default. Lines that are not selected or translated appear in gray.
+
+<Zoom>
+  <img src={require('./img/localization-table-PB.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+1. Select the lines to translate. It's a good idea to uncheck lines with IDs, URLs, and variables to prevent AI from translating them.
+
+2. Select the languages for translation.
+
+   <Zoom>
+     <img src={require('./img/localization-table-language-PB.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+3. Click **AI Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
 
 ## Exporting localization files for external translation
 
