@@ -5,7 +5,8 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
@@ -19,21 +20,82 @@ Please be aware that this endpoint does not support bulk deletion, therefore eac
 
 ## Method and endpoint
 
-```
+```http
 DELETE https://api.adapty.io/api/v2/server-side-api/profile/
 ```
 
+## Example request
+
+<Tabs>  
+<TabItem value="curl" label="cURL" default>  
+
+```bash 
+curl --location --request DELETE 'https://api.adapty.io/api/v2/server-side-api/profile/' \
+--header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
+--header 'adapty-platform: iOS' \
+--header 'Content-Type: application/json' \
+--header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--data ''
+```
+
+</TabItem>  
+<TabItem value="python" label="Python" default>  
+
+```python
+import requests
+import json
+
+url = "https://api.adapty.io/api/v2/server-side-api/profile/"
+
+payload = ""
+headers = {
+  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
+  'adapty-platform': 'iOS',
+  'Content-Type': 'application/json',
+  'adapty-profile-id': '<YOUR_USER_PROFILE_ID>',
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+}
+
+response = requests.request("DELETE", url, headers=headers, data=payload)
+
+print(response.text)
+```
+</TabItem>  
+<TabItem value="js" label="JavaScript" default>  
+
+```javascript 
+const myHeaders = new Headers();
+myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
+myHeaders.append("adapty-platform", "iOS");
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("adapty-profile-id", "<YOUR_USER_PROFILE_ID>");
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+
+const raw = "";
+
+const requestOptions = {
+  method: "DELETE",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+```
+</TabItem>  
+</Tabs>
+
 ## Parameters
 
-None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a header as described in [Authorization](ss-authorization).
+No parameters
 
 ## Successful response
 
-##### Header:
-
-| Name       | Type   | Description                                                  |
-| :--------- | ------ | :----------------------------------------------------------- |
-| Request-Id | String | Request ID, all backend logs have this id Example: 758f01dfd9e74ccfbabb4934241c4966 |
+**204 No Content** with an empty body is a successful response. 
 
 ---
 
@@ -58,3 +120,5 @@ None in the JSON body. `Profile_id` or `customer_user_id`  must be set up as a h
 - [Get profile](ss-get-profile)
 - [Create profile](ss-create-profile)
 - [Update profile](ss-update-profile)
+
+````

@@ -343,7 +343,10 @@ const config = {
           "toml",
           "groovy",
           "json",
-          "bash"
+          "python",
+          "bash",
+          "http"
+
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!

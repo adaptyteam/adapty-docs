@@ -7,6 +7,8 @@ displayed_sidebar: APISidebar
 
 
 
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
@@ -27,6 +29,85 @@ To grant access and simultaneously provide the transaction details, please use t
 POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/
 ```
 
+## Example request
+
+<Tabs>  
+<TabItem value="curl" label="cURL" default>  
+
+```bash 
+curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/' \
+--header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
+--header 'adapty-platform: iOS' \
+--header 'Content-Type: application/json' \
+--header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--data '{
+"access_level_id": "premium",
+"starts_at": "2022-10-12T09:42:50.000000+0000",
+"expires_at": "2024-10-12T09:42:50.000000+0000"
+}'
+```
+
+</TabItem>  
+<TabItem value="python" label="Python" default>  
+
+```python
+import requests
+import json
+
+url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/"
+
+payload = json.dumps({
+  "access_level_id": "premium",
+  "starts_at": "2022-10-12T09:42:50.000000+0000",
+  "expires_at": "2024-10-12T09:42:50.000000+0000"
+})
+headers = {
+  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
+  'adapty-platform': 'iOS',
+  'Content-Type': 'application/json',
+  'adapty-profile-id': '<YOUR_USER_PROFILE_ID>',
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+```
+
+</TabItem>  
+<TabItem value="js" label="JavaScript" default>  
+
+```javascript 
+const myHeaders = new Headers();
+myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
+myHeaders.append("adapty-platform", "iOS");
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("adapty-profile-id", "<YOUR_USER_PROFILE_ID>");
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+
+const raw = JSON.stringify({
+  "access_level_id": "premium",
+  "starts_at": "2022-10-12T09:42:50.000000+0000",
+  "expires_at": "2024-10-12T09:42:50.000000+0000"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+```
+
+</TabItem>  
+</Tabs>
+
 ## Parameters
 
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
@@ -34,16 +115,6 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-
 | access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard |
 | starts_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will be active. Maybe in the future |
 | expires_at      | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
-
-## Example request
-
-  ```json
-{
-  "access_level_id": "premium",
-  "starts_at": "2022-10-12T09:42:50.000000+0000",
-  "expires_at": "2024-10-12T09:42:50.000000+0000"
-}
-  ```
 
 ---
 
