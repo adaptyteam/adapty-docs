@@ -1,5 +1,5 @@
 ---
-title: "Migration guide to Adapty iOS SDK 3.3.x"
+title: "Migration guide to Adapty Flutter SDK 3.3.x"
 description: ""
 metadataTitle: ""
 ---
@@ -40,7 +40,7 @@ For the complete code example, check out the [Use fallback paywalls](flutter-use
 
 ## Update 3d-party integration SDK configuration
 
-To ensure integrations work properly with Adapty iOS SDK 3.2.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
+To ensure integrations work properly with Adapty Flutter SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
 ### Adjust
 

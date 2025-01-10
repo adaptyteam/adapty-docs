@@ -77,7 +77,7 @@ public override fun onPurchaseStarted(
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
-#### Successful or canceled purchase
+#### Successful, canceled, or pending purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 

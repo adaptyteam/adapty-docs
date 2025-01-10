@@ -329,7 +329,6 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-
 ```typescript 
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';

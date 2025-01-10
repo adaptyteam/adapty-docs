@@ -9,24 +9,23 @@ import TabItem from '@theme/TabItem';
 
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
-1. Update the making purchase in the paywalls designed without Paywall Builder. Remove processing of error codes `USER_CANCELLED` and `PENDING_PURCHASE`.
-2. For Paywall Builder paywalls: Replace the `onPurchaseCanceled` and `onPurchaseSuccess` paywall builder events with the `onPurchaseFinished` event. Because a canceled purchase is not treated as an error anymore and is added to a non-error purchase result.
-3. For Paywall Builder paywalls: Change the method signature of  `onAwaitingSubscriptionUpdateParams`.
-4. Update the method for providing fallback paywalls.
-5. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+1. Update how you handle making purchases in paywalls not created with Paywall Builder. Stop processing the `USER_CANCELED` and `PENDING_PURCHASE` error codes. A canceled purchase is no longer considered an error and will now appear in the non-error purchase results.
+2. Replace the `onPurchaseCanceled` and `onPurchaseSuccess` events with the new `onPurchaseFinished` event for paywalls created with Paywall Builder. This change is for the same reason: canceled purchases are no longer treated as errors and will be included in the non-error purchase results.
+3. Change the method signature of `onAwaitingSubscriptionUpdateParams` for Paywall Builder paywalls.
+4. Update the method used to provide fallback paywalls if you pass the file URI directly.
+5. Update the integration configurations for for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 
 ## Update making purchase
 
 Previously canceled and pending purchases were considered errors and returned the `USER_CANCELED` and `PENDING_PURCHASE` codes, respectively.  
 
-Now a new `AdaptyPurchaseResult` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
+Now a new `AdaptyPurchaseResult` class is used to indicate canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
 ~~~diff
 Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
 -            val info = result.value
--            // NOTE: info is null in case of cross-grade with DEFERRED proration mode
 -            val profile = info?.profile
 -        
 -            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
@@ -59,7 +58,7 @@ Adapty.makePurchase(activity, product) { result ->
 
 For the complete code example, check out the [Make purchases in mobile app](making-purchases#make-purchase) page. 
 
-## Add canceled purchase to non-error result
+## Modify Paywall Builder purchase events
 
 1. Add `onPurchaseFinished` event:
 
@@ -77,13 +76,13 @@ For the complete code example, check out the [Make purchases in mobile app](maki
    +            // Handle the case where the user canceled the purchase
    +        }
    +        is AdaptyPurchaseResult.Pending -> {
-   +            // Handle deferred purchases (e.g., the user will pay offline with cash
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash)
    +        }
    +    }
    + }
    ```
 
-   For the complete code example, check out the [Successful or canceled purchase](android-handling-events#successful-or-canceled-purchase) event description.
+   For the complete code example, check out the [Successful, canceled, or pending purchase](android-handling-events#successful-canceled-or-pending-purchase) and event description.
 
 2. Remove processing of the `onPurchaseCancelled` event:
 
@@ -109,7 +108,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 
 ## Change the signature of  onAwaitingSubscriptionUpdateParams method
 
-Now if a new subscription is purchased while another is still active, call `onSubscriptionUpdateParamsReceived(...)` either with `AdaptySubscriptionUpdateParameters` instance if the new subscription should replace a currently active subscription or with `null` if the active subscription should remain active and the new one should be added separately:
+Now if a new subscription is purchased while another is still active, call `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))` if the new subscription should replace a currently active subscription or `onSubscriptionUpdateParamsReceived(null)` if the active subscription should remain active and the new one should be added separately:
 
  ```diff
 - public override fun onAwaitingSubscriptionUpdateParams(
@@ -131,7 +130,7 @@ See the [Upgrade subscription](android-handling-events#upgrade-subscription) doc
 
 ## Update providing fallback paywalls
 
-If you pass file Uri to provide fallback paywalls, update how you do it in the following way:
+If you pass file URI to provide fallback paywalls, update how you do it in the following way:
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -156,7 +155,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 
 ## Update third-party integration SDK configuration
 
-To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
+To ensure integrations work properly with Adapty Android SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
 ### Adjust
 
@@ -167,7 +166,7 @@ Update your mobile app code as shown below. For the complete code example, check
 <TabItem value="v5" label="Adjust 5.x+" default>
 
 ```diff
- - Adjust.getAttribution { attribution ->
+- Adjust.getAttribution { attribution ->
 -     if (attribution == null) return@getAttribution
 -
 -     Adjust.getAdid { adid ->
@@ -193,7 +192,9 @@ Update your mobile app code as shown below. For the complete code example, check
 +     if (attribution == null) return@getAttribution
 +
 +     Adapty.updateAttribution(attribution, "adjust") { error ->
-+         // Handle the error
++         if (error != null) {
++             // Handle the error
++         }
 +     }
 + }
 ```
@@ -374,12 +375,12 @@ Update your mobile app code as shown below. For the complete code example, check
 // Login and update attribution
  Branch.getAutoInstance(this)
    .setIdentity("YOUR_USER_ID") { referringParams, error ->
-       referringParams?.let { params ->
+       referringParams?.let { data ->
 -            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
--                            if (error != null) {
--                                // Handle the error
--                            }
--                        }
+-                if (error != null) {
+-                    // Handle the error
+-                }
+-            }
 +            Adapty.updateAttribution(data, "branch") { error ->
 +                if (error != null) {
 +                    // Handle the error
@@ -401,8 +402,8 @@ Update your mobile app code as shown below. For the complete code example, check
 -     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
 -   
 - Adapty.updateProfile(builder.build()) { error ->
--     if (error == null) {
--         // Successful update
+-     if (error != null) {
+-        // Handle the error
 -     }
 - }
 
@@ -431,8 +432,10 @@ Update your mobile app code as shown below. For the complete code example, check
 -        AdaptyProfileParameters.Builder()
 -            .withFirebaseAppInstanceId(appInstanceId)
 -            .build()
--    ) {
--        // Handle the error
+-    ) { error ->
+-        if (error != null) {
+-            // Handle the error
+-        }
 -    }
 +    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
 +        if (error != null) {
@@ -547,7 +550,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 </TabItem> 
 
-<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
 <Tabs>
 

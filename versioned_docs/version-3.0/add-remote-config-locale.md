@@ -101,7 +101,7 @@ You can translate both **String** and **List** values. By default, all lines are
    />
    </Zoom>
 
-3. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
+3. Click **AI Translate** to apply translations. The selected lines will be translated and added to the paywall, with the translated lines marked green.
 
 ## Exporting localization files for external translation
 

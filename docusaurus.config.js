@@ -348,6 +348,7 @@ const config = {
           "ruby",
           "python",
           "bash",
+
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!

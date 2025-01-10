@@ -31,8 +31,7 @@ Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk
 - Getting/setting information about your user.
 
 :::tip
-Switching from another susbcription provider?
-Follow our guide for a detailed walk though giude:
+Switching from another subscription provider? Follow our guide for a detailed walk-though:
  - [Migration from RevenueCat](migration-from-revenuecat) (20 minutes)
  :::
 
