@@ -294,7 +294,7 @@ Even with a gap between the trial and subscription, Adapty links the two using *
 
 This section covers any adjustments made to active subscriptions, such as upgrades, downgrades or purchases of a product from another group.
 
-## Immediate Product Change Flow
+### Immediate Product Change Flow
 
 After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
 
@@ -336,6 +336,8 @@ If a user downgrades the subscription, most probably the first subscription will
   }}
 />
 </Zoom>
+
+### Delayed Product Change Flow
 
 There is also a variant when a user changes the product at the moment of the subscription renewal. This variant is very similar to the previous one: all events will be created at the moment when the user changes the subscription and it is  changed in the system:
 
