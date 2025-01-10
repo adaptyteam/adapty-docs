@@ -30,7 +30,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.1.2')
+    implementation platform('io.adapty:adapty-bom:3.3.0')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
 }
@@ -42,7 +42,7 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.1.2"))
+    implementation(platform("io.adapty:adapty-bom:3.3.0"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
 }
