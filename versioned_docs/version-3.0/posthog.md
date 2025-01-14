@@ -54,16 +54,25 @@ Adapty sends selected events to PostHog as configured in the **Events names** se
 
 Where
 
-| **Parameter**       | **Type**      | **Description**                                              |
-| ------------------- | ------------- | ------------------------------------------------------------ |
-| **distinct_id**     | String        | Unique identifier for the user (e.g., `profile.posthog_distinct_user_id`, `customer_user_id`, or `profile_id`). |
-| **event**           | String        | The name of the event as you defined it in the Events names section of the [**PostHog configuration**](https://app.adapty.io/integrations/posthog). |
-| **properties**      | Object        | Contains all the event-specific properties. Every property is optional and may not be sent to PostHog if missing. |
-| **properties.$set** | Object        | Contains personal properties to be set or updated in the user's profile: `email`, `first_name`, `last_name`, `birthday`, `gender`, and `os`. |
-| **timezone**        | String        | User's time zone in format `$geoip_time_zone`. Optional      |
-| **ip_address**      | String (IPv4) | User's IP address. Optional                                  |
+| **Parameter**   | **Type**             | **Description**                                              |
+| --------------- | -------------------- | ------------------------------------------------------------ |
+| **distinct_id** | String               | Unique identifier for the user (e.g., `profile.posthog_distinct_user_id`, `customer_user_id`, or `profile_id`). |
+| **timestamp**   | ISO 8601 date & time | The date and time of the event.                              |
+| **event**       | String               | The name of the event as you defined it in the Events names section of the [**PostHog configuration**](https://app.adapty.io/integrations/posthog). |
+| **properties**  | Object               | Contains the [properties.$set](posthog#propertiesset-parameters) and all the [event-specific properties](events#properties). Each property is optional and won't be sent to PostHog if missing. |
 
-`other_event_properties` is a placeholder representing the list of [event properties](events#properties) that might be included with the event. All properties are optional.
+### properties.$set parameters
+
+Each `properties.$set` object parameter is optional and won't be sent to PostHog if missing.
+
+| **Parameter**   | **Type**             | **Description**                                              |
+| --------------- | -------------------- | ------------------------------------------------------------ |
+| **email**           | String        | User's email address.                                        |
+| **first_name**      | String        | User's first name.                                           |
+| **last_name**       | String        | User's last name.                                            |
+| **birthday**        | String (Date) | User's date of birth.                                        |
+| **gender**          | String        | User's gender.                                               |
+| **os**              | String        | Operating system of the user's device.                       |
 
 ## Setting up PostHog integration
 
@@ -97,17 +106,6 @@ Where
 
 4. In the **Project** window, scroll down to the **Project ID** section and copy the **Project API key**.
 
-   <Zoom>
-     <img src={require('./img/e5dce30-image_3.webp').default}
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
 5. Paste the API key into the **Project API key** field in the Adapty Dashboard. PostHog doesn’t have a specific Sandbox mode for server-to-server integration. 
 
 6. Choose your **PostHog Deployment**:
@@ -117,17 +115,17 @@ Where
    | us/eu  | Default PostHog-hosted deployments.                          |
    | Custom | For self-hosted instances. Enter your instance URL in the **PostHog Instance URL** field. |
 
-7. (optional) If you use PostHog deployed on your own servers, fill in the PostHog Instance URL field with the address of your PostHog deployment.
+7. (optional) If you're using a self-hosted PostHog deployment, enter your deployment's address in the **PostHog Instance URL** field.
 
-8. (optional) You can adjust settings such as **Reporting Proceeds**, **Exclude Historical Events**, **Report User's Currency**, and **Send Trial Price** if needed. For more details about these options, check the [Integration settings](https://adapty.io/docs/configuration#integration-settings).
+8. (optional) Tweak settings like **Reporting Proceeds**, **Exclude Historical Events**, **Report User's Currency**, and **Send Trial Price**. Check the [Integration settings](https://adapty.io/docs/configuration#integration-settings) for details on these options.
 
-9. (optional) Adjust event sharing in the **Events names** section. Disable unwanted events or rename them as needed.
+9. (optional) You can also customize which events are sent to PostHog in the **Events names** section. Disable unwanted events or rename them as needed.
 
 10. Click **Save** to finalize the setup.
 
-Adapty will now send events to PostHog and receive attribution data. 
-
 ## SDK configuration
+
+To enable receiving attribution data from PostHog, pass the `distinctId` value to Adapty as shown below:
 
 <Tabs groupId="posthog"> 
 
@@ -174,7 +172,7 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 <TabItem value="Flutter" label="Flutter" default> 
 
-```
+```javascript
 try {
     final distinctId = await Posthog().getDistinctId();
 
@@ -191,7 +189,7 @@ try {
 
 <TabItem value="Unity" label="Unity" default> 
 
-There is no official SDK for Unity.
+There is no official PostHog SDK for Unity.
 
 </TabItem> 
 
@@ -202,3 +200,5 @@ There is no official SDK for Unity.
 </TabItem> --->
 
 </Tabs>
+
+Adapty will now send events to PostHog and receive attribution from it. 
