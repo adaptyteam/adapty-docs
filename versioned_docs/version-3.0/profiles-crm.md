@@ -151,3 +151,19 @@ Why do events show future timestamps in profiles and integrations? Event timesta
 When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
 
 <Sharingaccesslevel />
+
+### Access sharing history
+
+When access levels are shared or transferred, you might want to know who granted access to the current user or who the current user shared their access with. To find out, just open the user’s **Profile** and click the link to view the connected profile.
+
+<Zoom>
+  <img src={require('./img/profile-access-level-origin.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
