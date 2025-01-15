@@ -6,9 +6,12 @@ displayed_sidebar: APISidebar
 toc_max_heading_level: 2
 ---
 
+import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
+
 ## Authorization
 
-API requests must be authenticated with your secret API key as an Authothization header. You can find it in the [**App Settings**](https://app.adapty.io/settings/general). The format of the value is `Api-Key {YOUR_SECRET_API_KEY}`, for example, `Api-Key secret_live_...`.
+API requests must be authenticated with either your secret or your public API key as an Authorization header. You can find them in the [**App Settings**](https://app.adapty.io/settings/general). The format of the value is `Api-Key {your-secret-api-key}`, for example, `Api-Key secret_live_...`.
 
 ## Request format
 

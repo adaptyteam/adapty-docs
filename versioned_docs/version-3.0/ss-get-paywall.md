@@ -7,82 +7,71 @@ displayed_sidebar: APISidebar
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 
 Receives the paywall from the provided placement.
+
+## Method and endpoint
+
+```text
+POST https://api.adapty.io/api/v2/web-api/paywall/
+```
 
 <Tabs> 
 <TabItem value="shell" label="Shell" default>  
 
  ```shell
--# You can also use wget
--curl -X POST http://localhost:8000/api/v1/web-api/paywall/ \
--  -H 'Content-Type: application/json' \
--  -H 'Accept: application/json' \
--  -H 'Authorization: Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6'
-+
- 
+curl --location 'https://api.adapty.io/api/v2/web-api/paywall/' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Api-Key public_live_iNuUlSsN.83zcTTR8D5Y8FI9cGUI6' \
+--data '{
+  "store": "app_store",
+  "locale": "en",
+  "placement_id": "PaywallPlacementId",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+}'
  ```
-
-</TabItem>  
-<TabItem value="http" label="HTTP" default>
-
-```http
-POST http://localhost:8000/api/v1/web-api/paywall/ HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
-Accept: application/json
-
-```
 
 </TabItem>  
 <TabItem value="javascript" label="Javascript" default>
 
 ```javascript
-const inputBody = '{
+curl --location 'https://api.adapty.io/api/v2/web-api/paywall/' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>' \
+--data '{
   "store": "app_store",
-  "locale": "string",
-  "placement_id": "string",
-  "customer_user_id": "string"
-}';
-const headers = {
-  'Content-Type':'application/json',
-  'Accept':'application/json',
-  'Authorization':'Bearer {access-token}'
-};
-
-fetch('http://localhost:8000/api/v1/web-api/paywall/',
-{
-  method: 'POST',
-  body: inputBody,
-  headers: headers
-})
-.then(function(res) {
-    return res.json();
-}).then(function(body) {
-    console.log(body);
-});
-
+  "locale": "en",
+  "placement_id": "PaywallPlacementId",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+}'
 ```
 
 </TabItem>
 <TabItem value="ruby" label="Ruby" default>
 
 ```ruby
-require 'rest-client'
-require 'json'
+require "uri"
+require "json"
+require "net/http"
 
-headers = {
-  'Content-Type' => 'application/json',
-  'Accept' => 'application/json',
-  'Authorization' => 'Bearer {access-token}'
-}
+url = URI("https://api.adapty.io/api/v2/web-api/paywall/")
 
-result = RestClient.post 'http://localhost:8000/api/v1/web-api/paywall/',
-  params: {
-  }, headers: headers
+https = Net::HTTP.new(url.host, url.port)
+https.use_ssl = true
 
-p JSON.parse(result)
+request = Net::HTTP::Post.new(url)
+request["Content-Type"] = "application/json"
+request["Authorization"] = "Api-Key <YOUR_PUBLIC_API_KEY>"
+request.body = JSON.dump({
+  "store": "app_store",
+  "locale": "en",
+  "placement_id": "PaywallPlacementId",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+})
 
+response = https.request(request)
+puts response.read_body
 ```
 
 </TabItem>  
@@ -91,50 +80,40 @@ p JSON.parse(result)
 ```php
 <?php
 
-require 'vendor/autoload.php';
+$curl = curl_init();
 
-$headers = array(
-    'Content-Type' => 'application/json',
-    'Accept' => 'application/json',
-    'Authorization' => 'Bearer {access-token}',
-);
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://api.adapty.io/api/v2/web-api/paywall/',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS =>'{
+  "store": "app_store",
+  "locale": "en",
+  "placement_id": "PaywallPlacementId",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+}',
+  CURLOPT_HTTPHEADER => array(
+    'Content-Type: application/json',
+    'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>'
+  ),
+));
 
-$client = new \GuzzleHttp\Client();
+$response = curl_exec($curl);
 
-// Define array of request body.
-$request_body = array();
-
-try {
-    $response = $client->request('POST','http://localhost:8000/api/v1/web-api/paywall/', array(
-        'headers' => $headers,
-        'json' => $request_body,
-       )
-    );
-    print_r($response->getBody()->getContents());
- }
- catch (\GuzzleHttp\Exception\BadResponseException $e) {
-    // handle exception or api errors.
-    print_r($e->getMessage());
- }
-
- // ...
+curl_close($curl);
+echo $response;
 
 ```
 
 </TabItem>   
 </Tabs>
 
-#### Method and endpoint
-
-```text
-POST https://api-admin.adapty.io/api/v2/web-api/paywall/
-```
-
-#### Authentication header
-
-Public API Key
-
-#### Parameters
+## Parameters
 
 | Name             | Required           | Description                                                  |
 | ---------------- | ------------------ | ------------------------------------------------------------ |
@@ -144,18 +123,7 @@ Public API Key
 | customer_user_id | :heavy_plus_sign:* | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
 | profile_id       | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
-#### Request example
-
-```json
-{
-  "store": "app_store",
-  "locale": "en",
-  "placement_id": "PaywallPlacementId",
-  "customer_user_id": "UserIdInYourSystem"
-}
-```
-
-#### Responses
+## Responses
 
 | Status | Meaning            |
 | ------ | ------------------ |
@@ -164,35 +132,6 @@ Public API Key
 | 401    | Unauthorized       |
 | 404    | Not Found          |
 
-<details>
-   <summary>200 Response example (click to expand) (click to expand)</summary>
-```json
-{
-  "placement_id": "PaywallPlacementId",
-  "variation_id": "5130138e-590b-4f7e-8df9-63af3334262c",
-  "paywall_id": "eeb111ae-cdbe-489f-9fe4-30a4b6109051",
-  "ab_test_name": "Standard Flow vs Optimized Flow",
-  "paywall_name": "UsedPaywall",
-  "products": [
-    {
-      "title": "Monthly Premium. No trial",
-      "is_consumable": false,
-      "adapty_product_id": "onemonth_no_trial",
-      "vendor_product_id": "onemonth_no_trial",
-      "introductory_offer_eligibility": false,
-      "promotional_offer_eligibility": true,
-      "base_plan_id": "null",
-      "offer": {
-        "category": "promotional",
-        "type": "pay_up_front",
-        "id": "offer_promo_summer2024"
-      }
-    }
-  ],
-  "remote_config": {
-    "lang": "en",
-    "data": "RemoteConfig"
-  }
-}
-```
-</details>
+## Response example
+
+<PaywallObject /> 

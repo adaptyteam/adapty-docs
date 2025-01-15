@@ -4,19 +4,7 @@
 
 <!-- PaywallObject -->
 
-The object that contains information on a paywall
-
-| Name          | Type             | Required           | Description                                                  |
-| ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |
-| placement_id  | String           | :heavy_plus_sign:  | The ID of the [Placement](https://adapty.io/docs/placements) where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard. |
-| variation_id  | String(uuid)     | :heavy_plus_sign:  | The variation ID used to track purchases linked to this specific paywall. |
-| paywall_id    | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                        |
-| ab_test_name  | String           | :heavy_minus_sign: | The name of the parent A/B test.                             |
-| paywall_name  | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard. |
-| products      | Arrow of objects | :heavy_plus_sign:  | Array of [Products](web-api-objects#variationproduct) objects containing product information for the paywall. |
-| remote_config | JSON             | :heavy_minus_sign: | A [RemoteConfig](web-api-objects#remoteconfig-object) object in JSON format containing the full [remote config](customize-paywall-with-remote-config) of the paywall. |
-
-#### Example
+The object that contains information on a paywall.
 
 ```json title="JSON"
 {
@@ -48,3 +36,14 @@ The object that contains information on a paywall
 }
 
 ```
+Parameters:
+
+| Name          | Type             | Required           | Description                                                  |
+| ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |
+| placement_id  | String           | :heavy_plus_sign:  | The ID of the [Placement](https://adapty.io/docs/placements) where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard. |
+| variation_id  | String(uuid)     | :heavy_plus_sign:  | The variation ID used to track purchases linked to this specific paywall. |
+| paywall_id    | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                        |
+| ab_test_name  | String           | :heavy_minus_sign: | The name of the parent A/B test.                             |
+| paywall_name  | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard. |
+| products      | Arrow of objects | :heavy_plus_sign:  | Array of [Products](server-side-api-objects#product) objects containing product information for the paywall. |
+| remote_config | JSON             | :heavy_minus_sign: | A [RemoteConfig](web-api-objects#remoteconfig-object) object in JSON format containing the full [remote config](customize-paywall-with-remote-config) of the paywall. |

@@ -5,83 +5,156 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
+import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
+
 Adds attribution data to a profile.
 
-<Tabs> <TabItem value="shell" label="Shell" default>
+#### Endpoint and method
 
-```shell
-# You can also use wget
-curl -X POST http://localhost:8000/api/v1/web-api/attribution/ \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  -H 'Authorization: Api-Key public_live_iNuUlSsN.83zcTTT8D5Y8FI9cGUI6'
-
+```text
+POST https://api.adapty.io/api/v2/web-api/attribution/
 ```
 
-</TabItem> 
-<TabItem value="http" label="HTTP" default> 
+#### Request example
 
-```http
-POST http://localhost:8000/api/v1/web-api/attribution/ HTTP/1.1
-Host: localhost:8000
-Content-Type: application/json
-Accept: application/json
+<Tabs> <TabItem value="shell" label="cURL" default>
 
+```shell
+curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>' \
+--data '{
+  "placement_id": "PaywallPlacementId",
+  "status": "non_organic",
+  "variation_id": "00000000-0000-0000-0000-000000000000",
+  "paywall_id": "InternalPaywallId",
+  "ab_test_name": "Existing Offer | Improved Offer",
+  "paywall_name": "Used Paywall",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+  "products": [
+    {
+      "title": "Monthly Subscription w/o Trial",
+      "is_consumable": true,
+      "adapty_product_id": "InternalProductId",
+      "vendor_product_id": "onemonth_no_trial",
+      "introductory_offer_eligibility": false,
+      "promotional_offer_eligibility": true,
+      "base_plan_id": "B1",
+      "offer": {
+        "category": "promotional",
+        "type": "pay_up_front",
+        "id": "StoreOfferId"
+      }
+    }
+  ],
+  "remote_config": {
+    "lang": "en",
+    "data": "RemoteConfigObject"
+  }
+}'
 ```
 
 </TabItem> 
 <TabItem value="javascript" label="Javascript" default>  
 
 ```javascript
-const inputBody = '{
-  "status": "organic",
-  "attribution_user_id": "string",
-  "channel": "string",
-  "campaign": "string",
-  "ad_group": "string",
-  "ad_set": "string",
-  "creative": "string",
-  "profile_id": "bfcb6779-b1f9-41fc-92d7-88f8bc1d12e8"
-}';
-const headers = {
-  'Content-Type':'application/json',
-  'Accept':'application/json',
-  'Authorization':'Bearer {access-token}'
-};
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Authorization", "Api-Key <YOUR_PUBLIC_API_KEY>");
 
-fetch('http://localhost:8000/api/v1/web-api/attribution/',
-{
-  method: 'POST',
-  body: inputBody,
-  headers: headers
-})
-.then(function(res) {
-    return res.json();
-}).then(function(body) {
-    console.log(body);
+const raw = JSON.stringify({
+  "placement_id": "PaywallPlacementId",
+  "status": "non_organic",
+  "variation_id": "00000000-0000-0000-0000-000000000000",
+  "paywall_id": "InternalPaywallId",
+  "ab_test_name": "Existing Offer | Improved Offer",
+  "paywall_name": "Used Paywall",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+  "products": [
+    {
+      "title": "Monthly Subscription w/o Trial",
+      "is_consumable": true,
+      "adapty_product_id": "InternalProductId",
+      "vendor_product_id": "onemonth_no_trial",
+      "introductory_offer_eligibility": false,
+      "promotional_offer_eligibility": true,
+      "base_plan_id": "B1",
+      "offer": {
+        "category": "promotional",
+        "type": "pay_up_front",
+        "id": "StoreOfferId"
+      }
+    }
+  ],
+  "remote_config": {
+    "lang": "en",
+    "data": "RemoteConfigObject"
+  }
 });
 
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api.adapty.io/api/v2/web-api/attribution/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
 ```
 
 </TabItem> 
 <TabItem value="ruby" label="Ruby" default>  
 
 ```ruby
-require 'rest-client'
-require 'json'
+require "uri"
+require "json"
+require "net/http"
 
-headers = {
-  'Content-Type' => 'application/json',
-  'Accept' => 'application/json',
-  'Authorization' => 'Bearer {access-token}'
-}
+url = URI("https://api.adapty.io/api/v2/web-api/attribution/")
 
-result = RestClient.post 'http://localhost:8000/api/v1/web-api/attribution/',
-  params: {
-  }, headers: headers
+https = Net::HTTP.new(url.host, url.port)
+https.use_ssl = true
 
-p JSON.parse(result)
+request = Net::HTTP::Post.new(url)
+request["Content-Type"] = "application/json"
+request["Authorization"] = "Api-Key <YOUR_PUBLIC_API_KEY>"
+request.body = JSON.dump({
+  "placement_id": "PaywallPlacementId",
+  "status": "non_organic",
+  "variation_id": "00000000-0000-0000-0000-000000000000",
+  "paywall_id": "InternalPaywallId",
+  "ab_test_name": "Existing Offer | Improved Offer",
+  "paywall_name": "Used Paywall",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+  "products": [
+    {
+      "title": "Monthly Subscription w/o Trial",
+      "is_consumable": true,
+      "adapty_product_id": "InternalProductId",
+      "vendor_product_id": "onemonth_no_trial",
+      "introductory_offer_eligibility": false,
+      "promotional_offer_eligibility": true,
+      "base_plan_id": "B1",
+      "offer": {
+        "category": "promotional",
+        "type": "pay_up_front",
+        "id": "StoreOfferId"
+      }
+    }
+  ],
+  "remote_config": {
+    "lang": "en",
+    "data": "RemoteConfigObject"
+  }
+})
 
+response = https.request(request)
+puts response.read_body
 ```
 
 </TabItem> 
@@ -90,75 +163,66 @@ p JSON.parse(result)
 ```php
 <?php
 
-require 'vendor/autoload.php';
+$curl = curl_init();
 
-$headers = array(
-    'Content-Type' => 'application/json',
-    'Accept' => 'application/json',
-    'Authorization' => 'Bearer {access-token}',
-);
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://api.adapty.io/api/v2/web-api/attribution/',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS =>'{
+  "placement_id": "PaywallPlacementId",
+  "status": "non_organic",
+  "variation_id": "00000000-0000-0000-0000-000000000000",
+  "paywall_id": "InternalPaywallId",
+  "ab_test_name": "Existing Offer | Improved Offer",
+  "paywall_name": "Used Paywall",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+  "products": [
+    {
+      "title": "Monthly Subscription w/o Trial",
+      "is_consumable": true,
+      "adapty_product_id": "InternalProductId",
+      "vendor_product_id": "onemonth_no_trial",
+      "introductory_offer_eligibility": false,
+      "promotional_offer_eligibility": true,
+      "base_plan_id": "B1",
+      "offer": {
+        "category": "promotional",
+        "type": "pay_up_front",
+        "id": "StoreOfferId"
+      }
+    }
+  ],
+  "remote_config": {
+    "lang": "en",
+    "data": "RemoteConfigObject"
+  }
+}',
+  CURLOPT_HTTPHEADER => array(
+    'Content-Type: application/json',
+    'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>'
+  ),
+));
 
-$client = new \GuzzleHttp\Client();
+$response = curl_exec($curl);
 
-// Define array of request body.
-$request_body = array();
-
-try {
-    $response = $client->request('POST','http://localhost:8000/api/v1/web-api/attribution/', array(
-        'headers' => $headers,
-        'json' => $request_body,
-       )
-    );
-    print_r($response->getBody()->getContents());
- }
- catch (\GuzzleHttp\Exception\BadResponseException $e) {
-    // handle exception or api errors.
-    print_r($e->getMessage());
- }
-
- // ...
-
+curl_close($curl);
+echo $response;
 ```
 
 </TabItem> 
 </Tabs>
 
-#### Endpoint
-
-```text
-https://api-admin.adapty.io/api/v1/web-api/attribution/
-```
-
-#### Method
-
-```text
-POST
-```
-
-#### Request example
-
-```json
-{
-  "status": "organic",
-  "attribution_user_id": "UniqueIdentifierAssignedByAdNetwork",
-  "channel": "Google Ads",
-  "campaign": "Social media influencers - Rest of the world",
-  "ad_group": "null",
-  "ad_set": "Keywords 1.12",
-  "creative": "null",
-  "profile_id": "bfcb6779-b1f9-41fc-92d7-33f8bc1d12e3"
-}
-```
-
-#### Authentication header
-
-Public API Key
-
 #### Parameters
 
 | Name                | Type   | Required           | Description                                                  |
 | ------------------- | ------ | ------------------ | ------------------------------------------------------------ |
-| status              | String | :heavy_plus_sign:  | <p>Indicates if the attribution is organic or non-organic.</p><p>Possible values are:</p><ul><li> organic</li><li> non-organic</li><li> unknown</li></ul> |
+| status              | String | :heavy_plus_sign:  | <p>Indicates if the attribution is organic or non-organic.</p><p>Possible values are:</p><ul><li> organic</li><li> non_organic</li><li> unknown</li></ul> |
 | attribution_user_id | String | :heavy_minus_sign: | ID assigned to the user by the attribution source.           |
 | channel             | String | :heavy_minus_sign: | Marketing channel name.                                      |
 | campaign            | String | :heavy_minus_sign: | Marketing campaign name.                                     |
@@ -180,4 +244,3 @@ Public API Key
 #### Response example
 
 <PaywallObject /> 
-=======

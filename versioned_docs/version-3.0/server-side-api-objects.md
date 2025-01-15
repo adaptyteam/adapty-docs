@@ -142,8 +142,6 @@ You can do the following actions with user profiles via Adapty server-side API:
 
 This object contains details about a product in Adapty.
 
-#### Properties
-
 | Name                           | Type    | Required           | Description                                                  |
 | ------------------------------ | ------- | ------------------ | ------------------------------------------------------------ |
 | title                          | String  | :heavy_minus_sign: | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
@@ -154,8 +152,6 @@ This object contains details about a product in Adapty.
 | promotional_offer_eligibility  | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for a promotional offer.   |
 | base_plan_id                   | String  | :heavy_minus_sign: | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
 | offer                          | JSON    | :heavy_minus_sign: | An [Offer](web-api-objects#offer-object) object as a JSON.   |
-
-#### Example
 
 ```json
 {
@@ -175,7 +171,7 @@ This object contains details about a product in Adapty.
 
 ```
 
-### RemoteConfig
+## RemoteConfig
 
 This object contains information about a [remote config](customize-paywall-with-remote-config) for a paywall.
 
@@ -186,8 +182,6 @@ This object contains information about a [remote config](customize-paywall-with-
 }
 
 ```
-
-#### Properties
 
 | Name | Type   | Required          | Description                                                  |
 | ---- | ------ | ----------------- | ------------------------------------------------------------ |
@@ -205,15 +199,11 @@ The request failed due to missing or incorrect authorization. Check the [Authori
 
 The request also failed because the specified profile wasn’t found.
 
-###### Body:
-
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
 | errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
 | error_code  | String  | Short error name. Always `not_authenticated`.                |
 | status_code | Integer | HTTP status. Always `401.`                                   |
-
-###### Response example:
 
 ```json
 {
