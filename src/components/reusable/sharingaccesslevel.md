@@ -28,7 +28,7 @@ The first identified user profile to get an access level will retain it forever.
 
 Note that access levels are still shared between anonymous users.
 
-You can "untie" a purchase by [deleting the owner’s user profile](server-side-api-specs#delete-users-data). After deletion, the access level becomes available to the first user profile that claims it, whether anonymous or identified.
+You can "untie" a purchase by [deleting the owner’s user profile](ss-delete-profile). After deletion, the access level becomes available to the first user profile that claims it, whether anonymous or identified.
 
 Disabling sharing only affects new users. Subscriptions already shared between users will continue to be shared even after this option is disabled.
 

@@ -29,13 +29,15 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
    - Move `{profile_id_or_customer_user_id}` from the endpoint to a header.
    - Remove `{access_level}` from the endpoint and include it as a parameter where needed.
    - Add a new `adapty-platform` header with options like `iOS`, `macOS`, `iPadOS`, `visionOS`, or `Android`.
-4. **Unified Access Revocation:** In v1, you used separate requests to revoke or shorten access. Now, use the [Revoke access level](server-side-api-specs#revoke-access-level) request for both.
-5. **New Access Management Requests:**The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three:
-   - [Grant Access Level](server-side-api-specs#grant-access-level): Add or extend access without transaction info.
-   - [Revoke Access Level](server-side-api-specs#revoke-access-level): Shorten or revoke access.
-   - [Set Transaction](server-side-api-specs#set-transaction): Add transaction details without adding access.
+4. **Unified Access Revocation:** In v1, you used separate requests to revoke or shorten access. Now, use the [Revoke access level](ss-revoke-access-level) request for both.
+5. **New Access Management Requests:** The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three:
+   - [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.
+   - [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.
+   - [Set Transaction](ss-set-transaction): Add transaction details with adding access.
 6. **Parameter Updates:** Modify parameters as outlined for each request.
 7. **Response Handling:** Update your integration to handle the [new response formats](api-responses).
+
+---
 
 ### Prolong/grant a subscription for a user
 
@@ -43,14 +45,17 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
    1. **Grant Access Level:** Use this request to extend an access level without linking it to a transaction.
    2. Revoke Access Level:
       - In version 1, you used the [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately revoke access and the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request to shorten it.
-      - In version 2, both actions are handled by the [Revoke access level](server-side-api-specs#revoke-access-level) request.
+      - In version 2, both actions are handled by the [Revoke access level](ss-revoke-access-level) request.
    3. **Set Transaction:** Use this request to add transaction details to Adapty without managing access levels.
+   
+
+---
 
 #### Grant Access Level
 
 :::info
 
-For a detailed description, refer to the [Grant access level](server-side-api-specs#grant-access-level) request.
+For a detailed description, refer to the [Grant access level](ss-grant-access-level) request.
 
 :::
 
@@ -61,12 +66,15 @@ Grant or extend access for a user without tying it to a transaction.
   - **access_level_id**: Previously in the endpoint. Required.
   - **starts_at**: Now nullable.
   - **expires_at**: Optional for lifetime access and nullable.
+  
+
+---
 
 #### Revoke access level
 
 :::info
 
-For a detailed description, refer to the [Revoke access level](server-side-api-specs#revoke-access-level) request.
+For a detailed description, refer to the [Revoke access level](ss-revoke-access-level) request.
 
 :::
 
@@ -77,11 +85,13 @@ Revoke or shorten a user’s access.
   - **access_level_id**: Required.
   - **expires_at**: Nullable unless access is revoked immediately.
 
+---
+
 #### Set transaction
 
 :::info
 
-For a detailed description, refer to the [Set transaction](server-side-api-specs#set-transaction) request.
+For a detailed description, refer to the [Set transaction](ss-set-transaction) request.
 
 :::
 
@@ -89,6 +99,8 @@ Submit a transaction to Adapty, separate from granting or revoking access.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
 - **Details:** Parameters depend on whether the purchase is a subscription or one-time product. See specific guidelines for each.
+
+---
 
 ##### For Subscription
 
@@ -149,28 +161,34 @@ Submit a transaction to Adapty, separate from granting or revoking access.
 | `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign:                       | Represents transaction ID in app stores.                     |
 | `variation_id`                                               | Added            | String          | :heavy_minus_sign:                      | :heavy_minus_sign:                       | The variation ID used to trace purchases to the specific paywall they were made from. |
 
+---
+
 ### Revoke subscription from a user
 
 :::info
 
-For a detailed description, refer to the [Revoke access level](server-side-api-specs#revoke-access-level) request.
+For a detailed description, refer to the [Revoke access level](ss-revoke-access-level) request.
 
 :::
 
-In version 1, you used the [Revoke subscription from a user](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately remove access. Now, use the [Revoke access level](server-side-api-specs#revoke-access-level) request to either immediately remove access or shorten it.
+In version 1, you used the [Revoke subscription from a user](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately remove access. Now, use the [Revoke access level](ss-revoke-access-level) request to either immediately remove access or shorten it.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/`
 - **New Option:** Specify a future revoke date (`revoke_at`) if immediate revocation isn’t needed.
+
+---
 
 ### Validate a purchase from Stripe, provide access level to a customer, and import his transaction history from Stripe
 
 No changes
 
+---
+
 ### Get info about a user
 
 :::info
 
-For a detailed description, refer to the [Retrieve profile](server-side-api-specs#retrieve-profile) request.
+For a detailed description, refer to the [Get profile](ss-get-profile) request.
 
 :::
 
@@ -179,11 +197,13 @@ Retrieve complete user profile data without additional parameters.
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/profile/`
 - **Change:** The User Profile ID or Customer User ID is now passed via headers, and no additional parameters are needed. The **extended** parameter is no longer needed as the complete profile data is always returned.
 
+---
+
 ### Set the user's attribute
 
 :::info
 
-For a detailed description, refer to the [Update profile](server-side-api-specs#update-profile) request.
+For a detailed description, refer to the [Update profile](ss-update-profile) request.
 
 :::
 
@@ -200,11 +220,13 @@ In version 1, you could only update user attributes. With v2, you can modify a w
 | `store`              | Added      | String                | :heavy_minus_sign: | :heavy_plus_sign:                       | Store where the product was bought. Options include **app_store**, **play_store**, **stripe**, or the name of your [custom store](initial-custom). |
 | `store_country`      | Added      | String                | :heavy_minus_sign: | :heavy_plus_sign:                       | Country of the end user app store.                           |
 
+---
+
 ### Delete user's data
 
 :::info
 
-For a detailed description, refer to the [Delete profile](server-side-api-specs#delete-profile) request.
+For a detailed description, refer to the [Delete profile](ss-delete-profile) request.
 
 :::
 

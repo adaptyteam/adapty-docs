@@ -133,7 +133,7 @@ const config = {
             ],
           },*/
           {
-            label: "API",
+            label: "Server API",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
@@ -346,6 +346,9 @@ const config = {
           "php",
           "HTTP",
           "ruby",
+          "python",
+          "bash",
+          "http"
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!

@@ -14,7 +14,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+For the latest version, refer to the [Server-side API V2](ss-authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
 
 :::
 Each API request must be signed with the [Secret Key](general).
@@ -74,7 +74,7 @@ Request parameters:
 | **vendor_transaction_id**          | str           | ❌             | ❌        | <p>Transaction ID in a vendor environment.</p><p>If it is the same as **vendor_original_transaction_id** or if **vendor_original_transaction_id** is absent, Adapty considers it the first subscription purchase. If it differs from **vendor_original_transaction_id**, Adapty considers the purchase the subscription renewal.</p> |
 | **store**                          | str           | ❌             | ❌        | A store where users purchased a product, such as **app\_store** and **play\_store**, can be custom. Default is **adapty** |
 | **introductory_offer_type**        | str           | ❌             | ❌        | A type of introduction offer. Available values are **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. |
-| **price**                          | float         | ❌             | ❌        | <p>Price of the subscription/purchase to save in [transaction](server-side-api-specs#transaction).</p><p>The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal.</p><p></p><p>If you provide price, provide `price_locale` as well.</p> |
+| **price**                          | float         | ❌             | ❌        | <p>Price of the subscription/purchase to save in [transaction](server-side-api-specs-legacy#transaction).</p><p>The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal.</p><p></p><p>If you provide price, provide `price_locale` as well.</p> |
 | **price_locale**                   | str           | ❌             | ❌        | The currency of the transaction in the [three-letter](https://en.wikipedia.org/wiki/ISO_4217) format. `USD` is used by default. |
 | **proceeds**                       | float         | ❌             | ❌        | Proceeds \(price that is reduced due to stores' fee\) of the subscription/purchase to save in [transaction](server-side-api-specs#transaction). |
 | **is_sandbox**                     | bool          | ❌             | ❌        | Boolean indicating whether the product was purchased in the sandbox or production environment. |
@@ -286,7 +286,7 @@ Path parameters:
 | :--------------------------------- | :--- | :------- | :------- | :------------------------------------------- |
 | **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID |
 
-The response example is the same as for [Prolong/grant a subscription for a user](server-side-api-specs#prolonggrant-a-subscription-for-a-user).
+The response example is the same as for [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user).
 
 To get an extended response, add Key **"extended"** with any value to Query Params. It works only for the GET request.
 

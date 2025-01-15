@@ -153,7 +153,7 @@ Adapty has a special event `access_level_updated`. It is sent only to webhook in
 
 Adapty doesn't send `access_level_updated` upon subscription expiration - please, refer to **expires_at** value to end the subscriptions on your side. 
 
-Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](server-side-api-specs#prolonggrant-a-subscription-for-a-user)
+Please note that some properties can only be set using the [grant access level](ss-grant-access-level) method. 
 
 For detailed descriptions of the mentioned properties, you can refer to the[ API objects documentation](server-side-api-objects).
 
