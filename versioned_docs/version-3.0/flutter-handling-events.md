@@ -15,7 +15,7 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` methods and register the observer before presenting any screen:
 
 ```javascript title="Flutter"
-await AdaptyUI().activate(observer: this)
+AdaptyUI().setObserver(this);
 ```
 
 ### User-generated events
