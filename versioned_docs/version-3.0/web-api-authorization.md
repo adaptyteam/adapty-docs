@@ -11,6 +11,8 @@ API requests must be authenticated by your public API key as the **Authorization
 
 ## Request format
 
-- **Content-Type header**: Set the **Content-Type** header to `application/json` for the API to process your request.
-- **Body**: The API expects the request to use the body as JSON.
+- **Content-Type header**: 
+  Set the **Content-Type** header to `application/json` for the API to process your request.
+- **Body**: 
+  The API expects the request to use the body as JSON.
 

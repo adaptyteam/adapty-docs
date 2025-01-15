@@ -11,13 +11,13 @@ import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 
 Adds attribution data to a profile.
 
-#### Endpoint and method
+## Endpoint and method
 
 ```text
 POST https://api.adapty.io/api/v2/web-api/attribution/
 ```
 
-#### Request example
+## Request example
 
 <Tabs> <TabItem value="shell" label="cURL" default>
 
@@ -218,7 +218,7 @@ echo $response;
 </TabItem> 
 </Tabs>
 
-#### Parameters
+## Parameters
 
 | Name                | Type   | Required           | Description                                                  |
 | ------------------- | ------ | ------------------ | ------------------------------------------------------------ |
@@ -232,7 +232,7 @@ echo $response;
 | customer_user_id    | String | :heavy_plus_sign:* | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | profile_id          | String | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
-#### Responses
+## Responses
 
 | Status | Meaning              |
 | ------ | -------------------- |
@@ -241,6 +241,6 @@ echo $response;
 | 401    | Unauthorized         |
 | 404    | Not Found            |
 
-#### Response example
+## Response example
 
 <PaywallObject /> 

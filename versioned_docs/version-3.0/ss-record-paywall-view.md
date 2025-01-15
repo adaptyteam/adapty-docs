@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 Adapty assists you in measuring the performance of your paywalls. However, logging paywall views needs your input because only you know when a customer sees a paywall. Use this request to log a paywall view.
 
-#### Endpoint and method
+## Endpoint and method
 
 ```text
 POST https://api.adapty.io/api/v2/web-api/paywall/visit/
@@ -126,7 +126,7 @@ echo $response;
 </TabItem>  
 </Tabs>
 
-#### Parameters
+## Parameters
 
 | Name             | Required           | Description                                                  |
 | ---------------- | ------------------ | ------------------------------------------------------------ |
@@ -136,7 +136,7 @@ echo $response;
 | customer_user_id | :heavy_plus_sign:* | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
 | profile_id       | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
-<h3 id="web_api_paywall_visit_create-responses">Responses</h3>
+## Responses
 
 | Status | Meaning              |
 | ------ | -------------------- |
@@ -145,6 +145,6 @@ echo $response;
 | 401    | Unauthorized         |
 | 404    | Not Found            |
 
-#### Response example
+## Response example
 
 <ResponseExampleNew />
