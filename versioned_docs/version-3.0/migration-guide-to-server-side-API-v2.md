@@ -30,10 +30,10 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
    - Remove `{access_level}` from the endpoint and include it as a parameter where needed.
    - Add a new `adapty-platform` header with options like `iOS`, `macOS`, `iPadOS`, `visionOS`, or `Android`.
 4. **Unified Access Revocation:** In v1, you used separate requests to revoke or shorten access. Now, use the [Revoke access level](ss-revoke-access-level) request for both.
-5. **New Access Management Requests:**The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three:
-   - [Grant Access Level](ss-grant-access-level): Add or extend access without transaction info.
-   - [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access.
-   - [Set Transaction](ss-set-transaction): Add transaction details without adding access.
+5. **New Access Management Requests:** The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three:
+   - [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.
+   - [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.
+   - [Set Transaction](ss-set-transaction): Add transaction details with adding access.
 6. **Parameter Updates:** Modify parameters as outlined for each request.
 7. **Response Handling:** Update your integration to handle the [new response formats](api-responses).
 
