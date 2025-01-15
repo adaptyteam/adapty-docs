@@ -15,13 +15,11 @@ import Price from '@site/src/components/reusable/Price.md';
 import InstallationMeta from '@site/src/components/reusable/InstallationMeta.md';
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md'
 
-## Objects
-
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
 
 All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
 
-### Access level
+## Access level
 
 Info about customer’s [access level](access-level). 
 
@@ -36,7 +34,7 @@ You can do the following action via Adapty server-side API:
 
 <AccessLevel />
 
-### Installation Meta
+## Installation Meta
 
 Information about installation of the app on a specific device. 
 
@@ -47,7 +45,7 @@ You can do the following action via Adapty server-side API:
 
 <InstallationMeta />
 
-### Non Subscription
+## Non Subscription
 
 Info about non-subscription purchases. These can be one-time \(consumable\) products, unlocks \(like new map unlock in the game\), etc.  
 
@@ -57,11 +55,11 @@ You can do the following action via Adapty server-side API:
 
 <NonSubscription />
 
-### One-Time Purchase
+## One-Time Purchase
 
 <Purchase />
 
-### Offer
+## Offer
 
 Information on the applied offer. The Offer object is a part of the  [Subscription](server-side-api-objects#subscription), and [Access level](server-side-api-objects#access-level) objects.
 
@@ -71,11 +69,11 @@ You can do the following actions with offers via Adapty server-side API:
 
 <Offer />
 
-### Paywall object
+## Paywall
 
 <PaywallObject />
 
-### Price
+## Price
 
 Information about the cost of your product in local currency. The Price object is a part of the  [Subscription](server-side-api-objects#subscription) and Purchase objects.
 
@@ -85,7 +83,7 @@ You can do the following actions with product price via Adapty server-side API:
 
 <Price />
 
-### Profile
+## Profile
 
 Info about the [customer and their subscription](server-side-api-objects#profile)
 
@@ -98,11 +96,9 @@ You can do the following actions with user profiles via Adapty server-side API:
 
 <ProfileObject />
 
-### Product
+## Product
 
 This object contains details about a product in Adapty.
-
-#### Properties
 
 | Name                           | Type    | Required           | Description                                                  |
 | ------------------------------ | ------- | ------------------ | ------------------------------------------------------------ |
@@ -114,8 +110,6 @@ This object contains details about a product in Adapty.
 | promotional_offer_eligibility  | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for a promotional offer.   |
 | base_plan_id                   | String  | :heavy_minus_sign: | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
 | offer                          | JSON    | :heavy_minus_sign: | An [Offer](web-api-objects#offer-object) object as a JSON.   |
-
-#### Example
 
 ```json
 {
@@ -135,7 +129,7 @@ This object contains details about a product in Adapty.
 
 ```
 
-### RemoteConfig
+## RemoteConfig
 
 This object contains information about a [remote config](customize-paywall-with-remote-config) for a paywall.
 
@@ -147,14 +141,12 @@ This object contains information about a [remote config](customize-paywall-with-
 
 ```
 
-#### Properties
-
 | Name | Type   | Required          | Description                                                  |
 | ---- | ------ | ----------------- | ------------------------------------------------------------ |
 | lang | String | :heavy_plus_sign: | <p>Locale code for the [paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
 | data | String | :heavy_plus_sign: | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
 
-### Subscription
+## Subscription
 
 Info about your end user subscription.  You can do the following action via Adapty server-side API:
 
@@ -162,3 +154,28 @@ Info about your end user subscription.  You can do the following action via Adap
 - [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
 
 <Subscription />
+
+The request failed due to missing or incorrect authorization. Check the [Authorization](ss-authorization) page, paying close attention to the **Authorization header**.
+
+The request also failed because the specified profile wasn’t found.
+
+| Parameter   | Type    | Description                                                  |
+| ----------- | ------- | ------------------------------------------------------------ |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
+| error_code  | String  | Short error name. Always `not_authenticated`.                |
+| status_code | Integer | HTTP status. Always `401.`                                   |
+
+```json
+{
+  "errors": [
+    {
+      "source": "non_field_errors",
+      "errors": [
+        "Authentication credentials were not provided."
+      ]
+    }
+  ],
+  "error_code": "not_authenticated",
+  "status_code": 401
+}
+```

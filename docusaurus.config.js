@@ -347,7 +347,7 @@ const config = {
           "HTTP",
           "ruby",
           "python",
-          "bash",
+          "bash"
 
         ],
         magicComments: [

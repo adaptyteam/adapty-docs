@@ -51,10 +51,10 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 
 ```bash 
 curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --data '{
   "purchase_type": "subscription",
   "store": "app_store",
@@ -105,10 +105,10 @@ payload = json.dumps({
   "expires_at": "2026-10-12T09:42:50.000000+0000"
 })
 headers = {
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
   'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
   'adapty-platform': 'iOS',
   'Content-Type': 'application/json',
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
