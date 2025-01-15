@@ -77,5 +77,13 @@ These custom attributes can be used to create segments and run A/B tests.
 **What's next:**
 
 - Proceed with [authorization for server-side API](ss-authorization)
-- Proceed with [API requests](server-side-api-specs).
+- Requests:
+  - [Get profile](ss-get-profile)
+  - [Create profile](ss-create-profile)
+  - [Update profile](ss-update-profile)
+  - [Delete profile](ss-delete-profile) 
+  - [Grant access level](ss-grant-access-level)
+  - [Revoke access level](ss-revoke-access-level)
+  - [Set transaction](ss-set-transaction)
+  - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
 

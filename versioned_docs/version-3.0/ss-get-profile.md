@@ -29,11 +29,10 @@ GET https://api.adapty.io/api/v2/server-side-api/profile/
 
 ```bash
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
---header 'adapty-profile-id: <YOUR_USER_PROFILE_ID>' \
---header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
 
 </TabItem> 
@@ -48,11 +47,10 @@ url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
 payload = {}
 headers = {
+  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
   'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
   'adapty-platform': 'iOS',
   'Content-Type': 'application/json',
-  'adapty-profile-id': '<YOUR_USER_PROFILE_ID>',
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
 }
 
 response = requests.request("GET", url, headers=headers, data=payload)
@@ -66,11 +64,10 @@ print(response.text)
 
 ```javascript
 const myHeaders = new Headers();
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
 myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
-myHeaders.append("adapty-profile-id", "<YOUR_USER_PROFILE_ID>");
-myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
 const requestOptions = {
   method: "GET",
