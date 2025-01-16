@@ -4,7 +4,7 @@ A billing issue happens when there’s a problem during a subscription renewal a
 
 To resolve this, make sure the billing issue date (`billing_issue_detected_at`) is later than the transaction date (`purchased_at`).
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ To resolve this, make sure the billing issue date (`billing_issue_detected_at`) 
 | error_code  | String  | Short error name. Always `billing_issue_detected_at_date_comparison_error`. |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

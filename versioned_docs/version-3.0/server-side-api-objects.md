@@ -105,10 +105,6 @@ You can do the following actions with offers via Adapty server-side API:
 | offer_type     | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The type of active offer. Options are: **free_trial**, **pay_as_you_go**, **pay_up_front**, and **unknown**. If this isn’t null, it means the offer was applied in the current subscription period. |
 | offer_id       | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The ID of the applied offer.                                 |
 
-## Paywall
-
-<PaywallObject />
-
 ## Price
 
 Information about the cost of your product in local currency. The Price object is a part of the  [Subscription](server-side-api-objects#subscription) and Purchase objects.

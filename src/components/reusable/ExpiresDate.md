@@ -4,7 +4,7 @@ A user can’t buy a subscription that has already expired. So, the `expires_at`
 
 To fix this, check these dates and ensure that `expires_at` is after `purchased_at`.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ To fix this, check these dates and ensure that `expires_at` is after `purchased_
 | error_code  | String  | Short error name. Always `expires_date_error`.               |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

@@ -6,7 +6,7 @@ The `originally_purchased_at` timestamp marks the time of the original purchase,
 
 The request failed because `originally_purchased_at` is set to a later date than `purchased_at`. Make sure it’s earlier or equal to `purchased_at`.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -14,7 +14,7 @@ The request failed because `originally_purchased_at` is set to a later date than
 | error_code  | String  | Short error name. Always `originally_purchased_date_error`.  |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

@@ -6,7 +6,7 @@ If you do offer a grace period, the expiration date for it (`grace_period_expire
 
 To fix this, make sure the grace period expiration date (`grace_period_expires_at`) is later than the subscription expiration date (`expires_at`).
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -14,7 +14,7 @@ To fix this, make sure the grace period expiration date (`grace_period_expires_a
 | error_code  | String  | Short error name. Always `grace_period_expires_date_error`.  |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

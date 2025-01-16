@@ -8,6 +8,9 @@ displayed_sidebar: APISidebar
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
+import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
+import WebApi400 from '@site/src/components/reusable/WebApi400.md';
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
 Adds attribution data to a profile.
 
@@ -26,34 +29,16 @@ curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>' \
 --data '{
-  "placement_id": "PaywallPlacementId",
-  "status": "non_organic",
-  "variation_id": "00000000-0000-0000-0000-000000000000",
-  "paywall_id": "InternalPaywallId",
-  "ab_test_name": "Existing Offer | Improved Offer",
-  "paywall_name": "Used Paywall",
-  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
-  "products": [
-    {
-      "title": "Monthly Subscription w/o Trial",
-      "is_consumable": true,
-      "adapty_product_id": "InternalProductId",
-      "vendor_product_id": "onemonth_no_trial",
-      "introductory_offer_eligibility": false,
-      "promotional_offer_eligibility": true,
-      "base_plan_id": "B1",
-      "offer": {
-        "category": "promotional",
-        "type": "pay_up_front",
-        "id": "StoreOfferId"
-      }
-    }
-  ],
-  "remote_config": {
-    "lang": "en",
-    "data": "RemoteConfigObject"
-  }
-}'
+  "status": "organic",
+  "attribution_user_id": "attribution_user_id_value",
+  "channel": "marketing_channel_value",
+  "campaign": "campaign_name_value",
+  "ad_group": "ad_group_name_value",
+  "ad_set": "ad_set_name_value",
+  "creative": "creative_name_value",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+}
+'
 ```
 
 </TabItem> 
@@ -65,33 +50,14 @@ myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", "Api-Key <YOUR_PUBLIC_API_KEY>");
 
 const raw = JSON.stringify({
-  "placement_id": "PaywallPlacementId",
-  "status": "non_organic",
-  "variation_id": "00000000-0000-0000-0000-000000000000",
-  "paywall_id": "InternalPaywallId",
-  "ab_test_name": "Existing Offer | Improved Offer",
-  "paywall_name": "Used Paywall",
-  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
-  "products": [
-    {
-      "title": "Monthly Subscription w/o Trial",
-      "is_consumable": true,
-      "adapty_product_id": "InternalProductId",
-      "vendor_product_id": "onemonth_no_trial",
-      "introductory_offer_eligibility": false,
-      "promotional_offer_eligibility": true,
-      "base_plan_id": "B1",
-      "offer": {
-        "category": "promotional",
-        "type": "pay_up_front",
-        "id": "StoreOfferId"
-      }
-    }
-  ],
-  "remote_config": {
-    "lang": "en",
-    "data": "RemoteConfigObject"
-  }
+  "status": "organic",
+  "attribution_user_id": "attribution_user_id_value",
+  "channel": "marketing_channel_value",
+  "campaign": "campaign_name_value",
+  "ad_group": "ad_group_name_value",
+  "ad_set": "ad_set_name_value",
+  "creative": "creative_name_value",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
 });
 
 const requestOptions = {
@@ -124,33 +90,14 @@ request = Net::HTTP::Post.new(url)
 request["Content-Type"] = "application/json"
 request["Authorization"] = "Api-Key <YOUR_PUBLIC_API_KEY>"
 request.body = JSON.dump({
-  "placement_id": "PaywallPlacementId",
-  "status": "non_organic",
-  "variation_id": "00000000-0000-0000-0000-000000000000",
-  "paywall_id": "InternalPaywallId",
-  "ab_test_name": "Existing Offer | Improved Offer",
-  "paywall_name": "Used Paywall",
-  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
-  "products": [
-    {
-      "title": "Monthly Subscription w/o Trial",
-      "is_consumable": true,
-      "adapty_product_id": "InternalProductId",
-      "vendor_product_id": "onemonth_no_trial",
-      "introductory_offer_eligibility": false,
-      "promotional_offer_eligibility": true,
-      "base_plan_id": "B1",
-      "offer": {
-        "category": "promotional",
-        "type": "pay_up_front",
-        "id": "StoreOfferId"
-      }
-    }
-  ],
-  "remote_config": {
-    "lang": "en",
-    "data": "RemoteConfigObject"
-  }
+  "status": "organic",
+  "attribution_user_id": "attribution_user_id_value",
+  "channel": "marketing_channel_value",
+  "campaign": "campaign_name_value",
+  "ad_group": "ad_group_name_value",
+  "ad_set": "ad_set_name_value",
+  "creative": "creative_name_value",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
 })
 
 response = https.request(request)
@@ -175,34 +122,16 @@ curl_setopt_array($curl, array(
   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
   CURLOPT_CUSTOMREQUEST => 'POST',
   CURLOPT_POSTFIELDS =>'{
-  "placement_id": "PaywallPlacementId",
-  "status": "non_organic",
-  "variation_id": "00000000-0000-0000-0000-000000000000",
-  "paywall_id": "InternalPaywallId",
-  "ab_test_name": "Existing Offer | Improved Offer",
-  "paywall_name": "Used Paywall",
-  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
-  "products": [
-    {
-      "title": "Monthly Subscription w/o Trial",
-      "is_consumable": true,
-      "adapty_product_id": "InternalProductId",
-      "vendor_product_id": "onemonth_no_trial",
-      "introductory_offer_eligibility": false,
-      "promotional_offer_eligibility": true,
-      "base_plan_id": "B1",
-      "offer": {
-        "category": "promotional",
-        "type": "pay_up_front",
-        "id": "StoreOfferId"
-      }
-    }
-  ],
-  "remote_config": {
-    "lang": "en",
-    "data": "RemoteConfigObject"
-  }
-}',
+  "status": "organic",
+  "attribution_user_id": "attribution_user_id_value",
+  "channel": "marketing_channel_value",
+  "campaign": "campaign_name_value",
+  "ad_group": "ad_group_name_value",
+  "ad_set": "ad_set_name_value",
+  "creative": "creative_name_value",
+  "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
+}
+',
   CURLOPT_HTTPHEADER => array(
     'Content-Type: application/json',
     'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>'
@@ -232,15 +161,24 @@ echo $response;
 | customer_user_id    | String | :heavy_plus_sign:* | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | profile_id          | String | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
+---
+
 ## Responses
 
-| Status | Meaning              |
-| ------ | -------------------- |
-| 201    | Successfully created |
-| 400    | Bad Request          |
-| 401    | Unauthorized         |
-| 404    | Not Found            |
+### 200 - Successful request
 
-## Response example
+The successful response will contain the [Paywall](web-api-objects#paywall-object) object.
 
 <PaywallObject /> 
+
+### 400 - Bad Request
+
+<WebApi400 />
+
+### 401 - Unauthorised
+
+<ProfileResponseUnauthorized />
+
+### 404 - Not Found
+
+<VariationIdNotFound />

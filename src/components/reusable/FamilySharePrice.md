@@ -4,7 +4,7 @@ The request failed because the `is_family_shared` parameter is set to `true`, me
 
 If `is_family_shared` should be `true`, make sure to set the `value` parameter of the [Price](server-side-api-objects#price) object to `0`.
 
-###### Parameters
+#### Parameters
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ If `is_family_shared` should be `true`, make sure to set the `value` parameter o
 | error_code  | String  | Short error name. Always: `family_share_price_error`.        |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 The profile is not found
 

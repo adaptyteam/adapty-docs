@@ -8,6 +8,9 @@ displayed_sidebar: APISidebar
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
+import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
+import WebApi400 from '@site/src/components/reusable/WebApi400.md';
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
 Receives the paywall from the provided placement.
 
@@ -123,15 +126,24 @@ echo $response;
 | customer_user_id | :heavy_plus_sign:* | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
 | profile_id       | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
+---
+
 ## Responses
 
-| Status | Meaning            |
-| ------ | ------------------ |
-| 200    | Successful request |
-| 400    | Bad Request        |
-| 401    | Unauthorized       |
-| 404    | Not Found          |
+### 200 - Successful request
 
-## Response example
+The successful response will contain the [Paywall](web-api-objects#paywall-object) object.
 
 <PaywallObject /> 
+
+### 400 - Bad Request
+
+<WebApi400 />
+
+### 401 - Unauthorised
+
+<ProfileResponseUnauthorized />
+
+### 404 - Not Found
+
+<VariationIdNotFound />

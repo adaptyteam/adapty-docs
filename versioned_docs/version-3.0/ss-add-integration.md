@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
-Adds integration identifiers.
+Adds integration identifiers to a profile.
 
 ## Endpoint and method
 
@@ -129,10 +129,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 </TabItem> 
 
 </Tabs>
-
-## Authentication header
-
-Public API Key
 
 #### Parameters
 

@@ -115,11 +115,12 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/acces
 
 ---
 
-## Successful response
+## Successful response: 200 - Success
 
 <ProfileResponse />
 
-## Successful response example
+### Successful response example
+
 <ResponseExample />  
 
 ---

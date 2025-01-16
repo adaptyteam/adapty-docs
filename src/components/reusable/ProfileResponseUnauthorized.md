@@ -6,7 +6,7 @@ The request failed due to missing or incorrect authorization. Check the [Authori
 
 The request also failed because the specified profile wasn’t found.
 
-###### Body:
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -14,7 +14,7 @@ The request also failed because the specified profile wasn’t found.
 | error_code  | String  | Short error name. Always `not_authenticated`.                |
 | status_code | Integer | HTTP status. Always `401.`                                   |
 
-###### Response example:
+#### Response example
 
 ```json
 {

@@ -191,7 +191,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 ---
 
-## Successful response
+## Successful response: 200 - Success
 
 <ProfileResponse />
 

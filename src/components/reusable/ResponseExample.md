@@ -3,9 +3,9 @@
 ```json
 {
   "data": {
-    "app_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "profile_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "customer_user_id": "8612ED7C-3477-466D-93AE-1854B8E5FDD5",
+    "app_id": "3fa33f64-5717-4562-b3fc-2c333f66afa6",
+    "profile_id": "3fa85f64-5717-4562-b3fc-2c333f66afa6",
+    "customer_user_id": "8612ED7C-3477-466D-93AE-3334B8E5FDD5",
     "total_revenue_usd": 109.88999999999999,
     "segment_hash": "string",
     "timestamp": 0,
@@ -22,7 +22,7 @@
         "store_product_id": "weekly_8.99",
         "store_base_plan_id": "",
         "store_transaction_id": "530001802720333",
-        "store_original_transaction_id": "530001724306018",
+        "store_original_transaction_id": "530001802720333",
         "offer": {
           "category": "introductory",
           "type": "free_trial",
@@ -45,7 +45,7 @@
         "store_product_id": "weekly_8.99",
         "store_base_plan_id": "",
         "store_transaction_id": "530001802720333",
-        "store_original_transaction_id": "530001724306018",
+        "store_original_transaction_id": "530001802720333",
         "offer": {
           "offer_category": "introductory",
           "offer_type": "free_trial",
@@ -63,7 +63,7 @@
     ],
     "non_subscriptions": [
       {
-        "purchase_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "purchase_id": "3fa33f64-5717-4562-b3fc-2c963f66afa6",
         "store": "app_store",
         "store_product_id": "weekly_8.99",
         "store_base_plan_id": "",

@@ -190,7 +190,13 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 
 <Purchase />
 
-## Successful response example
+---
+
+## Successful response: 200 - Success
+
+<ProfileResponse />
+
+### Successful response example
 
 <!--- <ResponseExample />  --->
 
@@ -229,35 +235,80 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 }
 ```
 
+---
+
 ## Errors
 
 ### 400 - Bad request
-#### **billing_issue_detected_at_date_comparison_error
+
+#### billing_issue_detected_at_date_comparison_error
+
 <BillingIssueDetectedDate />
+
+---
+
 #### expires_date_error
+
 <ExpiresDate />
+
+---
+
 #### family_share_price_error
+
 <FamilySharePrice />
+
+---
+
 #### free_trial_price_error
 <FreeTrialPrice />
+
+---
+
 #### grace_period_billing_error
 <GracePeriodBilling />
+
+---
+
 #### grace_period_expires_date_error
 <FreeTrialPrice />
+
+---
+
 #### missing_offer_id
 <MissingOfferID />
+
+---
+
 #### originally_purchased_date_error
 <originallyPurchasedDate />
+
+---
+
 #### profile_does_not_exist
 <AccessLevelProfileNotFound /> 
+
+---
+
 #### refund_date_error
 <RefundDate />
+
+---
+
 #### refund_fields_error
 <RefundDateNull />
+
+---
+
 #### renew_status_changed_date_error
 <RenewStatusChangedDate />
+
+---
+
 #### store_transaction_id_error
 <StoreTransactionId />
+
+---
+
 ### 401 - Unauthorized
 <ProfileResponseUnauthorized />  
 ### 404 - Not found
