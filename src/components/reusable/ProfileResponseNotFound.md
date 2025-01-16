@@ -3,7 +3,7 @@
 <p> </p>
 The request failed because the specified profile wasn’t found.
 
-###### Body
+##### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -11,7 +11,7 @@ The request failed because the specified profile wasn’t found.
 | error_code  | String  | Short error name. Always `not_found`.                        |
 | status_code | Integer | HTTP status. Always `404`.                                   |
 
-###### Response example
+##### Response example
 
 ```json
 {

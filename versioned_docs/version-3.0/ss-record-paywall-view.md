@@ -9,6 +9,9 @@ displayed_sidebar: APISidebar
 import ResponseExampleNew from '@site/src/components/reusable/ResponseExample-new.md';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
+import WebApi400 from '@site/src/components/reusable/WebApi400.md';
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
 Adapty assists you in measuring the performance of your paywalls. However, logging paywall views needs your input because only you know when a customer sees a paywall. Use this request to log a paywall view.
 
@@ -136,15 +139,22 @@ echo $response;
 | customer_user_id | :heavy_plus_sign:* | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
 | profile_id       | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
 
+---
+
 ## Responses
 
-| Status | Meaning              |
-| ------ | -------------------- |
-| 201    | Successfully created |
-| 400    | Bad request          |
-| 401    | Unauthorized         |
-| 404    | Not Found            |
+### 201 - Created
 
-## Response example
+The paywall view is recorded successfully.
 
-<ResponseExampleNew />
+### 400 - Bad Request
+
+<WebApi400 />
+
+### 401 - Unauthorised
+
+<ProfileResponseUnauthorized />
+
+### 404 - Not Found
+
+<VariationIdNotFound />

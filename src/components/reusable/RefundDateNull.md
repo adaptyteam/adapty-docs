@@ -4,7 +4,7 @@ The request failed because it either includes `cancellation_reason` without a `r
 
 When a refund is set, both the refund date and reason need to be specified.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ When a refund is set, both the refund date and reason need to be specified.
 | error_code  | String  | Short error name. Always `refund_fields_error`.              |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

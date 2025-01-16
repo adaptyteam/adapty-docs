@@ -2,7 +2,7 @@
 
 The request failed because the profile in the request doesn’t match the specified access level. Double-check that the profile ID in the header and the access level ID in the body are correct, and make sure there are no typos.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -10,7 +10,7 @@ The request failed because the profile in the request doesn’t match the specif
 | error_code  | String  | Short error name. Always `profile_paid_access_level_does_not_exist`. |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

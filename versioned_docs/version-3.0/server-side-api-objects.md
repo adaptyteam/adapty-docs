@@ -69,10 +69,6 @@ You can do the following actions with offers via Adapty server-side API:
 
 <Offer />
 
-## Paywall
-
-<PaywallObject />
-
 ## Price
 
 Information about the cost of your product in local currency. The Price object is a part of the  [Subscription](server-side-api-objects#subscription) and Purchase objects.

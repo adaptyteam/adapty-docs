@@ -194,19 +194,22 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](ss-authorization).
   <ProfileRequest /> 
 
-## Successful response
+---
+
+## Successful response: 200 - Success
 
 <ProfileResponse />
 
 ### Successful response example
 <ResponseExample />  
 
-
+---
 
 ## Errors
 
 ### 400 - Bad request
 <ProfileResponseBadRequest />  
+
 ### 401 - Unauthorized
 <ProfileResponseUnauthorized />  
 ### 404 - Not found

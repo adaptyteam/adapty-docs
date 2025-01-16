@@ -90,7 +90,9 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 No parameters
 
-## Successful response
+---
+
+## Successful response: 204 No Content
 
 **204 No Content** with an empty body is a successful response. 
 

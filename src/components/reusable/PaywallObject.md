@@ -6,6 +6,8 @@
 
 The object that contains information on a paywall.
 
+#### Request example
+
 ```json title="JSON"
 {
   "placement_id": "PaywallPlacementId",
@@ -36,7 +38,7 @@ The object that contains information on a paywall.
 }
 
 ```
-Parameters:
+#### Body
 
 | Name          | Type             | Required           | Description                                                  |
 | ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |

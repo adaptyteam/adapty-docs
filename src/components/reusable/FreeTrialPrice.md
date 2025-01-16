@@ -4,7 +4,7 @@ The request failed because the `offer_type` parameter is set to `free_trial`, bu
 
 Another possible reason is that the `offer_id` parameter was included but left `null`, even though it can’t be null. In this case, either provide a value for `offer_id` or remove the parameter entirely.
 
-###### Parameters
+#### Parameters
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ Another possible reason is that the `offer_id` parameter was included but left `
 | error_code  | String  | Short error name. Always: `free_trial_price_error`.          |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 The profile is not found
 

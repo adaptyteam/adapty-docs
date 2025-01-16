@@ -6,7 +6,7 @@
 
 The request failed because the access level in the request couldn’t be found. Double-check that there are no typos in the `access_level_id` and that it matches the correct app.
 
-###### Parameters
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -14,7 +14,7 @@ The request failed because the access level in the request couldn’t be found. 
 | error_code  | String  | Short error name. Possible value: `paid_access_level_does_not_exist`. |
 | status_code | Integer | HTTP status. Always `404`.                                   |
 
-###### Response example
+#### Response example
 
 The access level was not found.
 
