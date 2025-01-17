@@ -6,8 +6,8 @@ The request failed because the `variation_ID` for the requested paywall couldnâ€
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error. </li></ul> |
-| error_code  | String  | Short error name. Possible value: `profile_does_not_exist`.  |
+| errors      | Object  | <ul><li> **source**: (string) Always `bull`.</li><li> **errors**: A description of the error. </li></ul> |
+| error_code  | String  | Short error name. Possible value: `VARIATION_DOES_NOT_EXIST_ERROR`. |
 | status_code | Integer | HTTP status. Always `404`.                                   |
 
 #### Response example

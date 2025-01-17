@@ -1,12 +1,17 @@
 ---
-title: "Response to web API requests: 404 Not found"
+title: "Response to web API requests: 400 Bad request"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
+import ParseError from '@site/src/components/reusable/ParseError.md';
+import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.md';
 
-import WebApi400 from '@site/src/components/reusable/WebApi400.md';
+## parse_error
 
-<WebApi400 />
+<ParseError />
 
+## base_error
+
+<InvalidDateFormat />
