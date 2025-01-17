@@ -168,7 +168,7 @@ echo $response;
 
 ### 201 - Created
 
-The paywall view is recorded successfully.
+The paywall view is recorded successfully. The response body is blank.
 
 ### 400 - Bad Request
 
