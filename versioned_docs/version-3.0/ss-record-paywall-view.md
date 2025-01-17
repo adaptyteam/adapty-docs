@@ -10,7 +10,7 @@ import ResponseExampleNew from '@site/src/components/reusable/ResponseExample-ne
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
-import WebApi400 from '@site/src/components/reusable/WebApi400.md';
+import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 
@@ -150,7 +150,7 @@ The paywall view is recorded successfully.
 
 ### 400 - Bad Request
 
-<WebApi400 />
+<InvalidDateFormat />
 
 ### 401 - Unauthorised
 
