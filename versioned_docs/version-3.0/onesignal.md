@@ -253,7 +253,7 @@ OneSignal.addSubscriptionObserver(event => {
 
  </TabItem> 
 
-<TabItem value="pre-v5" label="OneSignal SDK v. up t0 4.x (legacy)" default> 
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>

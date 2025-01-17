@@ -62,6 +62,22 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (correct
 5. Paste the contents of the **Enable Pub/Sub API** field you've copied in the Adapty **App Settings** into the **Topic name** field.
 6. Click the **Save changes** button in the Google Play Console.
 
+## Raw events forwarding
+
+Sometimes, you might still want to receive raw S2S events from Google. To continue receiving them while using Adapty, just add your endpoint to the **URL for forwarding raw Google events** field, and we'll send raw events as-is from Google.
+
+
+<Zoom>
+  <img src={require('./img/e388892-001774-September-22-GhkjOFbT.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 **What's next**
 
 Set up the Adapty SDK for:

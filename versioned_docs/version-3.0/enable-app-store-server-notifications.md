@@ -42,6 +42,22 @@ Setting up App Store server notifications is crucial for ensuring data accuracy 
 />
 </Zoom>
 
+## Raw events forwarding
+
+Sometimes, you might still want to receive raw S2S events from Apple. To continue receiving them while using Adapty, just add your endpoint to the **URL for forwarding raw Apple events** field, and we'll send raw events as-is from Apple.
+
+
+<Zoom>
+  <img src={require('./img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 **What's next**
 
 Set up the Adapty SDK for:
