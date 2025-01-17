@@ -50,7 +50,6 @@ To simplify using our server-side API, we've prepared a Postman collection and a
 
 --->
 
----
 ### Step 1. Configure request headers
 
 Configure request headers as follows:
@@ -62,6 +61,8 @@ Configure request headers as follows:
 | **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. |
 | **Content-Type**            | Set to `application/json` for the API to process the request. |
 
+---
+
 ### Step 2. Change `Prolong/grant a subscription for a user` request
 
 This request is now replaced with three separate requests to distinguish between adding transactions and managing access levels:
@@ -70,6 +71,8 @@ This request is now replaced with three separate requests to distinguish between
    - In version 1, you used the [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately revoke access and the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request to shorten it.
    - In version 2, both actions are handled by the [Revoke access level](ss-revoke-access-level) request.
 3. **Set Transaction:** Use this request to add transaction details to Adapty with access levels.
+
+---
 
 #### Step 2.1. How to grant access level
 
@@ -95,6 +98,8 @@ In version 1, the [Prolong/grant a subscription for a user](server-side-api-spec
 | Parameters | Many transaction parameters that are no longer needed in this request. | Parameters to keep: <ul><li> **access_level_id**: Previously in the endpoint. Required.</li><li> **starts_at**: Now nullable.</li><li> **expires_at**: Optional for lifetime access and nullable.</li></ul> |
 
 --->
+
+---
 
 #### Step 2.2. How to revoke or shorten access level
 
@@ -122,7 +127,7 @@ In version 1, you used the [Revoke access level](server-side-api-specs-legacy#re
 
 ---
 
-#### Step 2.3. How to record a transaction
+#### Step 2.3. How to record a subscription transaction
 
 :::info
 
@@ -130,12 +135,12 @@ For a detailed description, refer to the [Set transaction](ss-set-transaction) r
 
 :::
 
-In version 1, the request that recorded a transaction was called [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) and it was focused on subscription transaction. In version 2, the request is called [Set transaction](ss-set-transaction) and it is focused on both subscription and one-time purchase.
+In version 1, transactions were recorded using the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request, which was limited to subscription transactions.
+
+In version 2, this functionality has been replaced by the [Set Transaction](ss-set-transaction) request. This request can handle both subscription transactions and one-time purchases.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
-- **Details:** Parameters depend on whether the purchase is a subscription or one-time product. See specific guidelines for each.
-
-##### How to record a subscription transaction
+- **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording subscription transactions.
 
 New fields:
 
@@ -178,7 +183,22 @@ Changed fields:
 | `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
 | `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
 
-##### How to record a one-time purchase transaction
+---
+
+#### Step 2.4. How to record a subscription transaction
+
+:::info
+
+For a detailed description, refer to the [Set transaction](ss-set-transaction) request.
+
+:::
+
+In version 1, transactions were recorded using the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request, which was limited to subscription transactions.
+
+In version 2, this functionality has been replaced by the [Set Transaction](ss-set-transaction) request. This request can handle both subscription transactions and one-time purchases.
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
+- **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording one-time purchase transactions.
 
 New fields:
 
@@ -217,6 +237,8 @@ Changed fields:
 | `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
 | `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
 
+---
+
 ### Step 3. Change `Get info about a user `request
 
 :::info
@@ -252,6 +274,8 @@ In version 1, you could only update user attributes. With version 2, you can mod
 | `store_country`      | Added      | String                | :heavy_minus_sign: | :heavy_plus_sign:                       | Country of the end user app store.                           |
 | `birthday`           | Changed    | Date -> ISO 8601 date | :heavy_minus_sign: | :heavy_plus_sign: -> :heavy_minus_sign: | Your end user's birthday.                                    |
 | `ip_country`         | Changed    | String                | :heavy_minus_sign: | :heavy_plus_sign: -> :heavy_minus_sign: | Country of the end user in ISO 3166-2 format. Must be passed if the request is made from the server. Otherwise, determined by request IP. |
+
+---
 
 ### Step 5. Change `Delete user's data` request
 
