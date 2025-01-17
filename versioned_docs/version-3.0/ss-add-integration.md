@@ -148,15 +148,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | appsflyer_id               |        |                     |                     | The network user's ID in the [AppsFlyer integration](appsflyer). |
 | adjust_device_id           |        |                     |                     |                                                              |
 
-
-
 #### Successful response: 200 - Success
 
-<ProfileResponse />
-
-<details>    
-  <summary>Successful response example</summary>
-<ResponseExample />  
-</details>
-
-#### Errors
+The request is successful. The response body is blank.

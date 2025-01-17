@@ -12,6 +12,7 @@ import TabItem from '@theme/TabItem';
 import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
 import WebApi400 from '@site/src/components/reusable/WebApi400.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
+import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 
 Adapty assists you in measuring the performance of your paywalls. However, logging paywall views needs your input because only you know when a customer sees a paywall. Use this request to log a paywall view.
 
@@ -157,4 +158,4 @@ The paywall view is recorded successfully.
 
 ### 404 - Not Found
 
-<VariationIdNotFound />
+<ProfileResponseNotFound />
