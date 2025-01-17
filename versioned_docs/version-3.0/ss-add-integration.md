@@ -145,8 +145,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | firebase_app_instance_id   | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in  [Firebase integration](firebase-and-google-analytics). |
 | airbridge_device_id        | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Airbridge integration.](airbridge) |
 | branch_id                  | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The Branch Key of the user's app in the Branch integration.  |
-| appsflyer_id               |        |                     |                     | The network user's ID in the [AppsFlyer integration](appsflyer). |
-| adjust_device_id           |        |                     |                     |                                                              |
+| appsflyer_id               | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The network user's ID in the [AppsFlyer integration](appsflyer). |
+| adjust_device_id           | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The network user's ID in the [Adjust integration](adjust).   |
 
 #### Successful response: 200 - Success
 
