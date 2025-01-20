@@ -11,8 +11,8 @@ Adapty's Server-Side API v2 introduces new capabilities and improvements to help
 
 The second version of the Server-Side API gives you more flexibility and features when working with Adapty:
 
-- **Separate access level management and transaction recording**: Assign access levels to users without requiring transaction details, making it easier to handle compensations, bonuses, or other non-transactional scenarios.
-- **Record one-time purchases**: Log transactions for consumable product purchases with providing consumable-product-specific fields.
+- **Separate access level management**: Assign access levels to users without requiring transaction details, making it easier to handle compensations, bonuses, or other non-transactional scenarios.
+- **Record one-time purchases**: Log transactions for consumable product purchases by providing consumable-product-specific fields.
 - **Enhanced transaction details:** Include more data with transactions, like refunds, billing issues, cancellation reasons, renewals, and more.
 - **Profile updates:** Instead of just adding attributes, you can update a user’s profile. For instance, you can add installation metadata or disable external analytics if needed.
 
@@ -20,12 +20,12 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
 
 ## Changes Overview
 
-| Change                             | Required action                                              |
-| ---------------------------------- | ------------------------------------------------------------ |
-| **Base URL and Endpoint**          | Base URL and all endpoints are changed. Update your configuration as described in the request endpoints |
-| **Request Headers**                | <ol><li> Add either `adapty-profile-id` or `adapty-customer-user-id` to the header.</li><li> Add a new `adapty-platform` header.</li></ol> |
-| **New `adapty-platform` header**   | The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three: <ul><li> [Set Transaction](ss-set-transaction): Add transaction details with adding access.</li><li> [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.</li><li> [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.</li></ul> |
-| **Request and Response Structure** | Modify parameters as outlined for each request and update your integration to handle the [new response formats](api-responses). |
+| Change                              | Required action                                              |
+| ----------------------------------- | ------------------------------------------------------------ |
+| **Base URL and Endpoint**           | Base URL and all endpoints are changed. Update your configuration as described in the request endpoints |
+| **Request Headers**                 | <ol><li> Add either `adapty-profile-id` or `adapty-customer-user-id` as a header.</li><li> Add a new `adapty-platform` header.</li></ol> |
+| **Request and Response Structure**  | Modify parameters as outlined for each request and update your integration to handle the [new response formats](api-responses). |
+| **Changed access level management** | The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three: <ul><li> [Set Transaction](ss-set-transaction): Add transaction details with adding access.</li><li> [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.</li><li> [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.</li></ul> |
 
 ## Migration Steps
 
@@ -52,25 +52,28 @@ To simplify using our server-side API, we've prepared a Postman collection and a
 
 ### Step 1. Configure request headers
 
-Configure request headers as follows:
+Add new request headers as follows:
 
 | **Header**                  | **Description**                                              |
 | --------------------------- | ------------------------------------------------------------ |
 | **adapty-profile-id**       | (Required, choose one) The user’s Adapty profile ID. Visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-customer-user-id**, use any of them. |
-| **adapty-customer-user-id** | (Required, choose one) The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-profile-id**, use any of them.⚠️ Works only if you [identify users](http://localhost:3000/docs/identifying-users) in your app code using the Adapty SDK. |
+| **adapty-customer-user-id** |<p>(Required, choose one) The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-profile-id**, use any of them.</p><p>⚠️ Works only if you [identify users](http://localhost:3000/docs/identifying-users) in your app code using the Adapty SDK.</p>|
 | **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. |
-| **Content-Type**            | Set to `application/json` for the API to process the request. |
 
 ---
 
-### Step 2. Change `Prolong/grant a subscription for a user` request
+### Step 2. Change transaction and access management requests
 
-This request is now replaced with three separate requests to distinguish between adding transactions and managing access levels:
-1. **Grant Access Level:** Use this request to extend an access level without linking it to a transaction.
-2. **Revoke Access Level:**
-   - In version 1, you used the [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately revoke access and the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request to shorten it.
-   - In version 2, both actions are handled by the [Revoke access level](ss-revoke-access-level) request.
-3. **Set Transaction:** Use this request to add transaction details to Adapty with access levels.
+In version 1, you used to use:
+
+- [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request:  to record a transaction and grant or shorten access level.
+- [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request: to immediately revoke access.
+
+They are now replaced with three separate requests to distinguish between adding transactions and managing access levels:
+
+1. **[Grant Access Level](ss-grant-access-level):** Use this request to extend an access level without linking it to a transaction.
+2. **[Revoke Access Level](ss-revoke-access-level):** to immediately revoke or shorten access.
+3. **[Set Transaction](ss-set-transaction):** Use this request to add transaction details to Adapty with access levels.
 
 ---
 
@@ -142,7 +145,7 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
 - **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording subscription transactions.
 
-New fields:
+**New fields**
 
 | **Parameter**               | **Change** | **Type**      | **Required**       | **Nullable**       | **Description**                                              |
 | --------------------------- | ---------- | ------------- | ------------------ | ------------------ | ------------------------------------------------------------ |
@@ -160,7 +163,7 @@ New fields:
 | `renew_status_changed_at`   | Added      | ISO 8601 date | :heavy_minus_sign: | :heavy_minus_sign: | Indicates when auto-renewal status changed.                  |
 | `variation_id`              | Added      | String        | :heavy_minus_sign: | :heavy_minus_sign: | The variation ID used to trace purchases to the specific paywall they were made from. |
 
-Removed fields:
+**Removed fields**
 
 | **Parameter**             | **Change** | **Description**                                              |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
@@ -173,7 +176,7 @@ Removed fields:
 | `proceeds`                | Removed    |                                                              |
 | `starts_at`               | Removed    | Removed as it will be automatically taken from the access level connected to the selected product. |
 
-Changed fields:
+**Changed fields**
 
 | **Parameter**                                                | **Change**       | **Type**        | **Required**                            | **Nullable**       | Change Description                                           |
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -185,7 +188,7 @@ Changed fields:
 
 ---
 
-#### Step 2.4. How to record a subscription transaction
+#### Step 2.4. How to record a one-time purchase transaction
 
 :::info
 
@@ -200,7 +203,7 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
 - **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording one-time purchase transactions.
 
-New fields:
+**New fields**
 
 | **Parameter**                    | **Change** | **Type**        | **Required**                            | **Nullable**       | **Description Change**                                       |
 | -------------------------------- | ---------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -213,7 +216,7 @@ New fields:
 | `refunded_at`                    | Added      | ISO 8601 date   | :heavy_minus_sign:                      | :heavy_minus_sign: | If refunded, shows the datetime of the refund.               |
 | `variation_id`                                               | Added            | String          | :heavy_minus_sign:                      | :heavy_minus_sign:                       | The variation ID used to trace purchases to the specific paywall they were made from. |
 
-Removed fields:
+**Removed fields**
 
 | **Parameter**             | **Change** | **Description Change**                                       |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
@@ -227,7 +230,7 @@ Removed fields:
 | `proceeds`                | Removed    |                                                              |
 | `starts_at`               | Removed    | Removed as not relevant to a one-time purchase.              |
 
-Changed fields:
+**Changed fields**
 
 | **Parameter**                                                | **Change**       | **Type**        | **Required**                            | **Nullable**       | **Description Change**                                       |
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -239,7 +242,7 @@ Changed fields:
 
 ---
 
-### Step 3. Change `Get info about a user `request
+### Step 3. Change `Get info about a user` request
 
 :::info
 
