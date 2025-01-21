@@ -58,9 +58,8 @@ Configure request headers as follows:
 | **Header**                  | **Description**                                              |
 | --------------------------- | ------------------------------------------------------------ |
 | **adapty-profile-id**       | (Required, choose one) The user’s Adapty profile ID. Visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-customer-user-id**, use any of them. |
-| **adapty-customer-user-id** | (Required, choose one) The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-profile-id**, use any of them.⚠️ Works only if you [identify users](http://localhost:3000/docs/identifying-users) in your app code using the Adapty SDK. |
-| **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. |
-| **Content-Type**            | Set to `application/json` for the API to process the request. |
+| **adapty-customer-user-id** | <p>(Required, choose one) The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-profile-id**, use any of them.</p><p>⚠️ Works only if you [identify users](http://localhost:3000/docs/identifying-users) in your app code using the Adapty SDK.</p> |
+| **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`, or `web`. |
 
 ### Step 2. Change `Prolong/grant a subscription for a user` request
 
@@ -156,14 +155,14 @@ Removed fields:
 
 | **Parameter**             | **Change** | **Description**                                              |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
-| `base_plan_id`            | Removed    | Removed. Ass the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
-| `duration_days`           | Removed    | Removed as not needed. The duration is calculated automatically. |
-| `introductory_offer_type` | Removed    | Offer types are now in the `offer` object.                   |
-| `is_lifetime`             | Removed    | Removed as it's replaced with the `purchase_type` parameter. |
-| `is_sandbox`              | Removed    | Replaced with the `environment` parameter.                   |
-| `price_locale`            | Removed    | Moved to the `price` object.                                 |
-| `proceeds`                | Removed    |                                                              |
-| `starts_at`               | Removed    | Removed as it will be automatically taken from the access level connected to the selected product. |
+| `base_plan_id`            | Removed    | Merged into `store_product_id` as `product_id:base_plan_id`. |
+| `duration_days`           | Removed    | Automatically calculated, no manual input required.          |
+| `introductory_offer_type` | Removed    | Offer types moved to the `offer` object.                     |
+| `is_lifetime`             | Removed    | Replaced by the `purchase_type` parameter.                   |
+| `is_sandbox`              | Removed    | Replaced by the `environment` parameter.                     |
+| `price_locale`            | Removed    | Now part of the `price` object.                              |
+| `proceeds`                | Removed    | Automatically calculated, no manual input required.          |
+| `starts_at`               | Removed    | Automatically derived from the access level linked to the selected product. |
 
 Changed fields:
 
@@ -171,9 +170,9 @@ Changed fields:
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | `price`                                                      | Changed          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Now represented as a [Price](server-side-api-objects#price) object and includes `price_locale`, `country`, and `value` fields. |
 | `store`                                                      | Changed          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>The field became mandatory.</li><li>In addition to standard app stores, you can now use custom stores as well.</li></ol> |
-| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
 
 ##### Change one-time purchase transaction
 
@@ -193,24 +192,25 @@ Removed fields: |
 
 | **Parameter**             | **Change** | **Description Change**                                       |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
-| `base_plan_id`            | Removed    | Removed. Ass the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
-| `duration_days`           | Removed    | Removed as not needed. The duration is calculated automatically. |
-| `expires_at`              | Removed    | Removed as not relevant to a one-time purchase.              |
-| `introductory_offer_type` | Removed    | Offer types are now in the `offer` object.                   |
-| `is_lifetime`             | Removed    | Removed as it's replaced with the `purchase_type` parameter. |
-| `is_sandbox`              | Removed    | Replaced with the `environment`parameter.                    |
-| `price_locale`            | Removed    | Moved to the `price` object.                                 |
-| `proceeds`                | Removed    |                                                              |
-| `starts_at`               | Removed    | Removed as not relevant to a one-time purchase.              |
-Changed fields:
+| `base_plan_id`            | Removed    | Merged into `store_product_id` as `product_id:base_plan_id`. |
+| `duration_days`           | Removed    | Not applicable for one-time purchases.                       |
+| `expires_at`              | Removed    | Not applicable for one-time purchases.                       |
+| `introductory_offer_type` | Removed    | Offer types moved to the `offer` object.                     |
+| `is_lifetime`             | Removed    | Replaced by the `purchase_type` parameter.                   |
+| `is_sandbox`              | Removed    | Replaced by the `environment` parameter.                     |
+| `price_locale`            | Removed    | Now part of the `price` object.                              |
+| `proceeds`                | Removed    | Automatically calculated, no manual input required.          |
+| `starts_at`               | Removed    | Not applicable for one-time purchases.                       |
+
+**Changed fields**
 
 | **Parameter**                                                | **Change**       | **Type**        | **Required**                            | **Nullable**       | **Description Change**                                       |
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | `price`                                                      | Changed          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Now represented as a [Price](server-side-api-objects#price) object and includes `price_locale`, `country`, and `value` fields. |
 | `store`                                                      | Changed          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>The field became mandatory.</li><li>In addition to standard app stores, you can now use custom stores as well.</li></ol> |
-| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
 
 ### Step 3. Change `Get info about a user `request
 
