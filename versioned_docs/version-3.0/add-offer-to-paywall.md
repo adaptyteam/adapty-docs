@@ -11,9 +11,9 @@ Offers in the App Store and Google Play are special deals or discounts provided 
 
 To make an offer visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
 
-1. While [configuring the products on a paywall](create-paywall), choose an offer you [created earlier](create-offer) for this product from the **Offer** list. The list is available only for the products that have offers.
+While [configuring the products on a paywall](create-paywall), choose an offer you [created earlier](create-offer) for this product from the **Offer** list. The list is available only for the products that have offers.
 
-   
+
 
 <Zoom>
   <img src={require('./img/3a727c2-add_offer_to_paywall.webp').default}
@@ -25,6 +25,8 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
   }}
 />
 </Zoom>
+
+<p></p>
 
 :::info
 
