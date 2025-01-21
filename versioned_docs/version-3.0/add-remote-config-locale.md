@@ -120,7 +120,7 @@ Exporting by the **Export** button creates individual `.json` files for each lan
 />
 </Zoom>
 
-Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format and paywall remote config structure.
+Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format.
 
 ### Import file format
 
@@ -142,29 +142,6 @@ To ensure a successful import, the import file must meet the following requireme
 
 - **Valid JSON:**
   The file must be a valid JSON. If it is not, the import will fail.
-
-- **No Additional Keys:**
-  The file should not contain any keys that are not in the current remote config. Extra keys will result in errors.
-
-- **All Required Elements:**
-  The file must include all elements present in the current remote config. If any are missing, the import will succeed with errors, which will be displayed in the remote config table view. Hover over the error to see the issue, and refer to the table below for recommendations on resolving it.
-
-  <Zoom>
-    <img src={require('./img/localization-error.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
-  
-  | **Issue**                               | **Solution**                                                 |
-  | --------------------------------------- | ------------------------------------------------------------ |
-  | **Invalid JSON file**                   | The file is not a valid JSON. Validate it to ensure it meets JSON formatting standards (e.g., check for missing or extra commas). |
-  | **Some languages are not in the table** | <p>At least one file name does not match a locale name. Ensure all files are named correctly, as shown in the localization table. Locale names must match exactly.</p><p>Another possible reason is attempting to import an unrelated file. Verify the file’s contents.</p> |
-  | **Some keys are not in the table**      | The file contains keys not present in the current remote config. This may occur if keys were removed from the remote config after exporting for localization or if there are typos in the file. Review the file and remove any extra. |
 
 ## Manual localization
 
