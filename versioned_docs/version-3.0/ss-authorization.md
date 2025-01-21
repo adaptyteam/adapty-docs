@@ -23,7 +23,7 @@ The server-side API requests require specific headers and a JSON body. Use the d
 | --------------------------- | ------------------------------------------------------------ |
 | **adapty-profile-id**       | (Required, choose one) The user’s Adapty profile ID. Visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-customer-user-id**, use any of them. |
 | **adapty-customer-user-id** | <p>(Required, choose one) The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. Interchangeable with **adapty-profile-id**, use any of them.</p><p> ⚠️ Works only if you [identify users](identifying-users) in your app code using the Adapty SDK.</p> |
-| **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. |
+| **adapty-platform**         | Specify the app's platform. Possible options: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`, or `web`. |
 | **Content-Type**            | Set to `application/json` for the API to process the request. |
 
 **Body**
