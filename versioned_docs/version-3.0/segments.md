@@ -9,6 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 A Segment is a group of users with common properties.
 
+
 <Zoom>
   <img src={require('./img/3244407-Segments.webp').default}
   style={{
@@ -26,17 +27,15 @@ A Segment is a group of users with common properties.
 
 Segments are mainly used in [Placements](placements) and in [A/B tests](ab-tests) to create an Audience and target it with a paywall (or multiple paywalls). Here are some example scenarios where that can be useful:
 
-- Targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
-- Having different paywalls for different countries
-- Basing your segment on the Apple Search Ads attribution data
-- Creating segments based on your app's version, so that once you introduce a new paywall that is only supported by the recent versions of your app, the older versions will still continue to work
+- targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
+- having different paywalls for different countries
+- basing your segment on the Apple Search Ads attribution data
+- creating segments based on your app's version, so that once you introduce a new paywall that is only supported by the recent versions of your app, the older versions would still continue to work
 
 ## Creation
 
-To create a segment:
+To create a segment, write a segment name, and choose attributes.
 
-1. In the [**Segments**](https://app.adapty.io/profiles/segments) window, click **Create segment**.
-2. Write a segment name, and choose attributes.
 
 <Zoom>
   <img src={require('./img/1af9744-new_cohort.webp').default}
@@ -87,7 +86,7 @@ Please note that these attributes are predefined and cannot be modified, except 
 To create even more targeted segments, you can also create custom attributes. Custom attributes allow you to create user groups based on properties that are specific to your app or business.
 
 :::note
-To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#limits) to learn how to set them up.
+To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#custom-user-attributes) to learn how to set them up.
 :::
 
 :::warning
