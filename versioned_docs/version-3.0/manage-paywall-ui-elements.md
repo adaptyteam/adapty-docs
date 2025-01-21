@@ -57,32 +57,6 @@ To add an element to a compound element:
 
 
 
-
-
-## Delete element
-
-To delete an element from the paywall:
-
-1. Click the element in the left pane to open its details.
-
-   
-
-<Zoom>
-  <img src={require('./img/d6763f3-delete_element.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-2. Click the ellipse button in the right pane and choose the **Delete** option.
-
 ## Rename paywall element
 
 To rename an element:
@@ -152,3 +126,60 @@ A purple line indicates an available position for the element, while a red line 
 />
 </Zoom>
 
+## Show/ hide element
+
+Even though you have already created and configured an element, you can temporarily hide it from the paywall. That is convenient if you plan to add it later without losing all the configuration you made. After hiding an element, the paywall looks as though the element was never added, all alignments and spaces are recalculated and redrawn.
+
+To hide an element:
+
+1. Click the element in the left pane to open its details.
+
+2. Click the ellipse button in the right pane and choose the **Hide** option.
+
+<Zoom>
+  <img src={require('./img/pb-hide-element.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+The hidden element is marked in both the main pane - as a note and in the left pane if you choose it.
+
+<Zoom>
+  <img src={require('./img/pb-hidden-element.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Delete element
+
+To delete an element from the paywall:
+
+1. Click the element in the left pane to open its details.
+
+   
+
+<Zoom>
+  <img src={require('./img/d6763f3-delete_element.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+
+2. Click the ellipse button in the right pane and choose the **Delete** option.
