@@ -126,8 +126,6 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
    3. **Discounted recurring payment**: the subscription is cheaper for the first `n` periods. For example, normally a monthly plan costs $9.99, but with this offer type, each of the first three months costs $4.99, a 50% discount.  
       An offer can have two phases. In this case, the first phase must be a Free trial, and the second one is either a Single payment or a Discounted recurring payment. They would be applied in this order.
 
-   
-
 <Zoom>
   <img src={require('./img/d6267f3-a48f79e-001936-November-03-A13wutRh.webp').default}
   style={{
@@ -139,7 +137,13 @@ In the screenshot above, you can see a subscription `premium_access`(1) with two
 />
 </Zoom>
 
+<p> </p>
 
+:::info
+
+Please note that paywalls created with the Adapty Paywall Builder will display only the first phase of a multi-phase Google subscription offer. However, rest assured that when a user purchases the product, all offer phases will be applied as configured in Google Play.
+
+   :::
 
 
 5. Activate the offer to use it in the app.

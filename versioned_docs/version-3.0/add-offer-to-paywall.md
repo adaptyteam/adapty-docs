@@ -26,3 +26,9 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
 />
 </Zoom>
 
+:::info
+
+Paywalls created with the Adapty Paywall Builder will display only the first phase of a [multi-phase Google subscription offer](https://support.google.com/googleplay/android-developer/answer/12154973). However, rest assured that when a user purchases the product, all offer phases will be applied as configured in Google Play.
+
+:::
+
