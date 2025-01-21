@@ -15,7 +15,7 @@ Profile events are generated along the way and imported transactions are counted
 ## Method and endpoint
 
 ```http
-POST https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/
+POST https://api.adapty.io/api/v1/server-side-api/purchase/stripe/token/validate/
 ```
 
 :::warning
@@ -35,17 +35,15 @@ This request requires different authorization parameters:
 <TabItem value="curl" label="cURL" default>
 
 ```bash
---location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
+curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
 --header 'Content-Type: application/vnd.api+json' \
---header 'Authorization: Api-Key <PUBLIC_OR_PRIVATE_KEY>' \
---data-raw '{
-  "data": {
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--data '{
     "type": "stripe_receipt_validation_result",
     "attributes": {
-        "customer_user_id": "<CUSTOMER_USER_ID>",
-        "stripe_token": "sub_1OM8brJTlbIG45BdDRFOHWAU"
+        "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+        "stripe_token": "<YOUR_STRIPE_TOKEN>"
     }
-  }
 }'
 ```
 
@@ -56,15 +54,13 @@ This request requires different authorization parameters:
 import requests
 import json
 
-url = "https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/"
+url = "https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/"
 
 payload = json.dumps({
-  "data": {
-    "type": "stripe_receipt_validation_result",
-    "attributes": {
-      "customer_user_id": "<CUSTOMER_USER_ID>",
-      "stripe_token": "<YOUR_STRIPE_TOKEN>"
-    }
+  "type": "stripe_receipt_validation_result",
+  "attributes": {
+    "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+    "stripe_token": "<YOUR_STRIPE_TOKEN>"
   }
 })
 headers = {
@@ -85,12 +81,10 @@ myHeaders.append("Content-Type", "application/vnd.api+json");
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
 const raw = JSON.stringify({
-  "data": {
-    "type": "stripe_receipt_validation_result",
-    "attributes": {
-      "customer_user_id": "<CUSTOMER_USER_ID>",
-      "stripe_token": "<YOUR_STRIPE_TOKEN>"
-    }
+  "type": "stripe_receipt_validation_result",
+  "attributes": {
+    "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+    "stripe_token": "<YOUR_STRIPE_TOKEN>"
   }
 });
 
@@ -101,7 +95,7 @@ const requestOptions = {
   redirect: "follow"
 };
 
-fetch("https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/", requestOptions)
+fetch("https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/", requestOptions)
   .then((response) => response.text())
   .then((result) => console.log(result))
   .catch((error) => console.error(error));
