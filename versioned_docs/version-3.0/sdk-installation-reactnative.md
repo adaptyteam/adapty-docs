@@ -7,7 +7,6 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
 <Tabs groupId="sdk-installation-unity"> 
-
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
@@ -156,9 +155,6 @@ adapty.activate('PUBLIC_SDK_KEY', {
   },
 });
 ```
-
-
-
 </TabItem> 
 
 <TabItem value="old" label="Adapty SDK up to v2.x (legacy)" default> 
@@ -289,49 +285,29 @@ If you opt for a purely native approach, please consult the following instructio
 To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
 
   ```typescript title="/src/App.tsx"
-  import { adapty } from 'react-native-adapty';
+  import { adapty, LogLevel } from 'react-native-adapty';
 
-  adapty.activate('PUBLIC_SDK_KEY');
+  adapty.activate('PUBLIC_SDK_KEY', {
+    observerMode: false,
+    customerUserId: 'YOUR_USER_ID',
+    logLevel: LogLevel.ERROR,
+    __debugDeferActivation: false,
+    ipAddressCollectionDisabled: false,
+    ios: {
+      idfaCollectionDisabled: false,
+    },
+    activateUi: true, // NOT necessary as the default value is `true`, but you can pass `false` if you don't use the Paywall Builder
+    mediaCache: {
+      memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+      memoryStorageCountLimit: 2147483647, // 2^31 - 1
+      diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+    },
+  });
 
   const App = () => {
   	// ...
   }
   ```
-
-You can pass several optional parameters during activation:
-
-<Tabs>
-  <TabItem value="Typescript" label="Typescript" default>
-```typescript 
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-  logLevel: 'error',
-  __debugDeferActivation: false,
-  ipAddressCollectionDisabled: false,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-});
-```
-</TabItem>
-<TabItem value="JavaScript" label="JavaScript" default>
-```javascript 
-import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
-
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-  logLevel: LogLevel.ERROR,
-  __debugDeferActivation: false,
-  ipAddressCollectionDisabled: false,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-});
-```
-</TabItem>
-</Tabs>
 
 Activation parameters:
 
@@ -344,6 +320,8 @@ Activation parameters:
 | **\_\_debugDeferActivation** | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**. |
 | **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **idfaCollectionDisabled** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section. |
+| activateUi |  |  |
+| mediaCache |  |  |
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
