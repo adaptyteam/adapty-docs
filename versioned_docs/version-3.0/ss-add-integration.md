@@ -41,10 +41,13 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/integration/profil
   "appmetrica_device_id": "example_appmetrica_device_id",
   "appmetrica_profile_id": "example_appmetrica_profile_id",
   "one_signal_subscription_id": "example_one_signal_subscription_id",
+  "one_signal_player_id": "example_one_signal_player_id",
   "branch_id": "example_branch_id",
   "appsflyer_id": "example_appsflyer_id",
   "adjust_device_id": "example_adjust_device_id",
-  "airbridge_device_id": "example_airbridge_device_id"
+  "airbridge_device_id": "example_airbridge_device_id",
+  "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
+  "posthog_distinct_user_id": "example_posthog_distinct_user_id"
 }
 '
 ```
@@ -69,10 +72,13 @@ payload = json.dumps({
   "appmetrica_device_id": "example_appmetrica_device_id",
   "appmetrica_profile_id": "example_appmetrica_profile_id",
   "one_signal_subscription_id": "example_one_signal_subscription_id",
+  "one_signal_player_id": "example_one_signal_player_id",
   "branch_id": "example_branch_id",
   "appsflyer_id": "example_appsflyer_id",
   "adjust_device_id": "example_adjust_device_id",
-  "airbridge_device_id": "example_airbridge_device_id"
+  "airbridge_device_id": "example_airbridge_device_id",
+  "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
+  "posthog_distinct_user_id": "example_posthog_distinct_user_id"
 })
 headers = {
   'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
@@ -107,10 +113,13 @@ const raw = JSON.stringify({
   "appmetrica_device_id": "example_appmetrica_device_id",
   "appmetrica_profile_id": "example_appmetrica_profile_id",
   "one_signal_subscription_id": "example_one_signal_subscription_id",
+  "one_signal_player_id": "example_one_signal_player_id",
   "branch_id": "example_branch_id",
   "appsflyer_id": "example_appsflyer_id",
   "adjust_device_id": "example_adjust_device_id",
-  "airbridge_device_id": "example_airbridge_device_id"
+  "airbridge_device_id": "example_airbridge_device_id",
+  "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
+  "posthog_distinct_user_id": "example_posthog_distinct_user_id"
 });
 
 const requestOptions = {
@@ -145,8 +154,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | facebook_anonymous_id            | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Facebook Ads integration](facebook-ads). |
 | firebase_app_instance_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in  [Firebase integration](firebase-and-google-analytics). |
 | mixpanel_user_id                 | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Mixpanel integration](mixpanel).      |
-| one_signal_player_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal).    |
-| one_signal_subscription_id       | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal).    |
+| one_signal_player_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The legacy ID of the user in [OneSignal integration](onesignal). |
+| one_signal_subscription_id       | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The current ID of the user in [OneSignal integration](onesignal). |
 | posthog_distinct_user_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [PostHog integration](posthog).        |
 | pushwoosh_hwid                   | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Pushwoosh integration.](pushwoosh) |
 | tenjin_analytics_installation_id | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Tenjin integration.](tenjin) |
