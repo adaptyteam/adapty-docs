@@ -10,24 +10,56 @@ import TabItem from '@theme/TabItem';
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
-2. Remove `getProductsIntroductoryOfferEligibility` method.
-3. Update making purchase.
-4. Modify Paywall Builder purchase events.
-5. Modify Paywall Builder custom action events.
-6.  Modify `onProductSelected` callback.
-7. Remove third-party integration parameters from `updateProfile` method.
-8. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-9. Update Observer mode implementation.
+2. Renamings
+3. Remove `getProductsIntroductoryOfferEligibility` method.
+4. Update making purchase.
+5. Modify Paywall Builder purchase events.
+6. Modify Paywall Builder custom action events.
+7.  Modify `onProductSelected` callback.
+8. Remove third-party integration parameters from `updateProfile` method.
+9. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+10. Update Observer mode implementation.
 
 ## Upgrade Adapty React Native SDK to 3.3.x
 
 Up to this version, Adapty SDK was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
 
-Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged to Adapty SDK as a module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
+Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged into Adapty SDK as a module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
 
 1. Remove both **AdaptySDK** and **AdaptyUISDK** package dependencies from your project.
 2. Delete the **AdaptySDK** and **AdaptyUISDK** folders.
 3. Import the AdaptySDK package again as described in the [Adapty SDK installation & configuration for React Native](sdk-installation-reactnative) page.
+
+## Renamings
+
+Rename in Adapty module:
+
+| Old version           | New version    |
+| --------------------- | -------------- |
+| `timerInfo`           | `customTimers` |
+| `subscriptionDetails` | `subscription` |
+|                       |                |
+
+
+
+## Update import for presenting Paywall Builder paywalls
+
+For the complete code example, check out the [Present new Paywall Builder paywalls in React Native](react-native-present-paywalls).
+
+```diff
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
 
 ## Remove `getProductsIntroductoryOfferEligibility` method
 
@@ -65,6 +97,10 @@ try {
     // Handle the error
 }
 ```
+
+## Update developer-defined timer implementation
+
+Rename the 
 
 ## Modify Paywall Builder purchase events
 

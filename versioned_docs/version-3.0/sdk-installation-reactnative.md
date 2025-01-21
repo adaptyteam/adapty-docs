@@ -6,6 +6,163 @@ metadataTitle: "React Native -  - Adapty SDK Installation and Configuration Guid
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
+<Tabs groupId="sdk-installation-unity"> 
+
+<TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
+
+Adapty SDK includes two key modules for seamless integration into your mobile app:
+
+- **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
+- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+
+## Install Adapty SDK
+
+Currently, React Native provides two development paths: Expo and Pure React Native. Adapty seamlessly integrates with both. Please refer to the section below that matches your chosen setup.
+
+### Install Adapty SDK for Expo React Native
+
+You can streamline your development process with Expo Application Services (EAS). While configuration may vary based on your setup, here you'll find the most common and straightforward setup available:
+
+1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
+
+   ```sh title="Shell"
+   npm install -g eas-cli
+   ```
+
+2. In the root of your project, install the dev client to make a development build:
+
+   ```sh title="Shell"
+   expo install expo-dev-client
+   ```
+
+3. Run the installation command:
+
+   ```sh title="Shell"
+   expo install react-native-adapty
+   ```
+
+4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
+
+   ```sh title="Shell"
+   eas build --profile development --platform ios
+   ```
+
+5. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
+
+   ```sh title="Shell"
+   eas build --profile development --platform android
+   ```
+
+6. Start a development server with the following command:
+
+   ```sh title="Shell"
+   expo start --dev-client
+   ```
+
+This should result in the working app with react-native-adapty.
+
+Possible errors:
+
+| Error                                                        | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `Failed to start (Invariant Violation: Native module cannot be null)` | <p>if you scan a QR code from a CLI dev client it might lead you to this error. To resolve it  you can try the following:</p><p></p><p>> On your device open EAS built app (it should provide some Expo screen) and manually insert the URL that Expo provides (screenshot below). You can unescape special characters in URL with the JS function `unescape(“string”)`, which should result in something like `http://192.168.1.35:8081`</p> |
+
+### Install Adapty SDK with Pure React Native
+
+If you opt for a purely native approach, please consult the following instructions:
+
+1. In your project, run the installation command:
+
+   ```sh title="Shell"
+   yarn add react-native-adapty
+   ```
+
+2. For iOS: Install required pods:
+
+   ```sh title="Shell"
+   pod install --project-directory=ios
+   pod install --project-directory=ios/
+   ```
+
+   The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
+
+   If you run into an error during pod installation, find this line in your `ios/Podfile` and update the minimum target. After that, you should be able to run `pod install` without any issues.
+
+   ```diff title="Podfile"
+   -platform :ios, min_ios_version_supported
+   +platform :ios, 15.0
+   ```
+
+3. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
+
+   ```groovy title="/android/build.gradle"
+   ...
+   buildscript {
+     ...
+     dependencies {
+       ...
+       classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
+     }
+   }
+   ...
+   ```
+
+## Configure Adapty SDK
+
+To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
+
+  ```typescript title="/src/App.tsx"
+  import { adapty } from 'react-native-adapty';
+
+  adapty.activate('PUBLIC_SDK_KEY');
+
+  const App = () => {
+  	// ...
+  }
+  ```
+
+You can pass several optional parameters during activation:
+
+<Tabs>
+  <TabItem value="Typescript" label="Typescript" default>
+
+```typescript 
+adapty.activate('PUBLIC_SDK_KEY', {
+  observerMode: false,
+  customerUserId: 'YOUR_USER_ID',
+  logLevel: 'error',
+  __debugDeferActivation: false,
+  ipAddressCollectionDisabled: false,
+  ios: {
+    idfaCollectionDisabled: false,
+  },
+});
+```
+
+</TabItem>
+<TabItem value="JavaScript" label="JavaScript" default>
+
+```javascript 
+import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
+
+adapty.activate('PUBLIC_SDK_KEY', {
+  observerMode: false,
+  customerUserId: 'YOUR_USER_ID',
+  logLevel: LogLevel.ERROR,
+  __debugDeferActivation: false,
+  ipAddressCollectionDisabled: false,
+  ios: {
+    idfaCollectionDisabled: false,
+  },
+});
+```
+
+
+
+</TabItem> 
+
+<TabItem value="old" label="Adapty SDK up to v2.x (legacy)" default> 
+
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
@@ -188,8 +345,11 @@ Activation parameters:
 | **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **idfaCollectionDisabled** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section. |
 
-
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+
+</TabItem> 
+
+</Tabs>
 
 ## Set up the logging system
 

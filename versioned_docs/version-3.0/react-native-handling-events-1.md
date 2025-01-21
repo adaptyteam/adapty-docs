@@ -17,7 +17,7 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
 
 ```typescript title="React Native (TSX)"
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from '@adapty/react-native-ui';
 
 const view = await createPaywallView(paywall);
 
@@ -25,18 +25,20 @@ const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
     return true;
   },
-  onPurchaseCompleted(purchaseResult, product) {
-    return purchaseResult.type !== 'user_cancelled';
+  onPurchaseCompleted(profile) {
+    return true;
   },
-  onPurchaseStarted(product) { /***/},
+  onPurchaseStarted() { /***/},
+  onPurchaseCancelled() { /***/ },
   onPurchaseFailed(error) { /***/ },
   onRestoreCompleted(profile) { /***/ },
-  onRestoreFailed(error, product) { /***/ },
-  onProductSelected(productId) { /***/},
+  onRestoreFailed(error) { /***/ },
+  onProductSelected() { /***/},
   onRenderingFailed(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
   onUrlPress(url) { /* handle url */ },
 });
+
 ```
 
 You can register event handlers you need, and miss those you do not need. In this case, unused event listeners would not be created.
@@ -45,24 +47,20 @@ Note that at the very least you need to implement the reactions to both `onClose
 
 Event handlers return a boolean. If `true` is returned, the displaying process is considered complete, thus the paywall screen closes and event listeners for this view are removed. 
 
-Note, that `onCloseButtonPress`, `onPurchaseCompleted,` and `onRestoreCompleted` in the example above return `true` — This is their default behavior that you can override.
+Note, that `onCloseButtonPress`, `onPurchaseCompleted` and `onRestoreCompleted` in the example above return `true` — This is their default behavior that you can override.
 
 ### Event handlers
 
-| Event handler               | Description                                                  |
-| :-------------------------- | :----------------------------------------------------------- |
-| **onCloseButtonPress**      | If the close button is visible and a user taps it, this method will be invoked. It is recommended to dismiss the paywall screen in this handler. |
-| **onPurchaseCompleted**     | This callback covers scenarios where the user completes a purchase successfully, cancels it before completion, or when the purchase is still pending. As a result, the callback provides an updated `AdaptyProfile`. |
-| **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked. |
-| **onPurchaseFailed**        | If the purchase process fails, this method will be invoked and provide `AdaptyError`. |
-| **onRestoreStarted**        | If the user requests to restore their purchases, this callback will be invoked. |
-| **onRestoreCompleted**      | If a user's purchase restoration succeeds, this method will be invoked and provide an updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it. |
-| **onRestoreFailed**         | If the restoring process fails, this method will be invoked and will provide `AdaptyError`. |
-| **onProductSelected**       | When any product in the paywall view is selected, this method will be invoked, so that you can monitor what the user selects before the purchase. |
-| **onRenderingFailed**       | If an error occurs during view rendering, this method will be invoked and provide `AdaptyError`. Such errors should not occur, so if you come across one, please let us know. |
-| **onLoadingProductsFailed** | If you  haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, this method will be invoked and provide `AdaptyError`. |
-| **onCloseButtonPress**      | Use this callback to implement processing of the user's tapping the **Close** button in a paywall. |
-| **onUrlPress**              | Use this callback to implement processing of the user's tapping a URL in a paywall. |
-| **onAndroidSystemBack**     | This callback is revoked when the user taps the **Back** button on the Android device. |
-| **onCustomAction**          | Use this callback to process user's custom actions, e.g., tapping a custom button. `actionId` is configured in the Adapty Dashboard, for example, in the **Button action ID** field when [setting up a custom button](paywall-buttons). |
+| Event handler               | Description                                                                                                                                                                                                                                                                                    |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **onCloseButtonPress**      | If the close button is visible and a user taps it, this method will be invoked. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                               |
+| **onPurchaseCompleted**     | If a user's purchase succeeds, this method will be invoked and will provide updated `AdaptyProfile`. It is recommended to dismiss the paywall view in this handler.                                                                                                                            |
+| **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked.                                                                                                                                                                                        |
+| **onPurchaseCancelled**     | If a user initiates the purchase process and manually interrupts it, this method will be invoked.                                                                                                                                                                                              |
+| **onPurchaseFailed**        | If the purchase process fails, this method will be invoked and provide `AdaptyError`.                                                                                                                                                                                                          |
+| **onRestoreCompleted**      | If a user's purchase restoration succeeds, this method will be invoked and provide updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has  the required `accessLevel`. Refer to the [Subscription status](subscription-status)   topic to learn how to check it. |
+| **onRestoreFailed**         | If the restoring process fails, this method will be invoked and will provide `AdaptyError`.                                                                                                                                                                                                    |
+| **onProductSelected**       | When any product in the paywall view is selected, this method will be invoked, so that you can monitor what the user selects before the purchase.                                                                                                                                              |
+| **onRenderingFailed**       | If an error occurs during view rendering, this method will be invoked and provide `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                  |
+| **onLoadingProductsFailed** | If you  haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, this method will be invoked and provide `AdaptyError`.                                                                         |
 
