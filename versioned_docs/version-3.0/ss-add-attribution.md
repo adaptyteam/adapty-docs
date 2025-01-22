@@ -172,7 +172,7 @@ The paywall view is recorded successfully. The response body is blank.
 
 ### 400 - Bad Request
 
-<InvalidDateFormat />
+<ParseError />
 
 ### 401 - Unauthorised
 

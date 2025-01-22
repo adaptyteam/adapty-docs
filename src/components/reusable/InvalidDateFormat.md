@@ -23,8 +23,7 @@ The request failed because the format of the `visited_at` field is incorrect. Us
             ]
         }
     ],
-    "error_code": "base_error",
+    "error_code": "datetime",
     "status_code": 400
 }
 ```
-
