@@ -103,7 +103,7 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 ## SDK configuration
 
-For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
+For the integration, you should pass `airbridge_device_id` to profile builder and call `setIntegrationIdentifier` as it is shown in the example below: 
 
 <Tabs groupId="airbridge">
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -161,9 +161,7 @@ import { adapty } from 'react-native-adapty';
 try {
   const deviceId = await Airbridge.state.deviceUUID();
 
-  await adapty.updateProfile({
-    airbridgeDeviceId: deviceId,
-  });
+  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
 } catch (error) {
   // handle `AdaptyError`
 }

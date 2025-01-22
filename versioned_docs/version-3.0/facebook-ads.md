@@ -123,7 +123,7 @@ To enable specific events, simply toggle on the ones you require. In case multip
 ## SDK configuration
 
 :::warning
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes)  method. It allows Facebook to handle events if IDFA is not available.
+Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via `.setIntegrationIdentifier()` method. It allows Facebook to handle events if IDFA is not available.
 :::
 
 <Tabs groupId="facebook-ads">
@@ -177,9 +177,7 @@ import { AppEventsLogger } from 'react-native-fbsdk-next';
 try {
   const anonymousId = await AppEventsLogger.getAnonymousID();
 
-  await adapty.updateProfile({
-    facebookAnonymousId: anonymousId,
-  });
+  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
 } catch (error) {
   // handle `AdaptyError`
 }

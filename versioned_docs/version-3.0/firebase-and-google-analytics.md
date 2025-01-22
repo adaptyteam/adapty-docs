@@ -125,7 +125,7 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 ## SDK configuration
 
-Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the`firebase_app_instance_id` to Adapty. Here you can see an example of the code which can be used to integrate Firebase SDK and Adapty SDK.
+Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the `firebase_app_instance_id` to Adapty. Here you can see an example of the code that can be used to integrate Firebase SDK and Adapty SDK.
 
 <Tabs groupId="firebase-and-google-analytics">
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -226,9 +226,7 @@ import { adapty } from 'react-native-adapty';
 try {
   const appInstanceId = await analytics().getAppInstanceId();
 
-  await adapty.updateProfile({
-    firebaseAppInstanceId: appInstanceId,
-  });
+  await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
 } catch (error) {
   // handle `AdaptyError`
 }

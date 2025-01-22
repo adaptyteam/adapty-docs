@@ -40,12 +40,6 @@ do {
 let builder = AdaptyProfileParameters.Builder()
     .with(email: "email@email.com")
     .with(phoneNumber: "+18888888888")
-    .with(facebookAnonymousId: "facebookAnonymousId")
-    .with(amplitudeUserId: "amplitudeUserId")
-    .with(amplitudeDeviceId: "amplitudeDeviceId")
-    .with(mixpanelUserId: "mixpanelUserId")
-    .with(appmetricaProfileId: "appmetricaProfileId")
-    .with(appmetricaDeviceId: "appmetricaDeviceId")
     .with(firstName: "John")
     .with(lastName: "Appleseed")
     .with(gender: .other)
@@ -64,12 +58,6 @@ Adapty.updateProfile(params: builder.build()) { error in
 val builder = AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
-    .withFacebookAnonymousId("facebookAnonymousId")
-    .withAmplitudeUserId("amplitudeUserId")
-    .withAmplitudeDeviceId("amplitudeDeviceId")
-    .withMixpanelUserId("mixpanelUserId")
-    .withAppmetricaProfileId("appmetricaProfileId")
-    .withAppmetricaDeviceId("appmetricaDeviceId")
     .withFirstName("John")
     .withLastName("Appleseed")
     .withGender(AdaptyProfile.Gender.OTHER)
@@ -89,12 +77,6 @@ Adapty.updateProfile(builder.build()) { error ->
 AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
-    .withFacebookAnonymousId("facebookAnonymousId")
-    .withAmplitudeUserId("amplitudeUserId")
-    .withAmplitudeDeviceId("amplitudeDeviceId")
-    .withMixpanelUserId("mixpanelUserId")
-    .withAppmetricaProfileId("appmetricaProfileId")
-    .withAppmetricaDeviceId("appmetricaDeviceId")
     .withFirstName("John")
     .withLastName("Appleseed")
     .withGender(AdaptyProfile.Gender.OTHER)
@@ -113,12 +95,6 @@ Adapty.updateProfile(builder.build(), error -> {
 final builder = AdaptyProfileParametersBuilder()
   ..setEmail("email@email.com")
   ..setPhoneNumber("+18888888888")
-  ..setFacebookAnonymousId("facebookAnonymousId")
-  ..setAmplitudeUserId("amplitudeUserId")
-  ..setAmplitudeDeviceId("amplitudeDeviceId")
-  ..setMixpanelUserId("mixpanelUserId")
-  ..setAppmetricaProfileId("appmetricaProfileId")
-  ..setAppmetricaDeviceId("appmetricaDeviceId")
   ..setFirstName('John')
   ..setLastName('Appleseed')
   ..setGender(AdaptyProfileGender.other)
@@ -141,12 +117,6 @@ import type { AdaptyProfileParameters } from 'react-native-adapty';
 const params: AdaptyProfileParameters = {
     email: 'email@email.com',
     phoneNumber: '+18888888888',
-    facebookAnonymousId: 'facebookAnonymousId',
-    amplitudeUserId: 'amplitudeUserId',
-    amplitudeDeviceId: 'amplitudeDeviceId',
-    mixpanelUserId: 'mixpanelUserId',
-    appmetricaProfileId: 'appmetricaProfileId',
-    appmetricaDeviceId: 'appmetricaDeviceId',
     firstName: 'John',
     lastName: 'Appleseed',
     gender: 'other',
@@ -188,7 +158,7 @@ The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<V
 
 | Key | Value |
 |---|-----|
-| <p>email</p><p>phoneNumber</p><p>facebookAnonymousId</p><p>amplitudeUserId</p><p>amplitudeDeviceId</p><p>mixpanelUserId</p><p>appmetricaProfileId</p><p>appmetricaDeviceId</p><p>firstName</p><p>lastName</p> | String up to 30 characters |
+| <p>email</p><p>phoneNumber</p><p>firstName</p><p>lastName</p> | String up to 30 characters |
 | gender | Enum, allowed values are: `female`, `male`, `other` |
 | birthday | Date |
 

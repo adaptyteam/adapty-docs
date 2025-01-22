@@ -294,9 +294,9 @@ import appsFlyer from 'react-native-appsflyer';
 
 appsFlyer.onInstallConversionData(installData => {
     try {
-        // It's important to include the network user ID
-        const networkUserId = appsFlyer.getAppsFlyerUID();
-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
+        const uid = appsFlyer.getAppsFlyerUID();
+        adapty.setIntegrationIdentifier("appsflyer_id", uid);
+        adapty.updateAttribution(installData, "appsflyer");
     } catch (error) {
         // handle the error
     }

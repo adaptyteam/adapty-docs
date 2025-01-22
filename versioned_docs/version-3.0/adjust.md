@@ -171,7 +171,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that.
 
 <Tabs groupId="adjust">
 
@@ -309,6 +309,11 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 
 // ...
 Adjust.create(adjustConfig);
+
+Adjust.getAdid((adid) => {
+  if (adid)
+    adapty.setIntegrationIdentifier("adjust_device_id", adid);
+});
 ```
 
 </TabItem>

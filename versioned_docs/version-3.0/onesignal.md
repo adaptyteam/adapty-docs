@@ -135,7 +135,7 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 ## SDK configuration
 
-There are currently two ways to integrate OneSignal and Adapty: the old one, relying on `playerId` and the new one, relying on `subscriptionId`, since `playerId` is deprecated starting with [OneSignal SDK v5](https://github.com/OneSignal/OneSignal-iOS-SDK/releases/tag/5.0.0)
+There are currently two ways to integrate OneSignal and Adapty: the old one, relying on `playerId`  and the new one, relying on `subscriptionId`, since `playerId` is deprecated starting with [OneSignal SDK v5](https://github.com/OneSignal/OneSignal-iOS-SDK/releases/tag/5.0.0)
 
 :::warning
 Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on OneSignal SDK v5+) to Adapty, otherwise OneSignal tags couldn't be updated and the integration wouldn't work.
@@ -239,12 +239,12 @@ Adapty.SetIntegrationIdentifier(
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 
-OneSignal.addSubscriptionObserver(event => {
-  const playerId = event.to.userId;
-  
-  adapty.updateProfile({
-    oneSignalPlayerId: playerId,
-  });
+OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+  const subscriptionId = subscription.current.id;
+
+  if (subscriptionId) {
+    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+  }
 });
 ```
 
@@ -336,9 +336,7 @@ import OneSignal from 'react-native-onesignal';
 OneSignal.addSubscriptionObserver(event => {
   const playerId = event.to.userId;
   
-  adapty.updateProfile({
-    oneSignalPlayerId: playerId,
-  });
+  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
 });
 ```
 

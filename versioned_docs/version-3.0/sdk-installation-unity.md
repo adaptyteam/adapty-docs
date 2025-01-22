@@ -19,9 +19,9 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
-## Install Adapty SDKs
+## Install Adapty SDK
 
-To install the Adapty SDKs:
+To install the Adapty SDK:
 
 1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
 

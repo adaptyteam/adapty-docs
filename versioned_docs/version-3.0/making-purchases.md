@@ -187,11 +187,21 @@ void MakePurchase(AdaptyPaywallProduct product) {
 
 ```typescript 
 try {
-    const profile = await adapty.makePurchase(product);
-  const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
-  
-    if (isSubscribed) {
-        // Grant access to the paid features
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
     }
 } catch (error) {
     // Handle the error
@@ -338,11 +348,21 @@ Additional request parameter:
 
 ```typescript 
 try {
-    const profile = await adapty.makePurchase(product, params);
-    const isSubscribed = profile?.accessLevels['premium']?.isActive;
-  
-    if (isSubscribed) {
-        // grant access to premium features
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
     }
 } catch (error) {
     // Handle the error

@@ -10,8 +10,9 @@ import TabItem from '@theme/TabItem';
 Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Update the method for providing fallback paywalls.
-2. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-3. Update Observer mode implementation.
+2. Remove `getProductsIntroductoryOfferEligibility` method.
+3. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+4. Update Observer mode implementation.
 
 ## Update method for providing fallback paywalls
 
@@ -37,6 +38,12 @@ Previously, the method required the fallback paywall as a JSON string (`jsonStri
 ```
 
 For the complete code example, check out the [Use fallback paywalls](flutter-use-fallback-paywalls) page.
+
+## Remove `getProductsIntroductoryOfferEligibility` method
+
+Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
+
+Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility — if an offer is present, the user is eligible.
 
 ## Update 3d-party integration SDK configuration
 

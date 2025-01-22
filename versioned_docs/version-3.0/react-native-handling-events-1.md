@@ -14,7 +14,7 @@ Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't nee
 This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](react-native-handling-events-legacy).
 :::
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the`view.registerEventHandlers` method:
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
 
 ```typescript title="React Native (TSX)"
 import {createPaywallView} from '@adapty/react-native-ui';

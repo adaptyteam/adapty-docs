@@ -103,7 +103,7 @@ Adapty will send subscription events to Branch using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Branch attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+It's very important to send Branch attribution data from the device to Adapty using `.setIntegrationIdentifier()` SDK method. The example below shows how to do that.
 
 To connect the Branch and Adapty user, make sure you provide your `customerUserId` to Branch. If you prefer not to use `customerUserId` in Branch, use the `setIntegrationIdentifier method to specify the Branch user ID.
 
@@ -230,7 +230,7 @@ branch.subscribe({
   enComplete: ({
     params,
   }) => {
-    adapty.updateAttribution(params, AttributionSource.Branch);
+    adapty.updateAttribution(params, "branch");
   },
 });
 ```
