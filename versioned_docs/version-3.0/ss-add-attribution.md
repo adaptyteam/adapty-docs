@@ -12,6 +12,7 @@ import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFou
 import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
+import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnumerationMember.md';
 
 Adds attribution data to a profile.
 
@@ -159,8 +160,8 @@ echo $response;
 | ad_group            | String | :heavy_minus_sign: | Attribution ad group.                                        |
 | ad_set              | String | :heavy_minus_sign: | Attribution ad set.                                          |
 | creative            | String | :heavy_minus_sign: | Attribution creative keyword.                                |
-| customer_user_id    | String | :heavy_plus_sign:* | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| profile_id          | String | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
+| customer_user_id    | String | :heavy_plus_sign:* | <p>User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>Either `customer_user_id` or `profile_id` is required.</p> |
+| profile_id          | String | :heavy_plus_sign:* | <p>An identifier of a user in Adapty.  You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>Either `customer_user_id` or `profile_id` is required.</p> |
 
 ---
 
@@ -172,7 +173,7 @@ The paywall view is recorded successfully. The response body is blank.
 
 ### 400 - Bad Request
 
-<ParseError />
+<InvalidEnumerationMember />
 
 ### 401 - Unauthorised
 

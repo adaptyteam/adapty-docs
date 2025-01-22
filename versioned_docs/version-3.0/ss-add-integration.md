@@ -154,8 +154,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | facebook_anonymous_id            | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Facebook Ads integration](facebook-ads). |
 | firebase_app_instance_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in  [Firebase integration](firebase-and-google-analytics). |
 | mixpanel_user_id                 | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Mixpanel integration](mixpanel).      |
-| one_signal_player_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The legacy ID of the user in [OneSignal integration](onesignal). |
-| one_signal_subscription_id       | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The current ID of the user in [OneSignal integration](onesignal). |
+| one_signal_player_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal). Legacy identifier. |
+| one_signal_subscription_id       | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal). Recommended identifier. |
 | posthog_distinct_user_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [PostHog integration](posthog).        |
 | pushwoosh_hwid                   | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Pushwoosh integration.](pushwoosh) |
 | tenjin_analytics_installation_id | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Tenjin integration.](tenjin) |

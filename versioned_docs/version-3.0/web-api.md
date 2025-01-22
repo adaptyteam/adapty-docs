@@ -3,6 +3,7 @@ title: Adapty Web API
 description: ""
 metadataTitle: ""
 toc_max_heading_level: 4
+displayed_sidebar: APISidebar
 ---
 
 import Tabs from '@theme/Tabs'; 
