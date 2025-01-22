@@ -15,8 +15,8 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
 <details>
    <summary>Before you start checking subscription status (Click to Expand)</summary>
 
-   - For iOS, set up [App Store Server Notifications](app-store-server-notifications)
-   - For Android, set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)
+   - For iOS, set up [App Store Server Notifications](enable-app-store-server-notifications)
+   - For Android, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
 </details>
 
 ## Access level and the AdaptyProfile object

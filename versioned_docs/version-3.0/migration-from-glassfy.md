@@ -65,8 +65,8 @@ Create an account using a [special link ](https://app.adapty.io/glassfy-migratio
 
 You've done it at least once already, so we'll just leave the link to the docs. You will have to provide a Bundle ID and subscription keys and set up server notifications so that Adapty can work with purchases.
 
-- [Configuring subscription key](in-app-purchase-api-storekit-2) and [enabling Apple server notifications](app-store-server-notifications) for the App Store
-- [Configuring service account key file](service-account-key-file) and [enabling Google server notifications](real-time-developer-notifications-rtdn) for the Google Play
+- [Configuring subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) and [enabling Apple server notifications](enable-app-store-server-notifications) for the App Store
+- [Configuring service account key file](google-play-store-connection-configuration#step-2-upload-the-account-key-file) and [enabling Google server notifications](enable-real-time-developer-notifications-rtdn) for the Google Play
 
 #### Create products
 

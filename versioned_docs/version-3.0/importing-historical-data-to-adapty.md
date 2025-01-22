@@ -53,7 +53,7 @@ Please use the following files as samples for [iOS](https://docs.google.com/spre
 | Column name | Presence | Description |
 |-----------|--------|-----------|
 | **user_id** | required | ID of your user |
-| **apple_original_transaction_id** | required for iOS | <p>The original transaction ID or OTID ([learn more](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid) ), used in StoreKit 2 import mechanism. As one user can have multiple OTIDs, it is enough to provide at least one for successful import.</p><p></p><p>**Note:** We require In-app purchase API credentials for this import to be set up in your Adapty Dashboard. Learn how to do it [here](in-app-purchase-api-storekit-2) .</p> |
+| **apple_original_transaction_id** | required for iOS | <p>The original transaction ID or OTID ([learn more](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid) ), used in StoreKit 2 import mechanism. As one user can have multiple OTIDs, it is enough to provide at least one for successful import.</p><p></p><p>**Note:** We require In-app purchase API credentials for this import to be set up in your Adapty Dashboard. Learn how to do it [here](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) .</p> |
 | **google_product_id** | required for Google | Product ID in the Google Play Store. |
 | **google_purchase_token** | required for Google | A unique identifier that represents the user and the product ID for the in-app product they purchased |
 | **google_is_subscription** | required for Google | Possible values are `1` \| `0` |

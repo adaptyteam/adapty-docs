@@ -167,7 +167,7 @@ Adapty.MakePurchase(product, (profile, error) => {
 ```
 
 :::warning
-Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-promotional-offers) in Adapty Dashboard when using promotional offers.
+Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](offers) in Adapty Dashboard when using promotional offers.
 :::
 
 ### Introductory offer eligibility

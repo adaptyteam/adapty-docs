@@ -30,5 +30,5 @@ To configure the App Store credentials and ensure optimal functionality of the A
 | **Bundle ID** | Your [app bundle ID](app-store-connection-configuration#step-1-provide-bundle-id). |
 | **In-app purchase API (StoreKit 2)** | [Keys](app-store-connection-configuration#step-2-provide-issuer-id-and-key-id) to enable secure authentication and validation of in-app purchase transaction history requests. |
 | **App Store Server Notifications** | URL that is used to enable [server2server notifications](enable-app-store-server-notifications) from the App Store to monitor and respond to users' subscription status changes |
-| **App Store Promotional Offers** | Subscription keys for creating [Promotional offers](offers) in Adapty for specific products. |
+| **App Store Promotional Offers** | Subscription keys for creating [Promotional offers](generate-in-app-purchase-key) in Adapty for specific products. |
 | **App Store Connect shared secret (LEGACY)** | <p>**Legacy key for Adapty SDK prior to v.2.9.0**</p><p></p><p>[A key](app-store-connection-configuration#step-4-enter-app-store-shared-secret) for receipts validation and preventing fraud in your app.</p> |

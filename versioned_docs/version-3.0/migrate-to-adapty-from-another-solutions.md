@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 Migration has three steps:
 
 1. Switching to Adapty SDK.
-2. Changing [Apple](app-store-server-notifications)/ [Google](real-time-developer-notifications-rtdn) server2server notifications webhook.
+2. Changing [Apple](enable-app-store-server-notifications)/ [Google](enable-real-time-developer-notifications-rtdn) server2server notifications webhook.
 3. (Optional) [Importing historical data to Adapty](importing-historical-data-to-adapty) to instantly pull statistics.
 
 Let's quickly go through each part.
@@ -32,16 +32,17 @@ Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk
 
 :::tip
 Switching from another subscription provider? Follow our guide for a detailed walk-though:
+
  - [Migration from RevenueCat](migration-from-revenuecat) (20 minutes)
  :::
 
 ### Changing Apple server notifications
 
-Apple and Google send us events that happen with users' subscriptions outside of the application (renewal, cancellation, pausing, refund, etc.) via [App Store server notifications](app-store-server-notifications). 
+Apple and Google send us events that happen with users' subscriptions outside of the application (renewal, cancellation, pausing, refund, etc.) via [App Store server notifications](enable-app-store-server-notifications). 
 
 Adapty can work without this URL, but you'll get a limited feature set. For example, [Integrations](events) to 3rd party services will be delayed, subscription analytics won't be in real-time, and paywall A/B testing metrics won't be accurate. 
 
-When switching from a legacy system, sometimes you want two systems to work simultaneously for some time. In that case, you can use our [raw events forwarding](app-store-server-notifications#raw-events-forwarding), where Adapty is a proxy server for your legacy system.
+When switching from a legacy system, sometimes you want two systems to work simultaneously for some time. In that case, you can use our [raw events forwarding](enable-app-store-server-notifications#raw-events-forwarding), where Adapty is a proxy server for your legacy system.
 
 
 <Zoom>

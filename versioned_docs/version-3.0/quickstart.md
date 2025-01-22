@@ -40,8 +40,8 @@ In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/setti
 </Zoom>
 
 To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.com/), go to **My Apps**, and select the app whose ID you need. On the app page, in the drop-down **More** menu, select **About this App**. The app ID is displayed in the **Bundle ID** field.  
-– [How to connect to In-App Purchase API?](in-app-purchase-api-storekit-2)  
-– [How to set URL for App Store Server Notifications? **→**](app-store-server-notifications)
+– [How to connect to In-App Purchase API?](generate-in-app-purchase-key)  
+– [How to set URL for App Store Server Notifications? **→**](enable-app-store-server-notifications)
 
 **Play Store configuration**  
 Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_ and fill in the fields.
@@ -58,8 +58,8 @@ Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_
 </Zoom>
 
 To find Package Name, open the [Google Play Developer Console](https://play.google.com/console/u/0/developers) and select the app whose ID you need. The ID is specified next to the app's name and logo.  
-– [Where to find Service account key file? **→** ](service-account-key-file)  
-– [Where to find Real-time Developer Notifications (RTDN)? **→**](real-time-developer-notifications-rtdn) 
+– [Where to find Service account key file? **→** ](create-service-account)  
+– [Where to find Real-time Developer Notifications (RTDN)? **→**](enable-real-time-developer-notifications-rtdn) 
 
 ### Creating a product
 
@@ -139,16 +139,16 @@ Follow these guides for more info on:
 
 ### Configuring processing of purchases
 
-Connecting Adapty to  **In-App Purchase API** for [iOS](in-app-purchase-api-storekit-2) and adding both **package name** with **service account key file** for [Android](service-account-key-file) would be necessary to allow Adapty to successfully process purchasing events.
+Connecting Adapty to  **In-App Purchase API** for [iOS](app-store-connection-configuration) and adding both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be necessary to allow Adapty to successfully process purchasing events.
 
 ### Subscription events
 
 Here is what you can do to set up tracking of subscription events
 
-|                 |                                                                                                   |
-| :-------------- | :------------------------------------------------------------------------------------------------ |
-| **For iOS**     | **Update the App Store Server Notifications with our [link](app-store-server-notifications)** |
-| **For Android** | **Set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn)** |
+|                 |                                                              |
+| :-------------- | :----------------------------------------------------------- |
+| **For iOS**     | **Update the App Store Server Notifications with our [link](enable-app-store-server-notifications)** |
+| **For Android** | **Set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)** |
 
 ### Integrations
 
@@ -161,7 +161,7 @@ Here is what you can do to set up tracking of subscription events
 
 ### Promo campaigns and promo offers
 
-If you want to use Adapty along with Apple Promotional Offers, adding a [subscription key](app-store-promotional-offers) will allow us to sign offers.
+If you want to use Adapty along with Apple Promotional Offers, adding a [subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) will allow us to sign offers.
 
 ### Notes
 

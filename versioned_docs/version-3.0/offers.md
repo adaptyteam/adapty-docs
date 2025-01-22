@@ -28,7 +28,7 @@ These offers help attract and keep users engaged, making the app experience more
 Checklist for Adapty to successfuly process offers from the App Store and Play Store:
 
 1. [Create offers in the App Store Connect](app-store-offers) or [create offers in the Google Play Console](google-play-offers)
-2. (for iOS apps only) [Upload a special In-App Purchase Key from App Store Connect to Adapty](app-store-promotional-offers).
+2. (for iOS apps only) [Upload a special In-App Purchase Key from App Store Connect to Adapty](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file).
 3. [Create offers in Adapty](create-offer)
 4. [Add these offers to a paywall in Adapty](add-offer-to-paywall)
 :::

@@ -165,7 +165,7 @@ try {
 ```
 
 :::warning
-Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-promotional-offers) in Adapty Dashboard when using promotional offers.
+Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) in Adapty Dashboard when using promotional offers.
 :::
 
 ### Introductory offer eligibility
