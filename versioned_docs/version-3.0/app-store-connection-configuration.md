@@ -172,4 +172,4 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 
 **What's next**
 
-- Enable App Store server notifications
+- [Enable App Store server notifications](enable-app-store-server-notifications)
