@@ -11,14 +11,15 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 
 1. Upgrade to Adapty SDK v3.3.x.
 2. Renamings
-3. Remove `getProductsIntroductoryOfferEligibility` method.
-4. Update making purchase.
-5. Modify Paywall Builder purchase events.
-6. Modify Paywall Builder custom action events.
-7.  Modify `onProductSelected` callback.
-8. Remove third-party integration parameters from `updateProfile` method.
-9. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-10. Update Observer mode implementation.
+3. Changes in models
+4. Remove `getProductsIntroductoryOfferEligibility` method.
+5. Update making purchase.
+6. Modify Paywall Builder purchase events.
+7. Modify Paywall Builder custom action events.
+8. Modify `onProductSelected` callback.
+9. Remove third-party integration parameters from `updateProfile` method.
+10. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+11. Update Observer mode implementation.
 
 ## Upgrade Adapty React Native SDK to 3.3.x
 
@@ -34,13 +35,57 @@ Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged 
 
 Rename in Adapty module:
 
-| Old version           | New version    |
-| --------------------- | -------------- |
-| `timerInfo`           | `customTimers` |
-| `subscriptionDetails` | `subscription` |
-|                       |                |
+| Old version | New version    |
+| ----------- | -------------- |
+| `timerInfo` | `customTimers` |
+|             |                |
+
+## Changes in models
+
+**New model**
+
+(`AdaptySubscriptionOffer` это новая модель – думаю, тут достаточно будет просто ссылку на интерактивную доку добавить, сразу после релиза) (да и кажется как будто бы ко всем этим пунктам можно ссылки будет прикрепить)
+
+1. `AdaptyPaywallProduct`: optional property `subscriptionDetails` renamed to `subscription
 
 
+
+
+
+
+```
+-  subscriptionDetails?: AdaptySubscriptionDetails; 
++  subscription?: AdaptySubscriptionDetails;
+```
+
+
+`AdaptySubscriptionDetails` (также поменялись проперти):
+
+
+
+
+
+```
+-  introductoryOffers?: AdaptyDiscountPhase[]; +  offer?: AdaptySubscriptionOffer;    ios?: { -    promotionalOffer?: AdaptyDiscountPhase;     subscriptionGroupIdentifier?: string;   };    android?: { -    offerId?: string;     basePlanId: string; -    introductoryOfferEligibility: OfferEligibility; -    offerTags?: string[];     renewalType?: 'prepaid' | 'autorenewable';   }; }
+```
+
+
+(`promotionalOffer` теперь при доступности будет в поле `offer` (#L2 в сниппете), тип офера будет указан в `AdaptySubscriptionOfferId` – будет ссылка на интерактивную доку) 
+(`introductoryOfferEligibility` больше неактуально, т.к. возвращаются только eligible-оферы – но на всякий случай можно у Лехи уточнить по нюансам ios, либо найти аналог в доке по флаттеру и адаптировать)
+(`offerId` теперь можно найти в `AdaptySubscriptionOffer.identifier` – тоже дадим ссылку на интерактивную доку)
+(`offerTags` тоже переехал в `AdaptySubscriptionOffer.android` – дадим ссылку)
+
+`AdaptyDiscountPhase`:
+
+
+
+
+
+```
+-  ios?: { -    readonly identifier?: string; -  };
+```
+
+(`identifier` теперь можно найти в `AdaptySubscriptionOffer.identifier` – тоже дадим ссылку на интерактивную доку)
 
 ## Update import for presenting Paywall Builder paywalls
 
