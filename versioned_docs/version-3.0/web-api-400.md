@@ -12,6 +12,6 @@ import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.m
 
 <ParseError />
 
-## base_error
+## datetime
 
 <InvalidDateFormat />
