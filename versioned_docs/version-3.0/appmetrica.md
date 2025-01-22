@@ -192,10 +192,8 @@ const startupParamsCallback = async (
   const deviceId = params?.deviceId
   if (deviceId) {
     try {
-      await adapty.updateProfile({
-        appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
-        appmetricaDeviceId: deviceId,
-      });
+      await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
+      await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
     } catch (error) {
       // handle `AdaptyError`
     }

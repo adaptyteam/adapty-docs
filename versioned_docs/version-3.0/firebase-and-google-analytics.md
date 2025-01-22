@@ -226,9 +226,7 @@ import { adapty } from 'react-native-adapty';
 try {
   const appInstanceId = await analytics().getAppInstanceId();
 
-  await adapty.updateProfile({
-    firebaseAppInstanceId: appInstanceId,
-  });
+  await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
 } catch (error) {
   // handle `AdaptyError`
 }

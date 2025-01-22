@@ -157,6 +157,10 @@ adapty.activate('PUBLIC_SDK_KEY', {
 ```
 </TabItem> 
 
+</Tabs>
+
+</TabItem> 
+
 <TabItem value="old" label="Adapty SDK up to v2.x (legacy)" default> 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:

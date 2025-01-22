@@ -309,6 +309,11 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 
 // ...
 Adjust.create(adjustConfig);
+
+Adjust.getAdid((adid) => {
+  if (adid)
+    adapty.setIntegrationIdentifier("adjust_device_id", adid);
+});
 ```
 
 </TabItem>

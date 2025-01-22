@@ -239,12 +239,12 @@ Adapty.SetIntegrationIdentifier(
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 
-OneSignal.addSubscriptionObserver(event => {
-  const playerId = event.to.userId;
-  
-  adapty.updateProfile({
-    oneSignalPlayerId: playerId,
-  });
+OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+  const subscriptionId = subscription.current.id;
+
+  if (subscriptionId) {
+    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+  }
 });
 ```
 
@@ -336,9 +336,7 @@ import OneSignal from 'react-native-onesignal';
 OneSignal.addSubscriptionObserver(event => {
   const playerId = event.to.userId;
   
-  adapty.updateProfile({
-    oneSignalPlayerId: playerId,
-  });
+  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
 });
 ```
 

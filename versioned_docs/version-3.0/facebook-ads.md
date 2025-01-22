@@ -177,9 +177,7 @@ import { AppEventsLogger } from 'react-native-fbsdk-next';
 try {
   const anonymousId = await AppEventsLogger.getAnonymousID();
 
-  await adapty.updateProfile({
-    facebookAnonymousId: anonymousId,
-  });
+  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
 } catch (error) {
   // handle `AdaptyError`
 }

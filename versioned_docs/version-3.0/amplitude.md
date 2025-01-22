@@ -197,10 +197,8 @@ Adapty.SetIntegrationIdentifier(
 import { adapty } from 'react-native-adapty';
 
 try {
-  await adapty.updateProfile({
-    amplitudeDeviceId: deviceId,
-    amplitudeUserId: userId,
-  });
+  await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
+  await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
 } catch (error) {
   // handle `AdaptyError`
 }

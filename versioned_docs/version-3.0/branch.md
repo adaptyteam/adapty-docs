@@ -230,7 +230,7 @@ branch.subscribe({
   enComplete: ({
     params,
   }) => {
-    adapty.updateAttribution(params, AttributionSource.Branch);
+    adapty.updateAttribution(params, "branch");
   },
 });
 ```

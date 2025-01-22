@@ -161,9 +161,7 @@ import { adapty } from 'react-native-adapty';
 try {
   const deviceId = await Airbridge.state.deviceUUID();
 
-  await adapty.updateProfile({
-    airbridgeDeviceId: deviceId,
-  });
+  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
 } catch (error) {
   // handle `AdaptyError`
 }
