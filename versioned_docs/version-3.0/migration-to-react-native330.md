@@ -33,61 +33,66 @@ Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged 
 
 ## Renamings
 
-Rename in Adapty module:
+The parameter used to manage custom timers is renamed:
 
 | Old version | New version    |
 | ----------- | -------------- |
 | `timerInfo` | `customTimers` |
-|             |                |
 
 ## Changes in models
 
-**New model**
+### New models
 
 (`AdaptySubscriptionOffer` это новая модель – думаю, тут достаточно будет просто ссылку на интерактивную доку добавить, сразу после релиза) (да и кажется как будто бы ко всем этим пунктам можно ссылки будет прикрепить)
 
-1. `AdaptyPaywallProduct`: optional property `subscriptionDetails` renamed to `subscription
+### Changed models
+
+1. `AdaptyPaywallProduct`: 
+   optional property `subscriptionDetails` is renamed to `subscription`.
 
 
 
+    ```diff
+    -  subscriptionDetails?: AdaptySubscriptionDetails; 
+    +  subscription?: AdaptySubscriptionDetails;
+    ```
+
+2. `AdaptySubscriptionDetails`:
+   1. `promotionalOffer` will be in the `offer` field if available
+   2. Offer type will be defined in `AdaptySubscriptionOfferId`
+   3. `introductoryOfferEligibility` is out-of-date as the offer is returned only if the user is eligible.
+   4. `offerId` can be found in`AdaptySubscriptionOffer.identifier`
+   5. `offerTags` is moved to `AdaptySubscriptionOffer.android`.
 
 
+    ```diff
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. `AdaptyDiscountPhase`:
+   `identifier` can now be found in `AdaptySubscriptionOffer.identifier`
 
-```
--  subscriptionDetails?: AdaptySubscriptionDetails; 
-+  subscription?: AdaptySubscriptionDetails;
-```
+    ```diff
+    -  ios?: {
+    -    readonly identifier?: string;
+    -  };
+    ```
 
-
-`AdaptySubscriptionDetails` (также поменялись проперти):
-
-
-
-
-
-```
--  introductoryOffers?: AdaptyDiscountPhase[]; +  offer?: AdaptySubscriptionOffer;    ios?: { -    promotionalOffer?: AdaptyDiscountPhase;     subscriptionGroupIdentifier?: string;   };    android?: { -    offerId?: string;     basePlanId: string; -    introductoryOfferEligibility: OfferEligibility; -    offerTags?: string[];     renewalType?: 'prepaid' | 'autorenewable';   }; }
-```
-
-
-(`promotionalOffer` теперь при доступности будет в поле `offer` (#L2 в сниппете), тип офера будет указан в `AdaptySubscriptionOfferId` – будет ссылка на интерактивную доку) 
-(`introductoryOfferEligibility` больше неактуально, т.к. возвращаются только eligible-оферы – но на всякий случай можно у Лехи уточнить по нюансам ios, либо найти аналог в доке по флаттеру и адаптировать)
-(`offerId` теперь можно найти в `AdaptySubscriptionOffer.identifier` – тоже дадим ссылку на интерактивную доку)
-(`offerTags` тоже переехал в `AdaptySubscriptionOffer.android` – дадим ссылку)
-
-`AdaptyDiscountPhase`:
-
-
-
-
-
-```
--  ios?: { -    readonly identifier?: string; -  };
-```
-
-(`identifier` теперь можно найти в `AdaptySubscriptionOffer.identifier` – тоже дадим ссылку на интерактивную доку)
-
-## Update import for presenting Paywall Builder paywalls
+## Update presenting Paywall Builder paywalls
 
 For the complete code example, check out the [Present new Paywall Builder paywalls in React Native](react-native-present-paywalls).
 
@@ -111,8 +116,6 @@ try {
 Before Adapty iOS SDK 3.3.0, the product object always included offers, regardless of whether the user was eligible. You had to manually check eligibility before using the offer.
 
 Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility — if an offer is present, the user is eligible.
-
-If you still want to view offers for users who are not eligible, refer to `sk1Product` and `sk2Product`.
 
 ## Update making purchase
 
