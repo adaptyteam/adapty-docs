@@ -193,11 +193,24 @@ There is no official PostHog SDK for Unity.
 
 </TabItem> 
 
-<!--- <TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="RN" label="React Native (TS)" default>
 
- Text 
+```typescript
+ import { adapty } from 'react-native-adapty';
+import { usePostHog } from 'posthog-react-native'
 
-</TabItem> --->
+// ...
+const posthog = usePostHog();
+
+// ...
+try {
+  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.get_distinct_id());
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
+
+</TabItem>
 
 </Tabs>
 
