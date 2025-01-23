@@ -120,7 +120,7 @@ Exporting by the **Export** button creates individual `.json` files for each lan
 />
 </Zoom>
 
-Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format and paywall remote config structure.
+Once you’ve received the translated files, use the **Import** button to upload them all at once or individually. Adapty will automatically validate the files to ensure they match the correct format.
 
 ### Import file format
 
