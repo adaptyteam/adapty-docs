@@ -285,7 +285,7 @@ Adapty.UpdateAttribution(
 
 </TabItem>
 
-<!--- <TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
 import { adapty } from 'react-native-adapty';
@@ -302,6 +302,6 @@ try {
 }
 ```
 
-</TabItem> --->
+</TabItem>
 </Tabs>
 
