@@ -126,7 +126,7 @@ A purple line indicates an available position for the element, while a red line 
 />
 </Zoom>
 
-## Hide element
+## Hide / show element
 
 Even though you have already created and configured an element, you can temporarily hide it from the paywall. That is convenient if you plan to add it later without losing all the configuration you made. After hiding an element, the paywall looks as though the element was never added, all alignments and spaces are recalculated and redrawn.
 
