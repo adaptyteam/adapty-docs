@@ -7,9 +7,9 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Apple and Google send subscription events directly to the server using [App Store Server Notifications](app-store-server-notifications) and [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn). Therefore, mobile apps cannot send events to analytical systems correctly and on-time. For example, if the user subscribed and then didn't open the app, without a server developer will get zero information about subscription status. 
+Apple and Google send subscription events directly to the server using [App Store Server Notifications](enable-app-store-server-notifications) and [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn). Therefore, mobile apps cannot send events to analytical systems correctly and on-time. For example, if the user subscribed and then didn't open the app, without a server developer will get zero information about subscription status. 
 
-After installing Adapty SDK and setting up [App Store Server Notifications](app-store-server-notifications) for iOS and [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn). for Android, Adapty receives info about your customer behavior and converts it into human-readable events.
+After installing Adapty SDK and setting up [App Store Server Notifications](enable-app-store-server-notifications) for iOS and [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn). for Android, Adapty receives info about your customer behavior and converts it into human-readable events.
 
 :::note
 Adapty processes events into human-readable format instantly as they created and enriches them with additional information, such as customer ID, consecutive payments, store commission info, and others. Besides that Apple doesn't send events about subscription renewals but we do.
@@ -215,7 +215,7 @@ Adapty has a special event `access_level_updated`. It is sent only to [webhook](
 
 We don't send `access_level_updated` upon subscription expiration - please, refer to **expires_at** value to end the subscriptions on your side. 
 
-Please note that some properties can only be set using the grant Server-Side API method. You can find more information about this method in the [Adapty Server-Side API documentation.](server-side-api-specs#prolonggrant-a-subscription-for-a-user)
+Please note that some properties can only be set using the [grant access level](ss-grant-access-level) API method. 
 
 For detailed descriptions of the mentioned properties, you can refer to the [API objects documentation](server-side-api-objects).
 

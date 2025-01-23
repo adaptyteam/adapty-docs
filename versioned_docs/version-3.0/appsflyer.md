@@ -191,7 +191,7 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
 
-<Tabs>
+<Tabs groupId="appsflyer">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift
@@ -211,14 +211,15 @@ class YourAppsFlyerLibDelegateImplementation {
 ```kotlin 
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
-        // It's important to include the network user ID
-        Adapty.updateAttribution(
-            conversionData,
-            AdaptyAttributionSource.APPSFLYER,
-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
-        ) { error ->
+        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
+        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
             if (error != null) {
-                //handle error
+                // handle the error
+            }
+        }
+        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
+            if (error != null) {
+                //handle the error
             }
         }
     }
@@ -231,18 +232,22 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
+
 appsflyerSdk.onInstallConversionData((data) async {
     try {
-        // It's important to include the network user ID
         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
-        await Adapty().updateAttribution(
-          data,
-          source: AdaptyAttributionSource.appsflyer,
-          networkUserId: appsFlyerUID,
+        
+        await Adapty().setIntegrationIdentifier(
+          key: "appsflyer_id", 
+          value: appsFlyerUID,
         );
+        
+        await Adapty().updateAttribution(data, source: "appsflyer");
     } on AdaptyError catch (adaptyError) {
-        // handle error
-    } catch (e) {}
+        // handle the error
+    } catch (e) {
+        // handle the error
+    }
 });
 
 appsflyerSdk.initSdk(
@@ -255,6 +260,7 @@ appsflyerSdk.initSdk(
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp 
+using AdaptySDK;
 using AppsFlyerSDK;
 
 // before SDK initialization
@@ -262,9 +268,19 @@ AppsFlyer.getConversionData(this.name);
 
 // in your IAppsFlyerConversionData
 void onConversionDataSuccess(string conversionData) {
-    // It's important to include the network user ID
     string appsFlyerId = AppsFlyer.getAppsFlyerId();
-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
+    
+    Adapty.SetIntegrationIdentifier(
+      "appsflyer_id", 
+      appsFlyerId, 
+      (error) => {
+        // handle the error
+    });
+    
+    Adapty.UpdateAttribution(
+      conversionData, 
+      "appsflyer",
+      (error) => {
         // handle the error
     });
 }
@@ -282,7 +298,7 @@ appsFlyer.onInstallConversionData(installData => {
         const networkUserId = appsFlyer.getAppsFlyerUID();
         adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
     } catch (error) {
-        // handle error
+        // handle the error
     }
 });
 

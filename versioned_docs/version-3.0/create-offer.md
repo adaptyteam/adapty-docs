@@ -16,7 +16,7 @@ Introductory offers on iOS are applied automatically if the user is eligible. Do
 
 Once your promotional offer (for both the Play Store and App Store) or Win-back offer (for the App Store) is set up in the app stores, adding it to Adapty is simple:
 
-1. Open he [**Paywalls and Products**](https://app.adapty.io/products) section from the main menu in Adapty, then select the **Products** tab.
+1. Open the [**Paywalls and Products**](https://app.adapty.io/products) section from the main menu in Adapty, then select the **Products** tab.
 
    
 

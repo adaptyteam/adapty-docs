@@ -7,7 +7,7 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
+We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -16,7 +16,7 @@ We’re excited to introduce our **New Paywall Builder**, compatible with Adapty
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
 :::warning
-This section describes the new Paywall Builder, compatible with Adapty SDK v3.0 (3.2.0 for Flutter) and later which is now available for iOS, Android, Flutter, and React Native only. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
+This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
 :::
 
 ## Structure of a paywall
@@ -89,7 +89,7 @@ Currently, in Adapty two versions of the Paywall Builder work in parallel:
   The paywalls designed with this Paywall Builder version require Adapty SDK v3.0 or later.
 - The legacy version is located in the **Legacy Builder** tab of the Paywall functionality in the Adapty Dashboard. This version is outdated and should be used only to support app versions with installed SDK below v.3.х.х. We do not recommend using it for new paywalls as it will be deprecated soon.
 
-The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder** tab of the paywall. This version can be edited with the new Paywall Builder and will be displayed in the apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3) for detailed reference for upgrading to Adapty SDK v3.0.
+The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder** tab of the paywall. This version can be edited with the new Paywall Builder and will be displayed in the apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x](migration-to-adapty-sdk-v3) and [Migration guide to Adapty SDK v.3.3.x](migration-to-330) for detailed reference for upgrading to Adapty SDK.
 
 The existing version of your paywall will stay in the Legacy Builder tab, you will be able to continue adjusting it with the legacy Paywall Builder and it will be displayed in the apps with the installed Adapty SDK version 2.x or earlier.
 

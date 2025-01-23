@@ -78,8 +78,20 @@ const config = {
       {
         redirects: [
           {
-            to: 'https://adapty.io/docs/what-is-adapty',
-            from: ['/docs/'],
+            to: '/generate-in-app-purchase-key',
+            from: '/in-app-purchase-api-storekit-2',
+          },
+          {
+            to: '/enable-app-store-server-notifications',
+            from: '/app-store-server-notifications',
+          },
+          {
+            to: '/offers',
+            from: '/app-store-promotional-offers',
+          },
+          {
+            to: '/app-store-connection-configuration#step-4-enter-app-store-shared-secret',
+            from: '/app-store-shared-secret',
           },
         ],
       },
@@ -133,7 +145,7 @@ const config = {
             ],
           },*/
           {
-            label: "API",
+            label: "Server API",
             position: "left",
             href: "/getting-started-with-server-side-api",
           },
@@ -343,6 +355,10 @@ const config = {
           "toml",
           "groovy",
           "json",
+          "python",
+          "bash",
+          "http"
+
         ],
         magicComments: [
         // Remember to extend the default highlight class name as well!

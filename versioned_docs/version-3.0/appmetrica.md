@@ -81,7 +81,7 @@ If these aren’t set, Adapty will default to using your user ID (`customerUserI
 - [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
 - [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
 
-<Tabs>
+<Tabs groupId="appmetrica">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 import AppMetricaCore 
@@ -108,11 +108,13 @@ val startupParamsCallback = object: StartupParamsCallback {
     override fun onReceive(result: StartupParamsCallback.Result?) {
         val deviceId = result?.deviceId ?: return
 
-        val params = AdaptyProfileParameters.Builder()
-            .withAppmetricaDeviceId(deviceId)
-            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
-            .build()
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+        
+        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
             if (error != null) {
                 // handle the error
             }
@@ -123,7 +125,7 @@ val startupParamsCallback = object: StartupParamsCallback {
         reason: StartupParamsCallback.Reason,
         result: StartupParamsCallback.Result?
     ) {
-        //handle error
+        //handle the error
     }
 }
 
@@ -137,30 +139,42 @@ import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 final deviceId = await AppMetrica.deviceId;
 
 if (deviceId != null) {
-  final builder = AdaptyProfileParametersBuilder()
-    ..setAppmetricaDeviceId(deviceId)
-    ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-
   try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_device_id", 
+        value: deviceId,
+    );
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_profile_id", 
+        value: "YOUR_ADAPTY_CUSTOMER_USER_ID",
+    );
   } on AdaptyError catch (adaptyError) {
-    // handle error
-  } catch (e) {}
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
 }
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
+using AdaptySDK;
+
 var deviceId = AppMetrica.GetDeviceId();
 
 if (deviceId != null {
-  var builder = new Adapty.ProfileParameters.Builder();
-
-  builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
-  builder.SetAppmetricaDeviceId(deviceId);
-
-  Adapty.UpdateProfile(builder.Build(), (error) => {
-      // handle error
+  Adapty.SetIntegrationIdentifier(
+    "appmetrica_device_id", 
+    deviceId, 
+    (error) => {
+    // handle the error
+  });
+  
+  Adapty.SetIntegrationIdentifier(
+    "appmetrica_profile_id", 
+    "YOUR_ADAPTY_CUSTOMER_USER_ID", 
+    (error) => {
+    // handle the error
   });
 }
 ```

@@ -49,7 +49,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 2. **Obtain user consent for data sharing in your app**:
    Apple insists that you must obtain valid consent from the user before sharing their personal data with Apple. As the developer, you’re responsible for obtaining this consent since you’ll be sharing user data with Apple. See Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151) for more details.
 3. **Enable Server Notifications V2:**
-   Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide
+   Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](enable-app-store-server-notifications) guide
 
 ## How to enable Refund saver in Adapty
 
@@ -107,7 +107,7 @@ Adapty supports setting this preference, but we will use the same value for ever
 ## Limitations
 
 - **Apple’s App Store only:** Refund saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
-- **Requires Server Notifications V2:** Refund saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](app-store-server-notifications#sending-app-store-server-notifications-to-adapty) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
+- **Requires Server Notifications V2:** Refund saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](enable-app-store-server-notifications) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
 - **Not for consumables:** Refund saver does not apply to consumable products.
 
 

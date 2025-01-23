@@ -68,16 +68,16 @@ const App: React.FC = () => {
 
 ### Configuring processing of purchases
 
-Adding  **App Store shared secret** for [iOS](app-store-shared-secret) and both **package name** with **service account key file** for [Android](service-account-key-file) would be neccessary to allow Adapty to successfully process purchasing events.
+Adding  **App Store shared secret** for [iOS](app-store-connection-configuration#step-4-enter-app-store-shared-secret) and both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be neccessary to allow Adapty to successfully process purchasing events.
 
 ### Subscription Events
 
 Here is what you can do to set up tracking of subscription events.
 
-|                 |                                                                                               |
-| :-------------- | :-------------------------------------------------------------------------------------------- |
-| **For iOS**     | Update the App Store Server Notifications with our [link](app-store-server-notifications) |
-| **For Android** | Set up [Real-time Developer Notifications (RTDN)](real-time-developer-notifications-rtdn) |
+|                 |                                                              |
+| :-------------- | :----------------------------------------------------------- |
+| **For iOS**     | Update the App Store Server Notifications with our [link](enable-app-store-server-notifications) |
+| **For Android** | Set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) |
 
 ### Integrations
 
@@ -90,7 +90,7 @@ Here is what you can do to set up tracking of subscription events.
 
 ### Promo campaigns and promo offers
 
-If you want to use Adapty along with Apple Promotional Offers, adding a [subscription key](app-store-promotional-offers) will allow us to sign offers.
+If you want to use Adapty along with Apple Promotional Offers, adding a [subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) will allow us to sign offers.
 
 ### Notes
 

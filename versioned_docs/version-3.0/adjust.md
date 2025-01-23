@@ -2,6 +2,7 @@
 title: "Adjust"
 description: ""
 metadataTitle: ""
+
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -42,7 +43,6 @@ To setup the integration with Adjust go to [Integrations > Adjust](https://app.a
 
 The next step of the integration is to set credentials.
 
-
 <Zoom>
   <img src={require('./img/5064125-CleanShot_2023-08-11_at_14.43.382x.webp').default}
   style={{
@@ -60,7 +60,6 @@ The next step of the integration is to set credentials.
 
 1. If you have enabled OAuth authorization on the Adjust platform, it is mandatory to provide an **OAuth Token** during the integration process for your iOS and Android apps.
 2. Next, you need to provide the **app tokens** for your iOS and Android apps. Open your Adjust dashboard and you'll see your apps.
-
 
 <Zoom>
   <img src={require('./img/e9ee52e-image_52.webp').default}
@@ -82,7 +81,6 @@ You may have different Adjust applications for iOS and Android, so in Adapty you
 :::
 
 You will need to copy **App Token** and paste it to Adapty.
-
 
 <Zoom>
   <img src={require('./img/4b1601c-image_36.webp').default}
@@ -107,7 +105,6 @@ Adjust works a bit differently from other platforms. You need to manually create
 
 So first step here is to find event tokens for all events that you want Adapty to send. To do that go to All Settings in your Adjust dashboard.
 
-
 <Zoom>
   <img src={require('./img/6c6b9a0-image_83.webp').default}
   style={{
@@ -123,7 +120,6 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 
-
 <Zoom>
   <img src={require('./img/4d4f40d-image_9.webp').default}
   style={{
@@ -134,7 +130,6 @@ So first step here is to find event tokens for all events that you want Adapty t
   }}
 />
 </Zoom>
-
 
 
 
@@ -157,7 +152,6 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjsut from Adapty. Check the full list of the events offered by Adapty [here](events).
 
-
 <Zoom>
   <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.webp').default}
   style={{
@@ -179,7 +173,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
-<Tabs>
+<Tabs groupId="adjust">
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 
@@ -194,11 +188,9 @@ class AdjustModuleImplementation {
 func updateAdjustAdid() {
     Adjust.adid { adid in
         guard let adid else { return }
-
         Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
     }
 }
-
 func updateAdjustAttribution() {
     Adjust.attribution { attribution in
         guard let attribution = attribution?.dictionary() else { 
@@ -216,15 +208,21 @@ func updateAdjustAttribution() {
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin 
+Adjust.getAdid { adid ->
+    if (adid == null) return@getAdid
+
+    Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+
 Adjust.getAttribution { attribution ->
     if (attribution == null) return@getAttribution
 
-    Adjust.getAdid { adid ->
-        if (adid == null) return@getAdid
-
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
-            // handle the error
-        }
+    Adapty.updateAttribution(attribution, "adjust") { error ->
+        // handle the error
     }
 }
 ```
@@ -234,15 +232,21 @@ Adjust.getAttribution { attribution ->
 <TabItem value="java" label="Android (Java)" default>
 
 ```java
+Adjust.getAdid(adid -> {
+    if (adid == null) return;
+
+    Adapty.setIntegrationIdentifier("adjust_device_id", adid, error -> {
+        if (error != null) {
+            // handle the error
+        }
+    });
+});
+
 Adjust.getAttribution(attribution -> {
     if (attribution == null) return;
 
-    Adjust.getAdid(adid -> {
-        if (adid == null) return;
-
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid, error -> {
-            // handle the error
-        });
+    Adapty.updateAttribution(attribution, "adjust", error -> {
+        // handle the error
     });
 });
 ```
@@ -285,30 +289,6 @@ try {
 } catch (e) {
   // handle the error
 }
-```
-
-</TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
-
-```csharp 
-using static AdaptySDK.Adapty;
-using AdjustSdk;
-
-Adjust.GetAdid((adid) => {
-  Adjust.GetAttribution((attribution) => {
-    Dictionary<String, object> data = new Dictionary<String, object>();
-
-    data["network"] = attribution.Network;
-    data["campaign"] = attribution.Campaign;
-    data["adgroup"] = attribution.Adgroup;
-    data["creative"] = attribution.Creative;
-
-    String attributionString = JsonUtility.ToJson(data);
-    Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
-      // handle the error
-    });
-  });
-});
 ```
 
 </TabItem>
@@ -362,7 +342,7 @@ class YourAdjustDelegateImplementation {
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
+        Adapty.updateAttribution(attribution, "adjust") { error ->
             if (error != null) {
                 //handle error
             }

@@ -121,7 +121,7 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-<Tabs>
+<Tabs groupId="pushwoosh">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 do {
@@ -136,24 +136,16 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```kotlin 
-val params = AdaptyProfileParameters.Builder()
-    .withPushwooshHwid(Pushwoosh.getInstance().hwid)
-    .build()
-  
-Adapty.updateProfile(params) { error ->
+Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
     if (error != null) {
         // handle the error
     }
 }
 ```
 </TabItem>
-<TabItem value="java" label="Java" default>
+<TabItem value="java" label="Android (Java)" default>
 ```java 
-AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
-    .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
-    .build();
-
-Adapty.updateProfile(params, error -> {
+Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
     if (error != null) {
         // handle the error
     }
@@ -164,24 +156,29 @@ Adapty.updateProfile(params, error -> {
 ```javascript
 import 'package:pushwoosh/pushwoosh.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setPushwooshHWID(
-          await Pushwoosh.getInstance.getHWID,
-        );
+final hwid = await Pushwoosh.getInstance.getHWID;
+
 try {
-    await adapty.updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "pushwoosh_hwid", 
+        value: hwid,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp 
-var builder = new Adapty.ProfileParameters.Builder();
-builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+using AdaptySDK;
 
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    // handle error
+Adapty.SetIntegrationIdentifier(
+  "pushwoosh_hwid", 
+  Pushwoosh.Instance.HWID, 
+  (error) => {
+  // handle the error
 });
 ```
 </TabItem>

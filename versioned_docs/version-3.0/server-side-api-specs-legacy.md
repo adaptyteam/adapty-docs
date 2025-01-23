@@ -14,7 +14,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Server-side API V2](server-side-api-specs#authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+For the latest version, refer to the [Server-side API V2](ss-authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
 
 :::
 
@@ -27,6 +27,13 @@ When calling API:
 - All requests must set header **Content-Type**: application/json
 
 ## Working with customer user ID
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Server-side API V2](ss-authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
+
+:::
 
 Most server-side API requests allow passing `customer_user_id` as a URL parameter. This makes it easy for you to query/update data in Adapty, without having to store Adapty's `profile_id`.  In most cases, you should pass `customer_user_id` as is, without any modifications.
 
@@ -49,6 +56,17 @@ customer_user_id = '012?012' # GET: /profiles/MDEyPzAxMg==/?is_user_id_base64url
 ## Requests
 
 ### Prolong/grant a subscription for a user
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the following requests:
+
+- [Set Transaction](ss-set-transaction): Add transaction details with adding access.
+- [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.
+- [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.
+
+:::
 
 ```text title="Text"
 POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/grant/
@@ -75,9 +93,9 @@ Request parameters:
 | **vendor_transaction_id**          | str           | ❌             | ❌        | <p>Transaction ID in a vendor environment.</p><p>If it is the same as **vendor_original_transaction_id** or if **vendor_original_transaction_id** is absent, Adapty considers it the first subscription purchase. If it differs from **vendor_original_transaction_id**, Adapty considers the purchase the subscription renewal.</p> |
 | **store**                          | str           | ❌             | ❌        | A store where users purchased a product, such as **app\_store** and **play\_store**, can be custom. Default is **adapty** |
 | **introductory_offer_type**        | str           | ❌             | ❌        | A type of introduction offer. Available values are **free\_trial**, **pay\_as\_you\_go**, and **pay\_up\_front**. |
-| **price**                          | float         | ❌             | ❌        | <p>Price of the subscription/purchase to save in [transaction](server-side-api-specs#transaction).</p><p>The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal.</p><p></p><p>If you provide price, provide `price_locale` as well.</p> |
+| **price**                          | float         | ❌             | ❌        | <p>Price of the subscription/purchase to save in [transaction](server-side-api-specs-legacy#transaction).</p><p>The first subscription purchase with a zero price is considered a free trial, while a renewal with a zero price is considered a free subscription renewal.</p><p></p><p>If you provide price, provide `price_locale` as well.</p> |
 | **price_locale**                   | str           | ❌             | ❌        | The currency of the transaction in the [three-letter](https://en.wikipedia.org/wiki/ISO_4217) format. `USD` is used by default. |
-| **proceeds**                       | float         | ❌             | ❌        | Proceeds \(price that is reduced due to stores' fee\) of the subscription/purchase to save in [transaction](server-side-api-specs#transaction). |
+| **proceeds**                       | float         | ❌             | ❌        | Proceeds \(price that is reduced due to stores' fee\) of the subscription/purchase to save in [transaction](server-side-api-specs-legacy#transaction). |
 | **is_sandbox**                     | bool          | ❌             | ❌        | Boolean indicating whether the product was purchased in the sandbox or production environment. |
 
 
@@ -217,6 +235,13 @@ Learn more about responses in the [API Objects](server-side-api-objects) section
 
 ### Revoke subscription from a user
 
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Revoke Access Level](ss-revoke-access-level) request which can both shorten or revoke access without a transaction.
+
+:::
+
 ```text title="Text"
 POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/revoke/
 ```
@@ -277,6 +302,13 @@ Profile events are generated along the way and imported transactions are counted
 
 ### Get info about a user
 
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Get profile](ss-get-profile) request.
+
+:::
+
 ```text title="Text"
 GET: /profiles/{profile_id_or_customer_user_id}/
 ```
@@ -287,7 +319,7 @@ Path parameters:
 | :--------------------------------- | :--- | :------- | :------- | :------------------------------------------- |
 | **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID |
 
-The response example is the same as for [Prolong/grant a subscription for a user](server-side-api-specs#prolonggrant-a-subscription-for-a-user).
+The response example is the same as for [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user).
 
 To get an extended response, add Key **"extended"** with any value to Query Params. It works only for the GET request.
 
@@ -315,6 +347,13 @@ To get an extended response, add Key **"extended"** with any value to Query Para
 
 ### Create a user
 
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Create profile](ss-create-profile) request.
+
+:::
+
 ```text title="Text"
 POST: /profiles/
 ```
@@ -338,6 +377,13 @@ The response is the same as the GET request (**extended** parameter does not wor
 You can also set the user's attributes the same way as in the PATCH method.
 
 ### Set the user's attribute
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Update profile](ss-update-profile) request.
+
+:::
 
 ```text title="Text"
 PATCH: /profiles/{profile_id_or_customer_user_id}/
@@ -383,6 +429,13 @@ Sample request:
 The response is the same as the GET request (**extended** parameter does not work here).
 
 ### Delete user's data
+
+:::warning
+
+**You are viewing the guide for the legacy server-side API.**
+For the latest version, refer to the [Delete profile](ss-delete-profile) request.
+
+:::
 
 ```
 DELETE /profiles/{profile_id_or_customer_user_id}/delete

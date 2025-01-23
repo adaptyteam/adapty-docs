@@ -30,7 +30,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy 
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.1.2')
+    implementation platform('io.adapty:adapty-bom:3.3.0')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
 }
@@ -42,7 +42,7 @@ dependencies {
 ```kotlin 
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.1.2"))
+    implementation(platform("io.adapty:adapty-bom:3.3.0"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
 }
@@ -56,7 +56,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.1.2"
+adaptyBom = "3.3.0"
 
 [libraries]
 ..
@@ -130,6 +130,7 @@ override fun onCreate() {
           .withObserverMode(false) //default false
           .withCustomerUserId(customerUserId) //default null
           .withIpAddressCollectionDisabled(false) //default false
+          .withAdIdCollectionDisabled(false) // default false
           .build()
     )  
 }
@@ -148,6 +149,7 @@ public void onCreate() {
           .withObserverMode(false) //default false
           .withCustomerUserId(customerUserId) //default null
           .withIpAddressCollectionDisabled(false) //default false
+          .withAdIdCollectionDisabled(false) // default false
           .build()
     );
 }
@@ -164,6 +166,7 @@ Configurational options:
 | **observerMode**                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
 | **ipAddressCollectionDisabled** | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| **adIdCollectionDisabled**      | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248). The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
 
 :::note
 **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.

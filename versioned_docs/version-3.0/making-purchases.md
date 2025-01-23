@@ -38,16 +38,16 @@ do {
 
     switch purchaseResult {
         case .userCancelled:
-            // handle the user cancelled purchase
+            // Handle the case where the user canceled the purchase
         case .pending:
-            // handle the pending purchase
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
         case let .success(profile, transaction):
             if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-            // successful purchase
+            // Grant access to the paid features
             }
     }
 } catch {
-    // handle the error
+    // Handle the error
 }
 ```
 
@@ -60,16 +60,16 @@ Adapty.makePurchase(product: product) { result in
     case let .success(purchaseResult):
         switch purchaseResult {
             case .userCancelled:
-                // handle the user cancelled purchase
+                // Handle the case where the user canceled the purchase
             case .pending:
-                // handle the pending purchase
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
             case let .success(profile, transaction):
                 if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-                    // successful purchase
+                    // Grant access to the paid features
                 }
         }
     case let .failure(error):
-        // handle the error
+        // Handle the error
     }
 }
 ```
@@ -81,17 +81,26 @@ Adapty.makePurchase(product: product) { result in
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
-            val info = result.value
-            //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-            val profile = info?.profile
-        
-            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
-                // grant access to premium features
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                        // Grant access to the paid features
+                    }
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // Handle the case where the user canceled the purchase
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // Handle deferred purchases (e.g., the user will pay offline with cash)
+                }
             }
         }
         is AdaptyResult.Error -> {
             val error = result.error
-            // handle the error
+            // Handle the error
         }
     }
 }
@@ -102,20 +111,23 @@ Adapty.makePurchase(activity, product) { result ->
 ```java 
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
-        //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-        AdaptyProfile profile = info != null ? info.getProfile() : null;
-        
-        if (profile != null) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
             AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
-            
+
             if (premium != null && premium.isActive()) {
-                // successful purchase
+                // Grant access to the paid features
             }
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // Handle the case where the user canceled the purchase
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
         }
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
+        // Handle the error
     }
 });
 ```
@@ -129,7 +141,7 @@ try {
     switch (purchaseResult) {
       case AdaptyPurchaseResultSuccess(profile: final profile):
         if (profile.accessLevels['premium']?.isActive ?? false) {
-          // successful purchase
+          // Grant access to the paid features
         }
         break;
       case AdaptyPurchaseResultPending():
@@ -140,26 +152,35 @@ try {
         break;
     }
 } on AdaptyError catch (adaptyError) {
-    // handle the error
+    // Handle the error
 } catch (e) {
-    // handle the error
+    // Handle the error
 }
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
 ```csharp 
-Adapty.MakePurchase(product, (profile, error) => {
-  if(error != null) {
-      // handle error
-      return;
-  }
-  
-  var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
-  if (accessLevel != null && accessLevel.IsActive) {
-      // grant access to features
-  }
-});
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
@@ -170,10 +191,10 @@ try {
   const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
     if (isSubscribed) {
-        // grant access to features in accordance with access level
+        // Grant access to the paid features
     }
 } catch (error) {
-    // handle the error
+    // Handle the error
 }
 ```
 
@@ -192,113 +213,8 @@ Response parameters:
 |---------|-----------|
 | **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
-
-Below is a complete example of making the purchase of the access level `premium`. `Premium` is the default access level, so in most cases, your code will look this way:
-
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
-```swift
-do {
-    let info = try await Adapty.makePurchase(product: product)
-    if info.profile.accessLevels["premium"]?.isActive ?? false {
-        // grant access to premium features
-    }
-} catch {
-    // handle the error
-}
-
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
-Adapty.makePurchase(activity, product) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val info = result.value
-            //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-            val profile = info?.profile
-            
-            if (profile?.accessLevels?.get("premium")?.isActive == true) {
-                // grant access to premium features
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java 
-Adapty.makePurchase(activity, product, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
-        //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-        AdaptyProfile profile = info != null ? info.getProfile() : null;
-        
-        if (profile != null) {
-            AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
-            
-            if (premium != null && premium.isActive()) {
-                // grant access to premium features
-            }
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="Flutter" label="Flutter" default>
-```javascript 
-try {
-  final profile = await Adapty().makePurchase(product: product);
-  if (profile?.accessLevels['premium']?.isActive ?? false) {
-        // grant access to premium features      
-  }
-} on AdaptyError catch (adaptyError) {
-    // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="Unity" label="Unity" default>
-```csharp 
-Adapty.MakePurchase(product, (profile, error) => {
-  if(error != null) {
-      // handle error
-      return;
-  }
-  
-  // "premium" is an identifier of default access level
-  var accessLevel = profile.AccessLevels["premium"];
-  if (accessLevel != null && accessLevel.IsActive) {
-      // grant access to premium features
-  }
-});
-```
-</TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
-```typescript 
-try {
-    const profile = await adapty.makePurchase(product);
-    const isSubscribed = profile?.accessLevels['premium']?.isActive;
-  
-    if (isSubscribed) {
-        // grant access to premium features
-    }
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-</Tabs>
-
 :::warning
-**Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-shared-secret) instead. This method is currently deprecated by Apple.
+**Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
 :::
 
 ## Change subscription when making a purchase
@@ -316,15 +232,25 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     when (result) {
         is AdaptyResult.Success -> {
-            val info = result.value
-            //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-            val profile = info?.profile
-            
-            // successful cross-grade
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+
+                    // successful cross-grade
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // user canceled the purchase flow
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // the purchase has not been finished yet, e.g. user will pay offline by cash
+                }
+            }
         }
         is AdaptyResult.Error -> {
             val error = result.error
-            // handle the error
+            // Handle the error
         }
     }
 }
@@ -341,14 +267,20 @@ Additional request parameter:
 ```java 
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
-        //NOTE: info is null in case of cross-grade with DEFERRED proration mode
-        AdaptyProfile profile = info != null ? info.getProfile() : null;
-        
-        // successful cross-grade
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+
+            // successful cross-grade
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // user canceled the purchase flow
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
+        // Handle the error
     }
 });
 ```
@@ -370,9 +302,9 @@ try {
   
   // successful cross-grade
 } on AdaptyError catch (adaptyError) {
-  // handle the error
+  // Handle the error
 } catch (e) {
-  // handle the error
+  // Handle the error
 }
 ```
 Additional request parameter:
@@ -387,7 +319,7 @@ Additional request parameter:
 ```csharp 
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
-      // handle error
+      // Handle the error
       return;
   }
   
@@ -413,7 +345,7 @@ try {
         // grant access to premium features
     }
 } catch (error) {
-    // handle the error
+    // Handle the error
 }
 ```
 Additional request parameter:
@@ -459,7 +391,32 @@ Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a
 Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
+
+<TabItem value="Flutter" label="Flutter" default>
+
+```javascript
+try {
+  await Adapty().presentCodeRedemptionSheet();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem> 
+
+<TabItem value="Unity" label="Unity" default>
+
+```csharp
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
+</TabItem>
+
 <TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript 
 adapty.presentCodeRedemptionSheet();
 ```

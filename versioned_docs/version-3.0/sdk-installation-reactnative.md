@@ -24,6 +24,7 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 2.11.2             | 2.11.0           |
 | 2.11.3             | 2.11.1           |
 | 3.0.1              | 3.0.0-3.0.1      |
+| 3.1.0              | 3.1.0            |
 
 :::danger
 Go through release checklist before releasing your app
@@ -184,7 +185,7 @@ Activation parameters:
 | **customerUserId** | optional | <p>An identifier of a user in your system. We send it with subscription and analytical events, so we can match events to the right user profile. You can also find customers using the `customerUserId` in the [Profiles](profiles-crm)  section.</p><p></p><p>If you don't have a user ID when you start with Adapty, you can add it later using the `adapty.identify()` method. For more details, see the [Identifying users](identifying-users)  section.</p> |
 | **logLevel** | optional | A string parameter that makes Adapty record errors and other important information to help you understand what's happening. |
 | **\_\_debugDeferActivation** | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**. |
-| **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
 | **idfaCollectionDisabled** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section. |
 
 

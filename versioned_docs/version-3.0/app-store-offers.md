@@ -12,9 +12,8 @@ Offers in the App Store are special deals or discounts provided by these platfor
 With iOS 13 Apple released [Promotional offers](https://developer.apple.com/documentation/storekit/in-app_purchase/subscriptions_and_offers/implementing_promotional_offers_in_your_app) as a way to promote your users to subscribe. Adapty supports Subscription offers.
 
 :::note
-To use promotional offers, you have to [upload subscription key](app-store-promotional-offers) to Adapty dashboard, so Adapty can sign the offers.
+To use promotional offers, you have to [upload subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) to Adapty dashboard, so Adapty can sign the offers.
 :::
-
 
 <Zoom>
   <img src={require('./img/646799a-CleanShot_2023-07-25_at_15.14.112x.webp').default}

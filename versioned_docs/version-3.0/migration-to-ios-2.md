@@ -15,7 +15,7 @@ First, let's look at the main things that have been changed, and then let's disc
 - [Paywalls](#paywalls) – now you can get only the necessary paywall.
 - [Products](#products) – we separated the concept of paywall and product, so now the developer first asks for the paywall they want, and then the corresponding product array.
 - [Fallback Paywalls](#fallback-paywalls) – `.setFallbackPaywalls` method now accepts `Data` type as a parameter.
-- [Promotional offers](#promotional-offers) – we removed the `offerId` parameter from `.makePurchase` method.
+- [Promotional offers](#promotional_offers) – we removed the `offerId` parameter from `.makePurchase` method.
 - [Introductory offer eligibility](#introductory-offer-eligibility) – instead of true/false we give an extended list of options.
 - [Products Fetch Policy](#products-fetch-policy) – we have added the ability to explicitly get products after we send the receipt to our servers.
 - [Logging](#logging) – We redesigned the logging module so that you can integrate your systems into it and use the logs as you see fit.
@@ -179,7 +179,7 @@ Adapty.makePurchase(paywall: paywall, product: product) { result in
 ```
 
 :::warning
-Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-promotional-offers) in Adapty Dashboard when using promotional offers.
+Adapty signs the request according to Apple guidelines, please make sure you've uploaded [Subscription Key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) in Adapty Dashboard when using promotional offers.
 :::
 
 ### Introductory offer eligibility
@@ -284,3 +284,9 @@ In this article, we have listed the most significant changes introduced in the n
 You can find the complete list of changes on the [release page](https://github.com/adaptyteam/AdaptySDK-iOS/releases/tag/2.0.2). 
 
 Stay tuned for more updates!
+
+---
+
+**What's next:**
+
+- [Migrate to Adapty SDK 3.0.x](migration-to-adapty-sdk-v3)

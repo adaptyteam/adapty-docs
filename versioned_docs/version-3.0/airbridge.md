@@ -105,7 +105,7 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `updateProfile` as it is shown in the example below: 
 
-<Tabs>
+<Tabs groupId="airbridge">
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift 
 import AirBridge
@@ -124,10 +124,7 @@ do {
 ```kotlin 
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
-        val params = AdaptyProfileParameters.Builder()
-            .withAirbridgeDeviceId(result)
-            .build()
-        Adapty.updateProfile(params) { error ->
+        Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -142,16 +139,18 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
 ```javascript
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
-final builder = AdaptyProfileParametersBuilder()
-        ..setAirbridgeDeviceId(
-          await Airbridge.state.deviceUUID,
-        );
+final deviceUUID = await Airbridge.state.deviceUUID;
 
 try {
-    await Adapty().updateProfile(builder.build());
+    await Adapty().setIntegrationIdentifier(
+        key: "airbridge_device_id", 
+        value: deviceUUID,
+    );
 } on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {}
+    // handle the error
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
