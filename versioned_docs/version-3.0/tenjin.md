@@ -288,7 +288,18 @@ Adapty.UpdateAttribution(
 <!--- <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript 
-...
+import { adapty } from 'react-native-adapty';
+import Tenjin from 'react-native-tenjin';
+
+// ...
+const posthog = usePostHog()
+
+// ...
+try {
+  await adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", await Tenjin.getAnalyticsInstallationId());
+} catch (error) {
+  // handle `AdaptyError`
+}
 ```
 
 </TabItem> --->
