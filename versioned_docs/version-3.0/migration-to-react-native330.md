@@ -7,7 +7,7 @@ metadataTitle: ""
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty SDK 3.3.0 is a major release that brought some improvements which however may require some migration steps from you.
+Adapty SDK 3.3.0 is a major release that brought some improvements that may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
 2. Renamings
@@ -23,13 +23,13 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 
 ## Upgrade Adapty React Native SDK to 3.3.x
 
-Up to this version, Adapty SDK was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
+Up to this version, Adapty SDK (`react-native-adapty` ) was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK (`@adapty/react-native-ui`) was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
 
-Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged into Adapty SDK as a module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
+Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged into Adapty SDK. Because of this, the following steps are required to upgrade to version 3.3.0:
 
-1. Remove both **AdaptySDK** and **AdaptyUISDK** package dependencies from your project.
-2. Delete the **AdaptySDK** and **AdaptyUISDK** folders.
-3. Import the AdaptySDK package again as described in the [Adapty SDK installation & configuration for React Native](sdk-installation-reactnative) page.
+1. Change the `react-native-adapty` version to 3.3.0.
+2. Remove `@adapty/react-native-ui` package dependency from your project.
+3. Sync the dependencies.
 
 ## Renamings
 
@@ -49,8 +49,6 @@ The parameter used to manage custom timers is renamed:
 
 1. `AdaptyPaywallProduct`: 
    optional property `subscriptionDetails` is renamed to `subscription`.
-
-
 
     ```diff
     -  subscriptionDetails?: AdaptySubscriptionDetails; 
