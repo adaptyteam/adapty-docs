@@ -28,8 +28,6 @@ Before version 3.3.0, `react-native-adapty` SDK served as the core and mandatory
 
 As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its functionality has been merged into the `react-native-adapty` SDK. To upgrade to version 3.3.0, follow these steps:
 
-Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged into Adapty SDK. Because of this, the following steps are required to upgrade to version 3.3.0:
-
 1. Update the `react-native-adapty` package to version 3.3.0.
 2. Remove the `@adapty/react-native-ui` package from your project dependencies.
 3. Sync your project dependencies to apply the changes.
@@ -45,17 +43,21 @@ Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged 
 1. `AdaptyPaywallProduct`
    - Renamed the `subscriptionDetails` property to `subscription`.
 
+   <p> </p>
+   
     ```diff
     -  subscriptionDetails?: AdaptySubscriptionDetails; 
     +  subscription?: AdaptySubscriptionDetails;
     ```
-
+   
 2. `AdaptySubscriptionDetails`
-   1. `promotionalOffer` moved to the `offer` field.
-   1. The offer type now uses `AdaptySubscriptionOfferId`.
-   1. `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
-   1. `offerId` is now in `AdaptySubscriptionOffer.identifier`.
-   1. `offerTags` moved to `AdaptySubscriptionOffer.android`.
+   - `promotionalOffer` moved to the `offer` field.
+   - The offer type now uses `AdaptySubscriptionOfferId`.
+   - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
+   - `offerId` is now in `AdaptySubscriptionOffer.identifier`.
+   - `offerTags` moved to `AdaptySubscriptionOffer.android`.
+   
+   <p> </p>
 
 
     ```diff
@@ -79,6 +81,8 @@ Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged 
 3. `AdaptyDiscountPhase`:
    
    - The `identifier` field is now in `AdaptySubscriptionOffer.identifier`.
+   
+   <p> </p>
    
     ```diff
     -  ios?: {
