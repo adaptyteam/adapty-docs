@@ -28,7 +28,7 @@ Bundle ID is the unique identifier of your app in the App Store. This is require
 The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Connect, is a special ID that identifies the issuer who created the authentication token. The **In-App Purchase Key ID**, referred to as **Key ID** in App Store Connect, is a unique identifier associated with a cryptographic key you've generated in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.  
 
 1. Open **App Store Connect**. Proceed to [**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs) section.
-2. In the **Active **list, find the key you've created in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.
+2. In the **Active** list, find the key you've created in the [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key) section.
 
    
 

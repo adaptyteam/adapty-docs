@@ -106,7 +106,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
 
 
-5. Press "Add endpoint" and then press "Reveal" under the "Signing secret". This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
+5. Click **Add endpoint** and then click **Reveal** under **Signing secret**. This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
 
    
 
@@ -124,7 +124,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
 
 
-6. Finally, paste this key into Adapty's App Settings → Stripe under "Stripe Webhook Secret":
+6. Finally, paste this key into Adapty's **App Settings** → → [**Stripe**](https://app.adapty.io/settings/stripe) under **Stripe Webhook Secret**:
 
    
 

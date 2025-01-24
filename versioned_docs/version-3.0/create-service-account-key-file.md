@@ -9,8 +9,14 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 To link your mobile app on the Play Store with Adapty, you'll need to generate special service account key files in the Google Play Console and upload them to Adapty. These files help secure your app and prevent unauthorized access.
 
-:::warning
-It usually takes at least 24 hours for your new service account to become active. However, there's a [hack](https://stackoverflow.com/a/60691844). After creating the service account in the [Google Play Console](https://play.google.com/apps/publish/), open any application and navigate to **Monetize** -> **Products** -> **Subscriptions/In-app products**. Edit the description of any product and save the changes. This should activate the service account immediately, and you can revert the changes afterward.
+:::tip
+
+Before you start creating the service file, make sure you made these steps in Google Play Console and Google Cloud Console:
+
+1. [Enable Developer APIs in Google Play Console](enabling-of-developer-api)
+2. [Create service account in the Google Cloud Console](create-service-account)
+3. [Grant permissions to service account in the Google Play Console](grant-permissions-to-service-account)
+
 :::
 
 1. Open the [**Service accounts**](https://console.cloud.google.com/iam-admin/serviceaccounts) section in the Google Play Console. Ensure you’ve selected the correct project.  

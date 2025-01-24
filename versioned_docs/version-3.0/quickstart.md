@@ -9,24 +9,38 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty
+We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty.
 
-### Creating a project and registering an application
+Once you create an account in Adapty and provide your mobile app name and category, we automatically set up your project and your first app for you within our Adapty platform. The Onboarding tour leads you through the whole initial configuration in the Adapty Dashboard. If that is your case, you can partially skip the instructions and proceed with [Step 3. Creating product section](quickstart#step-3-creating-a-product).
 
-Create a new application in Adapty that will represent the real application you want to manage in Adapty. To do so:
+If you already have a project and wanna add one more app, start with [Step 1. Creating a project and registering an application](quickstart#step-1-creating-a-project-and-registering-an-application).
 
-1. In the **App Settings** menu in the right-top corner of Adapty, open the [General](general) tab. 
-2. After the **General** tab opens, enter the name of the application, its category, and the reporting time zone.
-3. You can configure other application settings. Mandatory settings are marked as **Required**.
+## Step 1. Creating a project and registering an application
 
-Settings are saved automatically.
+1. Click the name of your existing app at the top of the Adapty Dashboard and click **Add a new app**.
 
-### Configuring platforms
+
+<img
+  src={require('./img/add_new_app.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+
+2. Enter the app's name and category. Add logo icon if you want. Click **Add a new app**.
+
+Your new app is created and you are in the **App Settings** window where you configure the connection with app stores to validate purchases and get subscription updates from app stores in Adapty.
+
+## Step 2. Configuring platforms
 
 Configure SDKs to validate purchases and get subscription updates from one or both platforms in Adapty.
 
-**App Store configuration**  
-In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/settings/ios-sdk)_ and fill in the fields using the instructions below. 
+### Step 2.1. App Store configuration
+
+In the Adapty Dashboard, go to **App settings** >[ **iOS SDK**](https://app.adapty.io/settings/ios-sdk) and fill in the fields using the instructions below. 
 
 <Zoom>
   <img src={require('./img/qs.webp').default}
@@ -39,12 +53,21 @@ In Adapty Dashboard, go to _App settings >[ iOS SDK](https://app.adapty.io/setti
 />
 </Zoom>
 
-To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.com/), go to **My Apps**, and select the app whose ID you need. On the app page, in the drop-down **More** menu, select **About this App**. The app ID is displayed in the **Bundle ID** field.  
-– [How to connect to In-App Purchase API?](generate-in-app-purchase-key)  
-– [How to set URL for App Store Server Notifications? **→**](enable-app-store-server-notifications)
+1. Enter **Bundle ID**
+   
+   To find App Bundle ID, open [App Store Connect](https://appstoreconnect.apple.com/apps). Select your app and proceed to **General** → **App Information** section. Locate the **Bundle ID** in the **General Information** sub-section.
+2. Enter **Issuer ID**, **Key ID**, **Subscription Key ID**, and upload the key file to **Private key (.p8 file)** and **Subscription (.p8 file)** fields. 
+   
+   [Where to take the IDs and key files?](generate-in-app-purchase-key) 
+3. Set the URL for **App Store Server Notifications**
+   
+   Paste the URL from the Adapty Dashboard into the **Production Server URL** and **Sandbox Server URL** fields in the [App Store Connect](https://appstoreconnect.apple.com/apps) → **General** → **App Information** section, **App Store Server Notifications** subsection.
 
-**Play Store configuration**  
-Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_ and fill in the fields.
+If you need more detailed instructions on how to configure your app connection in Adapty and the App Store, see the [Initial integration with the App Store](initial_ios) section.
+
+### Step 2.2. Play Store configuration
+
+In Adapty Dashboard, go to **App settings** > [**Android SDK**](https://app.adapty.io/settings/android-sdk) and fill in the fields using the instructions below.
 
 <Zoom>
   <img src={require('./img/qs-Android_store_configuration.webp').default}
@@ -57,16 +80,26 @@ Go to _App settings > [Android SDK](https://app.adapty.io/settings/android-sdk)_
 />
 </Zoom>
 
-To find Package Name, open the [Google Play Developer Console](https://play.google.com/console/u/0/developers) and select the app whose ID you need. The ID is specified next to the app's name and logo.  
-– [Where to find Service account key file? **→** ](create-service-account)  
-– [Where to find Real-time Developer Notifications (RTDN)? **→**](enable-real-time-developer-notifications-rtdn) 
+1. Enter your app's **Package Name**.
 
-### Creating a product
+   Open the [Google Play Developer Console](https://play.google.com/console/u/0/developers) and select the app whose ID you need. The ID is specified next to the app's name and logo in the **Dashboard** window.
 
-**[Add Access Level](access-level) (optional)** 
+2. Upload the **Service account key file**
+
+   [Where to take the service account key file?](create-service-account-key-file)
+
+3. Set the URL for **Google Play RTDN topic name**
+
+   Paste the URL from the Adapty Dashboard into the **Topic name** field in the [Google Play Console](https://play.google.com/console/) → choose your app → **Monetize** → **Monetization setup** → **Google Play Billing** section.
+
+If you need more detailed instructions on how to configure your app connection in Adapty and the Google Play Store, see the [Initial integration with the Google Play Store](initial-android) section.
+
+### Stripe Store configuration
+
+If you sell your products via Strip, set up the connection with it in the **App Settings** → [**Stripe**](https://app.adapty.io/settings/stripe).
 
 <Zoom>
-  <img src={require('./img/qs-Access_Levels.webp').default}
+  <img src={require('./img/qs-stripe.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,7 +109,21 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 />
 </Zoom>
 
-**Add [product](product)** 
+1. Enter your app's **Stripe Secret API Key**, separate for **Production** and **Sandbox**
+
+   Open Stripe [Developers → API Keys](https://dashboard.stripe.com/apikeys), the key is specified in the **Secret key** field.
+
+2. Set the **Webhook URL**s
+
+   Copy **Webhook URL**s in the Adapty Dashboard and paste them into the **Endpoint URL** field in  [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe. [What events should I send to the webhook?](stripe#1-connect-stripe-to-adapty)
+
+3. Enter **Webhook Signing secret**
+
+   Find it in the Signing secret column of [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe.
+
+If you need more detailed instructions on how to configure your app connection in Adapty and the Stripe, see the [Stripe integration](stripe) section.
+
+## Step 3. Creating a product
 
 <Zoom>
   <img src={require('./img/qs-Product.webp').default}
@@ -89,7 +136,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 />
 </Zoom>
 
-### Setting up a paywall to show in the app
+## Step 4. Setting up a paywall to show in the app
 
 **Create a [paywall](paywalls) with this product** 
 
@@ -126,7 +173,7 @@ To find Package Name, open the [Google Play Developer Console](https://play.goog
 
 
 
-### Installing Adapty SDK
+## Step 5. Installing Adapty SDK
 
 [Install and configure Adapty SDK](installation-of-adapty-sdks) in your app and be sure you have replaced the **"PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
 
@@ -137,11 +184,11 @@ Follow these guides for more info on:
 - [Displaying paywalls & products](display-pb-paywalls)
 - [Setting up fallback paywalls](use-fallback-paywalls)
 
-### Configuring processing of purchases
+## Step 6. Configuring processing of purchases
 
 Connecting Adapty to  **In-App Purchase API** for [iOS](app-store-connection-configuration) and adding both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be necessary to allow Adapty to successfully process purchasing events.
 
-### Subscription events
+## Step 7. Subscription events
 
 Here is what you can do to set up tracking of subscription events
 
@@ -150,7 +197,7 @@ Here is what you can do to set up tracking of subscription events
 | **For iOS**     | **Update the App Store Server Notifications with our [link](enable-app-store-server-notifications)** |
 | **For Android** | **Set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)** |
 
-### Integrations
+## Step 8. Integrations
 
 [Integrations](events) with third-party analytics and attribution services require [passing identifiers](analytics-integration) to the SDK. 
 
