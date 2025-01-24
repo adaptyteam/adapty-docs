@@ -173,6 +173,8 @@ Change the **Domain restricted contacts** and **Domain restricted sharing** poli
 
 Finally, recreate the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title. The field will now have the correct format.
 
+Make sure to switch the **Policy source** back to **Inherit parent's policy** for the updated policies once you've successfully enabled Real-time Developer Notifications (RTDN).
+
 ---
 
 **What's next**
