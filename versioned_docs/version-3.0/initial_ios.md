@@ -21,10 +21,6 @@ Integrating Adapty into your mobile app involves establishing connections betwee
   - [ ] [Install Adapty SDKs for native iOS](sdk-installation-ios)
 - [ ] Build your application and run it in sandbox mode.
 
-:::warning
-Adapty SDK v3.0 is now available for iOS only. For installation guidance on Flutter, React Native, and Unity, see [Installation of Adapty SDKs v.2](installation-of-adapty-sdks).
-:::
-
 After the initial integration is complete, you [can begin using Adapty's features](product). 
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](display-pb-paywalls) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.

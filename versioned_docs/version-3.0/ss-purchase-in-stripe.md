@@ -15,7 +15,7 @@ Profile events are generated along the way and imported transactions are counted
 ## Method and endpoint
 
 ```http
-POST https://api.adapty.io/api/v2/server-side-api/purchase/stripe/token/validate/
+POST https://api.adapty.io/api/v1/server-side-api/purchase/stripe/token/validate/
 ```
 
 :::warning
