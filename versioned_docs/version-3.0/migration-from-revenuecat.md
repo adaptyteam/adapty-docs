@@ -137,7 +137,7 @@ Go through [release checklist](release-checklist)
 Make the final check using our list to validate the existing integration or add additional features such as [attribution](attribution-integration) or [analytics](analytics-integration) integrations.
 :::
 
-### (Optional) Ask RevenueCat support for historical data in CSV format
+### (Optional) Export your RevenueCat historical data  in CSV format
 
 :::warning
 Don't rush the historical data import
@@ -145,27 +145,73 @@ Don't rush the historical data import
 You should wait for at least a week after the release with the SDK before doing historical data import. During that time we will get all the info about purchase prices from the SDK, so the data you import will be more relevant.
 :::
 
-Ask RevenueCat about the historical data on their [support page](https://app.revenuecat.com/settings/support). For the file format reference, check this page: [Importing Historical Data to Adapty](importing-historical-data-to-adapty). Also, you can use this [Google Sheets file](https://docs.google.com/spreadsheets/d/162LMI9D7-BP63Jkllj2AtpaD7FQFa0-V-Yht1U65Ojs/edit#gid=70701724).
+Export your historical data from RevenueCat in CSV format by following the instructions in [RevenueCat’s official documentation](https://www.revenuecat.com/docs/integrations/scheduled-data-exports)
 
+### (Optional) Ask RevenueCat support for Google Purchase Tokens
 
-<Zoom>
-  <img src={require('./img/2bce57f-CleanShot_2022-03-16_at_15.40.072x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+If you need to import Google Play transactions, contact RevenueCat support for a CSV file containing Google Purchase Tokens via their [support page](https://app.revenuecat.com/settings/support). The Google Purchase Token is a unique identifier provided by Google Play for each transaction, essential for accurately tracking and verifying purchases in Adapty. This information is not included in the standard export file. The file usually contains the following three columns:
 
-
-
-
+- `user_id`
+- `google_purchase_token`
+- `google_product_id`
 
 ### Write us to import your historical data
 
-Contact us using the website messenger or just email us at [support@adapty.io](mailto:support@adapty.io) with your CSV file.
+Contact us via the website messenger or email us at [support@adapty.io](mailto:support@adapty.io) with your CSV files.
+
+1. Send the CSV file you exported from RevenueCat directly to our support team.
+2. If importing Google Play transactions, include the CSV file with Google Purchase Tokens that you received from RevenueCat support.
+3. Let us know which user ID should be used as the Customer User ID (Adapty’s primary user identifier): `rc_original_app_user_id` or `rc_last_seen_app_user_id_alias`.
+
+Our Support Team will import your transactions to Adapty. The following data will imported to Adapty for every transaction:
+
+| Parameter                     | Description                                                  | RC                                                        |
+| ----------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| user_id                       | Customer User Id, the main user identifier in Adapty, the identificator of the user in your system | rc_original_app_user_id OR rc_last_seen_app_user_id_alias |
+| apple_original_transaction_id | For subscription chains, this is the purchase date of the original transaction, linked by `store_original_transaction_id`. | original_store_transaction_id (when store = app_store)    |
+| google_product_id             | ID of the product in the Google Play store.                  | product_identifier                                        |
+| google_purchase_token         | The Google Purchase Token is a unique identifier provided by Google Play for each transaction required to validate it. | N/A as part of ETL export, only through support           |
+| country                       | Country of the transaction                                   | country                                                   |
+| created_at                    | The datetime of teh transaction                              | first_seen_time                                           |
+| subscription_expiration_date  | The datetime when the subscription expires.                  | effective_end_time                                        |
+| email                         |                                                              | reserved_subscriber_attributes -> $email                  |
+| phone_number                  |                                                              | reserved_subscriber_attributes -> $phoneNumber            |
+| idfa                          |                                                              | reserved_subscriber_attributes -> $idfa                   |
+| idfv                          |                                                              | reserved_subscriber_attributes -> $idfv                   |
+| advertising_id                |                                                              | reserved_subscriber_attributes -> $gpsAdId                |
+| last_seen                     |                                                              | N/A                                                       |
+| birthday                      |                                                              | N/A                                                       |
+| gender                        |                                                              | N/A                                                       |
+| first_name                    |                                                              | N/A                                                       |
+| last_name                     |                                                              | N/A                                                       |
+|                               |                                                              |                                                           |
+| INTEGRATIONS                  |                                                              |                                                           |
+| amplitude_user_id             |                                                              | reserved_subscriber_attributes -> $amplitudeUserId        |
+| amplitude_device_id           |                                                              | reserved_subscriber_attributes -> $amplitudeDeviceId      |
+| mixpanel_user_id              |                                                              | reserved_subscriber_attributes -> $mixpanelDistinctId     |
+| appsflyer_id                  |                                                              | reserved_subscriber_attributes -> $appsflyerId            |
+| adjust_device_id              |                                                              | reserved_subscriber_attributes -> $adjustId               |
+| facebook_anonymous_id         |                                                              | reserved_subscriber_attributes -> $fbAnonId               |
+| appmetrica_profile_id         |                                                              | N/A                                                       |
+| appmetrica_device_id          |                                                              | N/A                                                       |
+| branch_id                     |                                                              | N/A                                                       |
+|                               |                                                              |                                                           |
+| ATTRIBUTION                   |                                                              |                                                           |
+| attribution_source            |                                                              | N/A                                                       |
+| attribution_status            |                                                              | N/A                                                       |
+| attribution_channel           |                                                              | reserved_subscriber_attributes -> $mediaSource            |
+| attribution_campaign          |                                                              | reserved_subscriber_attributes -> $campaign               |
+| attribution_ad_group          |                                                              | reserved_subscriber_attributes -> $adGroup                |
+| attribution_ad_set            |                                                              | reserved_subscriber_attributes -> $ad                     |
+| attribution_creative          |                                                              | reserved_subscriber_attributes -> $creative               |
+
+- original_store_transaction_id (for App Store transactions only)
+- product_identifier
+- country
+- first_seen_time
+- 
+
+
 
 ### FAQ
 
@@ -173,10 +219,10 @@ Contact us using the website messenger or just email us at [support@adapty.io](m
 
 Most users charge their phones overnight, it's when the App Store usually auto-updates all their apps, so it shouldn't be a problem. There may still be a small number of paid subscribers who did not upgrade, but they will still have access to the premium content. You don't need to worry about it and force them to update.
 
-#### Do I need to request historical data from RevenueCat as quickly as possible, or will I lose it?
+#### Do I need to export my historical data from RevenueCat as quickly as possible, or will I lose it?
 
 You don't need to make it super fast; make a release with Adapty SDK first, and then give us your historical data. We will restore the history of your users' payments and fill in [profiles](profiles-crm) and [charts](charts).
 
 #### I use MMP (AppsFlyer, Adjust, etc.) and analytics (Mixpanel, Amplitude, etc.). How do I make sure that everything will work?
 
-You first need to pass us the IDs of such 3rd party services via our SDK that you want us to send data to. Read the guide for [attribution integration](attribution-integration) and for [analytics integration](analytics-integration). For historical data and legacy users, **make sure you pass us those IDs from the data export you asked for from RevenueCat.**
+You first need to pass us the IDs of such 3rd party services via our SDK that you want us to send data to. Read the guide for [attribution integration](attribution-integration) and for [analytics integration](analytics-integration). For historical data and legacy users, **make sure you pass us those IDs from the data you exported from RevenueCat.**
