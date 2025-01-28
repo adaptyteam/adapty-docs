@@ -265,7 +265,12 @@ try {
   if (adid == null) {
     // handle the error
   }
-
+  
+  await Adapty().setIntegrationIdentifier(
+    key: "adjust_device_id", 
+    value: adid,
+  );
+    
   final attributionData = await Adjust.getAttribution();
 
   var attribution = Map<String, String>();
@@ -281,11 +286,9 @@ try {
   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
 
-  Adapty().updateAttribution(
-    attribution,
-    source: AdaptyAttributionSource.adjust,
-    networkUserId: adid,
-  );
+  await Adapty().updateAttribution(attribution, source: "adjust");
+} on AdaptyError catch (adaptyError) {
+  // handle the error
 } catch (e) {
   // handle the error
 }

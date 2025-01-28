@@ -11,13 +11,13 @@ Adapty SDK 3.3.0 is a major release that brought some improvements that may requ
 
 1. Upgrade to Adapty SDK v3.3.x.
 2. Update models.
-3. Update Paywall Builder paywall presentation.
-4. Revise the developer-defined timer implementation.
-5. Update handling of Paywall Builder purchase events.
-6. Update handling of Paywall Builder custom action events.
-7. Modify the `onProductSelected` callback.
-8. Remove the `getProductsIntroductoryOfferEligibility` method.
-9. Update making purchase.
+3. Remove the `getProductsIntroductoryOfferEligibility` method.
+4. Update making purchase.
+5. Update Paywall Builder paywall presentation.
+6. Revise the developer-defined timer implementation.
+7. Update handling of Paywall Builder purchase events.
+8. Update handling of Paywall Builder custom action events.
+9. Modify the `onProductSelected` callback.
 10. Remove third-party integration parameters from the `updateProfile` method.
 11. Update integration configurations for Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, and Pushwoosh.
 12. Update Observer mode implementation.
@@ -36,13 +36,34 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### New models
 
-- The `AdaptySubscriptionOffer` model has been introduced. Refer to interactive documentation for details.
+1. `AdaptySubscriptionOffer`
+
+```typescript
+export interface AdaptySubscriptionOffer {
+  readonly identifier: AdaptySubscriptionOfferId;
+
+  phases: AdaptyDiscountPhase[];
+
+  android?: {
+    offerTags?: string[];
+  };
+}
+```
+
+2. `AdaptySubscriptionOfferId`
+
+```typescript
+export type AdaptySubscriptionOfferId =
+  | { id?: string; type: 'introductory'; }
+  | { id: string; type: 'promotional' | 'win_back'; };
+```
 
 ### Changed models
 
 1. `AdaptyPaywallProduct`
+   
    - Renamed the `subscriptionDetails` property to `subscription`.
-
+   
    <p> </p>
    
     ```diff
@@ -51,11 +72,10 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
     ```
    
 2. `AdaptySubscriptionDetails`
-   - `promotionalOffer` moved to the `offer` field.
-   - The offer type now uses `AdaptySubscriptionOfferId`.
+   - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
    - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
-   - `offerId` is now in `AdaptySubscriptionOffer.identifier`.
-   - `offerTags` moved to `AdaptySubscriptionOffer.android`.
+   - `offerId` is removed. Offer ID is now stored in `AdaptySubscriptionOffer.identifier`.
+   - `offerTags` is moved to `AdaptySubscriptionOffer.android`.
    
    <p> </p>
 
@@ -89,6 +109,41 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
     -    readonly identifier?: string;
     -  };
     ```
+
+## Remove `getProductsIntroductoryOfferEligibility` method
+
+Before Adapty iOS SDK 3.3.0, product objects always included offers, even if the user wasn’t eligible. This required you to manually check eligibility before using the offer.
+
+Starting with version 3.3.0, the product object includes offers only if the user is eligible. This simplifies the process, as you can assume the user is eligible if an offer is present.
+
+## Update making purchase
+
+In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
+
+Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
+
+```typescript title="React Native (TSX)"
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
 
 ## Update Paywall Builder paywall presentation
 
@@ -180,46 +235,11 @@ The `onAction` и `onCustomEvent` callbacks are replaced by `onCustomAction(acti
 
 Previously, `onProductSelected` required the `product` object. Now requires `productId` as a string.
 
-## Remove `getProductsIntroductoryOfferEligibility` method
-
-Before Adapty iOS SDK 3.3.0, product objects always included offers, even if the user wasn’t eligible. This required you to manually check eligibility before using the offer.
-
-Starting with version 3.3.0, the product object includes offers only if the user is eligible. This simplifies the process, as you can assume the user is eligible if an offer is present.
-
-## Update making purchase
-
-In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
-
-Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
-
-```typescript title="React Native (TSX)"
-try {
-    const purchaseResult = await adapty.makePurchase(product);
-    switch (purchaseResult.type) {
-      case 'success':
-        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
-
-        if (isSubscribed) {
-          // Grant access to the paid features
-        }
-        break;
-      case 'user_cancelled':
-        // Handle the case where the user canceled the purchase
-        break;
-      case 'pending':
-        // Handle deferred purchases (e.g., the user will pay offline with cash)
-        break;
-    }
-} catch (error) {
-    // Handle the error
-}
-```
-
 ## Remove third-party integration parameters from `updateProfile` method
 
 Third-party integration identifiers are now set using the `setIntegrationIdentifier` method. The `updateProfile` method no longer accepts them.
 
-## Update 3d-party integration SDK configuration
+## Update third-party integration SDK configuration
 
 To ensure integrations work properly with Adapty Flutter SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
