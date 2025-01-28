@@ -18,7 +18,6 @@ The request failed because the format of the `visited_at` field is incorrect. Us
         {
             "source": "visited_at",
             "errors": [
-                "invalid datetime format",
                 "invalid datetime format"
             ]
         }
