@@ -14,7 +14,7 @@ import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.m
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 
-Adapty assists you in measuring the performance of your paywalls. However, logging paywall views needs your input because only you know when a customer sees a paywall. Use this request to log a paywall view.
+Adapty can help you measure the conversion of your paywalls. However, to do so, it is required for you to log when a paywall gets shown — without that we'd only know about the users who made a purchase and we'd miss those who did not. Use this request to log a paywall view.
 
 ## Endpoint and method
 
