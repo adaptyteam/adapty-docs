@@ -167,7 +167,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 | Parameter                     | Type          | Required in request | Nullable in request    | Description                                                  |
 | :---------------------------- | :------------ | :------------------ | :--------------------- | :----------------------------------------------------------- |
 | purchase_type                 | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | The type of product purchased. Possible value: `subscription`. |
-| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Store where the product was bought. Options include **app_store**, **play_store**, **stripe**, or the name of your [custom store](initial-custom). |
+| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Store where the product was bought. Options include **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store). |
 | environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:     | Environment where the transaction took place. Options are `Sandbox` or `Production`. |
 | store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | ID of the product in the app store (like App Store, Google Play, Stripe) that unlocked this access level. |
 | store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
