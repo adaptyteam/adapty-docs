@@ -9,8 +9,8 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 import VariationIdNotFound from '@site/src/components/reusable/VariationIdNotFound.md';
-import InvalidDateFormat from '@site/src/components/reusable/InvalidDateFormat.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
+import ParseError from '@site/src/components/reusable/ParseError.md';
 
 Receives the paywall from the provided placement.
 
@@ -138,7 +138,7 @@ The successful response will contain the [Paywall](web-api-objects#paywall-objec
 
 ### 400 - Bad Request
 
-<InvalidDateFormat />
+<ParseError />
 
 ### 401 - Unauthorised
 
