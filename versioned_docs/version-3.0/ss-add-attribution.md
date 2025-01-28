@@ -14,7 +14,7 @@ import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileRe
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnumerationMember.md';
 
-Adds attribution data to a profile.
+Adds marketing attribution data to a profile.
 
 ## Endpoint and method
 
