@@ -150,28 +150,3 @@ Info about your end user subscription.  You can do the following action via Adap
 - [Set transaction to your user](server-side-api-specs#set-transaction) and grant a subscription to them
 
 <Subscription />
-
-The request failed due to missing or incorrect authorization. Check the [Authorization](ss-authorization) page, paying close attention to the **Authorization header**.
-
-The request also failed because the specified profile wasn’t found.
-
-| Parameter   | Type    | Description                                                  |
-| ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
-| error_code  | String  | Short error name. Always `not_authenticated`.                |
-| status_code | Integer | HTTP status. Always `401.`                                   |
-
-```json
-{
-  "errors": [
-    {
-      "source": "non_field_errors",
-      "errors": [
-        "Authentication credentials were not provided."
-      ]
-    }
-  ],
-  "error_code": "not_authenticated",
-  "status_code": 401
-}
-```
