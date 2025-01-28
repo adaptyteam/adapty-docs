@@ -3,7 +3,7 @@
 | Parameter                     | Type          | Required in request | Nullable in request | Description                                                  |
 | ----------------------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
 | purchase_type                 | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The type of product purchased. Possible value: `one_time_purchase`. |
-| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](initial-custom). |
+| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](custom-store). |
 | environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Transaction environment that provided the access level. Options: `Sandbox`, `Production`. |
 | store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The product ID in the app store (App Store, Google Play, Stripe, etc.) that unlocked this access level. |
 | store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
