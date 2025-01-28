@@ -364,18 +364,28 @@ You can read more about subscriptions and proration modes in the Google Develope
 - Proration mode [`IMMEDIATE_AND_CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#IMMEDIATE_AND_CHARGE_PRORATED_PRICE). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Proration mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#DEFERRED). Note: in case of success, `profile` in the callback will be returned as `null` since a real subscription change will occur only when the current subscription's billing period ends.
 
-## Make a deferred purchase in iOS
+## In-app purchases from the App Store
 
-For deferred purchases on iOS, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store `makeDeferredPurchase` and call it later if you want to hold your purchase for now. Then show the paywall to your user. To continue purchase, call `makeDeferredPurchase`.
+For deferred purchases on iOS, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store the product object and call `makePurchase` later if you want to hold your purchase for now. Then show the paywall to your user.
 
 ```swift title="Swift"
-extension AppDelegate: AdaptyDelegate {
-    func paymentQueue(shouldAddStorePaymentFor product: AdaptyDeferredProduct, defermentCompletion makeDeferredPurchase: @escaping (ResultCompletion<AdaptyPurchasedInfo>?) -> Void) {
-        // you can store makeDeferredPurchase callback and call it later
-        
-        // or you can call it right away
-        makeDeferredPurchase { result in
-            // check the purchase
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
         }
     }
 }
