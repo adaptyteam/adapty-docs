@@ -23,15 +23,14 @@ Let's say you sell products in your web app. You need to display a paywall to yo
 
 ### Steps with Adapty API
 
-1. **Create the profile:** Start by using the [Create profile](ss-create-profile) request to create a user in Adapty. This is the user who will see the paywall in your app.
-2. **Fetch and display the paywall:** When the user reaches the placement in your web app where the paywall should be shown, use the [Get paywall](ss-get-paywall) request to retrieve the paywall via the placement ID. Display the paywall in your web app.
-3. **Record the paywall view:** Use the [Record paywall view](ss-record-paywall-view) to log the paywall view with Adapty to ensure your analytics accurately reflect the event.
-4. **Record the purchase:** If the user completes a purchase, send the transaction details to Adapty using the Adapty API. Include the **variation ID** in this request to link the transaction to the specific paywall displayed. For guidance, check out our page on [associating paywalls with transactions in mobile apps](associate-paywalls-to-transactions)—the same approach applies to web apps.
-5. **Add attribution data (if applicable):** If you have any attribution data (e.g., campaign or ad details), use the [Add attribution](ss-add-attribution) to merge it into the user profile to enrich the analytics and improve insights.
+1. **Fetch and display the paywall:** When the user reaches the placement in your web app where the paywall should be shown, use the [Get paywall](ss-get-paywall) request to retrieve the paywall via the placement ID. Display the paywall in your web app.
+2. **Record the paywall view:** Use the [Record paywall view](ss-record-paywall-view) to log the paywall view with Adapty to ensure your analytics accurately reflect the event.
+3. **Record the purchase:** If the user completes a purchase, send the transaction details to Adapty using the Adapty API. Include the **variation ID** in this request to link the transaction to the specific paywall displayed. For guidance, check out our page on [associating paywalls with transactions in mobile apps](associate-paywalls-to-transactions)—the same approach applies to web apps.
+4. **Add attribution data (if applicable):** If you have any attribution data (e.g., campaign or ad details), use the [Add attribution](ss-add-attribution) to merge it into the user profile to enrich the analytics and improve insights.
 
 **What's next:**
 
-- Proceed with [authorization for server-side API](ss-authorization)
+- Proceed with [Web API authorization](web-api-authorization)
 - Requests:
   - [Add attribution](ss-add-attribution)
   - [Get paywall](ss-get-paywall)
