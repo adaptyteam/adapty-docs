@@ -51,7 +51,7 @@ Due to security reasons, you can't grant a subscription via mobile SDK.
 If you're selling through your own online store, Amazon Appstore, Microsoft Store, or any other platform besides Google Play and App Store, you’ll need to sync those transactions with Adapty to provide access and track the transaction in analytics.
 
 1. [Assign a unique ID to each user](identifying-users).
-2. [Set up a custom store for your products in the Adapty Dashboard](initial-custom).
+2. [Set up a custom store for your products in the Adapty Dashboard](custom-store).
 3. Sync the transaction to Adapty using the [Set transaction](ss-set-transaction) API request.
 
 ## Case 3: Grant an access level
