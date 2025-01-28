@@ -3,7 +3,7 @@
 | Parameter                     | Type          | Required in request | Nullable in request | Description                                                  |
 | :---------------------------- | :------------ | :------------------ | :------------------ | :----------------------------------------------------------- |
 | access_level_id               | String        | :heavy_plus_sign:                 | :heavy_minus_sign:                   | ID for the Paid Access Level set up in the Adapty Dashboard. |
-| store                         | String        | :heavy_plus_sign:                 | :heavy_minus_sign: | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](initial-custom). |
+| store                         | String        | :heavy_plus_sign:                 | :heavy_minus_sign: | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store). |
 | store_product_id              | String        | :heavy_plus_sign:                 | :heavy_minus_sign: | ID of the product in the app store (like App Store, Google Play, Stripe) that unlocked this access level. |
 | store_base_plan_id            | String        | :heavy_plus_sign:                 | :heavy_plus_sign:                 | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | store_transaction_id          | String        | :heavy_plus_sign:                 | :heavy_minus_sign:                   | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
