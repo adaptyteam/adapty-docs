@@ -10,6 +10,8 @@ The response means that either your request is not a valid JSON or some field is
 | error_code  | String  | Short error name. Here: `parse_error`.                       |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
+#### Response example
+
 ```json
 {
     "errors": [
