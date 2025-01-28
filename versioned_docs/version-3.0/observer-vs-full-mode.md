@@ -17,6 +17,7 @@ Both modes are offered at the same price and require your mobile app to be updat
 |-------------|-------------|---------|
 | **Comprehensive Analytics** | ✅ | ✅ |
 | **Third-Party Integrations** | ✅ | ✅ |
+| **Refund Saver** | ✅ | ✅ |
 | **Responding to purchase events to give/restrict paid access to your users** | ❌ | ✅ |
 | **Purchases Infrastructure Maintainer** | You | Adapty |
 | **A/B Testing** | <p>:warning:</p><p>Feasible, but requires a significant amount of additional coding and configuration, more than in Full Mode.</p> | ✅ |
