@@ -45,7 +45,7 @@ Before Adapty iOS SDK 3.3.0, the product object always included offers, regardle
 
 Now, the product object only includes an offer if the user is eligible. This means you no longer need to check eligibility — if an offer is present, the user is eligible.
 
-## Update 3d-party integration SDK configuration
+## Update third-party integration SDK configuration
 
 To ensure integrations work properly with Adapty Flutter SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
