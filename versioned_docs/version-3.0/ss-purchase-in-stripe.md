@@ -99,7 +99,7 @@ fetch("https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/", reques
 This request requires different authorization parameters:
 
 - **Base URL**: https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/
-- **Authorization**: API requests must be authenticated by including your secret API key as an **Authorization header** with value `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
+- **Authorization**: API requests must be authenticated by including your secret API key as an **Authorization header** with value `Api-Key {secret_token}` to each request, for example, `Api-Key secret_live_...`. You can find your secret API key in [Adapty Dashboard -> **App Settings** -> **General** tab API -> **API keys** section](https://app.adapty.io/settings/general). This key is secret, so be careful not to share it publicly.
 - **Content-Type header**: The API expects the request to use the **Content-Type** header set to `application/vnd.api+json`.
 - **Body**:  The API expects the request to use the body as JSON.
 
