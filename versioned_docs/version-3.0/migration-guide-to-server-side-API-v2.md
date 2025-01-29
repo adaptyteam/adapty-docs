@@ -33,7 +33,7 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
 
 To simplify using our server-side API, we've prepared a Postman collection and an environment file you can download and import into Postman.
 
-[Download the collection and environment](Adapty_server_side_API_postman_collection.zip)
+[Download the collection and environment](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/Adapty_server_side_API_postman_collection.zip)
 
 :::
 
