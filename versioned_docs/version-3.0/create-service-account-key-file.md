@@ -85,7 +85,7 @@ It usually takes at least 24 hours for your new service account to become active
 
 
 
-You’ll need this file when you [initially integrate Adapty with Google Play](google-play-store-connection-configuration).
+You’ll need this file when you [configure Google Play Store integration](google-play-store-connection-configuration).
 
 :::warning
 It usually takes at least 24 hours for your new service account to become active. However, there's a [hack](https://stackoverflow.com/a/60691844). After creating the service account in the [Google Play Console](https://play.google.com/apps/publish/), open any application and navigate to **Monetize** -> **Products** -> **Subscriptions/In-app products**. Edit the description of any product and save the changes. This should activate the service account immediately, and you can revert the changes afterward.

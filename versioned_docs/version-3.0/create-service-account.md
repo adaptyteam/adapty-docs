@@ -27,7 +27,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 
 
-2. In the Click the **Create service account** button. 
+2. In the **Service accounts** window, click the **Create service account** button. 
 
 
 <Zoom>
@@ -45,7 +45,7 @@ For Adapty to automate data access, a service account is necessary in the Google
 
 
 
-3. In **Service account details** sub-section of the **Create service account** window, enter the **Service Account Name** you want. We recommend including "Adapty" in the name to indicate the purpose of this account. The **Service account ID** will be created automatically.
+3. In the **Service account details** sub-section of the **Create service account** window, enter the **Service Account Name** you want. We recommend including "Adapty" in the name to indicate the purpose of this account. The **Service account ID** will be created automatically.
 
 4. Copy the service account email address and save it for future usage.
 
