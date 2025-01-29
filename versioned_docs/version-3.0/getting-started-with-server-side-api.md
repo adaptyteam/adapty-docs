@@ -88,4 +88,3 @@ These custom attributes can be used to create segments and run A/B tests.
   - [Set transaction](ss-set-transaction)
   - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
   - [Add integration identifiers](ss-add-integration)
->>>>>>> ADP-1295-Web-API
