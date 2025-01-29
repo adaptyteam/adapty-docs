@@ -100,7 +100,7 @@ export type AdaptySubscriptionOfferId =
     ```
 3. `AdaptyDiscountPhase`:
    
-   - The `identifier` field is now in `AdaptySubscriptionOffer.identifier`.
+   - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
    
    <p> </p>
    
@@ -199,9 +199,7 @@ import {createPaywallView} from 'react-native-adapty/dist/ui';
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-    return true;
-  },
+  // ... other optional callbacks
   onPurchaseCompleted(purchaseResult, product) {
     switch (purchaseResult.type) {
       case 'success':
@@ -229,7 +227,14 @@ const unsubscribe = view.registerEventHandlers({
 
 ## Modify Paywall Builder custom action events
 
-The `onAction` и `onCustomEvent` callbacks are replaced by `onCustomAction(actionId)`.
+Removed callbacks:
+
+-  `onAction`
+-  `onCustomEvent`
+
+Added callback:
+
+- New  `onCustomAction(actionId)` callback. Use it for custom actions.
 
 ## Modify `onProductSelected` callback
 
@@ -517,13 +522,17 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 
 :::
 
+:::note
+
 Please pay attention that the order of the parameters for the `reportTransaction` method differs from the one for the `setVariationId` method.
+
+:::
 
 ```diff
   const variationId = paywall.variationId;
 
  try {
--    await adapty.setVariationId('transaction_id', variationId);
+-    await adapty.setVariationId(variationId, transactionId);
 +    await adapty.reportTransaction(transactionId, variationId);
  } catch (error) {
      // handle the `AdaptyError`
