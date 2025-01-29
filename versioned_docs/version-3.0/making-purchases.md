@@ -366,18 +366,18 @@ You can read more about subscriptions and proration modes in the Google Develope
 
 ## In-app purchases from the App Store
 
-When the user starts the purchase in the App Store, and the transaction continues in your app, you have two options:
+When a user initiates a purchase in the App Store and the transaction carries over to your app, you have two options:
 
-- Either process the transaction right away: for this, simply return `true` in `shouldAddStorePayment`. In this case, the Apple purchase system screen will show.
-- Or store the product object: for this, return `false` in `shouldAddStorePayment` and call `makePurchase` with it later.
+- **Process the transaction immediately**: Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
+- **Store the product object for later processing**: Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This allows you to display a paywall before completing the purchase.
 
-See the snippet below:
+Here’s the complete snippet:
 
 ```swift title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
         // 1a.
-        // Return `true` to continue the transaction in your app.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will              show automatically.
 
         // 1b.
         // Store the product object and return `false` to defer or cancel the transaction.
