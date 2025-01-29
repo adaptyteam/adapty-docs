@@ -145,14 +145,6 @@ Adapty will now send purchase events to Tenjin and receive attribution data. You
 
 Tenjin only accepts purchase and **Trial started** events. In the **Events names** section, select which events to share with Tenjin to align with your tracking goals.
 
-- `non_subscription_purchase`
-- `non_subscription_refunded`
-- `subscription_started`
-- `subscription_refunded`
-- `subscription_renewed`
-- `trial_converted`
-- `trial_started`
-
 <Zoom>
   <img src={require('./img/tenjin-events.webp').default}
   style={{
