@@ -366,7 +366,12 @@ You can read more about subscriptions and proration modes in the Google Develope
 
 ## In-app purchases from the App Store
 
-For deferred purchases on iOS, Adapty SDK has an optional delegate method, which is called when the user starts the purchase in the App Store, and the transaction continues in your app. Just store the product object and call `makePurchase` later if you want to hold your purchase for now. Then show the paywall to your user.
+When the user starts the purchase in the App Store, and the transaction continues in your app, you have two options:
+
+- Either process the transaction right away: for this, simply return `true` in `shouldAddStorePayment`. In this case, the Apple purchase system screen will show.
+- Or store the product object: for this, return `false` in `shouldAddStorePayment` and call `makePurchase` with it later.
+
+See the snippet below:
 
 ```swift title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
