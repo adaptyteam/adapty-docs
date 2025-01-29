@@ -377,7 +377,7 @@ Here’s the complete snippet:
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
         // 1a.
-        // Return `true` to continue the transaction in your app. The Apple purchase system screen will              show automatically.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will show automatically.
 
         // 1b.
         // Store the product object and return `false` to defer or cancel the transaction.
