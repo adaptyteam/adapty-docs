@@ -193,7 +193,7 @@ Now, the product object only includes an offer if the user is eligible. This mea
 
 If you still want to view offers for users who are not eligible, refer to `sk1Product` and `sk2Product`.
 
-## Update 3d-party integration SDK configuration
+## Update third-party integration SDK configuration
 
 Starting with Adapty iOS SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 

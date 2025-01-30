@@ -171,7 +171,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Adjust attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that.
 
 <Tabs groupId="adjust">
 
@@ -265,7 +265,12 @@ try {
   if (adid == null) {
     // handle the error
   }
-
+  
+  await Adapty().setIntegrationIdentifier(
+    key: "adjust_device_id", 
+    value: adid,
+  );
+    
   final attributionData = await Adjust.getAttribution();
 
   var attribution = Map<String, String>();
@@ -281,11 +286,9 @@ try {
   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
 
-  Adapty().updateAttribution(
-    attribution,
-    source: AdaptyAttributionSource.adjust,
-    networkUserId: adid,
-  );
+  await Adapty().updateAttribution(attribution, source: "adjust");
+} on AdaptyError catch (adaptyError) {
+  // handle the error
 } catch (e) {
   // handle the error
 }
@@ -309,6 +312,11 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 
 // ...
 Adjust.create(adjustConfig);
+
+Adjust.getAdid((adid) => {
+  if (adid)
+    adapty.setIntegrationIdentifier("adjust_device_id", adid);
+});
 ```
 
 </TabItem>
@@ -423,6 +431,11 @@ adjustConfig.setAttributionCallbackListener(attribution => {
 
 // ...
 Adjust.create(adjustConfig);
+
+Adjust.getAdid((adid) => {
+  if (adid)
+    adapty.setIntegrationIdentifier("adjust_device_id", adid);
+});
 ```
 
 </TabItem>

@@ -35,7 +35,6 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
 
 You need only one variable such as **Mixpanel token**. You can find the token in your Mixpanel project. If you need help, [here's](https://help.mixpanel.com/hc/en-us/articles/115004502806-Find-Project-Token-) the official docs.
 
-
 <Zoom>
   <img src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.webp').default}
   style={{
@@ -81,7 +80,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ## SDK configuration
 
-Use `Adapty.updateProfile()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
+Use `.setIntegrationIdentifier()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
 <Tabs groupId="mixpanel">
 <TabItem value="Swift" label="iOS (Swift)" default>
@@ -165,9 +164,7 @@ import { Mixpanel } from 'mixpanel-react-native';
 
 // ...
 try {
-  await adapty.updateProfile({
-    mixpanelUserId: mixpanelUserId,
-  });
+  await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
 } catch (error) {
   // handle `AdaptyError`
 }

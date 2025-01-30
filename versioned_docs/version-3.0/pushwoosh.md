@@ -189,9 +189,7 @@ import Pushwoosh from 'pushwoosh-react-native-plugin';
 
 // ...
 try {
-  await adapty.updateProfile({
-    pushwooshHWID: hwid,
-  });
+  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
 } catch (error) {
   // handle `AdaptyError`
 }

@@ -79,6 +79,8 @@ Here is what you can do to set up tracking of subscription events.
 | **For iOS**     | Update the App Store Server Notifications with our [link](enable-app-store-server-notifications) |
 | **For Android** | Set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) |
 
+<!---
+
 ### Integrations
 
 [Integrations](events) with third-party analytics and attribution services require [passing identifiers](analytics-integration) to the SDK. 
@@ -87,6 +89,8 @@ Here is what you can do to set up tracking of subscription events.
 | :----------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **.updateProfile()**     | Use this method to passing identifiers to Amplitude, Mixpanel, Facebook Ads, and AppMetrica                                                                                                               |
 | **.updateAttribution()** | This method would be required for passing attribution data from AppsFlyer, Adjust, and Branch. Be sure to configure the integration of interest in Adapty Dashboard, by providing API key and event names |
+
+--->
 
 ### Promo campaigns and promo offers
 

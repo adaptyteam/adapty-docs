@@ -91,7 +91,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ### SDK configuration
 
-Use the `Adapty.updateProfile()` method to set either `amplitudeDeviceId` or `amplitudeUserId`. If neither is set, Adapty will default to using your user ID (`customerUserId`). If `customerUserId` is also absent, Adapty will handle `user_id` based on the **Always populate user_id** checkbox:
+Use the `setIntegrationIdentifier()` method to set either `amplitudeDeviceId` or `amplitudeUserId`. If neither is set, Adapty will default to using your user ID (`customerUserId`). If `customerUserId` is also absent, Adapty will handle `user_id` based on the **Always populate user_id** checkbox:
 
 - **If selected**, Adapty will set `user_id` to the Adapty `profile_id`.
 - **If cleared**, `user_id` will not be set.
@@ -197,10 +197,8 @@ Adapty.SetIntegrationIdentifier(
 import { adapty } from 'react-native-adapty';
 
 try {
-  await adapty.updateProfile({
-    amplitudeDeviceId: deviceId,
-    amplitudeUserId: userId,
-  });
+  await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
+  await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
 } catch (error) {
   // handle `AdaptyError`
 }

@@ -126,7 +126,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 const variationId = paywall.variationId;
 
 try {
-    await adapty.setVariationId('transaction_id', variationId);
+    await adapty.reportTransaction(transactionId, variationId);
 } catch (error) {
     // handle the `AdaptyError`
 }

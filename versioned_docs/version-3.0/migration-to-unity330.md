@@ -297,8 +297,7 @@ The handling of errors is changed as well, please update your code according to 
 
    
 
-
-## Update 3d-party integration SDK configuration
+## Update third-party integration SDK configuration
 
 Starting with Adapty Unity SDK 3.3.0, we’ve updated the public API for the `updateAttribution` method. Previously, it accepted a `[AnyHashable: Any]` dictionary, allowing you to pass attribution objects directly from various services. Now, it requires a `[String: any Sendable]`, so you’ll need to convert attribution objects before passing them.
 
