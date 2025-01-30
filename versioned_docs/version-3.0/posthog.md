@@ -14,10 +14,6 @@ PostHog is an analytics platform that provides tools for tracking user behavior,
 
 Integrating PostHog with Adapty enables seamless tracking of subscription-related events, such as trial starts, renewals, and cancellations. By sending these events to PostHog, you can analyze how subscription changes affect user behavior, evaluate paywall performance, and gain deeper insights into your monetization strategies — all within your existing analytics workflow.
 
-This integration operates in one way:
-
-1. **Sending subscription events to PostHog** Adapty sends purchase events to PostHog in real time. These events help evaluate the effectiveness of your ad campaigns directly within PostHog’s dashboard.
-
 ## Integration Characteristics
 
 | Integration characteristic | Description                                                  |
