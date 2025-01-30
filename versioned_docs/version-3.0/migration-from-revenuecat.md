@@ -145,11 +145,11 @@ Don't rush the historical data import
 You should wait for at least a week after the release with the SDK before doing historical data import. During that time we will get all the info about purchase prices from the SDK, so the data you import will be more relevant.
 :::
 
-Export your historical data from RevenueCat in CSV format by following the instructions in [RevenueCat’s official documentation](https://www.revenuecat.com/docs/integrations/scheduled-data-exports)
+Export your historical data from RevenueCat in CSV format by following the instructions in [RevenueCat’s official documentation](https://www.revenuecat.com/docs/integrations/scheduled-data-exports).
 
 ### (Optional) Ask RevenueCat support for Google Purchase Tokens
 
-If you need to import Google Play transactions, contact RevenueCat support for a CSV file containing Google Purchase Tokens via their [support page](https://app.revenuecat.com/settings/support). The Google Purchase Token is a unique identifier provided by Google Play for each transaction, essential for accurately tracking and verifying purchases in Adapty. This information is not included in the standard export file. The file usually contains the following three columns:
+If you need to import Google Play transactions, contact RevenueCat support for a CSV file containing Google Purchase Tokens via their [support page](https://app.revenuecat.com/settings/support). The Google Purchase Token is a unique identifier provided by Google Play for each transaction, essential for accurately tracking and verifying purchases in Adapty. This information is not included in the standard export file. The file contains the following three columns:
 
 - `user_id`
 - `google_purchase_token`
