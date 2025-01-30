@@ -1,5 +1,5 @@
 ---
-title: "Migration guide to Adapty SDK v.3.x or later"
+title: "Migration guide to Adapty SDK v.3.0.x"
 description: ""
 metadataTitle: ""
 ---
@@ -16,7 +16,7 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](ad
 1. Upgrading to Adapty SDK v3.x (instructions differ for platforms).
 2. Migrating your existing paywalls to the new Paywall Builder.
 
-## Upgrading to Adapty SDK v3.x
+## Upgrading to Adapty SDK v3.0.x
 
 <Tabs> 
 
@@ -295,6 +295,12 @@ Parameters:
 | **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
 | **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
 | **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+
+</TabItem>
+
+<TabItem value="RN" label="For React Native" default> 
+
+Upgrade to version 3.0.1 as you normally would — no extra migration steps are needed.
 
 </TabItem>
 
