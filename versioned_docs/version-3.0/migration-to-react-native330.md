@@ -38,57 +38,62 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 1. `AdaptySubscriptionOffer`
 
-```typescript
-export interface AdaptySubscriptionOffer {
-  readonly identifier: AdaptySubscriptionOfferId;
+    ```typescript
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
 
-  phases: AdaptyDiscountPhase[];
+      phases: AdaptyDiscountPhase[];
 
-  android?: {
-    offerTags?: string[];
-  };
-}
-```
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
 
 2. `AdaptySubscriptionOfferId`
 
-```typescript
-export type AdaptySubscriptionOfferId =
-  | { id?: string; type: 'introductory'; }
-  | { id: string; type: 'promotional' | 'win_back'; };
-```
+    ```typescript
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
 
 ### Changed models
 
 1. `AdaptyPaywallProduct`
    
-   - Renamed the `subscriptionDetails` property to `subscription`.
-   
-   <p> </p>
-   
-    ```diff
-    -  subscriptionDetails?: AdaptySubscriptionDetails; 
-    +  subscription?: AdaptySubscriptionDetails;
-    ```
-   
+    - Renamed the `subscriptionDetails` property to `subscription`.
+      
+      <p> </p>
+      
+     ```diff
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
 2. `AdaptySubscriptionDetails`
-   - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
-   - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
-   - `offerId` is removed. Offer ID is now stored in `AdaptySubscriptionOffer.identifier`.
-   - `offerTags` is moved to `AdaptySubscriptionOffer.android`.
-   
-   <p> </p>
+
+    - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
+
+    - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
+
+    - `offerId` is removed. Offer ID is now stored in `AdaptySubscriptionOffer.identifier`.
+
+    - `offerTags` is moved to `AdaptySubscriptionOffer.android`.
+      
+      <p> </p>
+
 
 
     ```diff
     -  introductoryOffers?: AdaptyDiscountPhase[];
     +  offer?: AdaptySubscriptionOffer;
-    
+
        ios?: {
     -    promotionalOffer?: AdaptyDiscountPhase;
          subscriptionGroupIdentifier?: string;
        };
-    
+
        android?: {
     -    offerId?: string;
          basePlanId: string;
@@ -100,15 +105,15 @@ export type AdaptySubscriptionOfferId =
     ```
 3. `AdaptyDiscountPhase`:
    
-   - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
-   
-   <p> </p>
-   
-    ```diff
-    -  ios?: {
-    -    readonly identifier?: string;
-    -  };
-    ```
+    - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
+      
+      <p> </p>
+      
+     ```diff
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
 
 ## Remove `getProductsIntroductoryOfferEligibility` method
 
@@ -122,7 +127,7 @@ In earlier versions, canceled and pending purchases were treated as errors and r
 
 Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
 
-```typescript title="React Native (TSX)"
+```typescript
 try {
     const purchaseResult = await adapty.makePurchase(product);
     switch (purchaseResult.type) {
@@ -193,7 +198,7 @@ Now:
 2. Remove error code handling for `25: 'pendingPurchase'`.
 3. Update the `onPurchaseCompleted` callback:
 
-```typescript title="React Native (TSX)"
+```typescript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
