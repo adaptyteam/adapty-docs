@@ -58,7 +58,7 @@ Note, that `onCloseButtonPress`, `onAndroidSystemBack`, and `onRestoreCompleted`
 | **onUrlPress**              | If a user clicks a URL in your paywall, this method will be invoked. |
 | **onAndroidSystemBack**     | If a user taps the system Android **Back** button, this method will be invoked. |
 | **onCloseButtonPress**      | If the close button is visible and a user taps it, this method will be invoked. It is recommended to dismiss the paywall screen in this handler. |
-| **onPurchaseCompleted**     | If a user's purchase succeeds, this method will be invoked and will provide an updated `AdaptyProfile`. It is recommended to dismiss the paywall view in this handler. |
+| **onPurchaseCompleted**     | If the purchase succeeds, the user cancels their purchase, or the purchase appears to be pending, this method will be invoked. In case of a successful purchase, it will provide an updated `AdaptyProfile`. |
 | **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked. |
 | **onPurchaseCancelled**     | If a user initiates the purchase process and manually interrupts it, this method will be invoked. |
 | **onPurchaseFailed**        | If the purchase process fails, this method will be invoked and provide `AdaptyError`. |

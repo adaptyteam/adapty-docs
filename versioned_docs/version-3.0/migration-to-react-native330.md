@@ -118,7 +118,7 @@ Starting with version 3.3.0, the product object includes offers only if the user
 
 ## Update making purchase
 
-In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
+In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
 
 Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
 
