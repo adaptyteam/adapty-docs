@@ -19,7 +19,7 @@ import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnume
 
 <InvalidDateFormat />
 
-## base_error
+## enum
 
 <InvalidEnumerationMember />
 

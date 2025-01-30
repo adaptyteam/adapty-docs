@@ -38,7 +38,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
 ```
 
 </TabItem>  
-<TabItem value="javascript" label="Javascript" default>   
+<TabItem value="javascript" label="JavaScript" default>   
 
 ```javascript
 const myHeaders = new Headers();

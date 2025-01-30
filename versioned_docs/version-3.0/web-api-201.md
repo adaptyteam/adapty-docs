@@ -7,4 +7,4 @@ displayed_sidebar: APISidebar
 
 
 
-The paywall view is recorded successfully or attribution is successfully added to the profile. 
+The paywall view is recorded successfully or attribution is successfully added to the profile. The response body is empty.

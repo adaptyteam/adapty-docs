@@ -22,7 +22,7 @@ To simplify using our web API, we've prepared a Postman collection and an enviro
 
 For info on how to import a collection and environment to Postman, please refer to the [Postman documentation](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/).
 
-### Variables used
+## Variables used
 
 We've created a unified environment for both the server-side and web APIs to simplify your workflow. Below are the variables specific to the web API:
 
@@ -34,7 +34,8 @@ We've created a unified environment for both the server-side and web APIs to sim
 
 **What's next: Requests:**
 
-- [Add attribution](web-api-add-attribution)
-
 - [Get paywall](web-api-get-paywall)
+
 - [Record paywall view](web-api-record-paywall-view)
+
+- [Add attribution](web-api-add-attribution)
