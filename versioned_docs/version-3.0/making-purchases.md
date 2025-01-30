@@ -368,8 +368,8 @@ You can read more about subscriptions and proration modes in the Google Develope
 
 When a user initiates a purchase in the App Store and the transaction carries over to your app, you have two options:
 
-- **Process the transaction immediately**: Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
-- **Store the product object for later processing**: Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This allows you to display a paywall before completing the purchase.
+- **Process the transaction immediately:** Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
+- **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
 
 Here’s the complete snippet:
 
@@ -384,7 +384,7 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
         false
     }
     
-    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
     func continueDeferredPurchase() async {
         let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
         do {
