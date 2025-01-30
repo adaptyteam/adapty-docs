@@ -300,7 +300,10 @@ Parameters:
 
 <TabItem value="RN" label="For React Native" default> 
 
-Upgrade to version 3.0.1 as you normally would — no extra migration steps are needed.
+1. Upgrade to version 3.0.1 as usual.
+2. Replace the fallback paywall files:
+   1. [Download the latest version](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) from the Adapty Dashboard.
+   2. Store them on the user's device and pass them to the `.setFallbackPaywalls` method as described [here](react-native-use-fallback-paywalls).
 
 </TabItem>
 
