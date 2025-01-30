@@ -24,7 +24,7 @@ This integration operates in two key ways:
 | Integration characteristic | Description                                                  |
 | -------------------------- | ------------------------------------------------------------ |
 | Schedule                   | Real-time; events may not appear immediately on the PostHog dashboard. |
-| Data direction             | Two-way transmission: <ul><li>**Adapty events**: From Adapty server to PostHog server</li><li> **PostHog attribution**: From PostHog SDK to Adapty server</li></ul> |
+| Data direction             | Adapty events are sent from the Adapty server to the PostHog server. |
 | Adapty integration point   | <ul><li> PostHog and Adapty SDKs in the mobile app code</li><li> Adapty server</li></ul> |
 
 ## PostHog event structure
