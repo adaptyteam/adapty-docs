@@ -81,37 +81,37 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/trans
 
 ```python
 import requests
-import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/"
 
-payload = json.dumps({
-  "purchase_type": "subscription",
-  "store": "app_store",
-  "environment": "Production",
-  "store_product_id": "1year.premium",
-  "store_transaction_id": "30002109551456",
-  "store_original_transaction_id": "30002109551456",
-  "is_family_shared": False,
-  "price": {
-    "country": "US",
-    "currency": "USD",
-    "value": 9.99
-  },
-  "purchased_at": "2022-10-12T09:42:50.000000+0000",
-  "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d",
-  "originally_purchased_at": "2022-10-12T09:42:50.000000+0000",
-  "renew_status": True,
-  "expires_at": "2026-10-12T09:42:50.000000+0000"
-})
-headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
+payload = {
+    "purchase_type": "subscription",
+    "store": "app_store",
+    "environment": "Production",
+    "store_product_id": "1year.premium",
+    "store_transaction_id": "30002109551456",
+    "store_original_transaction_id": "30002109551456",
+    "is_family_shared": False,
+    "price": {
+        "country": "US",
+        "currency": "USD",
+        "value": 9.99
+    },
+    "purchased_at": "2022-10-12T09:42:50.000000+0000",
+    "variation_id": "81109d24-ea95-4806-9ec7-b482bbd1a33d",
+    "originally_purchased_at": "2022-10-12T09:42:50.000000+0000",
+    "renew_status": True,
+    "expires_at": "2026-10-12T09:42:50.000000+0000"
 }
 
-response = requests.request("POST", url, headers=headers, data=payload)
+headers = {
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, headers=headers, json=payload)
 
 print(response.text)
 ```
@@ -171,7 +171,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 | environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:     | Environment where the transaction took place. Options are `Sandbox` or `Production`. |
 | store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | ID of the product in the app store (like App Store, Google Play, Stripe) that unlocked this access level. |
 | store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
-| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | <p>For subscriptions, this ID links to the first transaction in a renewal chain. Each renewal is connected to this original transaction.</p><br /><p>If there’s no renewal, store_original_transaction_id matches store_transaction_id.</p> |
+| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:     | <p>For subscriptions, this ID links to the first transaction in a renewal chain. Each renewal is connected to this original transaction.</p><p>If there’s no renewal, store_original_transaction_id matches store_transaction_id.</p> |
 | offer                         | Object        | :heavy_plus_sign:   | :heavy_minus_sign:     | The offer used in the purchase, provided as an [Offer](server-side-api-objects#offer) object. |
 | is_family_shared              | Boolean       | :heavy_minus_sign:  | :heavy_minus_sign:     | A Boolean value indicating whether the product supports family sharing in App Store Connect. iOS only. Always `false` for iOS below 14.0 and macOS below 11.0. |
 | price                         | Object        | :heavy_plus_sign:   | :heavy_minus_sign:     | Price of the subscription or purchase as a [Price](server-side-api-objects#price) object. An initial subscription purchase with zero cost is a free trial; a renewal with zero cost is a free renewal. |
@@ -192,7 +192,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 
 ---
 
-## Successful response: 200 - Success
+## Successful response: 200: OK
 
 <ProfileResponse />
 
@@ -239,7 +239,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 
 ## Errors
 
-### 400 - Bad request
+### 400: Bad request
 
 #### billing_issue_detected_at_date_comparison_error
 
@@ -309,9 +309,11 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 
 ---
 
-### 401 - Unauthorized
+### 401: Unauthorized
+
 <ProfileResponseUnauthorized />  
-### 404 - Not found
+### 404: Not found
+
 <ProfileResponseNotFound />  
 
 

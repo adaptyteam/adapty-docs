@@ -31,10 +31,10 @@ GET https://api.adapty.io/api/v2/server-side-api/profile/
 
 ```bash
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
---header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
 
 </TabItem> 
@@ -47,15 +47,14 @@ import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
-payload = {}
 headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json",
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
-response = requests.request("GET", url, headers=headers, data=payload)
+response = requests.get(url, headers=headers)
 
 print(response.text)
 ```
@@ -90,7 +89,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 Placeholders: 
 
 - `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
-- `<YOUR_USER_PROFILE_ID>`: The unique profile ID of the user in Adapty. `
+- `<YOUR_USER_PROFILE_ID>`: The unique profile ID of the user in Adapty. 
 - `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
 
 ## Parameters
@@ -99,7 +98,7 @@ No parameters
 
 ---
 
-## Successful response: 200 - Success
+## Successful response: 200: OK
 
 <ProfileResponse />	
 
@@ -197,11 +196,11 @@ No parameters
 
 ## Errors
 
-### 401 - Unauthorized
+### 401: Unauthorized
 
 <ProfileResponseUnauthorized /> 
 
-### 404 - Not found
+### 404: Not found
 
 <ProfileResponseNotFound />  
 

@@ -1,5 +1,5 @@
 ---
-title: "Response to web API requests: 400 Bad request"
+title: "Response to web API requests: 400: Bad request"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
@@ -19,7 +19,7 @@ import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnume
 
 <InvalidDateFormat />
 
-## base_error
+## enum
 
 <InvalidEnumerationMember />
 

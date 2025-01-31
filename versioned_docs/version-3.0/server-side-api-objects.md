@@ -55,6 +55,7 @@ You can do the following action via Adapty server-side API:
 
 <NonSubscription />
 
+
 ## One-Time Purchase
 
 <Purchase />
@@ -139,7 +140,7 @@ This object contains information about a [remote config](customize-paywall-with-
 
 | Name | Type   | Required          | Description                                                  |
 | ---- | ------ | ----------------- | ------------------------------------------------------------ |
-| lang | String | :heavy_plus_sign: | <p>Locale code for the [paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
+| lang | String | :heavy_plus_sign: | <p>Locale code for the paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
 | data | String | :heavy_plus_sign: | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
 
 ## Subscription

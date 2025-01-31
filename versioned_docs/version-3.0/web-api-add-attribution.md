@@ -44,7 +44,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
 ```
 
 </TabItem> 
-<TabItem value="javascript" label="Javascript" default>  
+<TabItem value="javascript" label="JavaScript" default>  
 
 ```javascript
 const myHeaders = new Headers();
@@ -167,18 +167,18 @@ echo $response;
 
 ## Responses
 
-### 201 - Created
+### 201: Created
 
 The paywall view is recorded successfully. The response body is blank.
 
-### 400 - Bad Request
+### 400: Bad Request
 
 <InvalidEnumerationMember />
 
-### 401 - Unauthorised
+### 401: Unauthorised
 
 <ProfileResponseUnauthorized />
 
-### 404 - Not Found
+### 404: Not Found
 
 <ProfileResponseNotFound />
