@@ -36,6 +36,7 @@ Follow our detailed guidance on configuring the following 3d-part attribution in
 - [Branch](branch)
 - [Facebook Ads](facebook-ads)
 - [Singular](singular)
+- [Tenjin](tenjin)
 
 :::note
 Don't see your attribution provider?
