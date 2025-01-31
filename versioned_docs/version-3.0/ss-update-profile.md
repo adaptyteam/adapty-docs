@@ -7,13 +7,14 @@ displayed_sidebar: APISidebar
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
-import ProfileObject from '@site/src/components/reusable/ProfileObject.md';import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';
+import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
 import ProfileRequest from '@site/src/components/reusable/ProfileRequest.md';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseBadRequest from '@site/src/components/reusable/ProfileResponseBadRequest.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
 
 

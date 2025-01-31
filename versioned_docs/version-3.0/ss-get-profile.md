@@ -9,7 +9,7 @@ displayed_sidebar: APISidebar
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
 import ProfileObject from '@site/src/components/reusable/ProfileObject.md';  
 import Tabs from '@theme/Tabs'; 

@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLevelProfileNotFound.md';
 import Purchase from '@site/src/components/reusable/Purchase.md';
 import FreeTrialPrice from '@site/src/components/reusable/FreeTrialPrice.md'; 
