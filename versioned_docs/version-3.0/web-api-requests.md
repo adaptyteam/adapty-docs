@@ -35,7 +35,5 @@ We've created a unified environment for both the server-side and web APIs to sim
 **What's next: Requests:**
 
 - [Get paywall](web-api-get-paywall)
-
 - [Record paywall view](web-api-record-paywall-view)
-
 - [Add attribution](web-api-add-attribution)

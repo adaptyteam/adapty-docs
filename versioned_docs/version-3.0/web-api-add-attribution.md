@@ -39,8 +39,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
   "ad_set": "ad_set_name_value",
   "creative": "creative_name_value",
   "customer_user_id": "<YOUR_CUSTOMER_USER_ID>"
-}
-'
+}'
 ```
 
 </TabItem> 
@@ -160,8 +159,8 @@ echo $response;
 | ad_group            | String | :heavy_minus_sign: | Attribution ad group.                                        |
 | ad_set              | String | :heavy_minus_sign: | Attribution ad set.                                          |
 | creative            | String | :heavy_minus_sign: | Attribution creative keyword.                                |
-| customer_user_id    | String | :heavy_plus_sign:* | <p>User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>Either `customer_user_id` or `profile_id` is required.</p> |
-| profile_id          | String | :heavy_plus_sign:* | <p>An identifier of a user in Adapty.  You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>Either `customer_user_id` or `profile_id` is required.</p> |
+| customer_user_id    | String | :heavy_plus_sign:* | <p>User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
+| profile_id          | String | :heavy_plus_sign:* | <p>An identifier of a user in Adapty.  You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users).</p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 
 ---
 
