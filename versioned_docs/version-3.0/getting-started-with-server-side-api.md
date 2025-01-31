@@ -46,12 +46,12 @@ To track subscription events, use [Webhook](webhook) integration in Adapty or in
 
 ## Case 1: Syncing subscribers between web and mobile
 
-1. If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
-   1. [Assign a unique ID to each user](identifying-users).
-   2. [Check their subscription status](ss-get-profile) using the API.
-   3. If a user is on a freemium plan, display a paywall on your website.
-   4. After a successful payment, [update the subscription status](ss-set-transaction) in Adapty via API.
-   5. Your subscribers will automatically stay in sync with your mobile app.
+If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
+1. [Assign a unique ID to each user](identifying-users).
+2. [Check their subscription status](ss-get-profile) using the API.
+3. If a user is on a freemium plan, display a paywall on your website.
+4. After a successful payment, [update the subscription status](ss-set-transaction) in Adapty via API.
+5. Your subscribers will automatically stay in sync with your mobile app.
 
 ## Case 2: Grant a subscription
 

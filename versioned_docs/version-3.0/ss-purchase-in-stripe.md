@@ -120,7 +120,7 @@ This request requires different authorization parameters:
 
 ## Errors
 
-### **400**: Bad request
+### 400: Bad request
 
 Contain a list of errors with parameters.
 
