@@ -77,7 +77,7 @@ You can do the following action via Adapty server-side API:
 | store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Identifier of the product in the app store (App Store/Google Play/Stripe, etc.) that unlocked this access level. |
 | store_base_plan_id            | String        | :heavy_plus_sign:   | :heavy_plus_sign:   | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The ID of the transaction in the app store (App Store/Google Play/Stripe, etc.). |
-| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><br /><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
+| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
 | purchased_at                  | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:  | The datetime when the access level was purchased the latest time. |
 | environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Environment of the transaction that provided the access level. Possible values: `Sandbox`, `Production.` |
 | is_refund                     | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates if the product has been refunded.                  |
@@ -181,7 +181,7 @@ This object contains information about a [remote config](customize-paywall-with-
 
 | Name | Type   | Required          | Description                                                  |
 | ---- | ------ | ----------------- | ------------------------------------------------------------ |
-| lang | String | :heavy_plus_sign: | <p>Locale code for the [paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
+| lang | String | :heavy_plus_sign: | <p>Locale code for the paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
 | data | String | :heavy_plus_sign: | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
 
 ## Subscription

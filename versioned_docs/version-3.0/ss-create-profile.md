@@ -81,7 +81,7 @@ payload = {
     "first_name": "Jane",
     "last_name": "Doe",
     "gender": "f",
-    "email": "jane.dow@example.com",
+    "email": "jane.doe@example.com",
     "phone_number": "+1234567890",
     "birthday": "2000-12-31",
     "ip_country": "FR",

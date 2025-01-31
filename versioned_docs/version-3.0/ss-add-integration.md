@@ -48,8 +48,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/integration/profil
   "airbridge_device_id": "example_airbridge_device_id",
   "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
   "posthog_distinct_user_id": "example_posthog_distinct_user_id"
-}
-'
+}'
 ```
 
 </TabItem> 
