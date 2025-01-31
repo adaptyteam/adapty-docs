@@ -36,12 +36,12 @@ To use the API effectively, you need a unique ID for your users. This could be a
 
 ## Case 1: Syncing subscribers between web and mobile
 
-1. If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
-   1. [Assign a unique ID to each user](identifying-users).
-   2. [Check their subscription status](server-side-api-specs#retrieve-profile) using the API.
-   3. If a user is on a freemium plan, display a paywall on your website.
-   4. After a successful payment, [update the subscription status](server-side-api-specs#set-transaction) in Adapty via API.
-   5. Your subscribers will automatically stay in sync with your mobile app.
+If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here’s how:
+1. [Assign a unique ID to each user](identifying-users).
+2. [Check their subscription status](server-side-api-specs#retrieve-profile) using the API.
+3. If a user is on a freemium plan, display a paywall on your website.
+4. After a successful payment, [update the subscription status](server-side-api-specs#set-transaction) in Adapty via API.
+5. Your subscribers will automatically stay in sync with your mobile app.
 
 ## Case 2: Grant a subscription
 
