@@ -43,19 +43,17 @@ curl --location --request DELETE 'https://api.adapty.io/api/v2/server-side-api/p
 
 ```python
 import requests
-import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
-payload = ""
 headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json"
 }
 
-response = requests.request("DELETE", url, headers=headers, data=payload)
+response = requests.delete(url, headers=headers)
 
 print(response.text)
 ```
@@ -90,21 +88,23 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 No parameters
 
-## Successful response
+---
 
-**204 No Content** with an empty body is a successful response. 
+## Successful response: 204: No Content
+
+**204: No Content** with an empty body is a successful response. 
 
 ---
 
 ## Errors
 
-### 401 - Unauthorized
+### 401: Unauthorized
 
 <ProfileResponseUnauthorized />  
 
 ---
 
-### 404 - Not found
+### 404: Not found
 
 <ProfileResponseNotFound />  
 

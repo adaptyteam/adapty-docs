@@ -56,4 +56,4 @@ You may have custom attributes for your users, other than defaults such as IDFA,
 
 With such attributes you can, for example, create a segment and run an A/B test. 
 
-To learn more about S2S API go to [API Specs](server-side-api-specs).
+To learn more about legacy S2S API go to [API Specs](server-side-api-specs-legacy).

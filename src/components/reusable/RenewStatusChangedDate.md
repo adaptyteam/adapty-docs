@@ -4,7 +4,7 @@ Renewal is a prolongation of a subscription. The user can cancel the subscriptio
 
 To fix the issue, make sure the `renew_status_changed_at` is later than the time of the transaction (`purchased_at`).
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ To fix the issue, make sure the `renew_status_changed_at` is later than the time
 | error_code  | String  | Short error name. Always `originally_purchased_date_error`.  |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

@@ -2,6 +2,7 @@
 title: "Server-side API"
 description: "Explore Adapty's server-side API for managing user subscriptions, syncing subscribers across platforms, updating user attributes, and granting access levels. Learn how to integrate payments from web stores and customize user attributes for better segmentation and A/B testing."
 metadataTitle: "Unlock Subscription and User Management with Adapty's Server-Side API"
+
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -86,4 +87,4 @@ These custom attributes can be used to create segments and run A/B tests.
   - [Revoke access level](ss-revoke-access-level)
   - [Set transaction](ss-set-transaction)
   - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
-
+  - [Add integration identifiers](ss-add-integration)

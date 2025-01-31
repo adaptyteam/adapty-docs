@@ -6,15 +6,15 @@ The request failed due to missing or incorrect authorization. Check the [Authori
 
 The request also failed because the specified profile wasn’t found.
 
-###### Body:
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`.</li><li> **errors**: A description of the error.</li></ul> |
 | error_code  | String  | Short error name. Always `not_authenticated`.                |
 | status_code | Integer | HTTP status. Always `401.`                                   |
 
-###### Response example:
+#### Response example
 
 ```json
 {

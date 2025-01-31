@@ -320,7 +320,6 @@ Here’s how:
    </Zoom>
 
 By mastering these customization options, you can create a compelling, visually appealing product list that guides users towards making a purchase effortlessly.
-
 ## Showing extra plans in a bottom sheet
 
 To simplify your paywall, you can hide some products and display them only when users click a button (like "View More Plans" or any label you choose). This action opens a sliding bottom sheet with the hidden products. This setup helps users focus on your main options first, while still giving them the flexibility to explore additional plans if they’re interested. It’s a effective way to declutter the paywall and potentially boost conversions.

@@ -42,7 +42,7 @@ curl --location --request PATCH 'https://api.adapty.io/api/v2/server-side-api/pr
   "first_name": "Jane",
   "last_name": "Doe",
   "gender": "f",
-  "email": "jane.dow@example.com",
+  "email": "jane.doe@example.com",
   "phone_number": "+1234567890",
   "birthday": "2000-12-31",
   "ip_country": "FR",
@@ -78,50 +78,50 @@ curl --location --request PATCH 'https://api.adapty.io/api/v2/server-side-api/pr
 
 ```python
 import requests
-import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
-payload = json.dumps({
-  "first_name": "Jane",
-  "last_name": "Doe",
-  "gender": "f",
-  "email": "jane.dow@example.com",
-  "phone_number": "+1234567890",
-  "birthday": "2000-12-31",
-  "ip_country": "FR",
-  "store_country": "US",
-  "store": "app_store",
-  "analytics_disabled": True,
-  "custom_attributes": [
-    {
-      "key": "favourite_sport",
-      "value": "yoga"
+payload = {
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "gender": "f",
+    "email": "jane.doe@example.com",
+    "phone_number": "+1234567890",
+    "birthday": "2000-12-31",
+    "ip_country": "FR",
+    "store_country": "US",
+    "store": "app_store",
+    "analytics_disabled": True,
+    "custom_attributes": [
+        {
+            "key": "favourite_sport",
+            "value": "yoga"
+        }
+    ],
+    "installation_meta": {
+        "device_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "device": "string",
+        "locale": "en",
+        "os": "string",
+        "platform": "iOS",
+        "timezone": "Europe/Rome",
+        "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
+        "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
+        "idfv": "E9D48DA5-3930-4B41-8521-D953AECD2F33",
+        "advertising_id": "",
+        "android_id": "",
+        "android_app_set_id": ""
     }
-  ],
-  "installation_meta": {
-    "device_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "device": "string",
-    "locale": "en",
-    "os": "string",
-    "platform": "iOS",
-    "timezone": "Europe/Rome",
-    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
-    "idfa": "EA7583CD-A667-48BC-B806-42ECB2B48333",
-    "idfv": "E9D48DA5-3930-4B41-8521-D953AECD2F33",
-    "advertising_id": "",
-    "android_id": "",
-    "android_app_set_id": ""
-  }
-})
-headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
 }
 
-response = requests.request("PATCH", url, headers=headers, data=payload)
+headers = {
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json"
+}
+
+response = requests.patch(url, headers=headers, json=payload)
 
 print(response.text)
 ```
@@ -141,7 +141,7 @@ const raw = JSON.stringify({
   "first_name": "Jane",
   "last_name": "Doe",
   "gender": "f",
-  "email": "jane.dow@example.com",
+  "email": "jane.doe@example.com",
   "phone_number": "+1234567890",
   "birthday": "2000-12-31",
   "ip_country": "FR",
@@ -194,22 +194,28 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 `Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](ss-authorization).
   <ProfileRequest /> 
 
-## Successful response
+---
+
+## Successful response: 200: OK
 
 <ProfileResponse />
 
 ### Successful response example
 <ResponseExample />  
 
-
+---
 
 ## Errors
 
-### 400 - Bad request
+### 400: Bad request
+
 <ProfileResponseBadRequest />  
-### 401 - Unauthorized
+
+### 401: Unauthorized
+
 <ProfileResponseUnauthorized />  
-### 404 - Not found
+### 404: Not found
+
 <ProfileResponseNotFound />  
 
 

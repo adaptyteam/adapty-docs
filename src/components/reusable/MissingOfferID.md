@@ -4,7 +4,7 @@ The request failed because the `offer_category` parameter has a value other than
 
 Another possible reason is that the `offer_id` parameter was added but left as `null`, even though it can’t be null. If that’s the case, either add a value for `offer_id` or remove the parameter entirely.
 
-###### Parameters
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ Another possible reason is that the `offer_id` parameter was added but left as `
 | error_code  | String  | Short error name. Possible value: `missing_offer_id`.        |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 The profile is not found
 

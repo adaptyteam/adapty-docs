@@ -16,16 +16,14 @@ For the latest version, refer to the [Server-side API V2](ss-authorization) and 
 
 :::
 
-Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
-
 All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for example, "2020-01-15T15:10:36.517975+0000".
 
 ### Profile
 
 Info about the [customer and his subscription.  ](server-side-api-objects#profile)
 
-| Param                    | Type  | Required | Nullable | Description                                                  |
-| :----------------------- | :---- | :------- | :------- | :----------------------------------------------------------- |
+| Param                    | Type  | Required | Nullable | Description                                                                                                                                                                                                                                         |
+| :----------------------- | :---- | :------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **profile\_id**          | UUID  | ✅        | ❌        | Adapty profile ID                                            |
 | **customer\_user\_id**   | str   | ✅        | ✅        | User ID in developer’s \(your\) system.                      |
 | **paid\_access\_levels** | dict  | ✅        | ✅        | Dictionary where the keys are paid access level identifiers configured by a developer in the Adapty Dashboard. Values are [CustomerAccessLevel](#customeraccesslevel) objects. Can be null if the customer has no access levels |

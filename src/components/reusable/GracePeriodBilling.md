@@ -4,7 +4,7 @@ The start of a grace period counts as a billing issue. So, if the grace period h
 
 To fix this, either set the start of the grace period in `billing_issue_detected_at` or, if the grace period hasn’t started yet, remove the `grace_period_expires_at` parameter.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ To fix this, either set the start of the grace period in `billing_issue_detected
 | error_code  | String  | Short error name. Always `grace_period_billing_error`.       |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

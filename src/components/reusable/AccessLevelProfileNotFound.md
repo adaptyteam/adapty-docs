@@ -4,7 +4,7 @@
 
 The request failed because the profile in the request header wasn’t found. Double-check that there are no typos in the `profile_id` or `customer_user_id` you entered in the request header, and make sure it’s for the correct app.
 
-###### Parameters
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ The request failed because the profile in the request header wasn’t found. Dou
 | error_code  | String  | Short error name. Possible value: `profile_does_not_exist`.  |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 The profile is not found
 

@@ -8,6 +8,12 @@ displayed_sidebar: APISidebar
 import ProfileObject from '@site/src/components/reusable/ProfileObject.md';
 import AccessLevel from '@site/src/components/reusable/AccessLevel.md';
 import Purchase from '@site/src/components/reusable/Purchase.md';
+import Subscription from '@site/src/components/reusable/Subscription.md';
+import NonSubscription from '@site/src/components/reusable/NonSubscription.md';
+import Offer from '@site/src/components/reusable/Offer.md';
+import Price from '@site/src/components/reusable/Price.md';
+import InstallationMeta from '@site/src/components/reusable/InstallationMeta.md';
+import PaywallObject from '@site/src/components/reusable/PaywallObject.md'
 
 Adapty API has JSON objects so you can understand a response structure and wrap it into your code.
 
@@ -71,7 +77,7 @@ You can do the following action via Adapty server-side API:
 | store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Identifier of the product in the app store (App Store/Google Play/Stripe, etc.) that unlocked this access level. |
 | store_base_plan_id            | String        | :heavy_plus_sign:   | :heavy_plus_sign:   | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The ID of the transaction in the app store (App Store/Google Play/Stripe, etc.). |
-| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><br /><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
+| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
 | purchased_at                  | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:  | The datetime when the access level was purchased the latest time. |
 | environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Environment of the transaction that provided the access level. Possible values: `Sandbox`, `Production.` |
 | is_refund                     | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates if the product has been refunded.                  |
@@ -98,8 +104,6 @@ You can do the following actions with offers via Adapty server-side API:
 | offer_category | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The category of the applied offer. Options are: **introductory**, **promotional**, **offer_code**, **win_back**. |
 | offer_type     | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The type of active offer. Options are: **free_trial**, **pay_as_you_go**, **pay_up_front**, and **unknown**. If this isn’t null, it means the offer was applied in the current subscription period. |
 | offer_id       | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The ID of the applied offer.                                 |
-
----
 
 ## Price
 
@@ -130,7 +134,55 @@ You can do the following actions with user profiles via Adapty server-side API:
 
 <ProfileObject />
 
----
+## Product
+
+This object contains details about a product in Adapty.
+
+| Name                           | Type    | Required           | Description                                                  |
+| ------------------------------ | ------- | ------------------ | ------------------------------------------------------------ |
+| title                          | String  | :heavy_minus_sign: | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
+| is_consumable                  | Boolean | :heavy_plus_sign:  | Indicates whether the product is consumable.                 |
+| adapty_product_id              | UUID    | :heavy_minus_sign: | Internal product ID as used in Adapty.                       |
+| vendor_product_id              | String  | :heavy_plus_sign:  | The product ID in app stores.                                |
+| introductory_offer_eligibility | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for an iOS introductory offer. |
+| promotional_offer_eligibility  | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for a promotional offer.   |
+| base_plan_id                   | String  | :heavy_minus_sign: | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
+| offer                          | JSON    | :heavy_minus_sign: | An [Offer](web-api-objects#offer-object) object as a JSON.   |
+
+```json
+{
+  "title": "Monthly Subscription w/o Trial",
+  "is_consumable": true,
+  "adapty_product_id": "InternalProductId",
+  "vendor_product_id": "onemonth_no_trial",
+  "introductory_offer_eligibility": false,
+  "promotional_offer_eligibility": true,
+  "base_plan_id": "B1",
+  "offer": {
+    "category": "promotional",
+    "type": "pay_up_front",
+    "id": "StoreOfferId"
+  }
+}
+
+```
+
+## RemoteConfig
+
+This object contains information about a [remote config](customize-paywall-with-remote-config) for a paywall.
+
+```json
+{
+  "lang": "en",
+  "data": "{\"bodyItems\":[{\"spacerValue\":{\"height\":20,\"style\":{\"type\":\"emptySpace\"}},\"type\":\"spacer\"},{\"mediaValue\":{\"ratio\":\"1:1\",\"source\":{\"fileType\":\"image\",\"reference\":{\"en\":\"bundle/images/new1.png\"}},\"widthStyle\":\"full\"},\"type\":\"media\"},{\"titleValue\":{\"alignment\":\"center\",\"subtitleConfig\":{\"fontSize\":17,\"text\":\"\",\"color\":\"#FFFFFF\"},\"titleConfig\":{\"fontSize\":22,\"text\":\"\"}},\"type\":\"title\"},{\"productListValue\":{\"items\":[{\"productId\":\"exampleapp.oneWeek\",\"promoText\":\"paywall.promo-1.title\",\"backgroundColor\":\"#0B867D\"},{\"discountRate\":80,\"productId\":\"exampleapp.oneYear\",\"promoText\":\"paywall.promo-2.title\",\"backgroundColor\":\"#0B867D\"}],\"layout\":\"vertical\"},\"type\":\"productList\"}],\"defaultProductId\":\"exampleapp.oneWeek\",\"footer\":{\"singleProductValue\":{\"customTitles\":{\"exampleapp.oneWeek\":\"Subscribe\",\"exampleapp.oneYear\":\"Subscribe\"},\"productId\":\"exampleapp.oneWeek\"},\"type\":\"singleProduct\"},\"id\":\"exampleapp\",\"isFullScreen\":true,\"settings\":{\"backgroundColor\":\"#000000\",\"closeButtonAlignment\":\"left\",\"closeButtonIconStyle\":\"light\",\"colorScheme\":{\"accent\":\"#007566\",\"background\":\"#001B0D\",\"label\":\"#FFFFFF\",\"primary\":\"#10C6B6\",\"secondaryLabel\":\"#FFFFFF\",\"seperator\":\"#FFFFFF\"},\"isFullScreen\":true,\"shouldShowAlertOnClose\":false,\"showCloseButtonAfter\":1,\"triggerPurchaseWithAlert\":false,\"triggerPurchaseWithProductChange\":false}}"
+}
+
+```
+
+| Name | Type   | Required          | Description                                                  |
+| ---- | ------ | ----------------- | ------------------------------------------------------------ |
+| lang | String | :heavy_plus_sign: | <p>Locale code for the paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
+| data | String | :heavy_plus_sign: | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
 
 ## Subscription
 
@@ -139,33 +191,4 @@ Info about your end user subscription.  You can do the following action via Adap
 - [Check the user's current subscription](ss-get-profile) by retrieving their profile details
 - [Set transaction to your user](ss-set-transaction) and grant a subscription to them
 
-The request failed due to missing or incorrect authorization. Check the [Authorization](ss-authorization) page, paying close attention to the **Authorization header**.
-
-The request also failed because the specified profile wasn’t found.
-
-###### Body:
-
-| Parameter   | Type    | Description                                                  |
-| ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `non_field_errors`</li><li> **errors**: A description of the error.</li></ul> |
-| error_code  | String  | Short error name. Always `not_authenticated`.                |
-| status_code | Integer | HTTP status. Always `401.`                                   |
-
-###### Response example:
-
-```json
-{
-  "errors": [
-    {
-      "source": "non_field_errors",
-      "errors": [
-        "Authentication credentials were not provided."
-      ]
-    }
-  ],
-  "error_code": "not_authenticated",
-  "status_code": 401
-}
-```
-
- 
+<Subscription />

@@ -1,6 +1,7 @@
 ---
 title: Exporting analytics with API
 toc_max_heading_level: 2
+displayed_sidebar: APISidebar
 ---
 
 import Details from '@site/src/components/Details';

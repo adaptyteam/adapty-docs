@@ -4,7 +4,7 @@ The request failed because the purchase date (`purchased_at`) is earlier than or
 
 To fix this, check the `purchased_at` and `refunded_at` parameters and make sure the refund date is later than the purchase date.
 
-###### Body
+#### Body
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
@@ -12,7 +12,7 @@ To fix this, check the `purchased_at` and `refunded_at` parameters and make sure
 | error_code  | String  | Short error name. Always `refund_date_error`.                |
 | status_code | Integer | HTTP status. Always `400`.                                   |
 
-###### Response example
+#### Response example
 
 ```json
 {

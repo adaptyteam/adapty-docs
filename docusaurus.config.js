@@ -355,6 +355,9 @@ const config = {
           "toml",
           "groovy",
           "json",
+          "php",
+          "HTTP",
+          "ruby",
           "python",
           "bash",
           "http"

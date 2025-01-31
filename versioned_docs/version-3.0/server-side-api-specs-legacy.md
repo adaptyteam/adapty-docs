@@ -17,7 +17,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 For the latest version, refer to the [Server-side API V2](ss-authorization) and the [Migration Guide to Server-side API V2](migration-guide-to-server-side-API-v2).
 
 :::
-
 Each API request must be signed with the [Secret Key](general).
 
 When calling API:
@@ -74,9 +73,9 @@ POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_leve
 
 Path parameters:
 
-| Param                              | Type | Required | Nullable | Description                                                  |
-| :--------------------------------- | :--- | :------- | :------- | :----------------------------------------------------------- |
-| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID                 |
+| Param                              | Type | Required | Nullable | Description                                                     |
+| :--------------------------------- | :--- | :------- | :------- | :-------------------------------------------------------------- |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID or developer's internal ID |
 | **access_level**                   | str  | ✅        | ❌        | ID \(slug\) of a paid access level. Find it in Adapty Dashboard |
 
 Request parameters:
@@ -452,3 +451,4 @@ Calling this endpoint enables the deletion of a user's profile and all related d
 Should another profile make a purchase from the device with the same Apple ID (or when subscription is restored), the profile history will be reassigned to the new profile, and integration events will be reissued.
 
 Please be aware that this endpoint does not support bulk deletion, therefore each request must be handled individually. For managing a substantial number of users, it is advisable to execute requests concurrently.
+
