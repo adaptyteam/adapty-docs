@@ -137,25 +137,25 @@ echo $response;
 | store            | :heavy_plus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](https://dev-docs.adapty.io/docs/initial-custom). |
 | locale           | :heavy_plus_sign:  | An identifier of a paywall locale. This parameter is expected to be a language code composed of one or more subtags separated by the "-" character. The first subtag is for the language, the second one is for the region (The support for regions will be added later).  Example: `en` means English, `en-US` represents US English. The paywall will be created in the default locale if the parameter is omitted. |
 | placement_id     | :heavy_plus_sign:  | The identifier of the [Placement](https://adapty.io/docs/placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
-| customer_user_id | :heavy_plus_sign:* | An identifier of a user in your system. Either `customer_user_id` or `profile_id` is required. |
-| profile_id       | :heavy_plus_sign:* | An identifier of a user in Adapty. Either `customer_user_id` or `profile_id` is required. |
+| customer_user_id | :heavy_plus_sign:* | <p>An identifier of a user in your system.</p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
+| profile_id       | :heavy_plus_sign:* | <p>An identifier of a user in Adapty. </p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 
 ---
 
 ## Responses
 
-### 201 - Created
+### 201: Created
 
 The paywall view is recorded successfully.
 
-### 400 - Bad Request
+### 400: Bad Request
 
 <InvalidDateFormat />
 
-### 401 - Unauthorised
+### 401: Unauthorised
 
 <ProfileResponseUnauthorized />
 
-### 404 - Not Found
+### 404: Not Found
 
 <ProfileResponseNotFound />

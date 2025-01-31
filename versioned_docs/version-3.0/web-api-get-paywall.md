@@ -143,20 +143,20 @@ echo $response;
 
 ## Responses
 
-### 200 - Successful request
+### 200: OK
 
 The successful response will contain the [Paywall](web-api-objects#paywall-object) object.
 
 <PaywallObject /> 
 
-### 400 - Bad Request
+### 400: Bad Request
 
 <ParseError />
 
-### 401 - Unauthorised
+### 401: Unauthorised
 
 <ProfileResponseUnauthorized />
 
-### 404 - Not Found
+### 404: Not Found
 
 <VariationIdNotFound />

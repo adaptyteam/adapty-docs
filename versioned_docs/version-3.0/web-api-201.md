@@ -1,5 +1,5 @@
 ---
-title: "Response to server-side API requests: 201 Created"
+title: "Response to server-side API requests: 201: Created"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar

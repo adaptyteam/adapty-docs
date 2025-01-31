@@ -48,22 +48,22 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/r
 
 ```python
 import requests
-import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/"
 
-payload = json.dumps({
-  "access_level_id": "premium",
-  "revoke_at": "2024-10-12T09:42:50.000000+0000"
-})
-headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
+payload = {
+    "access_level_id": "premium",
+    "revoke_at": "2024-10-12T09:42:50.000000+0000"
 }
 
-response = requests.request("POST", url, headers=headers, data=payload)
+headers = {
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, headers=headers, json=payload)
 
 print(response.text)
 ```
@@ -108,7 +108,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 
 ---
 
-## Successful response: 200 - Success
+## Successful response: 200: OK
 
 <ProfileResponse />
 
@@ -120,7 +120,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 
 ## Errors
 
-### 400 - Bad request 
+### 400: Bad request
+
 #### paid_access_level_does_not_exist
 <AccessLevelDoesNotExist />
 #### profile_does_not_exist
@@ -132,12 +133,14 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 
 ---
 
-### 401 - Unauthorized
+### 401: Unauthorized
+
 <ProfileResponseUnauthorized />  
 
 ---
 
-### 404 - Not found
+### 404: Not found
+
 <ProfileResponseNotFound />  
 
 

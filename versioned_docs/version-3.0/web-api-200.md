@@ -1,5 +1,5 @@
 ---
-title: "Response to web API requests: 200 Success"
+title: "Response to web API requests: 200: OK"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar

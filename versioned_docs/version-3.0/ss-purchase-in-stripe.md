@@ -42,23 +42,23 @@ curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate
 
 ```python
 import requests
-import json
 
 url = "https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/"
 
-payload = json.dumps({
-  "type": "stripe_receipt_validation_result",
-  "attributes": {
-    "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
-    "stripe_token": "<YOUR_STRIPE_TOKEN>"
-  }
-})
-headers = {
-  'Content-Type': 'application/vnd.api+json',
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+payload = {
+    "type": "stripe_receipt_validation_result",
+    "attributes": {
+        "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+        "stripe_token": "<YOUR_STRIPE_TOKEN>"
+    }
 }
 
-response = requests.request("POST", url, headers=headers, data=payload)
+headers = {
+    "Content-Type": "application/vnd.api+json",
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
+}
+
+response = requests.post(url, headers=headers, json=payload)
 
 print(response.text)
 ```
@@ -110,7 +110,7 @@ This request requires different authorization parameters:
 | **customer\_user\_id** | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK |
 | **stripe\_token**      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
 
-## Successful response
+## Successful response: 200: OK
 
 ```json
 {
@@ -120,7 +120,7 @@ This request requires different authorization parameters:
 
 ## Errors
 
-### **400** Bad request
+### **400**: Bad request
 
 Contain a list of errors with parameters.
 

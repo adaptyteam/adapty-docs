@@ -62,34 +62,36 @@ import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/integration/profile/set/integration-identifiers/"
 
-payload = json.dumps({
-  "pushwoosh_hwid": "example_pushwoosh_hwid",
-  "mixpanel_user_id": "example_mixpanel_user_id",
-  "facebook_anonymous_id": "example_facebook_anonymous_id",
-  "firebase_app_instance_id": "example_firebase_app_instance_id",
-  "amplitude_user_id": "example_amplitude_user_id",
-  "amplitude_device_id": "example_amplitude_device_id",
-  "appmetrica_device_id": "example_appmetrica_device_id",
-  "appmetrica_profile_id": "example_appmetrica_profile_id",
-  "one_signal_subscription_id": "example_one_signal_subscription_id",
-  "one_signal_player_id": "example_one_signal_player_id",
-  "branch_id": "example_branch_id",
-  "appsflyer_id": "example_appsflyer_id",
-  "adjust_device_id": "example_adjust_device_id",
-  "airbridge_device_id": "example_airbridge_device_id",
-  "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
-  "posthog_distinct_user_id": "example_posthog_distinct_user_id"
-})
-headers = {
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'adapty-platform': 'iOS',
-  'Content-Type': 'application/json',
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+payload = {
+    "pushwoosh_hwid": "example_pushwoosh_hwid",
+    "mixpanel_user_id": "example_mixpanel_user_id",
+    "facebook_anonymous_id": "example_facebook_anonymous_id",
+    "firebase_app_instance_id": "example_firebase_app_instance_id",
+    "amplitude_user_id": "example_amplitude_user_id",
+    "amplitude_device_id": "example_amplitude_device_id",
+    "appmetrica_device_id": "example_appmetrica_device_id",
+    "appmetrica_profile_id": "example_appmetrica_profile_id",
+    "one_signal_subscription_id": "example_one_signal_subscription_id",
+    "one_signal_player_id": "example_one_signal_player_id",
+    "branch_id": "example_branch_id",
+    "appsflyer_id": "example_appsflyer_id",
+    "adjust_device_id": "example_adjust_device_id",
+    "airbridge_device_id": "example_airbridge_device_id",
+    "tenjin_analytics_installation_id": "example_tenjin_analytics_installation_id",
+    "posthog_distinct_user_id": "example_posthog_distinct_user_id"
 }
 
-response = requests.request("POST", url, headers=headers, data=payload)
+headers = {
+    "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
+    "adapty-platform": "iOS",
+    "Content-Type": "application/json",
+    "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
+}
+
+response = requests.post(url, headers=headers, json=payload)
 
 print(response.text)
+
 ```
 
 </TabItem> 
@@ -161,6 +163,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | tenjin_analytics_installation_id | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Tenjin integration.](tenjin) |
 
 
-#### Successful response: 200 - Success
+#### Successful response: 200: OK
 
 The request is successful. The response body is blank.
