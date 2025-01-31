@@ -162,6 +162,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 | tenjin_analytics_installation_id | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Tenjin integration.](tenjin) |
 
 
-#### Successful response: 200: OK
+## Successful response: 200: OK
 
 The request is successful. The response body is blank.

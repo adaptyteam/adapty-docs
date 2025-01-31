@@ -121,7 +121,7 @@ fetch("https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/", reques
 
 ## Errors
 
-### **400**: Bad request
+### 400: Bad request
 
 Contain a list of errors with parameters.
 
