@@ -165,6 +165,28 @@ Contact us via the website messenger or email us at [support@adapty.io](mailto:s
 
 Our Support Team will import your transactions to Adapty. The following data will imported to Adapty for every transaction:
 
+| Parameter                     | Description                                                  |
+| ----------------------------- | ------------------------------------------------------------ |
+| user_id                       | Customer User ID, the main user identifier in Adapty, the identificator of the user in your system. |
+| apple_original_transaction_id | For subscription chains, this is the purchase date of the original transaction, linked by `store_original_transaction_id`. |
+| google_product_id             | ID of the product in the Google Play store.                  |
+| google_purchase_token         | The Google Purchase Token is a unique identifier provided by Google Play for each transaction required to validate it. |
+| country                       | Country of the transaction.                                  |
+| created_at                    | The datetime of teh transaction.                             |
+| subscription_expiration_date  | The datetime when the subscription expires.                  |
+| email                         | Your end user's email.                                       |
+| phone_number                  | Your end user's phone number.                                |
+| idfa                          | The Identifier for Advertisers, assigned by Apple to a user's device. |
+| idfv                          | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
+| advertising_id                | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
+| attribution_channel           | Marketing channel name.                                      |
+| attribution_campaign          | Marketing campaign name.                                     |
+| attribution_ad_group          | Attribution ad group.                                        |
+| attribution_ad_set            | Attribution ad set.                                          |
+| attribution_creative          | Attribution creative keyword.                                |
+
+<!---
+
 | Parameter                     | Description                                                  | RC                                                        |
 | ----------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
 | user_id                       | Customer User Id, the main user identifier in Adapty, the identificator of the user in your system | rc_original_app_user_id OR rc_last_seen_app_user_id_alias |
@@ -174,44 +196,20 @@ Our Support Team will import your transactions to Adapty. The following data wil
 | country                       | Country of the transaction                                   | country                                                   |
 | created_at                    | The datetime of teh transaction                              | first_seen_time                                           |
 | subscription_expiration_date  | The datetime when the subscription expires.                  | effective_end_time                                        |
-| email                         |                                                              | reserved_subscriber_attributes -> $email                  |
-| phone_number                  |                                                              | reserved_subscriber_attributes -> $phoneNumber            |
-| idfa                          |                                                              | reserved_subscriber_attributes -> $idfa                   |
-| idfv                          |                                                              | reserved_subscriber_attributes -> $idfv                   |
-| advertising_id                |                                                              | reserved_subscriber_attributes -> $gpsAdId                |
-| last_seen                     |                                                              | N/A                                                       |
-| birthday                      |                                                              | N/A                                                       |
-| gender                        |                                                              | N/A                                                       |
-| first_name                    |                                                              | N/A                                                       |
-| last_name                     |                                                              | N/A                                                       |
-|                               |                                                              |                                                           |
-| INTEGRATIONS                  |                                                              |                                                           |
-| amplitude_user_id             |                                                              | reserved_subscriber_attributes -> $amplitudeUserId        |
-| amplitude_device_id           |                                                              | reserved_subscriber_attributes -> $amplitudeDeviceId      |
-| mixpanel_user_id              |                                                              | reserved_subscriber_attributes -> $mixpanelDistinctId     |
-| appsflyer_id                  |                                                              | reserved_subscriber_attributes -> $appsflyerId            |
-| adjust_device_id              |                                                              | reserved_subscriber_attributes -> $adjustId               |
-| facebook_anonymous_id         |                                                              | reserved_subscriber_attributes -> $fbAnonId               |
-| appmetrica_profile_id         |                                                              | N/A                                                       |
-| appmetrica_device_id          |                                                              | N/A                                                       |
-| branch_id                     |                                                              | N/A                                                       |
-|                               |                                                              |                                                           |
-| ATTRIBUTION                   |                                                              |                                                           |
-| attribution_source            |                                                              | N/A                                                       |
-| attribution_status            |                                                              | N/A                                                       |
-| attribution_channel           |                                                              | reserved_subscriber_attributes -> $mediaSource            |
-| attribution_campaign          |                                                              | reserved_subscriber_attributes -> $campaign               |
-| attribution_ad_group          |                                                              | reserved_subscriber_attributes -> $adGroup                |
-| attribution_ad_set            |                                                              | reserved_subscriber_attributes -> $ad                     |
+| email                         | Your end user's email.                                       | reserved_subscriber_attributes -> $email                  |
+| phone_number                  | Your end user's phone number.                                | reserved_subscriber_attributes -> $phoneNumber            |
+| idfa                          | The Identifier for Advertisers, assigned by Apple to a user's device. | reserved_subscriber_attributes -> $idfa                   |
+| idfv                          | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. | reserved_subscriber_attributes -> $idfv                   |
+| advertising_id                | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. | reserved_subscriber_attributes -> $gpsAdId                |
+| attribution_channel           | Marketing channel name.                                      | reserved_subscriber_attributes -> $mediaSource            |
+| attribution_campaign          | Marketing campaign name.                                     | reserved_subscriber_attributes -> $campaign               |
+| attribution_ad_group          | Attribution ad group.                                        | reserved_subscriber_attributes -> $adGroup                |
+| attribution_ad_set            | Attribution ad set.                                          | reserved_subscriber_attributes -> $ad                     |
 | attribution_creative          |                                                              | reserved_subscriber_attributes -> $creative               |
 
-- original_store_transaction_id (for App Store transactions only)
-- product_identifier
-- country
-- first_seen_time
-- 
+--->
 
-
+In addition, integration identifiers for the following integrations will be imported: Amplitude, Mixpanel, AppsFlyer, Adjust, FacebookAds.
 
 ### FAQ
 
