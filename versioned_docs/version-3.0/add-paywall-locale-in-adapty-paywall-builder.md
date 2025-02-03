@@ -49,26 +49,15 @@ AI-powered translation is a quick and efficient way to localize your paywall.
 
 :::note
 
-To use AI for paywall translation, you’ll need a Pro, Pro+, or Enterprise plan.
+To use AI for paywall translation, you’ll need a Pro+ or Enterprise plan.
 
 :::
 
-You can translate both **String** and **List** values. By default, all lines are selected (highlighted in violet). Lines that have already been translated are marked in green and won’t be included in the new translation by default. Lines that are not selected or translated appear in gray.
+Lines containing **String** and **List** values will be translated. We automatically detect which lines have never been translated or have changed in English since their last translation and mark them as needing an update. Lines that were already translated and haven't changed will keep their original translation and won’t be re-translated.
 
-<Zoom>
-  <img src={require('./img/localization-table-PB.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in the translated version. Please adjust the translated text manually as needed.
 
-1. Select the lines to translate. It's a good idea to uncheck lines with IDs, URLs, and variables to prevent AI from translating them.
-
-2. Select the languages for translation.
+1. Select the languages for translation.
 
    <Zoom>
      <img src={require('./img/localization-table-language-PB.webp').default}
@@ -81,7 +70,7 @@ You can translate both **String** and **List** values. By default, all lines are
    />
    </Zoom>
 
-3. Click **AI Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
+2. Click **AI Translate** to apply translations. The selected lines will be translated and added to the table.
 
 ## Exporting localization files for external translation
 
