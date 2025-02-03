@@ -6,7 +6,7 @@
 
 The object that contains information on a paywall.
 
-### Properties
+#### Properties
 
 | Name          | Type             | Required           | Description                                                  |
 | ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |
@@ -18,7 +18,7 @@ The object that contains information on a paywall.
 | products      | Arrow of objects | :heavy_plus_sign:  | Array of [Products](server-side-api-objects#product) objects containing product information for the paywall. |
 | remote_config | JSON             | :heavy_minus_sign: | A [RemoteConfig](web-api-objects#remoteconfig-object) object in JSON format containing the full [remote config](customize-paywall-with-remote-config) of the paywall. |
 
-### Request example
+#### Example
 
 ```json showLineNumbers title="JSON"
 {
