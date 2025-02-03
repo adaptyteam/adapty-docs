@@ -52,7 +52,7 @@ To set attribution data for the profile, use `.updateAttribution()` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
     if error == nil {
         // succesfull attribution update
@@ -61,7 +61,7 @@ Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<n
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->
     if (error == null) {
         // succesfull attribution update
@@ -70,7 +70,7 @@ Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {
     if (error == null) {
         // succesfull attribution update
@@ -79,7 +79,7 @@ Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   await Adapty().updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>");
 } on AdaptyError catch (adaptyError) {
@@ -89,7 +89,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) => {
     if (error != null) {
         // handle the error
@@ -100,7 +100,7 @@ Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) =>
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Optionally import enum to JavaScript
 import { AttributionSource } from 'react-native-adapty';
 
@@ -145,7 +145,7 @@ In this case, it is mandatory to pass the `networkUserId` parameter.
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 // Find your implementation of AppsFlyerLibDelegate 
 // and update onConversionDataSuccess method:
 func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
@@ -155,7 +155,7 @@ func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         // It's important to include the network user ID
@@ -173,7 +173,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
     @Override
     public void onConversionDataSuccess(Map<String, Object> conversionData) {
@@ -193,7 +193,7 @@ AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 @override
 Future<bool> initialize() async {
     appsflyerSdk.onInstallConversionData((data) {
@@ -229,7 +229,7 @@ To set attribution from Adjust, pass the attribution you receive from the delega
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 // Find your implementation of AdjustDelegate 
 // and update adjustAttributionChanged method:
 func adjustAttributionChanged(_ attribution: ADJAttribution?) {
@@ -240,7 +240,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 adjustConfig.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
@@ -253,7 +253,7 @@ adjustConfig.setOnAttributionChangedListener { attribution ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 adjustConfig.setOnAttributionChangedListener(attribution -> {
     if (attribution != null) {
         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, error -> {
@@ -280,7 +280,7 @@ To connect Branch user and Adapty user, make sure you set your `customerUserId` 
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
     if let data = data {
@@ -290,7 +290,7 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 object branchListener : Branch.BranchReferralInitListener {
     override fun onInitFinished(referringParams: JSONObject?, error: BranchError?) {
         referringParams?.let { data ->
@@ -305,7 +305,7 @@ object branchListener : Branch.BranchReferralInitListener {
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Branch.BranchReferralInitListener branchListener = (data, e) -> {
     if (data != null) {
         Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH, error -> {
@@ -336,7 +336,7 @@ Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make s
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 let builder = ProfileParameterBuilder()
     .with(facebookAnonymousId: FBSDKCoreKit.AppEvents.anonymousID)
 
@@ -348,7 +348,7 @@ Adapty.updateProfile(parameters: builder.build()) { error in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 val builder = AdaptyProfileParameters.Builder()
     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
   
@@ -360,7 +360,7 @@ Adapty.updateProfile(builder.build()) { error ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
         .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context));
 
@@ -381,7 +381,7 @@ Adapty.updateProfile(builder.build(), error -> {
 If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
 To set attributes, use only the keys from the example below (all keys are optional). The system supports max 30 available attributes, where the keys are limited to 30 characters. Every value in the map should be no longer than 50 characters. `status` can only be `organic`, `non-organic` or `unknown`. Any additional keys will be omitted. 
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 let attribution = [
     "status": "non_organic|organic|unknown",
     "channel": "Google Ads",

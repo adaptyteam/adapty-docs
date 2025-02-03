@@ -10,19 +10,14 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves funnel data to track user progression through specific stages of a conversion process.
 
-### Endpoint
+## Endpoint and method
 
-```text
-https://api-admin.adapty.io/api/v1/client-api/metrics/funnel/
+```http
+POST https://api-admin.adapty.io/api/v1/client-api/metrics/funnel/
 ```
 
-### Method
+## Parameters
 
-```text
-POST
-```
-
-### Parameters
 | Name            | Type                                                 | Required           | Description                                                  |
 | --------------- | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | filters         | [MetricsFilters](client-api#metricsfilters-object-3) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
@@ -31,18 +26,18 @@ POST
 | segmentation | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
 | format          | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
-#### MetricsFilters object
+### MetricsFilters object
 
 <MetricsFilters />
 
-### Request example
+## Request example
 
   <details>
    <summary>Example request (click to expand)</summary>
 
 The example below shows how to monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
 
-```json
+```json showLineNumbers
 {
   "filters": {
     "date": [

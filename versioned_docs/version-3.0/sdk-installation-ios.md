@@ -53,14 +53,14 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    1. **Adapty** is the mandatory module.
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
-   ```shell title="Podfile"
+   ```shell showLineNumbers title="Podfile"
    pod 'Adapty', '~> 3.3.2'
    pod 'AdaptyUI', '~> 3.3.2' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    pod install
    ```
 
@@ -75,7 +75,7 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 // In your AppDelegate class:
 import Adapty
 
@@ -96,7 +96,7 @@ Adapty.activate(with: configurationBuilder) { error in
 </TabItem>
 <TabItem value="SwiftUI" label="SwiftUI" default>
 
-```swift 
+```swift showLineNumbers
 import Adapty
 
 @main
@@ -152,7 +152,7 @@ Remember that for paywalls and products to display in your app, and for analytic
 
 You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 import AdaptyUI // Only if you are going to use AdaptyUI
 
 // After calling Adapty.activate()
@@ -220,14 +220,14 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
 
 1. Add Adapty to your `Podfile`:
 
-   ```shell title="Podfile"
+   ```shell showLineNumbers title="Podfile"
    pod 'Adapty', '~> 2.11.3'
    pod 'AdaptyUI', '~> 2.11.3'
    ```
 
 2. Run:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    pod install
    ```
 
@@ -240,7 +240,7 @@ You only need to configure the Adapty SDK once, typically early in your applicat
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 // In your AppDelegate class:
 
 let configurationBuilder =
@@ -259,7 +259,7 @@ Adapty.activate(with: configurationBuilder) { error in
 </TabItem>
 <TabItem value="SwiftUI" label="SwiftUI" default>
 
-```swift 
+```swift showLineNumbers
 import Adapty
 
 @main
@@ -319,7 +319,7 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 
 If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 Adapty.setLogHandler { record in
     writeToLocalFile("Adapty \(record.level): \(record.message)")
 }

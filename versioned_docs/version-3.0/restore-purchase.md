@@ -20,7 +20,7 @@ To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-bui
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let profile = try await Adapty.restorePurchases()
     if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
@@ -33,7 +33,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.restorePurchases { [weak self] result in
     switch result {
         case let .success(profile):
@@ -48,7 +48,7 @@ Adapty.restorePurchases { [weak self] result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.restorePurchases { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -68,7 +68,7 @@ Adapty.restorePurchases { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.restorePurchases(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -89,7 +89,7 @@ Adapty.restorePurchases(result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
   final profile = await Adapty().restorePurchases();
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
@@ -103,7 +103,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 Adapty.RestorePurchases((profile, error) => {
     if (error != null) {
         // handle the error
@@ -119,7 +119,7 @@ Adapty.RestorePurchases((profile, error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const profile = await adapty.restorePurchases();
     const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;

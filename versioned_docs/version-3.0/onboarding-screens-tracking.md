@@ -17,7 +17,7 @@ To do this, simply call the `.logShowOnboarding` function:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 do {
     try await Adapty.logShowOnboarding(
       name: "onboarding_name", 
@@ -31,7 +31,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift
+```swift showLineNumbers
 Adapty.logShowOnboarding(
   name: "onboarding_name", 
   screenName: "first_screen", 
@@ -40,17 +40,17 @@ Adapty.logShowOnboarding(
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin
+```kotlin showLineNumbers
 Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", screenOrder = 1)
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java
+```java showLineNumbers
 Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   await Adapty().logShowOnboarding(name: 'onboarding_name', 
                                    screenName: 'first_screen', 
@@ -62,7 +62,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp
+```csharp showLineNumbers
 Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
     if(error != null) {
       // handle the error
@@ -71,7 +71,7 @@ Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript
+```typescript showLineNumbers
 await adapty.logShowOnboarding(
 	1, /* screenOrder */
 	'onboarding_name', /* name */

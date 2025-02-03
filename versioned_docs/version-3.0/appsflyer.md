@@ -194,7 +194,7 @@ It's very important to send AppsFlyer attribution data from the device to Adapty
 <Tabs groupId="appsflyer">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift
+```swift showLineNumbers
 class YourAppsFlyerLibDelegateImplementation {
     // Find your implementation of AppsFlyerLibDelegate 
     // and update onConversionDataSuccess method:
@@ -208,7 +208,7 @@ class YourAppsFlyerLibDelegateImplementation {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
         val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
@@ -228,7 +228,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-```javascript 
+```javascript showLineNumbers
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
 AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
@@ -259,7 +259,7 @@ appsflyerSdk.initSdk(
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 using AppsFlyerSDK;
 
@@ -288,7 +288,7 @@ void onConversionDataSuccess(string conversionData) {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
 

@@ -21,7 +21,7 @@ This guide covers only hiding **legacy Paywall Builder paywalls** which supports
 
 You can hide a paywall screen by calling the `view.dismiss` method.
 
-```typescript title="Flutter"
+```typescript showLineNumbers
 try {
   await view.dismiss();
 } on AdaptyError catch (e) {
@@ -37,7 +37,7 @@ try {
 
 You can hide a paywall view by calling the `view.Dismiss` method.
 
-```typescript title="Flutter"
+```typescript
 view.Dismiss((error) => {
   // handle the error
 });
@@ -52,7 +52,7 @@ You can hide a paywall view in 2 ways:
 - call the `view.dismiss` method 
 - return `true` from any [event ve-handlinhandler](handling-pb-paywall-events).
 
-```typescript title="React Native (TSX)"
+```typescript
 try {
   await view.dismiss();
 } catch (error) {

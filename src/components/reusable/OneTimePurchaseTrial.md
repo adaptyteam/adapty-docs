@@ -12,7 +12,7 @@ The request failed because a trial was provided with a one-time purchase. Unlike
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

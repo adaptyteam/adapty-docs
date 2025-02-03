@@ -182,7 +182,7 @@ For Adjust version 5.0 or later, use the following:
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 class AdjustModuleImplementation {
 
 func updateAdjustAdid() {
@@ -207,7 +207,7 @@ func updateAdjustAttribution() {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adjust.getAdid { adid ->
     if (adid == null) return@getAdid
 
@@ -231,7 +231,7 @@ Adjust.getAttribution { attribution ->
 
 <TabItem value="java" label="Android (Java)" default>
 
-```java
+```java showLineNumbers
 Adjust.getAdid(adid -> {
     if (adid == null) return;
 
@@ -255,7 +255,7 @@ Adjust.getAttribution(attribution -> {
 
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -297,7 +297,7 @@ try {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
 
@@ -331,7 +331,7 @@ For Adjust version 4.x or earlier, use the following:
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 class YourAdjustDelegateImplementation {
 	// Find your implementation of AdjustDelegate 
 	// and update adjustAttributionChanged method:
@@ -346,7 +346,7 @@ class YourAdjustDelegateImplementation {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 val config = AdjustConfig(context, adjustAppToken, environment)
 config.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
@@ -363,7 +363,7 @@ Adjust.onCreate(config)
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 
@@ -393,7 +393,7 @@ AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandb
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp 
+```csharp showLineNumbers
 AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
 adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
 
@@ -416,7 +416,7 @@ public void attributionChangedDelegate(AdjustAttribution attribution) {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { Adjust, AdjustConfig } from "react-native-adjust";
 import { adapty } from "react-native-adapty";
 

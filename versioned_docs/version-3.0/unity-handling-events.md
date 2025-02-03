@@ -20,7 +20,7 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 
 If a user has performed some action, this method will be invoked:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
   AdaptyUIView view, 
   AdaptyUIUserAction action
@@ -61,7 +61,7 @@ Note that `AdaptyUIUserAction` has optional value property: look at this in the 
 
 If a product was selected for purchase (by a user or by the system), this method will be invoked.
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidSelectProduct(
   AdaptyUIView view, 
   string productId
@@ -72,7 +72,7 @@ public void PaywallViewDidSelectProduct(
 
 If a user initiates the purchase process, this method will be invoked.
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartPurchase(
   AdaptyUIView view, 
   AdaptyPaywallProduct product
@@ -83,7 +83,7 @@ public void PaywallViewDidStartPurchase(
 
 If `Adapty.MakePurchase()` succeeds, the user cancels their purchase or the purchase appears to be pending, this method will be invoked:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishPurchase(
   AdaptyUIView view, 
   AdaptyPaywallProduct product, 
@@ -97,7 +97,7 @@ We recommend dismissing the screen in that case.
 
 If `Adapty.MakePurchase()` fails, this method will be invoked:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailPurchase(
   AdaptyUIView view, 
   AdaptyPaywallProduct product, 
@@ -109,7 +109,7 @@ public void PaywallViewDidFailPurchase(
 
 If `Adapty.RestorePurchases()` succeeds, this method will be invoked:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishRestore(
   AdaptyUIView view, 
   AdaptyProfile profile
@@ -122,7 +122,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 If `Adapty.RestorePurchases()` fails, this method will be invoked:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRestore(
   AdaptyUIView view, 
   AdaptyError error
@@ -135,7 +135,7 @@ public void PaywallViewDidFailRestore(
 
 If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. In this case, this operation may fail, and AdaptyUI will report the error by invoking this method:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
   AdaptyUIView view, 
   AdaptyError error
@@ -146,7 +146,7 @@ public void PaywallViewDidFailLoadingProducts(
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRendering(
   AdaptyUIView view, 
   AdaptyError error

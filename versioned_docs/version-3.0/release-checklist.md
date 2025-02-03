@@ -19,12 +19,12 @@ Bear in mind, that SDK calls must be made after calling** `.activate()`** method
 
 <Tabs>
 <TabItem value="Swift" label="iOS" default>
-```swift 
+```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android" default>
-```kotlin 
+```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
@@ -32,7 +32,7 @@ override fun onCreate() {
 ```
 </TabItem>
 <TabItem value="java" label="Flutter - info.plist" default>
-```xml 
+```xml showLineNumbers
 <dict>
     ...
     <key>AdaptyPublicSdkKey</key>
@@ -41,7 +41,7 @@ override fun onCreate() {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter - AndroidManifest.xml" default>
-```xml 
+```xml showLineNumbers
 <application ...>
        ...
        <meta-data
@@ -51,7 +51,7 @@ override fun onCreate() {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript title="React Native - /src/App.tsx"
+```typescript showLineNumbers title="React Native - /src/App.tsx"
 import { activateAdapty } from 'react-native-adapty';
 
 const App: React.FC = () => {

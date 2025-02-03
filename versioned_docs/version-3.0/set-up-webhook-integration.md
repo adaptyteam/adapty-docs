@@ -83,7 +83,7 @@ The event name can be any string. You cannot leave the fields empty for enabled 
 
 After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a `isMount` POST verification request to your endpoint.
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     adapty_check: {{check_string}}
 }
@@ -97,7 +97,7 @@ Be sure your endpoint supports **Content-Type**: `application/json` header
 
 Your server must reply with a 200 or 201 HTTP status code and send the response outlined below with the identical `check_string`. 
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     adapty_check_response: {{check_string}}
 }
@@ -115,7 +115,7 @@ Adapty will send you those events you've chosen in the **Events names** section 
 
 Each event is wrapped into the following structure:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
   "profile_id": "772204ce-ebf6-4ed9-82b0-d8688ab62b01",
   "customer_user_id": "john.doe",
@@ -236,7 +236,7 @@ If you've chosen to send attribution data, the following data will be sent with 
 
 ### Event properties example
 
-```json
+```json showLineNumbers
 {
     "price_usd": 9.99,
     "proceeds_usd": 6.99,

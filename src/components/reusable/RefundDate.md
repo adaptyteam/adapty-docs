@@ -14,7 +14,7 @@ To fix this, check the `purchased_at` and `refunded_at` parameters and make sure
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

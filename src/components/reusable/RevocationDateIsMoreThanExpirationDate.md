@@ -12,7 +12,7 @@ The request failed because the `revoke_at` you defined in the request is later t
 
 #### Response example
 
-```json
+```json showLineNumbers
   {
   "errors": [
     {

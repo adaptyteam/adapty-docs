@@ -18,7 +18,7 @@ The request failed because the access level in the request couldn’t be found. 
 
 The access level was not found.
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

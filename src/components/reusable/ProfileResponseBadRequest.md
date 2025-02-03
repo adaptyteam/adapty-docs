@@ -12,7 +12,7 @@ The request failed due to some error in a field.
 
 ###### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

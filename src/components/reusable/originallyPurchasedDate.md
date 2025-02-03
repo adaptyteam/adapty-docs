@@ -16,7 +16,7 @@ The request failed because `originally_purchased_at` is set to a later date than
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

@@ -12,7 +12,7 @@ The request failed because the format of the `visited_at` field is incorrect. Us
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
     "errors": [
         {

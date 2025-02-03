@@ -38,7 +38,7 @@ To get a paywall, use the `getPaywall` method:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
     // the requested paywall
@@ -49,7 +49,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -62,7 +62,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 import com.adapty.utils.seconds
 
 ...
@@ -83,7 +83,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 import com.adapty.utils.TimeInterval;
 
 ...
@@ -103,7 +103,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -116,7 +116,7 @@ try {
 
 <TabItem value="Unity" label="Unity" default>
 
-```csharp
+```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -131,7 +131,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const placementId = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
@@ -173,7 +173,7 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 <TabItem value="Swift" label="Swift" default>
 
 Use the `getPaywallConfiguration` method to load the view configuration.
-```swift 
+```swift showLineNumbers
 import Adapty
 import AdaptyUI
 
@@ -208,7 +208,7 @@ do {
 
 To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
-```Swift
+```Swift showLineNumbers
 @MainActor
 struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
     func timerEndAtDate(for timerId: String) -> Date {
@@ -234,7 +234,7 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s o
 
 Use the `getViewConfiguration` method to load the view configuration.
 
-```kotlin 
+```kotlin showLineNumbers
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
     return
@@ -263,7 +263,7 @@ AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
 
 Use the `getViewConfiguration` method to load the view configuration. 
 
-```java 
+```java showLineNumbers
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
@@ -294,7 +294,7 @@ In Flutter SDK, directly call the `createPaywallView` method without manually fe
 The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```javascript 
+```javascript showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
@@ -338,7 +338,7 @@ In React Native SDK, directly call the `createPaywallView` method without manual
 The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```typescript 
+```typescript showLineNumbers
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -371,7 +371,7 @@ In Unity SDK, directly call the `CreateView` method without manually fetching th
 The result of the `CreateView` method can only be used once. If you need to use it again, call the `CreateView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```csharp
+```csharp showLineNumbers
 var parameters = new AdaptyUICreateViewParameters()
   .SetPreloadProducts(preloadProducts)
   .SetCustomTags(
@@ -434,7 +434,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -446,7 +446,7 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -462,7 +462,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -478,7 +478,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```typescript
+```typescript showLineNumbers
 try {
     final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 } on AdaptyError catch (adaptyError) {
@@ -491,7 +491,7 @@ try {
 
 <TabItem value="Unity" label="Unity" default>
 
-```csharp
+```csharp showLineNumbers
 using AdaptySDK;
 
 Adapty.GetPaywallForDefaultAudience(
@@ -510,7 +510,7 @@ Adapty.GetPaywallForDefaultAudience(
 
 <TabItem value="RN" label="React Native" default>
 
-```typescript
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';

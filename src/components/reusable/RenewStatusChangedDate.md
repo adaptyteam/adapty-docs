@@ -14,7 +14,7 @@ To fix the issue, make sure the `renew_status_changed_at` is later than the time
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

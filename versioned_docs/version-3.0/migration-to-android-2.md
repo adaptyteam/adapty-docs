@@ -22,7 +22,7 @@ We've also compiled a full list of changes, which can be found on the release pa
 **Before:**  
 Previously, all information that related to the user was in the `PurchaserInfo` model. This information was obtained by calling the `.getPurchaserInfo(forceUpdate)` method:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 1.x.x
 Adapty.getPurchaserInfo(forceUpdate) { purchaserInfo, error ->
     if (error == null) {
@@ -34,7 +34,7 @@ Adapty.getPurchaserInfo(forceUpdate) { purchaserInfo, error ->
 **After:**  
 Now we have renamed the model to [`AdaptyProfile`](sdk-models#adaptyprofile). Also it affected the corresponding method:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 2.0.0
 Adapty.getProfile { result ->
     if (result is AdaptyResult.Success) {
@@ -54,7 +54,7 @@ This change also affected the method `.setOnPurchaserInfoUpdatedListener()` to `
 **Before:**  
 Previously, developers used to query a list of paywalls and then search that list for the desired element.
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 1.x.x
 Adapty.getPaywalls(forceUpdate) { paywalls, products, error ->
     if (error == null) {
@@ -66,7 +66,7 @@ Adapty.getPaywalls(forceUpdate) { paywalls, products, error ->
 **After:**  
 We have significantly simplified this use case, so now you can get only the requested object, without touching the rest. 
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 2.0.0
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
@@ -90,7 +90,7 @@ In addition to simplifying the most common usage scenario, we also significantly
 **Before:**  
 Previously the product entity was a part of the paywall, so you could use it right after `.getPaywalls` method was done. Also you could use products out of the paywalls context.
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 1.x.x
 Adapty.getPaywalls(forceUpdate) { paywalls, products, error ->
     if (error == null) {
@@ -102,7 +102,7 @@ Adapty.getPaywalls(forceUpdate) { paywalls, products, error ->
 **After:**  
 Once you have obtained the desired paywall, you can query the list of products for it. Now the product entity is independent, although it can only exist in the context of the paywall.
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 // AdaptySDK 2.0.0
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {

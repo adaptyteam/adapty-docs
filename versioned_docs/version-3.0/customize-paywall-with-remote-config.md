@@ -69,7 +69,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 
 <Tabs>
   <TabItem value="Titles" label="Titles" default>
-```json
+```json showLineNumbers
 {
     "screen_title": "Today only: Subscribe, and get 7 days for free!"
 }
@@ -78,7 +78,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="Images" label="Images" default>
-```json 
+```json showLineNumbers
 {
     "background_image": "https://adapty.io/media/paywalls/bg1.webp"
 }
@@ -87,7 +87,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="Fonts" label="Fonts" default>
-```json
+```json showLineNumbers
 {
     "font_family": "San Francisco",
     "font_size": 16
@@ -97,7 +97,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="Color" label="Color" default>
-```json 
+```json showLineNumbers
 {
     "subscribe_button_color": "purple"
 }
@@ -106,7 +106,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="HTML" label="HTML" default>
-```json
+```json showLineNumbers
 {
     "photo_gallery": "https://adapty.io/media/paywalls/link-to-html-snippet.html"
 }
@@ -115,7 +115,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="Soft/Hard Paywall" label="Soft/Hard Paywall" default>
-```json
+```json showLineNumbers
 {
     "hard_paywall": true
 }
@@ -125,7 +125,7 @@ Whatever view you've chosen to customize your paywall, you can later access this
 ```
 </TabItem>
 <TabItem value="Translations" label="Translations" default>
-```json
+```json showLineNumbers
 {
     "title": {
         "en": "Try for free!",

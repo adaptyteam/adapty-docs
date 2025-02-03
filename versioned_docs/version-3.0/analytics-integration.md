@@ -44,7 +44,7 @@ When external analytics is blocked, Adapty won't be sending any events to any in
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 let builder = AdaptyProfileParameters.Builder()
     .with(analyticsDisabled: true)
 
@@ -52,7 +52,7 @@ Adapty.updateProfile(parameters: builder.build())
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 val builder = AdaptyProfileParameters.Builder()
     .withExternalAnalyticsDisabled(true)
   
@@ -60,7 +60,7 @@ Adapty.updateProfile(builder.build())
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java ]
+```java showLineNumbers ]
 AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
     .withExternalAnalyticsDisabled(true);
 
@@ -68,7 +68,7 @@ Adapty.updateProfile(builder.build());
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 final builder = AdaptyProfileParametersBuilder()
   ..setAnalyticsDisabled(true);
 
@@ -81,7 +81,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 var builder = new AdaptyProfileParameters.Builder()
     .SetAnalyticsDisabled(true);
 
@@ -93,7 +93,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 adapty.updateProfile({ analyticsDisabled: true });
 ```
 </TabItem>
@@ -105,7 +105,7 @@ adapty.updateProfile({ analyticsDisabled: true });
 <TabItem value="Swift" label="iOS" default>
 You can disable IDFA collecting by using property `idfaCollectionDisabled`. Make sure you call it before `.activate()` method.
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 Adapty.idfaCollectionDisabled = true
 Adapty.activate("YOUR_ADAPTY_APP_TOKEN")
 ```
@@ -113,7 +113,7 @@ Adapty.activate("YOUR_ADAPTY_APP_TOKEN")
 <TabItem value="kotlin" label="Flutter, React Native, Unity" default>
 You can disable IDFA collecting by adding specific key to the Adapty-Info.plist file:
 
-```xml title="Adapty-Info.plist"
+```xml showLineNumbers title="Adapty-Info.plist"
 <key>AdaptyIDFACollectionDisabled</key>
 <true/>
 ```
@@ -121,7 +121,7 @@ You can disable IDFA collecting by adding specific key to the Adapty-Info.plist 
 <TabItem value="java" label="React Native" default>
 You also can disable IDFA collecting by setting `idfaCollectionDisabled` flag in your activation flow:
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   ios: {
     idfaCollectionDisabled: false,

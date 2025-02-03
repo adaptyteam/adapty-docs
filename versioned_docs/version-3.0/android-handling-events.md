@@ -35,7 +35,7 @@ Custom actions are handled differently. For example, if a user taps a custom but
 
 Here’s an example, but feel free to handle the actions in your own way:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
     when (action) {
         AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
@@ -57,7 +57,7 @@ Make sure to implement responses for all [predefined and custom actions](paywall
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onProductSelected(
     product: AdaptyPaywallProduct,
     context: Context,
@@ -68,7 +68,7 @@ public override fun onProductSelected(
 
 If a user initiates the purchase process, this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseStarted(
     product: AdaptyPaywallProduct,
     context: Context,
@@ -81,7 +81,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFinished(
     purchaseResult: AdaptyPurchaseResult,
     product: AdaptyPaywallProduct,
@@ -100,7 +100,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFailure(
     error: AdaptyError,
     product: AdaptyPaywallProduct,
@@ -114,7 +114,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onRestoreSuccess(
     profile: AdaptyProfile,
     context: Context,
@@ -127,7 +127,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onRestoreFailure(
     error: AdaptyError,
     context: Context,
@@ -138,7 +138,7 @@ public override fun onRestoreFailure(
 
 If a new subscription is purchased while another is still active, override this method to replace the current one with the new one. If the active subscription should remain active and the new one is added separately, call `onSubscriptionUpdateParamsReceived(null)`:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onAwaitingSubscriptionUpdateParams(
     product: AdaptyPaywallProduct,
     context: Context,
@@ -154,7 +154,7 @@ public override fun onAwaitingSubscriptionUpdateParams(
 
 If you don't pass the products during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by invoking this method:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onLoadingProductsFailure(
     error: AdaptyError,
     context: Context,
@@ -167,7 +167,7 @@ If you return `true`, AdaptyUI will repeat the request in 2 seconds.
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 public override fun onRenderingError(
     error: AdaptyError,
     context: Context,

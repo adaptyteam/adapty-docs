@@ -12,7 +12,7 @@ The request failed because the profile in the request doesn’t match the specif
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

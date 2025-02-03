@@ -52,7 +52,7 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 <Tabs>  
 <TabItem value="curl" label="cURL" default>  
 
-```bash 
+```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
@@ -82,7 +82,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/trans
 </TabItem>  
 <TabItem value="python" label="Python" default>  
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/"
@@ -122,7 +122,7 @@ print(response.text)
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
-```javascript 
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
 myHeaders.append("adapty-platform", "iOS");
@@ -183,7 +183,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/", 
 
 <!--- <ResponseExample />  --->
 
-```json
+```json showLineNumbers
 {
     "data": {
         "app_id": "14c3d623-2f3a-455a-aa86-ef83dff6913b",

@@ -13,7 +13,7 @@ This guide covers the process for **legacy Paywall Builder paywalls** only which
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the`view.registerEventHandlers` method:
 
-```typescript title="React Native (TSX)"
+```typescript showLineNumbers title="React Native (TSX)"
 import {createPaywallView} from '@adapty/react-native-ui';
 
 const view = await createPaywallView(paywall);

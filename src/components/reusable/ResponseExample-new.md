@@ -1,6 +1,6 @@
 <!-- ResponseExample -->
 
-```json title="JSON"
+```json showLineNumbers title="JSON"
 {
   "errors": {
     "property1": [

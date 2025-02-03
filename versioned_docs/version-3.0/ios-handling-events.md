@@ -33,7 +33,7 @@ Custom actions are handled differently. For example, if a user taps a custom but
 
 Here’s an example, but feel free to handle the actions in your own way:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
 
@@ -62,7 +62,7 @@ Make sure to implement responses for all [built-in and custom actions](paywall-b
 
 If a user selects a product for purchase, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
     func paywallController(
         _ controller: AdaptyPaywallController,
         didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
@@ -73,7 +73,7 @@ If a user selects a product for purchase, this method will be invoked:
 
 If a user initiates the purchase process, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 func paywallController(_ controller: AdaptyPaywallController,
                        didStartPurchase product: AdaptyPaywallProduct) {
 }
@@ -85,7 +85,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController,
     didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
@@ -105,7 +105,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController,
     didFailPurchase product: AdaptyPaywallProduct,
@@ -119,7 +119,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController, 
     didFinishRestoreWith profile: AdaptyProfile
@@ -132,7 +132,7 @@ We recommend dismissing the screen if a the has the required `accessLevel`. Refe
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 public func paywallController(
     _ controller: AdaptyPaywallController, 
     didFailRestoreWith error: AdaptyError
@@ -145,7 +145,7 @@ public func paywallController(
 
 If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 public func paywallController(
     _ controller: AdaptyPaywallController,
     didFailLoadingProductsWith error: AdaptyError
@@ -160,7 +160,7 @@ If you return `true`, AdaptyUI will repeat the request after 2 seconds.
 
 If an error occurs during the interface rendering, it will be reported by this method:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 public func paywallController(
     _ controller: AdaptyPaywallController,
     didFailRenderingWith error: AdaptyError
@@ -173,7 +173,7 @@ In a normal situation, such errors should not occur, so if you come across one, 
 
 To control or monitor processes occurring on the paywall screen within your mobile app, use the `.paywall` modifier in SwiftUI:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 @State var paywallPresented = false
 
 var body: some View {

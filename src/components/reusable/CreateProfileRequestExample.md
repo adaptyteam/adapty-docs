@@ -1,4 +1,4 @@
-```json
+```json showLineNumbers
 {
   "first_name": "Jane",
   "last_name": "Doe",

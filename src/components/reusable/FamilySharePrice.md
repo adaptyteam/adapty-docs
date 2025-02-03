@@ -16,7 +16,7 @@ If `is_family_shared` should be `true`, make sure to set the `value` parameter o
 
 The profile is not found
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

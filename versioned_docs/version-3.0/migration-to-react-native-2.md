@@ -46,7 +46,7 @@ In SDK v2 there are several changes:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 import { adapty, LogLevel } from 'react-native-adapty';
@@ -63,7 +63,7 @@ await adapty.activate('MY_API_KEY', {
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 import { activateAdapty } from 'react-native-adapty';
@@ -96,7 +96,7 @@ In SDK v2 there are several new features:
 **Error prefixes**  
 In SDK v2 you can now prepend a string to all Adapty error logs. It is ok to call this before initialization and wherever you want.
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.prefix = "[ADAPTY]";
@@ -114,7 +114,7 @@ This is an example: `[ADAPTY] #2002 (notActivated): The Adapty is not activated`
 **Error hooks**  
 You can now handle all the Adapty errors from any given place with `onError` hook. It will send to a callback all the registered AdaptyErrors right after they are created
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.onError = error => {
@@ -125,7 +125,7 @@ AdaptyError.onError = error => {
 **Changing `logLevel` in a runtime**  
 Now you can change your `logLevel` without reinitializing the SDK.
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 import { adapty, LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.WARN); // string 'warn' would also work
@@ -156,7 +156,7 @@ In SDK v2, methods are renamed:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 await adapty.identify();
@@ -169,7 +169,7 @@ await adapty.logout();
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 await adapty.profile.identify();
@@ -205,7 +205,7 @@ If you are using JavaScript, there are several new objects that may guarantee yo
 
 Below you may find an extensive diff for every _profile_ interface:
 
-```diff title="Profile interfaces diff"
+```diff showLineNumbers title="Profile interfaces diff"
 // Returned from `getProfile`, `makePurchase`, `restorePurchases`
 -interface AdaptyPurchaserInfo {
 +interface AdaptyProfile {
@@ -352,14 +352,14 @@ Note, that you can switch tabs:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
@@ -381,7 +381,7 @@ Previously, in SDK v1 there was `adapty.paywalls.setFallback` method. In SDK v2 
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 await adapty.logShowPaywall();
@@ -390,7 +390,7 @@ await adapty.setFallbackPaywalls(jsonStr);
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 await adapty.paywalls.logShow();
@@ -409,7 +409,7 @@ Below you can find all the changes introduced in v2.0.0 to `AdaptyPaywall` inter
 
 <Tabs>
 <TabItem value="Swift" label="Changes" default>
-```diff
+```diff showLineNumbers
 interface AdaptyPaywall {
 -	abTestName?: string; // it is now required
 +	abTestName: string;
@@ -429,7 +429,7 @@ interface AdaptyPaywall {
 ```
 </TabItem>
 <TabItem value="kotlin" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 export interface AdaptyPaywall {
@@ -445,7 +445,7 @@ export interface AdaptyPaywall {
 ```
 </TabItem>
 <TabItem value="java" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 export interface AdaptyPaywall {
@@ -483,7 +483,7 @@ Note, that you can switch tabs:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
@@ -491,7 +491,7 @@ const products = await adapty.getPaywallProducts(paywall);
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 const { paywalls } = await adapty.paywalls.getPaywalls({ forceUpdate: true });
@@ -510,7 +510,7 @@ Interfaces renamed:
 
 1. `AdaptyProductSubscriptionPeriod` → `AdaptySubscriptionPeriod`
 
-```diff title="Diff"
+```diff showLineNumbers title="Diff"
 interface AdaptyProduct {
 -	currencyCode: string;
 +	currencyCode?: string;
@@ -590,7 +590,7 @@ Note, that you can switch tabs:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 import { OfferEligibility } from 'react-native-adapty';
@@ -606,7 +606,7 @@ switch (product.introductoryOfferEligibility) {
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 // ...
@@ -631,7 +631,7 @@ In SDK v2 we will try to request a receipt in its unavailability in advance, and
 
 On JavaScript you can import `FetchPolicy` object to validate the passing values.
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 // AdaptySDK v2.0.0
 adapty.getPaywallProducts({ios: { fetchPolicy: 'waitForReceiptValidation' }});
 ```
@@ -655,14 +655,14 @@ Note that you can switch tabs:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK v2.0.0
 
 await adapty.makePurchase(product);
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript
+```typescript showLineNumbers
 // AdaptySDK v1.x.x
 
 await adapty.purchases.makePurchase(product, { ios: { offerId: offerId }});
@@ -694,7 +694,7 @@ Note that you can switch tabs:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK v2.0.0
 
 await adapty.setVariationId(variationId, transactionId);
@@ -703,7 +703,7 @@ await adapty.restorePurchases();
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK v1.x.x
 
 await adapty.purchases.setVariationId(variationId, transactionId);
@@ -733,7 +733,7 @@ In SDK v2, there are several changes:
 
 <Tabs>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 2.0.0
 
 import { adapty, AttributionSource } from 'react-native-adapty';
@@ -751,7 +751,7 @@ appsFlyer.onInstallConversionData((installData) => {
 ```
 </TabItem>
 <TabItem value="kotlin" label="v1.x.x (Previous)" default>
-```typescript 
+```typescript showLineNumbers
 // AdaptySDK 1.x.x
 
 import { adapty } from 'react-native-adapty';

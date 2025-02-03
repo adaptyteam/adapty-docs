@@ -14,7 +14,7 @@ To resolve this, make sure the billing issue date (`billing_issue_detected_at`) 
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

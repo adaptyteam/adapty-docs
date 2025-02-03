@@ -25,7 +25,7 @@ In order to display the visual paywall on the device screen, you must first conf
 
 <Tabs>
   <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -56,7 +56,7 @@ In order to display the visual paywall on the device screen, you must first conf
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java
+```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
         viewConfiguration,
@@ -77,7 +77,7 @@ paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topI
 ```
 </TabItem>
 <TabItem value="XML" label="XML" default>
-```xml 
+```xml showLineNumbers
 <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
@@ -105,7 +105,7 @@ For fullscreen mode where system bars overlap part of your UI, obtain insets in 
 
 <Tabs>
   <TabItem value="kotlin" label="Kotlin" default>
-```kotlin
+```kotlin showLineNumbers
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -127,7 +127,7 @@ paywallView.onReceiveSystemBarsInsets { insets ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java
+```java showLineNumbers
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;

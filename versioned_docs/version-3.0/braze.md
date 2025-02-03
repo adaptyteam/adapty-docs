@@ -144,13 +144,13 @@ To link user profiles in Adapty and Braze you need to either configure Braze SDK
 
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift 
+```swift showLineNumbers
 let braze = Braze(configuration: configuration)
 braze.changeUser(userId: "adapty_customer_user_id")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
+```kotlin showLineNumbers
 Braze.getInstance(context).changeUser("adapty_customer_user_id")
 ```
 </TabItem>

@@ -12,7 +12,7 @@ The request failed because the value of the `status` field is invalid. Please ch
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
     "errors": [
         {

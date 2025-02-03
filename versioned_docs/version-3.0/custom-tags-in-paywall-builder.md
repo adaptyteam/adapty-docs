@@ -84,7 +84,7 @@ To use custom tags in your mobile app, create a tagResolver object—a dictionar
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 let tagResolver = [
     "USERNAME": "John",
 ] 
@@ -97,14 +97,14 @@ let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
@@ -113,7 +113,7 @@ AdaptyUiTagResolver tagResolver = customTags::get;
 
 <TabItem value="Flutter" label="Flutter" default>
 
-```dart
+```dart showLineNumbers
 final customTags = {
   'USERNAME': 'John',
 };
@@ -133,7 +133,7 @@ final view = await AdaptyUI().createPaywallView(
 
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp
+```csharp showLineNumbers
 var parameters = new AdaptyUICreateViewParameters()
   .SetCustomTags(
     new Dictionary<string, string> {
@@ -150,7 +150,7 @@ AdaptyUI.CreateView(paywall, parameters, (view, error) => {
 
 <TabItem value="rn" label="React Native" default>
 
-```typescript
+```typescript showLineNumbers
 let customTags: Record<string, string> = { "USERNAME": "John" }
 //and then you can pass it to createPaywallView as follows:
 view = await createPaywallView(paywall, { customTags })

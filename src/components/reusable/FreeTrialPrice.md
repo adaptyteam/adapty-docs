@@ -16,7 +16,7 @@ Another possible reason is that the `offer_id` parameter was included but left `
 
 The profile is not found
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

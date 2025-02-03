@@ -22,7 +22,7 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 
 :::
 
-```swift 
+```swift showLineNumbers
 do {
     // every time when calling transasction.finish()
     try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
@@ -41,7 +41,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 
 :::
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setVariationId(transactionId, variationId) { error ->
     if (error == null) {
         // success
@@ -59,7 +59,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 
 :::
 
-```java 
+```java showLineNumbers
 Adapty.setVariationId(transactionId, variationId, error -> {
     if (error == null) {
         // success
@@ -77,7 +77,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 
 :::
 
-```javascript
+```javascript showLineNumbers
 try {
     // every time when calling transasction.finish()
     await Adapty().reportTransaction(
@@ -101,7 +101,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 
 :::
 
-```csharp 
+```csharp showLineNumbers
 // every time when calling transasction.finish()
 
 Adapty.ReportTransaction(
@@ -122,7 +122,7 @@ Don't forget to associate the transaction with the paywall. Skipping this step m
 
 :::
 
-```typescript 
+```typescript showLineNumbers
 const variationId = paywall.variationId;
 
 try {

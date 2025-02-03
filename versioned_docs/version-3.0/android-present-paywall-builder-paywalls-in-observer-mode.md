@@ -35,7 +35,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
+   ```kotlin showLineNumbers
    val observerModeHandler =
    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
@@ -58,7 +58,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-   ```java 
+   ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
@@ -100,7 +100,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 <Tabs>
   <TabItem value="kotlin1" label="Kotlin (option 1)" default>
 
-```kotlin 
+```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -116,7 +116,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 </TabItem>
 <TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
-```kotlin
+```kotlin showLineNumbers
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
@@ -136,7 +136,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 </TabItem>
 <TabItem value="java1" label="Java (option 1)" default>
 
-```java
+```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
         viewConfiguration,
@@ -152,7 +152,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
 
-```java
+```java showLineNumbers
 AdaptyPaywallView paywallView =
   new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
@@ -162,7 +162,7 @@ paywallView.showPaywall(viewConfiguration, products, eventListener, personalized
 </TabItem>
 <TabItem value="XML" label="XML" default>
 
-```xml 
+```xml showLineNumbers
 <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
@@ -178,7 +178,7 @@ paywallView.showPaywall(viewConfiguration, products, eventListener, personalized
 
 To do this, use this composable function:
 
-```kotlin
+```kotlin showLineNumbers
 AdaptyPaywallScreen(
     viewConfiguration,
     products,
@@ -222,7 +222,7 @@ AdaptyPaywallScreen(
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
+   ```kotlin showLineNumbers
    val observerModeHandler =
    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
@@ -245,7 +245,7 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-   ```java 
+   ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
@@ -281,7 +281,7 @@ AdaptyPaywallScreen(
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
+   ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -312,7 +312,7 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-   ```java 
+   ```java showLineNumbers
    AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
            activity,
            viewConfiguration,
@@ -335,7 +335,7 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 <TabItem value="XML" label="XML" default>
-   ```xml 
+   ```xml showLineNumbers
    <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
        android:layout_width="match_parent"
        android:layout_height="match_parent" />
@@ -363,7 +363,7 @@ AdaptyPaywallScreen(
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-   ```kotlin 
+   ```kotlin showLineNumbers
    import androidx.core.graphics.Insets
    import androidx.core.view.ViewCompat
    import androidx.core.view.WindowInsetsCompat
@@ -387,7 +387,7 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-   ```java 
+   ```java showLineNumbers
    import androidx.core.graphics.Insets;
    import androidx.core.view.ViewCompat;
    import androidx.core.view.WindowInsetsCompat;

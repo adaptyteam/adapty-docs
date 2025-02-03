@@ -32,7 +32,7 @@ To get the access level from the server, use the `.getProfile()` method:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let profile = try await Adapty.getProfile()
     
@@ -46,7 +46,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
@@ -59,7 +59,7 @@ Adapty.getProfile { result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -75,7 +75,7 @@ Adapty.getProfile { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -89,7 +89,7 @@ Adapty.getProfile(result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
   // check the access
@@ -100,7 +100,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -112,7 +112,7 @@ Adapty.GetProfile((profile, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
 } catch (error) {
@@ -136,7 +136,7 @@ Here is an example for checking for the default "premium" access level:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let profile = try await Adapty.getProfile()
     let isPremium = profile.accessLevels["premium"]?.isActive ?? false
@@ -148,7 +148,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getProfile { result in
     if let profile = try? result.get(), 
        profile.accessLevels["premium"]?.isActive ?? false {
@@ -158,7 +158,7 @@ Adapty.getProfile { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -177,7 +177,7 @@ Adapty.getProfile { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -195,7 +195,7 @@ Adapty.getProfile(result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
   if (profile?.accessLevels['premium']?.isActive ?? false) {
@@ -208,7 +208,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
     // handle the error
@@ -224,7 +224,7 @@ Adapty.GetProfile((profile, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
     
@@ -248,7 +248,7 @@ To receive messages from Adapty, you need to make some additional configuration:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.delegate = self
 
 // To receive subscription updates, extend `AdaptyDelegate` with this method:
@@ -259,28 +259,28 @@ nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to subscription state
 }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java t
+```java showLineNumbers t
 Adapty.setOnProfileUpdatedListener(profile -> {
     // handle any changes to subscription state
 });
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 Adapty().didUpdateProfileStream.listen((profile) {
   // handle any changes to subscription state
 });
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 // Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
   public void OnLoadLatestProfile(AdaptyProfile profile) {
@@ -290,7 +290,7 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Create an "onLatestProfileLoad" event listener
 adapty.addEventListener('onLatestProfileLoad', profile => {
     // handle any changes to subscription state

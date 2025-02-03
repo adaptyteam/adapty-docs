@@ -14,7 +14,7 @@ To fix this, either set the start of the grace period in `billing_issue_detected
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

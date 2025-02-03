@@ -12,7 +12,7 @@ The response means that either your request is not a valid JSON or some field is
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
     "errors": [
         {

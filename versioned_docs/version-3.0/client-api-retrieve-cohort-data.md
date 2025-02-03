@@ -10,19 +10,13 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves cohort data for tracking user groups over time.
 
-### Endpoint
+## Endpoint and method
 
-```text
-https://api-admin.adapty.io/api/v1/client-api/metrics/cohort/
+```http
+POST https://api-admin.adapty.io/api/v1/client-api/metrics/cohort/
 ```
 
-### Method
-
-```text
-POST
-```
-
-### Parameters
+## Parameters
 
 | Name            | Type                                                        | Required           | Description                                                  |
 | --------------- | ----------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -35,7 +29,7 @@ POST
 | renewal_days    | Array of Integers                                           | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
 | format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
-#### MetricsFilters object
+### MetricsFilters object
 
 | Name                 | Type                         | Required           | Description                                                  |
 | -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -57,14 +51,14 @@ POST
 
 
 
-### Request example
+## Request example
 
 <details>
    <summary>Example request (click to expand)</summary>
 
 The example below shows how to track retention by cohort to spot drop-off points, revealing trends and key moments where engagement strategies could boost retention. Limited to App Store, a specific product, and the USA.
 
-```json
+```json showLineNumbers
 {
   "filters": {
     "date": [
@@ -90,5 +84,4 @@ The example below shows how to track retention by cohort to spot drop-off points
 }
 ```
 </details>
-
 

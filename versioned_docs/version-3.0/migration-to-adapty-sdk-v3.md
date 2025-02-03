@@ -46,14 +46,14 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
 
-2. ```shell title="Podfile"
+2. ```shell showLineNumbers title="Podfile"
    pod 'Adapty', '~> 3.2.0'
    pod 'AdaptyUI', '~> 3.2.0' # optional module needed only for Paywall Builder
    ```
 
 3. Run:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    pod install
    ```
 
@@ -64,7 +64,7 @@ Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate Adap
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 // In your AppDelegate class:
 import Adapty
 import AdaptyUI // Only if you are going to use AdaptyUI
@@ -133,7 +133,7 @@ To migrate to v3.0, update your code as follows:
 <Tabs>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
-```diff 
+```diff showLineNumbers
 dependencies {
     ...
 -   implementation 'io.adapty:android-sdk:2.11.5'
@@ -147,7 +147,7 @@ dependencies {
 </TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
 
-```diff
+```diff showLineNumbers
 dependencies {
     ...
 -   implementation("io.adapty:android-sdk:2.11.5")
@@ -161,7 +161,7 @@ dependencies {
 </TabItem>
 <TabItem value="version catalog" label="version catalog" default>
 
-```diff
+```diff showLineNumbers
 //libs.versions.toml
 
 [versions]
@@ -206,7 +206,7 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 1. AdaptyUI becomes a module in Adapty SDK, so please remove `adapty_ui_flutter` from your  `pubspec.yaml` file:
 
-   ```diff
+   ```diff showLineNumbers
    dependencies:
    + adapty_flutter: ^3.2.1
    - adapty_flutter: ^2.10.3
@@ -215,7 +215,7 @@ Please note that the AdaptyUI library is deprecated and is now included as part 
 
 2. Run:
 
-   ```bash title="Bash"
+   ```bash showLineNumbers title="Bash"
    flutter pub get
    ```
 
@@ -231,14 +231,14 @@ You only need to configure the Adapty SDK once, typically at the start of your a
 
 1. Remove the AdaptyUI SDK import from your application as follows:
 
-   ```diff
+   ```diff showLineNumbers
    import 'package:adapty_flutter/adapty_flutter.dart';
    - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
 2. Update the Adapty SDK activation like this:
 
-   ```diff
+   ```diff showLineNumbers
    try {
    -	Adapty().activate();  
    +    await Adapty().activate(
@@ -269,7 +269,7 @@ Parameters:
 
 You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls):
 
-```dart title="Dart"
+```dart showLineNumbers title="Dart"
 try {
     final mediaCache = AdaptyUIMediaCacheConfiguration(
         memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB

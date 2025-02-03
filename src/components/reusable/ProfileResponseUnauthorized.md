@@ -16,7 +16,7 @@ The request also failed because the specified profile wasn’t found.
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {
