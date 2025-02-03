@@ -12,7 +12,7 @@ Are you looking to boost your in-app purchases and subscription revenue? One eff
 ### Important
 
 :::warning
-Be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-paywall-view-events) using the `.logShowPaywall().` Without this method, Adapty wouldn't be able to calculate views for the paywalls within the test, which will result in the irrelevant conversion stats.
+Be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-paywall-view-events) using the `.logShowPaywall().` Without this method, Adapty wouldn't be able to calculate views for the paywalls within the test, which would result in irrelevant conversion stats.
 :::
 
 ## How to create an A/B test
@@ -33,7 +33,6 @@ To create a new A/B test from the **A/B tests** section:
 
 1. Open the [**A/B tests**](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
 
-   
 
 <Zoom>
   <img src={require('./img/3ca9b3c-AB_tests.webp').default}
@@ -46,10 +45,7 @@ To create a new A/B test from the **A/B tests** section:
 />
 </Zoom>
 
-
-
 2. In the **A/B tests** window, click the **Create A/B test** button located at the top right side of the page. 
-
 
 <Zoom>
   <img src={require('./img/72af454-create_AB_test.webp').default}
@@ -61,10 +57,6 @@ To create a new A/B test from the **A/B tests** section:
   }}
 />
 </Zoom>
-
-
-
-
 
 3. In the **Create the A/B test** window, enter the **A/B test name**. This is a mandatory field and should be something that helps you easily identify the test in the future. Choose a name that is descriptive and meaningful, so you can quickly recognize the test when reviewing its results later on.
 4. Enter the **A/B test goal** for your further reference. Clearly defining the goal will help you stay focused on what you're trying to achieve with the test. The goal could be related to increasing subscription sign-ups, improving user engagement, or reducing bounce rates, among other objectives. By setting a specific goal, you can align your efforts and measure the success of the A/B test accurately.
@@ -82,10 +74,6 @@ To create a new A/B test from the **A/B tests** section:
   }}
 />
 </Zoom>
-
-
-
-
 
 6. Choose the paywalls you want to test and they will be shown in the **Create the A/B test** window.
 
@@ -117,7 +105,6 @@ You'll be prompted to choose whether you want to select an existing paywall grou
 
 Once you've added your paywalls, you can assign weights to each option to control how often they appear during the test. You can also set a test goal to track your progress and determine which paywall performs best with your audience.
 
-
 <Zoom>
   <img src={require('./img/1a7b50a-small-CleanShot_2023-04-25_at_14.53.452x.webp').default}
   style={{
@@ -129,14 +116,10 @@ Once you've added your paywalls, you can assign weights to each option to contro
 />
 </Zoom>
 
-
-
-
-
 Once you've created your A/B test and saved the placement, it will be available in the corresponding placement of your app and displayed for the selected audience.
 
 This means that users in the selected audience will see the paywalls included in the A/B test as they interact with your app. The weights assigned to each paywall option will determine how often each paywall appears during the test, allowing you to collect data on which paywalls perform best with your audience.
 
-You can monitor the progress of your A/B test in the dashboard and make adjustments as needed to improve your results. One way to do this is by checking the metrics of the placement. You can learn more about placement metrics in this doc [insert link].
+You can monitor the progress of your A/B test in the dashboard and make adjustments as needed to improve your results. One way to do this is by checking the metrics of the placement. You can learn more about placement metrics in [this doc](placement-metrics).
 
 By setting up an A/B test from the Placement detail page, you'll be able to more easily test different paywalls with specific audiences and get valuable insights into what works best for your business.
