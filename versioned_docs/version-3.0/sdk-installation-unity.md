@@ -77,7 +77,7 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
 1. Activate you Adapty SDK. You only need to activate it once, typically early in your app's lifecycle.
 
-    ```csharp title="C#"
+    ```csharp showLineNumbers title="C#"
     using UnityEngine;
     using AdaptySDK;
     
@@ -139,13 +139,13 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
 		Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
 
-     ```csharp title="C#"
+     ```csharp showLineNumbers title="C#"
      using AdaptySDK;
    ```
 
 3. Subscribe to Adapty events:
 
-    ```csharp title="C#"
+    ```csharp showLineNumbers title="C#"
     using UnityEngine;
     using AdaptySDK;
     
@@ -222,7 +222,7 @@ Skipping this step can cause your mobile app to crash when the paywall is displa
 
 2. Add the following line to `/Assets/Plugins/Android/launcherTemplate.gradle`:
 
-   ```groovy
+   ```groovy showLineNumbers
    apply plugin: 'com.android.application'
    // highlight-next-line
    apply plugin: 'kotlin-android'
@@ -232,7 +232,7 @@ Skipping this step can cause your mobile app to crash when the paywall is displa
 
 3. Add the following line to `/Assets/Plugins/Android/baseProjectTemplate.gradle`:
 
-   ```groovy
+   ```groovy showLineNumbers
    plugins {
        // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
        // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
@@ -328,7 +328,7 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
 You only need to activate the Adapty SDK once, typically early in your app's lifecycle.
 
-```csharp
+```csharp showLineNumbers
 using AdaptySDK;
 
 var builder = new AdaptyConfiguration.Builder("YOUR_API_TOKEN")
@@ -383,13 +383,13 @@ Adapty.Activate(builder.Build(), (error) => {
 
    Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
 
-   ```csharp title="C#"
+   ```csharp showLineNumbers title="C#"
 using AdaptySDK;
    ```
 
 2. Subscribe to Adapty events:
 
-```csharp title="C#"
+```csharp showLineNumbers title="C#"
    using UnityEngine;
    using AdaptySDK;
 

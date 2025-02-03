@@ -29,7 +29,7 @@ DELETE https://api.adapty.io/api/v2/server-side-api/profile/
 <Tabs>  
 <TabItem value="curl" label="cURL" default>  
 
-```bash 
+```bash showLineNumbers
 curl --location --request DELETE 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
@@ -41,7 +41,7 @@ curl --location --request DELETE 'https://api.adapty.io/api/v2/server-side-api/p
 </TabItem>  
 <TabItem value="python" label="Python" default>  
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v2/server-side-api/profile/"
@@ -60,7 +60,7 @@ print(response.text)
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
-```javascript 
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");

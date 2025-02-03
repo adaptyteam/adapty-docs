@@ -11,7 +11,7 @@ import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 
 This object contains details about the applied offer.
 
-```json
+```json showLineNumbers
 {
   "category": "no_offer",
   "type": "free_trial",
@@ -51,7 +51,7 @@ This object contains details about a product in Adapty.
 
 ### Example
 
-```json
+```json showLineNumbers
 {
   "title": "Monthly Subscription w/o Trial",
   "is_consumable": true,
@@ -75,7 +75,7 @@ This object contains details about a product in Adapty.
 
 This object contains information about a [remote config](customize-paywall-with-remote-config) for a paywall.
 
-```json
+```json showLineNumbers
 {
   "lang": "en",
   "data": "{\"bodyItems\":[{\"spacerValue\":{\"height\":20,\"style\":{\"type\":\"emptySpace\"}},\"type\":\"spacer\"},{\"mediaValue\":{\"ratio\":\"1:1\",\"source\":{\"fileType\":\"image\",\"reference\":{\"en\":\"bundle/images/new1.png\"}},\"widthStyle\":\"full\"},\"type\":\"media\"},{\"titleValue\":{\"alignment\":\"center\",\"subtitleConfig\":{\"fontSize\":17,\"text\":\"\",\"color\":\"#FFFFFF\"},\"titleConfig\":{\"fontSize\":22,\"text\":\"\"}},\"type\":\"title\"},{\"productListValue\":{\"items\":[{\"productId\":\"exampleapp.oneWeek\",\"promoText\":\"paywall.promo-1.title\",\"backgroundColor\":\"#0B867D\"},{\"discountRate\":80,\"productId\":\"exampleapp.oneYear\",\"promoText\":\"paywall.promo-2.title\",\"backgroundColor\":\"#0B867D\"}],\"layout\":\"vertical\"},\"type\":\"productList\"}],\"defaultProductId\":\"exampleapp.oneWeek\",\"footer\":{\"singleProductValue\":{\"customTitles\":{\"exampleapp.oneWeek\":\"Subscribe\",\"exampleapp.oneYear\":\"Subscribe\"},\"productId\":\"exampleapp.oneWeek\"},\"type\":\"singleProduct\"},\"id\":\"exampleapp\",\"isFullScreen\":true,\"settings\":{\"backgroundColor\":\"#000000\",\"closeButtonAlignment\":\"left\",\"closeButtonIconStyle\":\"light\",\"colorScheme\":{\"accent\":\"#007566\",\"background\":\"#001B0D\",\"label\":\"#FFFFFF\",\"primary\":\"#10C6B6\",\"secondaryLabel\":\"#FFFFFF\",\"seperator\":\"#FFFFFF\"},\"isFullScreen\":true,\"shouldShowAlertOnClose\":false,\"showCloseButtonAfter\":1,\"triggerPurchaseWithAlert\":false,\"triggerPurchaseWithProductChange\":false}}"

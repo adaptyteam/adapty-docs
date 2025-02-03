@@ -24,37 +24,37 @@ You can streamline your development process with Expo Application Services (EAS)
 
 1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    npm install -g eas-cli
    ```
 
 2. In the root of your project, install the dev client to make a development build:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo install expo-dev-client
    ```
 
 3. Run the installation command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo install react-native-adapty
    ```
 
 4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    eas build --profile development --platform ios
    ```
 
 5. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    eas build --profile development --platform android
    ```
 
 6. Start a development server with the following command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo start --dev-client
    ```
 
@@ -72,13 +72,13 @@ If you opt for a purely native approach, please consult the following instructio
 
 1. In your project, run the installation command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    yarn add react-native-adapty
    ```
 
 2. For iOS: Install required pods:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
    pod install --project-directory=ios/
    ```
@@ -87,14 +87,14 @@ If you opt for a purely native approach, please consult the following instructio
 
    If you run into an error during pod installation, find this line in your `ios/Podfile` and update the minimum target. After that, you should be able to run `pod install` without any issues.
 
-   ```diff title="Podfile"
+   ```diff showLineNumbers title="Podfile"
    -platform :ios, min_ios_version_supported
    +platform :ios, 15.0
    ```
 
 3. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
-   ```groovy title="/android/build.gradle"
+   ```groovy showLineNumbers title="/android/build.gradle"
    ...
    buildscript {
      ...
@@ -110,7 +110,7 @@ If you opt for a purely native approach, please consult the following instructio
 
 To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
 
-  ```typescript title="/src/App.tsx"
+  ```typescript showLineNumbers title="/src/App.tsx"
   import { adapty } from 'react-native-adapty';
 
   adapty.activate('PUBLIC_SDK_KEY');
@@ -125,7 +125,7 @@ You can pass several optional parameters during activation:
 <Tabs>
   <TabItem value="Typescript" label="Typescript" default>
 
-```typescript 
+```typescript showLineNumbers
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
@@ -141,7 +141,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 </TabItem>
 <TabItem value="JavaScript" label="JavaScript" default>
 
-```javascript 
+```javascript showLineNumbers
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
@@ -199,38 +199,38 @@ You can streamline your development process with Expo Application Services (EAS)
 
 1. If you haven't installed the EAS Command-Line Interface (CLI) yet, you can do so by using the following command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    npm install -g eas-cli
    ```
 
 2. In the root of your project, install the dev client to make a development build:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo install expo-dev-client
    ```
 
 3. Run the installation command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo install react-native-adapty
    expo install @adapty/react-native-ui
    ```
 
 4. For iOS: Make an iOS build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    eas build --profile development --platform ios
    ```
 
 4. For Android: Make an Android build with EAS CLI. This command may prompt you for additional info. You can refer to [expo official documentation](https://docs.expo.dev/develop/development-builds/create-a-build/) for more details:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    eas build --profile development --platform android
    ```
 
 5. Start a development server with the following command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    expo start --dev-client
    ```
 
@@ -249,14 +249,14 @@ If you opt for a purely native approach, please consult the following instructio
 
 1. In your project, run the installation command:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    yarn add react-native-adapty
    yarn add @adapty/react-native-ui
    ```
 
 2. For iOS: Install required pods:
 
-   ```sh title="Shell"
+   ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
    pod install --project-directory=ios/
    ```
@@ -265,14 +265,14 @@ If you opt for a purely native approach, please consult the following instructio
 
    If you run into an error during pod installation, find this line in your `ios/Podfile` and update the minimum target. After that, you should be able to run `pod install` without any issues.
 
-   ```diff title="Podfile"
+   ```diff showLineNumbers title="Podfile"
    -platform :ios, min_ios_version_supported
    +platform :ios, 15.0
    ```
 
 2. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
-   ```groovy title="/android/build.gradle"
+   ```groovy showLineNumbers title="/android/build.gradle"
    ...
    buildscript {
      ...
@@ -288,7 +288,7 @@ If you opt for a purely native approach, please consult the following instructio
 
 To use Adapty SDKs, import `adapty` and invoke `activate` in your _core component_ such as `App.tsx`. Preferably, position the activation before the React component to ensure no other Adapty calls occur before the activation.
 
-  ```typescript title="/src/App.tsx"
+  ```typescript showLineNumbers title="/src/App.tsx"
   import { adapty, LogLevel } from 'react-native-adapty';
 
   adapty.activate('PUBLIC_SDK_KEY', {
@@ -348,12 +348,12 @@ You can set `logLevel` at any time in the application's lifespan, but we recomme
 
 <Tabs>
   <TabItem value="Typescript" label="Typescript" default>
-```typescript 
+```typescript showLineNumbers
 adapty.setLogLevel('verbose');
 ```
 </TabItem>
 <TabItem value="Javascript" label="Javascript" default>
-```javascript 
+```javascript showLineNumbers
 import { LogLevel } from 'react-native-adapty';
 
 adapty.setLogLevel(LogLevel.VERBOSE);
@@ -367,7 +367,7 @@ For both `activate` and `setLogLevel` methods TypeScript validates the string yo
 
 If you're storing your standard output logs, you might wish to distinguish Adapty logs from others. You can achieve this by appending a prefix to all  `AdaptyError` instances that are logged:
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.prefix = "[ADAPTY]";
@@ -375,7 +375,7 @@ AdaptyError.prefix = "[ADAPTY]";
 
 You can also handle all raised errors from any location you prefer using `onError`. Errors will be thrown where expected, but they will also be duplicated to your event listener.
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 import { AdaptyError } from 'react-native-adapty';
 
 AdaptyError.onError = error => {
@@ -396,7 +396,7 @@ It's important to note that **this feature is intended for development use only*
 
 Here's the recommended approach for usage:
 
-```typescript title="Typescript"
+```typescript showLineNumbers title="Typescript"
 adapty.activate('PUBLIC_SDK_KEY', {
   __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
 });

@@ -82,20 +82,20 @@ To use custom tags in your mobile app, you need to create a `tagResolver` object
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 let tagResolver = [
     "USERNAME": "John",
 ]                           
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin title="Kotlin"
+```kotlin showLineNumbers title="Kotlin"
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java title="Java"
+```java showLineNumbers title="Java"
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
@@ -104,7 +104,7 @@ AdaptyUiTagResolver tagResolver = customTags::get;
 
 <TabItem value="rn" label="React Native" default>
 
-```typescript
+```typescript showLineNumbers
 let customTags: Record<string, string> = { "USERNAME": "John" }
 //and then you can pass it to createPaywallView as follows:
 view = await createPaywallView(paywall, { customTags })

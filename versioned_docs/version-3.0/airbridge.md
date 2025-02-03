@@ -107,7 +107,7 @@ For the integration, you should pass `airbridge_device_id` to profile builder an
 
 <Tabs groupId="airbridge">
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift 
+```swift showLineNumbers
 import AirBridge
 
 do {
@@ -121,7 +121,7 @@ do {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
+```kotlin showLineNumbers
 Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
     override fun onSuccess(result: String) {
         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
@@ -136,7 +136,7 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-```javascript
+```javascript showLineNumbers
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
 final deviceUUID = await Airbridge.state.deviceUUID;
@@ -154,7 +154,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 import Airbridge from 'airbridge-react-native-sdk';
 import { adapty } from 'react-native-adapty';
 

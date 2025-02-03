@@ -25,14 +25,14 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
 
-   ```yaml title="pubspec.yaml"
+   ```yaml showLineNumbers title="pubspec.yaml"
    dependencies:
    adapty_flutter: ^3.3.1
    ```
 
 2. Run:
 
-   ```bash title="Bash"
+   ```bash showLineNumbers title="Bash"
    flutter pub get
    ```
 
@@ -44,13 +44,13 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 1. Import Adapty SDKs in your application in the following way:
 
-   ```dart title="Dart"
+   ```dart showLineNumbers title="Dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
    ```
 
 2. Activate Adapty SDK with the following code:
 
-   ```dart title="Dart"
+   ```dart showLineNumbers title="Dart"
    try {
        await Adapty().activate(
            configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
@@ -112,7 +112,7 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 
 1. Add the Adapty and AdaptyUI modules to your `pubspec.yaml` file:
 
-   ```yaml title="pubspec.yaml"
+   ```yaml showLineNumbers title="pubspec.yaml"
    dependencies:
    adapty_flutter: ^2.10.3
    adapty_ui_flutter: ^2.1.3
@@ -120,13 +120,13 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 
 2. Run:
 
-   ```bash title="Bash"
+   ```bash showLineNumbers title="Bash"
    flutter pub get
    ```
 
 3. Import Adapty modules in your application in the following way:
 
-   ```dart title="Dart"
+   ```dart showLineNumbers title="Dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
    import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
@@ -139,7 +139,7 @@ The configuration of the Adapty SDK for Flutter slightly differs depending on th
 
 Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
 
-```xml title="Adapty-Info.plist"
+```xml showLineNumbers title="Adapty-Info.plist"
 <dict>
     <key>AdaptyPublicSdkKey</key>
     <string>PUBLIC_SDK_KEY</string>
@@ -160,7 +160,7 @@ Parameters:
 
 1. Add the `AdaptyPublicSdkKey` flag into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
 
-   ```xml title="AndroidManifest.xml"
+   ```xml showLineNumbers title="AndroidManifest.xml"
    <application ...>
        ...
        <meta-data
@@ -184,13 +184,13 @@ Parameters:
 
 2. In your application, add:
 
-   ```javascript title="Flutter"
+   ```javascript showLineNumbers title="Flutter"
    import 'package:adapty_flutter/adapty_flutter.dart';
    ```
 
 3. Activate Adapty SDK with the following code:
 
-   ```javascript title="Flutter"
+   ```javascript showLineNumbers title="Flutter"
    try {
    	Adapty().activate();
    } on AdaptyError catch (adaptyError) {}
@@ -212,7 +212,7 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` in your app before configuring Adapty.
 
-```javascript title="Flutter"
+```javascript showLineNumbers title="Flutter"
 try {
 	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 } on AdaptyError catch (adaptyError) {

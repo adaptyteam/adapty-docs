@@ -34,7 +34,7 @@ This integration operates in two key ways:
 
 Adapty sends selected events to Tenjin as configured in the **Events names** section on the [**Tenjin Integration page**](https://app.adapty.io/integrations/tenjin). Each event is structured like this:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
   "price": 99.0,
   "locale": "en-US",
@@ -163,7 +163,7 @@ It's very important to send Tenjin attribution data from the device to Adapty us
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift
+```swift showLineNumbers
 import TenjinSDK
 
 func updateTenjinId() {
@@ -199,7 +199,7 @@ func updateTenjinAttribution() {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.analyticsInstallationId) { error ->
     if (error != null) {
         // handle the error
@@ -211,7 +211,7 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.an
 
 <TabItem value="java" label="Android (Java)" default>
 
-```java 
+```java showLineNumbers
 Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.getAnalyticsInstallationId(), error -> {
     if (error != null) {
         // handle the error
@@ -223,7 +223,7 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.ge
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
     final tenjinId = await TenjinSDK.instance.getAnalyticsInstallationId();
     
@@ -246,7 +246,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 using System.Linq;
 
@@ -279,7 +279,7 @@ Adapty.UpdateAttribution(
 
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import Tenjin from 'react-native-tenjin';
 

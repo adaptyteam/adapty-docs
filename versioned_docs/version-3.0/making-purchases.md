@@ -32,7 +32,7 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let purchaseResult = try await Adapty.makePurchase(product: product)
 
@@ -54,7 +54,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(purchaseResult):
@@ -77,7 +77,7 @@ Adapty.makePurchase(product: product) { result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -108,7 +108,7 @@ Adapty.makePurchase(activity, product) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
@@ -135,7 +135,7 @@ Adapty.makePurchase(activity, product, result -> {
 <TabItem value="Flutter" label="Flutter" default>
 This snippet is valid for v.2.0 or later.
 
-```javascript 
+```javascript showLineNumbers
 try {
   final purchaseResult = await Adapty().makePurchase(product: product);
     switch (purchaseResult) {
@@ -160,7 +160,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 void MakePurchase(AdaptyPaywallProduct product) {
@@ -185,7 +185,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const purchaseResult = await adapty.makePurchase(product);
     switch (purchaseResult.type) {
@@ -238,7 +238,7 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -274,7 +274,7 @@ Additional request parameter:
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
@@ -303,7 +303,7 @@ Additional request parameter:
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
   final result = await adapty.makePurchase(
     product: product,
@@ -326,7 +326,7 @@ Additional request parameter:
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
   if(error != null) {
       // Handle the error
@@ -346,7 +346,7 @@ Additional request parameter:
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const purchaseResult = await adapty.makePurchase(product, params);
     switch (purchaseResult.type) {
@@ -393,7 +393,7 @@ When a user initiates a purchase in the App Store and the transaction carries ov
 
 Here’s the complete snippet:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
         // 1a.
@@ -422,14 +422,14 @@ Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
 
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript
+```javascript showLineNumbers
 try {
   await Adapty().presentCodeRedemptionSheet();
 } on AdaptyError catch (adaptyError) {
@@ -443,7 +443,7 @@ try {
 
 <TabItem value="Unity" label="Unity" default>
 
-```csharp
+```csharp showLineNumbers
 Adapty.PresentCodeRedemptionSheet((error) => {
   // handle the error
 });
@@ -452,7 +452,7 @@ Adapty.PresentCodeRedemptionSheet((error) => {
 
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 adapty.presentCodeRedemptionSheet();
 ```
 </TabItem>

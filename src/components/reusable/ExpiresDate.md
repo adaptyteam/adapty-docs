@@ -14,7 +14,7 @@ To fix this, check these dates and ensure that `expires_at` is after `purchased_
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

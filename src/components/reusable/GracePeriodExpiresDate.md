@@ -16,7 +16,7 @@ To fix this, make sure the grace period expiration date (`grace_period_expires_a
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

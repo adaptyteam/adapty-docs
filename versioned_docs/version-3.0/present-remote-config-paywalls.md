@@ -21,7 +21,7 @@ To get a remote config of a paywall, access the `remoteConfig` property and extr
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
     let headerText = paywall.remoteConfig?.dictionary?["header_text"] as? String
@@ -33,7 +33,7 @@ do {
 
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift
+```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
     let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
@@ -44,7 +44,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
 
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin
+```kotlin showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -62,7 +62,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java
+```java showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -82,7 +82,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript
+```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
   final String? headerText = paywall.remoteConfig?['header_text'];
@@ -112,22 +112,22 @@ To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.logShowPaywall(paywall);
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript
+```javascript showLineNumbers
 try {
   final result = await Adapty().logShowPaywall(paywall: paywall);
 } on AdaptyError catch (adaptyError) {
@@ -137,14 +137,14 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.LogShowPaywall(paywall, (error) => {
     // handle the error
 });
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript
+```typescript showLineNumbers
 await adapty.logShowPaywall(paywall);
 ```
 </TabItem>

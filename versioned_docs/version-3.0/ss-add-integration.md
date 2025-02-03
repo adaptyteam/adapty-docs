@@ -25,7 +25,7 @@ POST https://api.adapty.io/api/v2/server-side-api/integration/profile/set/integr
 <Tabs>
 <TabItem value="curl" label="cURL" default> 
 
-```bash
+```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/integration/profile/set/integration-identifiers/' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'adapty-platform: iOS' \
@@ -55,7 +55,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/integration/profil
 
 <TabItem value="python" label="Python" default> 
 
-```python
+```python showLineNumbers
 import requests
 import json
 
@@ -97,7 +97,7 @@ print(response.text)
 
 <TabItem value="js" label="JavaScript" default> 
 
-```javascript
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
 myHeaders.append("adapty-platform", "iOS");

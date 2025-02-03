@@ -149,7 +149,7 @@ Alternatively, you can [find the app on the App Store that will show your IDFA t
 
 To obtain the IDFV, ask your developer to request it using the following method for your app and display the received identifier to your logs or debug panel.
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 UIDevice.current.identifierForVendor
 ```
 
@@ -173,6 +173,6 @@ To find your device's advertising ID:
 
 To obtain the Android ID, ask your developer to request the [ANDROID_ID](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID) using the following method for your app and display the received identifier in your logs or debug panel.
 
-```kotlin title="Kotlin/Java"
+```kotlin showLineNumbers title="Kotlin/Java"
 android.provider.Settings.Secure.getString(contentResolver, android.provider.Settings.Secure.ANDROID_ID);
 ```

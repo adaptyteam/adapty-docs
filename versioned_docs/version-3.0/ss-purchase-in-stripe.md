@@ -31,7 +31,7 @@ This request requires different authorization parameters:
 ## Example request
 <Tabs>
 <TabItem value="curl" label="cURL" default>
-  ```bash
+  ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
 --header 'Content-Type: application/vnd.api+json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
@@ -46,7 +46,7 @@ curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate
 </TabItem>  
 <TabItem value="python" label="Python" default>
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/"
@@ -71,7 +71,7 @@ print(response.text)
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
-```javascript 
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Content-Type", "application/vnd.api+json");
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
@@ -118,7 +118,7 @@ This request requires different authorization parameters:
 
 ## Successful response: 200: OK
 
-```json
+```json showLineNumbers
 {
   "data": null
 }
@@ -140,7 +140,7 @@ Contain a list of errors with parameters.
 
 **Response example**
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

@@ -10,19 +10,13 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves analytics data for insights on user behavior and performance metrics to further use in charts.
 
-### Endpoint
+## Endpoint and method
 
-```text
-https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/
+```http
+POST https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/
 ```
 
-### Method
-
-```text
-POST
-```
-
-### Parameters
+## Parameters
 
 | Name         | Type                                                      | Required           | Description                                                  |
 | ------------ | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -173,7 +167,6 @@ Different charts can use different types of segmentation:
 - attribution_creative
 - attribution_source
 </details>
-
 ### MetricsFilters object
 
 Filtration criteria differe for different chats. Please see below the variants:
@@ -220,15 +213,14 @@ Filtration criteria differe for different chats. Please see below the variants:
   <summary>For all other charts (click to expand) </summary>
 <MetricsFilters />
 </details>
-
-### Request example
+## Request example
 
 <details>
    <summary>Example request (click to expand)</summary>
 
 Below is an example request for measuring the impact of last year's marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
 
-```json
+```json showLineNumbers
 {
   "filters": {
     "date": [

@@ -62,7 +62,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 
 1. Add `onPurchaseFinished` event:
 
-   ```diff
+   ```diff showLineNumbers
    + public override fun onPurchaseFinished(
    +     purchaseResult: AdaptyPurchaseResult,
    +     product: AdaptyPaywallProduct,
@@ -86,7 +86,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 
 2. Remove processing of the `onPurchaseCancelled` event:
 
-   ```diff
+   ```diff showLineNumbers
    - public override fun onPurchaseCanceled(
    -     product: AdaptyPaywallProduct,
    -     context: Context,
@@ -95,7 +95,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 
 3. Remove  `onPurchaseSuccess`:
 
-   ```diff
+   ```diff showLineNumbers
    
    - public override fun onPurchaseSuccess(
    -     profile: AdaptyProfile?,
@@ -110,7 +110,7 @@ For the complete code example, check out the [Make purchases in mobile app](maki
 
 Now if a new subscription is purchased while another is still active, call `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))` if the new subscription should replace a currently active subscription or `onSubscriptionUpdateParamsReceived(null)` if the active subscription should remain active and the new one should be added separately:
 
- ```diff
+ ```diff showLineNumbers
 - public override fun onAwaitingSubscriptionUpdateParams(
 -     product: AdaptyPaywallProduct,
 -     context: Context,
@@ -135,7 +135,7 @@ If you pass file URI to provide fallback paywalls, update how you do it in the f
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```diff
+```diff showLineNumbers
 val fileUri: Uri = // Get the URI for the file with fallback paywalls
 - Adapty.setFallbackPaywalls(fileUri, callback)
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback)
@@ -144,7 +144,7 @@ val fileUri: Uri = // Get the URI for the file with fallback paywalls
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```diff
+```diff showLineNumbers
 Uri fileUri = // Get the URI for the file with fallback paywalls
 - Adapty.setFallbackPaywalls(fileUri, callback);
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
@@ -165,7 +165,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 
-```diff
+```diff showLineNumbers
 - Adjust.getAttribution { attribution ->
 -     if (attribution == null) return@getAttribution
 -
@@ -203,7 +203,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="v4" label="Adjust 4.x" default>
 
-```diff
+```diff showLineNumbers
  val config = AdjustConfig(context, adjustAppToken, environment)
  config.setOnAttributionChangedListener { attribution ->
      attribution?.let { attribution ->
@@ -225,7 +225,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
      override fun onSuccess(result: String) {
 -         val params = AdaptyProfileParameters.Builder()
@@ -251,7 +251,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  // For Amplitude maintenance SDK (obsolete)
  val amplitude = Amplitude.getInstance()
  val amplitudeDeviceId = amplitude.getDeviceId()
@@ -296,7 +296,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  val startupParamsCallback = object: StartupParamsCallback {
      override fun onReceive(result: StartupParamsCallback.Result?) {
          val deviceId = result?.deviceId ?: return
@@ -339,7 +339,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
      override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
 -        Adapty.updateAttribution(
@@ -371,7 +371,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 // Login and update attribution
  Branch.getAutoInstance(this)
    .setIdentity("YOUR_USER_ID") { referringParams, error ->
@@ -397,7 +397,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 - val builder = AdaptyProfileParameters.Builder()
 -     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
 -   
@@ -424,7 +424,7 @@ Update your mobile app code as shown below. For the complete code example, check
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```diff
+```diff showLineNumbers
  // After Adapty.activate()
 
  FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
@@ -448,7 +448,7 @@ Update your mobile app code as shown below. For the complete code example, check
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```diff
+```diff showLineNumbers
 // After Adapty.activate()
 
 - FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
@@ -479,7 +479,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 - val params = AdaptyProfileParameters.Builder()
 -     .withMixpanelUserId(mixpanelAPI.distinctId)
 -     .build()
@@ -509,7 +509,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```diff
+```diff showLineNumbers
  // SubscriptionID 
  val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
      override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
@@ -530,7 +530,7 @@ Update your mobile app code as shown below. For the complete code example, check
 </TabItem>
 <TabItem value="java" label="(Android) Java" default>
 
-```diff
+```diff showLineNumbers
  // SubscriptionID 
  IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 -    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
@@ -556,7 +556,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```diff
+```diff showLineNumbers
  // PlayerID 
  val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
      stateChanges?.to?.userId?.let { playerId ->
@@ -577,7 +577,7 @@ Update your mobile app code as shown below. For the complete code example, check
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```diff
+```diff showLineNumbers
  // PlayerID 
  OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
      OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
@@ -613,7 +613,7 @@ Update your mobile app code as shown below. For the complete code example, check
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```diff
+```diff showLineNumbers
 - val params = AdaptyProfileParameters.Builder()
 -     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
 -     .build()
@@ -628,7 +628,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 </TabItem> <TabItem value="java" label="Java" default>
 
-```diff
+```diff showLineNumbers
 - AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
 -     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
 -     .build();

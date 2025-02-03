@@ -16,7 +16,7 @@ Your request failed because the `store_transaction_id` value for the [One-Time P
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

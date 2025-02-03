@@ -129,7 +129,7 @@ Then you have to set up Adapty SDK to associate your users with Firebase. For ea
 
 <Tabs groupId="firebase-and-google-analytics">
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift 
+```swift showLineNumbers
 import FirebaseCore
 import FirebaseAnalytics
 
@@ -148,7 +148,7 @@ if let appInstanceId = Analytics.appInstanceID() {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
+```kotlin showLineNumbers
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
@@ -161,7 +161,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 //after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
@@ -174,7 +174,7 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-```javascript
+```javascript showLineNumbers
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
@@ -192,7 +192,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 // We suppose FirebaseAnalytics Unity Plugin is already installed
@@ -219,7 +219,7 @@ Firebase.Analytics
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 import analytics from '@react-native-firebase/analytics';
 import { adapty } from 'react-native-adapty';
 

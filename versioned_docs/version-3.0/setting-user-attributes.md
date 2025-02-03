@@ -18,7 +18,7 @@ To set user attributes, call `.updateProfile()` method:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 let builder = AdaptyProfileParameters.Builder()
     .with(email: "email@email.com")
     .with(phoneNumber: "+18888888888")
@@ -36,7 +36,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 let builder = AdaptyProfileParameters.Builder()
     .with(email: "email@email.com")
     .with(phoneNumber: "+18888888888")
@@ -54,7 +54,7 @@ Adapty.updateProfile(params: builder.build()) { error in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 val builder = AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
@@ -73,7 +73,7 @@ Adapty.updateProfile(builder.build()) { error ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
     .withEmail("email@email.com")
     .withPhoneNumber("+18888888888")
@@ -91,7 +91,7 @@ Adapty.updateProfile(builder.build(), error -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 final builder = AdaptyProfileParametersBuilder()
   ..setEmail("email@email.com")
   ..setPhoneNumber("+18888888888")
@@ -110,7 +110,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```typescript 
+```typescript showLineNumbers
 // Only for TypeScript validation
 import type { AdaptyProfileParameters } from 'react-native-adapty';
 
@@ -132,7 +132,7 @@ try {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```csharp
+```csharp showLineNumbers
 var builder = new Adapty.ProfileParameters.Builder()
         .SetFirstName("John")
         .SetLastName("Appleseed")
@@ -171,7 +171,7 @@ If your application uses AppTrackingTransparency framework and presents an app-t
 
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 if #available(iOS 14, macOS 11.0, *) {
     let builder = AdaptyProfileParameters.Builder()
         .with(appTrackingTransparencyStatus: .authorized)
@@ -186,7 +186,7 @@ if #available(iOS 14, macOS 11.0, *) {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift
+```swift showLineNumbers
 if #available(iOS 14, macOS 11.0, *) {
     let builder = AdaptyProfileParameters.Builder()
         .with(appTrackingTransparencyStatus: .authorized)
@@ -201,7 +201,7 @@ if #available(iOS 14, macOS 11.0, *) {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript
+```javascript showLineNumbers
 final builder = AdaptyProfileParametersBuilder()
   ..setAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.authorized);
 
@@ -215,7 +215,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 var builder = new Adapty.ProfileParameters.Builder();
         .SetAppTrackingTransparencyStatus(IOSAppTrackingTransparencyStatus.Authorized);
 
@@ -228,7 +228,7 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript
+```typescript showLineNumbers
 import {AppTrackingTransparencyStatus} from 'react-native-adapty';
 
 try {
@@ -253,7 +253,7 @@ You can set your own custom attributes. These are usually related to your app us
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 do {
      builder = try builder.with(customAttribute: "value1", forKey: "key1")
 } catch {
@@ -262,17 +262,17 @@ do {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 builder.withCustomAttribute("key1", "value1")
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 builder.withCustomAttribute("key1", "value1");
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final builder = AdaptyProfileParametersBuilder()
       ..setCustomStringAttribute('value1', 'key1')
@@ -286,7 +286,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 try {
     builder = builder.SetCustomStringAttribute("string_key", "string_value");
     builder = builder.SetCustomDoubleAttribute("double_key", 123.0f);
@@ -296,7 +296,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
   await adapty.updateProfile({
     codableCustomAttributes: {
@@ -315,7 +315,7 @@ To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 do {
      builder = try builder.withRemoved(customAttributeForKey: "key2")
 } catch {
@@ -324,17 +324,17 @@ do {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 builder.withRemovedCustomAttribute("key2")
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 builder.withRemovedCustomAttribute("key2");
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final builder = AdaptyProfileParametersBuilder()
     ..removeCustomAttribute('key1')
@@ -348,7 +348,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 try {
     builder = builder.RemoveCustomAttribute("key_to_remove");
 } catch (Exception e) {
@@ -357,7 +357,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
   // to remove a key, pass null as its value
   await adapty.updateProfile({

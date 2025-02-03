@@ -13,7 +13,7 @@ The request failed because the specified profile wasn’t found. Double-check th
 
 ##### Response example
 
-```json
+```json showLineNumbers
 {
     "errors": [
         {

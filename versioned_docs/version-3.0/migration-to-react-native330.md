@@ -38,7 +38,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 1. `AdaptySubscriptionOffer`
 
-    ```typescript
+    ```typescript showLineNumbers
     export interface AdaptySubscriptionOffer {
       readonly identifier: AdaptySubscriptionOfferId;
 
@@ -52,7 +52,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 2. `AdaptySubscriptionOfferId`
 
-    ```typescript
+    ```typescript showLineNumbers
     export type AdaptySubscriptionOfferId =
       | { id?: string; type: 'introductory'; }
       | { id: string; type: 'promotional' | 'win_back'; };
@@ -66,7 +66,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
       
       <p> </p>
       
-     ```diff
+     ```diff showLineNumbers
      -  subscriptionDetails?: AdaptySubscriptionDetails; 
      +  subscription?: AdaptySubscriptionDetails;
      ```
@@ -85,7 +85,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 
 
-    ```diff
+    ```diff showLineNumbers
     -  introductoryOffers?: AdaptyDiscountPhase[];
     +  offer?: AdaptySubscriptionOffer;
 
@@ -109,7 +109,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
       
       <p> </p>
       
-     ```diff
+     ```diff showLineNumbers
      -  ios?: {
      -    readonly identifier?: string;
      -  };
@@ -127,7 +127,7 @@ In earlier versions, canceled and pending purchases were treated as errors and r
 
 Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
 
-```typescript
+```typescript showLineNumbers
 try {
     const purchaseResult = await adapty.makePurchase(product);
     switch (purchaseResult.type) {
@@ -154,7 +154,7 @@ try {
 
 For updated examples, see the [Present new Paywall Builder paywalls in React Native](react-native-present-paywalls) documentation.
 
-```diff
+```diff showLineNumbers
 - import { createPaywallView } from '@adapty/react-native-ui';
 + import { createPaywallView } from 'react-native-adapty/dist/ui';
 
@@ -173,7 +173,7 @@ try {
 
 Rename the `timerInfo` parameter to `customTimers`:
 
-```diff
+```diff showLineNumbers
 - let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
 + let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
  //and then you can pass it to createPaywallView as follows:
@@ -198,7 +198,7 @@ Now:
 2. Remove error code handling for `25: 'pendingPurchase'`.
 3. Update the `onPurchaseCompleted` callback:
 
-```typescript
+```typescript showLineNumbers
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
@@ -259,7 +259,7 @@ In addition, if you used the `AttributionSource` to get the attribution identifi
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { Adjust, AdjustConfig } from "react-native-adjust";
  import { adapty } from "react-native-adapty";
 
@@ -285,7 +285,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import Airbridge from 'airbridge-react-native-sdk';
  import { adapty } from 'react-native-adapty';
 
@@ -305,7 +305,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
-```diff
+```diff showLineNumbers
   import { adapty } from 'react-native-adapty';
 
  try {
@@ -324,7 +324,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
 
@@ -355,7 +355,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty, AttributionSource } from 'react-native-adapty';
  import appsFlyer from 'react-native-appsflyer';
 
@@ -379,7 +379,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty, AttributionSource } from 'react-native-adapty';
  import branch from 'react-native-branch';
 
@@ -397,7 +397,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import { AppEventsLogger } from 'react-native-fbsdk-next';
 
@@ -417,7 +417,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
-```diff
+```diff showLineNumbers
  import analytics from '@react-native-firebase/analytics';
  import { adapty } from 'react-native-adapty';
 
@@ -437,7 +437,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import { Mixpanel } from 'mixpanel-react-native';
 
@@ -460,7 +460,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import OneSignal from 'react-native-onesignal';
 
@@ -480,7 +480,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import OneSignal from 'react-native-onesignal';
 
@@ -502,7 +502,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import { adapty } from 'react-native-adapty';
  import Pushwoosh from 'pushwoosh-react-native-plugin';
 
@@ -533,7 +533,7 @@ Please pay attention that the order of the parameters for the `reportTransaction
 
 :::
 
-```diff
+```diff showLineNumbers
   const variationId = paywall.variationId;
 
  try {

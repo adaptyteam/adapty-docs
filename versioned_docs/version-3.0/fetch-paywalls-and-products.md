@@ -33,7 +33,7 @@ To display the products, you need to obtain a [Paywall](paywalls) from one of yo
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
     // the requested paywall
@@ -44,7 +44,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -57,7 +57,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -74,7 +74,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -90,7 +90,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -102,7 +102,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -115,7 +115,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
@@ -153,7 +153,7 @@ Once you have the paywall, you can query the product array that corresponds to i
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let products = try await Adapty.getPaywallProducts(paywall: paywall)
     // the requested products array
@@ -164,7 +164,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -177,7 +177,7 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -194,7 +194,7 @@ Adapty.getPaywallProducts(paywall) { result ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.getPaywallProducts(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
@@ -210,7 +210,7 @@ Adapty.getPaywallProducts(paywall, result -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript 
+```javascript showLineNumbers
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -222,7 +222,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp 
+```csharp showLineNumbers
 Adapty.GetPaywallProducts(paywall, (products, error) => {
   if(error != null) {
     // handle the error
@@ -235,7 +235,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     // ...paywall
     const products = await adapty.getPaywallProducts(paywall);
@@ -264,7 +264,7 @@ After showing the initial products, be sure to call the regular `getPaywallProdu
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let products = try await Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall)
     // the requested products array without subscriptionOffer
@@ -275,7 +275,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -308,7 +308,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID")
    // the requested paywall
@@ -319,7 +319,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -332,7 +332,7 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -349,7 +349,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -365,7 +365,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
@@ -379,7 +379,7 @@ try {
 </TabItem>
 <!--- <TabItem value="Dart" label="Flutter" default>
 
-```typescript 
+```typescript showLineNumbers
 // TODO: add Dart example
 ```
 </TabItem> --->

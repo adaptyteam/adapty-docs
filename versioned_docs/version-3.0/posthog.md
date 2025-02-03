@@ -26,7 +26,7 @@ Integrating PostHog with Adapty enables seamless tracking of subscription-relate
 
 Adapty sends selected events to PostHog as configured in the **Events names** section on the [**PostHog Integration page**](https://app.adapty.io/integrations/posthog). Each event is structured like this:
 
-```json
+```json showLineNumbers
 {
   "distinct_id": "john.doe@example.com",
   "timestamp": "2025-01-08T11:06:12+00:00",
@@ -126,7 +126,7 @@ To enable receiving attribution data from PostHog, pass the `distinctId` value t
 
 <TabItem value="Swift" label="Swift" default> 
 
-```swift
+```swift showLineNumbers
 do {
     let distinctId = PostHogSDK.shared.getDistinctId()
 
@@ -143,7 +143,7 @@ do {
 
 <TabItem value="kotlin" label="Kotlin" default> 
 
-```Kotlin
+```Kotlin showLineNumbers
 Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
     if (error != null) {
         // handle the error
@@ -155,7 +155,7 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 <TabItem value="java" label="Java" default>
 
-```java
+```java showLineNumbers
 Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
     if (error != null) {
         // handle the error
@@ -167,7 +167,7 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 <TabItem value="Flutter" label="Flutter" default> 
 
-```javascript
+```javascript showLineNumbers
 try {
     final distinctId = await Posthog().getDistinctId();
 
@@ -190,7 +190,7 @@ There is no official PostHog SDK for Unity.
 
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript
+```typescript showLineNumbers
  import { adapty } from 'react-native-adapty';
 import { usePostHog } from 'posthog-react-native'
 

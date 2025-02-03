@@ -20,7 +20,7 @@ The object that contains information on a paywall.
 
 ### Request example
 
-```json title="JSON"
+```json showLineNumbers title="JSON"
 {
   "placement_id": "PaywallPlacementId",
   "variation_id": "00000000-0000-0000-0000-000000000000",

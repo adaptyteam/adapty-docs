@@ -83,7 +83,7 @@ If these aren’t set, Adapty will default to using your user ID (`customerUserI
 
 <Tabs groupId="appmetrica">
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift 
+```swift showLineNumbers
 import AppMetricaCore 
 
 if let deviceID = AppMetrica.deviceID {
@@ -103,7 +103,7 @@ if let deviceID = AppMetrica.deviceID {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
+```kotlin showLineNumbers
 val startupParamsCallback = object: StartupParamsCallback {
     override fun onReceive(result: StartupParamsCallback.Result?) {
         val deviceId = result?.deviceId ?: return
@@ -133,7 +133,7 @@ AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupPa
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-```javascript
+```javascript showLineNumbers
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
 final deviceId = await AppMetrica.deviceId;
@@ -157,7 +157,7 @@ if (deviceId != null) {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 var deviceId = AppMetrica.GetDeviceId();
@@ -180,7 +180,7 @@ if (deviceId != null {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
 

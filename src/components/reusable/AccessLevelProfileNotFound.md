@@ -16,7 +16,7 @@ The request failed because the profile in the request header wasn’t found. Dou
 
 The profile is not found
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

@@ -14,7 +14,7 @@ When a refund is set, both the refund date and reason need to be specified.
 
 #### Response example
 
-```json
+```json showLineNumbers
 {
   "errors": [
     {

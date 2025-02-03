@@ -100,7 +100,7 @@ Make sure that any user ID you use to send data to Amplitude from your app match
 
 <Tabs groupId="amplitude">
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift
+```swift showLineNumbers
 import Amplitude 
 
 do {
@@ -119,7 +119,7 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 //for Amplitude maintenance SDK (obsolete)
 val amplitude = Amplitude.getInstance()
 val amplitudeDeviceId = amplitude.getDeviceId()
@@ -151,7 +151,7 @@ Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { erro
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-```javascript 
+```javascript showLineNumbers
 import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
@@ -173,7 +173,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 Adapty.SetIntegrationIdentifier(
@@ -193,7 +193,7 @@ Adapty.SetIntegrationIdentifier(
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 
 try {

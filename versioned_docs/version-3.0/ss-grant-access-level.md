@@ -34,7 +34,7 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-
 <Tabs>  
 <TabItem value="curl" label="cURL" default>  
 
-```bash 
+```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
@@ -50,7 +50,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/g
 </TabItem>  
 <TabItem value="python" label="Python" default>  
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/"
@@ -76,7 +76,7 @@ print(response.text)
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
-```javascript 
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");

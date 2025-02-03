@@ -164,7 +164,7 @@ Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk
 **Glassfy**
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
   Glassfy.initialize(apiKey: "YOUR_API_KEY", watcherMode: false)
@@ -178,7 +178,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
@@ -189,7 +189,7 @@ class App : Application() {
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 public class App extends Application {
   @Override
   public void onCreate() {
@@ -200,7 +200,7 @@ public class App extends Application {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
 
   await Glassfy.initialize('YOU_API_KEY',watcherMode: false);
@@ -212,7 +212,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
 
   await Glassfy.initialize('YOU_API_KEY', false);
@@ -228,7 +228,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
   
   let configurationBuilder =
@@ -243,7 +243,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -256,7 +256,7 @@ override fun onCreate() {
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 @Override
 public void onCreate() {
     super.onCreate();
@@ -270,7 +270,7 @@ public void onCreate() {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
     Adapty().activate();
 } on AdaptyError catch (adaptyError) {}
@@ -278,7 +278,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 adapty.activate('PUBLIC_SDK_KEY', {
   customerUserId: 'YOUR_USER_ID', // optionally add your internal user id
 });
@@ -292,7 +292,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Glassfy.offerings { (offerings, err) in
     if let offering = offerings?["premium"] {
         // display your offering's skus
@@ -307,7 +307,7 @@ Glassfy.offerings { (offerings, err) in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Glassfy.offerings() { offers, err ->
     offers?.all
         ?.firstOrNull { it.offeringId == "premium" }
@@ -324,7 +324,7 @@ Glassfy.offerings() { offers, err ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Glassfy.offerings(new OfferingsCallback() {
     @Override
     public void onResult(@Nullable Offerings offers, @Nullable GlassfyError err) {
@@ -350,7 +350,7 @@ Glassfy.offerings(new OfferingsCallback() {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
     var offerings = await Glassfy.offerings();
     var offering = offerings.all
@@ -367,7 +367,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     let offering = Glassfy.offerings().all.find((o) => o.offeringId === 'premium');
 
@@ -387,7 +387,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -400,7 +400,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -417,7 +417,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -433,7 +433,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -445,7 +445,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
@@ -462,7 +462,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
     case let .success(products):
@@ -481,7 +481,7 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywallProducts(paywall) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -504,7 +504,7 @@ Adapty.getPaywallProducts(paywall) { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getPaywallProducts(paywall, result -> {
     if (result instanceof AdaptyResult.Success) {
         List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
@@ -526,7 +526,7 @@ Adapty.getPaywallProducts(paywall, result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
   // the requested products array
@@ -544,7 +544,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     // ...paywall
     const products = await adapty.getPaywallProducts(paywall);
@@ -565,7 +565,7 @@ In Adapty, you always request the paywall via [placement id](placements). If you
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Glassfy.permissions { permissions, err in
     guard let permissions = permissions else { return }
     for p in permissions.all {
@@ -584,7 +584,7 @@ Glassfy.permissions { permissions, err in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Glassfy.permissions { permission, err ->
     // update app status accordingly
     permission?.all?.forEach {
@@ -600,7 +600,7 @@ Glassfy.permissions { permission, err ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Glassfy.permissions(new PermissionsCallback() {
     @Override
     public void onResult(@Nullable Permissions permission, @Nullable GlassfyError error) {
@@ -623,7 +623,7 @@ Glassfy.permissions(new PermissionsCallback() {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
 var permission = await Glassfy.permissions();
       permission.all?.forEach((p)=> {
@@ -638,7 +638,7 @@ var permission = await Glassfy.permissions();
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const permissions = await Glassfy.permissions();
     permissions.all.forEach((p)=>{
@@ -664,7 +664,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getProfile { result in
     if let profile = try? result.get() {
         // check the access
@@ -676,7 +676,7 @@ Adapty.getProfile { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getProfile { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -692,7 +692,7 @@ Adapty.getProfile { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getProfile(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
@@ -706,7 +706,7 @@ Adapty.getProfile(result -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
   // check the access
@@ -717,7 +717,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
 } catch (error) {
@@ -734,7 +734,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift
+```swift showLineNumbers
 Glassfy.purchase(sku: premiumSku) { (transaction, e) in
     // update app status accondingly
     if let p = transaction?.permissions["aPermission"] {
@@ -748,7 +748,7 @@ Glassfy.purchase(sku: premiumSku) { (transaction, e) in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Glassfy.purchase(activity, sku) { transaction, err ->
     // update app status accordingly
     transaction?.permissions
@@ -765,7 +765,7 @@ Glassfy.purchase(activity, sku) { transaction, err ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Glassfy.purchase(activity, sku, new PurchaseCallback() {
     @Override
     public void onResult(@Nullable Transaction t, @Nullable GlassfyError err) {
@@ -790,7 +790,7 @@ Glassfy.purchase(activity, sku, new PurchaseCallback() {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
     var transaction = await Glassfy.purchaseSku(sku);
 
@@ -808,7 +808,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const transaction = await Glassfy.purchaseSku(premiumSku );
     const permission = transaction.permissions.all.find((p) => p.permissionId === "aPermission");
@@ -827,7 +827,7 @@ try {
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
     switch result {
     case let .success(info):
@@ -841,7 +841,7 @@ Adapty.makePurchase(product: product) { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.makePurchase(activity, product) { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -862,7 +862,7 @@ Adapty.makePurchase(activity, product) { result ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.makePurchase(activity, product, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchasedInfo info = ((AdaptyResult.Success<AdaptyPurchasedInfo>) result).getValue();
@@ -885,7 +885,7 @@ Adapty.makePurchase(activity, product, result -> {
 
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final profile = await Adapty().makePurchase(product: product);
   if (profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false) {
@@ -898,7 +898,7 @@ try {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const profile = await adapty.makePurchase(product);
   const isSubscribed = profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;

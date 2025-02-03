@@ -150,7 +150,7 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 <Tabs groupId="onesignal">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 // SubscriptionID
 OneSignal.Notifications.requestPermission({ accepted in
     Task {
@@ -165,7 +165,7 @@ OneSignal.Notifications.requestPermission({ accepted in
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 // SubscriptionID
 val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
@@ -181,7 +181,7 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 </TabItem>
 <TabItem value="java" label="(Android) Java" default>
 
-```java 
+```java showLineNumbers
 // SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
     Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
@@ -196,7 +196,7 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-```javascript
+```javascript showLineNumbers
 OneSignal.shared.setSubscriptionObserver((changes) {
     final playerId = changes.to.userId;
     if (playerId != null) {
@@ -218,7 +218,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp
+```csharp showLineNumbers
 using AdaptySDK;
 using OneSignalSDK;
 
@@ -235,7 +235,7 @@ Adapty.SetIntegrationIdentifier(
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 
@@ -258,7 +258,7 @@ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
 <Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 // PlayerID
 // in your OSSubscriptionObserver implementation
 func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -276,7 +276,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 // PlayerID
 val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
     stateChanges?.to?.userId?.let { playerId ->
@@ -292,7 +292,7 @@ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 // PlayerID
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
@@ -312,7 +312,7 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
 
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-```javascript
+```javascript showLineNumbers
 // PlayerID (pre-v5 OneSignal SDK)
 // in your OSSubscriptionObserver implementation
 func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -329,7 +329,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';
 

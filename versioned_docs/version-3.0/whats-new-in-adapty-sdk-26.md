@@ -57,7 +57,7 @@ We hope these updates enhance your experience with Adapty SDK and the integratio
 
 <Tabs>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 // Adapty 2.4.x and older
 
 try {
@@ -86,7 +86,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 // Adapty 2.4.x and older
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -107,7 +107,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Adapty 2.4.x and older
 
 import {adapty,OfferEligibility} from 'react-native-adapty';
@@ -132,7 +132,7 @@ switch (product.introductoryOfferEligibility) {
 
 <Tabs>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 // Adapty 2.6.0+
 
 try {
@@ -159,7 +159,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp
+```csharp showLineNumbers
 // Adapty 2.6.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -181,7 +181,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Adapty 2.6.0+
 
 import {adapty,OfferEligibility} from 'react-native-adapty';
@@ -208,7 +208,7 @@ if (intoEligibility === OfferEligibility.Eligible) {
 
 <Tabs>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript
+```javascript showLineNumbers
 // Adapty 2.4.x and older
 
 try {
@@ -248,7 +248,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 // Adapty 2.4.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -292,7 +292,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Adapty 2.4.x and older
 
 import {adapty} from 'adapty';
@@ -335,7 +335,7 @@ if (promoDiscount) {
 
 <Tabs>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 // Adapty 2.6.0+
 
 try {
@@ -371,7 +371,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 // Adapty 2.6.0+
 
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -404,7 +404,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 // Adapty 2.6.0+
 
 import {adapty} from 'react-native-adapty';
