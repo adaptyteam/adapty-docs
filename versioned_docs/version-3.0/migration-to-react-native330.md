@@ -36,7 +36,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### New models
 
-1. `AdaptySubscriptionOffer`
+1. `AdaptySubscriptionOffer`:
 
     ```typescript
     export interface AdaptySubscriptionOffer {
@@ -50,7 +50,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
     }
     ```
 
-2. `AdaptySubscriptionOfferId`
+2. `AdaptySubscriptionOfferId`:
 
     ```typescript
     export type AdaptySubscriptionOfferId =
@@ -60,7 +60,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### Changed models
 
-1. `AdaptyPaywallProduct`
+1. `AdaptyPaywallProduct`:
    
     - Renamed the `subscriptionDetails` property to `subscription`.
       
@@ -71,7 +71,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
      +  subscription?: AdaptySubscriptionDetails;
      ```
     
-2. `AdaptySubscriptionDetails`
+2. `AdaptySubscriptionDetails`:
 
     - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
 
@@ -83,17 +83,15 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
       
       <p> </p>
 
-
-
     ```diff
     -  introductoryOffers?: AdaptyDiscountPhase[];
     +  offer?: AdaptySubscriptionOffer;
-
+    
        ios?: {
     -    promotionalOffer?: AdaptyDiscountPhase;
          subscriptionGroupIdentifier?: string;
        };
-
+    
        android?: {
     -    offerId?: string;
          basePlanId: string;
@@ -114,6 +112,13 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
      -    readonly identifier?: string;
      -  };
      ```
+
+### Remove models
+
+1. `AttributionSource`:
+   - The string is now used in places where `AttributionSource` was previously used.
+2. `OfferEligibility`:
+   - This model has been removed as it is no longer needed. Now, an offer is returned only if the user is eligible.
 
 ## Remove `getProductsIntroductoryOfferEligibility` method
 
