@@ -36,49 +36,52 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### New models
 
-1. `AdaptySubscriptionOffer`
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer):
 
-```typescript
-export interface AdaptySubscriptionOffer {
-  readonly identifier: AdaptySubscriptionOfferId;
+    ```typescript
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
 
-  phases: AdaptyDiscountPhase[];
+      phases: AdaptyDiscountPhase[];
 
-  android?: {
-    offerTags?: string[];
-  };
-}
-```
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
 
-2. `AdaptySubscriptionOfferId`
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid):
 
-```typescript
-export type AdaptySubscriptionOfferId =
-  | { id?: string; type: 'introductory'; }
-  | { id: string; type: 'promotional' | 'win_back'; };
-```
+    ```typescript
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
 
 ### Changed models
 
-1. `AdaptyPaywallProduct`
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct):
    
-   - Renamed the `subscriptionDetails` property to `subscription`.
-   
-   <p> </p>
-   
-    ```diff
-    -  subscriptionDetails?: AdaptySubscriptionDetails; 
-    +  subscription?: AdaptySubscriptionDetails;
-    ```
-   
-2. `AdaptySubscriptionDetails`
-   - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
-   - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
-   - `offerId` is removed. Offer ID is now stored in `AdaptySubscriptionOffer.identifier`.
-   - `offerTags` is moved to `AdaptySubscriptionOffer.android`.
-   
-   <p> </p>
+    - Renamed the `subscriptionDetails` property to `subscription`.
+      
+      <p> </p>
+      
+     ```diff
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails):
 
+    - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
+
+    - `introductoryOfferEligibility` is removed (offers are returned only if the user is eligible).
+
+    - `offerId` is removed. Offer ID is now stored in `AdaptySubscriptionOffer.identifier`.
+
+    - `offerTags` is moved to `AdaptySubscriptionOffer.android`.
+      
+      <p> </p>
 
     ```diff
     -  introductoryOffers?: AdaptyDiscountPhase[];
@@ -98,17 +101,24 @@ export type AdaptySubscriptionOfferId =
        };
      }
     ```
-3. `AdaptyDiscountPhase`:
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase):
    
-   - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
-   
-   <p> </p>
-   
-    ```diff
-    -  ios?: {
-    -    readonly identifier?: string;
-    -  };
-    ```
+    - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
+      
+      <p> </p>
+      
+     ```diff
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### Remove models
+
+1. `AttributionSource`:
+   - The string is now used in places where `AttributionSource` was previously used.
+2. `OfferEligibility`:
+   - This model has been removed as it is no longer needed. Now, an offer is returned only if the user is eligible.
 
 ## Remove `getProductsIntroductoryOfferEligibility` method
 
@@ -118,11 +128,11 @@ Starting with version 3.3.0, the product object includes offers only if the user
 
 ## Update making purchase
 
-In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
+In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
 
 Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
 
-```typescript title="React Native (TSX)"
+```typescript
 try {
     const purchaseResult = await adapty.makePurchase(product);
     switch (purchaseResult.type) {
@@ -193,7 +203,7 @@ Now:
 2. Remove error code handling for `25: 'pendingPurchase'`.
 3. Update the `onPurchaseCompleted` callback:
 
-```typescript title="React Native (TSX)"
+```typescript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
