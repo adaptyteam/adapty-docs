@@ -60,17 +60,17 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 ### Install Adapty SDK and replace RevenueCat SDK
 
-IInstall Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
+Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
 
 You need to replace a couple of SDK methods on the app side. Let's look at the most common functions and how to replace them with Adapty SDK.
 
 #### SDK activation
 
-Replace `Purchases.configure` with `Adapty.activate`.
+Replace `Purchases.configure` with `Adapty.activate`. 
 
 #### Getting paywalls (offerings)
 
-Replace `Purchases.shared.getOfferings` with `Adapty.getPaywall`. 
+Replace `Purchases.shared.getOfferings` with [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information). 
 
 In Adapty, you always request the paywall via [placement id](placements). In practice, you only fetch no more than 1-2 paywalls, so we made this on purpose to speed up the SDK and reduce network usage.
 
@@ -82,11 +82,11 @@ Replace `Purchases.shared.getCustomerInfo` with `Adapty.getProfile`.
 
 In RevenueCat, you use the following structure:`Purchases.shared.getOfferings` and then `self.offering?.availablePackages`.
 
-In Adapty, you first request a paywall (read above) to get immediate access to Adapty's [remote config](customize-paywall-with-remote-config) and then call for products with `Adapty.getPaywallProducts`.
+In Adapty, you first request a paywall (read above) to get immediate access to Adapty's [remote config](customize-paywall-with-remote-config) and then call for products with [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products).
 
 #### Making a purchase
 
-Replace `Purchases.shared.purchase` with `Adapty.makePurchase`.
+Replace `Purchases.shared.purchase` with [`Adapty.makePurchase`](making-purchases#make-purchase).
 
 #### Checking access level (entitlement)
 
@@ -96,11 +96,11 @@ Get a customer profile (read above first) and then replace
 
 with
 
-`profile.accessLevels["premium"]?.isActive == true`.
+[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
 
 #### Restore purchase
 
-Replace `Purchases.shared.restorePurchases` with `Adapty.restorePurchases`.
+Replace `Purchases.shared.restorePurchases` with [`Adapty.restorePurchases`](restore-purchase).
 
 #### Check if the user is logged in
 
@@ -108,11 +108,11 @@ Replace `Purchases.shared.isAnonymous` with `if profile.customerUserId == nil`.
 
 #### Log in user
 
-Replace `Purchases.shared.logIn` with `Adapty.identify`.
+Replace `Purchases.shared.logIn` with [`Adapty.identify`](identifying-users#setting-customer-user-id-after-configuration).
 
 #### Log out user
 
-Replace `Purchases.shared.logOut` with `Adapty.logout`.
+Replace `Purchases.shared.logOut` with [`Adapty.logout`](identifying-users#logging-out-and-logging-in).
 
 ### Switch App Store server-side notifications to Adapty
 
@@ -132,7 +132,7 @@ If you're reading this, you've already:
 If you checked the points above, just make a test purchase in the Sandbox and then release the app.
 
 :::info
-Go through [release checklist](release-checklist)
+Go through [release checklist](release-checklist).
 
 Make the final check using our list to validate the existing integration or add additional features such as [attribution](attribution-integration) or [analytics](analytics-integration) integrations.
 :::
@@ -167,23 +167,23 @@ Our Support Team will import your transactions to Adapty. The following data wil
 
 | Parameter                     | Description                                                  |
 | ----------------------------- | ------------------------------------------------------------ |
-| user_id                       | Customer User ID, the main user identifier in Adapty, the identificator of the user in your system. |
-| apple_original_transaction_id | For subscription chains, this is the purchase date of the original transaction, linked by `store_original_transaction_id`. |
-| google_product_id             | ID of the product in the Google Play store.                  |
-| google_purchase_token         | The Google Purchase Token is a unique identifier provided by Google Play for each transaction required to validate it. |
-| country                       | Country of the transaction.                                  |
-| created_at                    | The datetime of teh transaction.                             |
-| subscription_expiration_date  | The datetime when the subscription expires.                  |
-| email                         | Your end user's email.                                       |
-| phone_number                  | Your end user's phone number.                                |
-| idfa                          | The Identifier for Advertisers, assigned by Apple to a user's device. |
-| idfv                          | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
-| advertising_id                | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
-| attribution_channel           | Marketing channel name.                                      |
-| attribution_campaign          | Marketing campaign name.                                     |
-| attribution_ad_group          | Attribution ad group.                                        |
-| attribution_ad_set            | Attribution ad set.                                          |
-| attribution_creative          | Attribution creative keyword.                                |
+| user_id                       | Customer User ID, the main identifier in Adapty and your system. |
+| apple_original_transaction_id | For subscription chains, this is the original transaction's purchase date, linked by `store_original_transaction_id`. |
+| google_product_id             | The product ID in the Google Play Store.                     |
+| google_purchase_token         | A unique identifier provided by Google Play for each transaction, required for validation. |
+| country                       | The country of the transaction.                              |
+| created_at                    | The date and time of the transaction.                        |
+| subscription_expiration_date  | The date and time when the subscription expires.             |
+| email                         | The end user's email.                                        |
+| phone_number                  | The end user's phone number.                                 |
+| idfa                          | The Identifier for Advertisers (IDFA), assigned by Apple to a user's device. |
+| idfv                          | The Identifier for Vendors (IDFV), a code assigned to all apps by one developer and shared across those apps on a device. |
+| advertising_id                | A unique identifier provided by the Android OS that advertisers may use for tracking. |
+| attribution_channel           | The marketing channel name.                                  |
+| attribution_campaign          | The marketing campaign name.                                 |
+| attribution_ad_group          | The attribution ad group.                                    |
+| attribution_ad_set            | The attribution ad set.                                      |
+| attribution_creative          | The attribution creative keyword.                            |
 
 <!---
 
