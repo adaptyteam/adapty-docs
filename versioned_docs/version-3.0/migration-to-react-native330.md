@@ -36,7 +36,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### New models
 
-1. `AdaptySubscriptionOffer`:
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer):
 
     ```typescript
     export interface AdaptySubscriptionOffer {
@@ -50,7 +50,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
     }
     ```
 
-2. `AdaptySubscriptionOfferId`:
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid):
 
     ```typescript
     export type AdaptySubscriptionOfferId =
@@ -60,7 +60,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ### Changed models
 
-1. `AdaptyPaywallProduct`:
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct):
    
     - Renamed the `subscriptionDetails` property to `subscription`.
       
@@ -71,7 +71,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
      +  subscription?: AdaptySubscriptionDetails;
      ```
     
-2. `AdaptySubscriptionDetails`:
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails):
 
     - `promotionalOffer` is removed. Now the promotional offer is delivered within the `offer` property only if it's available. In this case `offer?.identifier?.type` will be `'promotional'`. 
 
@@ -101,7 +101,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
        };
      }
     ```
-3. `AdaptyDiscountPhase`:
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase):
    
     - The `identifier` field is removed from the `AdaptyDiscountPhase` model. The offer identifier is now stored in `AdaptySubscriptionOffer.identifier`.
       
