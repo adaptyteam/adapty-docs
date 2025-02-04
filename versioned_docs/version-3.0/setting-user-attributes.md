@@ -1,7 +1,7 @@
 ---
 title: "Set user attributes"
-description: ""
-metadataTitle: ""
+description: "Setting User Attributes | Adapty Docs"
+metadataTitle: "Learn how to set user attributes in Adapty to enable better audience segmentation."
 ---
 
 import Zoom from 'react-medium-image-zoom';

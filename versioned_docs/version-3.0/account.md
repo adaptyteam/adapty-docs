@@ -1,7 +1,7 @@
 ---
 title: "Account details"
-description: ""
-metadataTitle: ""
+description: "Adapty Account Management | Adapty Docs"
+metadataTitle: "Manage your Adapty account and optimize settings for better subscription tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

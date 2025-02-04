@@ -1,7 +1,7 @@
 ---
 title: "Android - Use fallback paywalls"
-description: ""
-metadataTitle: ""
+description: "Using Fallback Paywalls on Android | Adapty Docs"
+metadataTitle: "Use fallback paywalls in Android apps with Adapty to ensure revenue flow."
 ---
 
 import Zoom from 'react-medium-image-zoom';

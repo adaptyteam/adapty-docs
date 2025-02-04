@@ -1,7 +1,7 @@
 ---
 title: "A/B test results and metrics"
-description: ""
-metadataTitle: ""
+description: "Results and Metrics Analysis | Adapty Docs"
+metadataTitle: "Analyze results and key metrics in Adapty to improve your app’s subscription performance and user engagement."
 ---
 
 import Zoom from 'react-medium-image-zoom';

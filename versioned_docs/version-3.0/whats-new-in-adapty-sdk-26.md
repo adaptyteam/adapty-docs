@@ -1,7 +1,7 @@
 ---
 title: "What's new in Adapty SDK 2.6"
-description: ""
-metadataTitle: ""
+description: "What's New in Adapty SDK 2.6 | Adapty Docs"
+metadataTitle: "Discover the latest features and improvements in Adapty SDK 2.6."
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

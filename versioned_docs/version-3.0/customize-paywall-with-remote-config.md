@@ -1,7 +1,7 @@
 ---
 title: "Design paywall with remote config"
-description: "Leverage the Paywall Remote Config tool to fine-tune your paywalls effortlessly. Utilize custom JSON payloads to personalize titles, images, fonts, and colors with precision. Ensure optimal performance with size restrictions per language, all without hassle"
-metadataTitle: "Optimize Paywalls with Flexible Configuration using Paywall Remote Config"
+description: "Customizing Paywall with Remote Config | Adapty Docs"
+metadataTitle: "Customize your paywall with remote config in Adapty for better targeting."
 ---
 
 import Zoom from 'react-medium-image-zoom';

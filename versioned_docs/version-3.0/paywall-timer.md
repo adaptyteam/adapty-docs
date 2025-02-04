@@ -1,7 +1,7 @@
 ---
 title: "Paywall timer"
-description: "Enhance your promotions with a customizable paywall timer, perfect for creating urgency with time-limited offers, featuring adjustable text, color, and format options."
-metadataTitle: "Customizable Paywall Timer for Special Offers"
+description: "Using Paywall Timer for Conversions | Adapty Docs"
+metadataTitle: "Use Adapty’s paywall timer feature to increase conversions and create urgency."
 ---
 
 import Zoom from 'react-medium-image-zoom';

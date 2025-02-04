@@ -1,7 +1,7 @@
 ---
 title: "iOS – What's new"
-description: ""
-metadataTitle: ""
+description: "Migrating to iOS 2 | Adapty Docs"
+metadataTitle: "Migrate to iOS 2 seamlessly with Adapty’s migration guide."
 ---
 
 import Zoom from 'react-medium-image-zoom';

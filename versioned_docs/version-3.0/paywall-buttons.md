@@ -1,7 +1,7 @@
 ---
 title: "Paywall button"
-description: ""
-metadataTitle: ""
+description: "Customizing Paywall Buttons | Adapty Docs"
+metadataTitle: "Customize paywall buttons in Adapty to enhance user interactions and increase conversions."
 
 ---
 

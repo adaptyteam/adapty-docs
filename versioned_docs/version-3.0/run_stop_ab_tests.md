@@ -1,7 +1,7 @@
 ---
 title: "Run and stop A/B test"
-description: ""
-metadataTitle: ""
+description: "Running and Stopping A/B Tests | Adapty Docs"
+metadataTitle: "Learn how to run and stop A/B tests in Adapty to optimize subscription conversions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

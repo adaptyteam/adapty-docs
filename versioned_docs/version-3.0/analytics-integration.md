@@ -1,7 +1,7 @@
 ---
 title: "Analytics integrations"
-description: ""
-metadataTitle: ""
+description: "Analytics Integration Guide | Adapty Docs"
+metadataTitle: "Integrate analytics tools with Adapty to track and optimize user subscriptions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

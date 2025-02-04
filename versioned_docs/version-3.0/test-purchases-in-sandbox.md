@@ -1,7 +1,7 @@
 ---
 title: "Test in-app purchases in App Store Sandbox"
-description: "Learn how to prepare for purchase testing using App Store Sandbox, ensuring smooth testing processes on real devices with Sandbox Apple IDs. Follow this guide to seamlessly validate your app's purchase flow"
-metadataTitle: "Testing Purchases in App Store Sandbox: A Step-by-Step Guide"
+description: "Testing Purchases in Sandbox Mode | Adapty Docs"
+metadataTitle: "Test purchases in the sandbox environment to ensure smooth transactions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

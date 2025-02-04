@@ -1,7 +1,7 @@
 ---
 title: "Create product"
-description: "Learn how to optimize mobile app monetization with Adapty's product creation guide. Explore the seamless integration of App Store and Google Play products into a unified offering within Adapty. Simplify management and unlock revenue potential with Adapty's innovative approach to product creation. Get started today"
-metadataTitle: "What is product in Adapty and how to create it"
+description: "Creating Products in Adapty | Adapty Docs"
+metadataTitle: "Step-by-step guide on creating new subscription products in Adapty for better revenue management."
 ---
 
 import Zoom from 'react-medium-image-zoom';

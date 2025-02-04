@@ -1,7 +1,7 @@
 ---
 title: "Fix for Code-1000 noProductIDsFound error"
-description: ""
-metadataTitle: ""
+description: "Fixing Invalid Product Identifiers | Adapty Docs"
+metadataTitle: "Resolve invalid product identifier errors when managing subscriptions in Adapty."
 ---
 
 import ProvideBundleID from '@site/src/components/reusable/ProvideBundleID.md';

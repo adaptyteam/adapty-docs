@@ -1,7 +1,7 @@
 ---
 title: "Choose meaningful placements"
-description: ""
-metadataTitle: ""
+description: "Choosing Meaningful Placements | Adapty Docs"
+metadataTitle: "Optimize paywall placements with Adapty for increased user engagement and revenue."
 ---
 
 import Zoom from 'react-medium-image-zoom';

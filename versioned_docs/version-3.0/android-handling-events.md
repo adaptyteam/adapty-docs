@@ -1,7 +1,7 @@
 ---
 title: "Android - Handle paywall events"
-description: ""
-metadataTitle: ""
+description: "Handling Events in Android | Adapty Docs"
+metadataTitle: "Handle Android subscription events efficiently with Adapty's event tracking tools."
 toc_max_heading_level: 4
 ---
 
