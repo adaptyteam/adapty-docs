@@ -1,7 +1,7 @@
 ---
 title: "Edit placement"
-description: "Enhance user engagement by easily replacing paywalls or A/B tests and adjusting target user segments within placements. Streamline the process of updating displayed content without requiring app releases"
-metadataTitle: "Efficient Paywall Replacement: Editing Placements in Adapty"
+description: "How to Edit Placement in Adapty | Adapty Docs"
+metadataTitle: "Learn how to edit placements in Adapty to optimize paywall visibility and user engagement."
 ---
 
 import Zoom from 'react-medium-image-zoom';

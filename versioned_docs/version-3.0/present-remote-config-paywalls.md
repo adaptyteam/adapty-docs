@@ -1,7 +1,7 @@
 ---
 title: "Render paywall designed by remote config"
-description: "Discover how to implement and display a custom paywall and remote config paywall in your mobile app, ensuring flexibility and control over its content and appearance, while checking user eligibility for introductory offers."
-metadataTitle: "How to Render a Custom Paywall and Remore Config Paywall"
+description: "Presenting Remote Config Paywalls | Adapty Docs"
+metadataTitle: "Discover how to present remote config paywalls in Adapty to personalize user experience."
 ---
 
 import Zoom from 'react-medium-image-zoom';

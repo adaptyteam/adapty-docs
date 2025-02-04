@@ -1,7 +1,7 @@
 ---
 title: "Make purchases in mobile app"
-description: "Learn how to seamlessly integrate paywalls into your mobile app and enable purchases using Adapty. Discover the .makePurchase() method for making purchases. Explore how Adapty automatically applies promotional offers to enhance user transactions."
-metadataTitle: "How to Make Purchases in Code for Paywalls in Adapty"
+description: "Handling In-App Purchases in Adapty | Adapty Docs"
+metadataTitle: "Guide on handling in-app purchases and subscriptions using Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

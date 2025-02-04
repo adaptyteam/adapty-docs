@@ -1,7 +1,7 @@
 ---
 title: "Change audience priority in placement"
-description: "Refine user engagement by adjusting audience priority levels within Adapty placements, guiding content selection for users belonging to multiple audiences. Learn how to optimize audience targeting and enhance content delivery efficiency"
-metadataTitle: "Fine-Tune Audience Targeting: Changing Priority in Adapty Placements"
+description: "Changing Audience Priority | Adapty Docs"
+metadataTitle: "Adjust audience priorities in Adapty to target users with personalized offers."
 ---
 
 import Zoom from 'react-medium-image-zoom';

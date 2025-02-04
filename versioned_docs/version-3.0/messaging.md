@@ -1,7 +1,7 @@
 ---
 title: "Messaging service integrations"
-description: ""
-metadataTitle: ""
+description: "Messaging and Notifications in Adapty | Adapty Docs"
+metadataTitle: "Use Adapty’s messaging tools to improve subscription engagement and retention."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Unity – What's new"
-description: ""
-metadataTitle: ""
+description: "Migrating to Unity 2 | Adapty Docs"
+metadataTitle: "Migrate to Unity 2 with Adapty and improve your app’s monetization strategy."
 ---
 
 import Zoom from 'react-medium-image-zoom';

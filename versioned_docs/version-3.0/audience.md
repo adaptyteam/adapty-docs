@@ -1,7 +1,7 @@
 ---
 title: "Audiences"
-description: "Enhance user engagement by creating personalized segments with Adapty's Audiences feature, enabling tailored paywalls or A/B tests for specific user groups based on various filters. Learn how to target users effectively and optimize content delivery"
-metadataTitle: "Customized User Targeting: Using Audiences in Adapty"
+description: "Managing Audience Segments | Adapty Docs"
+metadataTitle: "Learn how to segment and manage audiences in Adapty for targeted subscription offers."
 ---
 
 import Zoom from 'react-medium-image-zoom';

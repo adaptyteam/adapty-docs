@@ -1,7 +1,7 @@
 ---
 title: "Migration to new Paywall Builder"
-description: ""
-metadataTitle: ""
+description: "Migration to New Paywall Builder | Adapty Docs"
+metadataTitle: "Migrate to the new Adapty Paywall Builder for an enhanced subscription flow."
 ---
 
 import Zoom from 'react-medium-image-zoom';

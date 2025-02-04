@@ -1,7 +1,7 @@
 ---
 title: "A/B test"
-description: ""
-metadataTitle: ""
+description: "A/B Testing for Paywalls | Adapty Docs"
+metadataTitle: "Optimize subscription pricing with A/B tests in Adapty for better conversion rates."
 ---
 
 import Zoom from 'react-medium-image-zoom';

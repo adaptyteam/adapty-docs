@@ -1,7 +1,7 @@
 ---
 title: "React Native - Use fallback paywalls"
-description: ""
-metadataTitle: ""
+description: "Using Fallback Paywalls in React Native | Adapty Docs"
+metadataTitle: "Use fallback paywalls in React Native apps with Adapty for stable revenue."
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

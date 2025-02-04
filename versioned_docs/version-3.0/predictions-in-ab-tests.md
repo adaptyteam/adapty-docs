@@ -1,7 +1,7 @@
 ---
 title: "Predictions in A/B tests"
-description: ""
-metadataTitle: ""
+description: "Predictions in A/B Tests | Adapty Docs"
+metadataTitle: "Learn how predictions in A/B tests help refine subscription pricing strategies."
 ---
 
 import Zoom from 'react-medium-image-zoom';

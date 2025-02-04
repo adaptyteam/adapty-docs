@@ -1,7 +1,7 @@
 ---
 title: "Add paywall locale in Adapty Paywall Builder"
-description: "Effortlessly tailor your paywall for different markets by integrating locales within Adapty Paywall Builder. Learn how to enhance global reach and cater to specific regional needs"
-metadataTitle: "Optimize Localization: Adding Locale in Adapty Paywall Builder"
+description: "Add Paywall Locale in Adapty Builder | Adapty Docs"
+metadataTitle: "Add localized paywalls in Adapty’s Paywall Builder to improve user experience worldwide."
 ---
 
 import Zoom from 'react-medium-image-zoom';

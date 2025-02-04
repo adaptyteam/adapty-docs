@@ -1,7 +1,7 @@
 ---
 title: "Slack"
-description: ""
-metadataTitle: ""
+description: "Slack Integration with Adapty | Adapty Docs"
+metadataTitle: "Integrate Slack with Adapty to receive real-time notifications about subscription events."
 ---
 
 import Zoom from 'react-medium-image-zoom';

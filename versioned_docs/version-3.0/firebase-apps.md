@@ -1,7 +1,7 @@
 ---
 title: "Firebase apps"
-description: ""
-metadataTitle: ""
+description: "Firebase Integration for Apps | Adapty Docs"
+metadataTitle: "Integrate Firebase with Adapty to enhance user analytics and subscription tracking for your mobile app."
 ---
 
 import Zoom from 'react-medium-image-zoom';

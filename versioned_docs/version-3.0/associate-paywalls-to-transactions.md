@@ -1,7 +1,7 @@
 ---
 title: "Associate paywalls to purchase transactions in Observer mode"
-description: ""
-metadataTitle: ""
+description: "Linking Paywalls to Transactions | Adapty Docs"
+metadataTitle: "Associate paywalls with transactions in Adapty for better user insights and revenue tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

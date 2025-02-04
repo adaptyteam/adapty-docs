@@ -1,7 +1,7 @@
 ---
 title: "Custom tags in paywall builder"
-description: ""
-metadataTitle: ""
+description: "Custom Tags in Paywall Builder | Adapty Docs"
+metadataTitle: "Learn how to use custom tags in Adapty's Paywall Builder to personalize user experiences and optimize conversions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

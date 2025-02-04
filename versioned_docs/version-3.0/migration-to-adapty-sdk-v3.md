@@ -1,7 +1,7 @@
 ---
 title: "Migration guide to Adapty SDK v.3.x or later"
-description: ""
-metadataTitle: ""
+description: "Migrating to Adapty SDK v3 | Adapty Docs"
+metadataTitle: "Migrate to Adapty SDK v3 for better performance and new monetization features."
 ---
 
 import Zoom from 'react-medium-image-zoom';
