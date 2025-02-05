@@ -103,8 +103,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
 | --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
-| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard |
-| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
+| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
+| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access.  The default value is `null`. |
 
 ---
 
