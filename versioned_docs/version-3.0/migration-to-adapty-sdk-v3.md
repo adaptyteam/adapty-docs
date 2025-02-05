@@ -16,7 +16,7 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](ad
 1. Upgrading to Adapty SDK v3.x (instructions differ for platforms).
 2. Migrating your existing paywalls to the new Paywall Builder.
 
-## Upgrading to Adapty SDK v3.x
+## Upgrading to Adapty SDK v3.0.x
 
 <Tabs> 
 
@@ -295,6 +295,15 @@ Parameters:
 | **memoryStorageTotalCostLimit** | required | Total cost limit of the storage in bytes.                    |
 | **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
 | **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+
+</TabItem>
+
+<TabItem value="RN" label="For React Native" default> 
+
+1. Upgrade to version 3.0.1 as usual.
+2. Replace the fallback paywall files:
+   1. [Download the latest version](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) from the Adapty Dashboard.
+   2. Store them on the user's device and pass them to the `.setFallbackPaywalls` method as described [here](react-native-use-fallback-paywalls).
 
 </TabItem>
 

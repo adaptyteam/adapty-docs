@@ -184,7 +184,7 @@ Please consult the compatibility table below to choose the correct pair of Adapt
 | 3.1.0              | 3.1.0            |
 
 :::danger
-Go through release checklist before releasing your app
+Go through the release checklist before releasing your app
 
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
