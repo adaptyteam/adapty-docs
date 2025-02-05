@@ -209,7 +209,7 @@ Our Support Team will import your transactions to Adapty. The following data wil
 
 --->
 
-In addition, integration identifiers for the following integrations will be imported: Amplitude, Mixpanel, AppsFlyer, Adjust, FacebookAds.
+In addition, integration identifiers for the following integrations will be imported: Amplitude, Mixpanel, AppsFlyer, Adjust, and FacebookAds.
 
 ### FAQ
 
