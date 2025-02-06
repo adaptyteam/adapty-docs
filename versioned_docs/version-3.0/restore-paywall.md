@@ -1,7 +1,7 @@
 ---
 title: "Return paywall from archive"
-description: "Optimize your paywall management process in Adapty by restoring archived paywalls, providing flexibility for reintroduction into your strategy when necessary. Learn how to efficiently return archived paywalls and enhance your paywall management experience"
-metadataTitle: "Flexible Paywall Management: Returning Archived Paywalls in Adapty"
+description: "Restoring Paywalls in Adapty | Adapty Docs"
+metadataTitle: "Restore paywalls in Adapty to ensure uninterrupted subscription services for users."
 ---
 
 import Zoom from 'react-medium-image-zoom';

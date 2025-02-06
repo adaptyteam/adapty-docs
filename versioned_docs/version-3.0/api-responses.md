@@ -5,7 +5,7 @@ metadataTitle: ""
 displayed_sidebar: APISidebar
 ---
 
-- [200 Success](ss-200)
-- [400 Bad request](ss-400)
-- [401 Unauthorized](ss-401)
-- [404 Not found](ss-404)
+- [200: Success](ss-200)
+- [400: Bad request](ss-400)
+- [401: Unauthorized](ss-401)
+- [404: Not found](ss-404)

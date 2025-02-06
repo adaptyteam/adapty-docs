@@ -10,19 +10,13 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves the retention data to analyze the ability of a product to keep users engaged over time.
 
-### Endpoint
+## Endpoint and method
 
-```text
-https://api-admin.adapty.io/api/v1/client-api/metrics/retention/
+```http
+POST https://api-admin.adapty.io/api/v1/client-api/metrics/retention/
 ```
 
-### Method
-
-```text
-POST
-```
-
-### Parameters
+## Parameters
 
 | Name         | Type                                                 | Required           | Description                                                  |
 | ------------ | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -38,14 +32,14 @@ POST
 
 <MetricsFilters />
 
-### Request example
+## Request example
 
 <details>
    <summary>Example request (click to expand)</summary>
 
 The example below shows how to view retention rates by region to identify high-engagement markets and guide localization or regional strategies
 
-```json
+```json showLineNumbers
 {
   "filters": {
     "date": [

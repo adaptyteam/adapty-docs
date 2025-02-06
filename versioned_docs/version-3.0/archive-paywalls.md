@@ -1,7 +1,7 @@
 ---
 title: "Archive paywall"
-description: "Simplify your paywall management process in Adapty by archiving unused paywalls, ensuring they're safely stored for future access while decluttering your workspace. Learn how to efficiently archive paywalls and optimize your interface for improved efficiency."
-metadataTitle: "Efficient Paywall Management: Archiving Unused Paywalls in Adapty"
+description: "Archiving Paywalls in Adapty | Adapty Docs"
+metadataTitle: "Learn how to archive outdated paywalls in Adapty without losing data."
 ---
 
 import Zoom from 'react-medium-image-zoom';

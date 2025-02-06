@@ -1,7 +1,7 @@
 ---
 title: "Troubleshooting test purchases"
-description: "Encounter transaction issues during test purchases with Adapty? Follow our tailored troubleshooting guide to resolve errors, pricing discrepancies, and transaction discrepancies, ensuring seamless testing of your mobile app's purchase flow"
-metadataTitle: "Troubleshooting Test Purchases with Adapty: Solutions for Transaction Issues"
+description: "Troubleshooting Test Purchases | Adapty Docs"
+metadataTitle: "Troubleshoot test purchases in Adapty and resolve common in-app transaction issues."
 ---
 
 import Zoom from 'react-medium-image-zoom';

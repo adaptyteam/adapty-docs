@@ -1,7 +1,7 @@
 ---
 title: "Quickstart guide"
-description: ""
-metadataTitle: ""
+description: "Adapty Quickstart Guide | Adapty Docs"
+metadataTitle: "Quickstart guide to setting up Adapty for in-app subscription management."
 ---
 
 import Zoom from 'react-medium-image-zoom';

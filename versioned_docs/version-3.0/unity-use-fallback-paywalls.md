@@ -12,7 +12,7 @@ To use fallback paywalls:
 1. Save fallback paywalls to files in `/Assets/StreamingAssets/`, 1 file for Android and another for iOS.
 2. Pass the file names to the `SetFallbackPaywalls` method. Place this method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 using AdaptySDK;
 
 void SetFallBackPaywalls() {

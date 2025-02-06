@@ -10,19 +10,13 @@ import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves LTV data to assess the long-term revenue potential of customers over their engagement period.
 
-### Endpoint
+## Endpoint and method
 
-```text
-https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/
+```http
+POST https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/
 ```
 
-### Method
-
-```text
-POST
-```
-
-### Parameters
+## Parameters
 
 | Name         | Type                                                | Required           | Description                                                  |
 | ------------ | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -32,18 +26,18 @@ POST
 | segmentation | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |
 | format       | String                                               | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
-#### MetricsFilters object
+### MetricsFilters object
 
 <MetricsFilters />
 
-### Request example
+## Request example
 
   <details>
    <summary>Example request (click to expand)</summary>
 
 The example below shows how to identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies.
 
-```json
+```json showLineNumbers
 {
   "filters": {
     "date": [

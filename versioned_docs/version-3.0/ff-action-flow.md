@@ -1,7 +1,7 @@
 ---
 title: "Step 1. Create flow to show paywall data"
-description: ""
-metadataTitle: ""
+description: "Feature Flags Action Flow | Adapty Docs"
+metadataTitle: "Set up feature flag action flows in Adapty to personalize user subscription journeys."
 ---
 
 import Zoom from 'react-medium-image-zoom';

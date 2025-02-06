@@ -27,7 +27,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 <Tabs>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
-```groovy 
+```groovy showLineNumbers
 dependencies {
     ...
     implementation platform('io.adapty:adapty-bom:3.3.0')
@@ -39,7 +39,7 @@ dependencies {
 </TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
 
-```kotlin 
+```kotlin showLineNumbers
 dependencies {
     ...
     implementation(platform("io.adapty:adapty-bom:3.3.0"))
@@ -51,7 +51,7 @@ dependencies {
 </TabItem>
 <TabItem value="version catalog" label="version catalog" default>
 
-```toml 
+```toml showLineNumbers
 //libs.versions.toml
 
 [versions]
@@ -87,7 +87,7 @@ If the dependency is not being resolved, please make sure that you have `mavenCe
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
-```groovy title="top-level build.gradle"
+```groovy showLineNumbers title="top-level build.gradle"
 allprojects {
     repositories {
         ...
@@ -98,7 +98,7 @@ allprojects {
 
 Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
 
-```groovy title="settings.gradle"
+```groovy showLineNumbers title="settings.gradle"
 dependencyResolutionManagement {
     ...
     repositories {
@@ -121,7 +121,7 @@ Add the following to your `Application` class:
 <Tabs>
   <TabItem value="Kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -139,7 +139,7 @@ override fun onCreate() {
 </TabItem>
 <TabItem value="Java" label="Java" default>
 
-```java 
+```java showLineNumbers
 @Override
 public void onCreate() {
     super.onCreate();
@@ -199,7 +199,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 <Tabs>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
-```groovy 
+```groovy showLineNumbers
 dependencies {
     ...
     implementation 'io.adapty:android-sdk:2.11.5'
@@ -210,7 +210,7 @@ dependencies {
 </TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
 
-```kotlin 
+```kotlin showLineNumbers
 dependencies {
     ...
     implementation("io.adapty:android-sdk:2.11.5")
@@ -221,7 +221,7 @@ dependencies {
 </TabItem>
 <TabItem value="version catalog" label="version catalog" default>
 
-```toml 
+```toml showLineNumbers
 //libs.versions.toml
 
 [versions]
@@ -257,7 +257,7 @@ If the dependency is not being resolved, please make sure that you have `mavenCe
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
-```groovy title="top-level build.gradle"
+```groovy showLineNumbers title="top-level build.gradle"
 allprojects {
     repositories {
         ...
@@ -268,7 +268,7 @@ allprojects {
 
 Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
 
-```groovy title="settings.gradle"
+```groovy showLineNumbers title="settings.gradle"
 dependencyResolutionManagement {
     ...
     repositories {
@@ -291,7 +291,7 @@ Add the following to your `Application` class:
 <Tabs>
   <TabItem value="Kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -313,7 +313,7 @@ override fun onCreate() {
 </TabItem>
 <TabItem value="Java" label="Java" default>
 
-```java 
+```java showLineNumbers
 @Override
 public void onCreate() {
     super.onCreate();
@@ -372,12 +372,12 @@ You can set the log level in your app before configuring Adapty.
 
 <Tabs>
   <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 ```
 </TabItem>
@@ -389,14 +389,14 @@ If you for some reason need to send messages from Adapty to your system or save 
 
 <Tabs>
   <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setLogHandler { level, message ->
     //handle the log
 }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.setLogHandler((level, message) -> {
     //handle the log
 });

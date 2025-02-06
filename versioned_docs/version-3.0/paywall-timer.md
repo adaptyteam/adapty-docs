@@ -1,7 +1,7 @@
 ---
 title: "Paywall timer"
-description: "Enhance your promotions with a customizable paywall timer, perfect for creating urgency with time-limited offers, featuring adjustable text, color, and format options."
-metadataTitle: "Customizable Paywall Timer for Special Offers"
+description: "Using Paywall Timer for Conversions | Adapty Docs"
+metadataTitle: "Use Adapty’s paywall timer feature to increase conversions and create urgency."
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -104,7 +104,7 @@ To use custom timers in your mobile app, create an object that follows the `Adap
 
 <Tabs> <TabItem value="Swift" label="Swift" default>
 
-```Swift
+```Swift showLineNumbers
 @MainActor
 struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
     func timerEndAtDate(for timerId: String) -> Date {
@@ -127,7 +127,7 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s o
 
 </TabItem> <TabItem value="kotlin" label="Kotlin" default> 
 
-```kotlin
+```kotlin showLineNumbers
 import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
@@ -146,7 +146,7 @@ In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined 
 
 </TabItem> <TabItem value="java" label="Java" default> 
 
-```JAVA
+```JAVA showLineNumbers
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -172,7 +172,7 @@ In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined 
 
 </TabItem> <TabItem value="Flutter" label="Flutter" default> 
 
-```dart
+```dart showLineNumbers
 try {
       final view = await AdaptyUI().createPaywallView(
         paywall: paywall,
@@ -199,7 +199,7 @@ try {
 
 <TabItem value="Unity" label="Unity (C#)" default> 
 
-```csharp
+```csharp showLineNumbers
 var parameters = new AdaptyUICreateViewParameters()
   .SetCustomTimers(
     new Dictionary<string, DateTime> {
@@ -222,7 +222,7 @@ AdaptyUI.CreateView(paywall, parameters, (view, error) => {
 
  <TabItem value="RN" label="React Native (TS)" default> 
 
-```typescript
+```typescript showLineNumbers
 let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
 //and then you can pass it to createPaywallView as follows:
 view = await createPaywallView(paywall, { timerInfo })

@@ -18,14 +18,14 @@ Adapty can help you measure the conversion of your paywalls. However, to do so, 
 
 ## Endpoint and method
 
-```text
+```text showLineNumbers
 POST https://api.adapty.io/api/v2/web-api/paywall/visit/
 ```
 
 <Tabs> 
 <TabItem value="shell" label="cURL" default>  
 
-```shell
+```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_PUBLIC_API_KEY>' \
@@ -40,7 +40,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
 </TabItem>  
 <TabItem value="javascript" label="JavaScript" default>   
 
-```javascript
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", "Api-Key <YOUR_PUBLIC_API_KEY>");
@@ -68,7 +68,7 @@ fetch("https://api.adapty.io/api/v2/web-api/paywall/visit/", requestOptions)
 </TabItem>  
 <TabItem value="ruby" label="Ruby" default>
 
-```ruby
+```ruby showLineNumbers
 require "uri"
 require "json"
 require "net/http"
@@ -95,7 +95,7 @@ puts response.read_body
 </TabItem>   
 <TabItem value="php" label="PHP" default>
 
-```php
+```php showLineNumbers
 <?php
 
 $curl = curl_init();

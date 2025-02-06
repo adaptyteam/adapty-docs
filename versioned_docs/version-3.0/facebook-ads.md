@@ -129,7 +129,7 @@ Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make s
 <Tabs groupId="facebook-ads">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 import FacebookCore
 
 do {
@@ -144,7 +144,7 @@ do {
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin
+```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     "facebook_anonymous_id",
     AppEventsLogger.getAnonymousAppDeviceGUID(context)
@@ -163,14 +163,14 @@ There is no official SDK for Flutter
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp 
+```csharp
 anonymousID is not available in the official SDK
 https://github.com/facebook/facebook-sdk-for-unity/issues/676
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 

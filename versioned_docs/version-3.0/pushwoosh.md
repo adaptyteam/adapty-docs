@@ -123,7 +123,7 @@ To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
 <Tabs groupId="pushwoosh">
 <TabItem value="Swift" label="iOS (Swift)" default>
-```swift 
+```swift showLineNumbers
 do {
     try await Adapty.setIntegrationIdentifier(
         key: "pushwoosh_hwid", 
@@ -135,7 +135,7 @@ do {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
     if (error != null) {
         // handle the error
@@ -144,7 +144,7 @@ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) 
 ```
 </TabItem>
 <TabItem value="java" label="Android (Java)" default>
-```java 
+```java showLineNumbers
 Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
     if (error != null) {
         // handle the error
@@ -153,7 +153,7 @@ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwi
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
-```javascript
+```javascript showLineNumbers
 import 'package:pushwoosh/pushwoosh.dart';
 
 final hwid = await Pushwoosh.getInstance.getHWID;
@@ -171,7 +171,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 Adapty.SetIntegrationIdentifier(
@@ -183,7 +183,7 @@ Adapty.SetIntegrationIdentifier(
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import Pushwoosh from 'pushwoosh-react-native-plugin';
 

@@ -13,7 +13,7 @@ Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
 <Tabs>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
     try {
       final result = await adapty.makePurchase(product: product);
     } on AdaptyError catch (adaptyError) {
@@ -25,7 +25,7 @@ Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.MakePurchase(product, (profile, error) => {
   if (error != null && error.Code == Adapty.ErrorCode.PaymentCancelled) {
       // payment cancelled
@@ -35,7 +35,7 @@ Adapty.MakePurchase(product, (profile, error) => {
 
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
   const params: MakePurchaseParamsInput = {};
   await adapty.makePurchase(product, params);

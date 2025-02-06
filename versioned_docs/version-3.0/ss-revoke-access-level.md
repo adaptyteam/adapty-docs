@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLevelProfileNotFound.md';
 import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDoesNotExist.md';
 import AccessLevelNoProfileAccessLevel from '@site/src/components/reusable/AccessLevelNoProfileAccessLevel.md';
@@ -31,7 +31,7 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access
 <Tabs>  
 <TabItem value="curl" label="cURL" default>  
 
-```bash 
+```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
@@ -46,7 +46,7 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/r
 </TabItem>  
 <TabItem value="python" label="Python" default>  
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/"
@@ -71,7 +71,7 @@ print(response.text)
 </TabItem>  
 <TabItem value="js" label="JavaScript" default>  
 
-```javascript 
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
@@ -103,8 +103,8 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
 | --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
-| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard |
-| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access |
+| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
+| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access.  The default value is `null`. |
 
 ---
 

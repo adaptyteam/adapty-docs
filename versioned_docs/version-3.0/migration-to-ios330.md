@@ -36,7 +36,7 @@ Update the code of Adapty iOS SDK activation in the following way:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```diff
+```diff showLineNumbers
 // In your AppDelegate class:
 import Adapty
 
@@ -57,7 +57,7 @@ Adapty.activate(with: configurationBuilder) { error in
 </TabItem>
 <TabItem value="SwiftUI" label="SwiftUI" default>
 
-```diff
+```diff showLineNumbers
 import Adapty
 
 @main
@@ -92,7 +92,7 @@ struct SampleApp: App {
 
 Update the method name to fetch the paywall's `viewConfiguration`:
 
-```diff
+```diff showLineNumbers
 import Adapty
 import AdaptyUI
 
@@ -124,7 +124,7 @@ The following updates have been made to SwiftUI:
 
 Update your code like this:
 
-```diff
+```diff showLineNumbers
 @State var paywallPresented = false
 
 var body: some View {
@@ -161,7 +161,7 @@ var body: some View {
 
 Update how you handle promotional in-app purchases from the App Store by removing the `defermentCompletion` parameter from the `AdaptyDelegate` method, as shown in the example below:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
         // 1a.
@@ -205,7 +205,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 
-```diff
+```diff showLineNumbers
 class AdjustModuleImplementation {
 -    func updateAdjustAttribution() {
 -        Adjust.attribution { attribution in
@@ -245,7 +245,7 @@ class AdjustModuleImplementation {
 
 <TabItem value="v4" label="Adjust 4.x" default>
 
-```diff
+```diff showLineNumbers
 class YourAdjustDelegateImplementation {
     // Find your implementation of AdjustDelegate 
     // and update adjustAttributionChanged method:
@@ -266,7 +266,7 @@ class YourAdjustDelegateImplementation {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import AirBridge
 
 - let builder = AdaptyProfileParameters.Builder()
@@ -288,7 +288,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import Amplitude 
 
 - let builder = AdaptyProfileParameters.Builder()
@@ -316,7 +316,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import AppMetricaCore
         
 - if let deviceID = AppMetrica.deviceID {
@@ -350,7 +350,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 class YourAppsFlyerLibDelegateImplementation {
     // Find your implementation of AppsFlyerLibDelegate 
     // and update onConversionDataSuccess method:
@@ -372,7 +372,7 @@ class YourAppsFlyerLibDelegateImplementation {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 class YourBranchImplementation {
     func initializeBranch() {
         // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
@@ -392,7 +392,7 @@ class YourBranchImplementation {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Facebook Ads integration](facebook-ads#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import FacebookCore
 
 - let builder = AdaptyProfileParameters.Builder()
@@ -421,7 +421,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
-```diff
+```diff showLineNumbers
  import FirebaseCore
  import FirebaseAnalytics
 
@@ -452,7 +452,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import Mixpanel
 
 - let builder = AdaptyProfileParameters.Builder()
@@ -479,7 +479,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  // PlayerID (pre-v5 OneSignal SDK)
  // in your OSSubscriptionObserver implementation
  func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
@@ -521,7 +521,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 - let params = AdaptyProfileParameters.Builder()
 -     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
 -     .build()
@@ -550,7 +550,7 @@ Remember to record the transaction using the `reportTransaction` method. Skippin
 
 :::
 
-```diff
+```diff showLineNumbers
 - let variationId = paywall.variationId
 -
 - // There are two overloads: for StoreKit 1 and StoreKit 2

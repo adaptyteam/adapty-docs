@@ -1,7 +1,7 @@
 ---
 title: "Delete product"
-description: ""
-metadataTitle: ""
+description: "How to Delete a Product | Adapty Docs"
+metadataTitle: "Find out how to delete a subscription product in Adapty without disrupting your app's revenue flow."
 ---
 
 import Zoom from 'react-medium-image-zoom';

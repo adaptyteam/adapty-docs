@@ -88,7 +88,7 @@ First, navigate to the [IAM Policy Dashboard](https://us-east-1.console.aws.amaz
 
 In the Policy editor, paste the following JSON and change `adapty-s3-integration-test` to your bucket name: 
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     "Version": "2012-10-17",
     "Statement": [

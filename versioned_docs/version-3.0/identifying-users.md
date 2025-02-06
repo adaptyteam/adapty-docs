@@ -17,22 +17,22 @@ If you have a user ID during configuration, just pass it as `customerUserId` par
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift
+```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin
+```kotlin showLineNumbers
 Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java
+```java showLineNumbers
 Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript
+```typescript showLineNumbers
 adapty.activate("PUBLIC_SDK_KEY", {
     customerUserId: "YOUR_USER_ID"
 });
@@ -49,7 +49,7 @@ If you don't have a user ID in the SDK configuration, you can set it later at an
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 do {
     try await Adapty.identify("YOUR_USER_ID")
 } catch {
@@ -59,7 +59,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift
+```swift showLineNumbers
 Adapty.identify("YOUR_USER_ID") { error in
     if let error {
         // handle the error
@@ -68,7 +68,7 @@ Adapty.identify("YOUR_USER_ID") { error in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin
+```kotlin showLineNumbers
 Adapty.identify("YOUR_USER_ID") { error ->
     if (error == null) {
         // successful identify
@@ -77,7 +77,7 @@ Adapty.identify("YOUR_USER_ID") { error ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java
+```java showLineNumbers
 Adapty.identify("YOUR_USER_ID", error -> {
     if (error == null) {
         // successful identify
@@ -86,7 +86,7 @@ Adapty.identify("YOUR_USER_ID", error -> {
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript
+```javascript showLineNumbers
 try {
   await Adapty().identify(customerUserId);
 } on AdaptyError catch (adaptyError) {
@@ -96,7 +96,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp
+```csharp showLineNumbers
 Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
     // successful identify
@@ -105,7 +105,7 @@ Adapty.Identify("YOUR_USER_ID", (error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript
+```typescript showLineNumbers
 try {
     await adapty.identify("YOUR_USER_ID");
     // successfully identified
@@ -135,7 +135,7 @@ You can logout the user anytime by calling `.logout()` method:
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 do {
     try await Adapty.logout()
 } catch {
@@ -145,7 +145,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift-Callback" default>
 
-```swift
+```swift showLineNumbers
 Adapty.logout { error in
     if error == nil {
         // successful logout
@@ -155,7 +155,7 @@ Adapty.logout { error in
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin
+```kotlin showLineNumbers
 Adapty.logout { error ->
     if (error == null) {
         // successful logout
@@ -165,7 +165,7 @@ Adapty.logout { error ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java
+```java showLineNumbers
 Adapty.logout(error -> {
     if (error == null) {
         // successful logout
@@ -175,7 +175,7 @@ Adapty.logout(error -> {
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
 
-```javascript
+```javascript showLineNumbers
 try {
   await Adapty().logout();
 } on AdaptyError catch (adaptyError) {
@@ -186,7 +186,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
-```csharp
+```csharp showLineNumbers
 Adapty.Logout((error) => {
   if(error == null) {
     // successful logout
@@ -196,7 +196,7 @@ Adapty.Logout((error) => {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript
+```typescript showLineNumbers
 try {
     await adapty.logout();
     // successful logout

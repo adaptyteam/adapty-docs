@@ -1,7 +1,7 @@
 ---
 title: "Configure Google Play Store integration"
-description: "Set your app's integration with Adapty by configuring Play Store integration with Adapty. Learn how to input your app's configuration data for seamless validation of purchases and receipt of subscription updates within Adapty's platform"
-metadataTitle: "Google Play Store Integration Configuration with Adapty"
+description: "Google Play Store Configuration | Adapty Docs"
+metadataTitle: "Configure Google Play Store connection in Adapty for smooth in-app purchase handling."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -18,7 +18,7 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 
 Previously, the method required the fallback paywall as a JSON string (`jsonString`), but now it takes the path to the local fallback file (`assetId`) instead.
 
-```diff
+```diff showLineNumbers
  import 'dart:async' show Future;
  import 'dart:io' show Platform;
 -import 'package:flutter/services.dart' show rootBundle;
@@ -53,7 +53,7 @@ To ensure integrations work properly with Adapty Flutter SDK 3.3.0 and later, up
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import 'package:adjust_sdk/adjust.dart';
  import 'package:adjust_sdk/adjust_config.dart';
 
@@ -101,7 +101,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AirBridge integration](airbridge#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
   final deviceUUID = await Airbridge.state.deviceUUID;
@@ -126,7 +126,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import 'package:amplitude_flutter/amplitude.dart';
 
  final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
@@ -159,7 +159,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
  final deviceId = await AppMetrica.deviceId;
@@ -192,7 +192,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
  AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
@@ -230,7 +230,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.initSession().listen((data) async {
@@ -253,7 +253,7 @@ FlutterBranchSdk.initSession().listen((data) async {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
-```diff
+```diff showLineNumbers
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
@@ -278,7 +278,7 @@ try {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
@@ -304,7 +304,7 @@ try {
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  OneSignal.shared.setSubscriptionObserver((changes) {
      final playerId = changes.to.userId;
      if (playerId != null) {
@@ -332,7 +332,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 import 'package:pushwoosh/pushwoosh.dart';
 
 final hwid = await Pushwoosh.getInstance.getHWID;
@@ -363,7 +363,7 @@ Don't forget to record the transaction using the `reportTransaction` method. Ski
 
 :::
 
-```diff
+```diff showLineNumbers
  try {
 -     await Adapty().setVariationId("YOUR_TRANSACTION_ID", "PAYWALL_VARIATION_ID");
 

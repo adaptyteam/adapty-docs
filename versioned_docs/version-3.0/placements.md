@@ -1,7 +1,7 @@
 ---
 title: "Placements"
-description: "Enhance user experience and maximize conversions by strategically deploying paywalls and A/B tests at various points in your app journey with Adapty's placement system. Learn how to manage, modify, and analyze placements effortlessly for improved engagement"
-metadataTitle: "Optimize Engagement: Utilizing Adapty's Placements for Paywalls and A/B Tests"
+description: "Managing Placements in Adapty | Adapty Docs"
+metadataTitle: "Manage placements in Adapty to optimize paywall visibility and revenue."
 ---
 
 import Zoom from 'react-medium-image-zoom';

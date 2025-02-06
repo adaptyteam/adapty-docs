@@ -36,7 +36,7 @@ If you're wondering about localizations, chances are you're already dealing with
 
 <Tabs>
 <TabItem value="Swift" label="iOS" default>
-```swift 
+```swift showLineNumbers
 // 1. Modify your Localizable.strings files
 
 /*
@@ -53,7 +53,7 @@ let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android" default>
-```kotlin
+```kotlin showLineNumbers
 // 1. Modify your strings.xml files
 
 /*
@@ -84,13 +84,13 @@ You can get similar (but not identical) results without explicitly defining loca
 
 <Tabs>
 <TabItem value="Swift" label="iOS" default>
-```swift 
+```swift showLineNumbers
 let locale = Locale.current.identifier
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android" default>
-```kotlin 
+```kotlin showLineNumbers
 val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
     context.resources.configuration.locales[0]
 else

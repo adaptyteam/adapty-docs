@@ -1,7 +1,7 @@
 ---
 title: "Delete placement"
-description: "Optimize app organization by effortlessly removing unused or mistakenly created placements with Adapty's deletion feature. Learn how to maintain a tidy environment and improve efficiency"
-metadataTitle: "Efficient Placement Cleanup: Deleting Unused Placements in Adapty"
+description: "How to Delete a Placement in Adapty | Adapty Docs"
+metadataTitle: "Find out how to delete a placement in Adapty without affecting your paywall performance."
 ---
 
 import Zoom from 'react-medium-image-zoom';

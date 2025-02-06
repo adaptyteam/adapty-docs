@@ -22,7 +22,7 @@ Adapty SDK has its own wrapper for all kinds of errors, called `AdaptyError`. Ba
 
 It's pretty easy to check the error for specific codes and react to them accordingly.
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 do {
     let info = try await Adapty.makePurchase(product: product)
 } catch {

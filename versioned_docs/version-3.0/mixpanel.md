@@ -85,7 +85,7 @@ Use `.setIntegrationIdentifier()` method to set `mixpanelUserId`.  If not set, A
 <Tabs groupId="mixpanel">
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-```swift 
+```swift showLineNumbers
 import Mixpanel
 
 do {
@@ -100,7 +100,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="iOS (Swift-Callback)" default>
 
-```swift 
+```swift showLineNumbers
 import Mixpanel
 
 let builder = AdaptyProfileParameters.Builder()
@@ -111,7 +111,7 @@ Adapty.updateProfile(params: builder.build())
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```kotlin 
+```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
     if (error != null) {
         // handle the error
@@ -121,7 +121,7 @@ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { er
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-```javascript
+```javascript showLineNumbers
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
@@ -141,7 +141,7 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-```csharp 
+```csharp showLineNumbers
 using AdaptySDK;
 
 var distinctId = Mixpanel.DistinctId;
@@ -158,7 +158,7 @@ if (distinctId != null) {
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 
-```typescript 
+```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import { Mixpanel } from 'mixpanel-react-native';
 

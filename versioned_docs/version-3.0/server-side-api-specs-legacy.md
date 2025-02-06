@@ -40,7 +40,7 @@ However, if your `customer_user_id` contains [reserved URI characters](https://e
 
 You should only encode the `customer_user_id` if you pass it as a URL path. When sending `customer_user_id` inside the JSON payload (for example, when creating the profile), you should not encode it.
 
-```python title="Python"
+```python showLineNumbers title="Python"
 ## Don't encode
 customer_user_id = '123' # GET: /profiles/123/
 customer_user_id = 'abc' # GET: /profiles/abc/
@@ -67,7 +67,7 @@ For the latest version, refer to the following requests:
 
 :::
 
-```text title="Text"
+```http
 POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/grant/
 ```
 
@@ -114,7 +114,7 @@ Also, be aware that these transactions affect billing since they are counted tow
 
 Sample request:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     "starts_at": "2020-01-15T15:10:36.517975+0000",
     "expires_at": "2020-02-15T15:10:36.517975+0000",
@@ -127,7 +127,7 @@ Sample request:
 
 Sample response:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
   "data": {
     "app_id": "ff90dd2e-e7f2-454b-9d86-071036a284fe",
@@ -241,7 +241,7 @@ For the latest version, refer to the [Revoke Access Level](ss-revoke-access-leve
 
 :::
 
-```text title="Text"
+```http
 POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/revoke/
 ```
 
@@ -262,7 +262,7 @@ Revokes user's subscription by setting **unsubscribed\_at** to current datetime,
 
 ### Validate a purchase from Stripe, provide access level to a customer, and import his transaction history from Stripe
 
-```
+```http
 POST: /api/v1/sdk/purchase/stripe/token/validate/
 ```
 
@@ -279,7 +279,7 @@ Request parameters:
 
 Sample request:
 
-```json title="CURL"
+```json showLineNumbers title="CURL"
 curl
 --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
 --header 'Content-Type: application/vnd.api+json' \
@@ -308,7 +308,7 @@ For the latest version, refer to the [Get profile](ss-get-profile) request.
 
 :::
 
-```text title="Text"
+```http
 GET: /profiles/{profile_id_or_customer_user_id}/
 ```
 
@@ -353,7 +353,7 @@ For the latest version, refer to the [Create profile](ss-create-profile) request
 
 :::
 
-```text title="Text"
+```http
 POST: /profiles/
 ```
 
@@ -365,7 +365,7 @@ Request parameters:
 
 Sample request:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     "customer_user_id": "123456"
 }
@@ -384,7 +384,7 @@ For the latest version, refer to the [Update profile](ss-update-profile) request
 
 :::
 
-```text title="Text"
+```http
 PATCH: /profiles/{profile_id_or_customer_user_id}/
 ```
 
@@ -415,7 +415,7 @@ If you'd like to set custom attributes, you can pass them in `custom_attributes`
 
 Sample request:
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     "phone_number": "+18003330000",
     "custom_attributes": {
@@ -436,7 +436,7 @@ For the latest version, refer to the [Delete profile](ss-delete-profile) request
 
 :::
 
-```
+```http
 DELETE /profiles/{profile_id_or_customer_user_id}/delete
 ```
 

@@ -62,7 +62,7 @@ Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged 
 
 From now on, the `SetLogLevel` method accepts a callback as an argument.
 
-```diff
+```diff showLineNumbers
 - Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
 + Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // or you can pass the callback to handle the possible error
 ```
@@ -71,7 +71,7 @@ From now on, the `SetLogLevel` method accepts a callback as an argument.
 
 From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an argument.
 
-```diff
+```diff showLineNumbers
 - Adapty.PresentCodeRedemptionSheet();
 + Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
 ```
@@ -80,7 +80,7 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 
 For the complete code example, check out the [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) section.
 
-```diff
+```diff showLineNumbers
 + var parameters = new AdaptyUICreateViewParameters()
 +   .SetPreloadProducts(true);
 
@@ -109,7 +109,7 @@ Up to this version, the fallback paywalls were passed as a serialized JSON. Star
 
 Your code will change this way:
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 void SetFallBackPaywalls() {
@@ -137,7 +137,7 @@ Previously canceled and pending purchases were considered errors and returned th
 
 Now a new `AdaptyPurchaseResultType` class is used to process canceled, successful, and pending purchases. Update the code of purchasing in the following way:
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 void MakePurchase(AdaptyPaywallProduct product) {
@@ -172,7 +172,7 @@ Canceled and pending purchases are not considered to be errors any more, all the
 
 2. Update handling of the Successful purchase event in the following way:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnFinishPurchase(
    -   AdaptyUI.View view, 
    -   Adapty.PaywallProduct product, 
@@ -188,7 +188,7 @@ Canceled and pending purchases are not considered to be errors any more, all the
 
 3. Update handling of actions:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnPerformAction(
    -   AdaptyUI.View view, 
    -   AdaptyUI.Action action
@@ -217,7 +217,7 @@ Canceled and pending purchases are not considered to be errors any more, all the
 
 4. Update handling of started purchase:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnSelectProduct(
    -   AdaptyUI.View view, 
    -   Adapty.PaywallProduct product
@@ -231,7 +231,7 @@ Canceled and pending purchases are not considered to be errors any more, all the
 
 5. Update handling of failed purchase:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnFailPurchase(
    -   AdaptyUI.View view, 
    -   Adapty.PaywallProduct product, 
@@ -248,7 +248,7 @@ Canceled and pending purchases are not considered to be errors any more, all the
 
 6. Update handling of successful restore event:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnFailRestore(
    -   AdaptyUI.View view, 
    -   Adapty.Error error
@@ -269,7 +269,7 @@ The handling of errors is changed as well, please update your code according to 
 
 1. Update the handling of the product loading errors:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnFailLoadingProducts(
    -   AdaptyUI.View view, 
    -   Adapty.Error error
@@ -283,7 +283,7 @@ The handling of errors is changed as well, please update your code according to 
 
 2. Update the handling of the rendering errors:
 
-   ```diff
+   ```diff showLineNumbers
    - public void OnFailRendering(
    -   AdaptyUI.View view, 
    -   Adapty.Error error
@@ -307,7 +307,7 @@ To ensure integrations work properly with Adapty Unity SDK 3.3.0 and later, upda
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 - using static AdaptySDK.Adapty;
  using AdaptySDK;
 
@@ -355,7 +355,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Amplitude integration](amplitude#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 - var builder = new Adapty.ProfileParameters.Builder();
 - builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
@@ -384,7 +384,7 @@ using AdaptySDK;
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppMetrica integration](appmetrica#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 - var deviceId = AppMetrica.GetDeviceId();
@@ -425,7 +425,7 @@ using AdaptySDK;
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for AppsFlyer integration](appsflyer#sdk-configuration).
 
-```diff
+```diff showLineNumbers
  using AppsFlyerSDK;
  using AdaptySDK;
 
@@ -460,7 +460,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Branch integration](branch#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 - class YourBranchImplementation {
@@ -489,7 +489,7 @@ using AdaptySDK;
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
-```diff
+```diff showLineNumbers
  // We suppose FirebaseAnalytics Unity Plugin is already installed
 
  using AdaptySDK;
@@ -524,7 +524,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Mixpanel integration](mixpanel#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 - var builder = new Adapty.ProfileParameters.Builder();
@@ -550,7 +550,7 @@ using AdaptySDK;
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 - using OneSignalSDK;
@@ -580,7 +580,7 @@ using AdaptySDK;
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-```diff
+```diff showLineNumbers
 using AdaptySDK;
 
 - var builder = new Adapty.ProfileParameters.Builder();
@@ -602,7 +602,7 @@ using AdaptySDK;
 
 Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](associate-paywalls-to-transactions).
 
-```diff
+```diff showLineNumbers
  // every time when calling transaction.finish()
 - Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
 -     if(error != null) {

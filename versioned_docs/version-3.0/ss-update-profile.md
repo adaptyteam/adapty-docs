@@ -7,13 +7,14 @@ displayed_sidebar: APISidebar
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
-import ProfileObject from '@site/src/components/reusable/ProfileObject.md';import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
+import ProfileObject from '@site/src/components/reusable/ProfileObject.md';
+import CreateProfileRequestExample from '@site/src/components/reusable/CreateProfileRequestExample.md';
 import ProfileRequest from '@site/src/components/reusable/ProfileRequest.md';
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseBadRequest from '@site/src/components/reusable/ProfileResponseBadRequest.md';
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
-import ResponseExample from '@site/src/components/reusable/responseExample.md';
+import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
 
 
@@ -32,7 +33,7 @@ PATCH https://api.adapty.io/api/v2/server-side-api/profile/
 
 <TabItem value="curl" label="cURL" default> 
 
-```bash
+```bash showLineNumbers
 curl --location --request PATCH 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
@@ -76,7 +77,7 @@ curl --location --request PATCH 'https://api.adapty.io/api/v2/server-side-api/pr
 
 <TabItem value="python" label="Python" default> 
 
-```python
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v2/server-side-api/profile/"
@@ -130,7 +131,7 @@ print(response.text)
 
 <TabItem value="js" label="JavaScript" default> 
 
-```javascript
+```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");

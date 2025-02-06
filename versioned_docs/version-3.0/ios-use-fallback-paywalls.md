@@ -19,7 +19,7 @@ Here's an example of retrieving fallback paywall data from a locally stored JSON
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 do {
      if let urlPath = Bundle.main.url(forResource: fileName, withExtension: "json") {
           try await Adapty.setFallbackPaywalls(fileURL: urlPath)
@@ -31,7 +31,7 @@ do {
 </TabItem>
 <TabItem value="Swift-Callback" label="Swift" default>
 
-```swift
+```swift showLineNumbers
 if let url = Bundle.main.url(forResource: "ios_fallback", withExtension: "json") {
      Adapty.setFallbackPaywalls(fileURL: url)
 }

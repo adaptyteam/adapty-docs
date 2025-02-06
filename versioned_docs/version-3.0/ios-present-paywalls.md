@@ -25,7 +25,7 @@ In order to display the visual paywall on the device screen, do the following:
 
 1. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-     ```swift title="Swift"
+     ```swift showLineNumbers title="Swift"
      import Adapty
      import AdaptyUI
         
@@ -50,7 +50,7 @@ In order to display the visual paywall on the device screen, do the following:
 
 2. After the object has been successfully created, you can display it on the screen of the device: 
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    present(visualPaywall, animated: true)
    ```
 
@@ -58,7 +58,7 @@ In order to display the visual paywall on the device screen, do the following:
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift title="SwiftUI"
+```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false
 
 var body: some View {

@@ -39,7 +39,7 @@ To get a paywall, use the `getPaywall` method:
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -51,7 +51,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 import com.adapty.utils.seconds
 
 ...
@@ -71,7 +71,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 import com.adapty.utils.TimeInterval;
 
 ...
@@ -90,7 +90,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
-```javascript 
+```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
@@ -101,7 +101,7 @@ try {
 ```
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
-```csharp 
+```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
     // handle the error
@@ -113,7 +113,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
-```typescript 
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';
@@ -153,7 +153,7 @@ After fetching the paywall, check if it includes a `viewConfiguration`, which in
 
 Use the `getViewConfiguration` method to load the view configuration.
 
-```swift 
+```swift showLineNumbers
 import Adapty
 import AdaptyUI
 
@@ -176,7 +176,7 @@ do {
 
 Use the `getViewConfiguration` method to load the view configuration.
 
-```kotlin 
+```kotlin showLineNumbers
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
     return
@@ -200,7 +200,7 @@ AdaptyUI.getViewConfiguration(paywall) { result ->
 
 Use the `getViewConfiguration` method to load the view configuration.
 
-```java 
+```java showLineNumbers
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
     return;
@@ -226,7 +226,7 @@ In Flutter SDK, you can directly call the `createPaywallView` method without man
 The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```javascript 
+```javascript showLineNumbers
 import 'package:adapty_ui_flutter/adapty_flutter.dart';
 
 try {
@@ -246,7 +246,7 @@ In Unity SDK, you can directly call the `createPaywallView` method without manua
 The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```csharp 
+```csharp showLineNumbers
 AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
   // use the view
 });
@@ -260,7 +260,7 @@ In React Native SDK, you can directly call the `createPaywallView` method withou
 The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```typescript 
+```typescript showLineNumbers
 import {createPaywallView} from '@adapty/react-native-ui';
 
 if (paywall.hasViewConfiguration) {
@@ -313,7 +313,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 
 <Tabs>
 <TabItem value="Swift" label="Swift" default>
-```swift 
+```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
         case let .success(paywall):
@@ -325,7 +325,7 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
     when (result) {
         is AdaptyResult.Success -> {
@@ -341,7 +341,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
@@ -356,7 +356,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 ```
 </TabItem>
 <TabItem value="RN" label="React Native" default>
-```typescript
+```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
     const locale = 'en';

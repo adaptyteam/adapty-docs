@@ -24,7 +24,7 @@ To display a paywall, use the `view.Present()` method on the `view` created by t
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```csharp title="Unity"
+```csharp showLineNumbers title="Unity"
 view.Present((error) => {
   // handle the error
 });

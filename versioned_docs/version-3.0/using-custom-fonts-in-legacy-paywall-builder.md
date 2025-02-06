@@ -1,7 +1,7 @@
 ---
 title: "Custom fonts in legacy Paywall Builder"
-description: ""
-metadataTitle: ""
+description: "Custom Fonts in Legacy Paywall Builder | Adapty Docs"
+metadataTitle: "Enhance your legacy paywall builder with custom fonts for a better visual experience."
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -108,7 +108,7 @@ There are two ways to get the correct ID for a font: first involves some basic c
 
 If you've already added a custom font to your app's bundle — chances are you're already referencing it by the font name. To make sure simply call `UIFont.familyNames()` to get the family name of the font and then plug it into `UIFont.fontNames(forFamilyName: familyName)`. You can do this in `viewDidLoad` and then remove this code snippet:
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 override func viewDidLoad() {
     super.viewDidLoad()
   	...

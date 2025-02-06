@@ -140,7 +140,7 @@ In addition, some events have additional properties. For the events `subscriptio
 
 Event example
 
-```json title="Json"
+```json showLineNumbers title="Json"
 {
     "price_usd": 9.99,
     "proceeds_usd": 6.99,

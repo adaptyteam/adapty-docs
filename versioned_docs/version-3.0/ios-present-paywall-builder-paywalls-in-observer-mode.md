@@ -37,7 +37,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 1. Implement the `AdaptyObserverModeResolver` object:
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
                      onStartPurchase: @escaping () -> Void,
                      onFinishPurchase: @escaping () -> Void) {
@@ -57,7 +57,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 2. Create a paywall configuration object:
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    do {
        let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
         forPaywall: <paywall object>, 
@@ -77,7 +77,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 3. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    import Adapty
    import AdaptyUI
    
@@ -102,7 +102,7 @@ Returns:
 
 After the object has been successfully created, you can display it like so: 
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 present(visualPaywall, animated: true)
 ```
 
@@ -114,7 +114,7 @@ Don't forget to [Associate paywalls to purchase transactions](associate-paywalls
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift title="SwiftUI"
+```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false
 
 var body: some View {
@@ -182,7 +182,7 @@ Don't forget to [Associate paywalls to purchase transactions](associate-paywalls
 <TabItem value="Swift" label="Swift" default>
 1. Implement the `AdaptyObserverModeDelegate` object:
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    func paywallController(_ controller: AdaptyPaywallController,
                           didInitiatePurchase product: AdaptyPaywallProduct,
                           onStartPurchase: @escaping () -> Void,
@@ -203,7 +203,7 @@ Don't forget to [Associate paywalls to purchase transactions](associate-paywalls
 
 2. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)` method:
 
-   ```swift title="Swift"
+   ```swift showLineNumbers title="Swift"
    import Adapty
    import AdaptyUI
    
@@ -235,7 +235,7 @@ Returns:
 
 After the object has been successfully created, you can display it like so: 
 
-```swift title="Swift"
+```swift showLineNumbers title="Swift"
 present(visualPaywall, animated: true)
 ```
 
@@ -246,7 +246,7 @@ Don't forget to [Associate paywalls to purchase transactions](associate-paywalls
 <TabItem value="swiftUI" label="SwiftUI" default>
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
-```swift title="SwiftUI"
+```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false
 
 var body: some View {

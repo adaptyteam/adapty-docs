@@ -1,7 +1,7 @@
 ---
 title: "Download fallback paywalls"
-description: "Explore how fallback paywalls ensure uninterrupted in-app purchases, even without an internet connection. Learn how Adapty's innovative solutions empower developers to define fallback paywalls for a seamless user experience."
-metadataTitle: "Fallback Paywalls: Ensuring Seamless In-App Purchases | Adapty"
+description: "Using Local Fallback Paywalls | Adapty Docs"
+metadataTitle: "Use local fallback paywalls in Adapty to ensure seamless subscription flows."
 ---
 
 import Zoom from 'react-medium-image-zoom';

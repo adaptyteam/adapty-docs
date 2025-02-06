@@ -1,7 +1,7 @@
 ---
 title: "Android - Use fallback paywalls"
-description: ""
-metadataTitle: ""
+description: "Using Fallback Paywalls on Android | Adapty Docs"
+metadataTitle: "Use fallback paywalls in Android apps with Adapty to ensure revenue flow."
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -18,7 +18,7 @@ Here's an example of retrieving fallback paywall data from locally stored JSON f
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin 
+```kotlin showLineNumbers
 //if you put the 'android_fallback.json' file to the 'assets' directory
 val location = FileLocation.fromAsset("android_fallback.json")
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json")` if you placed it in a child folder of 'assets')
@@ -35,7 +35,7 @@ Adapty.setFallbackPaywalls(location, callback)
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java 
+```java showLineNumbers
 //if you put the 'android_fallback.json' file to the 'assets' directory
 FileLocation location = FileLocation.fromAsset("android_fallback.json");
 //or `FileLocation.fromAsset("<additional_folder>/android_fallback.json");` if you placed it in a child folder of 'assets')

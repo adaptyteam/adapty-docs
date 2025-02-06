@@ -1,7 +1,7 @@
 ---
 title: "Initial integration with Google Play"
-description: "Get started with Adapty's initial integration process with the Googple Play Store, ensuring seamless connectivity and enabling access to Adapty's powerful features for optimizing user engagement. Explore step-by-step instructions for integrating your mobile app with Adapty and start leveraging its capabilities today"
-metadataTitle: "Adapty Initial Integration with Google Play Store: A Quick Guide"
+description: "Getting Started with Android | Adapty Docs"
+metadataTitle: "Get started with Adapty on Android and set up your app for efficient subscription management."
 ---
 
 We're thrilled to have you on board with Adapty! Our priority is to help you hit the ground running and achieve the best possible outcomes. This guide is designed to get you started with Adapty if your app is available in the Google Play Store.

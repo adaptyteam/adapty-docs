@@ -1,7 +1,7 @@
 ---
 title: "Enable Developer APIs in Google Play Console"
-description: "Optimize your subscription model by enabling Developer APIs in the Google Play Console for seamless integration with Adapty. Learn how to activate Developer APIs to facilitate automated processes and real-time data analysis for enhanced subscription management"
-metadataTitle: "Google Play Console: Enabling Developer APIs for Adapty Integration"
+description: "Enabling Developer API | Adapty Docs"
+metadataTitle: "Enable Adapty's Developer API to automate and streamline subscription management in your app."
 ---
 
 import Zoom from 'react-medium-image-zoom';

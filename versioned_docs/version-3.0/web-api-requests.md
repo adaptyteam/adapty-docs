@@ -29,7 +29,7 @@ We've created a unified environment for both the server-side and web APIs to sim
 | Variable                | Description                                                  | Example Value                                           |
 | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
 | public_api_key          | You can find it in the **Public SDK key** field in the [**App settings**](https://app.adapty.io/settings/general). | `public_live_Pj1P1xzM.2CvSvE1IalQRFjsWy6csBVNpH33atnod` |
-| adapty-customer-user-id | The user ID used in your system. In the Adapty Dashboard, you can find it in the **Customer user ID** field of the Profile. | `John.doe@example.com`                                  |
+| adapty-customer-user-id | The user ID used in your system. In the Adapty Dashboard, you can find it in the **Customer user ID** field of the Profile. | `john.doe@example.com`                                  |
 | adapty-profile-id       | The user ID assigned in Adapty. In the Adapty Dashboard, you can find it in the **Adapty ID** field of the Profile. | `3286abd3-48b0-4e9c-a5f6-ac0a006333a6`                  |
 
 **What's next: Requests:**

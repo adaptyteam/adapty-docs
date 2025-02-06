@@ -1,7 +1,7 @@
 ---
 title: "Reports"
-description: ""
-metadataTitle: ""
+description: "Generating Reports in Adapty | Adapty Docs"
+metadataTitle: "Generate detailed subscription reports in Adapty to analyze app revenue and user behavior."
 ---
 
 import Zoom from 'react-medium-image-zoom';

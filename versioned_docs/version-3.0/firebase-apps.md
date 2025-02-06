@@ -1,7 +1,7 @@
 ---
 title: "Firebase apps"
-description: ""
-metadataTitle: ""
+description: "Firebase Integration for Apps | Adapty Docs"
+metadataTitle: "Integrate Firebase with Adapty to enhance user analytics and subscription tracking for your mobile app."
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -23,7 +23,7 @@ If you're using Firebase auth, this snippet may help you keep your users in sync
 
 <Tabs>
 <TabItem value="Swift" label="iOS with Firebase" default>
-```swift
+```swift showLineNumbers
 import Adapty
 import Firebase
  
@@ -75,7 +75,7 @@ extension AppDelegate: AdaptyDelegate {
 ```
 </TabItem>
 <TabItem value="kotlin" label="Android with Firebase" default>
-```kotlin 
+```kotlin showLineNumbers
 class App : Application() {
 
     override fun onCreate() {

@@ -29,7 +29,7 @@ In order to display the visual paywall on the device screen, you must first conf
 <Tabs>
   <TabItem value="kotlin1" label="Kotlin (option 1)" default>
 
-```kotlin 
+```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
        activity,
        viewConfiguration,
@@ -44,7 +44,7 @@ In order to display the visual paywall on the device screen, you must first conf
 </TabItem>
 <TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
-```kotlin
+```kotlin showLineNumbers
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
@@ -64,7 +64,7 @@ In order to display the visual paywall on the device screen, you must first conf
 </TabItem>
 <TabItem value="java1" label="Java (option 1)" default>
 
-```java
+```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
         viewConfiguration,
@@ -79,7 +79,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
 
-```java
+```java showLineNumbers
 AdaptyPaywallView paywallView =
   new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
@@ -89,7 +89,7 @@ paywallView.showPaywall(viewConfiguration, products, eventListener, insets, pers
 </TabItem>
 <TabItem value="XML" label="XML" default>
 
-```xml 
+```xml showLineNumbers
 <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
@@ -106,7 +106,7 @@ If you get `AdaptyPaywallView` _not_ by calling `AdaptyUI.getPaywallView()`, you
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, use this composable function:
 
-```kotlin
+```kotlin showLineNumbers
 AdaptyPaywallScreen(
     viewConfiguration,
     products,
@@ -143,7 +143,7 @@ If your paywall isn’t edge-to-edge, you might want to set custom insets:
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
-```kotlin
+```kotlin showLineNumbers
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -173,7 +173,7 @@ paywallView.onReceiveSystemBarsInsets { insets ->
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-```java
+```java showLineNumbers
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -201,7 +201,7 @@ To use developer-defined timers in your mobile app, create a `timerResolver` obj
 <Tabs> 
 <TabItem value="kotlin" label="Kotlin" default> 
 
-```kotlin
+```kotlin showLineNumbers
 import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
@@ -219,7 +219,7 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 </TabItem> 
 <TabItem value="java" label="Java" default> 
 
-```JAVA
+```JAVA showLineNumbers
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -254,7 +254,7 @@ To use custom tags in your mobile app, create a `tagResolver` object—a diction
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 val customTags = mapOf("USERNAME" to "John")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
@@ -262,7 +262,7 @@ val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-```java 
+```java showLineNumbers
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
@@ -279,7 +279,7 @@ We recommend creating and populating the `tagResolver` right before presenting y
 
 You can override the default color of the loading indicator in the following way:
 
-```XML title = "XML"
+```XML showLineNumbers title = "XML"
 <!--your theme -->
 <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
     <!--other attrs -->

@@ -33,7 +33,7 @@ Include the `backendBaseUrl` parameter in your configuration:
 
 <TabItem value="Swift" label="Swift" default>
 
-```swift 
+```swift showLineNumbers
 // In your AppDelegate class:
 import Adapty
 
@@ -55,7 +55,7 @@ Adapty.activate(with: configurationBuilder) { error in
 </TabItem>
 <TabItem value="SwiftUI" label="SwiftUI" default>
 
-```swift 
+```swift showLineNumbers
 import Adapty
 
 @main
@@ -104,7 +104,7 @@ Use the `.withServerCluster` method in your configuration:
 <Tabs>
   <TabItem value="Kotlin" label="Kotlin" default>
 
-```kotlin 
+```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
@@ -123,7 +123,7 @@ override fun onCreate() {
   </TabItem>
   <TabItem value="Java" label="Java" default>
 
-```java 
+```java showLineNumbers
 @Override
 public void onCreate() {
     super.onCreate();

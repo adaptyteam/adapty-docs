@@ -1,7 +1,7 @@
 ---
 title: "Products"
-description: "Learn about App Store and Google Play products – digital items users can purchase within apps, ranging from in-game currency to premium features. Discover how Adapty revolutionizes mobile app monetization and user engagement with its seamless product management capabilities. With Adapty, consolidate similar products across platforms into a single internal product, streamlining management and maximizing revenue potential. Elevate user experience, increase app revenue, and attract more users effortlessly with Adapty's innovative solutions"
-metadataTitle: "What are products in mobile apps and how to improve mobile app monetization with Adapty"
+description: "Product Configuration Guide | Adapty Docs"
+metadataTitle: "Explore Adapty's product settings to configure and optimize in-app purchases and subscriptions."
 ---
 
 import Zoom from 'react-medium-image-zoom';
