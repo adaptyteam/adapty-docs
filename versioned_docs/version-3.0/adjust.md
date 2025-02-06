@@ -171,15 +171,9 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that.
+It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that. For Adjust version 5.0 or later, use the following:
 
 <Tabs groupId="adjust">
-
-<TabItem value="v5" label="Adjust 5.x+" default>
-
-For Adjust version 5.0 or later, use the following:
-
-<Tabs>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
@@ -228,7 +222,6 @@ Adjust.getAttribution { attribution ->
 ```
 
 </TabItem>
-
 <TabItem value="java" label="Android (Java)" default>
 
 ```java showLineNumbers
@@ -321,96 +314,3 @@ Adjust.getAdid((adid) => {
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-
-<TabItem value="v4" label="Adjust 4.x" default>
-
-For Adjust version 4.x or earlier, use the following:
-
-<Tabs>
-<TabItem value="Swift" label="iOS (Swift)" default>
-
-```swift showLineNumbers
-class YourAdjustDelegateImplementation {
-	// Find your implementation of AdjustDelegate 
-	// and update adjustAttributionChanged method:
-	func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-	    if let attribution = attribution?.dictionary() {
-	        Adapty.updateAttribution(attribution, source: "adjust")
-	    }
-	}
-}
-```
-
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)" default>
-
-```kotlin showLineNumbers
-val config = AdjustConfig(context, adjustAppToken, environment)
-config.setOnAttributionChangedListener { attribution ->
-    attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, "adjust") { error ->
-            if (error != null) {
-                //handle error
-            }
-        }
-    }
-}
-Adjust.onCreate(config)
-```
-
-</TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
-
-```csharp showLineNumbers
-AdjustConfig adjustConfig = new AdjustConfig("{Your App Token}", AdjustEnvironment.Sandbox);
-adjustConfig.setAttributionChangedDelegate(this.attributionChangedDelegate);
-
-public void attributionChangedDelegate(AdjustAttribution attribution) {
-    Dictionary<String, object> data = new Dictionary<String, object>();
-
-    if (attribution.adid != null) data["adid"] = attribution.adid;
-    if (attribution.network != null) data["network"] = attribution.network;
-    if (attribution.campaign != null) data["campaign"] = attribution.campaign;
-    if (attribution.adgroup != null) data["adgroup"] = attribution.adgroup;
-    if (attribution.creative != null) data["creative"] = attribution.creative;
-
-    String attributionString = JsonUtility.ToJson(data);
-    Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, (error) => {
-        // handle the error
-    });
-}
-```
-
-</TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-import { Adjust, AdjustConfig } from "react-native-adjust";
-import { adapty } from "react-native-adapty";
-
-var adjustConfig = new AdjustConfig(appToken, environment);
-
-// Before submiting Adjust config...
-adjustConfig.setAttributionCallbackListener(attribution => {
-  // Make sure Adapty SDK is activated at this point
-  // You may want to lock this thread awaiting of `activate`
-  adapty.updateAttribution(attribution, "adjust");
-});
-
-// ...
-Adjust.create(adjustConfig);
-
-Adjust.getAdid((adid) => {
-  if (adid)
-    adapty.setIntegrationIdentifier("adjust_device_id", adid);
-});
-```
-
-</TabItem>
-</Tabs>
-
-</TabItem>
-</Tabs>
-
