@@ -72,7 +72,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ## SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the `appmetricaProfileId` or `appmetricaDeviceId` parameter. Setting `appmetricaDeviceId` is preferred!
+Use the `setIntegrationIdentifier()` method to set the `appmetrica_profile_id` or `appmetrica_device_id` parameter. If both parameters are provided, the `appmetrica_profile_id` will be used!
 
 If these aren’t set, Adapty will default to using your user ID (`customerUserId`). Make sure the user ID you use to send data to AppMetrica from your app matches the one you send to Adapty. These links can help you set up a user ID for AppMetrica in your app.
 
