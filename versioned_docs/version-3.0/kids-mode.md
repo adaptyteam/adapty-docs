@@ -8,19 +8,44 @@ import TabItem from '@theme/TabItem';
 
 If your application is intended for kids, you must follow the policies of [Apple](https://developer.apple.com/app-store/kids-apps/) and [Google](https://support.google.com/googleplay/android-developer/answer/9893335). If you're using the Adapty SDK, a few simple steps will help you configure it to meet these policies and pass app store reviews. The exact steps vary by platform, but none will take more than 10 minutes.
 
-What needs to be done: Configure the Adapty SDK to prevent the collection of [IDFA](https://en.wikipedia.org/wiki/Identifier_for_Advertisers),  [Android Advertising ID (AAID)](https://support.google.com/googleplay/android-developer/answer/6048248) also known as GAID, and other advertising attributes.
+### What’s required?
 
-<Tabs groupId="kids-mode"> 
+You need to configure the Adapty SDK to **disable the collection of**:
 
-<TabItem value="Swift" label="Swift" default> 
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248)
+- Any other advertising-related data
 
-Text 
+## Kids Mode for iOS
 
-</TabItem> 
+To enable Kids Mode in the Adapty SDK using CocoaPods:
+1. Add the following to the end of your **Podfile**:
+
+    ```ruby showLineNumbers title="Podfile"
+    post_install do |installer|
+      installer.pods_project.targets.each do |target|
+        if target.name == 'Adapty'
+          target.build_configurations.each do |config|
+            config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
+            config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
+          end
+        end
+      end
+    end
+    ```
+2. Run the following command to apply the changes:
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+
+## Kids Mode for Android
+
+To comply with policies, you need to disable the collection of the Android Advertising ID when initializing the Adapty SDK:
+
+<Tabs>
 
 <TabItem value="Kotlin" label="Kotlin" default>
-
-In order to comply with policies, disable the collection of user GAID when configuring the Adapty SDK as follows: 
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -39,8 +64,6 @@ override fun onCreate() {
 </TabItem>
 <TabItem value="Java" label="Java" default>
 
-In order to comply with policies, disable the collection of user GAID when configuring the Adapty SDK as follows: 
-
 ```java showLineNumbers
 @Override
 public void onCreate() {
@@ -58,7 +81,11 @@ public void onCreate() {
 
 </TabItem> 
 
-<TabItem value="Flutter" label="Flutter" default> 
+</Tabs>
+
+<!---
+
+ ## Kids Mode in Flutter
 
 In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID (for Android) when configuring the Adapty SDK as follows: 
 
@@ -75,13 +102,11 @@ try {
 }
 ```
 
-</TabItem> 
-
-<TabItem value="Unity" label="Unity" default> 
+## Kids Mode for React Native
 
 In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID (for Android) when configuring the Adapty SDK as follows: 
 
-</TabItem>
+<Tabs>
 
 <TabItem value="RN" label="React Native (TS)" default> 
 
@@ -125,3 +150,8 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 </Tabs>
 
+--->
+
+## Kids Mode for Flutter, React Native, and Unity
+
+Support for Kids Mode in **Flutter, React Native, and Unity** is coming soon!
