@@ -361,36 +361,6 @@ Adjust.onCreate(config)
 ```
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-import 'package:adjust_sdk/adjust.dart';
-import 'package:adjust_sdk/adjust_config.dart';
-
-AdjustConfig config = new AdjustConfig('{YourAppToken}', AdjustEnvironment.sandbox);
-      config.attributionCallback = (data) async {
-        var attribution = Map<String, String>();
-        if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
-        if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
-        if (data.network != null) attribution['network'] = data.network!;
-        if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
-        if (data.creative != null) attribution['creative'] = data.creative!;
-        if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
-        if (data.adid != null) attribution['adid'] = data.adid!;
-        if (data.costType != null) attribution['costType'] = data.costType!;
-        if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
-        if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
-        if (data.fbInstallReferrer != null) attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
-
-        try {
-          await Adapty().updateAttribution(attribution, source: AdaptyAttributionSource.adjust);
-        } on AdaptyError catch (adaptyError) {
-          // handle error
-        } catch (e) {}
-      };
-```
-
-</TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
