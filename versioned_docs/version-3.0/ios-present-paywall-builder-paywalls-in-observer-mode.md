@@ -27,7 +27,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
    5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
    6. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) in your mobile app code.
-  </details>
+    </details>
 
 <p> </p>
 
@@ -107,7 +107,7 @@ present(visualPaywall, animated: true)
 ```
 
 :::warning
-Don't forget to [Associate paywalls to purchase transactions](associate-paywalls-to-transactions). Otherwise, Adapty will not determine the source paywall of the purchase. 
+Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase. 
 :::
 </TabItem> 
 <TabItem value="swiftUI" label="SwiftUI" default> 
@@ -158,7 +158,7 @@ Closure parameters:
 Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
 
 :::warning
-Don't forget to [Associate paywalls to purchase transactions](associate-paywalls-to-transactions). Otherwise, Adapty will not determine the source paywall of the purchase.
+Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
 ::: 
 
 </TabItem> 
@@ -240,7 +240,7 @@ present(visualPaywall, animated: true)
 ```
 
 :::warning
-Don't forget to [Associate paywalls to purchase transactions](associate-paywalls-to-transactions). Otherwise, Adapty will not determine the source paywall of the purchase.
+Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
 :::
 </TabItem>
 <TabItem value="swiftUI" label="SwiftUI" default>
@@ -296,7 +296,7 @@ Closure parameters:
 Refer to the [iOS - Handling events](ios-handling-events) topic for other closure parameters.
 
 :::warning
-Don't forget to [Associate paywalls to purchase transactions](associate-paywalls-to-transactions). Otherwise, Adapty will not determine the source paywall of the purchase.
+Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
 :::
 </TabItem>
 </Tabs>
