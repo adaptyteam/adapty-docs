@@ -19,16 +19,18 @@ You need to configure the Adapty SDK to **disable the collection of**:
 ## Kids Mode for iOS
 
 To enable Kids Mode in the Adapty SDK using CocoaPods:
-1. Add the following to the end of your **Podfile** or merge :
+1. Add the whole code block to the end of your **Podfile** if you do not have post_install section in it or merge highlighted lines into it if you have:
 
     ```ruby showLineNumbers title="Podfile"
     post_install do |installer|
       installer.pods_project.targets.each do |target|
+        // highlight-start
         if target.name == 'Adapty'
           target.build_configurations.each do |config|
             config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
             config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
           end
+        // highlight-end
         end
       end
     end
