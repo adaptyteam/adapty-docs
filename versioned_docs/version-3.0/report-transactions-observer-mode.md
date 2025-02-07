@@ -57,6 +57,12 @@ If you don't call `.restorePurchases()`, Adapty won't recognize the transaction,
 If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
 
 ```kotlin showLineNumbers
+Adapty.restorePurchases { result ->
+    if (result is AdaptyResult.Success) {
+        // success
+    }
+}
+
 Adapty.setVariationId(transactionId, variationId) { error ->
     if (error == null) {
         // success
@@ -85,6 +91,12 @@ If you don't call `.restorePurchases()`, Adapty won't recognize the transaction,
 If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
 
 ```java showLineNumbers
+Adapty.restorePurchases(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        // success
+    }
+});
+
 Adapty.setVariationId(transactionId, variationId, error -> {
     if (error == null) {
         // success
@@ -207,7 +219,7 @@ After the preliminary configuration is done, you need to associate the transacti
 
 ### Reporting transactions
 
-Use `.restorePurchases()` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](estore-purchase) page.
+For Android and Android-based crossplatforms, use `.restorePurchases()` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](restore-purchase) page. iOS Adapty SDK listens  
 
 :::warning
 
