@@ -19,7 +19,7 @@ You need to configure the Adapty SDK to **disable the collection of**:
 ## Kids Mode for iOS
 
 To enable Kids Mode in the Adapty SDK using CocoaPods:
-1. Add the following to the end of your **Podfile**:
+1. Add the following to the end of your **Podfile** or merge :
 
     ```ruby showLineNumbers title="Podfile"
     post_install do |installer|
