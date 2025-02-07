@@ -11,6 +11,8 @@ import TabItem from '@theme/TabItem';
 
 In Observer mode, the Adapty SDK can't track purchases made through your existing purchase system on its own. You need to report transactions from your app store. It's crucial to set this up **before** releasing your app to avoid errors in analytics.
 
+## Using Observer Mode in SDK 3.3.0 and later (current)
+
 <Tabs groupId="report-transactions-observer-mode">
 <TabItem value="Swift" label="Swift" default>
 
@@ -52,7 +54,7 @@ If you don't call `.restorePurchases()`, Adapty won't recognize the transaction,
 
 :::
 
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
 
 ```kotlin showLineNumbers
 Adapty.setVariationId(transactionId, variationId) { error ->
@@ -80,7 +82,7 @@ If you don't call `.restorePurchases()`, Adapty won't recognize the transaction,
 
 :::
 
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
 
 ```java showLineNumbers
 Adapty.setVariationId(transactionId, variationId, error -> {
@@ -108,7 +110,7 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 
 :::
 
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, include the `withVariationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```javascript showLineNumbers
 try {
@@ -142,7 +144,7 @@ If you don't call `ReportTransaction`, Adapty won't recognize the transaction, i
 
 :::
 
-If you use Adapty paywalls, include the `PAYWALL_VARIATION_ID` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, include the `withVariationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```csharp showLineNumbers
 // every time when calling transasction.finish()
@@ -173,7 +175,7 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 
 :::
 
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, include the `withVariationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```typescript showLineNumbers
 const variationId = paywall.variationId;
@@ -188,7 +190,7 @@ Parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)  object. |
+| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)  object. |
 | transactionId | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
 
 </TabItem>
@@ -197,4 +199,102 @@ Parameters:
 
 For accurate analytics, ensure the transaction is associated with the paywall within 3 hours of its creation.
 
-## Using Observer Mode in version below 3.3.0
+## Using Observer Mode in SDK versions below 3.3.0 (legacy)
+
+<!--- In Observer mode, Adapty SDK cannot determine the source of purchases as you are the one processing them. Therefore, if you intend to use paywalls and/or A/B tests in Observer mode, you need to associate the transaction coming from your app store with the corresponding paywall in your mobile app code. This is important to get right before releasing your app, otherwise, it will lead to errors in analytics.
+
+After the preliminary configuration is done, you need to associate the transaction generated by Apple or Google to the corresponding paywall in your mobile app code using the `variationId` parameter as shown in the example below. Make sure you always associate the transaction with the paywall that generated it, only then you will be able to see the correct metrics in the Adapty Dashboard. --->
+
+### Reporting transactions in versions below 3.3.0
+
+Use `.restorePurchases()` to report the transaction to Adapty in Observer Mode as described on the [Restore purchases in mobile code page](estore-purchase).
+
+:::warning
+
+**Don't skip transaction reporting!**
+If you don't call `.restorePurchases()`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+
+:::
+
+### Associating paywalls to transactions in versions below 3.3.0
+
+If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
+
+<Tabs>
+<TabItem value="Swift" label="Swift" default>
+```swift 
+let variationId = paywall.variationId
+// There are two overloads: for StoreKit 1 and StoreKit 2
+Adapty.setVariationId(variationId, forPurchasedTransaction: transactionId) { error in
+    if error == nil {
+        // successful binding
+    }    
+}
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin 
+Adapty.setVariationId(transactionId, variationId) { error ->
+    if (error == null) {
+        // success
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java 
+Adapty.setVariationId(transactionId, variationId, error -> {
+    if (error == null) {
+        // success
+    }
+});
+```
+</TabItem>
+<TabItem value="Flutter" label="Flutter" default>
+```javascript
+final transactionId = transaction.transactionIdentifier
+final variationId = paywall.variationId
+
+try {
+  await Adapty().setVariationId('transactionId', variationId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="Unity" label="Unity" default>
+```csharp 
+Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+    if(error != null) {
+        // handle the error
+        return;
+    }
+
+    // successful binding
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+```typescript 
+const variationId = paywall.variationId;
+
+try {
+    await adapty.setVariationId('transactionId', variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+</TabItem>
+</Tabs>
+
+Request parameters:
+
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| variationId | required | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)  object. |
+| transactionId | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+
+
+For accurate analytics, ensure the transaction is associated with the paywall within 3 hours of its creation.
