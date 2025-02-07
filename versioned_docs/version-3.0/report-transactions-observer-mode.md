@@ -196,3 +196,5 @@ Parameters:
 
 
 For accurate analytics, ensure the transaction is associated with the paywall within 3 hours of its creation.
+
+## Using Observer Mode in version below 3.3.0
