@@ -45,4 +45,4 @@ In Observer mode, Adapty SDK cannot determine the source of purchases as you mak
 Additionally, paywalls designed with Paywall Builder should be displayed in a special way when using the Observer mode:
 
 - Display paywalls in Observer mode for [iOS](implement-observer-mode) or [Android](android-present-paywall-builder-paywalls-in-observer-mode).
-- [Associate paywalls to purchase transactions in Observer mode](associate-paywalls-to-transactions).
+- [Associate paywalls to purchase transactions in Observer mode](report-transactions-observer-mode).
