@@ -30,8 +30,8 @@ To enable Kids Mode in the Adapty SDK using CocoaPods:
             config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
             config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
           end
-        // highlight-end
         end
+        // highlight-end
       end
     end
     ```
