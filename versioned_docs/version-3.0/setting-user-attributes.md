@@ -110,6 +110,24 @@ try {
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
 
+```csharp showLineNumbers
+var builder = new Adapty.ProfileParameters.Builder()
+        .SetFirstName("John")
+        .SetLastName("Appleseed")
+        .SetBirthday(new DateTime(1970, 1, 3))
+        .SetGender(ProfileGender.Female)
+        .SetEmail("example@adapty.io");
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    if(error != nil) {
+        // handle the error                        
+    }
+});
+```
+
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+
 ```typescript showLineNumbers
 // Only for TypeScript validation
 import type { AdaptyProfileParameters } from 'react-native-adapty';
@@ -128,23 +146,6 @@ try {
 } catch (error) {
     // handle `AdaptyError`
 }
-```
-</TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
-
-```csharp showLineNumbers
-var builder = new Adapty.ProfileParameters.Builder()
-        .SetFirstName("John")
-        .SetLastName("Appleseed")
-        .SetBirthday(new DateTime(1970, 1, 3))
-        .SetGender(ProfileGender.Female)
-        .SetEmail("example@adapty.io");
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    if(error != nil) {
-        // handle the error                        
-    }
-});
 ```
 
 </TabItem>
