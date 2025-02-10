@@ -72,25 +72,26 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ## SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the `appmetricaProfileId` or `appmetricaDeviceId` parameter. Setting `appmetricaDeviceId` is preferred!
+Use the `setIntegrationIdentifier()` method to set the `appmetrica_profile_id` or `appmetrica_device_id` parameter. If both parameters are provided, the `appmetrica_profile_id` will be used!
 
-If these aren’t set, Adapty will default to using your user ID (`customerUserId`). Make sure the user ID you use to send data to AppMetrica from your app matches the one you send to Adapty. These links can help you set up a user ID for AppMetrica in your app.
+If these aren’t set, Adapty will default to using your user ID (`YOUR_ADAPTY_CUSTOMER_USER_ID`). Make sure the user ID you use to send data to AppMetrica from your app matches the one you send to Adapty. These links can help you set up get all needed IDs for AppMetrica in your app.
 
-- [Set profile ID](https://appmetrica.yandex.com/docs/mobile-sdk-dg/ios/objective-c/ref/YMMYandexMetrica.html#method_detail__method_setUserProfileID) iOS;
-- [Get device ID](https://appmetrica.yandex.ru/docs/ru/sdk/react-native/analytics/methods#appmetrica) iOS;
+- [Set profile ID](https://appmetrica.yandex.com/docs/en/sdk/ios/analytics/objectivec/AMAAppMetrica#property_userProfileID) iOS;
+- [Get device ID hash](https://appmetrica.yandex.ru/docs/en/sdk/ios/analytics/swift/AppMetrica#property_deviceID) iOS;
 - [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
-- [Get device ID](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#requestStartupParams(android.content.Context,io.appmetrica.analytics.StartupParamsCallback,java.util.List)) Android.
+- [Get device ID hash](https://appmetrica.yandex.ru/docs/en/sdk/android/analytics/android-operations#get-ids) Android.
 
 <Tabs groupId="appmetrica">
 <TabItem value="Swift" label="iOS (Swift)" default>
+
 ```swift showLineNumbers
 import AppMetricaCore 
 
-if let deviceID = AppMetrica.deviceID {
+if let deviceIDHash = AppMetrica.deviceIDHash {
     do {
         try await Adapty.setIntegrationIdentifier(
             key: "appmetrica_device_id", 
-            value: deviceID
+            value: deviceIDHash
         )
         try await Adapty.setIntegrationIdentifier(
             key: "appmetrica_profile_id", 
@@ -106,9 +107,9 @@ if let deviceID = AppMetrica.deviceID {
 ```kotlin showLineNumbers
 val startupParamsCallback = object: StartupParamsCallback {
     override fun onReceive(result: StartupParamsCallback.Result?) {
-        val deviceId = result?.deviceId ?: return
+        val deviceIdHash = result?.deviceIdHash ?: return
 
-        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
             if (error != null) {
                 // handle the error
             }
@@ -129,20 +130,21 @@ val startupParamsCallback = object: StartupParamsCallback {
     }
 }
 
-AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
-final deviceId = await AppMetrica.deviceId;
+final startupParams = await AppMetrica.requestStartupParams([AppMetricaStartupParams.deviceIdHashKey]);
+final deviceIdHash = startupParams.result?.deviceIdHash;
 
-if (deviceId != null) {
+if (deviceIdHash != null) {
   try {
     await Adapty().setIntegrationIdentifier(
         key: "appmetrica_device_id", 
-        value: deviceId,
+        value: deviceIdHash,
     );
     await Adapty().setIntegrationIdentifier(
         key: "appmetrica_profile_id", 
@@ -159,48 +161,54 @@ if (deviceId != null) {
 <TabItem value="Unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 using AdaptySDK;
+using Io.AppMetrica;
 
-var deviceId = AppMetrica.GetDeviceId();
+AppMetrica.RequestStartupParams(
+    (result, errorReason) => {
+        string deviceIdHash = result.DeviceIdHash;
 
-if (deviceId != null {
-  Adapty.SetIntegrationIdentifier(
-    "appmetrica_device_id", 
-    deviceId, 
-    (error) => {
-    // handle the error
-  });
-  
-  Adapty.SetIntegrationIdentifier(
-    "appmetrica_profile_id", 
-    "YOUR_ADAPTY_CUSTOMER_USER_ID", 
-    (error) => {
-    // handle the error
-  });
-}
+        if (deviceIdHash != null) {
+            Adapty.SetIntegrationIdentifier(
+                "appmetrica_device_id",
+                deviceIdHash,
+                (error) => {
+                    // handle the error
+                });
+
+            Adapty.SetIntegrationIdentifier(
+                "appmetrica_profile_id",
+                "YOUR_ADAPTY_CUSTOMER_USER_ID",
+                (error) => {
+                    // handle the error
+                });
+          }
+      },
+      new List<string>() { StartupParamsKey.AppMetricaDeviceIDHash }
+);
 ```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
-import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+import AppMetrica, { DEVICE_ID_HASH_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
 
 // ...
 const startupParamsCallback = async (
   params?: StartupParams,
   reason?: StartupParamsReason
 ) => {
-  const deviceId = params?.deviceId
-  if (deviceId) {
+  const deviceIdHash = params?.deviceIdHash
+  if (deviceIdHash) {
     try {
       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
-      await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+      await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash);
     } catch (error) {
       // handle `AdaptyError`
     }
   }
 }
 
-AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_HASH_KEY])
 ```
 </TabItem>
 </Tabs>
