@@ -191,7 +191,7 @@ There is no official PostHog SDK for Unity.
 <TabItem value="RN" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
- import { adapty } from 'react-native-adapty';
+import { adapty } from 'react-native-adapty';
 import { usePostHog } from 'posthog-react-native'
 
 // ...
@@ -199,7 +199,7 @@ const posthog = usePostHog();
 
 // ...
 try {
-  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.get_distinct_id());
+  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.getDistinctId());
 } catch (error) {
   // handle `AdaptyError`
 }
