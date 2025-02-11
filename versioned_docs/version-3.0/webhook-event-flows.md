@@ -28,9 +28,15 @@ If a webhook integration isn’t configured or this event type isn’t enabled, 
 This flow happens when a customer buys a subscription for the first time without a trial. In this situation, the following events are created:
 
 - **Subscription started**
-- **Access level updated** to grant access to the user
+- **Access level updated** to grant access to the user.
 
-When the subscription renewal date comes, the subscription is renewed. In this case, the **Subscription renewal** event is created. Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) respectively.
+When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created: 
+
+- **Subscription renewal** to start a new period of the subscription.
+
+- **Access level updated** to update the subscription expiration date, extending access for another period..
+
+Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) ,respectively.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Initial_Purchase_Flow.webp').default}
@@ -45,10 +51,12 @@ When the subscription renewal date comes, the subscription is renewed. In this c
 
 ### Subscription Cancellation Flow
 
-When a user cancels their subscription, a **Subscription renewal canceled** event is created, which means the subscription will stay active until the end of the period and the user will lose their access at the end of the subscription period. Once the subscription ends:
+When a user cancels their subscription, the following events are created:
 
-- the **Subscription expired (churned)** event is triggered, revoking access 
-- The **Access level updated** event is created to remove the user’s access.
+- **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access.
+- The **Access level updated** event is created to disable auto-renewal for the access.
+
+Once the subscription ends, the **Subscription expired (churned)** event is triggered to to mark the end of the subscription.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow.webp').default}
@@ -61,7 +69,9 @@ When a user cancels their subscription, a **Subscription renewal canceled** even
 />
 </Zoom>
 
-If a refund is approved, an additional **Subscription refunded** event occurs at the moment of approval, which usually does not coincide with any other events.
+If a refund is approved, the following event replaces **Subscription expired (churned)**:
+
+- **Subscription refunded** to end the subscription and provide details about the refund.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp').default}
@@ -95,7 +105,7 @@ If a refund is approved, a **Subscription refunded** event is also triggered whe
 
 ### Subscription Reactivation Flow
 
-If a user cancels a subscription, it expires, and they later repurchase the same subscription, a **Subscription renewed** event will be created. Even if there’s a gap in access, Adapty treats this as a single transaction chain, linked by the **vendor_original_transaction_id**. So, the repurchase is considered a renewal.
+If a user cancels a subscription, it expires, and they later repurchase the same subscription, a **Subscription renewed** event will be created. Even if there’s a gap in access, Adapty treats this as a single transaction chain, linked by the `vendor_original_transaction_id`. So, the repurchase is considered a renewal.
 
 The **Access level updated** events will be created twice: 
 
@@ -146,20 +156,19 @@ These subscriptions will belong to the same transaction chain, linked with the s
 
 If attempts to renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled. 
 
-With a grace period, if the payment succeeds, the subscription renews.If it fails, the subscription expires, and the user will lose their access.
+With a grace period, if the payment succeeds, the subscription renews. If it fails, the app store will continue its attemps to charge the user for the subscription and if still fails, the app store will end the subscription itself.
 
 Therefore, at the moment of the billing issue, the following events are created in Adapty:
 
 - **Billing issue detected**
 - **Entered grace period** (if the grace period is enabled)
 
-If the payment succeeds later, the **Subscription renewed** event is created, and the user does not lose their access.
+If the payment succeeds later, Adapty records a **Subscription renewed** event, and the user does not lose access.
 
-If the payment never succeeds till the end of the grace period, the following events are created:
+If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
 
--  **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error
-
-- **Access level updated** to revoke the user's access.
+- **Subscription expired (churned)** with `cancellation_reason: billing_error`
+- **Access level updated**, revoking the user's access
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp').default}
@@ -172,7 +181,13 @@ If the payment never succeeds till the end of the grace period, the following ev
 />
 </Zoom>
 
-Without a grace period, the **Subscription expired (churned)** event is created immediately with the same cancellation reason as well as the **Access level updated** to revoke the user's access.
+Without a grace period, the Billing Retry Period (the period when the app store continues attempts to charge the user) starts immediately.
+
+If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
+
+-  **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`.
+
+-  **Access level updated** to revoke the user's access.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
@@ -208,10 +223,12 @@ In this flow, a user starts a trial with a payment method on file. A **Trial sta
 
 ### Trial without Successful Conversion Flow
 
-If a user cancels the trial before it converts to a subscription, a **Trial renewal cancelled** event is triggered at the time of cancellation. The user will have access until the end of the trial when the following events are created:
+If a user cancels the trial before it converts to a subscription, the following events are created at the time of cancellation:
 
-- **Trial expired**
-- **Access level updated** to revoke the user's access.
+- **Trial renewal cancelled** to disable automatic conversion of the trial to a subscription.
+- **Access level updated** to disable access renewal. 
+
+The user will have access until the end of the trial when the **Trial expired** event is created to mark the trial's end.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp').default}
@@ -232,14 +249,18 @@ If a user doesn’t cancel their trial but a billing issue occurs at the convers
 When the first payment fails, the following events are triggered:
 
 - **Billing issue detected**
-- **Entered grace period** since the grace periood is enabled
+- **Entered grace period** since the grace period is enabled
+- **Access level updated** to update the access expiration date to the end of the grace period..
 
-If the payment succeeds during the grace period, the trial converts to a subscription, triggering the **Trial converted** event.
+If the payment succeeds during the grace period, the trial converts to a subscription, triggering:
 
-If the payment never succeeds, the following events occur at the end of the grace period:
+- **Trial converted** event
+- **Access level updated** to extend the access till the end of the subscription period.
+
+If the payment never succeeds, no events occur at the end of the grace period. The app store will continue trying to charge the user for a while and then will end the subscription automatically. At this moment, the following events will occur:
 
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
-- **Access level updated** to revoke the user's access.
+- **Access level updated** to disable the user's access auto renewal.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period_trial.webp').default}
@@ -252,10 +273,8 @@ If the payment never succeeds, the following events occur at the end of the grac
 />
 </Zoom>
 
-**Without a Grace Period:**
-If no grace period is enabled, the trial ends immediately. No grace period or subscription is started, and access is revoked. The following events are triggered:
+Without a grace period, the Billing Retry Period (the period when the app store continues attempts to charge the user) starts immediately. No grace period or subscription is started, and access is revoked. If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
 
-- **Billing issue detected**
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
 - **Access level updated** to revoke the user's access.
 
@@ -277,7 +296,7 @@ If a trial expires (due to a billing issue or cancellation) and the user later b
 -  **Access level updated** to grant access to the user
 - **Trial converted**
 
-Even with a gap between the trial and subscription, Adapty links the two using **vendor_original_transaction_id**. This conversion is treated as part of a continuous transaction chain, starting with a zero-price trial. That is why the **Trial converted** event is created rather than the **Subscription started**.
+Even with a gap between the trial and subscription, Adapty links the two using `vendor_original_transaction_id`. This conversion is treated as part of a continuous transaction chain, starting with a zero-price trial. That is why the **Trial converted** event is created rather than the **Subscription started**.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp').default}
@@ -298,13 +317,11 @@ This section covers any adjustments made to active subscriptions, such as upgrad
 
 After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
 
-- the access level is changed  and 2 **Access level updated** events are created:
+- The access level is changed, and 2 **Access level updated** events are created:
   1. to remove the access to the first product 
   2. to give access to the second product
-
-- old subscription ends (the **Subscription expired (churned)** event is created for the first product)
-- new subscription starts (the **Subscription started** event is created for the new product)
-- if a refund is paid, the **Subscription refunded** event is also created, and the `cancellation_reason` will be `upgraded`.
+- The old subscription ends, and a refund is paid (the **Subscription refunded** event is created with the `cancellation_reason` = `upgraded`). Please note that no **Subscription expired (churned)** event is created, the **Subscription refunded** event replaces it.
+- The new subscription starts (the **Subscription started** event is created for the new product)
 
 <Zoom>
   <img src={require('./img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp').default}
@@ -317,14 +334,12 @@ After a user changes a product, it can be changed in the system immediately befo
 />
 </Zoom>
 
-If a user downgrades the subscription, most probably the first subscription will last till the end of the paid period, and when the subscription ends it will be replaced with a new, lower-tier subscription. In this situation, all events will be created at the moment of the subscription's actual replacement:
+If a user downgrades the subscription, the first subscription will last till the end of the paid period, and when the subscription ends, it will be replaced with a new, lower-tier subscription. In this situation, only the **Access level updated** event to disable access autorenewal will be created at once. All other events will be created at the moment of the subscription's actual replacement:
 
-- the access level is changed and 2 **Access level updated** events are created:
-  1. to remove the access to the first product
-  2. to give access to the second product
-
-- old subscription ends (the **Subscription expired (churned)** event is created for the first product)
-- new subscription starts (the **Subscription started** event is created for the new product)
+- Another **Access level updated** event is created to give access to the second product.
+  
+- The **Subscription expired (churned)** event is created to end the subscription for the first product.
+- The **Subscription started** event is created to start a new subscription for the new product.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Delayed_Product_Change_Downgrade.webp').default}
@@ -339,13 +354,12 @@ If a user downgrades the subscription, most probably the first subscription will
 
 ### Delayed Product Change Flow
 
-There is also a variant when a user changes the product at the moment of the subscription renewal. This variant is very similar to the previous one: all events will be created at the moment when the user changes the subscription and it is  changed in the system:
+There is also a variant when a user changes the product at the moment of the subscription renewal. This variant is very similar to the previous one: one **Access level updated** event will be created at once to disable access autorenewal for the old product. All other events will be created at the moment when the user changes the subscription and it is  changed in the system:
 
-- the access level is changed and 2 **Access level updated** events are created:
-  1. to remove the access to the first product
-  2. to give access to the second product
-- old subscription ends (the **Subscription expired (churned)** event is created for the first product)
-- new subscription starts (the **Subscription started** event is created for the new product)
+- Another **Access level updated** event is created to give access to the second product.
+
+- The **Subscription expired (churned)** event is created to end the subscription for the first product.
+- The **Subscription started** event is created to start a new subscription for the new product.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Product_Change_on_Renewal_Flow.webp').default}
@@ -384,7 +398,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User A: Access level updated (sent when User A purchases a subscription in the app)**
 
-  ```json
+  ```json showLineNumbers title="Json" 
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,
@@ -397,7 +411,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User A: Access level updated (sent when the app is reinstalled and User B logs in, revoking User A's access)**
 
-  ```json
+  ```json showLineNumbers title="Json" 
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,
@@ -410,7 +424,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User B: Access level updated (sent when User B logs in and access is granted)**
 
-  ```json
+  ```json showLineNumbers title="Json" 
   {
     "profile_id": "00000000-0000-0000-0000-000000000001",
     "customer_user_id": UserB,
@@ -440,22 +454,9 @@ Therefore, only 1 event will be created: **Access level updated** to grant acces
 
 Here’s a breakdown of the fields related to access level assignment and sharing in the events generated in this scenario:
 
-- **User A: Access level updated (sent when User A purchases a subscription in the app)**
+**User B: Access level updated (sent when User B logs in and access is granted)**
 
-  ```json
-  {
-    "profile_id": "00000000-0000-0000-0000-000000000000",
-    "customer_user_id": UserA,
-    "event_properties": {
-      "profile_has_access_level": true,
-    },
-    "profiles_sharing_access_level": null
-  }
-  ```
-
-- **User B: Access level updated (sent when User B logs in and access is granted)**
-
-  ```json
+  ```json showLineNumbers title="Json" 
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,

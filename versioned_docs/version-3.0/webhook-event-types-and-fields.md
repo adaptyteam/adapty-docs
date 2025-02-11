@@ -21,7 +21,7 @@ Adapty will send you only those events you've chosen in the **Events names** sec
 
 Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields; however, the list of event properties will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
 
-```json title="Json"
+```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
   "customer_user_id": "UserIdInYourSystem",
