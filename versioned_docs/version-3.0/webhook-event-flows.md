@@ -28,13 +28,13 @@ If a webhook integration isn’t configured or this event type isn’t enabled, 
 This flow happens when a customer buys a subscription for the first time without a trial. In this situation, the following events are created:
 
 - **Subscription started**
-- **Access level updated** to grant access to the user.
+- **Access level updated** to grant access to the user
 
 When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created: 
 
-- **Subscription renewal** to start a new period of the subscription.
+- **Subscription renewal** to start a new period of the subscription
 
-- **Access level updated** to update the subscription expiration date, extending access for another period..
+- **Access level updated** to update the subscription expiration date, extending access for another period
 
 Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) ,respectively.
 
@@ -71,7 +71,7 @@ Once the subscription ends, the **Subscription expired (churned)** event is trig
 
 If a refund is approved, the following event replaces **Subscription expired (churned)**:
 
-- **Subscription refunded** to end the subscription and provide details about the refund.
+- **Subscription refunded** to end the subscription and provide details about the refund
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp').default}
@@ -88,7 +88,7 @@ For Stripe, a subscription can be canceled immediately, skipping the remaining p
 
 - **Subscription renewal cancelled** 
 - **Subscription expired (churned)**
-- **Access Level updated** to remove the user’s access 
+- **Access Level updated** to remove the user’s access
 
 If a refund is approved, a **Subscription refunded** event is also triggered when it’s approved.
 
@@ -110,7 +110,7 @@ If a user cancels a subscription, it expires, and they later repurchase the same
 The **Access level updated** events will be created twice: 
 
 - at the subscription end to revoke the user's access
-- at the subscription repurchase to grant access.
+- at the subscription repurchase to grant access
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Rejoin_Flow.webp').default}
@@ -132,12 +132,12 @@ The subscription is officially paused at the end of the subscription period. At 
 No events are triggered when the user pauses the subscription. However, the following events are created at the end of the subscription period:
 
 - **Subscription paused (Android only)**
-- **Access level updated** to revoke the user's access.
+- **Access level updated** to revoke the user's access
 
 When the user resumes the subscription, the following events are triggered:
 
 - **Subscription renewed**
-- **Access level updated** to restore the user's access.
+- **Access level updated** to restore the user's access
 
 These subscriptions will belong to the same transaction chain, linked with the same **vendor_original_transaction_id**.
 
@@ -162,13 +162,13 @@ Therefore, at the moment of the billing issue, the following events are created 
 
 - **Billing issue detected**
 - **Entered grace period** (if the grace period is enabled)
-- **Access level updated** to provide the access till the end of the grace period.
+- **Access level updated** to provide the access till the end of the grace period
 
 If the payment succeeds later, Adapty records a **Subscription renewed** event, and the user does not lose access.
 
 If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
 
-- **Subscription expired (churned)** with `cancellation_reason: billing_error`.
+- **Subscription expired (churned)** with `cancellation_reason: billing_error`
 - **Access level updated** to revoke the user's access
 
 <Zoom>
@@ -186,9 +186,9 @@ Without a grace period, the Billing Retry Period (the period when the app store 
 
 If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
 
--  **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`.
+-  **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
 
--  **Access level updated** to revoke the user's access.
+-  **Access level updated** to revoke the user's access
 
 
 <Zoom>
@@ -230,7 +230,7 @@ The **Trial converted** event is created when the standard subscription starts.
 
 If a user cancels the trial before it converts to a subscription, the following events are created at the time of cancellation:
 
-- **Trial renewal cancelled** to disable automatic conversion of the trial to a subscription.
+- **Trial renewal cancelled** to disable automatic conversion of the trial to a subscription
 - **Access level updated** to disable access renewal. 
 
 The user will have access until the end of the trial when the **Trial expired** event is created to mark the trial's end.
@@ -255,7 +255,7 @@ When the first payment fails, the following events are triggered:
 
 - **Billing issue detected**
 - **Entered grace period** since the grace period is enabled
-- **Access level updated** to update the access expiration date to the end of the grace period..
+- **Access level updated** to update the access expiration date to the end of the grace period
 
 If the payment succeeds during the grace period, the trial converts to a subscription, triggering:
 
@@ -322,10 +322,10 @@ This section covers any adjustments made to active subscriptions, such as upgrad
 
 After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
 
-- The access level is changed, and 2 **Access level updated** events are created:
+- The access level is changed, and two **Access level updated** events are created:
   1. to remove the access to the first product.
   2. to give access to the second product.
-- The old subscription ends, and a refund is paid (the **Subscription refunded** event is created with the `cancellation_reason` = `upgraded`). Please note that no **Subscription expired (churned)** event is created, the **Subscription refunded** event replaces it.
+- The old subscription ends, and a refund is paid (the **Subscription refunded** event is created with the `cancellation_reason` = `upgraded`). Please note that no **Subscription expired (churned)** event is created; the **Subscription refunded** event replaces it.
 - The new subscription starts (the **Subscription started** event is created for the new product).
 
 <Zoom>
