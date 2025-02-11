@@ -162,13 +162,14 @@ Therefore, at the moment of the billing issue, the following events are created 
 
 - **Billing issue detected**
 - **Entered grace period** (if the grace period is enabled)
+- **Access level updated** to provide the access till the end of the grace period.
 
 If the payment succeeds later, Adapty records a **Subscription renewed** event, and the user does not lose access.
 
 If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
 
-- **Subscription expired (churned)** with `cancellation_reason: billing_error`
-- **Access level updated**, revoking the user's access
+- **Subscription expired (churned)** with `cancellation_reason: billing_error`.
+- **Access level updated** to revoke the user's access
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp').default}
@@ -189,6 +190,7 @@ If the payment never succeeds till the end of the grace period, the flow is the 
 
 -  **Access level updated** to revoke the user's access.
 
+
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
   style={{
@@ -206,9 +208,12 @@ If you use trials in your app, you’ll receive additional trial-related events.
 
 ### Trial with Successful Conversion Flow
 
-The most common flow occurs when a user starts a trial, provides a credit card, and successfully converts to a standard subscription at the end of the trial period. In this situation, the **Trial started** event is created at the moment when the user starts it and the **Trial converted** event is created after the payment and when the standard subscription starts.
+The most common flow occurs when a user starts a trial, provides a credit card, and successfully converts to a standard subscription at the end of the trial period. In this situation, the following events are created at the moment of teh trial start:
 
-In this flow, a user starts a trial with a payment method on file. A **Trial started** event is triggered when the trial begins.  If the payment succeeds at the end of the trial, it's followed by a **Trial converted** event after the successful payment, marking the start of a standard subscription.
+- **Trial started** to mark the trial start
+- **Access level updated** to grant access
+
+The **Trial converted** event is created when the standard subscription starts.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp').default}
@@ -254,7 +259,7 @@ When the first payment fails, the following events are triggered:
 
 If the payment succeeds during the grace period, the trial converts to a subscription, triggering:
 
-- **Trial converted** event
+- **Trial converted** 
 - **Access level updated** to extend the access till the end of the subscription period.
 
 If the payment never succeeds, no events occur at the end of the grace period. The app store will continue trying to charge the user for a while and then will end the subscription automatically. At this moment, the following events will occur:
@@ -318,10 +323,10 @@ This section covers any adjustments made to active subscriptions, such as upgrad
 After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
 
 - The access level is changed, and 2 **Access level updated** events are created:
-  1. to remove the access to the first product 
-  2. to give access to the second product
+  1. to remove the access to the first product.
+  2. to give access to the second product.
 - The old subscription ends, and a refund is paid (the **Subscription refunded** event is created with the `cancellation_reason` = `upgraded`). Please note that no **Subscription expired (churned)** event is created, the **Subscription refunded** event replaces it.
-- The new subscription starts (the **Subscription started** event is created for the new product)
+- The new subscription starts (the **Subscription started** event is created for the new product).
 
 <Zoom>
   <img src={require('./img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp').default}
@@ -336,8 +341,7 @@ After a user changes a product, it can be changed in the system immediately befo
 
 If a user downgrades the subscription, the first subscription will last till the end of the paid period, and when the subscription ends, it will be replaced with a new, lower-tier subscription. In this situation, only the **Access level updated** event to disable access autorenewal will be created at once. All other events will be created at the moment of the subscription's actual replacement:
 
-- Another **Access level updated** event is created to give access to the second product.
-  
+- Another **Access level updated** event is created to give access to the second product. 
 - The **Subscription expired (churned)** event is created to end the subscription for the first product.
 - The **Subscription started** event is created to start a new subscription for the new product.
 
@@ -357,7 +361,6 @@ If a user downgrades the subscription, the first subscription will last till the
 There is also a variant when a user changes the product at the moment of the subscription renewal. This variant is very similar to the previous one: one **Access level updated** event will be created at once to disable access autorenewal for the old product. All other events will be created at the moment when the user changes the subscription and it is  changed in the system:
 
 - Another **Access level updated** event is created to give access to the second product.
-
 - The **Subscription expired (churned)** event is created to end the subscription for the first product.
 - The **Subscription started** event is created to start a new subscription for the new product.
 
@@ -398,7 +401,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User A: Access level updated (sent when User A purchases a subscription in the app)**
 
-  ```json showLineNumbers title="Json" 
+  ```json showLineNumbers
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,
@@ -411,7 +414,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User A: Access level updated (sent when the app is reinstalled and User B logs in, revoking User A's access)**
 
-  ```json showLineNumbers title="Json" 
+  ```json showLineNumbers
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,
@@ -424,7 +427,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 - **User B: Access level updated (sent when User B logs in and access is granted)**
 
-  ```json showLineNumbers title="Json" 
+  ```json showLineNumbers
   {
     "profile_id": "00000000-0000-0000-0000-000000000001",
     "customer_user_id": UserB,
@@ -456,7 +459,7 @@ Here’s a breakdown of the fields related to access level assignment and sharin
 
 **User B: Access level updated (sent when User B logs in and access is granted)**
 
-  ```json showLineNumbers title="Json" 
+  ```json showLineNumbers
   {
     "profile_id": "00000000-0000-0000-0000-000000000000",
     "customer_user_id": UserA,
