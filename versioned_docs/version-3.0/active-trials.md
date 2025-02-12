@@ -1,7 +1,7 @@
 ---
 title: "Active trials"
-description: ""
-metadataTitle: ""
+description: "Managing Active Trials | Adapty Docs"
+metadataTitle: "Track and manage active subscription trials with Adapty analytics."
 ---
 
 import Zoom from 'react-medium-image-zoom';

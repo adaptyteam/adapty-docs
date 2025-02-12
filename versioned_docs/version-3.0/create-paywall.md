@@ -1,7 +1,7 @@
 ---
 title: "Create paywall"
-description: ""
-metadataTitle: ""
+description: "Creating a Paywall in Adapty | Adapty Docs"
+metadataTitle: "Learn how to create high-converting paywalls using Adapty’s paywall builder."
 ---
 
 import Zoom from 'react-medium-image-zoom';

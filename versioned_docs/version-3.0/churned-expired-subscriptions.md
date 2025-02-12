@@ -1,7 +1,7 @@
 ---
 title: "Churned (expired) subscriptions"
-description: ""
-metadataTitle: ""
+description: "Managing Churned & Expired Subscriptions | Adapty Docs"
+metadataTitle: "Manage churned and expired subscriptions to improve user retention."
 ---
 
 import Zoom from 'react-medium-image-zoom';

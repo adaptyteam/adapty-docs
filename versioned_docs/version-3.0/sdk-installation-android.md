@@ -1,7 +1,7 @@
 ---
 title: "Android - Adapty SDK Installation and configuration"
-description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on Android, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided"
-metadataTitle: "Android - Adapty SDK Installation and Configuration Guide"
+description: "Installing Adapty SDK on Android | Adapty Docs"
+metadataTitle: "Install and configure Adapty SDK for Android apps."
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

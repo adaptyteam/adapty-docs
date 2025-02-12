@@ -1,7 +1,7 @@
 ---
 title: "Subscriptions renewal cancelled"
-description: ""
-metadataTitle: ""
+description: "Handling Cancelled Subscriptions | Adapty Docs"
+metadataTitle: "Handle cancelled subscriptions efficiently with Adapty’s management tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';

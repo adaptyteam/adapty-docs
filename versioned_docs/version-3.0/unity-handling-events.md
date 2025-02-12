@@ -1,7 +1,7 @@
 ---
 title: "Unity - Handle paywall events"
-description: ""
-metadataTitle: ""
+description: "Handling Events in Unity with Adapty | Adapty Docs"
+metadataTitle: "Handle events in Unity using Adapty to track and manage subscriptions."
 toc_max_heading_level: 4
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Observer mode"
-description: ""
-metadataTitle: ""
+description: "Observer Mode vs Full Mode in Adapty | Adapty Docs"
+metadataTitle: "Compare Observer Mode and Full Mode in Adapty for subscriptions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Amazon S3"
-description: ""
-metadataTitle: ""
+description: "S3 Exports & Data Management | Adapty Docs"
+metadataTitle: "Export subscription data to S3 for advanced analytics and reporting."
 ---
 
 import Zoom from 'react-medium-image-zoom';

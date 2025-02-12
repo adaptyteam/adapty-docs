@@ -1,7 +1,7 @@
 ---
 title: "Migration from RevenueCat"
-description: "The document outlines a migration plan for switching from RevenueCat SDK to Adapty SDK, which involves learning the core differences, installing Adapty SDK, switching App Store server-side notifications, testing and releasing a new app version, and optionally importing historical data."
-metadataTitle: ""
+description: "Migrate from RevenueCat to Adapty | Adapty Docs"
+metadataTitle: "Migrate from RevenueCat to Adapty with our step-by-step guide."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "iOS - Use fallback paywalls"
-description: ""
-metadataTitle: ""
+description: "Using Fallback Paywalls on iOS | Adapty Docs"
+metadataTitle: "Learn how to use fallback paywalls on iOS to ensure seamless user experiences."
 ---
 
 import Zoom from 'react-medium-image-zoom';

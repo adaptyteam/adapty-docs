@@ -1,7 +1,7 @@
 ---
 title: "SplitMetrics Acquire"
-description: ""
-metadataTitle: ""
+description: "SplitMetrics Integration for A/B Testing | Adapty Docs"
+metadataTitle: "Use SplitMetrics with Adapty for subscription A/B testing and optimization."
 ---
 
 import Zoom from 'react-medium-image-zoom';

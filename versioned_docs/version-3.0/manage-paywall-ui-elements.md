@@ -1,7 +1,7 @@
 ---
 title: "Manage paywall UI elements"
-description: ""
-metadataTitle: ""
+description: "Managing Paywall UI Elements | Adapty Docs"
+metadataTitle: "Customize and manage paywall UI elements to enhance user experience."
 ---
 
 import Zoom from 'react-medium-image-zoom';

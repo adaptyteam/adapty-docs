@@ -1,7 +1,7 @@
 ---
 title: "Stripe integration"
-description: ""
-metadataTitle: ""
+description: "Stripe Integration Guide | Adapty Docs"
+metadataTitle: "Integrate Stripe with Adapty for seamless subscription payment processing."
 ---
 
 import Zoom from 'react-medium-image-zoom';

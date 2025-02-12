@@ -1,7 +1,7 @@
 ---
 title: "Enable Real-time developer notifications (RTDN) in Google Play Console"
-description: "Stay informed about critical events and maintain data accuracy by enabling Real-time Developer Notifications (RTDN) in the Google Play Console for Adapty. Learn how to set up RTDN to receive instant updates about refunds and other important events from the Play Store"
-metadataTitle: "Google Play Console: Enabling Real-time Developer Notifications (RTDN) for Adapty"
+description: "Enable Real-Time Developer Notifications | Adapty Docs"
+metadataTitle: "Enable real-time developer notifications (RTDN) for instant subscription updates."
 ---
 
 import Zoom from 'react-medium-image-zoom';

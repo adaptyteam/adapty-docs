@@ -1,7 +1,7 @@
 ---
 title: "Create offer"
-description: "Learn how to use Google Play and App Store offers to attract and keep users engaged in Adapty"
-metadataTitle: "How to create offers in Adapty"
+description: "Creating Special Offers | Adapty Docs"
+metadataTitle: "Create and manage special subscription offers using Adapty’s tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';

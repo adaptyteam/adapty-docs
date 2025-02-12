@@ -1,7 +1,7 @@
 ---
 title: "Access levels"
-description: "Efficiently manage user access in your mobile app with Adapty's Access Levels feature, allowing flexible control over privileges based on product purchases. Explore how to create and customize access levels to tailor user experiences effectively"
-metadataTitle: "Streamlined User Access Control: Managing Access Levels in Adapty"
+description: "Understanding Access Levels | Adapty Docs"
+metadataTitle: "Learn about access levels in Adapty and how to configure them for user management."
 ---
 
 import Zoom from 'react-medium-image-zoom';

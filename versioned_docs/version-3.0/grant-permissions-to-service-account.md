@@ -1,7 +1,7 @@
 ---
 title: "Grant permissions to service account in the Google Play Console"
-description: "Authorize Adapty's service account by granting essential permissions in the Google Play Console, facilitating seamless management of subscriptions and validation of purchases. Learn how to grant permissions to optimize your app's integration with Adapty"
-metadataTitle: "Google Play Console: Granting Permissions to Adapty's Service Account"
+description: "Granting Permissions to Service Accounts | Adapty Docs"
+metadataTitle: "Grant permissions to service accounts for secure and efficient API access."
 ---
 
 import Zoom from 'react-medium-image-zoom';

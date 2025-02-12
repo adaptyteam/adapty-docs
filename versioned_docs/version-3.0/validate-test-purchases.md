@@ -1,7 +1,7 @@
 ---
 title: "Validate test purchases"
-description: "Verify the success of test purchases by checking their tracking in Adapty's Event Feed. Learn how to ensure each transaction is accurately recorded for seamless testing of your mobile app's purchase flow"
-metadataTitle: "Validating Test Purchases: Ensure Success with Adapty"
+description: "Validating Test Purchases in Adapty | Adapty Docs"
+metadataTitle: "Validate test purchases in Adapty to ensure seamless transactions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

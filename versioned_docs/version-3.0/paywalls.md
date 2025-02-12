@@ -1,7 +1,7 @@
 ---
 title: "Paywalls"
-description: "Discover the power of Adapty's dynamic in-app product display solution. Learn how paywalls serve as versatile storefronts within your app, allowing you to tailor product offerings based on user subscriptions, location, and device type. With Adapty, enhance customer satisfaction and boost revenue by offering targeted product sets to different user segments effortlessly."
-metadataTitle: "Unlock Revenue Growth: Adapty's Dynamic In-App Product Display Solution"
+description: "Overview of Paywalls in Adapty | Adapty Docs"
+metadataTitle: "Explore Adapty’s paywall system and best practices for revenue growth."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Add offer to paywall"
-description: "Learn how to make an offer visible and selectable within a Adapty paywall for your app's users"
-metadataTitle: "How to use App Store and Google Play offers to empower your paywalls"
+description: "Adding Offers to Paywalls | Adapty Docs"
+metadataTitle: "Add custom offers to paywalls in Adapty to boost conversion rates."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Design paywalls with legacy Paywall Builder"
-description: "Craft tailored in-app storefronts effortlessly using Adapty's Paywall Builder. No coding or design expertise required. Customize appearance, messaging, and buttons in real time. Elevate sales, highlight content, or provide exclusive features with ease"
-metadataTitle: "Design Custom Paywalls Seamlessly with Adapty Paywall Builder"
+description: "Adapty Paywall Builder (Legacy) | Adapty Docs"
+metadataTitle: "Use the legacy Adapty Paywall Builder to manage in-app subscriptions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

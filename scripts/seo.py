@@ -10,9 +10,12 @@ CSV_FILE = "/Users/liudmilanemkova/Downloads/Docs pages SEO optimization - Sheet
 df = pd.read_csv(CSV_FILE)
 
 # Ensure required columns exist
-required_columns = {"Slug", "Updated SEO title", "Updated meta description"}
+required_columns = {"Slug", "Updated SEO title", "Updated meta description", "Added to docs"}
 if not required_columns.issubset(df.columns):
     raise ValueError(f"CSV file must contain the following columns: {required_columns}")
+
+# Filter out rows where "Added to docs" column has "v"
+df = df[df["Added to docs"].str.strip().str.lower() != "v"]
 
 # Convert Slug column to a dictionary for quick lookup
 updates = {

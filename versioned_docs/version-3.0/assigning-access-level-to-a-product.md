@@ -1,7 +1,7 @@
 ---
 title: "Assign access level to product"
-description: "Simplify user access control in your mobile app with Adapty's Access Levels feature, seamlessly assigning access levels to products for synchronized content access. Learn how to efficiently manage access levels and optimize user experiences"
-metadataTitle: "Streamlined Access Management: Assigning Access Levels to Products in Adapty"
+description: "Assigning Access Levels to Products | Adapty Docs"
+metadataTitle: "Assign access levels to products to optimize subscription management."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Fetch Paywall Builder paywalls and their configuration"
-description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
-metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
+description: "Retrieving PB Paywalls in Adapty | Adapty Docs"
+metadataTitle: "Learn how to retrieve PB paywalls in Adapty for better subscription control."
 ---
 
 import Zoom from 'react-medium-image-zoom';

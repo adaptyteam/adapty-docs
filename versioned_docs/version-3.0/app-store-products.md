@@ -1,7 +1,7 @@
 ---
 title: "Product in App Store"
-description: ""
-metadataTitle: ""
+description: "Managing App Store Products | Adapty Docs"
+metadataTitle: "Manage App Store products efficiently using Adapty’s subscription tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';
