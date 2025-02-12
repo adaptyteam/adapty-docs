@@ -33,7 +33,6 @@ This flow happens when a customer buys a subscription for the first time without
 When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created: 
 
 - **Subscription renewal** to start a new period of the subscription
-
 - **Access level updated** to update the subscription expiration date, extending access for another period
 
 Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) ,respectively.
@@ -53,8 +52,8 @@ Situations when the payment is not successful or when the user cancels the renew
 
 When a user cancels their subscription, the following events are created:
 
-- **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access.
-- The **Access level updated** event is created to disable auto-renewal for the access.
+- **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access
+- The **Access level updated** event is created to disable auto-renewal for the access
 
 Once the subscription ends, the **Subscription expired (churned)** event is triggered to to mark the end of the subscription.
 
@@ -231,7 +230,7 @@ The **Trial converted** event is created when the standard subscription starts.
 If a user cancels the trial before it converts to a subscription, the following events are created at the time of cancellation:
 
 - **Trial renewal cancelled** to disable automatic conversion of the trial to a subscription
-- **Access level updated** to disable access renewal. 
+- **Access level updated** to disable access renewal
 
 The user will have access until the end of the trial when the **Trial expired** event is created to mark the trial's end.
 
@@ -257,15 +256,15 @@ When the first payment fails, the following events are triggered:
 - **Entered grace period** since the grace period is enabled
 - **Access level updated** to update the access expiration date to the end of the grace period
 
-If the payment succeeds during the grace period, the trial converts to a subscription, triggering:
+If the payment succeeds during the grace period, the trial converts to a subscription, triggering the following:
 
 - **Trial converted** 
-- **Access level updated** to extend the access till the end of the subscription period.
+- **Access level updated** to extend the access till the end of the subscription period
 
 If the payment never succeeds, no events occur at the end of the grace period. The app store will continue trying to charge the user for a while and then will end the subscription automatically. At this moment, the following events will occur:
 
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
-- **Access level updated** to disable the user's access auto renewal.
+- **Access level updated** to disable the user's access auto renewal
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period_trial.webp').default}
@@ -281,7 +280,7 @@ If the payment never succeeds, no events occur at the end of the grace period. T
 Without a grace period, the Billing Retry Period (the period when the app store continues attempts to charge the user) starts immediately. No grace period or subscription is started, and access is revoked. If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
 
 - **Trial expired** event with a `cancellation_reason` of `billing_error`
-- **Access level updated** to revoke the user's access.
+- **Access level updated** to revoke the user's access
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_Without_Grace_Period_trial.webp').default}
