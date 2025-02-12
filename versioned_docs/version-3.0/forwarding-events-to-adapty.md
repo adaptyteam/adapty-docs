@@ -2,20 +2,24 @@
 title: "Forwarding Events to Adapty"
 description: ""
 metadataTitle: ""
+
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs'; 
+import TabItem from '@theme/TabItem'; 
 
-Apple and Google provide a way to send subscription events updates the moment they occur on their servers. It's very important to send them to Adapty to avoid delays in processing subscription status, and therefore providing the best experience for your customers.
+Apple and Google provide a way to send subscription event updates the moment they occur on their servers. It's essential to send them to Adapty to avoid delays in processing subscription status and therefore, providing the best experience for your customers.
 
-In most cases, you just have to paste [Adapty URL to App Store Connect] \(doc:app-store-server-notifications) or use the [Real-time Developer Notifications (RTDN) topic provided by Adapty](real-time-developer-notifications-rtdn) in Google Play Console, no coding is needed on your side.
+In most cases, you just have to [enable App Store server notifications](enable-app-store-server-notifications) or [enable Real-time developer notifications (RTDN) in Google Play Console](enable-real-time-developer-notifications-rtdn); no coding is needed on your side.
 
 However, if you process these events and want to keep doing it, make sure to forward events to Adapty from your backend. It's straightforward; you just have to send raw \(without any modification\) payload from Apple or Google as a request body to our server using the same URL from settings.
 
 Here are examples for different programming languages:
 
-```python title="Python"
+<Tabs groupId="Id">
+<TabItem value="python" label="Python" default>
+
+```python showLineNumbers
 import requests
 
 url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/" # don't forget to replace this URL
@@ -28,7 +32,11 @@ headers = {
 
 response = requests.request("POST", url, headers=headers, data=payload)
 ```
-```javascript title="Javascript"
+
+</TabItem>
+<TabItem value="javascript" label="Javascript" default>  
+
+```javascript  showLineNumbers
 const axios = require('axios');
 
 const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/'; // don't forget to replace this URL
@@ -46,7 +54,11 @@ const config = {
 
 const response = await axios(config);
 ```
-```php title="Php"
+
+</TabItem>
+<TabItem value="php" label="PHP" default> 
+
+```php  showLineNumbers
 <?php
 require_once 'HTTP/Request2.php';
 
@@ -66,7 +78,11 @@ $request->setHeader(array(
 $request->setBody($payload);
 $response = $request->send();
 ```
-```ruby title="Ruby"
+
+</TabItem>
+<TabItem value="ruby" label="Ruby" default>   
+
+```ruby  showLineNumbers
 require "uri"
 require "net/http"
 
@@ -83,7 +99,11 @@ request.body = payload
 
 response = https.request(request)
 ```
-```java title="Java"
+
+</TabItem>
+<TabItem value="java" label="Java" default> 
+
+```java showLineNumbers
 String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/"; // don't forget to replace this URL
 
 String payload = "{\"latest_receipt\":\"abc=\",\"notification_type\":\"INITIAL_BUY\",...}" // json encoded payload from Apple/Google
@@ -99,7 +119,11 @@ Request request = new Request.Builder()
   .build();
 Response response = client.newCall(request).execute();
 ```
-```go title="Go"
+
+</TabItem>
+<TabItem value="go" label="Go" default>    
+
+  ```go showLineNumbers
 package main
 
 import (
@@ -133,4 +157,7 @@ func main() {
 	}
 	defer res.Body.Close()
 }
-```
+  ```
+
+</TabItem>  </Tabs>
+
