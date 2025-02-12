@@ -125,8 +125,18 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```javascript showLineNumbers
+// every time when calling transaction.finish()
+if (Platform.isAndroid) {
+    try {
+        await Adapty().restorePurchases();
+    } on AdaptyError catch (adaptyError) {
+        // handle the error
+    } catch (e) {
+    }
+}
+
 try {
-    // every time when calling transasction.finish()
+    // every time when calling transaction.finish()
     await Adapty().reportTransaction(
         "YOUR_TRANSACTION_ID", 
         variationId: "PAYWALL_VARIATION_ID", // optional
@@ -161,6 +171,12 @@ If you use Adapty paywalls, include the `PAYWALL_VARIATION_ID` when reporting a 
 ```csharp showLineNumbers
 // every time when calling transasction.finish()
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+  Adapty.RestorePurchases((profile, error) => {
+    // handle the error
+  });
+#endif
+
 Adapty.ReportTransaction(
   "YOUR_TRANSACTION_ID", 
   "PAYWALL_VARIATION_ID", // optional
@@ -173,7 +189,7 @@ Parameters:
 | Parameter            | Presence | Description                                                  |
 | -------------------- | -------- | ------------------------------------------------------------ |
 | PAYWALL_VARIATION_ID | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
-| YOUR_TRANSACTION_ID  | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+| YOUR_TRANSACTION_ID  | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction) object.</p><p>For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
 
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
