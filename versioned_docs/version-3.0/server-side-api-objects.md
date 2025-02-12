@@ -1,7 +1,7 @@
 ---
 title: "API objects"
-description: ""
-metadataTitle: ""
+description: "Server-Side API Objects in Adapty | Adapty Docs"
+metadataTitle: "Explore Adapty’s server-side API objects to manage subscriptions efficiently."
 displayed_sidebar: APISidebar
 ---
 

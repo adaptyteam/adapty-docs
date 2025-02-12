@@ -1,7 +1,7 @@
 ---
 title: "Webhook and ETL integrations"
-description: ""
-metadataTitle: ""
+description: "Webhook & ETL Integration | Adapty Docs"
+metadataTitle: "Set up webhook and ETL integration for advanced subscription event tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

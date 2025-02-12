@@ -1,7 +1,7 @@
 ---
 title: "Add product to paywall"
-description: ""
-metadataTitle: ""
+description: "Adding Products to Paywalls | Adapty Docs"
+metadataTitle: "Learn how to add and manage products on paywalls in Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

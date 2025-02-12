@@ -1,7 +1,7 @@
 ---
 title: "Attribution integration"
-description: ""
-metadataTitle: ""
+description: "Attribution Integration Guide | Adapty Docs"
+metadataTitle: "Integrate Adapty with attribution tools to track user acquisition and LTV."
 ---
 
 import Zoom from 'react-medium-image-zoom';

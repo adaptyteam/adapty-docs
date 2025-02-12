@@ -1,7 +1,7 @@
 ---
 title: "Testing devices"
-description: "Discover how to assign your device as a test device in Adapty to bypass caching and view immediate changes to paywalls and placements"
-metadataTitle: "How to Mark Devices as Test in Adapty for Immediate Changes"
+description: "Managing Test Devices | Adapty Docs"
+metadataTitle: "Learn how to manage test devices in Adapty for efficient app testing."
 ---
 
 import Zoom from 'react-medium-image-zoom';

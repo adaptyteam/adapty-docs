@@ -1,7 +1,7 @@
 ---
 title: "Offers in Google Play"
-description: ""
-metadataTitle: ""
+description: "Google Play Offers Guide | Adapty Docs"
+metadataTitle: "Configure Google Play offers to improve app monetization and retention."
 ---
 
 import Zoom from 'react-medium-image-zoom';

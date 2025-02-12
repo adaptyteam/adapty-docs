@@ -1,7 +1,7 @@
 ---
 title: "Create access level"
-description: "Optimize user access management in your mobile app with Adapty's Access Levels feature, facilitating customization without reliance on specific product IDs. Learn how to create access levels for tailored user experiences"
-metadataTitle: "Enhanced User Access Control: Creating Access Levels in Adapty"
+description: "Creating Access Levels | Adapty Docs"
+metadataTitle: "Create and assign access levels in Adapty for better user segmentation."
 ---
 
 import Zoom from 'react-medium-image-zoom';

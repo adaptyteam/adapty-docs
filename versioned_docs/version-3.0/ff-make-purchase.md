@@ -1,7 +1,7 @@
 ---
 title: "Step 4. Enable purchase"
-description: ""
-metadataTitle: ""
+description: "Feature Flags: Making Purchases | Adapty Docs"
+metadataTitle: "Learn how to make purchases using Adapty’s Feature Flags system."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Duplicate paywall"
-description: "Simplify the process of modifying existing paywalls in Adapty by duplicating them, preserving analytics integrity while making minor adjustments. Learn how to efficiently duplicate paywalls for seamless replacement as needed"
-metadataTitle: "Streamlined Paywall Management: Duplicating Paywalls in Adapty"
+description: "Handling Duplicate Paywalls in Adapty | Adapty Docs"
+metadataTitle: "Learn how to manage duplicate paywalls and optimize paywall performance in Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

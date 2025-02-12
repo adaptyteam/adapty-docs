@@ -1,7 +1,7 @@
 ---
 title: "Hide legacy Paywall Builder paywalls (on cross-platform SDKs)"
-description: ""
-metadataTitle: ""
+description: "Hiding Legacy Paywall Builder Paywalls | Adapty Docs"
+metadataTitle: "Hide legacy paywalls in Adapty to streamline your app’s monetization strategy."
 ---
 
 import Tabs from '@theme/Tabs'; 

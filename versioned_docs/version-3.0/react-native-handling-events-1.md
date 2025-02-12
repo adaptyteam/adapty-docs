@@ -1,7 +1,7 @@
 ---
 title: "React Native - Handle paywall events"
-description: ""
-metadataTitle: ""
+description: "Handling Events in React Native | Adapty Docs"
+metadataTitle: "Handle subscription events in React Native with Adapty’s SDK."
 toc_max_heading_level: 4
 ---
 

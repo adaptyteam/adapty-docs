@@ -1,7 +1,7 @@
 ---
 title: "Create placement"
-description: "Drive user interaction and optimize conversions by creating targeted placements for paywalls and A/B tests in your app with Adapty's user-friendly platform. Learn how to effortlessly deploy and manage placements for enhanced engagement"
-metadataTitle: "Boost Engagement: Creating Placements in Adapty for Paywalls and A/B Tests"
+description: "Creating a Placement in Adapty | Adapty Docs"
+metadataTitle: "Create and manage placements in Adapty to improve paywall performance."
 ---
 
 import Zoom from 'react-medium-image-zoom';

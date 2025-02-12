@@ -1,7 +1,7 @@
 ---
 title: "Test webhook integration"
-description: "Learn how to test your Adapty webhook integration, validate event delivery, and ensure correct setup for historical events, subscriptions, and more"
-metadataTitle: "Testing Your Webhook Integration with Adapty"
+description: "Testing Webhook Integrations | Adapty Docs"
+metadataTitle: "Test webhook integrations in Adapty to automate subscription event tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

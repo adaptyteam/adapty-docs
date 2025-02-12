@@ -1,7 +1,7 @@
 ---
 title: "Flutter - Handle paywall events"
-description: ""
-metadataTitle: ""
+description: "Handling Events in Flutter (Legacy) | Adapty Docs"
+metadataTitle: "Handle subscription events in Flutter (Legacy) with Adapty’s SDK."
 ---
 
 import Zoom from 'react-medium-image-zoom';

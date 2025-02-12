@@ -1,7 +1,7 @@
 ---
 title: "Enable App Store server notifications"
-description: "Learn how to set up App Store server notifications in Adapty to receive real-time updates on refunds and other events directly from the App Store"
-metadataTitle: "How to Enable App Store Server Notifications in Adapty"
+description: "Enable App Store Server Notifications | Adapty Docs"
+metadataTitle: "Enable App Store server notifications to track subscription events in real time."
 ---
 
 import Zoom from 'react-medium-image-zoom';

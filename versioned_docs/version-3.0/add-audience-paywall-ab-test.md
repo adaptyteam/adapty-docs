@@ -1,7 +1,7 @@
 ---
 title: "Add audience and paywall or A/B test to placement"
-description: "Optimize user engagement by linking audiences with paywalls or A/B tests within Adapty placements, enabling personalized content delivery for specific user groups based on various filters. Learn how to enhance targeted content delivery and improve user experience"
-metadataTitle: "Targeted Content Delivery: Adding Audiences, paywalls, and A/B tests to Placements in Adapty"
+description: "Adding Audience Paywall A/B Tests | Adapty Docs"
+metadataTitle: "Run A/B tests on paywalls for different audience segments in Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

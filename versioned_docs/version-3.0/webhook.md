@@ -1,7 +1,7 @@
 ---
 title: "Webhook integration"
-description: "Learn how to use webhooks to get instant notifications about subscription events like new trials and billing issues, enabling seamless automation and enhanced backend management for your app."
-metadataTitle: "Understanding Webhooks: Real-Time Notifications for Subscription Events"
+description: "Adapty Webhook Integration | Adapty Docs"
+metadataTitle: "Integrate webhooks in Adapty to automate subscription event tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

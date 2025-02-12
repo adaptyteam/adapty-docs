@@ -1,7 +1,7 @@
 ---
 title: "Adjust"
-description: ""
-metadataTitle: ""
+description: "Adjust Integration for Subscription Analytics | Adapty Docs"
+metadataTitle: "Connect Adjust with Adapty for better subscription tracking and analytics."
 
 ---
 

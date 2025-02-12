@@ -1,7 +1,7 @@
 ---
 title: "Configure App Store integration"
-description: "Streamline App Store integration for your mobile app with Adapty, ensuring seamless validation of purchases and subscription updates. Learn how to input your app's configuration data from the App Store during initial onboarding or make changes later in the App Settings of the Adapty Dashboard"
-metadataTitle: "Adapty App Store Integration Configuration"
+description: "App Store Connection Configuration | Adapty Docs"
+metadataTitle: "Configure your App Store connection for seamless subscription tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Set up webhook integration"
-description: "Discover the step-by-step process to set up webhook integration in Adapty, enabling your server to receive real-time notifications for subscription events efficiently."
-metadataTitle: "Set Up Webhook Integration for Real-Time Subscription Notifications"
+description: "Setting Up Webhook Integration | Adapty Docs"
+metadataTitle: "Set up webhook integration in Adapty to automate event tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

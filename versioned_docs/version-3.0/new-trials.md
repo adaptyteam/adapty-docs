@@ -1,7 +1,7 @@
 ---
 title: "New trials"
-description: ""
-metadataTitle: ""
+description: "Managing New Trials in Adapty | Adapty Docs"
+metadataTitle: "Manage new subscription trials and optimize trial-to-paid conversion rates."
 ---
 
 import Zoom from 'react-medium-image-zoom';

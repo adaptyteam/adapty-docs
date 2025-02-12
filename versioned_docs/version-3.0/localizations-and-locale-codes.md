@@ -1,7 +1,7 @@
 ---
 title: "Use localizations and locale codes"
-description: ""
-metadataTitle: ""
+description: "Managing Localizations & Locale Codes | Adapty Docs"
+metadataTitle: "Manage app localizations and locale codes to reach a global audience."
 ---
 
 import Zoom from 'react-medium-image-zoom';

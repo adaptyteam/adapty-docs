@@ -1,7 +1,7 @@
 ---
 title: "Google Reduced Service Fee"
-description: ""
-metadataTitle: ""
+description: "Google Reduced Service Fee Explained | Adapty Docs"
+metadataTitle: "Understand Google’s reduced service fee and how it impacts app revenue."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Tag variables for product info in legacy Paywall Builder"
-description: ""
-metadataTitle: ""
+description: "Legacy Paywall Builder Tag Variables | Adapty Docs"
+metadataTitle: "Use tag variables in Adapty’s legacy paywall builder to optimize offers."
 ---
 
 import Zoom from 'react-medium-image-zoom';

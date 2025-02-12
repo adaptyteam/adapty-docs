@@ -1,7 +1,7 @@
 ---
 title: "React Native - Adapty SDK installation & configuration"
-description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on React Native, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided."
-metadataTitle: "React Native -  - Adapty SDK Installation and Configuration Guide"
+description: "Installing Adapty SDK for React Native | Adapty Docs"
+metadataTitle: "Install Adapty SDK for React Native and optimize your app’s monetization."
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

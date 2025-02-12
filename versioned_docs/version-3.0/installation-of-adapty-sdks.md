@@ -1,7 +1,7 @@
 ---
 title: "Installation of Adapty SDK"
-description: "Learn how to integrate AdaptySDK and AdaptyUI SDK into your mobile app for seamless functionality and effortless creation of subscription purchase pages with the Paywall builder. Get detailed installation and configuration guidance tailored for various frameworks"
-metadataTitle: "AdaptySDK and AdaptyUI SDK Integration Guide for Mobile Apps"
+description: "Installing Adapty SDKs | Adapty Docs"
+metadataTitle: "Install Adapty SDKs for iOS, Android, and cross-platform apps."
 ---
 
 import Zoom from 'react-medium-image-zoom';

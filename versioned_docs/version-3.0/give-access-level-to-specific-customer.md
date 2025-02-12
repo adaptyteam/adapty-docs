@@ -1,7 +1,7 @@
 ---
 title: "Give access level to specific customer"
-description: "Enhance user satisfaction by manually assigning access levels to specific customers in Adapty, whether through the intuitive Adapty Dashboard interface or API integration. Learn how to personalize user experiences and optimize support interactions efficiently"
-metadataTitle: "Personalized Access Control: Assigning Access Levels to Specific Customers in Adapty"
+description: "Assign Access Levels to Customers | Adapty Docs"
+metadataTitle: "Assign specific access levels to customers using Adapty’s advanced tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';

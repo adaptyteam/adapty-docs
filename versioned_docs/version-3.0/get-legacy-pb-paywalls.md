@@ -1,7 +1,7 @@
 ---
 title: "Fetch legacy Paywall Builder paywalls and their configuration"
-description: "Learn how to fetch paywalls and products for remote config paywalls in your app, crucial for displaying the right content to users based on their placements."
-metadataTitle: "Learn how to fetch paywalls and products for remote config paywalls in your app"
+description: "Getting Legacy PB Paywalls | Adapty Docs"
+metadataTitle: "Retrieve legacy PB paywalls in Adapty to maintain subscription offerings."
 ---
 
 <!--- get-legacy-pb-paywalls.md --->
