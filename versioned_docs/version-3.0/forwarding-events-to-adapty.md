@@ -19,6 +19,8 @@ Here are examples for different programming languages:
 <Tabs groupId="Id">
 <TabItem value="python" label="Python" default>
 
+<!--- Checked and approved by Sergey S --->
+
 ```python showLineNumbers
 import requests
 
@@ -35,6 +37,8 @@ response = requests.request("POST", url, headers=headers, data=payload)
 
 </TabItem>
 <TabItem value="javascript" label="Javascript" default>  
+
+<!--- Checked and approved by Sergey S --->
 
 ```javascript  showLineNumbers
 const axios = require('axios');
@@ -123,6 +127,8 @@ Response response = client.newCall(request).execute();
 </TabItem>
 <TabItem value="go" label="Go" default>    
 
+<!--- Provided by Sergey S --->
+
   ```go showLineNumbers
 package main
 
@@ -130,29 +136,27 @@ import (
 	"fmt"
 	"strings"
 	"net/http"
-	"io/ioutil"
+	"io"
 )
 
 func main() {
-	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/"; // don't forget to replace this URL
+	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/" // Replace this with the actual URL
 
-	payload := strings.NewReader(`{"latest_receipt":"abc=","notification_type":"INITIAL_BUY",...}`) // json encoded payload from Apple/Google
+	payload := strings.NewReader(`{"latest_receipt":"abc=","notification_type":"INITIAL_BUY"}`) // Ensure valid JSON
 
 	method := "POST"
 
-	client := &http.Client {
-	}
+	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
-
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error creating request:", err)
 		return
 	}
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error sending request:", err)
 		return
 	}
 	defer res.Body.Close()
