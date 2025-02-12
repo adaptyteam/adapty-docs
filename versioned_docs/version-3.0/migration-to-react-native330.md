@@ -7,7 +7,7 @@ metadataTitle: ""
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty SDK 3.3.0 is a major release that brought some improvements that may require some migration steps from you.
+Adapty SDK 3.3.1 is a major release that brought some improvements that may require some migration steps from you.
 
 1. Upgrade to Adapty SDK v3.3.x.
 2. Update models.
@@ -24,11 +24,11 @@ Adapty SDK 3.3.0 is a major release that brought some improvements that may requ
 
 ## Upgrade Adapty React Native SDK to 3.3.x
 
-Before version 3.3.0, `react-native-adapty` SDK served as the core and mandatory SDK for Adapty to function properly in your app. The `@adapty/react-native-ui` SDK was optional and only needed if you were using the Adapty Paywall Builder.
+Before version 3.3.1, `react-native-adapty` SDK served as the core and mandatory SDK for Adapty to function properly in your app. The `@adapty/react-native-ui` SDK was optional and only needed if you were using the Adapty Paywall Builder.
 
-As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its functionality has been merged into the `react-native-adapty` SDK. To upgrade to version 3.3.0, follow these steps:
+As of version 3.3.1, the `@adapty/react-native-ui` SDK is deprecated, and its functionality has been merged into the `react-native-adapty` SDK. To upgrade to version 3.3.1, follow these steps:
 
-1. Update the `react-native-adapty` package to version 3.3.0.
+1. Update the `react-native-adapty` package to version 3.3.1.
 2. Remove the `@adapty/react-native-ui` package from your project dependencies.
 3. Sync your project dependencies to apply the changes.
 
@@ -88,7 +88,7 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
     ```diff showLineNumbers
     -  introductoryOffers?: AdaptyDiscountPhase[];
     +  offer?: AdaptySubscriptionOffer;
-
+    
        ios?: {
     -    promotionalOffer?: AdaptyDiscountPhase;
          subscriptionGroupIdentifier?: string;
@@ -124,15 +124,15 @@ As of version 3.3.0, the `@adapty/react-native-ui` SDK is deprecated, and its fu
 
 ## Remove `getProductsIntroductoryOfferEligibility` method
 
-Before Adapty iOS SDK 3.3.0, product objects always included offers, even if the user wasn’t eligible. This required you to manually check eligibility before using the offer.
+Before Adapty SDK 3.3.1, product objects always included offers, even if the user wasn’t eligible. This required you to manually check eligibility before using the offer.
 
-Starting with version 3.3.0, the product object includes offers only if the user is eligible. This simplifies the process, as you can assume the user is eligible if an offer is present.
+Starting with version 3.3.1, the product object includes offers only if the user is eligible. This simplifies the process, as you can assume the user is eligible if an offer is present.
 
 ## Update making purchase
 
 In earlier versions, canceled and pending purchases were treated as errors and returned the codes `2: 'paymentCancelled'` and `25: 'pendingPurchase'`, respectively.
 
-Starting with version 3.3.0, canceled and pending purchases are now considered successful results and should be handled accordingly:
+Starting with version 3.3.1, canceled and pending purchases are now considered successful results and should be handled accordingly:
 
 ```typescript showLineNumbers
 try {
@@ -258,7 +258,7 @@ Third-party integration identifiers are now set using the `setIntegrationIdentif
 
 ## Update third-party integration SDK configuration
 
-To ensure integrations work properly with Adapty Flutter SDK 3.3.0 and later, update your SDK configurations for the following integrations as described in the sections below. 
+To ensure integrations work properly with Adapty React Native SDK 3.3.1 and later, update your SDK configurations for the following integrations as described in the sections below. 
 
 In addition, if you used the `AttributionSource` to get the attribution identifier, change your code to provide the required identifier as a string.
 
