@@ -17,6 +17,7 @@ import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLeve
 import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDoesNotExist.md';
 import AccessLevelNoProfileAccessLevel from '@site/src/components/reusable/AccessLevelNoProfileAccessLevel.md';
 import RevocationDateIsMoreThanExpirationDate from '@site/src/components/reusable/RevocationDateIsMoreThanExpirationDate.md';
+import ValueError from '@site/src/components/reusable/ValueError.md';
 
 Removes an access level from an end user of your app in Adapty.
 
@@ -104,7 +105,7 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
 | --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
 | access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
-| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access.  The default value is `null`. |
+| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | Specifies when the access level will expire. To revoke access immediately, either omit this field or set it to `null`. The default value is `null`. |
 
 ---
 
@@ -128,8 +129,14 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/acce
 <AccessLevelProfileNotFound />  
 #### profile_paid_access_level_does_not_exist
 <AccessLevelNoProfileAccessLevel />
+
 #### revocation_date_more_than_expiration_date
+
 <RevocationDateIsMoreThanExpirationDate />
+
+#### value_error
+
+<ValueError />
 
 ---
 

@@ -15,7 +15,7 @@ The object that contains information on a paywall.
 | paywall_id    | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                        |
 | ab_test_name  | String           | :heavy_minus_sign: | The name of the parent A/B test.                             |
 | paywall_name  | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard. |
-| products      | Arrow of objects | :heavy_plus_sign:  | Array of [Products](server-side-api-objects#product) objects containing product information for the paywall. |
+| products      | Array of objects | :heavy_plus_sign:  | Array of [Products](server-side-api-objects#product) objects containing product information for the paywall. |
 | remote_config | JSON             | :heavy_minus_sign: | A [RemoteConfig](web-api-objects#remoteconfig-object) object in JSON format containing the full [remote config](customize-paywall-with-remote-config) of the paywall. |
 
 #### Example
