@@ -9,7 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 A Segment is a group of users with common properties.
 
-
 <Zoom>
   <img src={require('./img/3244407-Segments.webp').default}
   style={{
@@ -21,21 +20,16 @@ A Segment is a group of users with common properties.
 />
 </Zoom>
 
-
-
-
-
 Segments are mainly used in [Placements](placements) and in [A/B tests](ab-tests) to create an Audience and target it with a paywall (or multiple paywalls). Here are some example scenarios where that can be useful:
 
-- targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
-- having different paywalls for different countries
-- basing your segment on the Apple Search Ads attribution data
-- creating segments based on your app's version, so that once you introduce a new paywall that is only supported by the recent versions of your app, the older versions would still continue to work
+- Targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
+- Having different paywalls for different countries
+- Basing your segment on the Apple Search Ads attribution data
+- Creating segments based on your app's version so that once you introduce a new paywall that is only supported by the recent versions of your app, the older versions would still continue to work
 
 ## Creation
 
 To create a segment, write a segment name, and choose attributes.
-
 
 <Zoom>
   <img src={require('./img/1af9744-new_cohort.webp').default}
@@ -48,34 +42,38 @@ To create a segment, write a segment name, and choose attributes.
 />
 </Zoom>
 
-
-
-
-
 ## Available attributes
 
-- Age of the user
-- App User ID
-- App Version
-- Calculated subscription state
-- Calculated total revenue USD
-- Country from IP
-- Country from store account
-- Creation date
-- Device
-- Gender
-- Language
-- OS
-- Platform
-- Subscription expiration date
-- Subscription product
-- Attribution Source: Organic, Non-Organic, Unknown
-- Attribution Channel
-- Attribution Campaign
-- Attribution Ad Group
-- Attribution Ad Set
-- Attribution Creative
-- [Custom Attributes](profiles-crm#custom-attributes)
+![image-20250213090516321](img//image-20250213090516321.png)![image-20250213090613370](img//image-20250213090613370.png)
+
+| Attribute                                           | Description                   |
+| --------------------------------------------------- | ----------------------------- |
+| Age                                                 |                               |
+| App User ID                                         |                               |
+| Calculated subscription state                       |                               |
+| Calculated total revenue USD                        |                               |
+| Country from IP                                     |                               |
+| Country from store account                          |                               |
+| Creation date                                       |                               |
+| Platform                                            |                               |
+| Subscription expiration date                        |                               |
+
+
+
+| Subscription product                                |                               |
+| Attribution Source                                  | Organic, Non-Organic, Unknown |
+| Attribution Channel                                 |                               |
+| Attribution Campaign                                |                               |
+| Attribution Ad Group                                |                               |
+| Attribution Ad Set                                  |                               |
+| Attribution Creative                                |                               |
+| [Custom Attributes](profiles-crm#custom-attributes) |                               |
+
+| App Version                                         |                               |
+| Device                                              |                               |
+| Gender                                              |                               |
+| Language                                            |                               |
+| OS                                                  |                               |
 
 :::note
 Please note that these attributes are predefined and cannot be modified, except for the **App Version** attribute, which allows for adding new values.
