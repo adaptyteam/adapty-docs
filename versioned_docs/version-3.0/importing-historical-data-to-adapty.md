@@ -1,7 +1,7 @@
 ---
 title: "Importing historical data to Adapty"
-description: ""
-metadataTitle: ""
+description: "Importing Historical Data into Adapty | Adapty Docs"
+metadataTitle: "Import historical data into Adapty for detailed analytics."
 ---
 
 import Zoom from 'react-medium-image-zoom';

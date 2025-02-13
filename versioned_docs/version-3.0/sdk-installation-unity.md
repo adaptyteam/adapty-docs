@@ -1,7 +1,7 @@
 ---
 title: "Unity - Adapty SDK installation & configuration"
-description: "Discover step-by-step instructions for installing and configuring Adapty SDK and AdaptyUI SDK on Unity, enabling seamless integration of Adapty into your mobile app. Find the correct pair of SDKs with the compatibility table provided."
-metadataTitle: "Unity -  - Adapty SDK Installation and Configuration Guide"
+description: "Installing Adapty SDK for Unity | Adapty Docs"
+metadataTitle: "Install Adapty SDK in Unity for subscription management."
 ---
 
 import Zoom from 'react-medium-image-zoom';

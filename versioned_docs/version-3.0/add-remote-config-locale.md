@@ -1,7 +1,7 @@
 ---
 title: "Remote config paywall localization"
-description: "Expand your paywall's reach across diverse markets by configuring locales in remote config. Learn how to optimize localization and cater to specific regional preferences"
-metadataTitle: "Implement Multi-Language Support: Adding Paywall Locale in Remote Config"
+description: "Adding Remote Config Locales | Adapty Docs"
+metadataTitle: "Add remote config locales to personalize Adapty paywalls."
 ---
 
 import Zoom from 'react-medium-image-zoom';

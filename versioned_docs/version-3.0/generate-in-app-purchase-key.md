@@ -1,7 +1,7 @@
 ---
 title: "Generate In-App Purchase Key in App Store Connect"
-description: "Optimize in-app purchase transactions and enhance security by generating an In-App Purchase Key in App Store Connect, facilitating secure communication with Apple's servers. Learn how to streamline the validation process for app purchases and align with Apple's focus on improving security measures"
-metadataTitle: "App Store Connect: Generating In-App Purchase Key"
+description: "Generating an In-App Purchase Key | Adapty Docs"
+metadataTitle: "Generate an in-app purchase key for secure transactions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

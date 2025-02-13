@@ -1,7 +1,7 @@
 ---
 title: "Identify users"
-description: ""
-metadataTitle: ""
+description: "Identifying Users in Adapty | Adapty Docs"
+metadataTitle: "Identify users in Adapty to improve personalized subscription experiences."
 ---
 
 import Zoom from 'react-medium-image-zoom';

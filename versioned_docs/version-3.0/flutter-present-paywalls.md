@@ -1,7 +1,7 @@
 ---
 title: "Flutter - Present new Paywall Builder paywalls"
-description: ""
-metadataTitle: ""
+description: "Presenting Paywalls in Flutter | Adapty Docs"
+metadataTitle: "Present paywalls in Flutter apps using Adapty’s monetization features."
 ---
 
 import Zoom from 'react-medium-image-zoom';

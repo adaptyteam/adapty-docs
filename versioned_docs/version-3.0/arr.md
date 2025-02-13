@@ -1,7 +1,7 @@
 ---
 title: "ARR"
-description: ""
-metadataTitle: ""
+description: "Understanding Annual Recurring Revenue (ARR) | Adapty Docs"
+metadataTitle: "Track Annual Recurring Revenue (ARR) and optimize your subscription strategy."
 ---
 
 import Zoom from 'react-medium-image-zoom';

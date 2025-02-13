@@ -1,7 +1,7 @@
 ---
 title: "Exporting analytics to CSV with API"
-description: ""
-metadataTitle: ""
+description: "Exporting Data via API | Adapty Docs"
+metadataTitle: "Export subscription data via Adapty API for better analytics and reporting."
 ---
 
 import Zoom from 'react-medium-image-zoom';

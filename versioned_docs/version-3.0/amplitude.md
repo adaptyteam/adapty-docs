@@ -1,7 +1,7 @@
 ---
 title: "Amplitude"
-description: ""
-metadataTitle: ""
+description: "Amplitude Integration | Adapty Docs"
+metadataTitle: "Integrate Amplitude with Adapty for better user behavior insights."
 ---
 
 import Zoom from 'react-medium-image-zoom';

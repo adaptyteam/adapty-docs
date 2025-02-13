@@ -1,7 +1,7 @@
 ---
 title: "Conversion analysis"
-description: ""
-metadataTitle: ""
+description: "Subscription Conversion Analytics | Adapty Docs"
+metadataTitle: "Measure subscription conversion rates using Adapty’s analytics tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';

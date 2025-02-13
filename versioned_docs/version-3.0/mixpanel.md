@@ -1,7 +1,7 @@
 ---
 title: "Mixpanel"
-description: ""
-metadataTitle: ""
+description: "Mixpanel Integration | Adapty Docs"
+metadataTitle: "Connect Mixpanel with Adapty for powerful subscription analytics."
 ---
 
 import Zoom from 'react-medium-image-zoom';
