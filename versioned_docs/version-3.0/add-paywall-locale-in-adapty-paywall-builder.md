@@ -53,7 +53,7 @@ To use AI for paywall translation, you’ll need a Pro+ or Enterprise plan.
 
 :::
 
-Lines containing **String** and **List** values will be translated. We automatically detect which lines have never been translated or have changed in English since their last translation and mark them as needing an update. Lines that were already translated and haven't changed will keep their original translation and won’t be re-translated.
+We automatically detect which lines have never been translated or have changed in English since their last translation and mark them as needing an update. Lines that were already translated and haven't changed will keep their original translation and won’t be re-translated.
 
 Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in the translated version. Please adjust the translated text manually as needed.
 
@@ -70,7 +70,7 @@ Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in 
    />
    </Zoom>
 
-2. Click **AI Translate** to apply translations. The selected lines will be translated and added to the table.
+2. Click **AI Translate** to apply translations. The paywall lines will be translated and added to the table.
 
 ## Exporting localization files for external translation
 
