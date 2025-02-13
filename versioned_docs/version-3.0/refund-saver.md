@@ -1,7 +1,7 @@
 ---
 title: "Refund saver"
-description: "Simplify refund management with Adapty’s Auto-managed refunds feature. Automate App Store refund requests, save up to 60% of revenue, and stay compliant with Apple’s guidelines."
-metadataTitle: "Auto-Managed Refunds for App Store: Save Time and Protect Revenue"
+description: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
+metadataTitle: "Use Adapty Refund Saver to minimize refunds and maximize revenue."
 ---
 
 import Zoom from 'react-medium-image-zoom';

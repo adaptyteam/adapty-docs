@@ -1,7 +1,7 @@
 ---
 title: "API reference"
-description: ""
-metadataTitle: ""
+description: "Adapty API Reference | Adapty Docs"
+metadataTitle: "Explore Adapty’s API reference for complete integration details."
 ---
 
 

@@ -1,7 +1,7 @@
 ---
 title: "Flutter – What's new"
-description: ""
-metadataTitle: ""
+description: "Migrating to Flutter 2 | Adapty Docs"
+metadataTitle: "Migrate your app to Flutter 2 with Adapty for better monetization support."
 ---
 
 import Zoom from 'react-medium-image-zoom';

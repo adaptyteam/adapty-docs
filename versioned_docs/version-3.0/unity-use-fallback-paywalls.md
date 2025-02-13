@@ -1,7 +1,7 @@
 ---
 title: "Unity - Use fallback paywalls"
-description: ""
-metadataTitle: ""
+description: "Using Fallback Paywalls in Unity | Adapty Docs"
+metadataTitle: "Implement fallback paywalls in Unity apps using Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

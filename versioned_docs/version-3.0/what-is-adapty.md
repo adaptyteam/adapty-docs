@@ -1,7 +1,7 @@
 ---
 title: "What is Adapty?"
-description: "Unlock the potential of your app's monetization strategy with Adapty – a versatile in-app purchase platform designed to fuel subscriber growth. From startups to established giants, Adapty simplifies the process of optimizing subscription prices and testing various approaches to ensure your app's success"
-metadataTitle: "Discover Adapty: Your Ultimate In-App Purchase Platform"
+description: "What is Adapty? | Adapty Docs"
+metadataTitle: "Learn what Adapty is and how it helps manage subscriptions."
 slug: /
 ---
 

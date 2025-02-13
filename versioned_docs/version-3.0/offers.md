@@ -1,7 +1,7 @@
 ---
 title: "Offers"
-description: "Unlock the potential of your mobile app's monetization strategy with Adapty's guide on adding offers to paywalls. Increase customer volume and retention by seamlessly integrating enticing offers into your app's paywalls. Learn how targeted promotions and incentives can elevate engagement and drive growth. Dive into our comprehensive guide now to maximize your app's revenue potential"
-metadataTitle: "What are offers and how to use them in Adapty to increase your customer volume"
+description: "Managing Subscription Offers | Adapty Docs"
+metadataTitle: "Set up and manage subscription offers in Adapty to drive conversions."
 ---
 
 import Zoom from 'react-medium-image-zoom';

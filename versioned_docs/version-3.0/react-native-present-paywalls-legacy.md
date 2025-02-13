@@ -1,7 +1,7 @@
 ---
 title: "React Native - Present legacy Paywall Builder paywalls"
-description: ""
-metadataTitle: ""
+description: "Presenting Paywalls in React Native (Legacy) | Adapty Docs"
+metadataTitle: "Present paywalls in React Native (Legacy) apps using Adapty."
 ---
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.

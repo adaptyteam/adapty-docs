@@ -1,7 +1,7 @@
 ---
 title: "AppsFlyer"
-description: ""
-metadataTitle: ""
+description: "AppsFlyer Integration | Adapty Docs"
+metadataTitle: "Integrate AppsFlyer with Adapty for advanced mobile attribution tracking."
 ---
 
 import Zoom from 'react-medium-image-zoom';

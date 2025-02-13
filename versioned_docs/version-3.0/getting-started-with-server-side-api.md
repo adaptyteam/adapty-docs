@@ -1,7 +1,7 @@
 ---
 title: "Server-side API"
-description: "Explore Adapty's server-side API for managing user subscriptions, syncing subscribers across platforms, updating user attributes, and granting access levels. Learn how to integrate payments from web stores and customize user attributes for better segmentation and A/B testing."
-metadataTitle: "Unlock Subscription and User Management with Adapty's Server-Side API"
+description: "Getting Started with Server-Side API | Adapty Docs"
+metadataTitle: "Get started with Adapty’s server-side API for subscription management."
 
 ---
 

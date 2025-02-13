@@ -1,7 +1,7 @@
 ---
 title: "Switch from AppsFlyer S2S API 2 to 3"
-description: "Learn how Adapty's support for AppsFlyer S2S API 3 provides a seamless transition from API 2, enhancing security and reducing fraud in in-app events. Switch today"
-metadataTitle: "Adapty Supports AppsFlyer S2S API 3 Upgrade: Enhanced Security and Fraud Reduction"
+description: "Switching from AppsFlyer S2S API 2 to 3 | Adapty Docs"
+metadataTitle: "Upgrade from AppsFlyer S2S API 2 to 3 in Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Events to send to 3d-party integrations"
-description: ""
-metadataTitle: ""
+description: "Tracking Subscription Events | Adapty Docs"
+metadataTitle: "Track key subscription events using Adapty’s analytics tools."
 ---
 
 import Zoom from 'react-medium-image-zoom';

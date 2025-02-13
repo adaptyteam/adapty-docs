@@ -1,7 +1,7 @@
 ---
 title: "Test in-app purchases in Google Play Store"
-description: ""
-metadataTitle: ""
+description: "Testing Subscription Purchases on Android | Adapty Docs"
+metadataTitle: "Test subscription purchases on Android using Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';

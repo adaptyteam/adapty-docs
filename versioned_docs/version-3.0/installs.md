@@ -1,7 +1,7 @@
 ---
 title: "Installs"
-description: ""
-metadataTitle: ""
+description: "Tracking Installs & Attribution | Adapty Docs"
+metadataTitle: "Track app installs and understand their impact on subscriptions with Adapty."
 ---
 
 import Zoom from 'react-medium-image-zoom';
