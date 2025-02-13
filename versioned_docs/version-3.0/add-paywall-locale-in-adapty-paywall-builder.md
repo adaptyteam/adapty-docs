@@ -70,7 +70,7 @@ Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in 
    />
    </Zoom>
 
-2. Click **AI Translate** to apply translations. The selected lines will be translated and added to the table.
+2. Click **AI Translate** to apply translations. The paywall lines will be translated and added to the table.
 
 ## Exporting localization files for external translation
 
