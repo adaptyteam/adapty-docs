@@ -1,7 +1,7 @@
 ---
 title: "Braze"
-description: "Braze Integration Guide | Adapty Docs"
-metadataTitle: "Integrate Braze with Adapty for seamless customer engagement and push notifications."
+description: "Integrate Braze with Adapty for seamless customer engagement and push notifications."
+metadataTitle: "Braze Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

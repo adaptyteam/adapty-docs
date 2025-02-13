@@ -1,7 +1,7 @@
 ---
 title: "Fetch paywalls and products for remote config paywalls"
-description: "Fetching Paywalls & Products | Adapty Docs"
-metadataTitle: "Fetch paywalls and products in Adapty to enhance user monetization."
+description: "Fetch paywalls and products in Adapty to enhance user monetization."
+metadataTitle: "Fetching Paywalls & Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

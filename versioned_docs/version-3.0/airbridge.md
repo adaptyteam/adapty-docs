@@ -1,7 +1,7 @@
 ---
 title: "Airbridge"
-description: "Airbridge Integration | Adapty Docs"
-metadataTitle: "Connect Adapty with Airbridge to track marketing and attribution insights."
+description: "Connect Adapty with Airbridge to track marketing and attribution insights."
+metadataTitle: "Airbridge Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Switch from AppsFlyer S2S API 2 to 3"
-description: "Switching from AppsFlyer S2S API 2 to 3 | Adapty Docs"
-metadataTitle: "Upgrade from AppsFlyer S2S API 2 to 3 in Adapty."
+description: "Upgrade from AppsFlyer S2S API 2 to 3 in Adapty."
+metadataTitle: "Switching from AppsFlyer S2S API 2 to 3 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

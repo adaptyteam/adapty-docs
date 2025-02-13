@@ -1,7 +1,7 @@
 ---
 title: "Funnel analysis"
-description: "Analytics Funnels Setup | Adapty Docs"
-metadataTitle: "Understand analytics funnels in Adapty to monitor user behavior and improve conversions."
+description: "Understand analytics funnels in Adapty to monitor user behavior and improve conversions."
+metadataTitle: "Analytics Funnels Setup | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

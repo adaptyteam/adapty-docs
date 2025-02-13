@@ -1,7 +1,7 @@
 ---
 title: "Offers"
-description: "Managing Subscription Offers | Adapty Docs"
-metadataTitle: "Set up and manage subscription offers in Adapty to drive conversions."
+description: "Set up and manage subscription offers in Adapty to drive conversions."
+metadataTitle: "Managing Subscription Offers | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

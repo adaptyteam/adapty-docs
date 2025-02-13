@@ -1,7 +1,7 @@
 ---
 title: "Paywall template"
-description: "Paywall Builder Templates | Adapty Docs"
-metadataTitle: "Use Adapty’s paywall builder templates to create high-converting paywalls."
+description: "Use Adapty’s paywall builder templates to create high-converting paywalls."
+metadataTitle: "Paywall Builder Templates | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

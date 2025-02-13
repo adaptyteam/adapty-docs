@@ -1,7 +1,7 @@
 ---
 title: "iOS - Present Paywall Builder paywalls in Observer mode"
-description: "Presenting PB Paywalls in Observer Mode | Adapty Docs"
-metadataTitle: "Learn how to present PB paywalls in observer mode for better insights."
+description: "Learn how to present PB paywalls in observer mode for better insights."
+metadataTitle: "Presenting PB Paywalls in Observer Mode | Adapty Docs"
 ---
 
 

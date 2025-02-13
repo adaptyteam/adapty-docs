@@ -1,7 +1,7 @@
 ---
 title: "Return paywall from archive"
-description: "Restoring Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Restore paywalls in Adapty to ensure uninterrupted subscription services for users."
+description: "Restore paywalls in Adapty to ensure uninterrupted subscription services for users."
+metadataTitle: "Restoring Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

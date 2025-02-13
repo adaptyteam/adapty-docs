@@ -1,7 +1,7 @@
 ---
 title: "Testing devices"
-description: "Managing Test Devices | Adapty Docs"
-metadataTitle: "Learn how to manage test devices in Adapty for efficient app testing."
+description: "Learn how to manage test devices in Adapty for efficient app testing."
+metadataTitle: "Managing Test Devices | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

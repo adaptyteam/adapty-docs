@@ -1,7 +1,7 @@
 ---
 title: "Paywall device compatibility preview"
-description: "Previewing Paywall Device Compatibility | Adapty Docs"
-metadataTitle: "Preview paywall compatibility across devices for an optimized experience."
+description: "Preview paywall compatibility across devices for an optimized experience."
+metadataTitle: "Previewing Paywall Device Compatibility | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

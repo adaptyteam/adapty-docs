@@ -1,7 +1,7 @@
 ---
 title: "Offers in App Store"
-description: "Managing App Store Offers | Adapty Docs"
-metadataTitle: "Set up and manage App Store offers to increase user retention."
+description: "Set up and manage App Store offers to increase user retention."
+metadataTitle: "Managing App Store Offers | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

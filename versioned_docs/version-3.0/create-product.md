@@ -1,7 +1,7 @@
 ---
 title: "Create product"
-description: "Creating Products in Adapty | Adapty Docs"
-metadataTitle: "Step-by-step guide on creating new subscription products in Adapty for better revenue management."
+description: "Step-by-step guide on creating new subscription products in Adapty for better revenue management."
+metadataTitle: "Creating Products in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

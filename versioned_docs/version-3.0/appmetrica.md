@@ -1,7 +1,7 @@
 ---
 title: "AppMetrica"
-description: "AppMetrica Integration | Adapty Docs"
-metadataTitle: "Integrate AppMetrica with Adapty for in-depth subscription analytics."
+description: "Integrate AppMetrica with Adapty for in-depth subscription analytics."
+metadataTitle: "AppMetrica Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

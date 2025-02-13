@@ -1,7 +1,7 @@
 ---
 title: "Expired (churned) trials"
-description: "Managing Expired & Churned Trials | Adapty Docs"
-metadataTitle: "Manage expired and churned trials effectively with Adapty analytics."
+description: "Manage expired and churned trials effectively with Adapty analytics."
+metadataTitle: "Managing Expired & Churned Trials | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

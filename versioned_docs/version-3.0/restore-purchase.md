@@ -1,7 +1,7 @@
 ---
 title: "Restore purchases in mobile app"
-description: "Restoring Purchases in Adapty | Adapty Docs"
-metadataTitle: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+description: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+metadataTitle: "Restoring Purchases in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

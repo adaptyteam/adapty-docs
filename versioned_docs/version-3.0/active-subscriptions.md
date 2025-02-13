@@ -1,7 +1,7 @@
 ---
 title: "Active subscriptions"
-description: "Managing Active Subscriptions | Adapty Docs"
-metadataTitle: "Monitor and manage active subscriptions with Adapty's robust analytics."
+description: "Monitor and manage active subscriptions with Adapty's robust analytics."
+metadataTitle: "Managing Active Subscriptions | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

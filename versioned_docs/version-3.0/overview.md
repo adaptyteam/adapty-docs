@@ -1,7 +1,7 @@
 ---
 title: "Analytics overview"
-description: "Adapty Documentation Overview | Adapty Docs"
-metadataTitle: "Explore the Adapty documentation overview for insights into subscription optimization."
+description: "Explore the Adapty documentation overview for insights into subscription optimization."
+metadataTitle: "Adapty Documentation Overview | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

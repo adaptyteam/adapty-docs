@@ -1,7 +1,7 @@
 ---
 title: "Retention analysis"
-description: "Understanding Analytics Retention | Adapty Docs"
-metadataTitle: "Understand user retention analytics and optimize your subscription strategy."
+description: "Understand user retention analytics and optimize your subscription strategy."
+metadataTitle: "Understanding Analytics Retention | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Test purchases"
-description: "Guide to Testing Purchases | Adapty Docs"
-metadataTitle: "Learn how to test purchases effectively in Adapty’s sandbox environment."
+description: "Learn how to test purchases effectively in Adapty’s sandbox environment."
+metadataTitle: "Guide to Testing Purchases | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Remote config paywall localization"
-description: "Adding Remote Config Locales | Adapty Docs"
-metadataTitle: "Add remote config locales to personalize Adapty paywalls."
+description: "Add remote config locales to personalize Adapty paywalls."
+metadataTitle: "Adding Remote Config Locales | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

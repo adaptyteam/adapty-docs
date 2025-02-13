@@ -1,7 +1,7 @@
 ---
 title: "Migrate to Adapty"
-description: "Migrating to Adapty from Other Solutions | Adapty Docs"
-metadataTitle: "Migrate to Adapty from other subscription management solutions easily."
+description: "Migrate to Adapty from other subscription management solutions easily."
+metadataTitle: "Migrating to Adapty from Other Solutions | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

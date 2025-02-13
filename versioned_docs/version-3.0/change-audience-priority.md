@@ -1,7 +1,7 @@
 ---
 title: "Change audience priority in placement"
-description: "Changing Audience Priority | Adapty Docs"
-metadataTitle: "Adjust audience priorities in Adapty to target users with personalized offers."
+description: "Adjust audience priorities in Adapty to target users with personalized offers."
+metadataTitle: "Changing Audience Priority | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

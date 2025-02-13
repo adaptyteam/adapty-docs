@@ -1,7 +1,7 @@
 ---
 title: "Initial integration with the App Store"
-description: "Getting Started with iOS | Adapty Docs"
-metadataTitle: "Get started with Adapty on iOS to streamline subscription setup and management."
+description: "Get started with Adapty on iOS to streamline subscription setup and management."
+metadataTitle: "Getting Started with iOS | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

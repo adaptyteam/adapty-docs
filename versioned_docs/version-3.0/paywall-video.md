@@ -1,7 +1,7 @@
 ---
 title: "Paywall hero video"
-description: "Adding Video to Paywalls | Adapty Docs"
-metadataTitle: "Enhance paywalls with video content to boost engagement in Adapty."
+description: "Enhance paywalls with video content to boost engagement in Adapty."
+metadataTitle: "Adding Video to Paywalls | Adapty Docs"
 ---
 
 

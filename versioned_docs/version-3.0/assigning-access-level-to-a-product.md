@@ -1,7 +1,7 @@
 ---
 title: "Assign access level to product"
-description: "Assigning Access Levels to Products | Adapty Docs"
-metadataTitle: "Assign access levels to products to optimize subscription management."
+description: "Assign access levels to products to optimize subscription management."
+metadataTitle: "Assigning Access Levels to Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

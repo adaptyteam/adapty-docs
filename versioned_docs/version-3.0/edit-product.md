@@ -1,7 +1,7 @@
 ---
 title: "Edit product"
-description: "Editing Products in Adapty | Adapty Docs"
-metadataTitle: "Modify and manage your subscription products in Adapty for better revenue tracking."
+description: "Modify and manage your subscription products in Adapty for better revenue tracking."
+metadataTitle: "Editing Products in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

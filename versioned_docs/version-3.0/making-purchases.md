@@ -1,7 +1,7 @@
 ---
 title: "Make purchases in mobile app"
-description: "Handling In-App Purchases in Adapty | Adapty Docs"
-metadataTitle: "Guide on handling in-app purchases and subscriptions using Adapty."
+description: "Guide on handling in-app purchases and subscriptions using Adapty."
+metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

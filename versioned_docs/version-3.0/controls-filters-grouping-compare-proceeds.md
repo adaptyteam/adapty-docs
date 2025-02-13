@@ -1,7 +1,7 @@
 ---
 title: "Analytics controls"
-description: "Controls, Filters, and Grouping Data | Adapty Docs"
-metadataTitle: "Control and filter revenue data with Adapty’s powerful analytics tools."
+description: "Control and filter revenue data with Adapty’s powerful analytics tools."
+metadataTitle: "Controls, Filters, and Grouping Data | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Check subscription status"
-description: "Understanding Subscription Status | Adapty Docs"
-metadataTitle: "Track and manage user subscription status in Adapty for improved customer retention."
+description: "Track and manage user subscription status in Adapty for improved customer retention."
+metadataTitle: "Understanding Subscription Status | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

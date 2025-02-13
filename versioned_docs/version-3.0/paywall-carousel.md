@@ -1,7 +1,7 @@
 ---
 title: "Paywall carousel"
-description: "Paywall Carousel Setup | Adapty Docs"
-metadataTitle: "Set up paywall carousels in Adapty to boost engagement and subscriptions."
+description: "Set up paywall carousels in Adapty to boost engagement and subscriptions."
+metadataTitle: "Paywall Carousel Setup | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

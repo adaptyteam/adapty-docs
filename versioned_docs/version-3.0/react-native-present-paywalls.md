@@ -1,7 +1,7 @@
 ---
 title: "React Native - Present new Paywall Builder paywalls"
-description: "Presenting Paywalls in React Native | Adapty Docs"
-metadataTitle: "Present paywalls in React Native apps using Adapty."
+description: "Present paywalls in React Native apps using Adapty."
+metadataTitle: "Presenting Paywalls in React Native | Adapty Docs"
 
 ---
 

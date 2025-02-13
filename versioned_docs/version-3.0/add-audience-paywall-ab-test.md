@@ -1,7 +1,7 @@
 ---
 title: "Add audience and paywall or A/B test to placement"
-description: "Adding Audience Paywall A/B Tests | Adapty Docs"
-metadataTitle: "Run A/B tests on paywalls for different audience segments in Adapty."
+description: "Run A/B tests on paywalls for different audience segments in Adapty."
+metadataTitle: "Adding Audience Paywall A/B Tests | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

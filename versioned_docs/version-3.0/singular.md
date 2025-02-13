@@ -1,7 +1,7 @@
 ---
 title: "Singular"
-description: "Singular Integration Guide | Adapty Docs"
-metadataTitle: "Integrate Singular with Adapty to analyze marketing and subscription data."
+description: "Integrate Singular with Adapty to analyze marketing and subscription data."
+metadataTitle: "Singular Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

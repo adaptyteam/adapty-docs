@@ -1,7 +1,7 @@
 ---
 title: "Unity - Adapty SDK installation & configuration"
-description: "Installing Adapty SDK for Unity | Adapty Docs"
-metadataTitle: "Install Adapty SDK in Unity for subscription management."
+description: "Install Adapty SDK in Unity for subscription management."
+metadataTitle: "Installing Adapty SDK for Unity | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Android - Present new Paywall Builder paywalls"
-description: "Presenting Paywalls on Android | Adapty Docs"
-metadataTitle: "Learn how to present paywalls on Android for effective monetization."
+description: "Learn how to present paywalls on Android for effective monetization."
+metadataTitle: "Presenting Paywalls on Android | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

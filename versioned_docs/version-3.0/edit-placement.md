@@ -1,7 +1,7 @@
 ---
 title: "Edit placement"
-description: "How to Edit Placement in Adapty | Adapty Docs"
-metadataTitle: "Learn how to edit placements in Adapty to optimize paywall visibility and user engagement."
+description: "Learn how to edit placements in Adapty to optimize paywall visibility and user engagement."
+metadataTitle: "How to Edit Placement in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

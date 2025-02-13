@@ -1,7 +1,7 @@
 ---
 title: "Create service account in the Google Cloud Console"
-description: "Creating a Service Account | Adapty Docs"
-metadataTitle: "Learn how to create a service account for secure API access in Adapty."
+description: "Learn how to create a service account for secure API access in Adapty."
+metadataTitle: "Creating a Service Account | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

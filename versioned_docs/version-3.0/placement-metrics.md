@@ -1,7 +1,7 @@
 ---
 title: "Placement metrics"
-description: "Analyzing Placement Metrics | Adapty Docs"
-metadataTitle: "Analyze placement metrics in Adapty to improve paywall performance."
+description: "Analyze placement metrics in Adapty to improve paywall performance."
+metadataTitle: "Analyzing Placement Metrics | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

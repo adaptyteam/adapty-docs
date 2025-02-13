@@ -1,7 +1,7 @@
 ---
 title: "Charts"
-description: "Analyzing Subscription Analytics Charts | Adapty Docs"
-metadataTitle: "Analyze subscription trends with Adapty’s analytics charts."
+description: "Analyze subscription trends with Adapty’s analytics charts."
+metadataTitle: "Analyzing Subscription Analytics Charts | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

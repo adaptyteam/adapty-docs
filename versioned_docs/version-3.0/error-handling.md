@@ -1,7 +1,7 @@
 ---
 title: "Handle errors"
-description: "Error Handling Guide in Adapty | Adapty Docs"
-metadataTitle: "Troubleshoot common subscription errors using Adapty’s error handling guide."
+description: "Troubleshoot common subscription errors using Adapty’s error handling guide."
+metadataTitle: "Error Handling Guide in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

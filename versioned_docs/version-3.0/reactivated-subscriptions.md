@@ -1,7 +1,7 @@
 ---
 title: "New subscriptions"
-description: "Managing Reactivated Subscriptions | Adapty Docs"
-metadataTitle: "Track and manage reactivated subscriptions to optimize user retention."
+description: "Track and manage reactivated subscriptions to optimize user retention."
+metadataTitle: "Managing Reactivated Subscriptions | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

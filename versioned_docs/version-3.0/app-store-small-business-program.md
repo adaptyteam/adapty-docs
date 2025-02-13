@@ -1,7 +1,7 @@
 ---
 title: "App Store Small Business Program"
-description: "Apple Small Business Program Explained | Adapty Docs"
-metadataTitle: "Understand Apple’s Small Business Program and its impact on revenue."
+description: "Understand Apple’s Small Business Program and its impact on revenue."
+metadataTitle: "Apple Small Business Program Explained | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

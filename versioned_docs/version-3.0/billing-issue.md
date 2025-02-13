@@ -1,7 +1,7 @@
 ---
 title: "Billing issue"
-description: "Resolving Subscription Billing Issues | Adapty Docs"
-metadataTitle: "Resolve subscription billing issues using Adapty’s support tools."
+description: "Resolve subscription billing issues using Adapty’s support tools."
+metadataTitle: "Resolving Subscription Billing Issues | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

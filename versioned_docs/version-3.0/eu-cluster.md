@@ -1,7 +1,7 @@
 ---
 title: "Adapty on EU servers"
-description: "EU Cluster & Data Storage | Adapty Docs"
-metadataTitle: "Understand Adapty’s EU cluster and its data storage policies."
+description: "Understand Adapty’s EU cluster and its data storage policies."
+metadataTitle: "EU Cluster & Data Storage | Adapty Docs"
 no_index: true
 ---
 <head>

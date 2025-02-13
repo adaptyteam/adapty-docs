@@ -1,7 +1,7 @@
 ---
 title: "Give access level to specific customer"
-description: "Assign Access Levels to Customers | Adapty Docs"
-metadataTitle: "Assign specific access levels to customers using Adapty’s advanced tools."
+description: "Assign specific access levels to customers using Adapty’s advanced tools."
+metadataTitle: "Assign Access Levels to Customers | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

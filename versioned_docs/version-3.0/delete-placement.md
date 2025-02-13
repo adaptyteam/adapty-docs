@@ -1,7 +1,7 @@
 ---
 title: "Delete placement"
-description: "How to Delete a Placement in Adapty | Adapty Docs"
-metadataTitle: "Find out how to delete a placement in Adapty without affecting your paywall performance."
+description: "Find out how to delete a placement in Adapty without affecting your paywall performance."
+metadataTitle: "How to Delete a Placement in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

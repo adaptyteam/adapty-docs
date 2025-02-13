@@ -1,7 +1,7 @@
 ---
 title: "Download fallback paywalls"
-description: "Using Local Fallback Paywalls | Adapty Docs"
-metadataTitle: "Use local fallback paywalls in Adapty to ensure seamless subscription flows."
+description: "Use local fallback paywalls in Adapty to ensure seamless subscription flows."
+metadataTitle: "Using Local Fallback Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

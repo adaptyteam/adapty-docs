@@ -1,7 +1,7 @@
 ---
 title: "iOS - Handle errors"
-description: "iOS SDK Error Handling Guide | Adapty Docs"
-metadataTitle: "Handle iOS SDK errors efficiently with Adapty’s troubleshooting guide."
+description: "Handle iOS SDK errors efficiently with Adapty’s troubleshooting guide."
+metadataTitle: "iOS SDK Error Handling Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

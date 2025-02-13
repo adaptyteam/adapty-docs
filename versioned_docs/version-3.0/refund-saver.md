@@ -1,7 +1,7 @@
 ---
 title: "Refund saver"
-description: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
-metadataTitle: "Use Adapty Refund Saver to minimize refunds and maximize revenue."
+description: "Use Adapty Refund Saver to minimize refunds and maximize revenue."
+metadataTitle: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

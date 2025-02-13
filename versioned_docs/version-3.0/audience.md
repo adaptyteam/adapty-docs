@@ -1,7 +1,7 @@
 ---
 title: "Audiences"
-description: "Managing Audience Segments | Adapty Docs"
-metadataTitle: "Learn how to segment and manage audiences in Adapty for targeted subscription offers."
+description: "Learn how to segment and manage audiences in Adapty for targeted subscription offers."
+metadataTitle: "Managing Audience Segments | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

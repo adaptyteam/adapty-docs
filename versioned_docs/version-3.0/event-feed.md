@@ -1,7 +1,7 @@
 ---
 title: "Event feed"
-description: "Event Feed Overview | Adapty Docs"
-metadataTitle: "Monitor and analyze user activity with Adapty’s event feed."
+description: "Monitor and analyze user activity with Adapty’s event feed."
+metadataTitle: "Event Feed Overview | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

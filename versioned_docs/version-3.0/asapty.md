@@ -1,7 +1,7 @@
 ---
 title: "Asapty"
-description: "What is Asapty? | Adapty Docs"
-metadataTitle: "Discover Asapty and its role in Adapty’s subscription ecosystem."
+description: "Discover Asapty and its role in Adapty’s subscription ecosystem."
+metadataTitle: "What is Asapty? | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

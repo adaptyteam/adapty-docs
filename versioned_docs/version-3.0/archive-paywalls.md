@@ -1,7 +1,7 @@
 ---
 title: "Archive paywall"
-description: "Archiving Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Learn how to archive outdated paywalls in Adapty without losing data."
+description: "Learn how to archive outdated paywalls in Adapty without losing data."
+metadataTitle: "Archiving Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Server-side API"
-description: "Getting Started with Server-Side API | Adapty Docs"
-metadataTitle: "Get started with Adapty’s server-side API for subscription management."
+description: "Get started with Adapty’s server-side API for subscription management."
+metadataTitle: "Getting Started with Server-Side API | Adapty Docs"
 
 ---
 
