@@ -1,7 +1,7 @@
 ---
 title: "Add offer to paywall"
-description: "Adding Offers to Paywalls | Adapty Docs"
-metadataTitle: "Add custom offers to paywalls in Adapty to boost conversion rates."
+description: "Add custom offers to paywalls in Adapty to boost conversion rates."
+metadataTitle: "Adding Offers to Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

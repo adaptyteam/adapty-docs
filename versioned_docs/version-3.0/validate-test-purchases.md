@@ -1,7 +1,7 @@
 ---
 title: "Validate test purchases"
-description: "Validating Test Purchases in Adapty | Adapty Docs"
-metadataTitle: "Validate test purchases in Adapty to ensure seamless transactions."
+description: "Validate test purchases in Adapty to ensure seamless transactions."
+metadataTitle: "Validating Test Purchases in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

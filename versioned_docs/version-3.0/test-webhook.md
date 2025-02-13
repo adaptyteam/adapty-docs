@@ -1,7 +1,7 @@
 ---
 title: "Test webhook integration"
-description: "Testing Webhook Integrations | Adapty Docs"
-metadataTitle: "Test webhook integrations in Adapty to automate subscription event tracking."
+description: "Test webhook integrations in Adapty to automate subscription event tracking."
+metadataTitle: "Testing Webhook Integrations | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

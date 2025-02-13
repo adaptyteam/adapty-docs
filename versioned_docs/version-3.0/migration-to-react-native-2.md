@@ -1,7 +1,7 @@
 ---
 title: "React Native — What's new"
-description: "Migrating to React Native 2 | Adapty Docs"
-metadataTitle: "Seamlessly migrate to React Native 2 with Adapty’s comprehensive migration guide."
+description: "Seamlessly migrate to React Native 2 with Adapty’s comprehensive migration guide."
+metadataTitle: "Migrating to React Native 2 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

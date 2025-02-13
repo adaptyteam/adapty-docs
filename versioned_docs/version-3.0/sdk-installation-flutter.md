@@ -1,7 +1,7 @@
 ---
 title: "Flutter - Adapty SDK Installation and configuration"
-description: "Installing Adapty SDK in Flutter | Adapty Docs"
-metadataTitle: "Install Adapty SDK in Flutter to handle subscriptions with ease."
+description: "Install Adapty SDK in Flutter to handle subscriptions with ease."
+metadataTitle: "Installing Adapty SDK in Flutter | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs'; 

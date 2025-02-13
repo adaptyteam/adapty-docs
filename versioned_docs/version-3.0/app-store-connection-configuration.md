@@ -1,7 +1,7 @@
 ---
 title: "Configure App Store integration"
-description: "App Store Connection Configuration | Adapty Docs"
-metadataTitle: "Configure your App Store connection for seamless subscription tracking."
+description: "Configure your App Store connection for seamless subscription tracking."
+metadataTitle: "App Store Connection Configuration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

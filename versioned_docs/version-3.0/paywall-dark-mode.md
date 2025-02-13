@@ -1,7 +1,7 @@
 ---
 title: "Paywall dark mode"
-description: "Enabling Paywall Dark Mode | Adapty Docs"
-metadataTitle: "Enable dark mode for paywalls in Adapty to improve user experience."
+description: "Enable dark mode for paywalls in Adapty to improve user experience."
+metadataTitle: "Enabling Paywall Dark Mode | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

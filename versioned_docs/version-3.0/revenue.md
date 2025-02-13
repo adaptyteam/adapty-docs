@@ -1,7 +1,7 @@
 ---
 title: "Revenue"
-description: "Understanding Revenue Metrics | Adapty Docs"
-metadataTitle: "Track and analyze your app’s revenue using Adapty’s subscription insights."
+description: "Track and analyze your app’s revenue using Adapty’s subscription insights."
+metadataTitle: "Understanding Revenue Metrics | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

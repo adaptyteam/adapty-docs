@@ -1,7 +1,7 @@
 ---
 title: "Design paywalls with legacy Paywall Builder"
-description: "Adapty Paywall Builder (Legacy) | Adapty Docs"
-metadataTitle: "Use the legacy Adapty Paywall Builder to manage in-app subscriptions."
+description: "Use the legacy Adapty Paywall Builder to manage in-app subscriptions."
+metadataTitle: "Adapty Paywall Builder (Legacy) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

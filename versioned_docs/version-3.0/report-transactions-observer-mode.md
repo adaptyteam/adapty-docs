@@ -1,7 +1,7 @@
 ---
 title: "Report transactions in Observer Mode"
-description: "Reporting Transactions in Observer Mode | Adapty Docs"
-metadataTitle: "Report purchase transactions in Adapty Observer Mode for user insights and revenue tracking."
+description: "Report purchase transactions in Adapty Observer Mode for user insights and revenue tracking."
+metadataTitle: "Reporting Transactions in Observer Mode | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

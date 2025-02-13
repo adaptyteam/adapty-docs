@@ -1,7 +1,7 @@
 ---
 title: "Access levels"
-description: "Understanding Access Levels | Adapty Docs"
-metadataTitle: "Learn about access levels in Adapty and how to configure them for user management."
+description: "Learn about access levels in Adapty and how to configure them for user management."
+metadataTitle: "Understanding Access Levels | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

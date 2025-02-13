@@ -1,7 +1,7 @@
 ---
 title: "Handle paywall events"
-description: "Handling PB Paywall Events | Adapty Docs"
-metadataTitle: "Track and handle PB paywall events efficiently in Adapty."
+description: "Track and handle PB paywall events efficiently in Adapty."
+metadataTitle: "Handling PB Paywall Events | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

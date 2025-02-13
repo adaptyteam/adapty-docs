@@ -1,7 +1,7 @@
 ---
 title: "Android - Handle errors"
-description: "Handling Android SDK Errors | Adapty Docs"
-metadataTitle: "Handle Android SDK errors effectively with Adapty’s troubleshooting guide."
+description: "Handle Android SDK errors effectively with Adapty’s troubleshooting guide."
+metadataTitle: "Handling Android SDK Errors | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

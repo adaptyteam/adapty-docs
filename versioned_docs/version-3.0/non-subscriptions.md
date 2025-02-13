@@ -1,7 +1,7 @@
 ---
 title: "Non-subscriptions"
-description: "Managing Non-Subscription Products | Adapty Docs"
-metadataTitle: "Learn how to manage non-subscription products in Adapty and track user purchases efficiently."
+description: "Learn how to manage non-subscription products in Adapty and track user purchases efficiently."
+metadataTitle: "Managing Non-Subscription Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

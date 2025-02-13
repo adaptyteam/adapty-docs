@@ -1,7 +1,7 @@
 ---
 title: "Cohort analysis"
-description: "Understanding Analytics Cohorts | Adapty Docs"
-metadataTitle: "Use analytics cohorts in Adapty to track user engagement and subscription trends."
+description: "Use analytics cohorts in Adapty to track user engagement and subscription trends."
+metadataTitle: "Understanding Analytics Cohorts | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

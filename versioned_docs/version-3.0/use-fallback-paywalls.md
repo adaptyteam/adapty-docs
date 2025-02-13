@@ -1,7 +1,7 @@
 ---
 title: "Use fallback paywalls"
-description: "How to Use Fallback Paywalls | Adapty Docs"
-metadataTitle: "Learn how to use fallback paywalls to improve user retention."
+description: "Learn how to use fallback paywalls to improve user retention."
+metadataTitle: "How to Use Fallback Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "SDK Models"
-description: "Understanding SDK Models | Adapty Docs"
-metadataTitle: "Understand Adapty’s SDK models to optimize in-app purchase handling."
+description: "Understand Adapty’s SDK models to optimize in-app purchase handling."
+metadataTitle: "Understanding SDK Models | Adapty Docs"
 ---
 
 ## Interfaces

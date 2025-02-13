@@ -1,7 +1,7 @@
 ---
 title: "Paywall texts and buttons"
-description: "Customizing Paywall Texts & Buttons | Adapty Docs"
-metadataTitle: "Customize paywall texts and buttons to improve conversion rates."
+description: "Customize paywall texts and buttons to improve conversion rates."
+metadataTitle: "Customizing Paywall Texts & Buttons | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

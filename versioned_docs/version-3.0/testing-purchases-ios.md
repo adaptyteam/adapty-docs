@@ -1,7 +1,7 @@
 ---
 title: "Test in-app purchases in Apple App Store"
-description: "Testing Purchases on iOS | Adapty Docs"
-metadataTitle: "Learn how to test in-app purchases on iOS with Adapty’s sandbox mode."
+description: "Learn how to test in-app purchases on iOS with Adapty’s sandbox mode."
+metadataTitle: "Testing Purchases on iOS | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

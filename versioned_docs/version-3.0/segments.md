@@ -1,7 +1,7 @@
 ---
 title: "Segments"
-description: "Managing User Segments | Adapty Docs"
-metadataTitle: "Create and manage user segments for better targeting in Adapty."
+description: "Create and manage user segments for better targeting in Adapty."
+metadataTitle: "Managing User Segments | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

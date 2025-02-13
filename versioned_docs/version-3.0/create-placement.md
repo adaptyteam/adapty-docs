@@ -1,7 +1,7 @@
 ---
 title: "Create placement"
-description: "Creating a Placement in Adapty | Adapty Docs"
-metadataTitle: "Create and manage placements in Adapty to improve paywall performance."
+description: "Create and manage placements in Adapty to improve paywall performance."
+metadataTitle: "Creating a Placement in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

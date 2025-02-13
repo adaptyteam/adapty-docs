@@ -1,7 +1,7 @@
 ---
 title: "Server-side API requests"
-description: "Server-Side API Specifications | Adapty Docs"
-metadataTitle: "Explore Adapty’s server-side API specifications for advanced integration."
+description: "Explore Adapty’s server-side API specifications for advanced integration."
+metadataTitle: "Server-Side API Specifications | Adapty Docs"
 displayed_sidebar: APISidebar
 ---
 

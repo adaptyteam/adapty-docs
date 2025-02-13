@@ -1,7 +1,7 @@
 ---
 title: "Adapty Resources"
-description: "Feature Flag Resources | Adapty Docs"
-metadataTitle: "Access Adapty's feature flag resources to streamline subscription-based features."
+description: "Access Adapty's feature flag resources to streamline subscription-based features."
+metadataTitle: "Feature Flag Resources | Adapty Docs"
 ---
 ## Custom Actions
 

@@ -1,7 +1,7 @@
 ---
 title: "Paywall localization"
-description: "Localizing Paywalls for Different Audiences | Adapty Docs"
-metadataTitle: "Localize paywalls in Adapty to reach global audiences."
+description: "Localize paywalls in Adapty to reach global audiences."
+metadataTitle: "Localizing Paywalls for Different Audiences | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

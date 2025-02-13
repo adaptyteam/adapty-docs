@@ -1,7 +1,7 @@
 ---
 title: "Maths behind the A/B tests"
-description: "The Math Behind Subscription Analytics | Adapty Docs"
-metadataTitle: "Understand the math behind subscription analytics for better revenue insights."
+description: "Understand the math behind subscription analytics for better revenue insights."
+metadataTitle: "The Math Behind Subscription Analytics | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

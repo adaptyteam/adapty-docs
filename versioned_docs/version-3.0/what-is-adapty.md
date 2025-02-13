@@ -1,7 +1,7 @@
 ---
 title: "What is Adapty?"
-description: "What is Adapty? | Adapty Docs"
-metadataTitle: "Learn what Adapty is and how it helps manage subscriptions."
+description: "Learn what Adapty is and how it helps manage subscriptions."
+metadataTitle: "What is Adapty? | Adapty Docs"
 slug: /
 ---
 

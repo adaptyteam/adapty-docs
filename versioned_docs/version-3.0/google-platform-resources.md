@@ -1,7 +1,7 @@
 ---
 title: "Google Platform resources"
-description: "Google Platform Resources | Adapty Docs"
-metadataTitle: "Explore Google platform resources to optimize subscription handling in your app."
+description: "Explore Google platform resources to optimize subscription handling in your app."
+metadataTitle: "Google Platform Resources | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

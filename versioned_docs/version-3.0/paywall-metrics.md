@@ -1,7 +1,7 @@
 ---
 title: "Paywall metrics"
-description: "Analyzing Paywall Metrics | Adapty Docs"
-metadataTitle: "Track and analyze paywall performance metrics to improve subscription revenue."
+description: "Track and analyze paywall performance metrics to improve subscription revenue."
+metadataTitle: "Analyzing Paywall Metrics | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

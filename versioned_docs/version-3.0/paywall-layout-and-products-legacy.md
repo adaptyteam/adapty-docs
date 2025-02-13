@@ -1,7 +1,7 @@
 ---
 title: "Paywall layout and products"
-description: "Legacy Paywall Layout & Products | Adapty Docs"
-metadataTitle: "Manage paywall layouts and products in Adapty’s legacy system."
+description: "Manage paywall layouts and products in Adapty’s legacy system."
+metadataTitle: "Legacy Paywall Layout & Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

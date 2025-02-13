@@ -1,7 +1,7 @@
 ---
 title: "Legacy Paywall Builder templates"
-description: "Paywall Builder Templates (Legacy) | Adapty Docs"
-metadataTitle: "Use legacy paywall builder templates in Adapty to streamline your monetization."
+description: "Use legacy paywall builder templates in Adapty to streamline your monetization."
+metadataTitle: "Paywall Builder Templates (Legacy) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

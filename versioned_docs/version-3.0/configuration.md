@@ -1,7 +1,7 @@
 ---
 title: "Configure 3d-party integration"
-description: "Configuration Settings in Adapty | Adapty Docs"
-metadataTitle: "Learn how to configure Adapty settings to optimize subscription management."
+description: "Learn how to configure Adapty settings to optimize subscription management."
+metadataTitle: "Configuration Settings in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

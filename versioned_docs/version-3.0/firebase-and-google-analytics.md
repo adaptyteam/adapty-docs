@@ -1,7 +1,7 @@
 ---
 title: "Firebase and Google Analytics"
-description: "Firebase & Google Analytics Integration | Adapty Docs"
-metadataTitle: "Integrate Firebase and Google Analytics with Adapty for better insights."
+description: "Integrate Firebase and Google Analytics with Adapty for better insights."
+metadataTitle: "Firebase & Google Analytics Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

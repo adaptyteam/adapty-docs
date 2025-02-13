@@ -1,7 +1,7 @@
 ---
 title: "Pushwoosh"
-description: "Pushwoosh Integration | Adapty Docs"
-metadataTitle: "Integrate Pushwoosh with Adapty for seamless push notification tracking."
+description: "Integrate Pushwoosh with Adapty for seamless push notification tracking."
+metadataTitle: "Pushwoosh Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

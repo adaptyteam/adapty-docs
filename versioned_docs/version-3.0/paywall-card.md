@@ -1,7 +1,7 @@
 ---
 title: "Paywall card"
-description: "Using Paywall Cards in Adapty | Adapty Docs"
-metadataTitle: "Design and implement paywall cards in Adapty for better engagement."
+description: "Design and implement paywall cards in Adapty for better engagement."
+metadataTitle: "Using Paywall Cards in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

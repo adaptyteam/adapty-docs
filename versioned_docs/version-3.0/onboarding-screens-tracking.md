@@ -1,7 +1,7 @@
 ---
 title: "Track onboarding screens"
-description: "Tracking Onboarding Screens | Adapty Docs"
-metadataTitle: "Track onboarding screens in Adapty to measure user engagement and improve retention."
+description: "Track onboarding screens in Adapty to measure user engagement and improve retention."
+metadataTitle: "Tracking Onboarding Screens | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

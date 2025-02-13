@@ -1,7 +1,7 @@
 ---
 title: "Apple Platform resources"
-description: "Apple Platform Resources | Adapty Docs"
-metadataTitle: "Explore Apple platform resources to optimize your app’s monetization and subscription management."
+description: "Explore Apple platform resources to optimize your app’s monetization and subscription management."
+metadataTitle: "Apple Platform Resources | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Flutter - Handle paywall events"
-description: "Handling Events in Flutter | Adapty Docs"
-metadataTitle: "Discover how to handle subscription-related events in Flutter using Adapty to track user interactions effectively."
+description: "Discover how to handle subscription-related events in Flutter using Adapty to track user interactions effectively."
+metadataTitle: "Handling Events in Flutter | Adapty Docs"
 ---
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder-legacy) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.

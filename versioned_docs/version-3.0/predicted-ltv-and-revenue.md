@@ -1,7 +1,7 @@
 ---
 title: "Prediction in cohorts"
-description: "Predicted LTV & Revenue Insights | Adapty Docs"
-metadataTitle: "Use Adapty’s predictive analytics to forecast LTV and revenue."
+description: "Use Adapty’s predictive analytics to forecast LTV and revenue."
+metadataTitle: "Predicted LTV & Revenue Insights | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

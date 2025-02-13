@@ -1,7 +1,7 @@
 ---
 title: "Products"
-description: "Product Configuration Guide | Adapty Docs"
-metadataTitle: "Explore Adapty's product settings to configure and optimize in-app purchases and subscriptions."
+description: "Explore Adapty's product settings to configure and optimize in-app purchases and subscriptions."
+metadataTitle: "Product Configuration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "How Adapty analytics works"
-description: "How Adapty Analytics Works | Adapty Docs"
-metadataTitle: "Learn how Adapty analytics work to track subscription performance efficiently."
+description: "Learn how Adapty analytics work to track subscription performance efficiently."
+metadataTitle: "How Adapty Analytics Works | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

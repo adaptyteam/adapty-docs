@@ -1,7 +1,7 @@
 ---
 title: "Android - Adapty SDK Installation and configuration"
-description: "Installing Adapty SDK on Android | Adapty Docs"
-metadataTitle: "Install and configure Adapty SDK for Android apps."
+description: "Install and configure Adapty SDK for Android apps."
+metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

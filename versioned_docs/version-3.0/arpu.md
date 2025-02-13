@@ -1,7 +1,7 @@
 ---
 title: "ARPU"
-description: "Understanding Average Revenue Per User (ARPU) | Adapty Docs"
-metadataTitle: "Analyze Average Revenue Per User (ARPU) to optimize revenue generation."
+description: "Analyze Average Revenue Per User (ARPU) to optimize revenue generation."
+metadataTitle: "Understanding Average Revenue Per User (ARPU) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Fetch legacy Paywall Builder paywalls and their configuration"
-description: "Getting Legacy PB Paywalls | Adapty Docs"
-metadataTitle: "Retrieve legacy PB paywalls in Adapty to maintain subscription offerings."
+description: "Retrieve legacy PB paywalls in Adapty to maintain subscription offerings."
+metadataTitle: "Getting Legacy PB Paywalls | Adapty Docs"
 ---
 
 <!--- get-legacy-pb-paywalls.md --->

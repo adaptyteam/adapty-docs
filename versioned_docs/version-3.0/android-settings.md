@@ -1,7 +1,7 @@
 ---
 title: "Google Play Store credentials"
-description: "Configuring Android Settings | Adapty Docs"
-metadataTitle: "Configure Android settings in Adapty for seamless subscription management."
+description: "Configure Android settings in Adapty for seamless subscription management."
+metadataTitle: "Configuring Android Settings | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

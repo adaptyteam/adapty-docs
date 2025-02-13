@@ -1,7 +1,7 @@
 ---
 title: "Installation of Adapty SDK"
-description: "Installing Adapty SDKs | Adapty Docs"
-metadataTitle: "Install Adapty SDKs for iOS, Android, and cross-platform apps."
+description: "Install Adapty SDKs for iOS, Android, and cross-platform apps."
+metadataTitle: "Installing Adapty SDKs | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Branch"
-description: "Branch Integration for Subscription Tracking | Adapty Docs"
-metadataTitle: "Integrate Branch with Adapty to track deep links and app conversions."
+description: "Integrate Branch with Adapty to track deep links and app conversions."
+metadataTitle: "Branch Integration for Subscription Tracking | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Display paywalls designed with remote config"
-description: "Displaying Remote Config Paywalls | Adapty Docs"
-metadataTitle: "Display remote config paywalls in Adapty for improved conversions."
+description: "Display remote config paywalls in Adapty for improved conversions."
+metadataTitle: "Displaying Remote Config Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

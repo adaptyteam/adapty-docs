@@ -1,7 +1,7 @@
 ---
 title: "Release checklist"
-description: "App Release Checklist | Adapty Docs"
-metadataTitle: "Follow Adapty’s release checklist to ensure a smooth app update process."
+description: "Follow Adapty’s release checklist to ensure a smooth app update process."
+metadataTitle: "App Release Checklist | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

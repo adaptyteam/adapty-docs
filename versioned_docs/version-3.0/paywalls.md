@@ -1,7 +1,7 @@
 ---
 title: "Paywalls"
-description: "Overview of Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Explore Adapty’s paywall system and best practices for revenue growth."
+description: "Explore Adapty’s paywall system and best practices for revenue growth."
+metadataTitle: "Overview of Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

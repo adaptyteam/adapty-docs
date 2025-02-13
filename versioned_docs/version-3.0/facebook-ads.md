@@ -1,7 +1,7 @@
 ---
 title: "Facebook Ads"
-description: "Facebook Ads Integration | Adapty Docs"
-metadataTitle: "Integrate Facebook Ads with Adapty for effective subscription marketing."
+description: "Integrate Facebook Ads with Adapty for effective subscription marketing."
+metadataTitle: "Facebook Ads Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

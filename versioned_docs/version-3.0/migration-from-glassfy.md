@@ -1,7 +1,7 @@
 ---
 title: "Migration from Glassfy"
-description: "Migration from Glassfy to Adapty | Adapty Docs"
-metadataTitle: "Migrate from Glassfy to Adapty seamlessly and enhance your subscription management."
+description: "Migrate from Glassfy to Adapty seamlessly and enhance your subscription management."
+metadataTitle: "Migration from Glassfy to Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

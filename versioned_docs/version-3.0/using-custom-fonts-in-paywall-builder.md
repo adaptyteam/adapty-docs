@@ -1,7 +1,7 @@
 ---
 title: "Custom fonts in paywall builder"
-description: "Custom Fonts in Paywall Builder | Adapty Docs"
-metadataTitle: "Enhance Adapty’s Paywall Builder with custom fonts to improve design."
+description: "Enhance Adapty’s Paywall Builder with custom fonts to improve design."
+metadataTitle: "Custom Fonts in Paywall Builder | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

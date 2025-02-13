@@ -1,7 +1,7 @@
 ---
 title: "Generate In-App Purchase Key in App Store Connect"
-description: "Generating an In-App Purchase Key | Adapty Docs"
-metadataTitle: "Generate an in-app purchase key for secure transactions."
+description: "Generate an in-app purchase key for secure transactions."
+metadataTitle: "Generating an In-App Purchase Key | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

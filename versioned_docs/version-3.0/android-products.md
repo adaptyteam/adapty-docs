@@ -1,7 +1,7 @@
 ---
 title: "Product in Play Store"
-description: "Managing Android Products | Adapty Docs"
-metadataTitle: "Manage Android products with Adapty, streamline in-app purchases, and optimize monetization strategies."
+description: "Manage Android products with Adapty, streamline in-app purchases, and optimize monetization strategies."
+metadataTitle: "Managing Android Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

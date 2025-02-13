@@ -1,7 +1,7 @@
 ---
 title: "Getting started"
-description: "Getting Started with Feature Flags | Adapty Docs"
-metadataTitle: "Get started with Adapty Feature Flags to personalize subscription flows."
+description: "Get started with Adapty Feature Flags to personalize subscription flows."
+metadataTitle: "Getting Started with Feature Flags | Adapty Docs"
 
 ---
 

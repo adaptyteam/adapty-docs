@@ -1,7 +1,7 @@
 ---
 title: "OneSignal"
-description: "OneSignal Integration Guide | Adapty Docs"
-metadataTitle: "Integrate OneSignal with Adapty to improve push notification-based engagement."
+description: "Integrate OneSignal with Adapty to improve push notification-based engagement."
+metadataTitle: "OneSignal Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

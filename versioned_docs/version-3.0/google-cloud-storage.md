@@ -1,7 +1,7 @@
 ---
 title: "Google Cloud Storage"
-description: "Google Cloud Storage Integration | Adapty Docs"
-metadataTitle: "Integrate Google Cloud Storage with Adapty for secure data storage."
+description: "Integrate Google Cloud Storage with Adapty for secure data storage."
+metadataTitle: "Google Cloud Storage Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Enable App Store server notifications"
-description: "Enable App Store Server Notifications | Adapty Docs"
-metadataTitle: "Enable App Store server notifications to track subscription events in real time."
+description: "Enable App Store server notifications to track subscription events in real time."
+metadataTitle: "Enable App Store Server Notifications | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

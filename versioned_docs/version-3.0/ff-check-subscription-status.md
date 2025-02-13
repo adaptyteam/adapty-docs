@@ -1,7 +1,7 @@
 ---
 title: "Step 5. Check access to paid content"
-description: "Checking Subscription Status | Adapty Docs"
-metadataTitle: "Learn how to check subscription status using Adapty's feature flags for better user segmentation."
+description: "Learn how to check subscription status using Adapty's feature flags for better user segmentation."
+metadataTitle: "Checking Subscription Status | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

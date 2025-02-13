@@ -1,7 +1,7 @@
 ---
 title: "Initial integration with other app stores"
-description: "Get started with Adapty's initial integration process with any app store"
-metadataTitle: "Adapty Initial Integration with App Store: A Quick Guide"
+description: "Adapty Initial Integration with App Store: A Quick Guide"
+metadataTitle: "Get started with Adapty's initial integration process with any app store"
 ---
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';

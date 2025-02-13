@@ -1,7 +1,7 @@
 ---
 title: "MRR"
-description: "Understanding Monthly Recurring Revenue (MRR) | Adapty Docs"
-metadataTitle: "Understand and optimize Monthly Recurring Revenue (MRR) in Adapty."
+description: "Understand and optimize Monthly Recurring Revenue (MRR) in Adapty."
+metadataTitle: "Understanding Monthly Recurring Revenue (MRR) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

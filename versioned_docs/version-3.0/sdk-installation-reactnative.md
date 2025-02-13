@@ -1,7 +1,7 @@
 ---
 title: "React Native - Adapty SDK installation & configuration"
-description: "Installing Adapty SDK for React Native | Adapty Docs"
-metadataTitle: "Install Adapty SDK for React Native and optimize your app’s monetization."
+description: "Install Adapty SDK for React Native and optimize your app’s monetization."
+metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 

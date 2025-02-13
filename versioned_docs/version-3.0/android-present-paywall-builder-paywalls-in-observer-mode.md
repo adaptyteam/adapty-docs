@@ -1,7 +1,7 @@
 ---
 title: "Android - Present Paywall Builder paywalls in Observer mode"
-description: "Presenting Paywalls in Observer Mode | Adapty Docs"
-metadataTitle: "Learn how to present paywalls in observer mode using Adapty’s Paywall Builder."
+description: "Learn how to present paywalls in observer mode using Adapty’s Paywall Builder."
+metadataTitle: "Presenting Paywalls in Observer Mode | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

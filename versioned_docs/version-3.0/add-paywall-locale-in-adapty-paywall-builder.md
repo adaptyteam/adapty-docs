@@ -1,7 +1,7 @@
 ---
 title: "Add paywall locale in Adapty Paywall Builder"
-description: "Add Paywall Locale in Adapty Builder | Adapty Docs"
-metadataTitle: "Add localized paywalls in Adapty’s Paywall Builder to improve user experience worldwide."
+description: "Add localized paywalls in Adapty’s Paywall Builder to improve user experience worldwide."
+metadataTitle: "Add Paywall Locale in Adapty Builder | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Profiles/CRM"
-description: "Managing Profiles & CRM | Adapty Docs"
-metadataTitle: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
+description: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
+metadataTitle: "Managing Profiles & CRM | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

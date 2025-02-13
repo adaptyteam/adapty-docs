@@ -1,7 +1,7 @@
 ---
 title: "Paywall layout"
-description: "Paywall Layout & Products | Adapty Docs"
-metadataTitle: "Design paywall layouts and manage products in Adapty for better conversion."
+description: "Design paywall layouts and manage products in Adapty for better conversion."
+metadataTitle: "Paywall Layout & Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

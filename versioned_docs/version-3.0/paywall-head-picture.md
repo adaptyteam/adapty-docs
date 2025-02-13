@@ -1,7 +1,7 @@
 ---
 title: "Paywall hero image"
-description: "Adding a Paywall Head Picture | Adapty Docs"
-metadataTitle: "Customize your paywall with a head picture to improve conversion rates in Adapty."
+description: "Customize your paywall with a head picture to improve conversion rates in Adapty."
+metadataTitle: "Adding a Paywall Head Picture | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
