@@ -41,7 +41,36 @@ Suppose you've finished configuring your paywall in the default `en` localizatio
 />
 </Zoom>
 
-Now, you can translate the content manually, or export the localization file for external translators.
+Now, you can translate the content manually, use AI, or export the localization file for external translators.
+
+## Translating paywalls with AI
+
+AI-powered translation is a quick and efficient way to localize your paywall.
+
+:::note
+
+To use AI for paywall translation, you’ll need a Pro+ or Enterprise plan.
+
+:::
+
+We automatically detect which lines have never been translated or have changed in English since their last translation and mark them as needing an update. Lines that were already translated and haven't changed will keep their original translation and won’t be re-translated.
+
+Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in the translated version. Please adjust the translated text manually as needed.
+
+1. Select the languages for translation.
+
+   <Zoom>
+     <img src={require('./img/localization-table-language-PB.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Click **AI Translate** to apply translations. The paywall lines will be translated and added to the table.
 
 ## Exporting localization files for external translation
 
