@@ -30,7 +30,7 @@ To set up the integration:
 1. Open [**Integrations** → **OneSignal**](https://app.adapty.io/integrations/onesignal) in your Adapty Dashboard.
 
    <Zoom>
-     <img src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.webp').default}
+     <img src={require('./img/onesignal-on.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
@@ -52,7 +52,7 @@ Find your **OneSignal App ID** in your [OneSignal Dashboard](https://dashboard.o
 1. Navigate to **Settings** → **Keys & IDs**.
 
    <Zoom>
-     <img src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.webp').default}
+     <img src={require('./img/onesignal-dashboard.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
@@ -62,16 +62,27 @@ Find your **OneSignal App ID** in your [OneSignal Dashboard](https://dashboard.o
    />
    </Zoom>
 
-2. Copy your **App ID** and paste it into the **App ID** field in the Adapty Dashboard.
+2. Copy your **OneSignal App ID** and paste it into the **App ID** field in the Adapty Dashboard.
+
+   <Zoom>
+     <img src={require('./img/onesignal-id.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
 
 You can find more information about the OneSignal ID in the [following documentation.](https://documentation.onesignal.com/docs/keys-and-ids) 
 
-### Configuring events & tags
+### Configuring events
 
 Adapty allows you to send three groups of events to OneSignal. Toggle on the ones you need in the Adapty Dashboard. You can view the complete list of available events with detailed description [here](events).
 
 <Zoom>
-  <img src={require('./img/30c7f2e-oneSignal.webp').default}
+  <img src={require('./img/onesignal.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -85,7 +96,7 @@ Adapty sends subscription events to OneSignal using a server-to-server integrati
 
 :::warning
 
-- Starting April 17, 2023, OneSignal's Free Plan no longer supports this integration. It is available only on **Growth**, **Professional**, and **higher** plans. For details, see [OneSignal Pricing](https://onesignal.com/pricing).
+Starting April 17, 2023, OneSignal's Free Plan no longer supports this integration. It is available only on **Growth**, **Professional**, and **higher** plans. For details, see [OneSignal Pricing](https://onesignal.com/pricing).
 
 :::
 
@@ -113,8 +124,7 @@ All float values are rounded to integers. The strings remain unchanged.
 
 In addition to the predefined tags, you can send [custom attributes](segments#custom-attributes) as tags, providing greater flexibility in the data you include. This is useful for tracking specific details related to your product or service.
 
-Custom user attributes are automatically sent to OneSignal if the **Send User Attributes** checkbox is enabled on the [integration page](https://app.adapty.io/integrations/onesignal). When unchecked, Adapty sends exactly 10 tags. If checked, more than 10 tags can be sent, allowing for enhanced data capture. 
-
+Custom user attributes are automatically sent to OneSignal if the **Send user attributes** checkbox is enabled on the [integration page](https://app.adapty.io/integrations/onesignal). When unchecked, Adapty sends exactly 10 tags. If checked, more than 10 tags can be sent, allowing for enhanced data capture. 
 
 ### SDK configuration
 
