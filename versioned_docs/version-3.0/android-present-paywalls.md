@@ -8,6 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -131,6 +132,8 @@ Request parameters:
 | **personalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
 | **tagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**             | optional | Pass the resolver here if you are going to use custom timer functionality. |
+
+<SampleApp />
 
 ## Change paywall insets
 

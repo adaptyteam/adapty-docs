@@ -8,6 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -54,8 +55,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 3.3.2'
-   pod 'AdaptyUI', '~> 3.3.2' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.3.6'
+   pod 'AdaptyUI', '~> 3.3.6' # optional module needed only for Paywall Builder   
    ```
 
 2. Run:
@@ -147,6 +148,8 @@ Parameters:
   :::
 
 Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+
+<SampleApp />
 
 ### Activate AdaptyUI module of Adapty SDK
 

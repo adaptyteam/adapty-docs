@@ -7,6 +7,7 @@ toc_max_heading_level: 4
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -49,6 +50,8 @@ Note that at the very least you need to implement the reactions to both `onClose
 Event handlers return a boolean. If `true` is returned, the displaying process is considered complete, thus the paywall screen closes and event listeners for this view are removed. 
 
 Note, that `onCloseButtonPress`, `onAndroidSystemBack`, and `onRestoreCompleted` in the example above return `true`, and the `onPurchaseCompleted` returns `purchaseResult.type !== 'user_cancelled'`. This is their default behavior that you can override. 
+
+<SampleApp />
 
 ### Event handlers
 

@@ -6,6 +6,7 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -35,6 +36,7 @@ try {
 }
 ```
 
+<!---
 ## Using developer-defined timers
 
 To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
@@ -57,9 +59,10 @@ try {
     }
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value, for example:
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 --->
+<SampleApp />

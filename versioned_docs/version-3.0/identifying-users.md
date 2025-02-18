@@ -8,6 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty creates an internal profile ID for every user. However, if you have your own authentication system, you should set your own Customer User ID. You can find users by their Customer User ID in the [Profiles](profiles-crm) section and use it in the [server-side API](getting-started-with-server-side-api), which will be sent to all integrations.
 
@@ -41,6 +42,8 @@ adapty.activate("PUBLIC_SDK_KEY", {
 </Tabs>
 
 You may notice that there are no snippets for Flutter and Unity. Unfortunately, there are technical limitations that won't allow passing the ID upon activation. 
+
+<SampleApp />
 
 ### Setting customer user ID after configuration
 

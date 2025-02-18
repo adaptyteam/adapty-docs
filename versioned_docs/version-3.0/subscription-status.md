@@ -9,6 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
@@ -24,6 +25,8 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
 Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
 To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-subscription-status-updates) section below.
+
+<SampleApp />
 
 ## Retrieving the access level from the server
 
