@@ -74,7 +74,7 @@ public void onCreate() {
       applicationContext,
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
       // highlight-start
-          .withAdIdCollectionDisabled(false) // set to `true`
+          .withAdIdCollectionDisabled(true) // set to `true`
       // highlight-end
           .build()
     );
