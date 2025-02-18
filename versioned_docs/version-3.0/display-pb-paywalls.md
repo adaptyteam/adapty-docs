@@ -7,6 +7,7 @@ metadataTitle: "Displaying PB Paywalls in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.
 
@@ -22,6 +23,8 @@ This guide covers the process for **new Paywall Builder paywalls** only. The new
 If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder), you don’t need to worry about rendering it in your app’s code. The paywall itself handles what to display, how to display it, and how to process user actions like purchases. Additionally, it automatically logs the paywall view event, so you don’t need to ensure analytics receives the data. 
 
 However, some coding is still required. You'll need to retrieve the paywall, display it within your app, and respond to the events it generates.
+
+<SampleApp />
 
 <details>
    <summary>Before you start displaying paywalls (click to expand)</summary>

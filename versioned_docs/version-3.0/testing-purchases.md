@@ -6,6 +6,7 @@ metadataTitle: "Guide to Testing Purchases | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 After you have set up everything in the Adapty Dashboard and your mobile app, it's time to test the in-app purchases.
 

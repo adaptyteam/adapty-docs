@@ -6,6 +6,7 @@ metadataTitle: "Hiding Paywall Builder Paywalls | Adapty Docs"
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 While Paywall Builder seamlessly handles the purchasing process upon clicking "buy" buttons, you have to manage the closure of paywall screens within your mobile app.
 
@@ -16,6 +17,7 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 :::
 
 ## Dismiss a paywall screen
+
 
 <Tabs>
 
@@ -47,3 +49,5 @@ try {
 ```
 
 </TabItem> </Tabs>
+
+<SampleApp /> 
