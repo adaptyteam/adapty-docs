@@ -9,8 +9,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
+
+<SampleApp />
 
 <details>
    <summary>Before you start fetching paywalls and products in your mobile app (click to expand)</summary>

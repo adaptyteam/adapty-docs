@@ -8,6 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 You can set optional attributes such as email, phone number, etc, to the user of your app. You can then use attributes to create user [segments](segments) or just view them in CRM.
 
@@ -152,6 +153,8 @@ try {
 </Tabs>
 
 Please note that the attributes that you've previously set with the `updateProfile` method won't be reset.
+
+<SampleApp />
 
 ### The allowed keys list
 
