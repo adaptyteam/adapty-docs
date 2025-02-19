@@ -39,9 +39,35 @@ Parameters:
 
 | Parameter           | Presence | Description                                                  |
 | ------------------- | -------- | ------------------------------------------------------------ |
-| **withVariationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
-| **transaction**     | required | <p>For StoreKit 1: SKPaymentTransaction.</p><p>For StoreKit 2: Transaction.</p> |
+| **transaction**     | required | <ul><li> For StoreKit 1: SKPaymentTransaction.</li><li> For StoreKit 2: Transaction.</li></ul> |
+| **variationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 
+<!---
+Comment for TW, do not open it!!!
+Although the parameter is used as `withVariationId` in the snippet, it's correct to call it `variationId`. It's the best practice to use it this way in Apple docs
+
+![apple-example.webp](img/apple-example.webp)
+
+From Alex G (https://adapty-team.slack.com/archives/C06R77S3LDA/p1739562944223879?thread_ts=1738929145.728859&cid=C06R77S3LDA)
+
+Сокращенно: `Adapty.reportTransaction(:withVariationId:)`
+Полностью:
+
+```
+Adapty.reportTransaction(
+    _ transaction: Transaction, 
+    withVariationId variationId: String?
+) async throws
+```
+
+Parameters:
+
+- transaction - ...
+- variationId - ...
+
+https://developer.apple.com/documentation/uikit/uiviewcontroller/targetviewcontroller(foraction:sender:)
+
+--->
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
@@ -73,8 +99,9 @@ Parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 | transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -107,8 +134,9 @@ Parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
 | transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
+
 
 </TabItem>
 <TabItem value="Flutter" label="Flutter" default>
@@ -151,8 +179,9 @@ Parameters:
 
 | Parameter           | Presence | Description                                                  |
 | ------------------- | -------- | ------------------------------------------------------------ |
+|transactionId| required | <ul><li> For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</li><li> For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</li><li> For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
 | variationId         | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
-|YOUR_TRANSACTION_ID| required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+
 
 </TabItem>
 <TabItem value="Unity" label="Unity" default>
@@ -186,10 +215,11 @@ Adapty.ReportTransaction(
 ```
 Parameters:
 
-| Parameter            | Presence | Description                                                  |
-| -------------------- | -------- | ------------------------------------------------------------ |
-| PAYWALL_VARIATION_ID | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
-| YOUR_TRANSACTION_ID  | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction) object.</p><p>For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | <ul><li> For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) object.</li><li> For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction) object.</li><li> For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
+| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+
 
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
@@ -228,14 +258,11 @@ Parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | <ul><li> For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) object.</li><li> For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction) object.</li><li> For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
 | variationId   | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
-| transactionId | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
 
 </TabItem>
 </Tabs>
-
-
-For accurate analytics, ensure the transaction is associated with the paywall within 3 hours of its creation.
 
 ## In legacy SDK versions (before 3.3.0)
 
