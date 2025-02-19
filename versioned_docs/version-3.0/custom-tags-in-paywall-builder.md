@@ -1,5 +1,5 @@
 ---
-title: "Custom tags in paywall builder"
+title: "Custom tags in Paywall Builder"
 description: "Learn how to use custom tags in Adapty's Paywall Builder to personalize user experiences and optimize conversions."
 metadataTitle: "Custom Tags in Paywall Builder | Adapty Docs"
 ---

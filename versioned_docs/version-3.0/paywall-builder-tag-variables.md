@@ -1,5 +1,5 @@
 ---
-title: "Tag variables for product info in Paywall builder"
+title: "Tag variables for product info in Paywall Builder"
 description: "Use tag variables in Adapty’s Paywall Builder to personalize user experiences and boost sales."
 metadataTitle: "Paywall Builder Tag Variables | Adapty Docs"
 ---

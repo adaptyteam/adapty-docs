@@ -1,5 +1,5 @@
 ---
-title: "Custom fonts in paywall builder"
+title: "Custom fonts in Paywall Builder"
 description: "Enhance Adapty’s Paywall Builder with custom fonts to improve design."
 metadataTitle: "Custom Fonts in Paywall Builder | Adapty Docs"
 ---
