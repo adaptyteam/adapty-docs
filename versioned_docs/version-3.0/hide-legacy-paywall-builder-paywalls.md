@@ -1,5 +1,5 @@
 ---
-title: "Hide legacy Paywall Builder paywalls (on cross-platform SDKs)"
+title: "Hide legacy Paywall Builder paywalls"
 description: "Hide legacy paywalls in Adapty to streamline your app’s monetization strategy."
 metadataTitle: "Hiding Legacy Paywall Builder Paywalls | Adapty Docs"
 ---

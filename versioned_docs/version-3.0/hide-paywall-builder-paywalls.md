@@ -1,5 +1,5 @@
 ---
-title: "Hide Paywall Builder paywalls (on cross-platform SDKs)"
+title: "Hide new Paywall Builder paywalls"
 description: "Learn how to hide Paywall Builder paywalls for better user control."
 metadataTitle: "Hiding Paywall Builder Paywalls | Adapty Docs"
 ---
@@ -19,6 +19,23 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 
 <Tabs>
 
+<TabItem value="RN" label="React Native (TS)" default> 
+
+You can hide a paywall view in 2 ways: 
+
+- call the `view.dismiss` method 
+- return `true` from any [event ve-handlinhandler](handling-pb-paywall-events).
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.dismiss();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
 <TabItem value="Unity" label="Unity" default> 
 
 You can hide a paywall view by calling the `view.Dismiss` method.
@@ -31,19 +48,4 @@ AdaptyUI.DismissView(view, (error) => {
 
   </TabItem> 
 
-<TabItem value="RN" label="React Native (TS)" default> 
-
-- You can hide a paywall view in 2 ways: 
-
-  - call the `view.dismiss` method 
-  - return `true` from any [event ve-handlinhandler](handling-pb-paywall-events).
-
-```typescript showLineNumbers title="React Native (TSX)"
-try {
-  await view.dismiss();
-} catch (error) {
-  // handle the error
-}
-```
-
-</TabItem> </Tabs>
+ </Tabs>

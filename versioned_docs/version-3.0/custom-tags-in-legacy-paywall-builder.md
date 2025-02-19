@@ -1,5 +1,5 @@
 ---
-title: "Custom tags in paywall builder"
+title: "Custom tags in legacy Paywall Builder"
 description: "Implement custom tags in Adapty's legacy Paywall Builder to enhance subscription workflows."
 metadataTitle: "Custom Tags in Legacy Paywall | Adapty Docs"
 ---
@@ -41,7 +41,7 @@ To add a custom tag to a line:
 
    Please pay attention that:
 
-   - In the Adapty paywall builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`) while in mobile app code, you should refer to them directly (`CUSTOM_TAG`).
+   - In the Adapty Paywall Builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`) while in mobile app code, you should refer to them directly (`CUSTOM_TAG`).
    - Custom tags are case-sensitive.
    - Custom tags can't overlap with any of the [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
 

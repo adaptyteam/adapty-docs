@@ -7,9 +7,9 @@ metadataTitle: "Legacy Paywall Layout & Products | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[Adapty paywall builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty Paywall Builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
-Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
+Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the Paywall Builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the Paywall Builder provides a user-friendly solution to accomplish these objectives.
 
 In this section, we will discuss the customization of the layout and products of your paywalls.
 
@@ -21,7 +21,7 @@ This section describes the legacy Paywall Builder, compatible with Adapty SDK v2
 
 ### Layout
 
-After selecting the preferred layout type and corresponding template for your paywall in Adapty's paywall builder, you gain the ability to shape the visual appearance of your paywall, making it engaging and aligned with your brand's aesthetics. This tab offers a range of controls that allow you to customize various aspects of the paywall's layout, background, and appearance. Let's explore the controls and options available in the Layout tab:
+After selecting the preferred layout type and corresponding template for your paywall in Adapty's Paywall Builder, you gain the ability to shape the visual appearance of your paywall, making it engaging and aligned with your brand's aesthetics. This tab offers a range of controls that allow you to customize various aspects of the paywall's layout, background, and appearance. Let's explore the controls and options available in the Layout tab:
 
 #### Main image and sizing
 
@@ -234,7 +234,7 @@ Use the drop-down menu above the asset to select different devices, providing a 
 
 ### Products
 
-In the products tab of Adapty's paywall builder, you have the ability to create and customize a visually appealing product section that showcases your offerings to users. This tab enables you to configure various aspects of the product's appearance and textual content. Let's delve into the options available for customization in the products tab:
+In the products tab of Adapty's Paywall Builder, you have the ability to create and customize a visually appealing product section that showcases your offerings to users. This tab enables you to configure various aspects of the product's appearance and textual content. Let's delve into the options available for customization in the products tab:
 
 
 <Zoom>

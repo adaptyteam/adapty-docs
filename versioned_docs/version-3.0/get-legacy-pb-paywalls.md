@@ -289,7 +289,7 @@ Response parameters:
 | **viewConfiguration** | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. You'll need it when [presenting the paywall](present-pb-paywalls) in your mobile app. |
 
 :::note
-If you are using multiple languages, learn how to add a [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
+If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
 :::
 
 Once you have successfully loaded the paywall and its view configuration, you can proceed to [presenting the paywall](present-pb-paywalls) in your mobile app.
