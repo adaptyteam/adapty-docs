@@ -6,6 +6,8 @@ metadataTitle: "Installing Adapty SDK in Flutter | Adapty Docs"
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+
 
 <Tabs> <TabItem value="3" label="v3.2.x and up (current)" default> 
 
@@ -35,6 +37,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
    ```bash showLineNumbers title="Bash"
    flutter pub get
    ```
+
+<SampleApp />
 
 ## Configure Adapty SDK
 

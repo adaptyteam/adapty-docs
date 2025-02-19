@@ -6,9 +6,9 @@ metadataTitle: "Installing Adapty SDK for Unity | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 <Tabs groupId="sdk-installation-unity"> 
 
@@ -410,6 +410,8 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 </TabItem> 
 
 </Tabs>
+
+<SampleApp />
 
 ## Set up the logging system
 
