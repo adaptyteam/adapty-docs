@@ -28,13 +28,12 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 
 ### Available sample apps
 
-| Platform     | Language | Link                                                         |
-| ------------ | -------- | ------------------------------------------------------------ |
-| iOS          | Swift    | [GitHub](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples) |
-| Android      | Kotlin   | [GitHub](https://github.com/adaptyteam/AdaptySDK-Android)    |
-| Flutter      | Dart     | [GitHub](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example) |
-| React Native |          | [GitHub](https://github.com/adaptyteam/AdaptySDK-React-Native) |
-| Unity        | C#       | [GitHub](https://github.com/adaptyteam/AdaptySDK-Unity)      |
+| Platform | Language | Link                                                         |
+| -------- | -------- | ------------------------------------------------------------ |
+| iOS      | Swift    | [GitHub](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples) |
+| Android  | Kotlin   | [GitHub](https://github.com/adaptyteam/AdaptySDK-Android)    |
+| Flutter  | Dart     | [GitHub](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example) |
+| Unity    | C#       | [GitHub](https://github.com/adaptyteam/AdaptySDK-Unity)      |
 
 ### How to use
 
