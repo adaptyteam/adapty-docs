@@ -20,7 +20,7 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 />
 </Zoom>
 
-### Why use sample apps?
+### Why to use sample apps?
 
 - **Quick Integration:** See how Adapty SDK works in a real app.
 - **Best Practices:** Follow recommended implementation patterns.
@@ -28,16 +28,9 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 
 ### Available sample apps
 
-| Platform     | Language | Link                                                         |
-| ------------ | -------- | ------------------------------------------------------------ |
-| iOS          | Swift    | [GitHub](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples) |
-| Android      | Kotlin   | [GitHub](https://github.com/adaptyteam/AdaptySDK-Android)    |
-| Flutter      | Dart     | [GitHub](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example) |
-| React Native |          | [GitHub](https://github.com/adaptyteam/AdaptySDK-React-Native) |
-| Unity        | C#       | [GitHub](https://github.com/adaptyteam/AdaptySDK-Unity)      |
-
-### How to use
-
-1. Clone the repository from GitHub.
-2. Follow the setup instructions in the README file.
-3. Run the app on a simulator or real device to see Adapty in action.
+| Platform | Language | Link                                                         |
+| -------- | -------- | ------------------------------------------------------------ |
+| iOS      | Swift    | [GitHub](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples) |
+| Android  | Kotlin   | [GitHub](https://github.com/adaptyteam/AdaptySDK-Android)    |
+| Flutter  | Dart     | [GitHub](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example) |
+| Unity    | C#       | [GitHub](https://github.com/adaptyteam/AdaptySDK-Unity)      |

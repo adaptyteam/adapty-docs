@@ -13,7 +13,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
+This guide is for **new Paywall Builder paywalls** only, which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
 - For presenting **legacy Paywall Builder paywalls**, check out [React Native - Present Paywall Builder paywalls](react-native-present-paywalls-legacy).
 - For presenting **remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
@@ -39,10 +39,7 @@ try {
 } catch (error) {
   // handle the error
 }
-
 ```
-
-<SampleApp />
 
 ## Use developer-defined timer
 

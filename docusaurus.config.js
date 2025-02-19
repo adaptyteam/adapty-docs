@@ -230,10 +230,6 @@ const config = {
                 href: "https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example",
               },
               {
-                label: "React Native",
-                href: "https://github.com/adaptyteam/AdaptySDK-React-Native",
-              },
-              {
                 label: "Unity",
                 href: "https://github.com/adaptyteam/AdaptySDK-Unity",
               },
