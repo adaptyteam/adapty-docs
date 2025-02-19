@@ -6,6 +6,7 @@ metadataTitle: "AdaptySDK and AdaptyUI SDK Integration Guide for Mobile Apps"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
@@ -19,3 +20,5 @@ The Adapty SDK installation and configuration depend on your framework, so refer
 - [Flutter](sdk-installation-flutter)
 - [React Native](sdk-installation-reactnative) 
 - [Unity](sdk-installation-unity)
+
+<SampleApp />
