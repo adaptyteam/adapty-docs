@@ -9,6 +9,7 @@ import TabItem from '@theme/TabItem';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 
+
 <Tabs> <TabItem value="3" label="v3.2.x and up (current)" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
@@ -80,7 +81,7 @@ Parameters:
 | withCustomerUserId                        | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | withIpAddressCollectionDisabled           | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
 | withAppleIdfaCollectionDisabled           | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
-| withGoogleAdvertisingIdCollectionDisabled |          | <p>Set to `true` to disable Android/Google advertising ID (GAID/AAID) collection and sharing.</p><p>The default value is `false`.</p><p>For more details on GAID/AAID collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section.</p> |
+| withGoogleAdvertisingIdCollectionDisabled | optional | <p>Set to `true` to disable Android/Google advertising ID (GAID/AAID) collection and sharing.</p><p>The default value is `false`.</p><p>For more details on GAID/AAID collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section.</p> |
 
 ### Activation and configuration of AdaptyUI module of Adapty SDK
 
