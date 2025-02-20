@@ -26,18 +26,20 @@ Profiles is a CRM for your users. With Profiles, you can:
 />
 </Zoom>
 
-In a full table of subscribers, you can filter, sort, and find users. The state describes user state in terms of a subscription and can be:
+## Subscription state
 
-| User state                 | Description                                                                  |
-| :------------------------- | :--------------------------------------------------------------------------- |
-| **Subscribed**             | The user has an active subscription                                          |
-| **Active trial**           | The user has a subscription with an active trial period                      |
-| **Auto renew off**         | The user turned off auto-renewal. Check [events](events)  for more info  |
-| **Subscription cancelled** | The user cancelled a subscription. Check [events](events)  for more info |
-| **Trial cancelled**        | The user cancelled a trial                                                   |
-| **Never subscribed**       | The user has never subscribed, i.e. he's a freemium user                     |
-| **Billing issue**          | The user can't be charged                                                    |
-| **Grace period**           | A user entered a grace period                                                |
+In a full table of subscribers, you can filter, sort, and find users. The state describes the user state in terms of a subscription and can be:
+
+| User state             | Description                                                  |
+| :--------------------- | :----------------------------------------------------------- |
+| Subscribed             | The user has an active subscription with enabled auto-renewal. |
+| Active trial           | The user has a subscription with an active trial period.     |
+| Auto-renew off         | The user turned off subscription auto-renewal. A user still has access to the premium features of your app until the end of the subscription period. |
+| Subscription cancelled | The user has canceled a subscription, and it is completely finished. |
+| Trial cancelled        | The user canceled a trial and now has no subscription.       |
+| Billing issue          | The user can't be charged due to a billing problem.          |
+| Grace period           | The user is currently in a grace period.                     |
+| Never subscribed       | The user has never subscribed and did not start a trial, and remains a freemium user. |
 
 ## User properties
 
