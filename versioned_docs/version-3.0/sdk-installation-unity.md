@@ -106,10 +106,6 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
                 }
             });
         }
-    
-        public void OnLoadLatestProfile(AdaptyProfile profile) {
-            // handle updated profile data
-        }
     }
     ```
 
@@ -155,39 +151,12 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
     using AdaptySDK;
     
     public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-      void Start() {
-        DontDestroyOnLoad(this.gameObject);
-          Adapty.SetEventListener(this);
-    
-    
-          var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
-            .SetCustomerUserId(null)
-            .SetObserverMode(false)
-            .SetServerCluster(AdaptyServerCluster.Default)
-            .SetIPAddressCollectionDisabled(false)
-            .SetIDFACollectionDisabled(false);
-            .SetActivateUI(true)
-            .SetAdaptyUIMediaCache(
-              100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
-              null, // MemoryStorageCountLimit
-              100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
-            );
-      
-          Adapty.Activate(builder.Build(), (error) => {
-            if (error != null) {
-              // handle the error
-              return;
-            }
-          });
-        }
-    
-        public void OnLoadLatestProfile(Adapty.Profile profile) {
-          // handle updated profile data
-        }
-      }
+         public void OnLoadLatestProfile(Adapty.Profile profile) {
+           // handle updated profile data
+         }
     }
     ```
-
+    
 4. We recommend adjusting the Script Execution Order to place the AdaptyListener before Default Time. This ensures that Adapty initializes as early as possible.
 
    <Zoom>
