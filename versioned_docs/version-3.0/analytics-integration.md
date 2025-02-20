@@ -99,7 +99,7 @@ adapty.updateProfile({ analyticsDisabled: true });
 </TabItem>
 </Tabs>
 
-### Disable collection of IDFA and Google/Android Advertising ID (AAID/GAID)
+### Disable collection of advertising identifiers
 
 <Tabs>
 <TabItem value="Swift" label="iOS" default>
