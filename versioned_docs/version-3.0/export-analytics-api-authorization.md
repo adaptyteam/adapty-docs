@@ -26,9 +26,9 @@ The API expects a JSON-formatted body with the necessary data for the request.
 
 **What's next: Requests:**
 
-- [Retrieve analytics data](client-api-retrieve-analytics-data)
-- [Retrieve cohort data](client-api-retrieve-cohort-data)
-- [Retrieve conversion data](client-api-retrieve-conversion-data)
-- [Retrieve funnel data](client-api-retrieve-funnel-data)
-- [Retrieve Lifetime Value (LTV) data](client-api-retrieve-ltv)
-- [Retrieve retention data](client-api-retrieve-retention-data)
+- [Retrieve analytics data](export-analytics-api-retrieve-analytics-data)
+- [Retrieve cohort data](export-analytics-api-retrieve-cohort-data)
+- [Retrieve conversion data](export-analytics-api-retrieve-conversion-data)
+- [Retrieve funnel data](export-analytics-api-retrieve-funnel-data)
+- [Retrieve Lifetime Value (LTV) data](export-analytics-api-retrieve-ltv)
+- [Retrieve retention data](export-analytics-api-retrieve-retention-data)

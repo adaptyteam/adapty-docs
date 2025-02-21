@@ -153,7 +153,7 @@ Each event is wrapped into the following structure:
 | **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html) : starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **event_properties**              | JSON                 | JSON of [event properties](set-up-webhook-integration#event-properties). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
-| **attributions**                  | JSON                 | JSON of [attribution data](webhook#attribution-data).        |
+| **attributions**                  | JSON                 | JSON of [attribution data](set-up-webhook-integration#attribution-data). |
 | **user_attributes**               | JSON                 | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). |
 | **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
 

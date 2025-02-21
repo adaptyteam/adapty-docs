@@ -258,7 +258,7 @@ Request parameters:
 | :------------- | :--- | :------- | :------- | :--------------------------------------------------- |
 | **is\_refund** | bool | ✅        | ❌        | Whether this subscription is revoked due to a refund |
 
-Revokes user's subscription by setting **unsubscribed\_at** to current datetime, and **expires\_at** to a maximum of current **starts\_at** and current datetime \(to avoid **expires\_at** being less than **starts\_at**). If there is a [transaction](server-side-api-specs#transaction) associated with this paid access level, this transaction expiration is also set to the new **expires\_at** value. If **is\_refund** is **true**, the transaction is marked as a refund, and revenue is set to zero.
+Revokes user's subscription by setting **unsubscribed\_at** to current datetime, and **expires\_at** to a maximum of current **starts\_at** and current datetime \(to avoid **expires\_at** being less than **starts\_at**). If there is a [transaction](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) associated with this paid access level, this transaction expiration is also set to the new **expires\_at** value. If **is\_refund** is **true**, the transaction is marked as a refund, and revenue is set to zero.
 
 ### Validate a purchase from Stripe, provide access level to a customer, and import his transaction history from Stripe
 

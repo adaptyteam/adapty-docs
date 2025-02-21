@@ -20,7 +20,7 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/
 
 | Name         | Type                                                | Required           | Description                                                  |
 | ------------ | --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-4) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| filters         | [#metricsfilters-object) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
 | period_unit  | String                                              | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
 | period_type  | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> renewals</li><li> days</li></ul> |
 | segmentation | String                                              | :heavy_minus_sign: | Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> year</li><li> country</li><li> product</li><li> paywall</li><li> paywalls_group</li><li> audience</li><li> placement</li><li> duration</li><li> store</li></ul> |

@@ -18,16 +18,16 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/cohort/
 
 ## Parameters
 
-| Name            | Type                                                        | Required           | Description                                                  |
-| --------------- | ----------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters         | [MetricsFilters](client-api#metricsfilters-object-1) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit     | String                                                      | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc.  Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| period_type     | String                                                      | :heavy_minus_sign: | <p>Analyze data by renewals or by days. For a detailed description, see [Tracking by renewals or by days](analytics-cohorts#cohorts-by-renewals-or-by-days). </p><p>Possible values are: </p><ul><li> renewals</li><li> days</li></ul> |
-| value_type      | String                                                      | :heavy_minus_sign: | Specify how values are displayed. Possible values are: <ul><li>absolute: as a percentage of the total</li><li>relative: as a percentage from the start, starting at 100% for renewal periods.</li></ul> |
-| value_field     | String                                                      | :heavy_minus_sign: | Specify the type of values displayed. Possible values are: <ul><li>revenue</li><li>arppu</li><li>arpu</li><li>arpas</li><li>subscribers</li><li>subscriptions</li></ul> |
-| accounting_type | String                                                      | :heavy_minus_sign: | The accounting method used. Possible values are: <ul><li>revenue</li><li>proceeds</li><li>net_revenue</li></ul> |
-| renewal_days    | Array of Integers                                           | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
-| format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
+| Name            | Type                                            | Required           | Description                                                  |
+| --------------- | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters         | [MetricsFilters](#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit     | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc.  Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
+| period_type     | String                                          | :heavy_minus_sign: | <p>Analyze data by renewals or by days. For a detailed description, see [Tracking by renewals or by days](analytics-cohorts#cohorts-by-renewals-or-by-days). </p><p>Possible values are: </p><ul><li> renewals</li><li> days</li></ul> |
+| value_type      | String                                          | :heavy_minus_sign: | Specify how values are displayed. Possible values are: <ul><li>absolute: as a percentage of the total</li><li>relative: as a percentage from the start, starting at 100% for renewal periods.</li></ul> |
+| value_field     | String                                          | :heavy_minus_sign: | Specify the type of values displayed. Possible values are: <ul><li>revenue</li><li>arppu</li><li>arpu</li><li>arpas</li><li>subscribers</li><li>subscriptions</li></ul> |
+| accounting_type | String                                          | :heavy_minus_sign: | The accounting method used. Possible values are: <ul><li>revenue</li><li>proceeds</li><li>net_revenue</li></ul> |
+| renewal_days    | Array of Integers                               | :heavy_minus_sign: | This is a list of days since the app was installed for the cohort type `period_type=days`. Default:  <ul><li>0</li><li> 3</li><li> 7</li><li> 14</li><li> 28</li><li> 31</li><li> 61</li><li> 92</li><li> 183</li><li> 336</li><li> 550</li><li> 731</li></ul> |
+| format          | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
 
 ### MetricsFilters object
 
