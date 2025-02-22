@@ -86,7 +86,7 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
             DontDestroyOnLoad(this.gameObject);
             Adapty.SetEventListener(this);
     
-            var builder = new AdaptyConfiguration.Builder("YOUR_API_TOKEN")
+            var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
               .SetCustomerUserId(null)
               .SetObserverMode(false)
               .SetServerCluster(AdaptyServerCluster.Default)
@@ -118,7 +118,7 @@ To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Pl
 
     | Parameter                           | Presence | Description                                                  |
     | ----------------------------------- | -------- | ------------------------------------------------------------ |
-    | YOUR_API_KEY                  | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
+    | apiKey                 | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
     | withLogLevel                | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
     | withObserverMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
     | withCustomerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
@@ -328,7 +328,7 @@ Adapty.Activate(builder.Build(), (error) => {
 
 | Parameter                       | Presence | Description                                                  |
 | ------------------------------- | -------- | ------------------------------------------------------------ |
-| YOUR_API_KEY                    | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
+| apiKey                          | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
 | withLogLevel                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 | withObserverMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | withCustomerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
