@@ -15,7 +15,7 @@ First, let's look at the main things that have been changed, and then let's disc
 - [Paywalls](#paywalls) – now you can get only the necessary paywall.
 - [Products](#products) – we separated the concept of paywall and product, so now the developer first asks for the paywall they want, and then the corresponding product array.
 - [Fallback Paywalls](#fallback-paywalls) – `.setFallbackPaywalls` method now accepts `Data` type as a parameter.
-- [Promotional offers](#promotional_offers) – we removed the `offerId` parameter from `.makePurchase` method.
+- [Promotional offers](#promotional-offers) – we removed the `offerId` parameter from `.makePurchase` method.
 - [Introductory offer eligibility](#introductory-offer-eligibility) – instead of true/false we give an extended list of options.
 - [Products Fetch Policy](#products-fetch-policy) – we have added the ability to explicitly get products after we send the receipt to our servers.
 - [Logging](#logging) – We redesigned the logging module so that you can integrate your systems into it and use the logs as you see fit.

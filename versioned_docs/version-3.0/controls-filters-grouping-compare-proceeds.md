@@ -160,7 +160,7 @@ To analyze the raw data behind charts, cohort analyses, funnels, retentions, or 
 />
 </Zoom>
 
-You can also [retrieve the same data via the API](client-api). Regardless of the method, the data file will be identical.
+You can also [retrieve the same data via the API](export-analytics-api). Regardless of the method, the data file will be identical.
 
 This feature gives you access to the underlying data, which you can further analyze in spreadsheet applications or other tools to gain deeper insights.
 
