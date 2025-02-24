@@ -91,4 +91,7 @@ Make sure you've configured [Apple Search Ads](apple-search-ads) in Adapty and [
 
 ## Troubleshooting
 
-If the integration with SplitMetrics Acquire isn't working despite the correct setup, ensure the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [**App Settings** -> **Apple Search Ads** tab.
+If the integration with SplitMetrics Acquire isn't working despite the correct setup:
+
+- Make sure you've enabled the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [App Settings -> Apple Search Ads tab](https://app.adapty.io/settings/apple-search-ads), configured [Apple Search Ads](apple-search-ads) in Adapty, and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, SplitMetric won't work.
+- Ensure the profiles have non-organic ASA attribution. Only profiles with detailed, non-organic ASA attribution will deliver their events to Asapty.
