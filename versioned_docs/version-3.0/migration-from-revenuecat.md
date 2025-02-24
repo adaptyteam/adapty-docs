@@ -54,10 +54,6 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 />
 </Zoom>
 
-
-
-
-
 ### Install Adapty SDK and replace RevenueCat SDK
 
 Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
@@ -167,12 +163,12 @@ Our Support Team will import your transactions to Adapty. The following data wil
 
 | Parameter                     | Description                                                  |
 | ----------------------------- | ------------------------------------------------------------ |
-| user_id                       | Customer User ID, the main identifier in Adapty and your system. |
+| user_id                       | Customer User ID, the main identifier of your user in Adapty and your system. |
 | apple_original_transaction_id | For subscription chains, this is the original transaction's purchase date, linked by `store_original_transaction_id`. |
 | google_product_id             | The product ID in the Google Play Store.                     |
 | google_purchase_token         | A unique identifier provided by Google Play for each transaction, required for validation. |
-| country                       | The country of the transaction.                              |
-| created_at                    | The date and time of the transaction.                        |
+| country                       | The country of the user.                                     |
+| created_at                    | The date and time of the user creation.                      |
 | subscription_expiration_date  | The date and time when the subscription expires.             |
 | email                         | The end user's email.                                        |
 | phone_number                  | The end user's phone number.                                 |
