@@ -52,10 +52,11 @@ You don't have to configure anything on the SDK side, but we recommend sending `
 :::warning
 Troubleshooting
 
-- Make sure you've enabled the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [App Settings -> Apple Search Ads tab](https://app.adapty.io/settings/apple-search-ads), configured [Apple Search Ads](apple-search-ads) in Adapty, and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, Asapty won't work.
+- Make sure you've configured [Apple Search Ads](apple-search-ads) in Adapty and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, Asapty won't work.
+- Only the profiles with detailed, non-organic ASA attribution will deliver their events to Asapty. You will see "The user profile is missing the required integration data." if the attribution is not sufficient.
+- Profiles created prior to configuring the integrations will not be able to deliver their events to Asapty.
+:::
 
-- Only the profiles with detailed, non-organic ASA attribution will deliver their events to Asapty.
+## Troubleshooting
 
-- Profiles created prior to configuring the integrations will not be able to deliver their events to Asapty. You will see the "The user profile is missing the required integration data." error in such cases.
-
-  :::
+If the integration with Adapty isn't working despite the correct setup, ensure the **Receive Apple Search Ads attribution in Adapty** toggle is enabled in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads).
