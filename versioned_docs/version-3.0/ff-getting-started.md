@@ -85,7 +85,7 @@ The Adapty Plugin for FlutterFlow doesn’t support web apps. Avoid compiling we
 
 5. Click the **Add** button.
 
-6. For  `YOUR_API_KEY` in the **Adapty** window, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard.
+6. For  `apiKey` in the **Adapty** window, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard.
 
    <Zoom>
      <img src={require('./FF_img/adaptyapikey.webp').default}
