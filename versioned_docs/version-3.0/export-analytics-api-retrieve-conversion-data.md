@@ -16,25 +16,9 @@ Retrieves conversion data to analyze user actions and measure the effectiveness 
 POST https://api-admin.adapty.io/api/v1/client-api/metrics/conversion/
 ```
 
-## Parameters
-
-| Name         | Type                                                 | Required           | Description                                                  |
-| ------------ | ---------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| filters      | [MetricsFilters](#metricsfilters-object) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
-| period_unit  | String                                               | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are: <ul><li> day</li><li> week</li><li> month</li><li> quarter</li><li> year</li></ul> |
-| segmentation | String                                               | :heavy_minus_sign: | Sets the basis for segmentation. Possible values are: <ul><li> app_id</li><li> period</li><li> renewal_status</li><li> cancellation_reason</li><li> store_product_id</li><li> country</li><li> store</li><li> purchase_container_id</li><li> paywall_id</li><li> audience_id</li><li> placement_id</li><li> attribution_source</li><li> attribution_status</li><li> attribution_channel</li><li> attribution_campaign</li><li> attribution_adgroup</li><li> attribution_adset</li><li> attribution_creative</li><li> duration</li><li> default</li></ul> |
-| format          | String                                                      | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li> json</li><li> csv</li></ul> |
-
-### MetricsFilters object
-
-<MetricsFilters />
-
 ## Request example
 
-<details>
-   <summary>Example request (click to expand)</summary>
-
-The example below shows how to get conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spend on high-performing channels.
+The example below shows how to get conversion rates for key acquisition channels to identify which ones drive first-time purchases most effectively. This helps prioritize marketing spend on the channels with the highest performance.
 
 ```json showLineNumbers
 {
@@ -64,4 +48,16 @@ The example below shows how to get conversion rates for key acquisition channels
   "segmentation": "attribution_channel"
 }
 ```
-</details>
+
+## Parameters
+
+| Name         | Type                                     | Required           | Description.                                                 |
+| ------------ | ---------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters      | [MetricsFilters](#metricsfilters-object) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit  | String                                   | :heavy_minus_sign: | <p>Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are:</p><ul><li>day.</li><li>week.</li><li>month.</li><li>quarter.</li><li>year.</li></ul> |
+| segmentation | String                                   | :heavy_minus_sign: | <p>Sets the basis for segmentation. Possible values are:</p><ul><li>app_id.</li><li>period.</li><li>renewal_status.</li><li>cancellation_reason.</li><li>store_product_id.</li><li>country.</li><li>store.</li><li>purchase_container_id.</li><li>paywall_id.</li><li>audience_id.</li><li>placement_id.</li><li>attribution_source.</li><li>attribution_status.</li><li>attribution_channel.</li><li>attribution_campaign.</li><li>attribution_adgroup.</li><li>attribution_adset.</li><li>attribution_creative.</li><li>duration.</li><li>default.</li></ul> |
+| format       | String                                   | :heavy_minus_sign: | <p>Specify the export file format. Available options are:</p><ul><li>json.</li><li>csv.</li></ul> |
+
+### MetricsFilters object
+
+<MetricsFilters />

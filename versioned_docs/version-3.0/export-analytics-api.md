@@ -27,5 +27,9 @@ With the analytics export API, you can, for example:
 
 6. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies. Use the [Retrieve retention data](export-analytics-api-retrieve-retention-data) method for this.
 
+---
+
 **What's next**:
 
+-  [Authorization and request format](export-analytics-api-authorization) 
+-  [Exporting analytics API requests](export-analytics-api-requests) 
