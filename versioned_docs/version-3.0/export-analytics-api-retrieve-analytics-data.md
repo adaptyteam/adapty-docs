@@ -44,16 +44,16 @@ Below is an example request for measuring the impact of last year’s marketing 
 | ------------ | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | chart_id     | String                                          | :heavy_plus_sign:  | <p>Specify which chart you need.</p><p>Possible values are:</p> <ul><li>revenue</li><li>mrr</li><li>arr</li><li>arppu</li><li>subscriptions_active</li><li>subscriptions_new</li><li>subscriptions_renewal_cancelled</li><li>subscriptions_expired</li><li>trials_active</li><li>trials_new</li><li>trials_renewal_cancelled</li><li>trials_expired</li><li>grace_period</li><li>billing_issue</li><li>refund_events</li><li>refund_money</li><li>non_subscriptions</li><li>arpu</li><li>installs</li></ul> |
 | filters      | [MetricsFilters](#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filter parameters. See details below this table. |
-| period_unit  | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, so you can view results grouped by days, weeks, months, etc. Possible values are: <ul><li>day</li><li>week</li><li>month</li><li>quarter</li><li>year</li></ul> |
+| period_unit  | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, so you can view results grouped by days, weeks, months, etc. Possible values are: <ul><li>day</li><li>week</li><li>month (default)</li><li>quarter</li><li>year</li></ul> |
+| date_type    | String                                          | :heavy_minus_sign: | Possible values are: <ul><li>purchase_date (вуафгде)</li><li>profile_install_date</li></ul> |
 | segmentation | String                                          | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different charts in the Segmentation table below this one. |
-| format       | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li>json</li><li>csv</li></ul> |
+| format       | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li>json (default)</li><li>csv</li></ul> |
 
-#### Segmentation
+### Segmentation
 
 Different charts can use different types of segmentation:
 
-<details>
-<summary>For ARPU (click to expand)</summary>
+### For ARPU
 
 - country  
 - store  
@@ -66,10 +66,7 @@ Different charts can use different types of segmentation:
 - attribution_source  
 - period  
 
-</details>
-
-<details>
-<summary>For revenue, MRR, ARR, active subscriptions, and active trials (click to expand)</summary>
+### For revenue, MRR, ARR, active subscriptions, and active trials
 
 - country  
 - store  
@@ -91,10 +88,7 @@ Different charts can use different types of segmentation:
 - offer_type  
 - offer_id  
 
-</details>
-
-<details>
-<summary>For ARPPU (click to expand)</summary>
+### For ARPPU
 
 - country  
 - store  
@@ -113,10 +107,7 @@ Different charts can use different types of segmentation:
 - renewal_status  
 - period  
 
-</details>
-
-<details>
-<summary>For new subscriptions, new trials, and refund events (click to expand)</summary>
+### For new subscriptions, new trials, and refund events
 
 - country  
 - store  
@@ -136,10 +127,7 @@ Different charts can use different types of segmentation:
 - offer_type  
 - offer_id  
 
-</details>
-
-<details>
-<summary>For expired subscriptions and expired trials (click to expand)</summary>
+### For expired subscriptions and expired trials
 
 - country  
 - store  
@@ -157,10 +145,7 @@ Different charts can use different types of segmentation:
 - duration  
 - cancellation_reason  
 
-</details>
-
-<details>
-<summary>For cancelled subscription renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases (click to expand)</summary>
+### For cancelled subscription renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases
 
 - country  
 - store  
@@ -177,10 +162,7 @@ Different charts can use different types of segmentation:
 - placement_id  
 - duration  
 
-</details>
-
-<details>
-<summary>For installs (click to expand)</summary>
+### For installs
 
 - country  
 - store  
@@ -192,14 +174,11 @@ Different charts can use different types of segmentation:
 - attribution_creative  
 - attribution_source  
 
-</details>
-
 ### MetricsFilters object
 
 Filtration criteria differ for different charts. See the variants below:
 
-<details>
-<summary>For ARPU and installs (click to expand)</summary>
+### For ARPU and installs
 
 | Name                 | Type                         | Required           | Description.                                                 |
 | -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -214,10 +193,7 @@ Filtration criteria differ for different charts. See the variants below:
 | attribution_adset    | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
 
-</details>
-
-<details>
-<summary>For cancelled trials, expired trials, grace periods, billing issues, cancelled subscription renewals, and expired subscriptions (click to expand)</summary>
+### For cancelled trials, expired trials, grace periods, billing issues, cancelled subscription renewals, and expired subscriptions
 
 | Name                 | Type                         | Required           | Description.                                                 |
 | -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -234,11 +210,6 @@ Filtration criteria differ for different charts. See the variants below:
 | attribution_adset    | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
 
-</details>
-
-<details>
-<summary>For all other charts (click to expand)</summary>
+### For all other charts
 
 <MetricsFilters />
-
-</details>
