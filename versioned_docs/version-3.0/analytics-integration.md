@@ -99,33 +99,112 @@ adapty.updateProfile({ analyticsDisabled: true });
 </TabItem>
 </Tabs>
 
-### Disable collection of IDFA
+### Disable collection of advertising identifiers
 
 <Tabs>
 <TabItem value="Swift" label="iOS" default>
-You can disable IDFA collecting by using property `idfaCollectionDisabled`. Make sure you call it before `.activate()` method.
+You can disable IDFA collection by using the `idfaCollectionDisabled` property. Make sure you call it before `.activate()` method.
 
-```swift showLineNumbers title="Swift"
-Adapty.idfaCollectionDisabled = true
-Adapty.activate("YOUR_ADAPTY_APP_TOKEN")
+```swift showLineNumbers
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+ // highlight-start
+        .with(idfaCollectionDisabled: true) // set to `true`
+// highlight-end
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
 ```
 </TabItem>
-<TabItem value="kotlin" label="Flutter, React Native, Unity" default>
-You can disable IDFA collecting by adding specific key to the Adapty-Info.plist file:
 
-```xml showLineNumbers title="Adapty-Info.plist"
-<key>AdaptyIDFACollectionDisabled</key>
-<true/>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+You can disable AAID/GAID collection by using the `withAdIdCollectionDisabled` property when activating the Adapty SDK:
+
+```swift showLineNumbers
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+      applicationContext,
+      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    )  
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+You can disable AAID/GAID collection by using the `withAdIdCollectionDisabled` property when activating the Adapty SDK:
+
+```swift showLineNumbers 
+@Override
+public void onCreate() {
+    super.onCreate();
+    Adapty.activate(
+      applicationContext,
+      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    );
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+You can disable IDFA collecting by using the `withAppleIdfaCollectionDisabled` property and Google/Android Advertising ID by using the `withGoogleAdvertisingIdCollectionDisabled` property. Set them to `true` when activating the Adapty SDK:
+
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+ // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true), // set to `true`
+          ..withAppleIdfaCollectionDisabled(true), // set to `true`
+// highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
-<TabItem value="java" label="React Native" default>
-You also can disable IDFA collecting by setting `idfaCollectionDisabled` flag in your activation flow:
 
-```typescript showLineNumbers title="Typescript"
+<TabItem value="unity" label="Unity" default>
+You can disable IDFA collecting by using the `SetIDFACollectionDisabled` property when activating the Adapty SDK. The AAID/GAID collection cannot be disabled now.
+
+```dart showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+ // highlight-start
+    .SetIDFACollectionDisabled(true); // set to `true`
+ // highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+You also can disable IDFA collecting by using `idfaCollectionDisabled` property when activating the Adapty SDK. The AAID/GAID collection cannot be disabled now.
+
+```typescript showLineNumbers
 adapty.activate('PUBLIC_SDK_KEY', {
+  // highlight-start 
   ios: {
-    idfaCollectionDisabled: false,
+    idfaCollectionDisabled: true, // set to `true`
   },
+  // highlight-end
 });
 ```
 </TabItem>
