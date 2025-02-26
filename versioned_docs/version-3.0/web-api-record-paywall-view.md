@@ -22,8 +22,8 @@ Adapty can help you measure the conversion of your paywalls. However, to do so, 
 POST https://api.adapty.io/api/v2/web-api/paywall/visit/
 ```
 
-<Tabs> 
-<TabItem value="shell" label="cURL" default>  
+<Tabs groupId="api-lang" queryString> 
+<TabItem value="curl" label="cURL" default>  
 
 ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
@@ -38,7 +38,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
 ```
 
 </TabItem>  
-<TabItem value="javascript" label="JavaScript" default>   
+<TabItem value="js" label="JavaScript" default>   
 
 ```javascript showLineNumbers
 const myHeaders = new Headers();

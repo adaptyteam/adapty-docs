@@ -49,7 +49,7 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 
 ## Example request
 
-<Tabs>  
+<Tabs groupId="api-lang" queryString>  
 <TabItem value="curl" label="cURL" default>  
 
 ```bash showLineNumbers
