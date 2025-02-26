@@ -40,7 +40,8 @@ override fun onCreate() {
 </dict>
 ```
 </TabItem>
-<TabItem value="flutter" label="Flutter - AndroidManifest.xml" default>
+<TabItem value="flutter2" label="Flutter - AndroidManifest.xml" default>
+
 ```xml showLineNumbers
 <application ...>
        ...
