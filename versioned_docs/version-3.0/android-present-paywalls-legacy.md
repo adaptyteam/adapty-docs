@@ -23,7 +23,7 @@ This guide covers the process for **legacy Paywall Builder paywalls** only which
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -103,7 +103,7 @@ Request parameters:
 
 For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 import androidx.core.graphics.Insets

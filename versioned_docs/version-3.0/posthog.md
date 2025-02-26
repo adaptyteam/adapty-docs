@@ -122,7 +122,7 @@ Each `properties.$set` object parameter is optional and won't be sent to PostHog
 
 To enable receiving attribution data from PostHog, pass the `distinctId` value to Adapty as shown below:
 
-<Tabs groupId="posthog"> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="Swift" label="Swift" default> 
 

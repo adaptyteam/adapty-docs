@@ -50,7 +50,7 @@ Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll c
 
 To set attribution data for the profile, use `.updateAttribution()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
@@ -143,7 +143,7 @@ To set attribution from AppsFlyer, pass the attribution you receive from the del
 In this case, it is mandatory to pass the `networkUserId` parameter.
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 // Find your implementation of AppsFlyerLibDelegate 
@@ -227,7 +227,7 @@ iOS SDK
 To set attribution from Adjust, pass the attribution you receive from the delegate method of Adjust iOS SDK. You should also configure [Adjust integration](adjust) in Adapty Dashboard.
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 // Find your implementation of AdjustDelegate 
@@ -278,7 +278,7 @@ iOS SDK
 To connect Branch user and Adapty user, make sure you set your `customerUserId` as Branch Identity Id. If you prefer to not use `customerUserId` in Branch, set `networkUserId` param in `.updateAttribution()` method to specify the Branch user Id.
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
@@ -334,7 +334,7 @@ Adapty can automatically collect Apple Search Ad attribution data. All you need 
 
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes) method. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 let builder = ProfileParameterBuilder()

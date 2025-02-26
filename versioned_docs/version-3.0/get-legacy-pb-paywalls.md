@@ -37,7 +37,7 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 
 To get a paywall, use the `getPaywall` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -148,7 +148,7 @@ Response parameters:
 
 After fetching the paywall, check if it includes a `viewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `viewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 Use the `getViewConfiguration` method to load the view configuration.
@@ -311,7 +311,7 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in

@@ -13,7 +13,7 @@ In Observer mode, the Adapty SDK can't track purchases made through your existin
 
 ## In the current SDK version (3.3 and later)
 
-<Tabs groupId="report-transactions-observer-mode">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 Use `reportTransaction` to send the transaction data to Adapty.
@@ -243,7 +243,7 @@ For iOS and iOS-based cross-platforms:
 
 Adapty SDK cannot determine the source of purchases, as you are the one processing them. Therefore, if you intend to use paywalls and/or A/B tests in Observer mode, you need to associate the transaction coming from your app store with the corresponding paywall in your mobile app code. This is important to get right before releasing your app, otherwise, it will lead to errors in analytics.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift 
 let variationId = paywall.variationId

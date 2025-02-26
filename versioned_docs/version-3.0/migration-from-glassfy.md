@@ -162,7 +162,7 @@ Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk
 #### SDK activation
 
 **Glassfy**
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -226,7 +226,7 @@ try {
 
 **Adapty**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -290,7 +290,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 **Glassfy**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.offerings { (offerings, err) in
@@ -385,7 +385,7 @@ try {
 
 **Adapty**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -460,7 +460,7 @@ try {
 </TabItem>
 </Tabs>
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
@@ -563,7 +563,7 @@ In Adapty, you always request the paywall via [placement id](placements). If you
 
 **Glassfy**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.permissions { permissions, err in
@@ -662,7 +662,7 @@ try {
 </TabItem>
 </Tabs>
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getProfile { result in
@@ -732,7 +732,7 @@ try {
 
 **Glassfy**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.purchase(sku: premiumSku) { (transaction, e) in
@@ -825,7 +825,7 @@ try {
 
 **Adapty**
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in

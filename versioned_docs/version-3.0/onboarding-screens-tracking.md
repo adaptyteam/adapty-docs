@@ -14,7 +14,7 @@ In order for you to be able to analyze user behavior at this critical stage with
 
 To do this, simply call the `.logShowOnboarding` function:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

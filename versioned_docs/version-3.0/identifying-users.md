@@ -15,7 +15,7 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
@@ -46,7 +46,7 @@ You may notice that there are no snippets for Flutter and Unity. Unfortunately, 
 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -132,7 +132,7 @@ It's also important to note that you should re-request all paywalls and products
 
 You can logout the user anytime by calling `.logout()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

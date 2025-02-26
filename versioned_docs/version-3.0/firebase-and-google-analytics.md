@@ -127,7 +127,7 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the `firebase_app_instance_id` to Adapty. Here you can see an example of the code that can be used to integrate Firebase SDK and Adapty SDK.
 
-<Tabs groupId="firebase-and-google-analytics">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 import FirebaseCore

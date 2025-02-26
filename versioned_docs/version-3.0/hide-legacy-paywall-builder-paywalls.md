@@ -15,7 +15,7 @@ In native iOS and Android SDKs, you have complete control over both presenting a
 This guide covers only hiding **legacy Paywall Builder paywalls** which supports Adapty SDK v2.x or earlier. To learn how to hide **new Paywall Builder paywalls**, read the [Hide Paywall Builder paywalls (on cross-platform SDKs)](hide-paywall-builder-paywalls)
 :::
 
-   <Tabs>  
+   <Tabs groupId="current-os" queryString>  
 
 <TabItem value="Flutter" label="Flutter" default> 
 

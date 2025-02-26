@@ -20,11 +20,11 @@ Go through the release checklist before releasing your app
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
-<Tabs> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
 
 ## Install via Gradle
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```groovy showLineNumbers
@@ -118,7 +118,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
@@ -196,7 +196,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install via Gradle
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```groovy showLineNumbers
@@ -288,7 +288,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
@@ -370,7 +370,7 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
@@ -387,7 +387,7 @@ Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.setLogHandler { level, message ->

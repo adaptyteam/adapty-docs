@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Flutter" label="Flutter" default>
 ```javascript showLineNumbers
     try {

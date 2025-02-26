@@ -26,7 +26,7 @@ Follow the instructions below to use the fallback paywalls in your mobile app co
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-<Tabs groupId="Id"> <TabItem value="current" label="Current (v2.11+)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="current" label="Current (v2.11+)" default> 
 ```typescript showLineNumbers
 //after v2.11
 const paywallsLocation = {

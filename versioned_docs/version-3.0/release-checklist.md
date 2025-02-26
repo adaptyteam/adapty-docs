@@ -17,7 +17,7 @@ Install Adapty SDK in your app and be sure you have replaced the **"PUBLIC_SDK_K
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS" default>
 ```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")

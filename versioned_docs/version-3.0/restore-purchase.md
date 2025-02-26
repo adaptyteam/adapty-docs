@@ -17,7 +17,7 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder), purchases are 
 
 To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

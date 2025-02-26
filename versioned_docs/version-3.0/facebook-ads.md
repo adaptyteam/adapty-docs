@@ -126,7 +126,7 @@ To enable specific events, simply toggle on the ones you require. In case multip
 Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send `facebookAnonymousId` to Adapty via `.setIntegrationIdentifier()` method. It allows Facebook to handle events if IDFA is not available.
 :::
 
-<Tabs groupId="facebook-ads">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

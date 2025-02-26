@@ -191,7 +191,7 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
 
-<Tabs groupId="appsflyer">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

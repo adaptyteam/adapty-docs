@@ -8,7 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
 
-<Tabs> <TabItem value="3" label="v3.2.x and up (current)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="3" label="v3.2.x and up (current)" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 

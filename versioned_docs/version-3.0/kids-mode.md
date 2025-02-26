@@ -18,7 +18,7 @@ You need to configure the Adapty SDK to **disable the collection of**:
 
 ## Kids Mode activation
 
-<Tabs groupId="Id"> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="Swift" label="iOS" default> 
 

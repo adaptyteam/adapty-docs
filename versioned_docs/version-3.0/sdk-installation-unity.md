@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem';
 
-<Tabs groupId="sdk-installation-unity"> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
 

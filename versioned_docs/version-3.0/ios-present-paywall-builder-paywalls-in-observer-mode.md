@@ -16,7 +16,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 :::warning
 This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [iOS - Present Paywall Builder paywalls](ios-present-paywalls).
 :::
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
 <details>
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
@@ -32,7 +32,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 <p> </p>
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="Swift" label="Swift" default> 
 
@@ -179,7 +179,7 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
 </details>
 
 <p> </p>
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 1. Implement the `AdaptyObserverModeDelegate` object:
 

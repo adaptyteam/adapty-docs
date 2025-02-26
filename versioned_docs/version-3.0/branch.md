@@ -107,7 +107,7 @@ It's very important to send Branch attribution data from the device to Adapty us
 
 To connect the Branch and Adapty user, make sure you provide your `customerUserId` to Branch. If you prefer not to use `customerUserId` in Branch, use the `setIntegrationIdentifier method to specify the Branch user ID.
 
-<Tabs groupId="branch">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
@@ -165,7 +165,7 @@ branch.setIdentity('YOUR_USER_ID');
 
 Next, pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

@@ -29,7 +29,7 @@ To be notified of profile updates, listen for profile changes as described in th
 
 To get the access level from the server, use the `.getProfile()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -133,7 +133,7 @@ The `.getProfile()` method provides you with the user profile from which you can
 
 Here is an example for checking for the default "premium" access level:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -245,7 +245,7 @@ Whenever the user's subscription changes, Adapty fires an event.
 
 To receive messages from Adapty, you need to make some additional configuration:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

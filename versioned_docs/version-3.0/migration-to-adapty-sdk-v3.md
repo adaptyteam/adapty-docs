@@ -18,7 +18,7 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](ad
 
 ## Upgrading to Adapty SDK v3.0.x
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="iOS" label="For iOS" default> 
 
@@ -61,7 +61,7 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -130,7 +130,7 @@ Adapty SDKs are delivered as a BoM (Bill of Materials), ensuring that the Adapty
 
 To migrate to v3.0, update your code as follows:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```diff showLineNumbers

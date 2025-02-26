@@ -17,7 +17,7 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 
 ## Dismiss a paywall screen
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="RN" label="React Native (TS)" default> 
 

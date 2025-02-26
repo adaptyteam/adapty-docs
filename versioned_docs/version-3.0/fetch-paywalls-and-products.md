@@ -30,7 +30,7 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -150,7 +150,7 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -261,7 +261,7 @@ By default, the `getPaywallProducts` method checks eligibility for introductory,
 After showing the initial products, be sure to call the regular `getPaywallProducts` method to update the products with accurate offer eligibility information.
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -305,7 +305,7 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise, stick to the `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information).
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

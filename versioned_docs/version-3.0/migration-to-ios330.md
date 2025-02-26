@@ -34,7 +34,7 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 
 Update the code of Adapty iOS SDK activation in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```diff showLineNumbers
@@ -203,7 +203,7 @@ To ensure integrations work properly with Adapty iOS SDK 3.3.0 and later, update
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 

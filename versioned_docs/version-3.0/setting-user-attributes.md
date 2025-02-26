@@ -15,7 +15,7 @@ You can set optional attributes such as email, phone number, etc, to the user of
 
 To set user attributes, call `.updateProfile()` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -168,7 +168,7 @@ The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<V
 
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="Swift" label="Swift" default>
 
@@ -252,7 +252,7 @@ We strongly recommend that you send this value as early as possible when it chan
 
 You can set your own custom attributes. These are usually related to your app usage. For example, for fitness applications, they might be the number of exercises per week, for language learning app user's knowledge level, and so on. You can use them in segments to create targeted paywalls and offers, and you can also use them in analytics to figure out which product metrics affect the revenue most.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 do {
@@ -314,7 +314,7 @@ try {
 
 To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 do {

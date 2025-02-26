@@ -22,14 +22,14 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 
 ## Step 1. Configure Adapty SDK for EU region
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="iOS" label="iOS"> 
 
 Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Include the `backendBaseUrl` parameter in your configuration:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="Swift" label="Swift" default>
 
@@ -101,7 +101,7 @@ Install Adapty SDK 3.0.4 or later as described in [Adapty SDK Installation & Con
 
 Use the `.withServerCluster` method in your configuration:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
