@@ -29,7 +29,7 @@ PATCH https://api.adapty.io/api/v2/server-side-api/profile/
 
 ## Example request
 
-<Tabs> 
+<Tabs groupId="api-lang" queryString> 
 
 <TabItem value="curl" label="cURL" default> 
 

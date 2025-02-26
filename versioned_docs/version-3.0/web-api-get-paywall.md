@@ -20,7 +20,7 @@ Receives the paywall from the provided placement.
 POST https://api.adapty.io/api/v2/web-api/paywall/
 ```
 
-<Tabs> 
+<Tabs groupId="api-lang" queryString> 
 <TabItem value="curl" label="cURL" default>  
 
  ```shell showLineNumbers

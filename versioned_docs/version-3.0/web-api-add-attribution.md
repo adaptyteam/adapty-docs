@@ -24,7 +24,7 @@ POST https://api.adapty.io/api/v2/web-api/attribution/
 
 ## Request example
 
-<Tabs> <TabItem value="curl" label="cURL" default>
+<Tabs groupId="api-lang" queryString> <TabItem value="curl" label="cURL" default>
 
 ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \

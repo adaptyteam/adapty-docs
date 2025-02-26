@@ -29,7 +29,7 @@ POST https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access
 
 ## Example request
 
-<Tabs>  
+<Tabs groupId="api-lang" queryString>  
 <TabItem value="curl" label="cURL" default>  
 
 ```bash showLineNumbers
