@@ -17,8 +17,8 @@ Install Adapty SDK in your app and be sure you have replaced the **"PUBLIC_SDK_K
 
 Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
 
-<Tabs>
-<TabItem value="Swift" label="iOS" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
 ```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
@@ -31,7 +31,7 @@ override fun onCreate() {
 }
 ```
 </TabItem>
-<TabItem value="java" label="Flutter - info.plist" default>
+<TabItem value="flutter" label="Flutter - info.plist" default>
 ```xml showLineNumbers
 <dict>
     ...
@@ -40,7 +40,7 @@ override fun onCreate() {
 </dict>
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter - AndroidManifest.xml" default>
+<TabItem value="flutter" label="Flutter - AndroidManifest.xml" default>
 ```xml showLineNumbers
 <application ...>
        ...
@@ -50,7 +50,7 @@ override fun onCreate() {
 </application>
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers title="React Native - /src/App.tsx"
 import { activateAdapty } from 'react-native-adapty';
 

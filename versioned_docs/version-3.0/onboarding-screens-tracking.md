@@ -14,8 +14,8 @@ In order for you to be able to analyze user behavior at this critical stage with
 
 To do this, simply call the `.logShowOnboarding` function:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -29,7 +29,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.logShowOnboarding(
@@ -49,7 +49,7 @@ Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", 
 Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   await Adapty().logShowOnboarding(name: 'onboarding_name', 
@@ -61,7 +61,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
     if(error != null) {
@@ -70,7 +70,7 @@ Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 await adapty.logShowOnboarding(
 	1, /* screenOrder */

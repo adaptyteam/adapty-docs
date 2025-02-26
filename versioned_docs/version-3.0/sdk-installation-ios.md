@@ -39,7 +39,7 @@ Review the release checklist before launching your app
 Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="3.0" label="Adapty SDK v3.x+ (current)" default> 
 
 ## Install Adapty SDK via Swift Package Manager
@@ -85,8 +85,8 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 ### Activate Adapty module of Adapty SDK
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -107,7 +107,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty
@@ -250,8 +250,8 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -270,7 +270,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty

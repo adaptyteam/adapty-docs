@@ -98,8 +98,8 @@ Use the `setIntegrationIdentifier()` method to set either `amplitudeDeviceId` or
 
 Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
 
-<Tabs groupId="amplitude">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 import Amplitude 
 
@@ -150,7 +150,7 @@ Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { erro
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:amplitude_flutter/amplitude.dart';
 
@@ -172,7 +172,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 using AdaptySDK;
 
@@ -191,7 +191,7 @@ Adapty.SetIntegrationIdentifier(
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

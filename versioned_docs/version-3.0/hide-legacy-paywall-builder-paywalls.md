@@ -15,9 +15,9 @@ In native iOS and Android SDKs, you have complete control over both presenting a
 This guide covers only hiding **legacy Paywall Builder paywalls** which supports Adapty SDK v2.x or earlier. To learn how to hide **new Paywall Builder paywalls**, read the [Hide Paywall Builder paywalls (on cross-platform SDKs)](hide-paywall-builder-paywalls)
 :::
 
-   <Tabs>  
+   <Tabs groupId="current-os" queryString>  
 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 You can hide a paywall screen by calling the `view.dismiss` method.
 
@@ -33,7 +33,7 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default> 
+<TabItem value="unity" label="Unity" default> 
 
 You can hide a paywall view by calling the `view.Dismiss` method.
 
@@ -45,7 +45,7 @@ view.Dismiss((error) => {
 
   </TabItem> 
 
-<TabItem value="RN" label="React Native (TS)" default> 
+<TabItem value="rn" label="React Native (TS)" default> 
 
 You can hide a paywall view in 2 ways:
 

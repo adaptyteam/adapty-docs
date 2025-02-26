@@ -191,8 +191,8 @@ Adapty will send subscription events to AppsFlyer using a server-to-server integ
 
 It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
 
-<Tabs groupId="appsflyer">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 class YourAppsFlyerLibDelegateImplementation {
@@ -226,7 +226,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
@@ -257,7 +257,7 @@ appsflyerSdk.initSdk(
 );
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -286,7 +286,7 @@ void onConversionDataSuccess(string conversionData) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty, AttributionSource } from 'react-native-adapty';

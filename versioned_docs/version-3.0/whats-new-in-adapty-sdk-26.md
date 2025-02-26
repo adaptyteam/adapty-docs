@@ -55,8 +55,8 @@ We hope these updates enhance your experience with Adapty SDK and the integratio
 
 ##### Adapty SDK 2.4.x and older:
 
-<Tabs>
-<TabItem value="Flutter" label="Flutter" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.4.x and older
 
@@ -85,7 +85,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 // Adapty 2.4.x and older
 
@@ -106,7 +106,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 // Adapty 2.4.x and older
 
@@ -130,8 +130,8 @@ switch (product.introductoryOfferEligibility) {
 
 ##### Adapty SDK 2.6.0 and newer:
 
-<Tabs>
-<TabItem value="Flutter" label="Flutter" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.6.0+
 
@@ -158,7 +158,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 // Adapty 2.6.0+
 
@@ -180,7 +180,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 // Adapty 2.6.0+
 
@@ -206,8 +206,8 @@ if (intoEligibility === OfferEligibility.Eligible) {
 
 ##### Adapty SDK 2.4.x and older:
 
-<Tabs>
-<TabItem value="Flutter" label="Flutter" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.4.x and older
 
@@ -247,7 +247,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 // Adapty 2.4.0+
 
@@ -291,7 +291,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 // Adapty 2.4.x and older
 
@@ -333,8 +333,8 @@ if (promoDiscount) {
 
 ##### Adapty SDK 2.6.0 and newer:
 
-<Tabs>
-<TabItem value="Flutter" label="Flutter" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.6.0+
 
@@ -370,7 +370,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 // Adapty 2.6.0+
 
@@ -403,7 +403,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 // Adapty 2.6.0+
 

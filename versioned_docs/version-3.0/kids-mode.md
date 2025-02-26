@@ -18,9 +18,9 @@ You need to configure the Adapty SDK to **disable the collection of**:
 
 ## Kids Mode activation
 
-<Tabs groupId="Id"> 
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="iOS" default> 
+<TabItem value="swift" label="iOS" default> 
 
 In order to comply with policies, disable the collection of user's IDFA:
 
@@ -90,7 +90,7 @@ public void onCreate() {
 ```
 
 </TabItem> 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID/AAID (for Android).
 

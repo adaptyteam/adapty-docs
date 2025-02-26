@@ -30,8 +30,8 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -42,7 +42,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -88,7 +88,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -100,7 +100,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -113,7 +113,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -150,8 +150,8 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -162,7 +162,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
@@ -208,7 +208,7 @@ Adapty.getPaywallProducts(paywall, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -220,7 +220,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -233,7 +233,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -261,8 +261,8 @@ By default, the `getPaywallProducts` method checks eligibility for introductory,
 After showing the initial products, be sure to call the regular `getPaywallProducts` method to update the products with accurate offer eligibility information.
 :::
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -273,7 +273,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="swift-callback" label="Swift" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
@@ -305,8 +305,8 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise, stick to the `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information).
 :::
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -317,7 +317,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -363,7 +363,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -377,7 +377,7 @@ try {
 }
 ```
 </TabItem>
-<!--- <TabItem value="Dart" label="Flutter" default>
+<!--- <TabItem value="flutter" label="Flutter" default>
 
 ```typescript showLineNumbers
 // TODO: add Dart example

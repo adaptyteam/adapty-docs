@@ -16,7 +16,7 @@ However, if you process these events and want to keep doing it, make sure to for
 
 Here are examples for different programming languages:
 
-<Tabs groupId="Id">
+<Tabs groupId="current-os" queryString>
 <TabItem value="python" label="Python" default>
 
 <!--- Checked and approved by Sergey S --->

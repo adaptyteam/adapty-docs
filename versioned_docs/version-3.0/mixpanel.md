@@ -82,8 +82,8 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `.setIntegrationIdentifier()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-<Tabs groupId="mixpanel">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 import Mixpanel
@@ -98,7 +98,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="iOS (Swift-Callback)" default>
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
 
 ```swift showLineNumbers
 import Mixpanel
@@ -119,7 +119,7 @@ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { er
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
@@ -139,7 +139,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -156,7 +156,7 @@ if (distinctId != null) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

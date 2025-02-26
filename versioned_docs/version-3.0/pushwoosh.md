@@ -121,8 +121,8 @@ In addition to the pre-defined list of tags available, it is possible to send [c
 
 To link Adapty with Pushwoosh, you need to send us the `HWID` value:
 
-<Tabs groupId="pushwoosh">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 do {
     try await Adapty.setIntegrationIdentifier(
@@ -152,7 +152,7 @@ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwi
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:pushwoosh/pushwoosh.dart';
 
@@ -170,7 +170,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 using AdaptySDK;
 
@@ -182,7 +182,7 @@ Adapty.SetIntegrationIdentifier(
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import Pushwoosh from 'pushwoosh-react-native-plugin';

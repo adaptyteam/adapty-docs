@@ -17,9 +17,9 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 
 ## Dismiss a paywall screen
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
-<TabItem value="RN" label="React Native (TS)" default> 
+<TabItem value="rn" label="React Native (TS)" default> 
 
 You can hide a paywall view in 2 ways: 
 
@@ -36,7 +36,7 @@ try {
 
 </TabItem>
 
-<TabItem value="Unity" label="Unity" default> 
+<TabItem value="unity" label="Unity" default> 
 
 You can hide a paywall view by calling the `view.Dismiss` method.
 

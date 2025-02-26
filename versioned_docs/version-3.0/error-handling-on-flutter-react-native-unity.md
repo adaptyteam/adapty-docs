@@ -11,8 +11,8 @@ import TabItem from '@theme/TabItem';
 
 Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
-<Tabs>
-<TabItem value="Flutter" label="Flutter" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
     try {
       final result = await adapty.makePurchase(product: product);
@@ -24,7 +24,7 @@ Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
     }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.MakePurchase(product, (profile, error) => {
   if (error != null && error.Code == Adapty.ErrorCode.PaymentCancelled) {
@@ -34,7 +34,7 @@ Adapty.MakePurchase(product, (profile, error) => {
 ```
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
   const params: MakePurchaseParamsInput = {};

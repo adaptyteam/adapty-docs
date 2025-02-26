@@ -16,7 +16,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [Android - Present Paywall Builder paywalls](android-present-paywalls) topic instead.
 :::
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
 <details>
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
@@ -34,7 +34,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
@@ -93,13 +93,13 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 2. In order to display the visual paywall on the device screen, you must first configure it.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
 To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -135,7 +135,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -221,7 +221,7 @@ AdaptyPaywallScreen(
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
@@ -280,7 +280,7 @@ AdaptyPaywallScreen(
 
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -362,7 +362,7 @@ AdaptyPaywallScreen(
 
    For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    import androidx.core.graphics.Insets

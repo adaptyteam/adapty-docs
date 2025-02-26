@@ -21,13 +21,13 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. 
 
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -62,7 +62,7 @@ In order to display the visual paywall on the device screen, you must first conf
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -141,7 +141,7 @@ If your paywall isn’t edge-to-edge, you might want to set custom insets:
 - If neither the status bar nor the navigation bar overlap with the `AdaptyPaywallView`, use `AdaptyPaywallInsets.NONE`.
 - For more custom setups, like if your paywall overlaps with the top status bar but not the bottom, you can set only the `bottomInset` to `0`, as shown in the example below:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 import androidx.core.graphics.Insets
@@ -198,7 +198,7 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
 
 To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="kotlin" label="Kotlin" default> 
 
 ```kotlin showLineNumbers
@@ -251,7 +251,7 @@ In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined 
 
 To use custom tags in your mobile app, create a `tagResolver` object—a dictionary or map that pairs custom tags with the string values that will replace them when the paywall is rendered. Here's an example:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers

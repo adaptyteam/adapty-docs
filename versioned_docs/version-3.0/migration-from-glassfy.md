@@ -162,8 +162,8 @@ Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk
 #### SDK activation
 
 **Glassfy**
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
@@ -199,7 +199,7 @@ public class App extends Application {
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
 
@@ -211,7 +211,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
 
@@ -226,8 +226,8 @@ try {
 
 **Adapty**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
   
@@ -269,7 +269,7 @@ public void onCreate() {
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
     Adapty().activate();
@@ -277,7 +277,7 @@ try {
 } catch (e) {}
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 adapty.activate('PUBLIC_SDK_KEY', {
   customerUserId: 'YOUR_USER_ID', // optionally add your internal user id
@@ -290,8 +290,8 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 **Glassfy**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.offerings { (offerings, err) in
     if let offering = offerings?["premium"] {
@@ -349,7 +349,7 @@ Glassfy.offerings(new OfferingsCallback() {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
     var offerings = await Glassfy.offerings();
@@ -366,7 +366,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     let offering = Glassfy.offerings().all.find((o) => o.offeringId === 'premium');
@@ -385,8 +385,8 @@ try {
 
 **Adapty**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -432,7 +432,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
@@ -444,7 +444,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -460,8 +460,8 @@ try {
 </TabItem>
 </Tabs>
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
     switch result {
@@ -525,7 +525,7 @@ Adapty.getPaywallProducts(paywall, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final products = await Adapty().getPaywallProducts(paywall: paywall);
@@ -543,7 +543,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     // ...paywall
@@ -563,8 +563,8 @@ In Adapty, you always request the paywall via [placement id](placements). If you
 
 **Glassfy**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.permissions { permissions, err in
     guard let permissions = permissions else { return }
@@ -622,7 +622,7 @@ Glassfy.permissions(new PermissionsCallback() {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
 var permission = await Glassfy.permissions();
@@ -637,7 +637,7 @@ var permission = await Glassfy.permissions();
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const permissions = await Glassfy.permissions();
@@ -662,8 +662,8 @@ try {
 </TabItem>
 </Tabs>
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getProfile { result in
     if let profile = try? result.get() {
@@ -705,7 +705,7 @@ Adapty.getProfile(result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
@@ -716,7 +716,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
@@ -732,8 +732,8 @@ try {
 
 **Glassfy**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Glassfy.purchase(sku: premiumSku) { (transaction, e) in
     // update app status accondingly
@@ -789,7 +789,7 @@ Glassfy.purchase(activity, sku, new PurchaseCallback() {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
     var transaction = await Glassfy.purchaseSku(sku);
@@ -807,7 +807,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const transaction = await Glassfy.purchaseSku(premiumSku );
@@ -825,8 +825,8 @@ try {
 
 **Adapty**
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
     switch result {
@@ -884,7 +884,7 @@ Adapty.makePurchase(activity, product, result -> {
 ```
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final profile = await Adapty().makePurchase(product: product);
@@ -897,7 +897,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const profile = await adapty.makePurchase(product);
