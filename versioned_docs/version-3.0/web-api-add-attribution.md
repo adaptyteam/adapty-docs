@@ -24,7 +24,7 @@ POST https://api.adapty.io/api/v2/web-api/attribution/
 
 ## Request example
 
-<Tabs> <TabItem value="curl" label="cURL" default>
+<Tabs> <TabItem value="shell" label="cURL" default>
 
 ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
@@ -44,7 +44,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
 ```
 
 </TabItem> 
-<TabItem value="js" label="JavaScript" default>  
+<TabItem value="javascript" label="JavaScript" default>  
 
 ```javascript showLineNumbers
 const myHeaders = new Headers();
