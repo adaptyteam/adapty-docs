@@ -82,7 +82,7 @@ To add a custom tag:
 To use custom tags in your mobile app, create a tagResolver object—a dictionary or map that pairs custom tags with the string values that will replace them when the paywall is rendered. Here's an example:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 let tagResolver = [
@@ -111,7 +111,7 @@ AdaptyUiTagResolver tagResolver = customTags::get;
 ```
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```dart showLineNumbers
 final customTags = {
@@ -131,7 +131,7 @@ final view = await AdaptyUI().createPaywallView(
 ```
 </TabItem>
 
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 var parameters = new AdaptyUICreateViewParameters()

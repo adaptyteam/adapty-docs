@@ -27,7 +27,7 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -62,7 +62,7 @@ In order to display the visual paywall on the device screen, you must first conf
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
