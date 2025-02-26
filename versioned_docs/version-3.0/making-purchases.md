@@ -30,7 +30,7 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -52,7 +52,7 @@ do {
 ```
 
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
@@ -132,7 +132,7 @@ Adapty.makePurchase(activity, product, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 This snippet is valid for v.2.0 or later.
 
 ```javascript showLineNumbers
@@ -158,7 +158,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -183,7 +183,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -301,7 +301,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -324,7 +324,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
@@ -344,7 +344,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -421,13 +421,13 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -441,7 +441,7 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.PresentCodeRedemptionSheet((error) => {
@@ -450,7 +450,7 @@ Adapty.PresentCodeRedemptionSheet((error) => {
 ```
 </TabItem>
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 adapty.presentCodeRedemptionSheet();

@@ -31,7 +31,7 @@ In Adapty, a [product](product) serves as a combination of products from both th
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -42,7 +42,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -88,7 +88,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -100,7 +100,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -113,7 +113,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -151,7 +151,7 @@ Response parameters:
 Once you have the paywall, you can query the product array that corresponds to it:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -162,7 +162,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
@@ -208,7 +208,7 @@ Adapty.getPaywallProducts(paywall, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -220,7 +220,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.GetPaywallProducts(paywall, (products, error) => {
@@ -233,7 +233,7 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -262,7 +262,7 @@ After showing the initial products, be sure to call the regular `getPaywallProdu
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -273,7 +273,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="swift-callback" label="Swift" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
@@ -306,7 +306,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -317,7 +317,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -363,7 +363,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -377,7 +377,7 @@ try {
 }
 ```
 </TabItem>
-<!--- <TabItem value="Dart" label="Flutter" default>
+<!--- <TabItem value="flutter" label="Flutter" default>
 
 ```typescript showLineNumbers
 // TODO: add Dart example

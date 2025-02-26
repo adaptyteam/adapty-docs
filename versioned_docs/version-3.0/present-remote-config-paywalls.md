@@ -19,7 +19,7 @@ To get a remote config of a paywall, access the `remoteConfig` property and extr
 
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -31,7 +31,7 @@ do {
 ```
 </TabItem>
 
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
@@ -81,7 +81,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
@@ -111,7 +111,7 @@ Adapty assists you in measuring the performance of your paywalls. While we gathe
 To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
@@ -126,7 +126,7 @@ Adapty.logShowPaywall(paywall)
 Adapty.logShowPaywall(paywall);
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final result = await Adapty().logShowPaywall(paywall: paywall);
@@ -136,14 +136,14 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.LogShowPaywall(paywall, (error) => {
     // handle the error
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 await adapty.logShowPaywall(paywall);
 ```

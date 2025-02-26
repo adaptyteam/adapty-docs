@@ -86,7 +86,7 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 ### Activate Adapty module of Adapty SDK
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -107,7 +107,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty
@@ -251,7 +251,7 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 You only need to configure the Adapty SDK once, typically early in your application lifecycle:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -270,7 +270,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty

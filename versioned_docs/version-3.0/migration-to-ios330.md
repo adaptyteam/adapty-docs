@@ -35,7 +35,7 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 Update the code of Adapty iOS SDK activation in the following way:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```diff showLineNumbers
 // In your AppDelegate class:
@@ -56,7 +56,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```diff showLineNumbers
 import Adapty

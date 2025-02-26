@@ -124,7 +124,7 @@ To enable receiving attribution data from PostHog, pass the `distinctId` value t
 
 <Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="Swift" default> 
+<TabItem value="swift" label="Swift" default> 
 
 ```swift showLineNumbers
 do {
@@ -165,7 +165,7 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 </TabItem> 
 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 ```javascript showLineNumbers
 try {
@@ -182,13 +182,13 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default> 
+<TabItem value="unity" label="Unity" default> 
 
 There is no official PostHog SDK for Unity.
 
 </TabItem> 
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

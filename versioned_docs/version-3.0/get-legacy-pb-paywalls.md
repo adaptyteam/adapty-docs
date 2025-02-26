@@ -38,7 +38,7 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 To get a paywall, use the `getPaywall` method:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -89,7 +89,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
@@ -100,7 +100,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
   if(error != null) {
@@ -112,7 +112,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';
@@ -149,7 +149,7 @@ Response parameters:
 After fetching the paywall, check if it includes a `viewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `viewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 Use the `getViewConfiguration` method to load the view configuration.
 
@@ -218,7 +218,7 @@ AdaptyUI.getViewConfiguration(paywall, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 In Flutter SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
@@ -238,7 +238,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 In Unity SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
@@ -252,7 +252,7 @@ AdaptyUI.CreatePaywallView(paywall, preloadProducts: true, (view, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 In React Native SDK, you can directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
@@ -312,7 +312,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -355,7 +355,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native" default>
+<TabItem value="rn" label="React Native" default>
 ```typescript showLineNumbers
 try {
     const id = 'YOUR_PLACEMENT_ID';

@@ -36,7 +36,7 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 To get a paywall, use the `getPaywall` method:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -47,7 +47,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -101,7 +101,7 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -114,7 +114,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -129,7 +129,7 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
 
 </TabItem>
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -170,7 +170,7 @@ Response parameters:
 After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 Use the `getPaywallConfiguration` method to load the view configuration.
 ```swift showLineNumbers
@@ -286,7 +286,7 @@ AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
 | **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 In Flutter SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
 
@@ -330,7 +330,7 @@ In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem>
-<TabItem value="React Native" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 In React Native SDK, directly call the `createPaywallView` method without manually fetching the view configuration first. 
 
@@ -363,7 +363,7 @@ Parameters:
 
 </TabItem>
 
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
 
@@ -433,7 +433,7 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -476,7 +476,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```typescript showLineNumbers
 try {
@@ -489,7 +489,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -508,7 +508,7 @@ Adapty.GetPaywallForDefaultAudience(
 
 </TabItem>
 
-<TabItem value="RN" label="React Native" default>
+<TabItem value="rn" label="React Native" default>
 
 ```typescript showLineNumbers
 try {

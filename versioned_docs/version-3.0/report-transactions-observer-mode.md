@@ -14,7 +14,7 @@ In Observer mode, the Adapty SDK can't track purchases made through your existin
 ## In the current SDK version (3.3 and later)
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 Use `reportTransaction` to send the transaction data to Adapty.
 
@@ -111,7 +111,7 @@ Parameters:
 | transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 Use `reportTransaction` to send the transaction data to Adapty.
 
@@ -145,7 +145,7 @@ Parameters:
 |YOUR_TRANSACTION_ID| required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
 
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 Use `reportTransaction` for both platforms and `restorePurchases` (additionally for Android) to send transaction data to Adapty.
 
@@ -176,7 +176,7 @@ Parameters:
 | YOUR_TRANSACTION_ID  | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 Use `reportTransaction` for both platforms and `restorePurchases` (additionally for Android) to send transaction data to Adapty.
 
@@ -244,7 +244,7 @@ For iOS and iOS-based cross-platforms:
 Adapty SDK cannot determine the source of purchases, as you are the one processing them. Therefore, if you intend to use paywalls and/or A/B tests in Observer mode, you need to associate the transaction coming from your app store with the corresponding paywall in your mobile app code. This is important to get right before releasing your app, otherwise, it will lead to errors in analytics.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift 
 let variationId = paywall.variationId
 // There are two overloads: for StoreKit 1 and StoreKit 2
@@ -274,7 +274,7 @@ Adapty.setVariationId(transactionId, variationId, error -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript
 final transactionId = transaction.transactionIdentifier
 final variationId = paywall.variationId
@@ -287,7 +287,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp 
 Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
     if(error != null) {
@@ -299,7 +299,7 @@ Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) =>
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript 
 const variationId = paywall.variationId;
 

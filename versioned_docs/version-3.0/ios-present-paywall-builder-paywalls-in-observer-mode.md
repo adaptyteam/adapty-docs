@@ -34,7 +34,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 <Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="Swift" default> 
+<TabItem value="swift" label="Swift" default> 
 
 1. Implement the `AdaptyObserverModeResolver` object:
 
@@ -111,7 +111,7 @@ present(visualPaywall, animated: true)
 Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase. 
 :::
 </TabItem> 
-<TabItem value="swiftUI" label="SwiftUI" default> 
+<TabItem value="swiftui" label="SwiftUI" default> 
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
@@ -180,7 +180,7 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
 
 <p> </p>
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 1. Implement the `AdaptyObserverModeDelegate` object:
 
    ```swift showLineNumbers title="Swift"
@@ -244,7 +244,7 @@ present(visualPaywall, animated: true)
 Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
 :::
 </TabItem>
-<TabItem value="swiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
 ```swift showLineNumbers title="SwiftUI"

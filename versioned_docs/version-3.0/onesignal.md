@@ -148,7 +148,7 @@ Here is how you can link Adapty with OneSignal with either `playerId` or `subscr
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 // SubscriptionID
@@ -194,7 +194,7 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 
 </TabItem>  
 
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 OneSignal.shared.setSubscriptionObserver((changes) {
@@ -216,7 +216,7 @@ OneSignal.shared.setSubscriptionObserver((changes) {
 ```
 
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -233,7 +233,7 @@ Adapty.SetIntegrationIdentifier(
 ```
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
@@ -256,7 +256,7 @@ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
 <TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 // PlayerID
@@ -310,7 +310,7 @@ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
 
 </TabItem>  
 
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 // PlayerID (pre-v5 OneSignal SDK)
@@ -328,7 +328,7 @@ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
 ```
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import OneSignal from 'react-native-onesignal';

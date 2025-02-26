@@ -145,7 +145,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 ```
 
 </TabItem>
-<TabItem value="JavaScript" label="JavaScript" default>
+<TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
@@ -372,7 +372,7 @@ You can set `logLevel` at any time in the application's lifespan, but we recomme
 adapty.setLogLevel('verbose');
 ```
 </TabItem>
-<TabItem value="Javascript" label="Javascript" default>
+<TabItem value="java" label="Javascript" default>
 ```javascript showLineNumbers
 import { LogLevel } from 'react-native-adapty';
 

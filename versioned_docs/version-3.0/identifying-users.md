@@ -16,7 +16,7 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
 ```
@@ -31,7 +31,7 @@ Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USE
 Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 adapty.activate("PUBLIC_SDK_KEY", {
     customerUserId: "YOUR_USER_ID"
@@ -47,7 +47,7 @@ You may notice that there are no snippets for Flutter and Unity. Unfortunately, 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -57,7 +57,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.identify("YOUR_USER_ID") { error in
@@ -85,7 +85,7 @@ Adapty.identify("YOUR_USER_ID", error -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   await Adapty().identify(customerUserId);
@@ -95,7 +95,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
@@ -104,7 +104,7 @@ Adapty.Identify("YOUR_USER_ID", (error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     await adapty.identify("YOUR_USER_ID");
@@ -133,7 +133,7 @@ It's also important to note that you should re-request all paywalls and products
 You can logout the user anytime by calling `.logout()` method:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -143,7 +143,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.logout { error in
@@ -173,7 +173,7 @@ Adapty.logout(error -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -184,7 +184,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.Logout((error) => {
@@ -194,7 +194,7 @@ Adapty.Logout((error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
