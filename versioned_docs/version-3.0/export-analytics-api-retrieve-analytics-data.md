@@ -19,8 +19,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/
 ```
 ## Request example
 
-Below is an example request for measuring the impact of last year’s marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  

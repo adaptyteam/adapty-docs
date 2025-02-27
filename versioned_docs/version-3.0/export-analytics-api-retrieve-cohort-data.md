@@ -20,8 +20,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/cohort/
 
 ## Request example
 
-The following example shows how to track retention by cohort to spot drop-off points. It reveals trends and highlights key moments where engagement strategies could boost retention. This example is limited to the App Store, a specific product, and the USA.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  
