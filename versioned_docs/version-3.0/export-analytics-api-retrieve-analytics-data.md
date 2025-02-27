@@ -7,6 +7,8 @@ import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 
 Retrieves analytics data for insights on user behavior and performance metrics to further use in charts.
 
@@ -18,6 +20,116 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/
 ## Request example
 
 Below is an example request for measuring the impact of last year’s marketing campaigns in the USA to see which ones brought in the highest revenue, with weekly tracking.
+
+<Tabs groupId="api-lang" queryString>  
+
+<TabItem value="curl" label="cURL" default>  
+
+```bash
+curl --location 'https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--header 'Content-Type: application/json' \
+--data '{
+  "chart_id": "revenue",
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_channel": [
+      "social_media_influencers"
+    ]
+  },
+  "period_unit": "week",
+  "segmentation": "attribution_campaign"
+}'
+```
+
+</TabItem>  
+
+<TabItem value="python" label="Python" default>
+
+  ```python  showLineNumbers
+import requests
+import json
+
+url = "https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/"
+
+payload = json.dumps({
+  "chart_id": "revenue",
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_channel": [
+      "social_media_influencers"
+    ]
+  },
+  "period_unit": "week",
+  "segmentation": "attribution_campaign"
+})
+headers = 
+  'Authorization': "Api-Key <YOUR_SECRET_API_KEY>",
+  'Content-Type': "application/json"}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+
+  ```
+
+</TabItem>  
+
+<TabItem value="js" label="JavaScript" default>
+
+  ```javascript  showLineNumbers
+const myHeaders = new Headers();
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+myHeaders.append("Content-Type", "application/json");
+
+const raw = JSON.stringify({
+  "chart_id": "revenue",
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_channel": [
+      "social_media_influencers"
+    ]
+  },
+  "period_unit": "week",
+  "segmentation": "attribution_campaign"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+  ```
+
+</TabItem>  
+
+</Tabs>
+
+<!---
 
 ```json showLineNumbers
 {
@@ -38,22 +150,24 @@ Below is an example request for measuring the impact of last year’s marketing 
   "segmentation": "attribution_campaign"
 }
 ```
+--->
+
 ## Parameters
 
 | Name         | Type                                            | Required           | Description.                                                 |
 | ------------ | ----------------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| chart_id     | String                                          | :heavy_plus_sign:  | <p>Specify which chart you need.</p><p>Possible values are:</p> <ul><li>revenue</li><li>mrr</li><li>arr</li><li>arppu</li><li>subscriptions_active</li><li>subscriptions_new</li><li>subscriptions_renewal_cancelled</li><li>subscriptions_expired</li><li>trials_active</li><li>trials_new</li><li>trials_renewal_cancelled</li><li>trials_expired</li><li>grace_period</li><li>billing_issue</li><li>refund_events</li><li>refund_money</li><li>non_subscriptions</li><li>arpu</li><li>installs</li></ul> |
 | filters      | [MetricsFilters](#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filter parameters. See details below this table. |
-| period_unit  | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, so you can view results grouped by days, weeks, months, etc. Possible values are: <ul><li>day</li><li>week</li><li>month</li><li>quarter</li><li>year</li></ul> |
-| segmentation | String                                          | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different charts in the Segmentation table below this one. |
-| format       | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li>json</li><li>csv</li></ul> |
+| chart_id     | String                                          | :heavy_minus_sign: | <p>Specify which chart you need.</p><p>Possible values are:</p> <ul><li>revenue</li><li>mrr</li><li>arr</li><li>arppu</li><li>subscriptions_active</li><li>subscriptions_new</li><li>subscriptions_renewal_cancelled</li><li>subscriptions_expired</li><li>trials_active</li><li>trials_new</li><li>trials_renewal_cancelled</li><li>trials_expired</li><li>grace_period</li><li>billing_issue</li><li>refund_events</li><li>refund_money</li><li>non_subscriptions</li><li>arpu</li><li>installs</li></ul> |
+| period_unit  | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, so you can view results grouped by days, weeks, months, etc. Possible values are: <ul><li>day</li><li>week</li><li>month (default)</li><li>quarter</li><li>year</li></ul> |
+| date_type    | String                                          | :heavy_minus_sign: | Possible values are: <ul><li>purchase_date (default)</li><li>profile_install_date</li></ul> |
+| segmentation | String                                          | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different charts in the [Segmentation](#segmentation) table below. |
+| format       | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li>json (default)</li><li>csv</li></ul> |
 
-#### Segmentation
+### Segmentation
 
 Different charts can use different types of segmentation:
 
-<details>
-<summary>For ARPU (click to expand)</summary>
+### For ARPU
 
 - country  
 - store  
@@ -66,10 +180,7 @@ Different charts can use different types of segmentation:
 - attribution_source  
 - period  
 
-</details>
-
-<details>
-<summary>For revenue, MRR, ARR, active subscriptions, and active trials (click to expand)</summary>
+### For revenue, MRR, ARR, active subscriptions, and active trials
 
 - country  
 - store  
@@ -91,10 +202,7 @@ Different charts can use different types of segmentation:
 - offer_type  
 - offer_id  
 
-</details>
-
-<details>
-<summary>For ARPPU (click to expand)</summary>
+### For ARPPU
 
 - country  
 - store  
@@ -113,10 +221,7 @@ Different charts can use different types of segmentation:
 - renewal_status  
 - period  
 
-</details>
-
-<details>
-<summary>For new subscriptions, new trials, and refund events (click to expand)</summary>
+### For new subscriptions, new trials, and refund events
 
 - country  
 - store  
@@ -136,10 +241,7 @@ Different charts can use different types of segmentation:
 - offer_type  
 - offer_id  
 
-</details>
-
-<details>
-<summary>For expired subscriptions and expired trials (click to expand)</summary>
+### For expired subscriptions and expired trials
 
 - country  
 - store  
@@ -157,10 +259,7 @@ Different charts can use different types of segmentation:
 - duration  
 - cancellation_reason  
 
-</details>
-
-<details>
-<summary>For cancelled subscription renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases (click to expand)</summary>
+### For cancelled subscription renewals, cancelled trials, grace periods, billing issues, money refunds, and non-subscription purchases
 
 - country  
 - store  
@@ -177,10 +276,7 @@ Different charts can use different types of segmentation:
 - placement_id  
 - duration  
 
-</details>
-
-<details>
-<summary>For installs (click to expand)</summary>
+### For installs
 
 - country  
 - store  
@@ -192,14 +288,11 @@ Different charts can use different types of segmentation:
 - attribution_creative  
 - attribution_source  
 
-</details>
-
 ### MetricsFilters object
 
 Filtration criteria differ for different charts. See the variants below:
 
-<details>
-<summary>For ARPU and installs (click to expand)</summary>
+### For ARPU and installs
 
 | Name                 | Type                         | Required           | Description.                                                 |
 | -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -214,10 +307,7 @@ Filtration criteria differ for different charts. See the variants below:
 | attribution_adset    | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
 
-</details>
-
-<details>
-<summary>For cancelled trials, expired trials, grace periods, billing issues, cancelled subscription renewals, and expired subscriptions (click to expand)</summary>
+### For cancelled trials, expired trials, grace periods, billing issues, cancelled subscription renewals, and expired subscriptions
 
 | Name                 | Type                         | Required           | Description.                                                 |
 | -------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------ |
@@ -234,11 +324,6 @@ Filtration criteria differ for different charts. See the variants below:
 | attribution_adset    | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
 
-</details>
-
-<details>
-<summary>For all other charts (click to expand)</summary>
+### For all other charts
 
 <MetricsFilters />
-
-</details>
