@@ -6,6 +6,7 @@ metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
@@ -171,6 +172,8 @@ Configurational options:
 :::note
 **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
 :::
+
+<SampleApp />
 
  </TabItem> 
 

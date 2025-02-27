@@ -214,33 +214,6 @@ const config = {
               },
             ],
           },
-         
-         
-          {
-            title: "Adapty UI Sample Apps ",
-            items: [
-              {
-                label: "iOS",
-                href: "https://github.com/adaptyteam/AdaptyUI-iOS",
-              },
-              {
-                label: "Android",
-                href: "https://github.com/adaptyteam/AdaptyUI-Android",
-              },
-              {
-                label: "Flutter",
-                href: "https://github.com/adaptyteam/AdaptyUI-Flutter",
-              },
-              {
-                label: "React Native",
-                href: "https://github.com/adaptyteam/AdaptyUI-React-Native",
-              },
-              {
-                label: "Unity",
-                href: "https://github.com/adaptyteam/AdaptyUI-Unity",
-              },
-            ],
-          },
           {
             title: "Adapty SDK Sample Apps",
             items: [
@@ -255,10 +228,6 @@ const config = {
               {
                 label: "Flutter",
                 href: "https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example",
-              },
-              {
-                label: "React Native",
-                href: "https://github.com/adaptyteam/AdaptySDK-React-Native",
               },
               {
                 label: "Unity",
@@ -295,16 +264,16 @@ const config = {
             title: "API Reference",
             items: [
               {
-                label: "Getting started with server-side API",
+                label: "Server-side API",
                 href: "/getting-started-with-server-side-api",
               },
               {
-                label: "API specs",
-                href: "/server-side-api-specs",
+                label: "Web API",
+                href: "/web-api",
               },
               {
-                label: "API objects",
-                href: "/server-side-api-objects",
+                label: "Analytics export API",
+                href: "/export-analytics-api",
               },
             ],
           },

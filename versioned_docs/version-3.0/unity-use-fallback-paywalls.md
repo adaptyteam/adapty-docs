@@ -6,6 +6,7 @@ metadataTitle: "Using Fallback Paywalls in Unity | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 To use fallback paywalls:
 
@@ -35,3 +36,5 @@ Parameters:
 | Parameter   | Description                                                  |
 | :---------- | :----------------------------------------------------------- |
 | **assetId** | The path to the fallback JSON file you [downloaded in the Adapty Dashboard](https://dev-docs.adapty.io/docs/fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). |
+
+<SampleApp />

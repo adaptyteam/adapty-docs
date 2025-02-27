@@ -8,6 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -160,6 +161,8 @@ Parameters:
   :::
 
 Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+
+<SampleApp />
 
 ### Activate AdaptyUI module of Adapty SDK
 
