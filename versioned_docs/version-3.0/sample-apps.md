@@ -20,7 +20,7 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 />
 </Zoom>
 
-### Why to use sample apps?
+### Why use sample apps?
 
 - **Quick Integration:** See how Adapty SDK works in a real app.
 - **Best Practices:** Follow recommended implementation patterns.
