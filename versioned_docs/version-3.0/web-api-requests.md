@@ -12,7 +12,7 @@ Adapty's server-side API empowers you to programmatically access and manage your
 To simplify using our web API, we've prepared a Postman collection and an environment file you can download and import into Postman.
 
 - **Request Collection**: Includes all requests available in the Adapty web API. Note that it uses variables that you can define in the environment.
-- **Environment**: Contains a list of variables where you can define values once. We've prepared a unified environment for both the server-side and web APIs to make things easier for you. After making this environment active, Postman will automatically substitute the defined variable values in your requests.
+- **Environment**: Contains a list of variables where you can define values once. We've prepared a unified environment for the server-side API, web API, and analytics export API to make things easier for you. After making this environment active, Postman will automatically substitute the defined variable values in your requests.
 
 :::tip
 
@@ -24,7 +24,7 @@ For info on how to import a collection and environment to Postman, please refer 
 
 ## Variables used
 
-We've created a unified environment for both the server-side and web APIs to simplify your workflow. Below are the variables specific to the web API:
+We've created a unified environment for the server-side API, web API, and analytics export API to simplify your workflow. Below are the variables specific to the web API:
 
 | Variable                | Description                                                  | Example Value                                           |
 | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
