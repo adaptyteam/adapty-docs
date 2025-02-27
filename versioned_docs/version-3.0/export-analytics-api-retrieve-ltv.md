@@ -6,6 +6,8 @@ toc_max_heading_level: 2
 import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves LTV data to assess the long-term revenue potential of customers over their engagement period.
@@ -18,6 +20,34 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/
 ## Request example
 
 The example below shows how to identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies.
+
+<Tabs groupId="api-lang" queryString>  
+
+<TabItem value="curl" label="cURL" default>  
+
+```bash
+.
+```
+
+</TabItem>  
+
+<TabItem value="python" label="Python" default>
+
+  ```python  showLineNumbers
+.
+  ```
+
+</TabItem>  
+
+<TabItem value="js" label="JavaScript" default>
+
+  ```javascript  showLineNumbers
+. 
+  ```
+
+</TabItem>  
+
+</Tabs>
 
 ```json showLineNumbers
 {

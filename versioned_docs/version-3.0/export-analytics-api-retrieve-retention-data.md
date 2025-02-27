@@ -6,6 +6,8 @@ toc_max_heading_level: 2
 import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves the retention data to analyze the ability of a product to keep users engaged over time.
@@ -18,6 +20,34 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/retention/
 ## Request example
 
 The example below shows how to view retention rates by region to identify high-engagement markets and guide localization or regional strategies.
+
+<Tabs groupId="api-lang" queryString>  
+
+<TabItem value="curl" label="cURL" default>  
+
+```bash
+.
+```
+
+</TabItem>  
+
+<TabItem value="python" label="Python" default>
+
+  ```python  showLineNumbers
+.
+  ```
+
+</TabItem>  
+
+<TabItem value="js" label="JavaScript" default>
+
+  ```javascript  showLineNumbers
+. 
+  ```
+
+</TabItem>  
+
+</Tabs>
 
 ```json showLineNumbers
 {

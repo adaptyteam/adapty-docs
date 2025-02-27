@@ -6,6 +6,8 @@ toc_max_heading_level: 2
 import Details from '@site/src/components/Details';
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
 import MetricsFilters from '@site/src/components/reusable/MetricsFilters.md';
 
 Retrieves funnel data to track user progression through specific stages of a conversion process.
@@ -18,6 +20,34 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/funnel/
 ## Request example
 
 The example below shows how to monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
+
+<Tabs groupId="api-lang" queryString>  
+
+<TabItem value="curl" label="cURL" default>  
+
+```bash
+.
+```
+
+</TabItem>  
+
+<TabItem value="python" label="Python" default>
+
+  ```python  showLineNumbers
+  .
+  ```
+
+</TabItem>  
+
+<TabItem value="js" label="JavaScript" default>
+
+  ```javascript  showLineNumbers
+  . 
+  ```
+
+</TabItem>  
+
+</Tabs>
 
 ```json showLineNumbers
 {
