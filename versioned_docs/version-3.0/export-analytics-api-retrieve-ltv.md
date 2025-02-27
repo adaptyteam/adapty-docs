@@ -26,7 +26,43 @@ The example below shows how to identify the lifetime value of different user seg
 <TabItem value="curl" label="cURL" default>  
 
 ```bash
-.
+curl --location 'https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/' \
+--header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
+--header 'Content-Type: application/json' \
+--data '{
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "compare_date": [
+      "2023-01-01",
+      "2023-12-31"
+    ],
+    "offer_category": [
+      "introductory"
+    ],
+    "store": [
+      "app_store"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_source": [
+      "appsflyer"
+    ],
+    "attribution_status": [
+      "organic"
+    ],
+    "attribution_channel": [
+      "social_media"
+    ]
+  },
+  "period_unit": "quarter",
+  "period_type": "renewals",
+  "segmentation": "store_product_id",
+  "format": "csv"
+}'
 ```
 
 </TabItem>  
@@ -34,7 +70,47 @@ The example below shows how to identify the lifetime value of different user seg
 <TabItem value="python" label="Python" default>
 
   ```python  showLineNumbers
-.
+import requests
+import json
+
+url = "https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/"
+
+payload = json.dumps({
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "compare_date": [
+      "2023-01-01",
+      "2023-12-31"
+    ],
+    "offer_category": [
+      "introductory"
+    ],
+    "store": [
+      "app_store"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_source": [
+      "appsflyer"
+    ]
+  },
+  "period_unit": "quarter",
+  "period_type": "renewals",
+  "segmentation": "store_product_id",
+  "format": "csv"
+})
+headers = {
+  'Authorization':"Api-Key <YOUR_SECRET_API_KEY>",
+  'Content-Type': "application/json"
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
   ```
 
 </TabItem>  
@@ -42,12 +118,57 @@ The example below shows how to identify the lifetime value of different user seg
 <TabItem value="js" label="JavaScript" default>
 
   ```javascript  showLineNumbers
-. 
+const myHeaders = new Headers();
+myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
+myHeaders.append("Content-Type", "application/json");
+
+const raw = JSON.stringify({
+  "filters": {
+    "date": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "compare_date": [
+      "2023-01-01",
+      "2023-12-31"
+    ],
+    "offer_category": [
+      "introductory"
+    ],
+    "store": [
+      "app_store"
+    ],
+    "country": [
+      "us"
+    ],
+    "attribution_source": [
+      "appsflyer"
+    ]
+  },
+  "period_unit": "quarter",
+  "period_type": "renewals",
+  "segmentation": "store_product_id",
+  "format": "csv"
+});
+
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: raw,
+  redirect: "follow"
+};
+
+fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
   ```
 
 </TabItem>  
 
 </Tabs>
+
+<!---
 
 ```json showLineNumbers
 {
@@ -67,12 +188,6 @@ The example below shows how to identify the lifetime value of different user seg
     ],
     "attribution_source": [
       "appsflyer"
-    ],
-    "attribution_status": [
-      "organic"
-    ],
-    "attribution_channel": [
-      "social_media"
     ]
   },
   "period_unit": "month",
@@ -81,15 +196,17 @@ The example below shows how to identify the lifetime value of different user seg
 }
 ```
 
+--->
+
 ## Parameters
 
-| Name         | Type                                                | Required           | Description.                                                                                                                                                      |
-| ------------ | --------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| filters      | [MetricsFilters](#metricsfilters-object)            | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table.                                                                                         |
-| period_unit  | String                                              | :heavy_minus_sign: | <p>Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are:</p><ul><li>day.</li><li>week.</li><li>month.</li><li>quarter.</li><li>year.</li></ul> |
-| period_type  | String                                              | :heavy_minus_sign: | <p>Possible values are:</p><ul><li>renewals.</li><li>days.</li></ul>                                                                                                                                   |
-| segmentation | String                                              | :heavy_minus_sign: | <p>Possible values are:</p><ul><li>day.</li><li>week.</li><li>month.</li><li>year.</li><li>country.</li><li>product.</li><li>paywall.</li><li>paywalls_group.</li><li>audience.</li><li>placement.</li><li>duration.</li><li>store.</li></ul> |
-| format       | String                                              | :heavy_minus_sign: | <p>Specify the export file format. Available options are:</p><ul><li>json.</li><li>csv.</li></ul>                                                                                                       |
+| Name         | Type                                     | Required           | Description                                                  |
+| ------------ | ---------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| filters      | [MetricsFilters](#metricsfilters-object) | :heavy_plus_sign:  | An object containing filtration parameters. See details below this table. |
+| period_unit  | String                                   | :heavy_minus_sign: | <p>Specify the time interval for aggregating analytics data, to view results grouped by selected periods, such as days, weeks, months, etc. Possible values are:</p><ul><li>day</li><li>week</li><li>month</li><li>quarter</li><li>year</li></ul> |
+| period_type  | String                                   | :heavy_minus_sign: | <p>Possible values are:</p><ul><li>renewals</li><li>days</li></ul> |
+| segmentation | String                                   | :heavy_minus_sign: | <p>Possible values are:</p><ul><li>day</li><li>week</li><li>month</li><li>year</li><li>country</li><li>product</li><li>paywall</li><li>paywalls_group</li><li>audience</li><li>placement</li><li>duration</li><li>store</li></ul> |
+| format       | String                                   | :heavy_minus_sign: | <p>Specify the export file format. Available options are:</p><ul><li>json</li><li>csv</li></ul> |
 
 ### MetricsFilters object
 

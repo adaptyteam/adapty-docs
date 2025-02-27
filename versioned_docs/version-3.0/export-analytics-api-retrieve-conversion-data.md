@@ -50,35 +50,34 @@ curl --location 'https://api-admin.adapty.io/api/v1/client-api/metrics/conversio
 <TabItem value="python" label="Python" default>
 
   ```python  showLineNumbers
-const myHeaders = new Headers();
-myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
-myHeaders.append("Content-Type", "application/json");
+import requests
+import json
 
-const raw = JSON.stringify({
+url = "https://api-admin.adapty.io/api/v1/client-api/metrics/conversion/"
+
+payload = json.dumps({
   "filters": {
     "date": [
       "2024-01-01",
       "2024-12-31"
     ],
-    "offer_category": "promotional"
+    "offer_category": [
+      "promotional"
+    ]
   },
   "period_unit": "month",
   "date_type": "purchase_date",
   "segmentation": "country",
   "format": "csv"
-});
+})
+headers = {
+  'Authorization': "Api-Key <YOUR_SECRET_API_KEY>",
+  'Content-Type': "application/json"
+}
 
-const requestOptions = {
-  method: "POST",
-  headers: myHeaders,
-  body: raw,
-  redirect: "follow"
-};
+response = requests.request("POST", url, headers=headers, data=payload)
 
-fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/conversion/", requestOptions)
-  .then((response) => response.text())
-  .then((result) => console.log(result))
-  .catch((error) => console.error(error));
+print(response.text)
   ```
 
 </TabItem>  

@@ -75,10 +75,9 @@ payload = json.dumps({
   "period_unit": "week",
   "segmentation": "attribution_campaign"
 })
-headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>',
-  'Content-Type': 'application/json'
-}
+headers = 
+  'Authorization': "Api-Key <YOUR_SECRET_API_KEY>",
+  'Content-Type': "application/json"}
 
 response = requests.request("POST", url, headers=headers, data=payload)
 
@@ -130,6 +129,8 @@ fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/", reques
 
 </Tabs>
 
+<!---
+
 ```json showLineNumbers
 {
   "chart_id": "revenue",
@@ -149,6 +150,8 @@ fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/", reques
   "segmentation": "attribution_campaign"
 }
 ```
+--->
+
 ## Parameters
 
 | Name         | Type                                            | Required           | Description.                                                 |
@@ -156,8 +159,8 @@ fetch("https://api-admin.adapty.io/api/v1/client-api/metrics/analytics/", reques
 | filters      | [MetricsFilters](#metricsfilters-object) object | :heavy_plus_sign:  | An object containing filter parameters. See details below this table. |
 | chart_id     | String                                          | :heavy_minus_sign: | <p>Specify which chart you need.</p><p>Possible values are:</p> <ul><li>revenue</li><li>mrr</li><li>arr</li><li>arppu</li><li>subscriptions_active</li><li>subscriptions_new</li><li>subscriptions_renewal_cancelled</li><li>subscriptions_expired</li><li>trials_active</li><li>trials_new</li><li>trials_renewal_cancelled</li><li>trials_expired</li><li>grace_period</li><li>billing_issue</li><li>refund_events</li><li>refund_money</li><li>non_subscriptions</li><li>arpu</li><li>installs</li></ul> |
 | period_unit  | String                                          | :heavy_minus_sign: | Specify the time interval for aggregating analytics data, so you can view results grouped by days, weeks, months, etc. Possible values are: <ul><li>day</li><li>week</li><li>month (default)</li><li>quarter</li><li>year</li></ul> |
-| date_type    | String                                          | :heavy_minus_sign: | Possible values are: <ul><li>purchase_date (вуафгде)</li><li>profile_install_date</li></ul> |
-| segmentation | String                                          | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different charts in the Segmentation table below this one. |
+| date_type    | String                                          | :heavy_minus_sign: | Possible values are: <ul><li>purchase_date (default)</li><li>profile_install_date</li></ul> |
+| segmentation | String                                          | :heavy_minus_sign: | Sets the basis for segmentation. See which segmentation is available for different charts in the [Segmentation](#segmentation) table below. |
 | format       | String                                          | :heavy_minus_sign: | Specify the export file format. Available options are: <ul><li>json (default)</li><li>csv</li></ul> |
 
 ### Segmentation

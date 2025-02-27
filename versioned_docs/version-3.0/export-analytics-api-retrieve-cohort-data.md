@@ -79,8 +79,8 @@ payload = json.dumps({
   "value_field": "subscriptions"
 })
 headers = {
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>',
-  'Content-Type': 'application/json'
+  'Authorization': "Api-Key <YOUR_SECRET_API_KEY>",
+  'Content-Type': "application/json"
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
