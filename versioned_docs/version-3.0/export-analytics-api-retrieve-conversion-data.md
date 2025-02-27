@@ -20,8 +20,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/conversion/
 
 ## Request example
 
-The example below shows how to get conversion rates for key acquisition channels to identify which ones drive first-time purchases most effectively. This helps prioritize marketing spend on the channels with the highest performance.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  
@@ -72,13 +70,12 @@ payload = json.dumps({
 })
 headers = {
   'Authorization': "Api-Key <YOUR_SECRET_API_KEY>",
-  'Content-Type': "application/json
+  'Content-Type': "application/json"
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
 
 print(response.text)
-
   ```
 
 </TabItem>  

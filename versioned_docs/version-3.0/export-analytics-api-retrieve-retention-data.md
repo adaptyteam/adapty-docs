@@ -19,8 +19,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/retention/
 ```
 ## Request example
 
-The example below shows how to view retention rates by region to identify high-engagement markets and guide localization or regional strategies.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  

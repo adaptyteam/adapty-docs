@@ -19,8 +19,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/funnel/
 ```
 ## Request example
 
-The example below shows how to monitor how quickly users are unsubscribing to uncover churn patterns or gauge the success of retention efforts, focusing on France and a specific product.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  

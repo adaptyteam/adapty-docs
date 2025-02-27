@@ -19,8 +19,6 @@ POST https://api-admin.adapty.io/api/v1/client-api/metrics/ltv/
 ```
 ## Request example
 
-The example below shows how to identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies.
-
 <Tabs groupId="api-lang" queryString>  
 
 <TabItem value="curl" label="cURL" default>  
