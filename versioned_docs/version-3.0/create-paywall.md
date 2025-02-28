@@ -61,7 +61,7 @@ To create a new paywall in the Adapty dashboard:
 />
 </Zoom>
 
-6. If you’re offering free trials or other offers for your products, be sure to add them here; otherwise, they won’t be available. Choose an offer you [created earlier](http://localhost:3000/docs/create-offer) for this product from the **Offer** list. The list is available only for the products that have offers. 
+6. If you’re offering free trials or other offers for your products, be sure to add them here; otherwise, they won’t be available. Choose an offer you [created earlier](create-offer) for this product from the **Offer** list. The list is available only for the products that have offers. 
 
 7. Click **Create as a draft** to confirm the paywall creation.
 
