@@ -72,7 +72,7 @@ Add the **Hero video** in place of the **Hero image** element:
 
 | Specification     | Details      |
 | ----------------- | ------------ |
-| Supported formats | mp4 and webp |
+| Supported formats | MP4 and WEBM |
 | Minimum size      | 640х480      |
 | Maximum length    | 30 sec       |
 
