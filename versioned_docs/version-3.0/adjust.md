@@ -171,7 +171,7 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that. For Adjust version 5.0 or later, use the following:
+For Adapty to send subscription data to Adjust, pass the Adjust device ID using the `setIntegrationIdentifier()` SDK method. For Adjust version 5.0 or later, use the following example:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
