@@ -35,6 +35,6 @@ Parameters:
 
 | Parameter   | Description                                                  |
 | :---------- | :----------------------------------------------------------- |
-| **assetId** | The path to the fallback JSON file you [downloaded in the Adapty Dashboard](https://dev-docs.adapty.io/docs/fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). |
+| **assetId** | The path to the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). |
 
 <SampleApp />
