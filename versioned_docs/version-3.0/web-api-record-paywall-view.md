@@ -137,7 +137,7 @@ echo $response;
 | customer_user_id | String        | :heavy_plus_sign:* | <p>An identifier of a user in your system.</p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 | profile_id       | String        | :heavy_plus_sign:* | <p>An identifier of a user in Adapty. </p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 | visited at       | ISO 8601 date | :heavy_minus_sign: | The datetime when the user opened the paywall.               |
-| store            | String        | :heavy_plus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](initial-custom). |
+| store            | String        | :heavy_plus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](custom-store). |
 | variation_id     | String        | :heavy_plus_sign:  | The variation ID used to trace purchases to the specific paywall they were made from. |
 
 <!---
