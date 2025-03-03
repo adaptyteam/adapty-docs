@@ -10,17 +10,21 @@ If your application is intended for kids, you must follow the policies of [Apple
 
 ## What’s required?
 
-You need to configure the Adapty SDK to **disable the collection of**:
+You need to configure the Adapty SDK to disable the collection of:
 
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248)
-- Any other advertising-related data
+- [IP address](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+In addition, we recommend using customer user ID carefully. User ID in format `<FirstName.LastName>` will be definitely treated as gathering personal data as well as using email. For Kids Mode, a best practice is to use randomized or anonymized identifiers (e.g., hashed IDs or device-generated UUIDs) to ensure compliance.
 
 ## Kids Mode activation
 
 <Tabs groupId="Id"> 
 
 <TabItem value="Swift" label="iOS" default> 
+
+You can only enable the Kids Mode with Cocoa Pods.
 
 In order to comply with policies, disable the collection of user's IDFA:
 
@@ -63,6 +67,7 @@ override fun onCreate() {
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
       // highlight-start
           .withAdIdCollectionDisabled(true) // set to `true`
+          .withIpAddressCollectionDisabled(true) // set to `true`
       // highlight-end
           .build()
     )  
@@ -83,18 +88,21 @@ public void onCreate() {
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
       // highlight-start
           .withAdIdCollectionDisabled(true) // set to `true`
+          .withIpAddressCollectionDisabled(true) // set to `true`
       // highlight-end
           .build()
     );
 }
 ```
 
+
+
 </TabItem> 
 <TabItem value="Flutter" label="Flutter" default> 
 
 In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID/AAID (for Android).
 
-### Android: Update your SDK configuration
+**Android: Update your SDK configuration**
 
 ```dart showLineNumbers title="Dart"
 try {
@@ -109,7 +117,7 @@ try {
 }
 ```
 
-### iOS: Enable Kids Mode using CocoaPods
+**iOS: Enable Kids Mode using CocoaPods**
 
 1. Update your Podfile:
 
