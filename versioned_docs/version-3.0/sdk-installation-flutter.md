@@ -6,8 +6,11 @@ metadataTitle: "Install Adapty SDK in Flutter to handle subscriptions with ease.
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-<Tabs> <TabItem value="3" label="v3.2.x and up (current)" default> 
+
+
+<Tabs groupId="current-os" queryString> <TabItem value="3" label="v3.2.x and up (current)" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -27,7 +30,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
    ```yaml showLineNumbers title="pubspec.yaml"
    dependencies:
-   adapty_flutter: ^3.3.1
+   adapty_flutter: ^3.3.2
    ```
 
 2. Run:
@@ -35,6 +38,8 @@ Before releasing your application, make sure to carefully review the [Release Ch
    ```bash showLineNumbers title="Bash"
    flutter pub get
    ```
+
+<SampleApp />
 
 ## Configure Adapty SDK
 
@@ -58,7 +63,8 @@ You only need to configure the Adapty SDK once, typically early in your app's li
              ..withObserverMode(false)
              ..withCustomerUserId(null)
              ..withIpAddressCollectionDisabled(false)
-             ..withIdfaCollectionDisabled(false),
+             ..withAppleIdfaCollectionDisabled(false),
+             ..withGoogleAdvertisingIdCollectionDisabled(false),
        );
    } catch (e) {
        // handle the error
@@ -67,14 +73,15 @@ You only need to configure the Adapty SDK once, typically early in your app's li
 
 Parameters:
 
-| Parameter                           | Presence | Description                                                  |
-| ----------------------------------- | -------- | ------------------------------------------------------------ |
-| **PUBLIC_SDK_KEY**                  | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| **withLogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| **withObserverMode**                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| **withCustomerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
-| **withIpAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| Parameter                             | Presence | Description                                                  |
+| ------------------------------------- | -------- | ------------------------------------------------------------ |
+| apiKey                                | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
+| logLevel                              | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
+| observerMode                          | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| customerUserId                        | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
+| ipAddressCollectionDisabled           | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+| appleIdfaCollectionDisabled           | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
+| googleAdvertisingIdCollectionDisabled | optional | <p>Set to `true` to disable Android/Google advertising ID (GAID/AAID) collection and sharing.</p><p>The default value is `false`.</p><p>For more details on GAID/AAID collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.</p> |
 
 ### Activation and configuration of AdaptyUI module of Adapty SDK
 
@@ -84,11 +91,11 @@ You can configure AdaptyUI by passing `AdaptyUIMediaCacheConfiguration` to the `
 
 Parameters:
 
-| Parameter                       | Presence | Description                                                  |
-| :------------------------------ | :------- | :----------------------------------------------------------- |
-| **memoryStorageTotalCostLimit** | required | The total cost limit of the storage in bytes.                |
-| **memoryStorageCountLimit**     | required | The item count limit of the memory storage.                  |
-| **diskStorageSizeLimit**        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+| Parameter                   | Presence | Description                                                  |
+| :-------------------------- | :------- | :----------------------------------------------------------- |
+| memoryStorageTotalCostLimit | required | The total cost limit of the storage in bytes.                |
+| memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
+| diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
 
 If you do not use the Paywall Builder and want to deactivate the AdaptyUI module, pass `withActivateUI(false)` during activation.
 
@@ -97,7 +104,7 @@ If you do not use the Paywall Builder and want to deactivate the AdaptyUI module
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
+- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
 Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
 
@@ -150,11 +157,11 @@ Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPubli
 
 Parameters:
 
-| Parameter                  | Presence | Description                                                  |
-| -------------------------- | -------- | ------------------------------------------------------------ |
-| **AdaptyPublicSdkKey**     | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| **AdaptyObserverMode**     | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. At any purchase or restore in your application, you'll need to call `.restorePurchases()` method to record the action in Adapty. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| **idfaCollectionDisabled** | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)  section.</p> |
+| Parameter              | Presence | Description                                                  |
+| ---------------------- | -------- | ------------------------------------------------------------ |
+| AdaptyPublicSdkKey     | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
+| AdaptyObserverMode     | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. At any purchase or restore in your application, you'll need to call `.restorePurchases()` method to record the action in Adapty. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| idfaCollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)  section.</p> |
 
 ### Configure Adapty SDK for Android
 
@@ -178,9 +185,9 @@ Parameters:
 | ---------------------------- | -------- | ------------------------------------------------------------ |
 | PUBLIC_SDK_KEY               | required | <p>Contents of the **Public SDK key** field in the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.</p><p>Make sure you use the **Public SDK key** for Adapty initialization, since the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.</p> |
 | AdaptyObserverMode           | optional | <p>A boolean value that is controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| AdaptyIDFACollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
+| AdaptyIDFACollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
 
-   
+  
 
 2. In your application, add:
 
