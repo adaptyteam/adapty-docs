@@ -63,8 +63,8 @@ You only need to configure the Adapty SDK once, typically early in your app's li
              ..withObserverMode(false)
              ..withCustomerUserId(null)
              ..withIpAddressCollectionDisabled(false)
-             ..withAppleIdfaCollectionDisabled(false),
-             ..withGoogleAdvertisingIdCollectionDisabled(false),
+             ..withAppleIdfaCollectionDisabled(false)
+             ..withGoogleAdvertisingIdCollectionDisabled(false)
        );
    } catch (e) {
        // handle the error

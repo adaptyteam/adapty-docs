@@ -22,7 +22,7 @@ In addition, we recommend using customer user ID carefully. User ID in format `<
 
 ### Updates in the Adapty Dashboard
 
-In the Adapty Dashboard, you need to disable IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
+In the Adapty Dashboard, you need to disable the IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
 
 ### Updates in your mobile app code
 
