@@ -82,7 +82,7 @@ If these aren’t set, Adapty will default to using your user ID (`YOUR_ADAPTY_C
 - [Get device ID hash](https://appmetrica.yandex.ru/docs/en/sdk/android/analytics/android-operations#get-ids) Android.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 import AppMetricaCore 
@@ -133,7 +133,7 @@ val startupParamsCallback = object: StartupParamsCallback {
 AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
@@ -158,7 +158,7 @@ if (deviceIdHash != null) {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 using AdaptySDK;
 using Io.AppMetrica;
@@ -187,7 +187,7 @@ AppMetrica.RequestStartupParams(
 );
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 import AppMetrica, { DEVICE_ID_HASH_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';

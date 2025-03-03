@@ -127,7 +127,7 @@ Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make s
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 import FacebookCore
@@ -155,20 +155,20 @@ Adapty.setIntegrationIdentifier(
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```text
 There is no official SDK for Flutter
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp
 anonymousID is not available in the official SDK
 https://github.com/facebook/facebook-sdk-for-unity/issues/676
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

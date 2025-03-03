@@ -23,7 +23,7 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 ## Step 1. Configure Adapty SDK for EU region
 
 <Tabs groupId="current-os" queryString> 
-<TabItem value="iOS" label="iOS"> 
+<TabItem value="swift" label="iOS"> 
 
 Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
@@ -31,7 +31,7 @@ Include the `backendBaseUrl` parameter in your configuration:
 
 <Tabs groupId="current-os" queryString>
 
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -53,7 +53,7 @@ Adapty.activate(with: configurationBuilder) { error in
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty
@@ -96,13 +96,13 @@ Parameters:
 
 </TabItem> 
 
-<TabItem value="Android" label="Android" default> 
+<TabItem value="kotlin" label="Android" default> 
 Install Adapty SDK 3.0.4 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Use the `.withServerCluster` method in your configuration:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="Kotlin" label="Kotlin" default>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -121,7 +121,7 @@ override fun onCreate() {
 ```
 
   </TabItem>
-  <TabItem value="Java" label="Java" default>
+  <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override

@@ -99,7 +99,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -115,7 +115,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 ```
 
 </TabItem>
-<TabItem value="kotlin2" label="Kotlin (option 2)" default>
+<TabItem value="kotlin" label="Kotlin (option 2)" default>
 
 ```kotlin showLineNumbers
    val paywallView =
@@ -135,7 +135,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -151,7 +151,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 ```
 
 </TabItem>
-<TabItem value="java2" label="Java (option 2)" default>
+<TabItem value="java" label="Java (option 2)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView =
