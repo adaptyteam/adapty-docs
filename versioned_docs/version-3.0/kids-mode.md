@@ -19,16 +19,13 @@ You need to configure the Adapty SDK to disable the collection of:
 In addition, we recommend using customer user ID carefully. User ID in format `<FirstName.LastName>` will be definitely treated as gathering personal data as well as using email. For Kids Mode, a best practice is to use randomized or anonymized identifiers (e.g., hashed IDs or device-generated UUIDs) to ensure compliance.
 
 ## Enabling Kids Mode
-<Tabs groupId="current-os" queryString> 
-
 ### Updates in the Adapty Dashboard
 
-In the Adapty Dashboard, you need to disable IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
+In the Adapty Dashboard, you need to disable the IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
 
 ### Updates in your mobile app code
 
 <Tabs groupId="current-os" queryString> 
-
 <TabItem value="swift" label="iOS" default> 
 
 You can only enable the Kids Mode with Cocoa Pods.
@@ -62,7 +59,6 @@ In order to comply with policies, disable the collection of the user's IDFA and 
    ```
 
 </TabItem> 
-
 <TabItem value="kotlin" label="Android (Kotlin)" default> 
 
 To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID)  and IP address when initializing the Adapty SDK: 
@@ -82,7 +78,6 @@ override fun onCreate() {
 ```
 
 </TabItem> 
-
 <TabItem value="java" label="Android (Java)" default> 
 To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID)  and IP address when initializing the Adapty SDK: 
 
