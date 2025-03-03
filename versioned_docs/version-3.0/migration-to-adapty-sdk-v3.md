@@ -20,7 +20,7 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](ad
 
 <Tabs groupId="current-os" queryString> 
 
-<TabItem value="iOS" label="For iOS" default> 
+<TabItem value="swift" label="For iOS" default> 
 
 :::info
 
@@ -62,7 +62,7 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -86,7 +86,7 @@ AdaptyUI.activate()
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift title="" showLineNumbers
 import Adapty
@@ -124,7 +124,7 @@ struct SampleApp: App {
 
 </TabItem> 
 
-<TabItem value="Android" label="For Android" default> 
+<TabItem value="kotlin" label="For Android" default> 
 
 Adapty SDKs are delivered as a BoM (Bill of Materials), ensuring that the Adapty SDK and AdaptyUI SDK versions in your app remain consistent.
 
@@ -194,7 +194,7 @@ dependencies {
 
  </TabItem> 
 
-<TabItem value="Flutter" label="For Flutter" default> 
+<TabItem value="flutter" label="For Flutter" default> 
 
 :::info
 
@@ -298,7 +298,7 @@ Parameters:
 
 </TabItem>
 
-<TabItem value="RN" label="For React Native" default> 
+<TabItem value="rn" label="For React Native" default> 
 
 1. Upgrade to version 3.0.1 as usual.
 2. Replace the fallback paywall files:

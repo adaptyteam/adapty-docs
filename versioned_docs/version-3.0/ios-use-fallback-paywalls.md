@@ -17,7 +17,7 @@ To use fallback paywalls:
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `ios_fallback.json`.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -29,7 +29,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 if let url = Bundle.main.url(forResource: "ios_fallback", withExtension: "json") {

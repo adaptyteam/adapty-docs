@@ -120,7 +120,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 Add the following to your `Application` class:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="Kotlin" label="Kotlin" default>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -138,7 +138,7 @@ override fun onCreate() {
 ```
 
 </TabItem>
-<TabItem value="Java" label="Java" default>
+<TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override
@@ -292,7 +292,7 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 Add the following to your `Application` class:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="Kotlin" label="Kotlin" default>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -314,7 +314,7 @@ override fun onCreate() {
 ```
 
 </TabItem>
-<TabItem value="Java" label="Java" default>
+<TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override

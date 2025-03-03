@@ -128,7 +128,7 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the `firebase_app_instance_id` to Adapty. Here you can see an example of the code that can be used to integrate Firebase SDK and Adapty SDK.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 import FirebaseCore
 import FirebaseAnalytics
@@ -173,7 +173,7 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:firebase_analytics/firebase_analytics.dart';
 
@@ -191,7 +191,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 using AdaptySDK;
 
@@ -218,7 +218,7 @@ Firebase.Analytics
   });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import analytics from '@react-native-firebase/analytics';
 import { adapty } from 'react-native-adapty';

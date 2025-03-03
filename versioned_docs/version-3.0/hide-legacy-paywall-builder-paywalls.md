@@ -17,7 +17,7 @@ This guide covers only hiding **legacy Paywall Builder paywalls** which supports
 
    <Tabs groupId="current-os" queryString>  
 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 You can hide a paywall screen by calling the `view.dismiss` method.
 
@@ -33,7 +33,7 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default> 
+<TabItem value="unity" label="Unity" default> 
 
 You can hide a paywall view by calling the `view.Dismiss` method.
 
@@ -45,7 +45,7 @@ view.Dismiss((error) => {
 
   </TabItem> 
 
-<TabItem value="RN" label="React Native (TS)" default> 
+<TabItem value="rn" label="React Native (TS)" default> 
 
 You can hide a paywall view in 2 ways:
 

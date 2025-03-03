@@ -161,7 +161,7 @@ Tenjin only accepts purchase and **Trial started** events. In the **Events names
 It's very important to send Tenjin attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 import TenjinSDK
@@ -221,7 +221,7 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.ge
 
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 try {
@@ -244,7 +244,7 @@ try {
 ```
 
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -277,7 +277,7 @@ Adapty.UpdateAttribution(
 
 </TabItem>
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

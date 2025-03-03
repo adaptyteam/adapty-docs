@@ -115,7 +115,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="Kotlin (option 2)" default>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
 ```kotlin showLineNumbers
    val paywallView =
@@ -151,7 +151,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 ```
 
 </TabItem>
-<TabItem value="java" label="Java (option 2)" default>
+<TabItem value="java2" label="Java (option 2)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView =

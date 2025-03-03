@@ -102,7 +102,7 @@ You can customize what happens when the timer runs out. Should it display anothe
 
 To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
-<Tabs groupId="current-os" queryString> <TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString> <TabItem value="swift" label="Swift" default>
 
 ```Swift showLineNumbers
 @MainActor
@@ -170,7 +170,7 @@ AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
 
 In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
 
-</TabItem> <TabItem value="Flutter" label="Flutter" default> 
+</TabItem> <TabItem value="flutter" label="Flutter" default> 
 
 ```dart showLineNumbers
 try {
@@ -197,7 +197,7 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity (C#)" default> 
+<TabItem value="unity" label="Unity (C#)" default> 
 
 ```csharp showLineNumbers
 var parameters = new AdaptyUICreateViewParameters()
@@ -220,7 +220,7 @@ AdaptyUI.CreateView(paywall, parameters, (view, error) => {
 
 </TabItem> 
 
- <TabItem value="RN" label="React Native (TS)" default> 
+ <TabItem value="rn" label="React Native (TS)" default> 
 
 ```typescript showLineNumbers
 let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
