@@ -42,7 +42,7 @@ You may want to stop sending analytics events for a specific customer. This is u
 To disable external analytics for a customer, use `updateProfile()` method. Create `AdaptyProfileParameters.Builder` object and set the corresponding value to it.  
 When external analytics is blocked, Adapty won't be sending any events to any integrations for the specific user. If you want to disable an integration for all users of your app, just turn it off in Adapty Dashboard.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 let builder = AdaptyProfileParameters.Builder()
@@ -101,7 +101,7 @@ adapty.updateProfile({ analyticsDisabled: true });
 
 ### Disable collection of advertising identifiers
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS" default>
 You can disable IDFA collection by using the `idfaCollectionDisabled` property. Make sure you call it before `.activate()` method.
 

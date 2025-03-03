@@ -6,7 +6,7 @@ metadataTitle: "React Native -  - Adapty SDK Installation and Configuration Guid
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-<Tabs groupId="sdk-installation-unity"> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
@@ -122,7 +122,7 @@ To use Adapty SDKs, import `adapty` and invoke `activate` in your _core componen
 
 You can pass several optional parameters during activation:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Typescript" label="Typescript" default>
 
 ```typescript showLineNumbers
@@ -368,7 +368,7 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Typescript" label="Typescript" default>
 ```typescript showLineNumbers
 adapty.setLogLevel('verbose');

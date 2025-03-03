@@ -132,7 +132,7 @@ See the [Upgrade subscription](android-handling-events#upgrade-subscription) doc
 
 If you pass file URI to provide fallback paywalls, update how you do it in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```diff showLineNumbers
@@ -161,7 +161,7 @@ To ensure integrations work properly with Adapty Android SDK 3.3.0 and later, up
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Adjust integration](adjust#sdk-configuration).
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="v5" label="Adjust 5.x+" default>
 
@@ -421,7 +421,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Firebase and Google Analytics integration](firebase-and-google-analytics).
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```diff showLineNumbers
@@ -501,11 +501,11 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
@@ -552,7 +552,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 <TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
@@ -610,7 +610,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for Pushwoosh integration](pushwoosh#sdk-configuration).
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```diff showLineNumbers

@@ -19,6 +19,7 @@ You need to configure the Adapty SDK to disable the collection of:
 In addition, we recommend using customer user ID carefully. User ID in format `<FirstName.LastName>` will be definitely treated as gathering personal data as well as using email. For Kids Mode, a best practice is to use randomized or anonymized identifiers (e.g., hashed IDs or device-generated UUIDs) to ensure compliance.
 
 ## Enabling Kids Mode
+<Tabs groupId="current-os" queryString> 
 
 ### Updates in the Adapty Dashboard
 

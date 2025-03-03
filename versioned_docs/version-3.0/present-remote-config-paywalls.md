@@ -18,7 +18,7 @@ Don't forget to [check if a user is eligible for an introductory offer in iOS](f
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -110,7 +110,7 @@ Adapty assists you in measuring the performance of your paywalls. While we gathe
 
 To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.logShowPaywall(paywall)

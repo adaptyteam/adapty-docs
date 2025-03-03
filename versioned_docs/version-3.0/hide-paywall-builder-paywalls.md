@@ -18,8 +18,7 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 
 ## Dismiss a paywall screen
 
-
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
 <TabItem value="Unity" label="Unity" default> 
 

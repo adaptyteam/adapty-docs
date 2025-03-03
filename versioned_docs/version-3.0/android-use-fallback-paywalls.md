@@ -16,7 +16,7 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from locally stored JSON file named `android_fallback.json`.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 //if you put the 'android_fallback.json' file to the 'assets' directory

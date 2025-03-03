@@ -32,7 +32,7 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 
 <SampleApp />
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers
@@ -239,7 +239,7 @@ When a user opts for a new subscription instead of renewing the current one, the
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
@@ -423,7 +423,7 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.presentCodeRedemptionSheet()

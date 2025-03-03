@@ -102,7 +102,7 @@ You can customize what happens when the timer runs out. Should it display anothe
 
 To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
-<Tabs> <TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString> <TabItem value="Swift" label="Swift" default>
 
 ```Swift showLineNumbers
 @MainActor

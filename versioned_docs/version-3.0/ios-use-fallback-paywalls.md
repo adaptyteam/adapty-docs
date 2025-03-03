@@ -16,7 +16,7 @@ To use fallback paywalls:
 
 Here's an example of retrieving fallback paywall data from a locally stored JSON file named `ios_fallback.json`.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Swift" default>
 
 ```swift showLineNumbers

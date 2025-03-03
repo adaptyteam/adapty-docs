@@ -137,11 +137,11 @@ There are two ways to integrate OneSignal with Adapty:
 Make sure to send `playerId` (for OneSignal SDK pre-v5) or `subscriptionId` (for OneSignal SDK v5+) to Adapty. Without this, OneSignal tags won’t be updated, and the integration won’t function properly.
 :::
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
-<Tabs groupId="onesignal">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
@@ -249,7 +249,7 @@ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
 
 <TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

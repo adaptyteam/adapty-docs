@@ -179,7 +179,7 @@ It's very important to send Adjust attribution data from the device to Adapty us
 
 For Adjust version 5.0 or later, use the following:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

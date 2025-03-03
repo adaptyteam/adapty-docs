@@ -98,7 +98,7 @@ Use the `setIntegrationIdentifier()` method to set either `amplitudeDeviceId` or
 
 Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
 
-<Tabs groupId="amplitude">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 import Amplitude 

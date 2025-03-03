@@ -81,7 +81,7 @@ If these aren’t set, Adapty will default to using your user ID (`YOUR_ADAPTY_C
 - [Set profile id](https://yastatic.net/s3/doc-binary/src/dev/appmetrica/ru/javadoc-7.2.2/io/appmetrica/analytics/AppMetrica.html#setUserProfileID(java.lang.String)) Android;
 - [Get device ID hash](https://appmetrica.yandex.ru/docs/en/sdk/android/analytics/android-operations#get-ids) Android.
 
-<Tabs groupId="appmetrica">
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers

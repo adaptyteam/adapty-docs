@@ -55,7 +55,7 @@ We hope these updates enhance your experience with Adapty SDK and the integratio
 
 ##### Adapty SDK 2.4.x and older:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.4.x and older
@@ -130,7 +130,7 @@ switch (product.introductoryOfferEligibility) {
 
 ##### Adapty SDK 2.6.0 and newer:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.6.0+
@@ -206,7 +206,7 @@ if (intoEligibility === OfferEligibility.Eligible) {
 
 ##### Adapty SDK 2.4.x and older:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.4.x and older
@@ -333,7 +333,7 @@ if (promoDiscount) {
 
 ##### Adapty SDK 2.6.0 and newer:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Flutter" label="Flutter" default>
 ```javascript showLineNumbers
 // Adapty 2.6.0+
