@@ -20,9 +20,9 @@ In addition, we recommend using customer user ID carefully. User ID in format `<
 
 ## Kids Mode activation
 
-<Tabs groupId="Id"> 
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="iOS" default> 
+<TabItem value="swift" label="iOS" default> 
 
 You can only enable the Kids Mode with Cocoa Pods.
 
@@ -98,7 +98,7 @@ public void onCreate() {
 
 
 </TabItem> 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID/AAID (for Android).
 
@@ -110,6 +110,7 @@ try {
         configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
       // highlight-start
           ..withGoogleAdvertisingIdCollectionDisabled(true),  // set to `true`
+          ..withIpAddressCollectionDisabled(true),  // set to `true`
       // highlight-end
     );
 } catch (e) {
