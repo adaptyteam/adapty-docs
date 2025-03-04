@@ -25,7 +25,7 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 
 :::
 
-If you use Adapty paywalls, include the `withVariationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```swift showLineNumbers
 do {
@@ -71,26 +71,20 @@ https://developer.apple.com/documentation/uikit/uiviewcontroller/targetviewcontr
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-Use `restorePurchases` to report the transaction to Adapty.
+Use `reportTransaction` to send the transaction data to Adapty.
 
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
-If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
+If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```kotlin showLineNumbers
-Adapty.restorePurchases { result ->
+Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId) { result ->
     if (result is AdaptyResult.Success) {
-        // success
-    }
-}
-
-Adapty.setVariationId(transactionId, variationId) { error ->
-    if (error == null) {
         // success
     }
 }
@@ -106,26 +100,20 @@ Parameters:
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-Use `restorePurchases` to report the transaction to Adapty.
+Use `reportTransaction` to send the transaction data to Adapty.
 
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
-If you use Adapty paywalls, link your transaction to the paywall that led to the purchase using the `setVariationId` method. This ensures the purchase is correctly attributed to the triggering paywall for accurate analytics. This step is only necessary if you're using Adapty paywalls.
+If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```java showLineNumbers
-Adapty.restorePurchases(result -> {
+Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId, result -> {
     if (result instanceof AdaptyResult.Success) {
-        // success
-    }
-});
-
-Adapty.setVariationId(transactionId, variationId, error -> {
-    if (error == null) {
         // success
     }
 });
@@ -195,7 +183,7 @@ If you don't call these methods, Adapty won't recognize the transaction, it won�
 
 :::
 
-If you use Adapty paywalls, include the `PAYWALL_VARIATION_ID` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```csharp showLineNumbers
 // every time when calling transasction.finish()
@@ -297,6 +285,13 @@ Adapty.setVariationId(variationId, forPurchasedTransaction: transactionId) { err
     }    
 }
 ```
+Request parameters:
+
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| transactionId | required | <p>For StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p> |
+
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
@@ -307,8 +302,16 @@ Adapty.setVariationId(transactionId, variationId) { error ->
     }
 }
 ```
+Request parameters:
+
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java 
 Adapty.setVariationId(transactionId, variationId, error -> {
     if (error == null) {
@@ -316,6 +319,10 @@ Adapty.setVariationId(transactionId, variationId, error -> {
     }
 });
 ```
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 </TabItem>
 <TabItem value="flutter" label="Flutter" default>
 ```javascript
@@ -331,6 +338,7 @@ try {
 ```
 </TabItem>
 <TabItem value="unity" label="Unity" default>
+
 ```csharp 
 Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
     if(error != null) {
@@ -341,6 +349,10 @@ Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) =>
     // successful binding
 });
 ```
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
 ```typescript 
@@ -352,13 +364,13 @@ try {
     // handle the `AdaptyError`
 }
 ```
-</TabItem>
-</Tabs>
-
 Request parameters:
 
-| Parameter | Presence | Description |
-|---------|--------|-----------|
-| variationId | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
 | transactionId | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+
+</TabItem>
+</Tabs>
 
