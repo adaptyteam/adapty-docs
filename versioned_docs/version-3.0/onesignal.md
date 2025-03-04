@@ -27,7 +27,7 @@ Adapty updates OneSignal tags based on subscription events, enabling you to deli
 
 To set up the integration:
 
-1. Open [**Integrations** → **OneSignal**](https://app.adapty.io/integrations/onesignal) in your Adapty Dashboard.
+1. Open [Integrations → OneSignal](https://app.adapty.io/integrations/onesignal) in your Adapty Dashboard.
 
    <Zoom>
      <img src={require('./img/onesignal-on.webp').default}
@@ -43,7 +43,7 @@ To set up the integration:
 2. Enable the integration toggle.
 3. Enter your **OneSignal App ID**.
 
-To set up the integration with OneSignal, go to [**Integrations** -> **OneSignal**](https://app.adapty.io/integrations/onesignal) in your Adapty dashboard, turn on a toggle, and configure the integration credentials.
+To set up the integration with OneSignal, go to [Integrations -> OneSignal](https://app.adapty.io/integrations/onesignal) in your Adapty dashboard, turn on a toggle, and configure the integration credentials.
 
 ## Retrieving your OneSignal App ID
 
