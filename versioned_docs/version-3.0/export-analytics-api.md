@@ -17,11 +17,7 @@ With the analytics export API, you can, for example:
 
 1. **Analyze MRR from Marketing Campaigns**: Measure the impact of last year's marketing campaigns in a specific country to see which ones brought in the highest revenue, with weekly tracking. Use the [Retrieve analytics data](export-analytics-api-retrieve-analytics-data) method for this.
 
-<<<<<<< HEAD:versioned_docs/version-3.0/client-api.md
-2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to the App Store, a specific product, and the USA. Use the [Retrieve cohort data](client-api#retrieve-cohort-data) method for this.
-=======
 2. **Track Cohort Retention Over Time**: Follow retention by cohort to spot drop-off points and compare cohorts over time, revealing trends and key moments where engagement strategies could boost retention. Limited to a specific app store, a specific country, and a particular product. Use the [Retrieve cohort data](export-analytics-api-retrieve-cohort-data) method for this.
->>>>>>> ADP-2367-Android-340:versioned_docs/version-3.0/export-analytics-api.md
 
 3. **Evaluate Conversion Rates Across Channels**: Analyze conversion rates for key acquisition channels to see which are most effective in driving first-time purchases. This helps prioritize marketing spending on high-performing channels. Use the [Retrieve conversion data](export-analytics-api-retrieve-conversion-data) method for this.
 
@@ -29,9 +25,6 @@ With the analytics export API, you can, for example:
 
 5. **Assess LTV by User Segment**: Identify the lifetime value of different user segments to understand which groups bring in the highest revenue over time. Focus on high-value segments like long-term subscribers, and use the results to refine acquisition strategies. Use the [Retrieve LTV data](export-analytics-api-retrieve-ltv) method for this.
 
-<<<<<<< HEAD:versioned_docs/version-3.0/client-api.md
-6. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies. Use the [Retrieve retention data](client-api#retrieve-retention-data) method for this.
-=======
 6. **Check Retention by Country**: Look at retention rates by region to find high-engagement markets and guide localization or regional strategies. Use the [Retrieve retention data](export-analytics-api-retrieve-retention-data) method for this.
 
 ---
@@ -40,4 +33,4 @@ With the analytics export API, you can, for example:
 
 -  [Authorization and request format](export-analytics-api-authorization) 
 -  [Exporting analytics API requests](export-analytics-api-requests) 
->>>>>>> ADP-2367-Android-340:versioned_docs/version-3.0/export-analytics-api.md
+
