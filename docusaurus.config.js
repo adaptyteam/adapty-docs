@@ -273,7 +273,11 @@ const config = {
               },
               {
                 label: "Analytics export API",
+<<<<<<< HEAD
                 href: "/client-api",
+=======
+                href: "/export-analytics-api",
+>>>>>>> ADP-2367-Android-340
               },
             ],
           },
