@@ -83,7 +83,9 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```kotlin showLineNumbers
-Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId) { result ->
+val transactionInfo = TransactionInfo.fromPurchase(purchase)
+
+Adapty.reportTransaction(transactionInfo, variationId) { result ->
     if (result is AdaptyResult.Success) {
         // success
     }
@@ -91,10 +93,10 @@ Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId) { 
 ```
 Parameters:
 
-| Parameter     | Presence | Description                                                  |
-| ------------- | -------- | ------------------------------------------------------------ |
-| transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| Parameter       | Presence | Description                                                  |
+| --------------- | -------- | ------------------------------------------------------------ |
+| transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId     | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 
 
 </TabItem>
@@ -112,7 +114,9 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```java showLineNumbers
-Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId, result -> {
+TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
+
+Adapty.reportTransaction(transactionInfo, variationId, result -> {
     if (result instanceof AdaptyResult.Success) {
         // success
     }
@@ -120,10 +124,10 @@ Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId, re
 ```
 Parameters:
 
-| Parameter     | Presence | Description                                                  |
-| ------------- | -------- | ------------------------------------------------------------ |
-| transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
+| Parameter       | Presence | Description                                                  |
+| --------------- | -------- | ------------------------------------------------------------ |
+| transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
+| variationId     | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
 
 
 </TabItem>

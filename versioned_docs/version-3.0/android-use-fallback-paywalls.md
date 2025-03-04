@@ -55,6 +55,6 @@ Adapty.setFallbackPaywalls(location, callback);
 
 Parameters:
 
-| Parameter    | Description                                                                                                               |
-| :----------- | :------------------------------------------------------------------------------------------------------------------------ |
-| **location** | The [FileLocation](https://kotlin.adapty.io/adapty/com.adapty.utils/-file-location/)  for the file with fallback paywalls |
+| Parameter    | Description                                                  |
+| :----------- | :----------------------------------------------------------- |
+| **location** | The [FileLocation](https://kotlin.adapty.io/adapty/com.adapty.utils/-file-location/-companion/)  for the file with fallback paywalls |

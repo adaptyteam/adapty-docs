@@ -4,6 +4,9 @@ description: "Migrate to Adapty SDK v3.4 for better performance and new monetiza
 metadataTitle: "Migrating to Adapty SDK v3.4 | Adapty Docs"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
 Adapty SDK 3.4.0 is a major release that introduces improvements that require migration steps on your end.
 
 <Tabs groupId="current-os" queryString> 
@@ -17,7 +20,7 @@ No changes are needed in your mobile app code. However, you must update your fal
 
  </TabItem> 
 
-<TabItem value="kotlin" label="Android" default> Text </TabItem>
+<TabItem value="android" label="Android" default> 
 
 **Update fallback paywall files**
 
@@ -28,11 +31,11 @@ Update your fallback paywall files to ensure compatibility with the new SDK vers
 
 **Update implementation of Observer Mode**
 
-If you use Observer mode, update its implementation. 
+If you're using Observer Mode, make sure to update its implementation.
 
-In previous versions, you were to restore purchases for Adapty to learn about transactions that were made through your own infrastructure, as Adapty knows nothing about your transactions in the Observer mode. After that, if you use paywalls, you were to assiciate the made transction with the paywalls used to start it.
+In previous versions, you had to restore purchases so Adapty could recognize transactions made through your own infrastructure, as Adapty had no direct access to them in Observer Mode. If you used paywalls, you also needed to manually associate each transaction with the paywall that initiated it.
 
-In new version, you need to explicitelly report the made transaction for Adapty to learn aboout it. If you use paywalls, additionally pass the variation ID for Adapty to associate the transaction with the used paywall.
+In the new version, you must explicitly report each transaction for Adapty to recognize it. If you use paywalls, you also need to pass the variation ID to link the transaction to the paywall used.
 
 :::warning
 
@@ -57,7 +60,9 @@ If you don't call `restorePurchases`, Adapty won't recognize the transaction, it
 -     }
 - }
 
-+ Adapty.reportTransaction(TransactionInfo.fromPurchase(purchase), variationId) { result ->
++ val transactionInfo = TransactionInfo.fromPurchase(purchase)
++ 
++ Adapty.reportTransaction(transactionInfo, variationId) { result ->
 +     if (result is AdaptyResult.Success) {
 +         // success
 +     }
@@ -81,15 +86,19 @@ If you don't call `restorePurchases`, Adapty won't recognize the transaction, it
 -     }
 - });
 
-+ Adapty.reportTransaction(TransactionInfo.fromId(transactionId), variationId, result -> {
++ TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
++ 
++ Adapty.reportTransaction(transactionInfo, variationId, result -> {
 +     if (result instanceof AdaptyResult.Success) {
 +         // success
 +     }
 + });
 ```
 
-</TabItem> 
+</TabItem>
 
 </Tabs>
+
+</TabItem>
 
 </Tabs>
