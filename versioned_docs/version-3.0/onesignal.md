@@ -9,24 +9,80 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-As one of the top customer engagement solutions, [OneSignal ](https://onesignal.com/)provides a wide range of tools for push notifications, email, SMS, and in-app messaging. By integrating Adapty with OneSignal, you can easily access all of your subscription events in one place, giving you the ability to trigger automated communication based on those events. 
+[OneSignal](https://onesignal.com/) is a leading customer engagement platform offering push notifications, email, SMS, and in-app messaging. Integrating Adapty with OneSignal enables you to access all your subscription events in one place, allowing you to trigger automated communication based on those events.
 
-Adapty provides a complete set of data that lets you track [subscription events](events) from all stores in one place and can be used to update your OneSignal users. With Adapty, you can easily see how your subscribers are behaving, learn what they like, and use that information to communicate with them in a way that's targeted and effective. Therefore, this integration allows you to track subscription events in your OneSignal dashboard and map them with your [acquisition campaigns.](https://documentation.onesignal.com/docs/automated-messages#example-automated-message-campaigns) 
+With Adapty, you can track [subscription events](events) across multiple stores, analyze user behavior, and use that data for more targeted communication. This integration helps you monitor subscription events within your OneSignal dashboard and map them to your [acquisition campaigns](https://documentation.onesignal.com/docs/automated-messages#example-automated-message-campaigns).
 
-Adapty uses subscription events to update OneSignal tags, so you can build target communication with customers using OneSignal push notifications after a short and easy integration setting as described below. 
+Adapty updates OneSignal tags based on subscription events, enabling you to deliver personalized push notifications with minimal setup.
 
-## How to set up One Signal integration
+**Integration characteristics**
 
-To set up the integration with OneSignal, go to [**Integrations** -> **OneSignal**](https://app.adapty.io/integrations/onesignal) in your Adapty dashboard, turn on a toggle from off to on, and fill out fields.
+| Integration characteristic | Description                                                  |
+| :------------------------- | :----------------------------------------------------------- |
+| Schedule                   | Real-time updates                                            |
+| Data direction             | One-way: from Adapty to OneSignal server                     |
+| Adapty integration point   | <ul><li>OneSignal and Adapty SDKs in the mobile app code</li><li>Adapty server</li></ul>|
 
-### Set up credentials in the Adapty Dashboard
+## Setting up One Signal integration
 
-The initial step of the integration process is to provide the necessary credentials to establish a connection between your OneSignal and Adapty profiles.  
-You'll need to provide your **OneSignal App ID** and **Auth Token**. You can find more information about OneSignal Keys and IDs in [following documentation.](https://documentation.onesignal.com/docs/keys-and-ids) 
+To set up the integration:
 
+1. Open [Integrations → OneSignal](https://app.adapty.io/integrations/onesignal) in your Adapty Dashboard.
+
+   <Zoom>
+     <img src={require('./img/onesignal-on.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Enable the integration toggle.
+3. Enter your **OneSignal App ID**.
+
+To set up the integration with OneSignal, go to [Integrations -> OneSignal](https://app.adapty.io/integrations/onesignal) in your Adapty dashboard, turn on a toggle, and configure the integration credentials.
+
+## Retrieving your OneSignal App ID
+
+Find your **OneSignal App ID** in your [OneSignal Dashboard](https://dashboard.onesignal.com/login):
+
+1. Navigate to **Settings** → **Keys & IDs**.
+
+   <Zoom>
+     <img src={require('./img/onesignal-dashboard.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+2. Copy your **OneSignal App ID** and paste it into the **App ID** field in the Adapty Dashboard.
+
+   <Zoom>
+     <img src={require('./img/onesignal-id.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+You can find more information about the OneSignal ID in the [following documentation.](https://documentation.onesignal.com/docs/keys-and-ids) 
+
+### Configuring events
+
+Adapty allows you to send three groups of events to OneSignal. Toggle on the ones you need in the Adapty Dashboard. You can view the complete list of available events with detailed description [here](events).
 
 <Zoom>
-  <img src={require('./img/44c5f25-CleanShot_2023-08-17_at_15.07.162x.webp').default}
+  <img src={require('./img/onesignal.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -36,115 +92,52 @@ You'll need to provide your **OneSignal App ID** and **Auth Token**. You can fin
 />
 </Zoom>
 
-
-
-
-
-### Retrieving credentials from OneSignal dashboard
-
-To find your OneSignal app ID and authentication key, simply navigate to your [OneSignal dashboard](https://dashboard.onesignal.com/login).  
-Your **App ID** can be found under the **Keys & IDs **section in the Settings tab. 
-
-
-<Zoom>
-  <img src={require('./img/7181f82-CleanShot_2023-08-17_at_15.10.262x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-The Auth token can be found in the **Account & API Keys** section of your OneSignal dashboard.
-
-
-<Zoom>
-  <img src={require('./img/238a8ae-CleanShot_2023-08-17_at_15.14.53_22x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-After retrieving your OneSignal App ID and authentication key from the OneSignal dashboard, you need to add them to the Adapty dashboard in the corresponding fields. 
-
-### Events and tags
-
-Below the credentials, there are three groups of events you can send to OneSignal from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
-
-
-<Zoom>
-  <img src={require('./img/30c7f2e-oneSignal.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-Adapty will send subscription events to OneSignal using a server-to-server integration, allowing you to view all subscription events in your OneSignal Dashboard and link them to your acquisition campaigns.
+Adapty sends subscription events to OneSignal using a server-to-server integration, allowing you to track all subscription-related activity in OneSignal.
 
 :::warning
-Please consider that starting from April 17th, 2023, it will not be possible to send attribution data from Adapty to OneSignal, if you are using the Free Plan of OneSignal. This integration is only available for OneSignal's Growth, Professional and higher plans. For more info please check [OneSignal pricing.](https://onesignal.com/pricing)
 
-Furthermore, it's important to note that the tag limitation applies to all the tags you have set up in OneSignal, including any existing tags. When sending data from Adapty to OneSignal, the tag limit in OneSignal includes both the tags sent from Adapty and the tags you may have already defined in OneSignal. Therefore, if you exceed the tag limit in OneSignal, it may result in errors when sending events from Adapty.
+Starting April 17, 2023, OneSignal's Free Plan no longer supports this integration. It is available only on **Growth**, **Professional**, and **higher** plans. For details, see [OneSignal Pricing](https://onesignal.com/pricing).
+
 :::
 
-:::note
-Custom tags
+## Custom tags
 
-This integration can update and set various properties in your Adapty users as tags that will be send to OneSignal. You can refer to the list of tags provided below to determine which tag is best suited for your needs.
+This integration updates and assigns various properties to your Adapty users as tags, which are then sent to OneSignal. Refer to the list of tags below to find the ones that best fit your needs.
+:::warning
+OneSignal has a tag limit. This includes both Adapty-generated tags and any existing tags in OneSignal. Exceeding the limit may cause errors when sending events.
 :::
 
 | Tag | Type | Description |
 |---|----|-----------|
-| `adapty_customer_user_id` | String | Contains the value of the unique identifier of the user, which can be found from OneSignal side. |
-| `adapty_profile_id` | String | Contains the value of the unique identifier Adapty User Profile ID of the user, which can be found in your Adapty [dashboard](profiles-crm). |
-| `environment` | String | <p>Indicates whether the user is operating in a sandbox or production environment.</p><p></p><p>Values are either `Sandbox` or `Production`</p> |
-| `store` | String | <p>Contains the name of the Store that used to make the purchase.</p><p></p><p>Possible values:</p><p>`app_store` or `play_store`.</p> |
-| `vendor_product_id` | String | <p>Contains the value of Product Id in Apple/Google store.</p><p></p><p>e.g., org.locals.12345</p> |
-| `subscription_expires_at` | String | <p>Contains the expiration date of the latest subscription.</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| `last_event_type` | String | Indicates the type of the last received event from the list of the standard [Adapty events](events) that you have enabled for the integration. |
-| `purchase_date` | String | <p>Contains the date of the last transaction (original purchase or renewal).</p><p></p><p>Value format is:</p><p>year-month dayThour:minute:second</p><p>e.g., 2023-02-10T17:22:03.000000+0000</p> |
-| `active_subscription` | String | The value will be set to `true` on any purchase/renewal event, or `false` if the subscription is expired. |
-| `period_type` | String | <p>Indicates the latest period type for the purchase or renewal.</p><p></p><p>Possible values are</p><p>`trial` for trial period or `normal` for the rest.</p> |
+| `adapty_customer_user_id` | String | The unique identifier of the user in your app. It must be consistent across your system, Adapty, and OneSignal. |
+| `adapty_profile_id` | String | The Adapty user profile ID, available in your [Adapty Dashboard](profiles-crm). |
+| `environment` | String | `Sandbox` or `Production`, indicating the user’s current environment. |
+| `store` | String | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store). |
+| `vendor_product_id` | String | The product ID in the app store (e.g., `org.locals.12345`). |
+| `subscription_expires_at` | String | Expiration date of the latest subscription (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`). |
+| `last_event_type` | String | The latest event type from the [Adapty event list](events). |
+| `purchase_date` | String | Last transaction date (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`). |
+| `active_subscription` | String | `true` if the user has an active subscription and `false` if the subscription has expired. |
+| `period_type` | String | Indicates the most recent period type for the purchase or renewal. Possible values: `trial` for a trial period or `normal` for all other cases. |
 
+All float values are rounded to integers. The strings remain unchanged.
 
-Please consider that all float values will be rounded to int. Strings stay the same. 
+In addition to the predefined tags, you can send [custom attributes](segments#custom-attributes) as tags, providing greater flexibility in the data you include. This is useful for tracking specific details related to your product or service.
 
-In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to OneSignal if the user marks the ** Send User Attributes** checkbox from[ the integration page.](https://app.adapty.io/integrations/onesignal) When unchecked, Adapty sends exactly 10 tags. If the checkbox is checked, we can send more than 10 tags for greater flexibility in capturing relevant data.
+Custom user attributes are automatically sent to OneSignal if the **Send user attributes** checkbox is enabled on the [integration page](https://app.adapty.io/integrations/onesignal). When unchecked, Adapty sends exactly 10 tags. If checked, more than 10 tags can be sent, allowing for enhanced data capture. 
 
-## SDK configuration
+### SDK configuration
 
-There are currently two ways to integrate OneSignal and Adapty: the old one, relying on `playerId`  and the new one, relying on `subscriptionId`, since `playerId` is deprecated starting with [OneSignal SDK v5](https://github.com/OneSignal/OneSignal-iOS-SDK/releases/tag/5.0.0)
+There are two ways to integrate OneSignal with Adapty:
+
+1. **Legacy (pre-v5):** Uses `playerId` (deprecated in [OneSignal SDK v5](https://github.com/OneSignal/OneSignal-iOS-SDK/releases/tag/5.0.0)).
+2. **Current (v5+):** Uses `subscriptionId`.
 
 :::warning
-Make sure you send `playerId` (on OneSignal SDK pre-v5) or `subscriptionId` (on OneSignal SDK v5+) to Adapty, otherwise OneSignal tags couldn't be updated and the integration wouldn't work.
+Make sure to send `playerId` (for OneSignal SDK pre-v5) or `subscriptionId` (for OneSignal SDK v5+) to Adapty. Without this, OneSignal tags won’t be updated, and the integration won’t function properly.
 :::
 
-Here is how you can link Adapty with OneSignal with either `playerId` or `subscriptionId`:
-
-<Tabs groupId="current-os" queryString> 
-
+<Tabs groupId="current-version" queryString> 
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 
 <Tabs groupId="current-os" queryString>
@@ -347,14 +340,15 @@ OneSignal.addSubscriptionObserver(event => {
 
 </Tabs>
 
-
-
-Read more about `OSSubscriptionObserver` in [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
+Read more about `OSSubscriptionObserver` in the [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
 
 ## Dealing with multiple devices
 
-One can often encounter the following situation: a single user has different devices and analytics of purchase events or user subscriptions becomes difficult. OneSignal suggests [methods](https://documentation.onesignal.com/docs/external-user-ids) to cope with this problem. You can match different devices on your server side and send this information to OneSignal. Thus, when you change the user's tags, they will be updated not only for a specific device but for all devices the user has.
+If a user has multiple devices, tracking purchase events and subscriptions can be challenging. OneSignal provides a way to handle this through [external user IDs](https://documentation.onesignal.com/docs/external-user-ids).
 
-To take advantage of this feature, Adapty provides the ability to [identify users](identifying-users) using the Adapty SDK and [send their ID](https://documentation.onesignal.com/docs/external-user-ids#setexternaluserid-method) to OneSignal. By leveraging this opportunity, you can easily match a user's devices and update tags for multiple devices without any extra actions. This not only simplifies the process of tracking user activity and subscriptions but also allows you to provide a seamless experience for your users across all their devices.
+To keep user data consistent across devices:
 
-It's important to note that to properly match a user's devices, you must ensure that each user has a unique identifier. Adapty's `customer_user_id` can be used as an `externalUserId` for this purpose, but if your app doesn't have a registration system, you may need to use a different identifier. Additionally, it's crucial to keep this identifier consistent across all devices and to send updates to OneSignal whenever a user's ID changes. By keeping track of their activity and subscriptions across all devices, you can better understand their needs and provide them with relevant and timely notifications.
+1. Match different devices on your **server side** and send this data to OneSignal.
+2. Use Adapty’s [customer_user_id](identifying-users) as an [externalUserId](https://documentation.onesignal.com/docs/external-user-ids#setexternaluserid-method) in OneSignal. If your app doesn't have a registration system, consider using another unique identifier that remains consistent across the user's devices.
+
+It's important to maintain consistency in the user identifier across all devices and update OneSignal whenever a user's ID changes. This simplifies tracking user activity and subscriptions while ensuring consistent messaging and allows for more accurate analytics and a better user experience. For more details, see OneSignal's [external user ID documentation](https://documentation.onesignal.com/docs/external-user-ids).
