@@ -10,19 +10,29 @@ If your application is intended for kids, you must follow the policies of [Apple
 
 ## What’s required?
 
-You need to configure the Adapty SDK to **disable the collection of**:
+You need to configure the Adapty SDK to disable the collection of:
 
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248)
-- Any other advertising-related data
+- [IP address](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
 
-## Kids Mode activation
+In addition, we recommend using customer user ID carefully. User ID in format `<FirstName.LastName>` will be definitely treated as gathering personal data as well as using email. For Kids Mode, a best practice is to use randomized or anonymized identifiers (e.g., hashed IDs or device-generated UUIDs) to ensure compliance.
+
+## Enabling Kids Mode
+
+### Updates in the Adapty Dashboard
+
+In the Adapty Dashboard, you need to disable the IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
+
+### Updates in your mobile app code
 
 <Tabs groupId="current-os" queryString> 
 
 <TabItem value="swift" label="iOS" default> 
 
-In order to comply with policies, disable the collection of user's IDFA:
+You can only enable the Kids Mode with Cocoa Pods.
+
+In order to comply with policies, disable the collection of the user's IDFA and IP address:
 
 1. Update your Podfile:
 
@@ -54,7 +64,7 @@ In order to comply with policies, disable the collection of user's IDFA:
 
 <TabItem value="kotlin" label="Android (Kotlin)" default> 
 
-To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID) when initializing the Adapty SDK: 
+To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID)  and IP address when initializing the Adapty SDK: 
 ```kotlin showLineNumbers
 override fun onCreate() {
     super.onCreate()
@@ -63,6 +73,7 @@ override fun onCreate() {
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
       // highlight-start
           .withAdIdCollectionDisabled(true) // set to `true`
+          .withIpAddressCollectionDisabled(true) // set to `true`
       // highlight-end
           .build()
     )  
@@ -72,7 +83,7 @@ override fun onCreate() {
 </TabItem> 
 
 <TabItem value="java" label="Android (Java)" default> 
-To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID) when initializing the Adapty SDK: 
+To comply with policies, you need to disable the collection of the Android Advertising ID (AAID/GAID)  and IP address when initializing the Adapty SDK: 
 
 ```java showLineNumbers
 @Override
@@ -83,18 +94,21 @@ public void onCreate() {
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
       // highlight-start
           .withAdIdCollectionDisabled(true) // set to `true`
+          .withIpAddressCollectionDisabled(true) // set to `true`
       // highlight-end
           .build()
     );
 }
 ```
 
+
+
 </TabItem> 
 <TabItem value="flutter" label="Flutter" default> 
 
-In order to comply with policies, disable the collection of user's IDFA (for iOS) and GAID/AAID (for Android).
+In order to comply with policies, disable the collection of the user's IDFA (for iOS), GAID/AAID (for Android), and IP address.
 
-### Android: Update your SDK configuration
+**Android: Update your SDK configuration**
 
 ```dart showLineNumbers title="Dart"
 try {
@@ -102,6 +116,7 @@ try {
         configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
       // highlight-start
           ..withGoogleAdvertisingIdCollectionDisabled(true),  // set to `true`
+          ..withIpAddressCollectionDisabled(true),  // set to `true`
       // highlight-end
     );
 } catch (e) {
@@ -109,7 +124,7 @@ try {
 }
 ```
 
-### iOS: Enable Kids Mode using CocoaPods
+**iOS: Enable Kids Mode using CocoaPods**
 
 1. Update your Podfile:
 
