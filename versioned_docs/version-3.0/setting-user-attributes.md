@@ -365,8 +365,6 @@ Keep in mind that the value of `customAttributes` may be out of date since the u
 
 ### Limits
 
-You can set up to 30 custom attributes per user, with key names up to 30 characters long and values up to 50 characters long.
-
 - Up to 30 custom attributes per user
-- Key name up to 30 characters long. The key name can include alphanumeric characters and any of the following: `_`  `-` `.`
-- Value up to 50 characters long
+- Key names are up to 30 characters long. The key name can include alphanumeric characters and any of the following: `_`  `-` `.`
+- Value can be a string or float with no more than 50 characters.
