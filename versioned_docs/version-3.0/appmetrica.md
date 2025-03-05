@@ -68,25 +68,13 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ## SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the `appmetrica_profile_id` or `appmetrica_device_id` parameter. If both parameters are provided, the `appmetrica_profile_id` will be used!
+Use the `setIntegrationIdentifier()` method to set the  `appmetrica_device_id` parameter. It's a must to set up the integration.
 
-If these aren’t set, Adapty will default to using your user ID (`YOUR_ADAPTY_CUSTOMER_USER_ID`). Make sure the user ID you use to send data to AppMetrica from your app matches the one you send to Adapty. 
+If you have a user registration, you can pass `appmetrica_profile_id` as well.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
 
-**Setting appmetrica_profile_id**
-
-```swift showLineNumbers
-do {
-  try await Adapty.setIntegrationIdentifier(
-    key: "appmetrica_profile_id",
-    value: "YOUR_APPMETRICA_PROFILE_ID"
-  )
-} catch {
-  // handle the error
-}
-```
 **Setting appmetrica_device_id**
 
 ```swift showLineNumbers
@@ -114,8 +102,26 @@ AppMetrica.requestStartupIdentifiers(on: nil) { ids, error in
 }
 ```
 
+**Setting appmetrica_profile_id**
+
+```swift showLineNumbers
+do {
+  try await Adapty.setIntegrationIdentifier(
+    key: "appmetrica_profile_id",
+    value: "YOUR_APPMETRICA_PROFILE_ID"
+  )
+} catch {
+  // handle the error
+}
+```
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
+**Setting appmetrica_device_id**
+
+```kotlin showLineNumbers 
+.
+```
 
 **Setting appmetrica_profile_id**
 
@@ -147,31 +153,9 @@ val startupParamsCallback = object: StartupParamsCallback {
 
 AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
-**Setting appmetrica_device_id**
-
-```kotlin showLineNumbers 
-.
-```
-
 </TabItem>
 <TabItem value="Flutter" label="Flutter (Dart)" default>
 
-**Setting appmetrica_profile_id**
-
-```javascript showLineNumbers
-import 'package:appmetrica_plugin/appmetrica_plugin.dart';
-
-try {
-    await Adapty().setIntegrationIdentifier(
-        key: "appmetrica_profile_id", 
-        value: "YOUR_APPMETRICA_PROFILE_ID",
-    );
-} on AdaptyError catch (adaptyError) {
-    // handle the error
-} catch (e) {
-    // handle the error
-}
-```
 **Setting appmetrica_device_id**
 
 ```javascript showLineNumbers
@@ -194,19 +178,25 @@ if (deviceIdHash != null) {
 }
 ```
 
+**Setting appmetrica_profile_id**
+
+```javascript showLineNumbers
+import 'package:appmetrica_plugin/appmetrica_plugin.dart';
+
+try {
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_profile_id", 
+        value: "YOUR_APPMETRICA_PROFILE_ID",
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
 </TabItem>
 <TabItem value="Unity" label="Unity (C#)" default>
 
-**Setting appmetrica_profile_id**
-
-```csharp showLineNumbers
-Adapty.SetIntegrationIdentifier(
-  "appmetrica_profile_id",
-  "YOUR_APPMETRICA_PROFILE_ID",
-  (error) => {
-    // handle the error
-});
-```
 **Setting appmetrica_device_id**
 
 ```csharp showLineNumbers
@@ -230,8 +220,24 @@ AppMetrica.RequestStartupParams(
 );
 ```
 
+**Setting appmetrica_profile_id**
+
+```csharp showLineNumbers
+Adapty.SetIntegrationIdentifier(
+  "appmetrica_profile_id",
+  "YOUR_APPMETRICA_PROFILE_ID",
+  (error) => {
+    // handle the error
+});
+```
 </TabItem>
 <TabItem value="RN" label="React Native (TS)" default>
+
+**Setting appmetrica_device_id**
+
+```typescript showLineNumbers
+.
+```
 
 **Setting appmetrica_profile_id**
 
@@ -257,11 +263,5 @@ const startupParamsCallback = async (
 
 AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_HASH_KEY])
 ```
-**Setting appmetrica_device_id**
-
-```typescript showLineNumbers
-.
-```
-
 </TabItem>
 </Tabs>
