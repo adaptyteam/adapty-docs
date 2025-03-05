@@ -16,7 +16,7 @@ In Observer mode, the Adapty SDK can't track purchases made through your existin
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
 
-Use `reportTransaction` to send the transaction data to Adapty.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
@@ -71,7 +71,7 @@ https://developer.apple.com/documentation/uikit/uiviewcontroller/targetviewcontr
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
-Use `reportTransaction` to send the transaction data to Adapty.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
@@ -96,13 +96,13 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId     | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-Use `reportTransaction` to send the transaction data to Adapty.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
@@ -127,13 +127,12 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId     | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
-
+| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
 
 </TabItem>
 <TabItem value="flutter" label="Flutter" default>
 
-Use `reportTransaction` to send the transaction data to Adapty.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
@@ -178,7 +177,7 @@ Parameters:
 </TabItem>
 <TabItem value="unity" label="Unity" default>
 
-Use `reportTransaction` for both platforms and `restorePurchases` (additionally for Android) to send transaction data to Adapty.
+Use `reportTransaction` on both platforms to explicitly report each transaction, and `restorePurchases` (additionally for Android) to ensure Adapty recognizes it.
 
 :::warning
 
@@ -216,7 +215,7 @@ Parameters:
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
 
-Use `reportTransaction` for both platforms and `restorePurchases` (additionally for Android) to send transaction data to Adapty.
+Use `reportTransaction` on both platforms to explicitly report each transaction, and `restorePurchases` (additionally for Android) to ensure Adapty recognizes it.
 
 :::warning
 
@@ -260,19 +259,29 @@ Parameters:
 
 ### Reporting transactions
 
-For Android and Android-based cross-platforms, use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](restore-purchase) page.
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="swift" label="iOS" default> 
+
+- Versions up to 3.1.x automatically listen for transactions in the App Store, so manual reporting is not required.
+- Version 3.2 does not support Observer Mode.
+
+ </TabItem> 
+
+<TabItem value="kotlin" label="Android and Android-based cross-platforms" default> 
+
+Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](restore-purchase) page.
 
 :::warning
 
 **Don't skip transaction reporting!**
 If you don’t call `restorePurchases`, Adapty won’t recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
-:::
+::: 
 
-For iOS and iOS-based cross-platforms:
+</TabItem> 
 
-- Versions up to 3.1.x automatically listen for transactions in the App Store, so manual reporting is not required.
-- Version 3.2 does not support Observer Mode.
+</Tabs>
 
 ### Associating paywalls to transactions
 

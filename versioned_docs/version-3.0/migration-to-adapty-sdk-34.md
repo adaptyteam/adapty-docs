@@ -40,7 +40,7 @@ In the new version, you must explicitly report each transaction for Adapty to re
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
