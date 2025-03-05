@@ -91,25 +91,25 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
 
 Event parameters are the same for all event types.
 
-| **Field**                         | **Type**             | **Description**                                              |
-| --------------------------------- | -------------------- | ------------------------------------------------------------ |
-| **advertising_id**                | UUID                 | Advertising ID (Android only).                               |
-| **attributions**                  | JSON                 | JSON of [attribution data](webhook-event-types-and-fields#attribution-data). To send the attribution, enable the **Send Attribution** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page. |
-| **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. If not set, this field will be null. **Customer User ID** ** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **email**                         | String               | E-mail of your user. **Email** f** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
-| **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
-| **event_properties**              | JSON                 | JSON of [event properties](webhook-event-types-and-fields#event-properties). |
-| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> trial_converted </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> **Default event ID** in the [Webhook events](webhook-event-types-and-fields#webhook-event-types) table. Standard flows with events that are created and sent to Webhook are described on the [Webhook event flows](event-flows) page.</p> |
-| **idfa**                          | UUID                 | Advertising ID (Apple only).  **IDFA** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). A user's device may not have an IDFA if the user has restricted tracking, the device is in kids mode, or due to other privacy settings. |
-| **idfv**                          | UUID                 | The identifier for Vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. **IDFV** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a `null` is sent. |
-| **play_store_purchase_token**     | JSON                 | JSON containing the [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token) used to revalidate the purchase is required. This is included only if the **Send Play Store purchase token** option is enabled in the Webhook integration settings. |
-| **profile_id**                    | UUID                 | **Adapty ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **profile_install_datetime**      | ISO 8601 date & time | Installation date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
-| **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul> <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li> <li> **customer_user_id**: (String) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
-| **user_agent**                    | String               | User-agent used by the browser on the device.                |
-| **user_attributes**               | JSON                 | <p>JSON of [custom user attributes](setting-user-attributes#custom-user-attributes) you've set up to send from your mobile app. To send it, enable the **Send User Attributes** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page. </p><p>While custom attribute values in the mobile app code can be set as floats or strings, attributes received via the server-side API or historical import may come in different formats. The boolean and integer values will be converted to floats in this case.</p> |
+| **Field**                         | **Type** | **Description**                                              |
+| --------------------------------- | -------- | ------------------------------------------------------------ |
+| **advertising_id**                | UUID     | Advertising ID (Android only).                               |
+| **attributions**                  | JSON     | [Attribution data](webhook-event-types-and-fields#attribution-data). Included if **Send Attribution** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
+| **customer_user_id**              | String   | User ID from your app (UUID, email, or other ID). If not set, this field is `null`. **Customer User ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **email**                         | String   | User's email. **Email** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **event_api_version**             | Integer  | Adapty API version (current: `1`).                           |
+| **event_datetime**                | ISO 8601 | Event timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
+| **event_properties**              | JSON     | [Event properties](webhook-event-types-and-fields#event-properties). |
+| **event_type**                    | String   | Event name in Adapty format. See [Webhook events](webhook-event-types-and-fields#webhook-event-types) for the full list. |
+| **idfa**                          | UUID     | Advertising ID (Apple only). **IDFA** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). It may be `null` if unavailable due to tracking restrictions, kids mode, or privacy settings. |
+| **idfv**                          | UUID     | Identifier for Vendors (IDFV), unique per developer. **IDFV** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **integration_ids**               | JSON     | User integration IDs. `null` if unavailable or integrations are disabled. |
+| **play_store_purchase_token**     | JSON     | [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token), included if **Send Play Store purchase token** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
+| **profile_id**                    | UUID     | **Adapty ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **profile_install_datetime**      | ISO 8601 | Installation timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
+| **profiles_sharing_access_level** | JSON     | List of users sharing access excluding the current user profile: <ul><li>**profile_id**: (UUID) Adapty ID</li><li>**customer_user_id**: (String) Customer User ID if provided</li></ul> Used for [Sharing purchases between accounts](general#6-sharing-purchases-between-user-accounts). |
+| **user_agent**                    | String   | Device browser user-agent.                                   |
+| **user_attributes**               | JSON     | [Custom user attributes](setting-user-attributes#custom-user-attributes). Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>While custom attribute values in the mobile app code can be set as floats or strings, attributes received via the server-side API or historical import may come in different formats. The boolean and integer values will be converted to floats in this case.</p> |
 
 ### Attribution data
 
@@ -117,7 +117,23 @@ If you've chosen to send attribution data and if you have them, the data below w
 
 To send the attribution, enable the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page. 
 
+```json title="Json" showLineNumbers
+{
+  "attributions": {
+    "appsflyer": {
+      "ad_set": "sample_ad_set_123",
+      "status": "non_organic",
+      "channel": "sample_channel",
+      "ad_group": "sample_ad_group_456",
+      "campaign": "sample_ios_campaign",
+      "creative": "sample_creative_789",
+      "created_at": "2000-01-31T00:00:00.000000+0000",
+      "network_user_id": "0000000000000-0000000"
+    }
+  }
+}
 
+```
 
 | Field name          | Field type    | Description                                        |
 | :------------------ | :------------ | :------------------------------------------------- |
@@ -132,7 +148,23 @@ To send the attribution, enable the **Send Attribution** option in the [Integrat
 
 ### Integration IDs
 
-The following integration IDs are used now in events: `adjust_device_id`, `airbridge_device_id`, `amplitude_device_id`, `amplitude_user_id`, `appmetrica_device_id`, `appmetrica_profile_id`, `appsflyer_id`, `branch_id`, `facebook_anonymous_id`, `firebase_app_instance_id`, `mixpanel_user_id`,  `pushwoosh_hwid`, `one_signal_player_id`, `one_signal_subscription_id`, `tenjin_analytics_installation_id`.
+The following integration IDs are used now in events: 
+
+- `adjust_device_id`
+- `airbridge_device_id`
+- `amplitude_device_id`
+- `amplitude_user_id`
+- `appmetrica_device_id`
+- `appmetrica_profile_id`
+- `appsflyer_id`
+- `branch_id`
+- `facebook_anonymous_id`
+- `firebase_app_instance_id`
+- `mixpanel_user_id`
+- `pushwoosh_hwid`
+- `one_signal_player_id`
+- `one_signal_subscription_id`
+- `tenjin_analytics_installation_id`
 
 ### Play Store purchase token
 
