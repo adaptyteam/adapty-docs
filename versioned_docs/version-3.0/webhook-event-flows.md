@@ -11,13 +11,13 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 In Adapty, you'll receive various webhook events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
-:::warning
+<!--- :::warning
 
 Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
 
 If a webhook integration isn’t configured or this event type isn’t enabled, the **Access level updated** event won’t be created and won’t appear in the [**Event Feed**](https://app.adapty.io/event-feed).
 
-:::
+::: --->
 
 ## Subscription Lifecycle
 
@@ -439,7 +439,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 ###  Shared Access Between Users Flow
 
-This option allows multiple users to share the same access level, though it’s a bit risky since it may lead to multiple users accessing the same content. While the access level is shared, all transactions are logged under the original [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) to maintain complete transaction history and analytics.
+This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) to maintain complete transaction history and analytics.
 
 Therefore, only 1 event will be created: **Access level updated** to grant access to the second user.
 

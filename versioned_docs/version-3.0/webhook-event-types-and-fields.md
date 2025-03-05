@@ -7,19 +7,19 @@ toc_max_heading_level: 4
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
 
-Adapty sends webhooks in response to events that occur in your app. This section defines these event types and the data contained in each webhook.
+Adapty sends webhooks in response to subscription events. This section defines these event types and the data contained in each webhook.
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Event flows](event-flows) to decide which events are required or not. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
+You can send all event types to your webhook or choose only some of them. You can consult our [Event flows](event-flows) to learn what kind of incoming data to expect and how to build your business logic around it. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
 
 <WebhookEvents />
 
 ## Webhook event structure
 
-Adapty will send you only those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
+Adapty will send you only those events you've chosen in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events have the same event fields; however, the list of event properties will depend on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they will contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
+Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events follow the same structure, but their fields vary based on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
 
 ```json title="Json" showLineNumbers
 {
@@ -93,19 +93,19 @@ Event parameters are the same for all event types.
 
 | **Field**                         | **Type**             | **Description**                                              |
 | --------------------------------- | -------------------- | ------------------------------------------------------------ |
-| **advertising_id**                | UUID                 | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device. Used for Android only. |
-| **attributions**                  | JSON                 | JSON of [attribution data](webhook-event-types-and-fields#attribution-data). To send the attribution, enable the **Send Attribution** option in the [**Integrations** -> **Webhooks**](https://app.adapty.io/integrations/customwebhook) page. |
-| **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. If not set, this field will be null. You can find it in the **Customer User ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **email**                         | String               | E-mail of your user. You can find it in the **Email** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **advertising_id**                | UUID                 | Advertising ID (Android only).                               |
+| **attributions**                  | JSON                 | JSON of [attribution data](webhook-event-types-and-fields#attribution-data). To send the attribution, enable the **Send Attribution** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page. |
+| **customer_user_id**              | String               | User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. If not set, this field will be null. **Customer User ID** ** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **email**                         | String               | E-mail of your user. **Email** f** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
 | **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **event_properties**              | JSON                 | JSON of [event properties](webhook-event-types-and-fields#event-properties). |
-| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> trial_converted </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> You can see them in the **Default event ID** of the [Webhook events](webhook-event-types-and-fields#webhook-event-types) table. Standard flows with events that are created and sent to Webhook are described on the [Webhook event flows](event-flows) page.</p> |
-| **idfa**                          | UUID                 | The identifier for advertisers (IDFA) is a random device identifier assigned by Apple to a user's device. You can find it in the **IDFA** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **idfv**                          | UUID                 | The identifier for vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. You can find it in the **IDFV** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a null is sent. |
+| **event_type**                    | String               | <p>Event name in Adapty format.</p> <ul><li> subscription_started</li><li> subscription_renewed</li><li> subscription_renewal_cancelled</li><li> subscription_renewal_reactivated</li><li> subscription_expired</li><li> subscription_paused</li><li> non_subscription_purchase</li><li> trial_started</li><li> trial_converted </li><li> trial_renewal_cancelled</li><li> trial_renewal_reactivated</li><li> trial_expired</li><li> entered_grace_period</li><li> billing_issue_detected</li><li> subscription_refunded</li><li> non_subscription_purchase_refunded</li><li> access_level_updated</li></ul><p> **Default event ID** in the [Webhook events](webhook-event-types-and-fields#webhook-event-types) table. Standard flows with events that are created and sent to Webhook are described on the [Webhook event flows](event-flows) page.</p> |
+| **idfa**                          | UUID                 | Advertising ID (Apple only).  **IDFA** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). A user's device may not have an IDFA if the user has restricted tracking, the device is in kids mode, or due to other privacy settings. |
+| **idfv**                          | UUID                 | The identifier for Vendors (IDFV) is a unique code assigned to all apps developed by a single developer, which in this case refers to your apps. **IDFV** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **integration_ids**               | JSON                 | JSON of user integration identifiers. If a user doesn't have any identifier or integrations are disabled, then a `null` is sent. |
 | **play_store_purchase_token**     | JSON                 | JSON containing the [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token) used to revalidate the purchase is required. This is included only if the **Send Play Store purchase token** option is enabled in the Webhook integration settings. |
-| **profile_id**                    | UUID                 | The ID of the profile in Adapty. You can find it in the **Adapty ID** field of the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **profile_id**                    | UUID                 | **Adapty ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
 | **profile_install_datetime**      | ISO 8601 date & time | Installation date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul> <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li> <li> **customer_user_id**: (String) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **user_agent**                    | String               | User-agent used by the browser on the device.                |
@@ -115,7 +115,9 @@ Event parameters are the same for all event types.
 
 If you've chosen to send attribution data and if you have them, the data below will be sent with the event for every source. The same attribution data is sent to all event types.
 
-To send the attribution, enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page. 
+To send the attribution, enable the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page. 
+
+
 
 | Field name          | Field type    | Description                                        |
 | :------------------ | :------------ | :------------------------------------------------- |
