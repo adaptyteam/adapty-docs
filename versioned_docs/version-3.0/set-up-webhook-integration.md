@@ -35,19 +35,21 @@ Adapty [webhook integration](webhook) consists of the following steps:
 1. [**Verification request**](#verification-request): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the verification response.
 2. [**Usual event**](#adapty-standard-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
 
-   Additionally, for your testing needs in the sandbox environment, two other fields are available:
-
 ### Verification request
 
+After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a POST verification request to your endpoint:
+
+```json title="Json"
+{}
+```
+
+Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
 
 Your server must reply with a 2xx status code and send the JSON response, for example:
 
 ```json title="Json"
 {}
 ```
-
-
-Once Adapty receives the verification response in the correct format, your Adapty webhook integration is fully configured.
 
 ### Adapty standard events
 
