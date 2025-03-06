@@ -57,7 +57,13 @@ Adapty will send to your webhook endpoint 2 types of requests:
 
 ### Verification request
 
-After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a POST verification request to your endpoint. Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
+After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a POST verification request to your endpoint:
+
+```json title="Json"
+{}
+```
+
+Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
 
 Your server must reply with a 2xx status code and send the JSON response, for example:
 
@@ -65,7 +71,7 @@ Your server must reply with a 2xx status code and send the JSON response, for ex
 {}
 ```
 
-Once Adapty receives the verification response in the correct format, your Adapty webhook integration is fully configured.
+Once Adapty receives the verification response in the correct format and with a 2xx status code, your Adapty webhook integration is fully configured.
 
 ## Adapty standard events
 
