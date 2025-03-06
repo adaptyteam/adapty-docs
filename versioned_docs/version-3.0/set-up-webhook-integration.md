@@ -6,14 +6,35 @@ metadataTitle: ""
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 
+1. **You set up your endpoint:**
+   1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
+   2. Configure your server to receive Adapty's verification request and respond with any `2xx` status and a JSON body.
+   3. [Handle subscription events](set-up-webhook-integration#step-2-set-up-the-processing-of-adapty-standard-events) once the connection is verified.
+2. **You configure and enable the webhook integration** in the [Adapty Dashboard](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
+3. **Adapty sends a verification request** to your server.
+4. **Your server responds** with a `2XX` status and a JSON body.
+5. **Once Adapty receives a valid response, it starts sending subscription events.**
+
+<Zoom>
+  <img src={require('./img/webhook-setup.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+<!--- 
+
 Adapty [webhook integration](webhook) consists of the following steps:
 
 1. You set up your endpoint:
    1.  To [have the **Content-Type** header as `application/json`](set-up-webhook-integration#step-1-set-up-your-server-to-process-adapty-requests). 
-   2.  To [receive the first Adapty verification request](set-up-webhook-integration#step-11-set-up-receiving-adaptys-verification-request-by-your-server) - the initial request to verify the connection is set up correctly.
-   3.  And after that, to [respond](set-up-webhook-integration#step-12-set-up-your-servers-verification-response) to it for the Adapty server to learn the connection is successfully established.
+   2.  To [receive the first Adapty verification request](set-up-webhook-integration#step-11-set-up-receiving-adaptys-verification-request-by-your-server) - the initial request to verify the connection is set up correctly and [respond](set-up-webhook-integration#step-12-set-up-your-servers-verification-response) to it for the Adapty server to learn the connection is successfully established.
    4.  To [receive the standard events and process them](set-up-webhook-integration#step-2-set-up-the-processing-of-adapty-standard-events).
-
+   
 2. [You configure the integration](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard) in the Adapty Dashboard. Within this step, you can optionally [map Adapty events with your event names](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). We recommend to first use the Sandbox environment to test how your server processes Adapty events and after you make sure it does it as expected, switch to the production environment.
 
 3. Adapty sends a verification request to your server.
@@ -22,16 +43,16 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 5. After the Adapty server receives the verification response in the expected format, it's ready to send standard event requests.
 
-After that, we recommend testing your webhook integration.
+After that, we recommend testing your webhook integration. --->
 
-## Step 1. Set up your server to process Adapty requests
+## Set up your server to process Adapty requests
 
 Adapty will send to your webhook endpoint 2 types of requests:
 
 1. [**Verification request**](set-up-webhook-integration#step-11-set-up-receiving-adaptys-verification-request-by-your-server): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the [verification response](set-up-webhook-integration#step-12-set-up-your-servers-verification-response).
 2. [**Usual event**](set-up-webhook-integration#step-2-set-up-the-processing-of-adapty-standard-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
 
-### Step 1.1. Set up receiving Adapty's verification request by your server
+### Step 1. Set up receiving Adapty's verification request by your server
 
 After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a `isMount` POST verification request to your endpoint.
 
@@ -59,7 +80,7 @@ From then on, Adapty will send the selected events to your specified URL as they
 
 ## Step 2. Set up the processing of Adapty standard events
 
-Ensure your endpoint includes the Content-Type header set to application/json, so your server expects incoming webhook requests with JSON-formatted payloads.
+Ensure your endpoint includes the **Content-Type** header set to `application/json`, so your server expects incoming webhook requests with JSON-formatted payloads.
 
 For the webhook event structure and detailed description of its fields, see the [Webhook event types and fields page](webhook-event-types-and-fields#webhook-event-structure).
 
