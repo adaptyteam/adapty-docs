@@ -9,9 +9,16 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-[AppMetrica](https://appmetrica.yandex.ru/en/about) is a no-cost tool that helps you track advertisements and analyze how your mobile app is doing. It works in real-time, so you see things right away.
+[AppMetrica](https://appmetrica.yandex.ru/en/about) is a no-cost tool that helps you track advertisements and analyze how your mobile app is doing. It works in real time, so you see things right away.
 
-### How to set up AppMetrica integration
+## How to set up AppMetrica integration
+
+AppMetrica integration configuration is comprised of two major steps:
+
+1. Enable the integration in the Adapty Dashboard.
+2. Configure the integration in your app’s code.
+
+### Dashboard Configuration
 
 To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica) and set credentials.
 
@@ -26,10 +33,6 @@ To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/
 />
 </Zoom>
 
-
-
-
-
 Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choose the app you want to send events to and go to **Settings**. Copy **Application ID** and **Post API key** and use them to set up the integration in Adapty.
 
 <Zoom>
@@ -43,13 +46,9 @@ Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choo
 />
 </Zoom>
 
-
-
-
-
 AppMetrica syncs events every 4 hours, so it may take some time for events to appear in the dashboard. AppMetrica doesn't support sending events revenue, but we send it as regular property.
 
-## Events and tags
+### Events and tags
 
 Below the credentials, there are three groups of events you can send to AppMetrics from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
@@ -66,14 +65,39 @@ Below the credentials, there are three groups of events you can send to AppMetri
 
 We recommend using the default event names provided by Adapty. But you can change the event names based on your needs.
 
-## SDK configuration
+### SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the `appmetrica_profile_id` or `appmetrica_device_id` parameter. If both parameters are provided, the `appmetrica_profile_id` will be used!
+Use the `setIntegrationIdentifier()` method to set the `appmetrica_device_id` parameter. This is required to enable the integration.
 
-If these aren’t set, Adapty will default to using your user ID (`YOUR_ADAPTY_CUSTOMER_USER_ID`). Make sure the user ID you use to send data to AppMetrica from your app matches the one you send to Adapty. 
+If your app has user registration, you can also pass `appmetrica_profile_id`.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
+
+**Setting appmetrica_device_id**
+
+```swift showLineNumbers
+val startupParamsCallback = object: StartupParamsCallback {
+    override fun onReceive(result: StartupParamsCallback.Result?) {
+        val deviceIdHash = result?.deviceIdHash ?: return
+
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+
+    override fun onRequestError(
+        reason: StartupParamsCallback.Reason,
+        result: StartupParamsCallback.Result?
+    ) {
+        //handle the error
+    }
+}
+
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
+```
 
 **Setting appmetrica_profile_id**
 
@@ -87,35 +111,33 @@ do {
   // handle the error
 }
 ```
-**Setting appmetrica_device_id**
-
-```swift showLineNumbers
-AppMetrica.requestStartupIdentifiers(on: nil) { ids, error in
-  if let error {
-    // handle AppMetrica error    
-    return
-  }
-
-  guard let deviceIDHash = ids?[.deviceIDHashKey] as? String else {
-    // handle AppMetrica error
-    return
-  }
-
-  Task {
-    do {
-      try await Adapty.setIntegrationIdentifier(
-        key: "appmetrica_device_id",
-        value: deviceIDHash
-      )
-    } catch {
-      // handle the error
-    }
-  }
-}
-```
-
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
+**Setting appmetrica_device_id**
+
+```kotlin showLineNumbers 
+val startupParamsCallback = object: StartupParamsCallback {
+    override fun onReceive(result: StartupParamsCallback.Result?) {
+        val deviceIdHash = result?.deviceIdHash ?: return
+
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+
+    override fun onRequestError(
+        reason: StartupParamsCallback.Reason,
+        result: StartupParamsCallback.Result?
+    ) {
+        //handle the error
+    }
+}
+
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
+```
 
 **Setting appmetrica_profile_id**
 
@@ -147,31 +169,9 @@ val startupParamsCallback = object: StartupParamsCallback {
 
 AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
-**Setting appmetrica_device_id**
-
-```kotlin showLineNumbers 
-.
-```
-
 </TabItem>
 <TabItem value="flutter" label="Flutter (Dart)" default>
 
-**Setting appmetrica_profile_id**
-
-```javascript showLineNumbers
-import 'package:appmetrica_plugin/appmetrica_plugin.dart';
-
-try {
-    await Adapty().setIntegrationIdentifier(
-        key: "appmetrica_profile_id", 
-        value: "YOUR_APPMETRICA_PROFILE_ID",
-    );
-} on AdaptyError catch (adaptyError) {
-    // handle the error
-} catch (e) {
-    // handle the error
-}
-```
 **Setting appmetrica_device_id**
 
 ```javascript showLineNumbers
@@ -194,19 +194,25 @@ if (deviceIdHash != null) {
 }
 ```
 
+**Setting appmetrica_profile_id**
+
+```javascript showLineNumbers
+import 'package:appmetrica_plugin/appmetrica_plugin.dart';
+
+try {
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_profile_id", 
+        value: "YOUR_APPMETRICA_PROFILE_ID",
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
 </TabItem>
 <TabItem value="unity" label="Unity (C#)" default>
 
-**Setting appmetrica_profile_id**
-
-```csharp showLineNumbers
-Adapty.SetIntegrationIdentifier(
-  "appmetrica_profile_id",
-  "YOUR_APPMETRICA_PROFILE_ID",
-  (error) => {
-    // handle the error
-});
-```
 **Setting appmetrica_device_id**
 
 ```csharp showLineNumbers
@@ -230,10 +236,20 @@ AppMetrica.RequestStartupParams(
 );
 ```
 
+**Setting appmetrica_profile_id**
+
+```csharp showLineNumbers
+Adapty.SetIntegrationIdentifier(
+  "appmetrica_profile_id",
+  "YOUR_APPMETRICA_PROFILE_ID",
+  (error) => {
+    // handle the error
+});
+```
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
 
-**Setting appmetrica_profile_id**
+**Setting appmetrica_device_id**
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
@@ -247,7 +263,6 @@ const startupParamsCallback = async (
   const deviceIdHash = params?.deviceIdHash
   if (deviceIdHash) {
     try {
-      await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash);
     } catch (error) {
       // handle `AdaptyError`
@@ -257,11 +272,17 @@ const startupParamsCallback = async (
 
 AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_HASH_KEY])
 ```
-**Setting appmetrica_device_id**
+
+**Setting appmetrica_profile_id**
 
 ```typescript showLineNumbers
-.
-```
+import { adapty } from 'react-native-adapty';
 
+try {
+  await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
 </TabItem>
 </Tabs>
