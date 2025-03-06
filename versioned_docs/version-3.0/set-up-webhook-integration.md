@@ -25,8 +25,8 @@ Adapty [webhook integration](webhook) consists of the following steps:
 1. **You set up your endpoint:**
    1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
    2. Configure your server to receive Adapty's verification request and respond with any `2xx` status and a JSON body.
-   3. [Handle subscription events](#adapty-standard-events) once the connection is verified.
-2. **You configure and enable the webhook integration** in the [Adapty Dashboard](#dashboard-configuration). You can also [map Adapty events to custom event names](https://dev-docs.adapty.io/docs/set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
+   3. [Handle subscription events](#subscription-events) once the connection is verified.
+2. **You [configure and enable the webhook integration](#configure-webhook-integration-in-the-adapty-dashboard)** in the Adapty Dashboard. You can also [map Adapty events to custom event names](https://dev-docs.adapty.io/docs/set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
 3. **Adapty sends a verification request** to your server.
 4. **Your server responds** with a `2XX` status and a JSON body.
 5. **Once Adapty receives a valid response, it starts sending subscription events.**
@@ -35,8 +35,8 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 Adapty will send to your webhook endpoint 2 types of requests:
 
-1. [**Verification request**](#verification-request): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the verification response.
-2. [**Subscription event**](#adapty-standard-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
+1. [Verification request](#verification-request): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the verification response.
+2. [Subscription event](#subscription-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
 
 ### Verification request
 
@@ -62,7 +62,7 @@ Subscription events are sent with the **Content-Type** header set to `applicatio
 
 #### Webhook event structure
 
-Adapty will send you those events you've chosen in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
+Adapty will send you those events you've chosen in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
 Each event is wrapped into the following structure:
 
@@ -97,10 +97,10 @@ Each event is wrapped into the following structure:
 | **idfa**                          | String               | The identifier for advertisers (IDFA) is a random device identifier assigned by Apple to a user's device. |
 | **advertising_id**                | String               | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device. |
 | **profile_install_datetime**      | ISO 8601 date & time | Installation date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html): starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
-| **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID4) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
+| **profiles_sharing_access_level** | JSON                 | <p> A list of objects, each containing the IDs of users who share the access level (including the current profile):</p><ul>  <li> **profile_id**: (UUID4) The Adapty Profile ID sharing the access level, including the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [Sharing paid access between user accounts](general#6-sharing-purchases-between-user-accounts).</p> |
 | **user_agent**                    | String               | User-agent used by the browser on the device.                |
 | **email**                         | String               | E-mail of your user.                                         |
-| **event_type**                    | String               | Event name as set up in the in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook)  page in lowercase. |
+| **event_type**                    | String               | Event name as set up in the in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook)  page in lowercase. |
 | **event_datetime**                | ISO 8601 date & time | Event date and time in format [IOS 8601](https://www.iso.org/iso-8601-date-and-time-format.html) : starting with the year, followed by the month, the day, the hour, the minutes, seconds, and milliseconds. For example, 2020-07-10T15:00:00.000000+0000, represents the 10th of July 2020 at 3 p.m. |
 | **event_properties**              | JSON                 | JSON of [event properties](set-up-webhook-integration#event-properties). |
 | **event_api_version**             | Integer              | Adapty API version. The current value is `1`.                |
@@ -114,7 +114,7 @@ Note that this structure may grow over time — with new data being introduced b
 
 Webhook integration enables the control of sending attribution and user attributes. 
 
-- Enable the **Send Attribution** option in the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
+- Enable the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page to send the information about the source of app installs from data providers. 
 - Enable the **Send User Attributes** option to send custom user attributes set up from the Adapty SDK, such as user preferences and app usage data.
 
 #### Attribution data
@@ -250,8 +250,7 @@ Please note that the moment you click the **Save** button, Adapty will send a ve
 
 ### Choose events to send and map event names
 
-Choose the events you want to receive in your server by enabling the toggle next to it. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own in the **Events names** section of the [**Integrations** ->  **Webhooks**](https://app.adapty.io/integrations/customwebhook) page.
-
+Choose the events you want to receive in your server by enabling the toggle next to it. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
 <Zoom>
   <img src={require('./img/86942b8-event_names_renaming.webp').default}
@@ -265,7 +264,7 @@ Choose the events you want to receive in your server by enabling the toggle next
 </Zoom>
 
 
-The event name can be any string. You cannot leave the fields empty for enabled events. If you accidentally removed Adapty event name, you can always copy the name from the [Events to send to 3d-party integrations](events) topic.
+The event name can be any string. You cannot leave the fields empty for enabled events. If you accidentally removed Adapty event name, you can always copy the name from the [Events to send to third-party integrations](events) topic.
 
 ## Handle webhook events
 
