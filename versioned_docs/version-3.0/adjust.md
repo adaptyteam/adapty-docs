@@ -194,8 +194,6 @@ func updateAdjustAttribution() {
         Adapty.updateAttribution(attribution, source: "adjust")
     }
 }
-
-}
 ```
 
 </TabItem>

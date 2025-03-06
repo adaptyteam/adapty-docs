@@ -91,23 +91,19 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ### SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set either `amplitudeDeviceId` or `amplitudeUserId`. If neither is set, Adapty will default to using your user ID (`customerUserId`). If `customerUserId` is also absent, Adapty will handle `user_id` based on the **Always populate user_id** checkbox:
+Use the `setIntegrationIdentifier()` method to set the  `amplitude_device_id` parameter. It's a must to set up the integration.
 
-- **If selected**, Adapty will set `user_id` to the Adapty `profile_id`.
-- **If cleared**, `user_id` will not be set.
-
-Make sure that any user ID you use to send data to Amplitude from your app matches the one you send to Adapty.
+If you have a user registration, you can pass `amplitude_user_id` as well.
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS (Swift)" default>
+<TabItem value="Swift" label="iOS (Swift)" default>
+
+**Setting amplitudeDeviceId**
+
 ```swift showLineNumbers
 import Amplitude 
 
 do {
-    try await Adapty.setIntegrationIdentifier(
-        key: "amplitude_user_id", 
-        value: Amplitude.instance().userId
-    )
     try await Adapty.setIntegrationIdentifier(
         key: "amplitude_device_id", 
         value: Amplitude.instance().deviceId
@@ -116,8 +112,52 @@ do {
     // handle the error
 }
 ```
+
+**Setting amplitudeUserId**
+
+```swift showLineNumbers
+import Amplitude 
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "amplitude_user_id", 
+        value: "YOUR_AMPLITUDE_USER_ID"
+    )
+} catch {
+    // handle the error
+}
+```
+
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
+
+**Setting amplitudeDeviceId**
+
+```kotlin showLineNumbers 
+//for Amplitude maintenance SDK (obsolete)
+val amplitude = Amplitude.getInstance()
+val amplitudeDeviceId = amplitude.getDeviceId()
+val amplitudeUserId = amplitude.getUserId()
+
+//for actual Amplitude Kotlin SDK
+val amplitude = Amplitude(
+    Configuration(
+        apiKey = AMPLITUDE_API_KEY,
+        context = applicationContext
+    )
+)
+val amplitudeDeviceId = amplitude.store.deviceId
+
+//
+
+Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
+
+**Setting amplitudeUserId**
 
 ```kotlin showLineNumbers
 //for Amplitude maintenance SDK (obsolete)
@@ -132,7 +172,6 @@ val amplitude = Amplitude(
         context = applicationContext
     )
 )
-val amplitudeDeviceId = amplitude.store.deviceId
 val amplitudeUserId = amplitude.store.userId
 
 //
@@ -142,25 +181,19 @@ Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
         // handle the error
     }
 }
-
-Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
-    if (error != null) {
-        // handle the error
-    }
-}
 ```
+
 </TabItem>
-<TabItem value="flutter" label="Flutter (Dart)" default>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+
+**Setting amplitudeDeviceId**
+
 ```javascript showLineNumbers
 import 'package:amplitude_flutter/amplitude.dart';
 
 final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
 
 try {
-    await Adapty().setIntegrationIdentifier(
-        key: "amplitude_user_id", 
-        value: amplitude.getUserId(),
-    );
     await Adapty().setIntegrationIdentifier(
         key: "amplitude_device_id", 
         value: amplitude.getDeviceId(),
@@ -171,8 +204,44 @@ try {
     // handle the error
 }
 ```
+
+**Setting amplitudeUserId**
+
+```javascript showLineNumbers
+import 'package:amplitude_flutter/amplitude.dart';
+
+final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
+
+try {
+    await Adapty().setIntegrationIdentifier(
+        key: "amplitude_user_id", 
+        value: "YOUR_AMPLITUDE_USER_ID",
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
 </TabItem>
-<TabItem value="unity" label="Unity (C#)" default>
+<TabItem value="Unity" label="Unity (C#)" default>
+
+**Setting amplitudeDeviceId**
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+Adapty.SetIntegrationIdentifier(
+  "amplitude_device_id", 
+  amplitude.getDeviceId(), 
+  (error) => {
+  // handle the error
+});
+```
+
+**Setting amplitudeUserId**
+
 ```csharp showLineNumbers
 using AdaptySDK;
 
@@ -182,26 +251,34 @@ Adapty.SetIntegrationIdentifier(
   (error) => {
   // handle the error
 });
-
-Adapty.SetIntegrationIdentifier(
-  "amplitude_device_id", 
-  amplitude.getDeviceId(), 
-  (error) => {
-  // handle the error
-});
 ```
+
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
+
+**Setting amplitudeDeviceId**
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';
 
 try {
   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
+
+**Setting amplitudeUserId**
+
+```typescript showLineNumbers
+import { adapty } from 'react-native-adapty';
+
+try {
   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
 } catch (error) {
   // handle `AdaptyError`
 }
 ```
+
 </TabItem>
 </Tabs>
