@@ -91,9 +91,9 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 ### SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the  `amplitudeDeviceId` parameter. It's a must to set up the integration.
+Use the `setIntegrationIdentifier()` method to set the  `amplitude_device_id` parameter. It's a must to set up the integration.
 
-If you have a user registration, you can pass `amplitudeUserId` as well.
+If you have a user registration, you can pass `amplitude_user_id` as well.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
