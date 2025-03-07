@@ -4,6 +4,9 @@ description: "Migrate to Adapty SDK v3.4 for better performance and new monetiza
 metadataTitle: "Migrating to Adapty SDK v3.4 | Adapty Docs"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
 <!--- Adapty SDK 3.4.0 is a major release that introduces improvements that require migration steps on your end. ---> 
 
 **Update Adapty SDK activation**
