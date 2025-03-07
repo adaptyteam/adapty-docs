@@ -102,7 +102,7 @@ let configurationBuilder =
         .with(ipAddressCollectionDisabled: false)
         .with(loglevel: .verbose) // optional 
 
-Adapty.activate(with: configurationBuilder) { error in
+Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 ```
@@ -126,7 +126,7 @@ struct SampleApp: App {
           .with(LogLevel: verbose) // optional 
       
         Task {
-            try await Adapty.activate(with: configurationBuilder)
+            try await Adapty.activate(with: configurationBuilder.build())
         }
     }
 
@@ -267,7 +267,7 @@ let configurationBuilder =
         .with(idfaCollectionDisabled: false) // optional
         .with(ipAddressCollectionDisabled: false) // optional
 
-Adapty.activate(with: configurationBuilder) { error in
+Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 ```
@@ -290,7 +290,7 @@ struct SampleApp: App {
           .with(ipAddressCollectionDisabled: false) // optional
           .with(LogLevel: verbose) // optional  
 
-        Adapty.activate(with: configurationBuilder) { error in
+        Adapty.activate(with: configurationBuilder.build()) { error in
           // handle the error
         }
     }

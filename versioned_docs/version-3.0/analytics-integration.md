@@ -116,7 +116,7 @@ let configurationBuilder =
         .with(idfaCollectionDisabled: true) // set to `true`
 // highlight-end
 
-Adapty.activate(with: configurationBuilder) { error in
+Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 ```
