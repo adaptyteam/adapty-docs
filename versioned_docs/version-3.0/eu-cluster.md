@@ -47,7 +47,7 @@ let configurationBuilder =
         // highlight-next-line
         .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
 
-Adapty.activate(with: configurationBuilder) { error in
+Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 ```
@@ -71,7 +71,7 @@ struct SampleApp: App {
           // highlight-next-line
           .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
   
-        Adapty.activate(with: configurationBuilder) { error in
+        Adapty.activate(with: configurationBuilder.build()) { error in
           // handle the error
         }
     }
