@@ -37,7 +37,6 @@ To integrate Amazon S3 go to [**Integrations** -> **Amazon S3**](https://app.ada
 
 First of all set credentials to build a connection between Amazon S3 and Adapty profiles. 
 
-
 <Zoom>
   <img src={require('./img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.webp').default}
   style={{
@@ -48,10 +47,6 @@ First of all set credentials to build a connection between Amazon S3 and Adapty 
   }}
 />
 </Zoom>
-
-
-
-
 
 In the Adapty Dashboard, the following fields are needed to set up the connection:
 
@@ -379,7 +374,15 @@ Here is the table structure for the paywall visits:
 
 ## Events and tags
 
-Below the credentials, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
+You can manage what data is communicated by the integration. The integration offers the following configuration options:
+
+| Setting                            | Description                                                  |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events**      | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
+| **Include events without profile** | Opt to include transactions that are not linked to a user profile in Adapty. These may include purchases made before Adapty SDK was installed or transactions received from store server notifications that cannot be immediately associated with a specific user. |
+| **Send User Attributes**           | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors. |
+
+Below the integration settings, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
 
 <Zoom>
