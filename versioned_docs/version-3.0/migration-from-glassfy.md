@@ -236,7 +236,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
       .Builder(withAPIKey: "PUBLIC_SDK_KEY")
       .with(customerUserId: "YOUR_USER_ID") // optionally add your internal user id
 
-    Adapty.activate(with: configurationBuilder) { error in
+    Adapty.activate(with: configurationBuilder.build()) { error in
     // handle the error
     }
 }
