@@ -1,5 +1,5 @@
 ---
-title: "Migration guide to iOS Adapty SDK v.3.4"
+title: "Migration guide to Adapty SDK v.3.4"
 description: "Migrate to Adapty SDK v3.4 for better performance and new monetization features."
 metadataTitle: "Migrating to Adapty SDK v3.4 | Adapty Docs"
 ---
