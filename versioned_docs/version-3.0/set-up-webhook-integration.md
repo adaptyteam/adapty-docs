@@ -19,7 +19,7 @@ Adapty [webhook integration](webhook) consists of the following steps:
 />
 </Zoom>
 
-
+<p> </p>
 
 1. **You set up your endpoint:**
    1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
@@ -126,7 +126,7 @@ Open [Integrations -> Webhook](https://app.adapty.io/integrations/customwebhook)
 
 The moment you click the **Save** button, Adapty will send a verification request and will wait for your server verification response.
 
-## Step 4. Handle webhook events
+## Handle webhook events
 
 Webhooks are typically delivered within 5 to 60 seconds after the event occurs. Cancellation events, however, may take up to 2 hours to be delivered after a user cancels their subscription.
 
