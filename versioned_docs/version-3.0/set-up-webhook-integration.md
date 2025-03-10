@@ -9,51 +9,52 @@ import 'react-medium-image-zoom/dist/styles.css'
 
 Adapty [webhook integration](webhook) consists of the following steps:
 
-
-1. **You set up your endpoint:**
-   1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
-   2. Configure your server to receive Adapty's verification request and respond with any `2xx` status and a JSON body.
-   3. [Handle subscription events](#adapty-standard-events) once the connection is verified.
-2. **You configure and enable the webhook integration** in the [Adapty Dashboard](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](set-up-webhook-integration#step-3-configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
-3. **Adapty sends a verification request** to your server.
-4. **Your server responds** with a `2XX` status and a JSON body.
-5. **Once Adapty receives a valid response, it starts sending subscription events.**
-
-<!--- <Zoom>
+<Zoom>
   <img src={require('./img/webhook-setup.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '400px', /* image width */
+    width: '300px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
 />
-</Zoom> --->
+</Zoom>
+
+
+
+1. **You set up your endpoint:**
+   1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
+   2. Configure your server to receive Adapty's verification request and respond with any `2xx` status and a JSON body.
+   3. [Handle subscription events](#subscription-events) once the connection is verified.
+2. **You configure and enable the webhook integration** in the [Adapty Dashboard](#configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](#configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
+3. **Adapty sends a verification request** to your server.
+4. **Your server responds** with a `2XX` status and a JSON body.
+5. **Once Adapty receives a valid response, it starts sending subscription events.**
 
 ## Set up your server to process Adapty requests
 
+Adapty will send to your webhook endpoint 2 types of requests:
+
 1. [**Verification request**](#verification-request): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the verification response.
-2. [**Usual event**](#adapty-standard-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
+2. [**Subscription event**](#subscription-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
 
 ### Verification request
 
-After you enable webhook integration in the Adapty Dashboard, Adapty will automatically send a POST verification request to your endpoint:
-
-```json title="Json"
-{}
-```
+After you enable webhook integration in the Adapty Dashboard, Adapty will send a POST verification request containing an empty JSON object `{}` as a body.
 
 Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
 
-Your server must reply with a 2xx status code and send the JSON response, for example:
+Your server must reply with a 2xx status code and send any valid JSON response, for example:
 
 ```json title="Json"
 {}
 ```
 
-### Adapty standard events
+Once Adapty receives the verification response in the correct format and with a 2xx status code, your Adapty webhook integration is fully configured.
 
-Each event is wrapped into the following structure:
+### Subscription events
+
+Subscription events are sent with the **Content-Type** header set to `application/json` and contain event data in JSON format. For possible event types and request structures, see [Webhook event types and fields](webhook-event-types-and-fields).
 
 ```json showLineNumbers title="Json"
 {
