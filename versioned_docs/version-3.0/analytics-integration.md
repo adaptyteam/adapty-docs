@@ -28,7 +28,7 @@ Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll c
 
 ## Event properties
 
-Webhook events are serialized in JSON. All events follow the same structure, but their fields vary based on the event type, store, and your specific configuration. 
+Webhook events are sent in JSON format. All events follow the same structure, but their fields vary based on the event type, store, and your specific configuration. 
 
 | Property                      | Type          | Description                                                  |
 | ----------------------------- | ------------- | ------------------------------------------------------------ |

@@ -1,7 +1,7 @@
 ---
 title: "Event flows"
-description: "Discover detailed schemes of webhook event flows in Adapty. Learn how subscription events are generated and sent to webhook integrations, helping you track key moments in your customers’ journeys."
-metadataTitle: "Understanding Webhook Event Flows in Adapty: Schemes and Scenarios"
+description: "Discover detailed schemes of subscription event flows in Adapty. Learn how subscription events are generated and sent to integrations, helping you track key moments in your customers’ journeys."
+metadataTitle: "Understanding Event Flows in Adapty: Schemes and Scenarios"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 
 
-In Adapty, you'll receive various webhook events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
+In Adapty, you'll receive various subscription events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
 <!--- :::warning
 
@@ -151,6 +151,56 @@ These subscriptions will belong to the same transaction chain, linked with the s
 />
 </Zoom>
 
+### Billing Issue Outcome Flow
+
+If attempts to renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled. 
+
+With a grace period, if the payment succeeds, the subscription renews. If it fails, the app store will continue its attemps to charge the user for the subscription and if still fails, the app store will end the subscription itself.
+
+Therefore, at the moment of the billing issue, the following events are created in Adapty:
+
+- **Billing issue detected**
+- **Entered grace period** (if the grace period is enabled)
+- **Access level updated** to provide the access till the end of the grace period
+
+If the payment succeeds later, Adapty records a **Subscription renewed** event, and the user does not lose access.
+
+If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
+
+- **Subscription expired (churned)** with `cancellation_reason: billing_error`
+- **Access level updated** to revoke the user's access
+
+<Zoom>
+  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Without a grace period, the Billing Retry Period (the period when the app store continues attempts to charge the user) starts immediately.
+
+If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
+
+-  **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
+
+-  **Access level updated** to revoke the user's access
+
+
+<Zoom>
+  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## Trial Flows
 
 If you use trials in your app, you’ll receive additional trial-related events.
@@ -186,6 +236,54 @@ The user will have access until the end of the trial when the **Trial expired** 
 
 <Zoom>
   <img src={require('./img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Trial Billing Issue Outcome Flow
+
+If a user doesn’t cancel their trial but a billing issue occurs at the conversion point, the flow varies depending on whether a grace period is enabled. 
+
+**With a Grace Period:**
+When the first payment fails, the following events are triggered:
+
+- **Billing issue detected**
+- **Entered grace period** since the grace period is enabled
+- **Access level updated** to update the access expiration date to the end of the grace period
+
+If the payment succeeds during the grace period, the trial converts to a subscription, triggering the following:
+
+- **Trial converted** 
+- **Access level updated** to extend the access till the end of the subscription period
+
+If the payment never succeeds, no events occur at the end of the grace period. The app store will continue trying to charge the user for a while and then will end the subscription automatically. At this moment, the following events will occur:
+
+- **Trial expired** event with a `cancellation_reason` of `billing_error`
+- **Access level updated** to disable the user's access auto renewal
+
+<Zoom>
+  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period_trial.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Without a grace period, the Billing Retry Period (the period when the app store continues attempts to charge the user) starts immediately. No grace period or subscription is started, and access is revoked. If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
+
+- **Trial expired** event with a `cancellation_reason` of `billing_error`
+- **Access level updated** to revoke the user's access
+
+<Zoom>
+  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_Without_Grace_Period_trial.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -267,58 +365,6 @@ There is also a variant when a user changes the product at the moment of the sub
 
 <Zoom>
   <img src={require('./img_webhook_flows/Product_Change_on_Renewal_Flow.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Billing Issue Outcome Flow
-
-If attempts to convert a trial to a subscription or renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled.
-
-With a grace period, if the payment succeeds, the trial is converted or the subscription renews. If it fails, the app store will continue to attempt to charge the user for the subscription and if still fails, the app store will end the subscription itself.
-
-Therefore, at the moment of the billing issue, the following events are created in Adapty:
-
-- **Billing issue detected**
-- **Entered grace period** (if the grace period is enabled)
-- **Access level updated** to provide the access till the end of the grace period
-
-If the payment succeeds during the grace period, the trial converts to a subscription/ the subscription renews, triggering the following:
-
-- **Trial converted** or **Subscription renewed**
-- **Access level updated** to extend the access till the end of the subscription period
-
-If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
-
-- **Trial expired** or **Subscription expired (churned)** with `cancellation_reason: billing_error`
-- **Access level updated** to revoke the user's access
-
-<Zoom>
-  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Without a grace period, the Billing Retry Period (the period when the app store continues to attempt to charge the user) starts immediately.
-
-If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
-
--  **Trial expired** or **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
-
--  **Access level updated** to revoke the user's access
-
-<Zoom>
-  <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
