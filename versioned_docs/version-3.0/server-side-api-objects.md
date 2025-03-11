@@ -34,6 +34,12 @@ You can do the following action via Adapty server-side API:
 
 <AccessLevel />
 
+:::note
+
+Although the SDK includes the `is_active` parameter to check if a subscription is active, the server-side API does not provide this parameter. However, you can determine subscription status at any time by checking whether the current date falls between the `starts_at` and `expires_at` parameters.
+
+:::
+
 ---
 
 ## Installation Meta
@@ -192,3 +198,9 @@ Info about your end user subscription.  You can do the following action via Adap
 - [Set transaction to your user](ss-set-transaction) and grant a subscription to them
 
 <Subscription />
+
+:::note
+
+Although the SDK includes the `is_active` parameter to check if a subscription is active, the server-side API does not provide this parameter. However, you can determine subscription status at any time by checking whether the current date falls between the `starts_at` and `expires_at` parameters of the [Access Level](#access-level) object.
+
+:::
