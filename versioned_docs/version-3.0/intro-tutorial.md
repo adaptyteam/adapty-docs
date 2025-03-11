@@ -309,7 +309,7 @@ This is now what your products section should look like:
 </Zoom>
 
 4. Click on **Paywalls** in the left-side navigation, and create a new paywall using the button in the upper right.
-   1. Give the *paywall a name*
+   1. Give the *paywall a name*.
    2. Add the products we just created in the previous step to this paywall.
    3. Click the button at the bottom titled **Create as draft**.
    <Zoom>
