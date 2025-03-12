@@ -5,7 +5,21 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 This tutorial will guide you through installing the Adapty SDK, configuring it within your project, and setting up a paywall to monetize your app effectively. We will use a sample project called *Movie Mania* as an example throughout this guide.
 
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/n401moJDZjE?si=rDSRW_zwE0It22kc" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
 ## Prerequisites
+
 Before continuing with this tutorial, ensure you’ve done the following:
 
 * Installed Xcode on your Mac
@@ -324,6 +338,7 @@ This is now what your products section should look like:
    </Zoom>
 
 5. Click the **Builder** tab and choose from our available templates. You’ll want to pick a template with at least two product areas as we have two subscriptions to show.
+
 6. Once chosen, you can customize the template with marketing copy, images, and style and layout changes to make it look just right for your needs. Any changes you make to the design will be reflected in the preview design to the right.
    <Zoom>
      <img src={require('./img/paywall-builder.webp').default}
@@ -337,19 +352,33 @@ This is now what your products section should look like:
    </Zoom>
 
 7. If you’re happy with the design of the paywall, click **Save & publish** at the bottom to save all your changes.
+
 8. Finally, click on **Placements** in the left-side navigation to create a placement and assign it to a paywall.
    1. Click **Create placement** and add a *placement name* as well as a *placement ID*. They should look as shown:
-   2. Click **Run Paywall** and choose the paywall you created in the previous step.
-   <Zoom>
-       <img src={require('./img/placement-run-paywall.webp').default}
+   
+      <Zoom>
+       <img src={require('./img/placement-config-name.webp').default}
        style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
        display: 'block', /* for alignment */
        margin: '0 auto' /* center alignment */
        }}
-   />
-   </Zoom>
+      />
+      </Zoom>
+   
+   2. Click **Run Paywall** and choose the paywall you created in the previous step.
+     <Zoom>
+      <img src={require('./img/placement-run-paywall.webp').default}
+      style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+      }}
+     />
+     </Zoom>
+   
    3. Lastly, click **Save & publish** at the bottom to save this placement.
 
 ## Testing Your Paywall
