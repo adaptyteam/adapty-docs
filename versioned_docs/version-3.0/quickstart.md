@@ -12,7 +12,7 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty
 
-Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform. After that, you need to configure the initial integration of Adapty with in-app purchase platforms.
+After you sign up for Adapty and enter your mobile app's name and category, we’ll set up the app for you on the Adapty platform. Next, you’ll need to complete the initial integration with in-app purchase platforms.
 
 ## Configuring platforms
 
