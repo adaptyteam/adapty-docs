@@ -10,6 +10,8 @@ Apple and Google send subscription events directly to servers via [App Store Ser
 
 Adapty bridges this gap by collecting subscription data and converting it into human-readable events. These integration events are sent in JSON format. While all events share the same structure, their fields vary depending on the event type, store, and specific configuration. You can find the exact fields included in each event on the respective integration pages.
 
+To understand how to determine whether an event was successfully processed or if something went wrong, check the [Event statuses](event-statuses.md) page.
+
 ## Event types
 
 Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if the [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [Event Feed](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
@@ -22,29 +24,23 @@ The events above fully cover the users' state in terms of purchases. Let's look 
 
 ### Example 1
 
-_The user has activated a monthly subscription on April 1st with 7 days trial. On the 4th day, he unsubscribed._
+_The user activated a monthly subscription on April 1st with a 7-day trial. On the 4th day, he unsubscribed._
 
-In that case following events will be sent:
+In that case, the following events will be sent:
 
-1. trial\_started on April 1st
-2. auto\_renew\_off on 4th April
-3. trial\_cancelled on 7th April
+1. `trial_started` on April 1st
+2. `trial_renewal_cancelled` on 4th April
+3. `trial_expired` on 7th April
 
 ### Example 2
 
-_The user has activated a monthly subscription on April 1st with 7 days trial. On the 10th day, he unsubscribed._
+_The user activated a monthly subscription on April 1st with a 7-day trial. On the 10th day, he unsubscribed._
 
-In that case following events will be sent:
+In that case, the following events will be sent:
 
-1. trial\_started on April 1st
-2. trial\_converted on April 7th
-3. auto\_renew\_off\_subscription on April 10th
-4. subscription\_cancelled on May 1st
+1. `trial_started` on April 1st
+2. `trial_converted` on April 7th
+3. `subscription_renewal_cancelled` on April 10th
+4. `subscription_expired` on May 1st
 
----
-
-**What's next:**
-
--  [Event statuses](event-statuses.md) 
--  [Event Flows](event-flows.md) 
-
+For a detailed breakdown of which events are triggered in each scenario, check out the [Event flows](event-flows.md).
