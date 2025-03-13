@@ -33,7 +33,6 @@ DELETE https://api.adapty.io/api/v2/server-side-api/profile/
 curl --location --request DELETE 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
 --data ''
 ```
@@ -49,7 +48,6 @@ url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 headers = {
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "adapty-platform": "iOS",
     "Content-Type": "application/json"
 }
 
@@ -64,7 +62,6 @@ print(response.text)
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
 
 const raw = "";
