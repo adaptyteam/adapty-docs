@@ -56,7 +56,6 @@ Varies based on whether the purchase is a **subscription** or a **one-time purch
 curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
 --data '{
   "purchase_type": "subscription",
@@ -110,7 +109,6 @@ payload = {
 headers = {
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>",
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "adapty-platform": "iOS",
     "Content-Type": "application/json"
 }
 
@@ -125,7 +123,6 @@ print(response.text)
 ```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
