@@ -11,6 +11,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 In Adapty, you'll receive various subscription events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
+Keep in mind that Apple processes subscription payments several hours before the actual start/ renewal time. In the flows below, we show both the subscription start/ renewal and the charge happening at the same time to keep the diagrams clear.
+
+Also, events related to the same action occur simultaneously and may appear in your **Event Feed** in any order, which might differ from the sequence shown in our diagrams.
+
 <!--- :::warning
 
 Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
