@@ -47,7 +47,7 @@ payload = ""
 headers = {
   "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
   "Content-Type": "application/json",
-  "Authorization": "Api-Key <YOUR_SECRET_API_KEY>
+  "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
 response = requests.request("GET", url, headers=headers, data=payload)
