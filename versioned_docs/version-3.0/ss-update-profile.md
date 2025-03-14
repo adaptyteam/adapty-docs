@@ -188,6 +188,12 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 </Tabs>
 
+Placeholders: 
+
+- `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
+- `<OPTIONAL_DEVICE_PLATFORM>`: The platform of the device where the user has your app installed. Useful when the user has installed your app on multiple devices.
+
 <!--- <CreateProfileRequestExample /> --->
 
 ## Parameters

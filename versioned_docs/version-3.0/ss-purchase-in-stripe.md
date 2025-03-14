@@ -99,6 +99,10 @@ fetch("https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/", reques
 </TabItem>  
 </Tabs>
 
+Placeholders: 
+
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
+
 ## Parameters
 
 :::warning
