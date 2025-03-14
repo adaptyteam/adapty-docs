@@ -12,7 +12,7 @@ Are you looking to boost your in-app purchases and subscription revenue? One eff
 ### Important
 
 :::warning
-Be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-paywall-view-events) using the `.logShowPaywall().` Without this method, Adapty wouldn't be able to calculate views for the paywalls within the test, which would result in irrelevant conversion stats.
+If you are using paywalls not created with the Adapty Paywall Builder, be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-paywall-view-events) using the `.logShowPaywall().` Without this method, Adapty wouldn't be able to calculate views for the paywalls within the test, which would result in irrelevant conversion stats.
 :::
 
 ## How to create an A/B test
