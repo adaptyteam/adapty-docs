@@ -78,7 +78,22 @@ Below is an example clause for the opt-out approach, including the types of data
 
 *"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
-## Refund preference
+Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
+
+ <Zoom>
+  <img src={require('./img/refund-saver-preference.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+## Refund default preference
 
 Apple allows developers to specify a preferential outcome for each refund request when responding to it. The purpose of this setting is to find the right balance between declining and accepting refund requests so that only fair refunds are provided. Note that this setting is only used to influence an outcome, but ultimately the decision is still up to Apple.
 
@@ -96,13 +111,24 @@ Adapty supports setting this preference, but we will use the same value for ever
    />
    </Zoom>
 
-2. In the **Edit refund preference** window, choose your preferred option:
+2. In the **Edit refund preference** window, choose your **Default refund request preference** option:
 
-   | Option         | Description                                                  |
-   | -------------- | ------------------------------------------------------------ |
-   | Always decline | This is the default option and usually yields the best results for minimizing refunds. |
-   | No preference  | If you feel that Apple rejects too many refunds, you can choose this milder option. With it, Apple usually grants refunds less often. |
-   | Always refund  | If you want to recommend Apple approve every refund request, select this option. |
+   | Option                                       | Description                                                  |
+   | -------------------------------------------- | ------------------------------------------------------------ |
+   | Always decline                               | (default) This is the default option and usually yields the best results for minimizing refunds. |
+   | Decline first refund request, grant all next | Suggests that Apple decline the first request from a user but approve all subsequent ones from the same user. |
+   | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. |
+   | Always refund                                | Suggests that Apple approve every refund request, select this option. |
+   | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
+
+## Individual refund preference
+
+Even with a default refund behavior set, you may want to manually adjust specific requests. Here's how:
+
+1. Enable the **Delay automated response for manual processing** toggle in the **Edit Refund Saver preferences** window. This gives you 11 hours to manually process the request before it is sent. 11 hours is the maximum delay allowed by Apple.
+2. Manually adjust the refund preference for specific requests as needed. 
+
+If you don’t make any changes within 11 hours, the request will be sent using your default preference.
 
 ## Limitations
 
