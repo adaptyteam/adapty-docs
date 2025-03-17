@@ -26,7 +26,7 @@ Adapty supports two types of A/B tests:
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   
 
-### Key Differences
+### Key differences
 
 | Feature                 | Regular A/B Test                                  | Cross-placement A/B Test                    |
 | ----------------------- | ------------------------------------------------- | ------------------------------------------- |
@@ -36,7 +36,7 @@ Adapty supports two types of A/B tests:
 | **Weight distribution** | Independent for each placement                    | Same across all placements                  |
 | **Best for**            | Testing unique paywalls in different app sections | Evaluating app-wide monetization strategies |
 
-### How Each A/B Test Works
+### How each A/B test works
 
 - **Regular A/B Test:**
   - Conducted separately for each placement.
@@ -46,19 +46,18 @@ Adapty supports two types of A/B tests:
   - The same paywall variant is assigned and shown consistently across all included placements.
   - Variant weight distribution remains uniform across all affected placements.
 
-<!---
+Regular and cross-placement A/B tests are displayed in separate lists, which you can switch between.
 
- **How a crossplacement A/B test works**
-
-- Cross-placement A/B tests are conducted on the same audience across multiple placements simultaneously.
-
-- They determine the same paywall to show for each placement in the A/B test.
-
-- The weight distribution for variants is the same across all affected placements.
-
-- When a user encounters this A/B test (specifically, the paywall determined by it), they will consistently receive the same variant across all related placements. 
-
-  --->
+<Zoom>
+  <img src={require('./img/ab-test-type.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## How to create an A/B test
 
@@ -72,79 +71,7 @@ By configuring your A/B test options and assigning weights to each paywall, you 
 
 <!--- When it comes to creating A/B tests in Adapty, you have several options to choose from. Depending on your goals and needs, you can create a new A/B test directly from the A/B test section, from a specific placement page, or from a paywall page. Here's a step-by-step guide on how to create an A/B test using each of these options. --->
 
-### Creating regular A/B test from A/B test section
-
-A regular A/B test is a test that is created for a single placement. To create a new A/B test from the **A/B tests** section:
-
-1. Open the [A/B tests](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
-
-<Zoom>
-  <img src={require('./img/3ca9b3c-AB_tests.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-2. In the **A/B tests** window, click the **Create A/B test** button located at the top right side of the page. 
-
-<Zoom>
-  <img src={require('./img/72af454-create_AB_test.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-3. In the **Create the A/B test** window, enter the **A/B test name**. This is a mandatory field and should be something that helps you easily identify the test in the future. Choose a name that is descriptive and meaningful, so you can quickly recognize the test when reviewing its results later on.
-4. Enter the **A/B test goal** for your further reference. Clearly defining the goal will help you stay focused on what you're trying to achieve with the test. The goal could be related to increasing subscription sign-ups, improving user engagement, or reducing bounce rates, among other objectives. By setting a specific goal, you can align your efforts and measure the success of the A/B test accurately.
-5. Click the **Add paywall** button.
-
-   
-
-<Zoom>
-  <img src={require('./img/2d25ae6-create_AB_test_with_data.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. Choose the paywalls you want to test and they will be shown in the **Create the A/B test** window.
-
-<Zoom>
-  <img src={require('./img/870cfda-AB_test_with_Paywalls.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-7. You have two ways to save the new A/B test:
-   
-   1. You can choose to save the newly created paywall **as a draft**, which means the test won't be launched at once. You can run the test later from the placement or A/B test list. This option is suitable if you're not yet ready to make the test live and want to review and modify it further before implementation. If you choose this option, click the **Save as draft** button.
-   
-   2. Alternatively, you can choose to run the A/B test immediately by clicking the **Run A/B test** button. This will prompt you to select the placement and audience for which the A/B test will go live. Once you click the "**Run A/B test**" button, the A/B test will become active and live.  
-      To learn more about running A/B tests and the process involved, you can refer to the [documentation](run_stop_ab_tests) on running A/B tests. You'll be able to monitor and track the test's performance using various metrics. For more information on these metrics, please refer to the [metrics documentation](results-and-metrics). 
-### Creating crossplacement A/B test
-
-A Crossplacement A/B test is an A/B test created for multiple placements in your app. This means the same paywall once determined by the A/b test will be consistently shown across different sections of your app, with the weight distribution for variants being the same across all affected placements. 
-
-Therefore, the crossplacement test will have 2 or more placements, with 2 or more paywall variants in each. You can set up 
-
-To create a new crossplacement A/B test from the **A/B tests** section:
+To create a new A/B test from the **A/B tests** section:
 
 1. Open the [A/B tests](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
 
@@ -159,7 +86,6 @@ To create a new crossplacement A/B test from the **A/B tests** section:
    />
    </Zoom>
 
-2. In the **A/B tests** window, switch the toggle to **Crossplacement A/B test**.
 3. Click the **Create A/B test** button located at the top right side of the page. 
 
    <Zoom>
@@ -177,7 +103,7 @@ To create a new crossplacement A/B test from the **A/B tests** section:
    
 5. Enter the **Test goal** for your further reference. Clearly defining the goal will help you stay focused on what you're trying to achieve with the test. The goal could be related to increasing subscription sign-ups, improving user engagement, or reducing bounce rates, among other objectives. By setting a specific goal, you can align your efforts and measure the success of the A/B test accurately.
    
-6. Now it's time to set up the content of the test: placements and variants in the **Variants** table. Variants are set up in the lines, while placements - in the rows. In the crossing of them - the paywalls. By default, we added 2 variants and 1 placement, but you can add as many as you need.
+6. Now it's time to set up the content of the test: placements and variants in the **Variants** table. Variants are set up in the lines, while placements - in the rows. In the crossing of them - the paywalls. By default, we added 2 variants and 1 placement, but you can add as many as you need. Once you add the second placement, the A/B test will become a crossplatform.
    
       <Zoom>
           <img src={require('./img/cross-ab-test.webp').default}
