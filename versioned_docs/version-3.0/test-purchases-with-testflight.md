@@ -61,3 +61,8 @@ Keep in mind that in TestFlight, subscription renewals happen daily, regardless 
 | 6 months                       | 30 minutes                   | 1 day                           |
 | 1 year                         | 1 hour                       | 1 day                           |
 
+:::note
+
+**Example scenario:** If you start a 1-month subscription on February 1st, it'll renew every 24 hours for a total of 6 renewals before being canceled. Since subscriptions renew at an accelerated rate in TestFlight, you'll see a new transaction for each renewal on February 2nd, 3rd, 4th, 5th, 6th, and 7th. The subscription's auto-renewal will then be disabled on February 8th.
+
+:::
