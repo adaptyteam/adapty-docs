@@ -27,7 +27,7 @@ Choose a unique name and icon that represent your app in the Adapty interface. P
 
 ## App-specific URLs
 
-You might have noticed that the URLs in the Adapty Dashboard include your app ID. By default, Adapty generates this slug based on your app’s name. If you ever need to change it, you can do so in the **App URL Customization** field on the [General](https://app.adapty.io/settings/general) tab of the **App settings** page.
+You might have noticed that the URLs in the Adapty Dashboard include your app ID. By default, Adapty generates this slug based on your app’s name. If you ever need to change it, you can do so in the **App URL Customization** field on the [General](https://app.adapty.io/settings/general) tab of the **App settings** page. Keep in mind that the app slug must be unique within your company in the Adapty Dashboard.
 
 <Zoom>
   <img src={require('./img/app-slug.webp').default}
