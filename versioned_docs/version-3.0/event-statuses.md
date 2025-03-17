@@ -18,17 +18,6 @@ You can track the status of integration events in the **Event List** within the 
 For more details on failed events, hover over the integration name to see a tooltip with specific error information.
 
 <Zoom>
-  <img src={require('./img/f69ea1a-Screenshot_2023-06-02_at_14.58.48.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-<!--- <Zoom>
   <img src={require('./img/event-status.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
@@ -37,6 +26,6 @@ For more details on failed events, hover over the integration name to see a tool
     margin: '0 auto' /* center alignment */
   }}
 />
-</Zoom> --->
+</Zoom> 
 
 The **Event Feed** displays data from the past two weeks to optimize performance. This limitation improves page loading speed, making it easier for users to navigate and analyze events efficiently.
