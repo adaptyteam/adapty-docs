@@ -134,3 +134,15 @@ Make a purchase in your mobile app via paywall.
 :::info
 Now you can [validate that the test purchase is successful](validate-test-purchases).
 :::
+
+## Subscription renewal, billing retry, and grace period in Apple Sandbox
+
+Keep in mind that in the Apple Sandbox environment, subscription renewals happen faster, and both the billing retry and grace periods are shorter than in production. The default values are shown in the table below. You can adjust a tester’s subscription renewal rate, billing retry period, and grace period at any time. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings/#edit-subscription-renewal-speed).
+
+| Subscription duration          | 1 week     | 1 month    | 2 months   | 3 months   | 6 months   | 1 year     |
+| :----------------------------- | :--------- | :--------- | :--------- | :--------- | :--------- | :--------- |
+| Subscription renewal speed     | 3 minutes  | 5 minutes  | 10 minutes | 15 minutes | 30 minutes | 1 hour     |
+| Length of Billing Retry        | 10 minutes | 10 minutes | 10 minutes | 10 minutes | 10 minutes | 10 minutes |
+| Length of Billing Grace Period | 3 minutes  | 5 minutes  | 5 minutes  | 5 minutes  | 5 minutes  | 5 minutes  |
+
+Additionally, keep in mind that in the sandbox environment, auto-renewable subscriptions renew up to 12 times before they stop.
