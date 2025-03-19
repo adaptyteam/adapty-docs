@@ -17,9 +17,8 @@ If you also need paywalls and A/B testing, additional setup is required, as desc
 
 ## Using Adapty paywalls in Observer Mode
 
-If you also want to use Adapty's paywalls and A/B testing features, you can — but it requires some extra setup in Observer mode compared to Full mode. Here's what you'll need to do:
+If you also want to use Adapty's paywalls and A/B testing features, you can — but it requires some extra setup in Observer mode. Here's what you'll need to do in addition to the steps above:
 
 1. Display paywalls as usual for [remote config paywalls](display-remote-config-paywalls). For Paywall Builder paywalls, follow the specific setup guides for [iOS](ios-present-paywall-builder-paywalls-in-observer-mode) and [Android](android-present-paywall-builder-paywalls-in-observer-mode).
-2. Implement the purchasing flow according to your own requirements.
-3. [Report transactions](report-transactions-observer-mode) from your purchase infrastructure to Adapty and associate paywalls with purchase transactions.
+3. [Associate paywalls](report-transactions-observer-mode) with purchase transactions.
 
