@@ -133,7 +133,7 @@ Update your fallback paywall files to ensure compatibility with the new SDK vers
 
 If you're using Observer Mode, make sure to update its implementation.
 
-In previous versions, you had to restore purchases so Adapty could recognize transactions made through your own infrastructure, as Adapty had no direct access to them in Observer Mode. If you used paywalls, you also needed to manually associate each transaction with the paywall that initiated it.
+In previous versions, you had to restore purchases so Adapty could recognize transactions made through your own infrastructure. If you used paywalls, you also needed to manually associate each transaction with the paywall that initiated it.
 
 In the new version, you must explicitly report each transaction for Adapty to recognize it. If you use paywalls, you also need to pass the variation ID to link the transaction to the paywall used.
 
@@ -167,5 +167,56 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 ```
 
 </TabItem>
+
+<TabItem value="flutter" label="Flutter" default> 
+
+**Update fallback paywall files**
+
+Update your fallback paywall files to ensure compatibility with the new SDK version:
+
+1. [Download the updated fallback paywall files](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) from the Adapty Dashboard.
+2. [Replace the existing fallback paywalls in your mobile app](ios-use-fallback-paywalls) with the new files.
+
+**Update implementation of Observer Mode**
+
+If you're using Observer Mode, make sure to update its implementation.
+
+Previously, different methods were used to report transactions to Adapty. In the new version, the `reportTransaction` method should be used consistently across both Android and iOS. This method explicitly reports each transaction to Adapty, ensuring it's recognized. If a paywall was used, pass the variation ID to link the transaction to it.
+
+:::warning
+
+**Don't skip transaction reporting!**
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+
+:::
+
+```diff showLineNumbers
+- // every time when calling transaction.finish()
+- if (Platform.isAndroid) {
+-     try {
+-         await Adapty().restorePurchases();
+-     } on AdaptyError catch (adaptyError) {
+-         // handle the error
+-     } catch (e) {
+-     }
+- }
+
+  try {
+      // every time when calling transaction.finish()
+      await Adapty().reportTransaction(
+          "YOUR_TRANSACTION_ID", 
+          variationId: "PAYWALL_VARIATION_ID", // optional
+      );
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+```
+
+ 
+
+</TabItem>
+
 </Tabs>
 
