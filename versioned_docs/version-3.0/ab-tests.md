@@ -28,13 +28,14 @@ Adapty supports two types of A/B tests:
 
 ### Key differences
 
-| Feature                 | Regular A/B Test                                  | Cross-placement A/B Test                    |
-| ----------------------- | ------------------------------------------------- | ------------------------------------------- |
-| **Scope**               | Single placement                                  | Multiple placements                         |
-| **Paywall consistency** | Different paywalls per placement                  | Same paywall across placements              |
-| **Audience targeting**  | Per placement                                     | Shared across placements                    |
-| **Weight distribution** | Independent for each placement                    | Same across all placements                  |
-| **Best for**            | Testing unique paywalls in different app sections | Evaluating app-wide monetization strategies |
+| Feature                 | Regular A/B Test                                  | Cross-placement A/B Test                                     |
+| ----------------------- | ------------------------------------------------- | ------------------------------------------------------------ |
+| **Scope**               | Single placement                                  | Multiple placements                                          |
+| **Paywall consistency** | Different paywalls per placement                  | Same paywall across placements                               |
+| **Audience targeting**  | Per placement                                     | Shared across placements                                     |
+| **Weight distribution** | Independent for each placement                    | Same across all placement                                    |
+| **Users**               | For all users                                     | Only for new users, i.e. users that have never seen a single Adapty paywall in your app |
+| **Best for**            | Testing unique paywalls in different app sections | Evaluating app-wide monetization strategies                  |
 
 ### How each A/B test works
 
@@ -59,7 +60,7 @@ Regular and cross-placement A/B tests are displayed in separate lists, which you
 />
 </Zoom>
 
-## How to create an A/B test
+## Creating A/B tests
 
 When creating a new A/B test, a regular one, or a crossplacement one, you must have at least two [paywalls](paywalls) in it. Each paywall in the test will have a weight, which represents the relative amount of users it will receive during the test. 
 
@@ -181,3 +182,7 @@ This means that users in the selected audience will see the paywalls included in
 You can monitor the progress of your A/B test in the dashboard and make adjustments as needed to improve your results. One way to do this is by checking the metrics of the placement. You can learn more about placement metrics in [this doc](placement-metrics).
 
 By setting up an A/B test from the Placement detail page, you'll be able to more easily test different paywalls with specific audiences and get valuable insights into what works best for your business. --->
+
+## Editing A/B tests
+
+Only draft A/B tests can be edited. After you run an A/B test, you cannot change it anymore. The **Modify** option lets you create a duplicate of the test with the same name and make the changes in it. The original A/B test however will be stopped. This means that in analytics, you will see 2 different tests. 
