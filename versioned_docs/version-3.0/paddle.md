@@ -8,24 +8,29 @@ metadataTitle: "Paddle Integration Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty supports tracking web payments and subscriptions made through [Stripe](https://www.paddle.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
+Adapty supports tracking web payments and subscriptions made through [Paddle](https://www.paddle.com/). If you’re already selling your product on the web or considering doing so, this integration can help in two key ways:
 
-- automatically providing access to paid features for users who purchased on the web but later installed the app and logged in to their account
-- having all the subscription analytics in a single Adapty Dashboard (including cohorts, predictions, and the rest of our analytics toolbox)
+- Automatically granting access to paid features for users who purchased on the web but later installed the app and logged in.
+- Consolidating all subscription analytics in one Adapty Dashboard, including cohorts, predictions, and other analytics tools.
 
-Even though purchases on the web are becoming increasingly popular for apps, you must remember that it is against Apple's App Store terms to provide a different system than in-app purchases for digital goods. Make sure you don't promote your web subscriptions from inside your app. Otherwise, your app may get rejected or banned.
+While web-based purchases are becoming more common, keep in mind that Apple's App Store guidelines prohibit offering alternative payment systems for digital goods within your app. Promoting your web subscriptions inside the app may result in rejection or removal from the App Store.
 
-The steps below outline how to configure the integration with Paddle.
+Follow these steps to set up the Paddle integration.
 
-### 1\. Connect Stripe to Adapty
+### 1\. Connect Paddle to Adapty
 
-This integration mainly relies on Adapty pulling subscription data from Paddle via the webhook. So it is essential to connect your Adapty account to your Paddle account by doing 2 things: providing API Keys and using Adapty's webhook URL in Paddle.
+This integration mainly relies on Adapty receiving subscription data from Paddle via webhooks. To connect your Adapty and Paddle accounts, you’ll need to:
+
+1. Provide your Paddle API keys.
+2. Add Adapty's webhook URL to Paddle.
 
 :::note
-The steps below are the same for Production and Sandbox. You can do them simultaneously for both environments. We provide you with the **Live Mode** links. If you prefer to start with a **Test Mode**, please add `sandbox-` at the beginning of every link, e.g. use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`. 
+The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test Mode in Paddle). You can configure both simultaneously. The links provided are for **Live Mode** — to get **Test Mode** links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
 :::
 
-1. Go to [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2) in Paddle:
+### Get and add Paddle API keys
+
+1. In Paddle, go to [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2).
 
    
 
@@ -43,12 +48,11 @@ The steps below are the same for Production and Sandbox. You can do them simulta
 
 
 
-2. Click the eclipse button next to the API you plan to use, then click the **Copy key**, and go to Adapty's [App Settings → Paddle](https://app.adapty.io/settings/paddle). Paste the key here:
-
-   
+2. Click the three-dot button next to the API key you plan to use, then click **Copy key**.
+3. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key:
 
 <Zoom>
-  <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp').default}
+  <img src={require('./img/paddle-api-keys-adapty.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -58,15 +62,13 @@ The steps below are the same for Production and Sandbox. You can do them simulta
 />
 </Zoom>
 
+### Add Adapty’s webhook to Paddle
 
-
-
-3. Next, copy the Webhook URL from the bottom of the same page in Adapty. Go to [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe and click the **Add endpoint** button:
-
-   
+1. Copy the **Webhook URL** from the same **Paddle settings page** in Adapty.
+2. In Paddle, go to [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) and click **New destination**.
 
 <Zoom>
-  <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp').default}
+  <img src={require('./img/paddle-webhook.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -76,25 +78,68 @@ The steps below are the same for Production and Sandbox. You can do them simulta
 />
 </Zoom>
 
+3. Enter a descriptive name for the webhook. We recommend including "Adapty" in it.
+
+4. Paste the **Webhook URL** from Adapty into the **URL** field.
+
+5. Set **Notification type** to **Webhook**.
+
+6. Select the following events:
+
+   - `subscription.created`
+
+   - `subscription.updated`
+
+   - `transaction.created`
+
+   - `transaction.updated`
+
+   - `adjustment.created`
+
+   - `adjustment.updated`
 
 
 
-4. Paste the webhook URL from Adapty into the **Endpoint URL** field. Then choose the **Latest API version** in the webhook **Version** field. Then select the following events:
 
-   - charge.refunded
-   - customer.subscription.created
-   - customer.subscription.deleted
-   - customer.subscription.paused
-   - customer.subscription.resumed
-   - customer.subscription.updated
-   - invoice.created
-   - invoice.updated
-   - payment_intent.succeeded
+<Zoom>
+  <img src={require('./img/paddle-create-webhook.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+
+
+5. Click **Save destination** to finalize the webhook setup.
+
+### Retrieve and Add the Webhook Secret Key
+
+1. In the **Notifications** window, click the three-dot button next to the webhook you just created and select **Edit destination**.
+2. A new field called **Secret key** will appear in the **Edit destination** panel. Copy it.
+
+<Zoom>
+  <img src={require('./img/paddle-webhook-secret-key-copy.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
+5. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key into the **Notification secret key** field. This key is used to verify webhook data in Adapty.
 
    
 
 <Zoom>
-  <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp').default}
+  <img src={require('./img/paddle-webhook-secret-key.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -104,76 +149,20 @@ The steps below are the same for Production and Sandbox. You can do them simulta
 />
 </Zoom>
 
+### Configure profile creation behavior
+
+The last step is to define which Paddle data should be used as `customer_user_id` in Adapty when creating a profile for a new transaction from Paddle. You can set this in the **Profile creation behavior** section. Possible options:
+
+| Option                                    | Description |
+| ----------------------------------------- | ----------- |
+| Use `customer_user_id` from `custom data` |             |
+| Use `email` from `customer` object        |             |
+| Use Paddle customer ID                    |             |
 
 
+That’s it! Your integration is now set up. The next step is to add your Paddle products to Adapty.
 
-5. Press "Add endpoint" and then press "Reveal" under the "Signing secret". This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
-
-   
-
-<Zoom>
-  <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-6. Finally, paste this key into Adapty's App Settings → Stripe under "Stripe Webhook Secret":
-
-   
-
-<Zoom>
-  <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-You're all set! Next, create your products on Stripe and add them to Adapty.
-
-### 2\. Create products on Stripe
-
-:::note
-If you're configuring Sandbox, make sure to switch to Test mode in Stripe, before proceeding with this step.
-:::
-
-Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=true) and create the products you would like to sell as well as their pricing plans. Note that Stripe allows you to have multiple pricing plans per product, which is useful for tailoring your offering without the need to create additional products.
-
-
-<Zoom>
-  <img src={require('./img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-:::warning
-At the moment Adapty only supports **Flat rate** ($9.99/month) or **Package pricing** ($9.99/10 units), as those behave similar to app stores. **Tiered pricing**, **Usage-based fee** and **Customer chooses price** options are not supported
-:::
-
-### 3\. Add Stripe products to Adapty
+### 2. Add Paddle products to Adapty
 
 :::warning
 
@@ -181,10 +170,10 @@ Products are required! Be sure to create your Stripe products in the Adapty Dash
 
 :::
 
-We treat Stripe the same way as App Store and Google Play: it is just another store where you sell your digital products. So it is configured similarly: simply add Stripe products (namely their `product_id` and `price_id`) to the Products section of Adapty:
+We treat Paddle the same way as App Store and Google Play: it is just another store where you sell your digital products. So it is configured similarly: simply add Paddle products (namely their `product_id` and `price_id`) to the [Products](https://app.adapty.io/products) section of Adapty:
 
 <Zoom>
-  <img src={require('./img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.webp').default}
+  <img src={require('./img/paddle-create-product.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -194,10 +183,10 @@ We treat Stripe the same way as App Store and Google Play: it is just another st
 />
 </Zoom>
 
-Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. They are pretty easy to find for each product in Stripe's [Product Catalog](https://dashboard.stripe.com/products?active=true), once you open any Product:
+Product IDs in Paddle look like `pro_...` and price IDs look like `pri_...`. They are pretty easy to find for each product in Stripe's [Product catalog](https://vendors.paddle.com/products-v2), once you open any Product:
 
 <Zoom>
-  <img src={require('./img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp').default}
+  <img src={require('./img/paddle-product-price.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -207,7 +196,7 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 />
 </Zoom>
 
-After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
+After you've added all the necessary products, the next step is to let Paddle know about which user is making the purchase, so it could get picked up by Adapty!
 
 ### 4\. Enrich purchases made on the web with your user ID
 
@@ -215,7 +204,7 @@ Adapty relies on the webhooks from Stripe to provide and update access levels fo
 
 For access levels to be consistent across platforms (web or mobile), you have to make sure that there is a single user ID to rely on which Adapty can recognize from the webhooks as well. This could be user's email, phone number or any other ID from the authorization system you're utilizing.
 
-Figure out which ID you would like to use to identify your users. Then, access the part of your code that's initiatilizing the payment through Stripe — and add this user ID to the `metadata` object of either [Stripe Subscription](https://stripe.com/docs/api/subscriptions/object#subscription_object-metadata) (`sub_...`) or [Checkout Session](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata) object (`ses_...`) as `customer_user_id` like so:
+Figure out which ID you would like to use to identify your users. Then, access the part of your code that's initiatilizing the payment through Stripe — and add this user ID to the `custom_data` object of either [Stripe Subscription](https://stripe.com/docs/api/subscriptions/object#subscription_object-metadata) (`sub_...`) or [Checkout Session](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata) object (`ses_...`) as `customer_user_id` like so:
 
 ```json showLineNumbers title="Stripe Metadata contents"
 {'customer_user_id': "YOUR_USER_ID"}
