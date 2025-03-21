@@ -1,5 +1,5 @@
 ---
-title: "Stripe integration"
+title: "Initial integration with Stripe"
 description: "Integrate Stripe with Adapty for seamless subscription payment processing."
 metadataTitle: "Stripe Integration Guide | Adapty Docs"
 ---
@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
 
 - automatically providing access to paid features for users who purchased on the web but later installed the app and logged in to their account
-- having all the subscription analytics in a single Adapty Dashboard (including cohorts, predictions and the rest of our analytics toolbox)
+- having all the subscription analytics in a single Adapty Dashboard (including cohorts, predictions, and the rest of our analytics toolbox)
 
 Even though purchases on the web are becoming increasingly popular for apps, you must remember that it is against Apple's App Store terms to provide a different system than in-app purchases for digital goods. Make sure you don't promote your web subscriptions from inside your app. Otherwise, your app may get rejected or banned.
 
@@ -42,7 +42,7 @@ The steps below are the same for Production and Sandbox (or Test mode in Stripe)
 
 
 
-2. Click the **Reveal live (test) key button** next to the **Secret key** title, then copy it and go to Adapty's [**App Settings** → **Stripe**](https://app.adapty.io/settings/stripe). Paste the key here:
+2. Click the **Reveal live (test) key button** next to the **Secret key** title, then copy it and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key here:
 
    
 
