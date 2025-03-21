@@ -17,14 +17,15 @@ Validates a purchase using the provided Paddle token using the credentials of Pa
 ## Request header
 
 :::warning
-This request requires a different set of headers than usual. Only the **Content-Type** header can be used.
-
-Note that `customer_user_id` should be included in the request body, not in a header, and `profile_id` should not be provided at all.
-:::
+This request requires a different set of headers than usual. Only the header listed below should be used.
 
 | **Header**       | **Description**                                              |
 | ---------------- | ------------------------------------------------------------ |
 | **Content-Type** | Set to `application/json` for the API to process the request. |
+
+Note that `customer_user_id` should be included in the request body, not in a header, and `profile_id` should not be provided at all.
+
+:::
 
 ## Method and endpoint
 
