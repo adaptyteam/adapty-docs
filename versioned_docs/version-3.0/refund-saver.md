@@ -6,6 +6,7 @@ metadataTitle: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem'; 
 
 The Refund saver helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
 
@@ -91,9 +92,39 @@ Depending on your chosen approach, set the **Default consent policy** option in 
 />
 </Zoom>
 
+Use the snippet below to update the user’s consent status in Adapty:
 
+<Tabs groupId="current-os" queryString> 
 
-## Refund default preference
+<TabItem value="swift" label="iOS (3.4.1+)" default> 
+
+ ```swift showLineNumbers 
+do {
+  try await Adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>)
+} catch {
+  // handle the error
+}
+ ```
+
+</TabItem> 
+
+<TabItem value="flutter" label="Flutter (3.4.0+)" default> 
+
+```javascript showLineNumbers 
+
+try {
+  await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem> 
+</Tabs>
+
+## Set a default refund preference
 
 Apple allows developers to specify a preferential outcome for each refund request when responding to it. The purpose of this setting is to find the right balance between declining and accepting refund requests so that only fair refunds are provided. Note that this setting is only used to influence an outcome, but ultimately the decision is still up to Apple.
 
@@ -121,7 +152,39 @@ Adapty supports setting this preference, but we will use the same value for ever
    | Always refund                                | Suggests that Apple approve every refund request, select this option. |
    | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
 
-## Individual refund preference
+## Set a refund preference with the SDK
+
+You can set the refund preference in your app code individually for every installation depending on some user's actions. Use the snippet below to set the preference:
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="swift" label="iOS (3.4.1+)" default>   
+
+```swift showLineNumbers code  
+do {
+  try await Adapty.updateRefundPreference(<PREFERENCE_VALUE>)
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter (3.4.0+)" default> 
+
+```javascript showLineNumbers code  
+try {
+  await Adapty().updateRefundPreference(<PREFERENCE_VALUE>);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+``` 
+</TabItem> 
+</Tabs>
+
+
+
+## Manually adjust individual refund preferences
 
 Even with a default refund behavior set, you may want to manually adjust specific requests. Here's how:
 
