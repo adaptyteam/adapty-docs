@@ -29,7 +29,7 @@ import Subscription from '@site/src/components/reusable/Subscription.md';
 
 
 
-Creates a new transaction for an end user of your app in Adapty and provides access level. The transaction created by this method will appear in your [analytics](https://app.adapty.io/analytics) and [**Event Feed**](https://app.adapty.io/event-feed) and well as will be sent to all integrations.
+Creates a new transaction for an end user of your app in Adapty and provides access level. The transaction created by this method will appear in your [analytics](https://app.adapty.io/analytics) and [Event Feed](https://app.adapty.io/event-feed) and well as will be sent to all integrations.
 
 This method is recommended over the [Grant access level](ss-grant-access-level) one.
 
