@@ -28,24 +28,30 @@ Adapty supports two types of A/B tests:
 
 ### Key differences
 
-| Feature                 | Regular A/B Test                                  | Cross-placement A/B Test                                     |
-| ----------------------- | ------------------------------------------------- | ------------------------------------------------------------ |
-| **Scope**               | Single placement                                  | Multiple placements                                          |
-| **Paywall consistency** | Different paywalls per placement                  | Same paywall across placements                               |
-| **Audience targeting**  | Per placement                                     | Shared across placements                                     |
-| **Weight distribution** | Independent for each placement                    | Same across all placement                                    |
-| **Users**               | For all users                                     | Only for new users, i.e. users that have never seen a single Adapty paywall in your app |
-| **Best for**            | Testing unique paywalls in different app sections | Evaluating app-wide monetization strategies                  |
+| Feature                         | Regular A/B Test                                 | Cross-placement A/B Test                                     |
+| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| **Scope**                       | Single placement                                 | Multiple placements                                          |
+| **Paywall consistency**         | Paywalls can differ across placements            | Same paywall shown across placements                         |
+| **Audience targeting**          | Defined per placement                            | Shared across all placements                                 |
+| **Analytics**                   | You analyse one placement                        | You analyze the whole app on those placements that are a part of the test |
+| **Variant weight distribution** | Set independently for each placement             | Same weights used across all placements                      |
+| **Users**                       | For all users                                    | Only new users (those who haven’t seen an Adapty paywall)    |
+| **Priority in audiences**       | Lower priority than cross-placement tests        | Highest priority in audience conflicts; multiple crossplacement tests applied in order of creation |
+| **Best for**                    | Testing unique placements in different app areas | Evaluating overall monetization strategies app-wide          |
 
 ### How each A/B test works
 
 - **Regular A/B Test:**
   - Conducted separately for each placement.
   - Different placements may show different paywalls.
+  - Analytics shown for one placement.
+  - Lower audience priority if a cross-placement test applies to the same audience/placement.
 - **Cross-placement A/B Test:**
   - Conducted across multiple placements for the same audience.
   - The same paywall variant is assigned and shown consistently across all included placements.
   - Variant weight distribution remains uniform across all affected placements.
+  - Analytics shown for the entire app.
+  - Highest audience priority. If multiple crossplacement tests apply, the oldest runs first.
 
 Regular and cross-placement A/B tests are displayed in separate lists, which you can switch between.
 
@@ -62,19 +68,19 @@ Regular and cross-placement A/B tests are displayed in separate lists, which you
 
 ## Creating A/B tests
 
-When creating a new A/B test, a regular one, or a crossplacement one, you must have at least two [paywalls](paywalls) in it. Each paywall in the test will have a weight, which represents the relative amount of users it will receive during the test. 
+When creating a new A/B test—whether it's a regular or cross-placement one—you need to include at least two [paywalls](paywalls). Each paywall is assigned a weight that determines how traffic is split during the test.
 
-For example, if the first paywall has a weight of 70% and the second paywall weighs 30%, the first paywall will receive approximately 700 users out of 1000, and the second paywall will receive approximately 300 users. The sum of all weights must be 100%.
+For example, if one paywall is given a weight of 70% and the other 30%, the first paywall will be shown to roughly 700 out of 1,000 users, and the second to about 300. The total weight across all variants must equal 100%.
 
-The difference between regular and A/B tests is that for the crossplacement A/B tests, you can show paywalls in more than 1 placement in the app. The paywalls in the placements can be the same or different if this fits the variants you wanna test. The weight is configured per variant rather than per paywall.
+The key difference between regular and cross-placement A/B tests is that cross-placement tests allow you to show paywalls in multiple placements. These paywalls can be different or even partially the same depending on what you're testing. In cross-placement tests, weights are assigned per variant, not per paywall.
 
-By configuring your A/B test options and assigning weights to each paywall, you can more effectively test different paywalls, enabling data-driven decisions for your business.
+Setting up your A/B test this way allows you to effectively compare different paywalls and make smarter, data-driven decisions for your app’s monetization strategy.
 
 <!--- When it comes to creating A/B tests in Adapty, you have several options to choose from. Depending on your goals and needs, you can create a new A/B test directly from the A/B test section, from a specific placement page, or from a paywall page. Here's a step-by-step guide on how to create an A/B test using each of these options. --->
 
-To create a new A/B test from the **A/B tests** section:
+To create a new A/B test:
 
-1. Open the [A/B tests](https://app.adapty.io/ab-tests) item from the Adapty main menu. 
+1. Open the [A/B tests](ab-tests) section from the Adapty main menu.
 
    <Zoom>
      <img src={require('./img/list_cross_AB_test.webp').default}
@@ -87,7 +93,7 @@ To create a new A/B test from the **A/B tests** section:
    />
    </Zoom>
 
-3. Click the **Create A/B test** button located at the top right side of the page. 
+3. Click the **Create A/B test** button.
 
    <Zoom>
      <img src={require('./img/create_AB_cross_test.webp').default}
@@ -100,11 +106,11 @@ To create a new A/B test from the **A/B tests** section:
    />
    </Zoom>
 
-4. In the **Create the A/B test** window, enter the **Test name**. This is a mandatory field and should be something that helps you easily identify the test in the future. Choose a name that is descriptive and meaningful, so you can quickly recognize the test when reviewing its results later on.
+4. In the **Create the A/B test** window, enter a **Test name**. This is required and should help you easily identify the test later. Choose something descriptive and meaningful so it’s clear what the test is about when you review the results.
    
-5. Enter the **Test goal** for your further reference. Clearly defining the goal will help you stay focused on what you're trying to achieve with the test. The goal could be related to increasing subscription sign-ups, improving user engagement, or reducing bounce rates, among other objectives. By setting a specific goal, you can align your efforts and measure the success of the A/B test accurately.
+5. Fill in the **Test goal** to keep track of what you're trying to achieve. It could be increasing subscriptions, improving engagement, reducing churn, or anything else you're focusing on. A clear goal helps you stay on track and measure success.
    
-6. Now it's time to set up the content of the test: placements and variants in the **Variants** table. Variants are set up in the lines, while placements - in the rows. In the crossing of them - the paywalls. By default, we added 2 variants and 1 placement, but you can add as many as you need. Once you add the second placement, the A/B test will become a crossplatform.
+6. Now it’s time to set up the test content using the **Variants** table. Variants go in rows, placements go in columns, and paywalls are added where they intersect. By default, there are 2 variants and 1 placement, but you can add more of each. Once you add a second placement, the test becomes a cross-placement A/B test.
    
       <Zoom>
           <img src={require('./img/cross-ab-test.webp').default}
@@ -143,13 +149,11 @@ To create a new A/B test from the **A/B tests** section:
     </tr>
   </table>
 </div>
-7. Don't forget to save the created test. You have two ways to save the new A/B test:
+7. Don’t forget to save your test. You have two options:
+    1. **Save as draft**: This means the test won’t go live right away. You can launch it later from either the placement or A/B test list. This option is great if you’re not quite ready to start the test and want more time to review or tweak it.
+    2. **Run A/B test**: Choose this if you’re ready to launch the test immediately. The test will go live as soon as you click this button.
 
-    1. You can choose to save the newly created paywall **as a draft**, which means the test won't be launched at once. You can run the test later from the placement or A/B test list. This option is suitable if you're not yet ready to make the test live and want to review and modify it further before implementation. If you choose this option, click **Save as draft**.
-	   
-    2. Alternatively, you can choose to run the A/B test immediately by clicking **Run A/B test**. Once you do that, the A/B test will become active and live.
-
-To learn more about running A/B tests and the process involved, you can refer to the [documentation](run_stop_ab_tests) on running A/B tests. You'll be able to monitor and track the test's performance using various metrics. For more information on these metrics, please refer to the [metrics documentation](results-and-metrics). 
+To learn more about launching A/B tests, check out our [guide on running A/B tests](run_stop_ab_tests). You’ll also be able to track performance using a variety of metrics — see the [metrics documentation](results-and-metrics) for more details.
 
 
 <!--- ### Creating A/B test from the placement
@@ -185,4 +189,4 @@ By setting up an A/B test from the Placement detail page, you'll be able to more
 
 ## Editing A/B tests
 
-Only draft A/B tests can be edited. After you run an A/B test, you cannot change it anymore. The **Modify** option lets you create a duplicate of the test with the same name and make the changes in it. The original A/B test however will be stopped. This means that in analytics, you will see 2 different tests. 
+You can only edit A/B tests that are saved as drafts. Once a test is live, it can’t be changed. However, you can use the **Modify** option to create a duplicate of the test with the same name and make your updates there. The original test will be stopped, and both the original and the new version will appear separately in your analytics.
