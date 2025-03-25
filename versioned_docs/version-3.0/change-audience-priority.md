@@ -7,7 +7,7 @@ metadataTitle: "Changing Audience Priority | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-When you have different user audiences in one [placement](placements), a user can belong to more than one audience. For instance, if you've defined audiences like "Female", "Runners", and a general audience like "All users," it's crucial to determine which specific audience to consider first when a user falls into multiple categories.
+When you have different user audiences in one [placement](placements), a user can belong to more than one audience. For instance, if you've defined audiences like "Female", "Runners", and a general audience like "All users", it's crucial to determine which specific audience to consider first when a user falls into multiple categories.
 
 
 <Zoom>
@@ -25,7 +25,7 @@ In this scenario, we rely on audience priority. Audience priority is a numerical
 
 To adjust audience priorities for a placement:
 
-1. Open the **[Placements](https://app.adapty.io/placements)** section from the Adapty main menu.
+1. Open the [Placements](https://app.adapty.io/placements) section from the Adapty main menu.
 2. Click the placement for which you want to change the audience priority.
 
    
