@@ -147,8 +147,8 @@ Adapty supports setting this preference, but we will use the same value for ever
    | Option                                       | Description                                                  |
    | -------------------------------------------- | ------------------------------------------------------------ |
    | Always decline                               | (default) This is the default option and usually yields the best results for minimizing refunds. |
-   | Decline first refund request, grant all next | Suggests that Apple decline the first request from a user but approve all subsequent ones from the same user. |
-   | Always refund                                | Suggests that Apple approve every refund request, select this option. |
+   | Decline first refund request, grant all next | For every transaction Refund Saver encounters, it will initially ask Apple to decline the refund. However, if the same transaction appears again, Refund Saver will always recommend granting the refund. This approach helps minimize user frustration from unfair refund declines — users can simply request the refund again and will likely receive it. |
+   | Always refund                                | Suggests that Apple approve every refund request.            |
    | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
    
       <!---    | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. | --->
