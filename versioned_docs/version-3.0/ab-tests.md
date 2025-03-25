@@ -39,7 +39,24 @@ Adapty supports two types of A/B tests:
 | **Priority in audiences**       | Lower priority than cross-placement tests        | Highest priority in audience conflicts; multiple crossplacement tests applied in order of creation |
 | **Best for**                    | Testing unique placements in different app areas | Evaluating overall monetization strategies app-wide          |
 
-### How each A/B test works
+## A/B test selection logic
+
+As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users**—those who haven’t seen a single Adapty paywall yet. This ensures consistency in results across placements.
+
+The logic Adapty follows when deciding which A/B test to show is outlined below:
+
+<Zoom>
+  <img src={require('./img/ab-tests-scheme.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '350px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+<!--- ### How each A/B test works
 
 - **Regular A/B Test:**
   - Conducted separately for each placement.
@@ -51,7 +68,7 @@ Adapty supports two types of A/B tests:
   - The same paywall variant is assigned and shown consistently across all included placements.
   - Variant weight distribution remains uniform across all affected placements.
   - Analytics shown for the entire app.
-  - Highest audience priority. If multiple crossplacement tests apply, the oldest runs first.
+  - Highest audience priority. If multiple crossplacement tests apply, the oldest runs first. --->
 
 Regular and cross-placement A/B tests are displayed in separate lists, which you can switch between.
 
