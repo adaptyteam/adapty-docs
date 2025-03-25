@@ -1,5 +1,5 @@
 ---
-title: "Refund saver"
+title: "Refund Saver"
 description: "Use Adapty Refund Saver to minimize refunds and maximize revenue."
 metadataTitle: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
 ---
@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem'; 
 
-The Refund saver helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
+The Refund Saver helps Adapty users efficiently manage refund requests from Apple’s App Store using automation. By streamlining this process, it reduces revenue loss and saves time. With real-time notifications and actionable insights, this tool ensures you address refund requests effectively while staying compliant with Apple’s guidelines.
 
 <Zoom>
   <img src={require('./img/refunds-chart.webp').default}
@@ -21,11 +21,11 @@ The Refund saver helps Adapty users efficiently manage refund requests from Appl
 />
 </Zoom>
 
-## What is the Refund saver?
+## What is the Refund Saver?
 
 When users request refunds on the App Store, Apple evaluates consumption data related to the in-app purchase to decide whether to approve or deny the request. For example, if a user buys a subscription, uses it heavily for most of the subscription period, and then requests a refund, Apple is likely to approve it unless you provide usage data to show the subscription was actively consumed. Apple [encourages developers](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information) to share this data to ensure refund decisions are fair.
 
-Adapty’s Refund saver automates this process while remaining fully compliant with App Store [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information).
+Adapty’s Refund Saver automates this process while remaining fully compliant with App Store [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information).
 
 Here’s how it works:
 
@@ -37,11 +37,11 @@ This automation reduces the chance of unnecessary refunds while saving you time 
 
 :::info
 
-With Refund saver, you can save up to 40% of the revenue from refund requests.
+With Refund Saver, you can save up to 40% of the revenue from refund requests.
 
 :::
 
-## Requirements to use Refund saver
+## Requirements to use Refund Saver
 
 To use this feature, ensure you’ve met the following prerequisites:
 
@@ -52,9 +52,9 @@ To use this feature, ensure you’ve met the following prerequisites:
 3. **Enable Server Notifications V2:**
    Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](enable-app-store-server-notifications) guide
 
-## How to enable Refund saver in Adapty
+## How to enable Refund Saver in Adapty
 
-1. Open the [**Refund saver**](https://app.adapty.io/refund-saver) section in the Adapty Dashboard.
+1. Open the [Refund Saver](https://app.adapty.io/refund-saver) section in the Adapty Dashboard.
 
 <Zoom>
   <img src={require('./img/refund-off.webp').default}
@@ -67,7 +67,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 />
 </Zoom>
 
-2. Click **Turn on Refund saver** to activate the feature.
+2. Click **Turn on Refund Saver** to activate the feature.
 
 ## Obtain user consent
 
@@ -79,7 +79,7 @@ Below is an example clause for the opt-out approach, including the types of data
 
 *"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
-Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
+<!--- Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
 
  <Zoom>
   <img src={require('./img/refund-saver-preference.webp').default}
@@ -122,7 +122,7 @@ try {
 ```
 
 </TabItem> 
-</Tabs>
+</Tabs> --->
 
 ## Set a default refund preference
 
@@ -148,11 +148,12 @@ Adapty supports setting this preference, but we will use the same value for ever
    | -------------------------------------------- | ------------------------------------------------------------ |
    | Always decline                               | (default) This is the default option and usually yields the best results for minimizing refunds. |
    | Decline first refund request, grant all next | Suggests that Apple decline the first request from a user but approve all subsequent ones from the same user. |
-   | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. |
    | Always refund                                | Suggests that Apple approve every refund request, select this option. |
    | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
+   
+      <!---    | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. | --->
 
-## Set a refund preference with the SDK
+<!--- ## Set a refund preference with the SDK
 
 You can set the refund preference in your app code individually for every installation depending on some user's actions. Use the snippet below to set the preference:
 
@@ -178,7 +179,7 @@ try {
 } catch (e) {
   // handle the error
 }
-``` 
+```
 </TabItem> 
 </Tabs>
 
@@ -191,13 +192,13 @@ Even with a default refund behavior set, you may want to manually adjust specifi
 1. Enable the **Delay automated response for manual processing** toggle in the **Edit Refund Saver preferences** window. This gives you 11 hours to manually process the request before it is sent. 11 hours is the maximum delay allowed by Apple.
 2. Manually adjust the refund preference for specific requests as needed. 
 
-If you don’t make any changes within 11 hours, the request will be sent using your default preference.
+If you don’t make any changes within 11 hours, the request will be sent using your default preference. --->
 
 ## Limitations
 
-- **Apple’s App Store only:** Refund saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
-- **Requires Server Notifications V2:** Refund saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](enable-app-store-server-notifications) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
-- **Not for consumables:** Refund saver does not apply to consumable products.
+- **Apple’s App Store only:** Refund Saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
+- **Requires Server Notifications V2:** Refund Saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](enable-app-store-server-notifications) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
+- **Not for consumables:** Refund Saver does not apply to consumable products.
 
 
 
