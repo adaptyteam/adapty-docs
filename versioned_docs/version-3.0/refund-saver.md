@@ -79,20 +79,7 @@ Below is an example clause for the opt-out approach, including the types of data
 
 *"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
 
-<!--- Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
-
- <Zoom>
-  <img src={require('./img/refund-saver-preference.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Use the snippet below to update the user’s consent status in Adapty:
+Use the snippet below to update the user’s consent status in Adapty SDK:
 
 <Tabs groupId="current-os" queryString> 
 
@@ -111,7 +98,6 @@ do {
 <TabItem value="flutter" label="Flutter (3.4.0+)" default> 
 
 ```javascript showLineNumbers 
-
 try {
   await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>);
 } on AdaptyError catch (adaptyError) {
@@ -122,7 +108,22 @@ try {
 ```
 
 </TabItem> 
-</Tabs> --->
+</Tabs>
+
+Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
+
+ <Zoom>
+  <img src={require('./img/refund-saver-preference.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+
 
 ## Set a default refund preference
 
@@ -148,12 +149,13 @@ Adapty supports setting this preference, but we will use the same value for ever
    | -------------------------------------------- | ------------------------------------------------------------ |
    | Always decline                               | (default) This is the default option and usually yields the best results for minimizing refunds. |
    | Decline first refund request, grant all next | For every transaction Refund Saver encounters, it will initially ask Apple to decline the refund. However, if the same transaction appears again, Refund Saver will always recommend granting the refund. This approach helps minimize user frustration from unfair refund declines — users can simply request the refund again and will likely receive it. |
+   | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. |
    | Always refund                                | Suggests that Apple approve every refund request.            |
    | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
    
-      <!---    | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. | --->
+   
 
-<!--- ## Set a refund preference with the SDK
+## Set an individual refund preference with the SDK
 
 You can set the refund preference in your app code individually for every installation depending on some user's actions. Use the snippet below to set the preference:
 
@@ -183,6 +185,8 @@ try {
 </TabItem> 
 </Tabs>
 
+## Set an individual refund preference with API
+
 
 
 ## Manually adjust individual refund preferences
@@ -192,7 +196,7 @@ Even with a default refund behavior set, you may want to manually adjust specifi
 1. Enable the **Delay automated response for manual processing** toggle in the **Edit Refund Saver preferences** window. This gives you 11 hours to manually process the request before it is sent. 11 hours is the maximum delay allowed by Apple.
 2. Manually adjust the refund preference for specific requests as needed. 
 
-If you don’t make any changes within 11 hours, the request will be sent using your default preference. --->
+If you don’t make any changes within 11 hours, the request will be sent using your default preference.
 
 ## Limitations
 
