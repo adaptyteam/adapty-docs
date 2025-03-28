@@ -18,30 +18,30 @@ Be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-
 Adapty supports two types of A/B tests:
 
 - **Regular A/B test:** An A/B test created for a single placement. This is useful if:
-  - Your app has only one placement.
-  - You want to show different paywalls in different placements within your app.
-  
-- **Crossplacement A/B test:** An A/B test created for multiple placements in your app. This means the same paywall once determined by the A/b test will be consistently shown across different sections of your app, with the weight distribution for variants being the same across all affected placements. This is useful when:
-  - You want to use the same product set in multiple sections, such as Onboarding and Settings.
+  - You have only 1 placement in your app.
+  - You want to run your A/B test for only one placement even if you have multiple placements in your app and see economics changes for this one placement only.
+  - You want to run an A/B test on old users (those who have seen at least one Adapty paywall).
+- **Crossplacement A/B test:** An A/B test created for multiple placements in your app. This means the same variant once determined by the A/b test will be consistently shown across different sections of your app. This is useful when:
+  - You want to use the same variant in multiple sections, such as Onboarding and Settings. 
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
+  - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
   
 
 ### Key differences
 
-| Feature                         | Regular A/B Test                                 | Cross-placement A/B Test                                     |
-| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
-| **Scope**                       | Single placement                                 | Multiple placements                                          |
-| **Paywall consistency**         | Paywalls can differ across placements            | Same paywall shown across placements                         |
-| **Audience targeting**          | Defined per placement                            | Shared across all placements                                 |
-| **Analytics**                   | You analyse one placement                        | You analyze the whole app on those placements that are a part of the test |
-| **Variant weight distribution** | Set independently for each placement             | Same weights used across all placements                      |
-| **Users**                       | For all users                                    | Only new users (those who haven’t seen an Adapty paywall)    |
-| **Priority in audiences**       | Lower priority than cross-placement tests        | Highest priority in audience conflicts; multiple crossplacement tests applied in order of creation |
-| **Best for**                    | Testing unique placements in different app areas | Evaluating overall monetization strategies app-wide          |
+| Feature                  | Regular A/B Test                                             | Cross-placement A/B Test                                     |
+| ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **What is being tested** | One paywall                                                  | Set of paywalls belonging to one variant                     |
+| **Variant consistency**  | Variant is determined separately for every placement         | Same variant used across all placements                      |
+| **Audience targeting**   | Defined per placement                                        | Shared across all placements                                 |
+| **Analytics**            | You analyse one placement                                    | You analyze the whole app on those placements that are a part of the test |
+| **Variant weight distribution** | Per paywall  | Per set of paywalls   |
+| **Users**                | For all users                                                | Only new users (those who haven’t seen an Adapty paywall)    |
+| **Best for**             | Testing independent changes in a single placement without considering the overall app economics | Evaluating overall monetization strategies app-wide          |
 
 ## A/B test selection logic
 
-As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users**—those who haven’t seen a single Adapty paywall yet. This ensures consistency in results across placements.
+As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users **— those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). This ensures consistency in results across placements.
 
 The logic Adapty follows when deciding which A/B test to show is outlined below:
 
@@ -82,6 +82,13 @@ Regular and cross-placement A/B tests are displayed in separate lists, which you
   }}
 />
 </Zoom>
+
+## Crossplacement A/B test limitations
+
+Crossplacement A/B tests guarantee the same variant across all placements in the A/B test, but this causes several limitations:
+
+- They always have the highest priority 
+- They take only new users, i.e. the users who have not seen a single Adapty paywall before. That is done because it's not possible to garantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test is started
 
 ## Creating A/B tests
 
