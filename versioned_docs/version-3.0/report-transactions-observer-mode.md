@@ -108,30 +108,20 @@ Parameters:
 | variationId     | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
 
 </TabItem>
-<!--- <TabItem value="flutter" label="Flutter" default>
+ <TabItem value="flutter" label="Flutter" default>
 
-Use `reportTransaction` on both platforms to explicitly report each transaction, and use `restorePurchases` on Android as an additional step to ensure Adapty recognizes it.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
-**Don't skip transaction reporting and purchase restoring!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+**Don't skip transaction reporting!**
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
 If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```javascript showLineNumbers
-// every time when calling transaction.finish()
-if (Platform.isAndroid) {
-    try {
-        await Adapty().restorePurchases();
-    } on AdaptyError catch (adaptyError) {
-        // handle the error
-    } catch (e) {
-    }
-}
-
 try {
     // every time when calling transaction.finish()
     await Adapty().reportTransaction(
@@ -149,12 +139,11 @@ Parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| transactionId | required | <ul><li> For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</li><li> For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</li><li> For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
+| transactionId | required | <ul><li> For iOS: Identifier of the transaction.</li><li> For Android: String identifier `purchase.getOrderId` of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
 | variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
 
-
 </TabItem>
-<TabItem value="unity" label="Unity" default>
+<!--- <TabItem value="unity" label="Unity" default>
 
 Use `reportTransaction` on both platforms to explicitly report each transaction, and use `restorePurchases` on Android as an additional step to ensure Adapty recognizes it.
 
