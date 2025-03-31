@@ -149,7 +149,7 @@ Use `reportTransaction` on both platforms to explicitly report each transaction,
 
 :::warning
 
-**Don't skip transaction reporting and purchase restoring!**
+**Don't skip transaction reporting!**
 If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
@@ -183,11 +183,11 @@ Parameters:
 </TabItem> --->
 <TabItem value="rn" label="React Native (TS)" default>
 
-Use `reportTransaction` on both platforms to explicitly report each transaction, and use `restorePurchases` on Android as an additional step to ensure Adapty recognizes it.
+Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
-**Don't skip transaction reporting and purchase restoring!**
+**Don't skip transaction reporting!**
 If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
