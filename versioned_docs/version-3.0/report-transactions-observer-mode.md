@@ -150,7 +150,7 @@ Use `reportTransaction` on both platforms to explicitly report each transaction,
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
@@ -188,7 +188,7 @@ Use `reportTransaction` to explicitly report each transaction for Adapty to reco
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
 
 :::
 
