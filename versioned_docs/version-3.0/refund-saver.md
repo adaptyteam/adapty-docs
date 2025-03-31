@@ -108,6 +108,19 @@ try {
 ```
 
 </TabItem> 
+
+<TabItem value="rn" label="React Native (3.4.0+)" default> 
+
+```typescript showLineNumbers 
+try {
+    await adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>);
+} catch (error) {
+    // handle the `AdaptyError`
+}   
+```
+
+</TabItem>
+
 </Tabs>
 
 Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
@@ -183,6 +196,16 @@ try {
 }
 ```
 </TabItem> 
+<TabItem value="rn" label="React Native (3.4.0+)" default>
+
+```typescript showLineNumbers
+try {
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+</TabItem>
 </Tabs>
 
 ## Set an individual refund preference with API
