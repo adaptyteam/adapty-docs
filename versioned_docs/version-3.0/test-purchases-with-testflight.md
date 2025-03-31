@@ -47,7 +47,7 @@ Use a paywall in your app to make a test purchase.
 
 Once the purchase is complete, [validate the test purchase](validate-test-purchases) to confirm it was successful.
 
-## Subscriptions in TextFlight
+## Subscriptions in TestFlight
 
 Keep in mind that in TestFlight, subscription renewals happen daily, regardless of the subscription's actual duration. Each subscription can renew up to six times within one week. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-a-beta-version/subscription-renewal-rate-in-testflight).
 

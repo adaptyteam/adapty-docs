@@ -390,5 +390,5 @@ let attribution = [
     "ad_set": "ad set",
     "creative": "creative id"
 ]
-Adapty.updateAttribution(attribution, source: .custom)
+Adapty.updateAttribution(attribution, source: "custom")
 ```
