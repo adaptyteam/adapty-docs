@@ -52,7 +52,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 3. **Enable Server Notifications V2:**
    Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](enable-app-store-server-notifications) guide
 
-## How to enable Refund Saver in Adapty
+## Turn on Refund Saver
 
 1. Open the [Refund Saver](https://app.adapty.io/refund-saver) section in the Adapty Dashboard.
 
@@ -69,7 +69,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 
 2. Click **Turn on Refund Saver** to activate the feature.
 
-## Set a default refund preference
+## Set a default refund behavior
 
 Apple allows developers to specify a preferential outcome for each refund request when responding to it. The purpose of this setting is to find the right balance between declining and accepting refund requests so that only fair refunds are provided. Note that this setting is only used to influence an outcome, but ultimately the decision is still up to Apple.
 
@@ -98,9 +98,23 @@ Adapty supports setting this preference, but we will use the same value for ever
    <!--- 
    | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. |
    --->
-   
 
-## Set an individual refund preference with the SDK
+## Set refund behavior for a specific user in the dashboard
+
+Even if you’ve configured default settings for the entire app, you may want to set individual preferences for specific users. In the Adapty Dashboard, you can do this from the user’s profile. Use the **Refund Saver Preferences** section located at the bottom left.
+
+<Zoom>
+  <img src={require('./img/refund-saver-profile-preference.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Set refund behavior for a specific user in the SDK
 
 You can set the refund preference in your app code individually for every installation depending on some user's actions. Use the snippet below to set the preference:
 
@@ -146,7 +160,7 @@ try {
 
 --->
 
-## Manually adjust individual refund preferences
+## Manually adjust refund behavior for a specific request
 
 Even with a default refund behavior set, you may want to manually adjust specific requests. Here's how:
 
@@ -168,7 +182,7 @@ Below is an example clause for the opt-out approach, including the types of data
 Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
 
  <Zoom>
-  <img src={require('./img/refund-saver-preference.webp').default}
+  <img src={require('./img/refund-saver-consent.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -178,12 +192,14 @@ Depending on your chosen approach, set the **Default consent policy** option in 
 />
 </Zoom>
 
+<p> </p>
+
 | Option  | Description                                                  |
 | ------- | ------------------------------------------------------------ |
 | Opt-out | (default) Consent is assumed by default. Users are considered to have agreed to data sharing unless they explicitly opt out. |
 | Opt-in  | Consent is not assumed by default. Users must actively provide consent through an in-app prompt. If they ignore or decline the prompt, they are considered not to have consented. This is Apple’s recommended approach. |
 
-## Change user consent status with the SDK
+## Update user consent in the SDK
 
 Earlier, you configured how Adapty should treat user consent by default — whether the user is considered to have given consent (opt-out) or not (opt-in). This means that when a user profile is created, it will reflect the default setting you've chosen.
 
@@ -239,7 +255,20 @@ Parameters:
 | ----------------- | ------------------------------------------------------------ |
 | \<CONSENT_VALUE\> | <ul><li> Set to `true` if the user has given consent to data sharing. In this case, Adapty will share the refund-related data with Apple. </li><li> Set to `false` if the user has revoked consent. In this case, Adapty will not share any refund-related data with Apple.</li></ul> |
 
+## Check user consent
 
+You can check a user’s current consent status anytime. In the Adapty Dashboard, just open the user’s profile and look for the **Allow data sharing** setting in the **Refund Saver Preferences** section at the bottom left.
+
+<Zoom>
+  <img src={require('./img/refund-saver-profile-consent.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Limitations
 
