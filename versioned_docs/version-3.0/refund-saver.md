@@ -208,9 +208,11 @@ try {
 </TabItem>
 </Tabs>
 
+<!---
+
 ## Set an individual refund preference with API
 
-
+--->
 
 ## Manually adjust individual refund preferences
 
