@@ -101,7 +101,7 @@ Adapty supports setting this preference, but we will use the same value for ever
 
 ## Set refund behavior for a specific user in the dashboard
 
-Even if you’ve configured default settings for the entire app, you may want to set individual preferences for specific users. In the Adapty Dashboard, you can do this from the user’s profile. Use the **Refund Saver Preferences** section located at the bottom left.
+Even if you’ve configured the default Refund Saver behavior for the entire app, you may want to set individual preferences for specific users. In the Adapty Dashboard, you can do this from the user’s profile. Use the **Refund Saver Preferences** section located at the bottom left.
 
 <Zoom>
   <img src={require('./img/refund-saver-profile-preference.webp').default}
@@ -196,16 +196,12 @@ Depending on your chosen approach, set the **Default consent policy** option in 
 
 | Option  | Description                                                  |
 | ------- | ------------------------------------------------------------ |
-| Opt-out | (default) Consent is assumed by default. Users are considered to have agreed to data sharing unless they explicitly opt out. |
-| Opt-in  | Consent is not assumed by default. Users must actively provide consent through an in-app prompt. If they ignore or decline the prompt, they are considered not to have consented. This is Apple’s recommended approach. |
+| Opt-out | (default) If Adapty doesn't know the user's consent status, it assumes consent **was given** and Refund Saver **will share** refund-related data with Apple. |
+| Opt-in  | If Adapty doesn't know the user's consent status, it assumes consent **was not given** and Refund Saver **won’t share** any data with Apple. This is Apple’s recommended approach. |
 
 ## Update user consent in the SDK
 
-Earlier, you configured how Adapty should treat user consent by default — whether the user is considered to have given consent (opt-out) or not (opt-in). This means that when a user profile is created, it will reflect the default setting you've chosen.
-
-However, when a user explicitly gives consent in the opt-in approach, or revokes consent in the opt-out approach, you need to update their profile to reflect this change. To do that, use the `updateCollectingRefundDataConsent` method in the SDK.
-
-Use the snippet below to update the user’s consent status in Adapty SDK:
+To tell Adapty whether a specific user has given consent, use the `updateCollectingRefundDataConsent` method:
 
 <Tabs groupId="current-os" queryString> 
 
@@ -213,7 +209,7 @@ Use the snippet below to update the user’s consent status in Adapty SDK:
 
  ```swift showLineNumbers 
 do {
-  try await Adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>)
+  try await Adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>) // true = consent is explicitly provided, false = consent is explicitly revoked
 } catch {
   // handle the error
 }
@@ -223,9 +219,10 @@ do {
 
 <TabItem value="flutter" label="Flutter (3.4.0+)" default> 
 
-```javascript showLineNumbers 
+```dart showLineNumbers 
 try {
-  await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>);
+  // true = user gave consent, false = user revoked consent
+  await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>); 
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {
@@ -239,7 +236,7 @@ try {
 
 ```typescript showLineNumbers 
 try {
-    await adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>);
+    await adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>); // true = consent is explicitly provided, false = consent is explicitly revoked
 } catch (error) {
     // handle the `AdaptyError`
 }   
@@ -248,12 +245,6 @@ try {
 </TabItem>
 
 </Tabs>
-
-Parameters:
-
-| Option            | Description                                                  |
-| ----------------- | ------------------------------------------------------------ |
-| \<CONSENT_VALUE\> | <ul><li> Set to `true` if the user has given consent to data sharing. In this case, Adapty will share the refund-related data with Apple. </li><li> Set to `false` if the user has revoked consent. In this case, Adapty will not share any refund-related data with Apple.</li></ul> |
 
 ## Check user consent
 
