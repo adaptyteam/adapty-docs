@@ -52,7 +52,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 3. **Enable Server Notifications V2:**
    Ensure that Server Notifications V2 are activated in your Apple Developer account and properly configured in Adapty, as V1 notifications are not supported. If they aren’t activated yet, follow the steps in the [Enable App Store server notifications](enable-app-store-server-notifications) guide
 
-## How to enable Refund Saver in Adapty
+## Turn on Refund Saver
 
 1. Open the [Refund Saver](https://app.adapty.io/refund-saver) section in the Adapty Dashboard.
 
@@ -69,62 +69,7 @@ To use this feature, ensure you’ve met the following prerequisites:
 
 2. Click **Turn on Refund Saver** to activate the feature.
 
-## Obtain user consent
-
-How you collect user consent for data sharing is up to you, but Apple requires valid user consent before sharing any personal data with them. Apple recommends using an **opt-in approach**, which involves in-app prompts that explain how data will be used and require explicit user action to provide consent. If a user ignores or denies the prompt, they are not considered to have consented. For more details, refer to Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151).
-
-If explicit consent isn’t practical for your app, you can consider an **opt-out approach**. This involves including a data-sharing clause in your Terms of Service, explaining that users agree to data sharing by accepting the terms. Be sure to clearly outline how users can revoke their consent. 
-
-Below is an example clause for the opt-out approach, including the types of data you might share. This is only a sample to guide you in crafting your own text. You are responsible for ensuring your final version complies with all applicable laws and Apple’s requirements.
-
-*"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
-
-<!--- Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
-
- <Zoom>
-  <img src={require('./img/refund-saver-preference.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Use the snippet below to update the user’s consent status in Adapty:
-
-<Tabs groupId="current-os" queryString> 
-
-<TabItem value="swift" label="iOS (3.4.1+)" default> 
-
- ```swift showLineNumbers 
-do {
-  try await Adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>)
-} catch {
-  // handle the error
-}
- ```
-
-</TabItem> 
-
-<TabItem value="flutter" label="Flutter (3.4.0+)" default> 
-
-```javascript showLineNumbers 
-
-try {
-  await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>);
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
-```
-
-</TabItem> 
-</Tabs> --->
-
-## Set a default refund preference
+## Set a default refund behavior
 
 Apple allows developers to specify a preferential outcome for each refund request when responding to it. The purpose of this setting is to find the right balance between declining and accepting refund requests so that only fair refunds are provided. Note that this setting is only used to influence an outcome, but ultimately the decision is still up to Apple.
 
@@ -150,10 +95,26 @@ Adapty supports setting this preference, but we will use the same value for ever
    | Decline first refund request, grant all next | For every transaction Refund Saver encounters, it will initially ask Apple to decline the refund. However, if the same transaction appears again, Refund Saver will always recommend granting the refund. This approach helps minimize user frustration from unfair refund declines — users can simply request the refund again and will likely receive it. |
    | Always refund                                | Suggests that Apple approve every refund request.            |
    | No preference                                | Do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history, without any influence from your settings. This option provides the most neutral approach. |
-   
-      <!---    | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. | --->
+   <!--- 
+   | Grant first refund request, decline all next | Suggests that Apple approve the first request from a user but decline all subsequent ones from the same user. |
+   --->
 
-<!--- ## Set a refund preference with the SDK
+## Set refund behavior for a specific user in the dashboard
+
+Even if you’ve configured the default Refund Saver behavior for the entire app, you may want to set individual preferences for specific users. In the Adapty Dashboard, you can do this from the user’s profile. Use the **Refund Saver Preferences** section located at the bottom left.
+
+<Zoom>
+  <img src={require('./img/refund-saver-profile-preference.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Set refund behavior for a specific user in the SDK
 
 You can set the refund preference in your app code individually for every installation depending on some user's actions. Use the snippet below to set the preference:
 
@@ -181,18 +142,124 @@ try {
 }
 ```
 </TabItem> 
+<TabItem value="rn" label="React Native (3.4.0+)" default>
+
+```typescript showLineNumbers
+try {
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+</TabItem>
 </Tabs>
 
+<!---
 
+## Set an individual refund preference with API
 
-## Manually adjust individual refund preferences
+--->
+
+## Manually adjust refund behavior for a specific request
 
 Even with a default refund behavior set, you may want to manually adjust specific requests. Here's how:
 
 1. Enable the **Delay automated response for manual processing** toggle in the **Edit Refund Saver preferences** window. This gives you 11 hours to manually process the request before it is sent. 11 hours is the maximum delay allowed by Apple.
 2. Manually adjust the refund preference for specific requests as needed. 
 
-If you don’t make any changes within 11 hours, the request will be sent using your default preference. --->
+If you don’t make any changes within 11 hours, the request will be sent using your default preference.
+
+## Obtain user consent
+
+How you collect user consent for data sharing is up to you, but Apple requires valid user consent before sharing any personal data with them. Apple recommends using an **opt-in approach**, which involves in-app prompts that explain how data will be used and require explicit user action to provide consent. If a user ignores or denies the prompt, they are not considered to have consented. For more details, refer to Apple’s [guidelines](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information#3921151).
+
+If explicit consent isn’t practical for your app, you can consider an **opt-out approach**. This involves including a data-sharing clause in your Terms of Service, explaining that users agree to data sharing by accepting the terms. Be sure to clearly outline how users can revoke their consent. 
+
+Below is an example clause for the opt-out approach, including the types of data you might share. This is only a sample to guide you in crafting your own text. You are responsible for ensuring your final version complies with all applicable laws and Apple’s requirements.
+
+*"If we receive a refund request for an in-app purchase, we may provide Apple with information about the user's in-app purchase activity. This could include details such as time since app installation, total app usage time, an anonymous account identifier, whether the in-app purchase was fully consumed, whether it included a trial period, the total amount spent, and the total amount refunded."*
+
+Depending on your chosen approach, set the **Default consent policy** option in the **Edit refund preferences** menu:
+
+ <Zoom>
+  <img src={require('./img/refund-saver-consent.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+<p> </p>
+
+| Option  | Description                                                  |
+| ------- | ------------------------------------------------------------ |
+| Opt-out | (default) If Adapty doesn't know the user's consent status, it assumes consent **was given** and Refund Saver **will share** refund-related data with Apple. |
+| Opt-in  | If Adapty doesn't know the user's consent status, it assumes consent **was not given** and Refund Saver **won’t share** any data with Apple. This is Apple’s recommended approach. |
+
+## Update user consent in the SDK
+
+To tell Adapty whether a specific user has given consent, use the `updateCollectingRefundDataConsent` method:
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="swift" label="iOS (3.4.1+)" default> 
+
+ ```swift showLineNumbers 
+do {
+  try await Adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>) // true = consent is explicitly provided, false = consent is explicitly revoked
+} catch {
+  // handle the error
+}
+ ```
+
+</TabItem> 
+
+<TabItem value="flutter" label="Flutter (3.4.0+)" default> 
+
+```dart showLineNumbers 
+try {
+  // true = user gave consent, false = user revoked consent
+  await Adapty().updateCollectingRefundDataConsent(<CONSENT_VALUE>); 
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem> 
+
+<TabItem value="rn" label="React Native (3.4.0+)" default> 
+
+```typescript showLineNumbers 
+try {
+    await adapty.updateCollectingRefundDataConsent(<CONSENT_VALUE>); // true = consent is explicitly provided, false = consent is explicitly revoked
+} catch (error) {
+    // handle the `AdaptyError`
+}   
+```
+
+</TabItem>
+
+</Tabs>
+
+## Check user consent
+
+You can check a user’s current consent status anytime. In the Adapty Dashboard, just open the user’s profile and look for the **Allow data sharing** setting in the **Refund Saver Preferences** section at the bottom left.
+
+<Zoom>
+  <img src={require('./img/refund-saver-profile-consent.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Limitations
 
