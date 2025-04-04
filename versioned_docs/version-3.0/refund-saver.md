@@ -124,7 +124,7 @@ You can set the refund preference in your app code individually for every instal
 
 ```swift showLineNumbers code  
 do {
-  try await Adapty.updateRefundPreference(<PREFERENCE_VALUE>)
+  try await Adapty.updateRefundPreference(<PREFERENCE_VALUE>) // possible values: .noPreference, .grant, .decline
 } catch {
   // handle the error
 }
@@ -134,6 +134,7 @@ do {
 
 ```javascript showLineNumbers code  
 try {
+  // possible values: RefundPreference.noPreference, RefundPreference.grant, RefundPreference.decline
   await Adapty().updateRefundPreference(<PREFERENCE_VALUE>);
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -146,7 +147,7 @@ try {
 
 ```typescript showLineNumbers
 try {
-    await adapty.updateRefundPreference(<PREFERENCE_VALUE>);
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: "noPreference", "grant", "decline"
 } catch (error) {
     // handle the `AdaptyError`
 }
@@ -158,7 +159,7 @@ try {
 
 ## Set an individual refund preference with API
 
---->
+
 
 ## Manually adjust refund behavior for a specific request
 
@@ -167,7 +168,7 @@ Even with a default refund behavior set, you may want to manually adjust specifi
 1. Enable the **Delay automated response for manual processing** toggle in the **Edit Refund Saver preferences** window. This gives you 11 hours to manually process the request before it is sent. 11 hours is the maximum delay allowed by Apple.
 2. Manually adjust the refund preference for specific requests as needed. 
 
-If you don’t make any changes within 11 hours, the request will be sent using your default preference.
+If you don’t make any changes within 11 hours, the request will be sent using your default preference.--->
 
 ## Obtain user consent
 
