@@ -134,7 +134,7 @@ do {
 
 ```javascript showLineNumbers code  
 try {
-  // possible values: RefundPreference.noPreference, RefundPreference.grant, RefundPreference.decline
+  // possible values: AdaptyRefundPreference.noPreference, AdaptyRefundPreference.grant, AdaptyRefundPreference.decline
   await Adapty().updateRefundPreference(<PREFERENCE_VALUE>);
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -147,7 +147,7 @@ try {
 
 ```typescript showLineNumbers
 try {
-    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: "noPreference", "grant", "decline"
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: RefundPreference.NoPreference, RefundPreference.Grant, RefundPreference.Decline
 } catch (error) {
     // handle the `AdaptyError`
 }
