@@ -7,7 +7,7 @@ metadataTitle: "Understanding Annual Recurring Revenue (ARR) | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Annual recurring revenue chart shows revenue from all active auto-renewable subscriptions normalized to one year.   The chart considers any paid, unexpired subscription as active. ARR is a crucial metric for tracking your subscription business's growth and predicting future revenue.
+The Annual recurring revenue chart shows revenue from all active auto-renewable subscriptions normalized to one year. The chart considers any paid, unexpired subscription as active. ARR is a crucial metric for tracking your subscription business's growth and predicting future revenue.
 
 
 <Zoom>

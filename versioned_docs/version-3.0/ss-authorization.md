@@ -8,10 +8,23 @@ toc_max_heading_level: 2
 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 ## Authorization
 
-API requests must be authenticated with either your secret or your public API key as an Authorization header. You can find them in the [**App Settings**](https://app.adapty.io/settings/general). The format of the value is `Api-Key {your-secret-api-key}`, for example, `Api-Key secret_live_...`.
+API requests must be authenticated with either your secret or your public API key as an Authorization header. You can find them in the [**App Settings**](https://app.adapty.io/settings/general):
+
+<Zoom>
+  <img src={require('./img/adapty-api-keys.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Request format
 
@@ -21,6 +34,7 @@ The server-side API requests require specific headers and a JSON body. Use the d
 
 | **Header**                  | **Description**                                              |
 | --------------------------- | ------------------------------------------------------------ |
+| **Authorization**           | <p>Use secret API key: `<Api-Key secret_live_...>`</p> |
 | **adapty-profile-id**       | <p>The user’s Adapty profile ID. Visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. </p><p>Interchangeable with **adapty-customer-user-id**, use any of them.</p> |
 | **adapty-customer-user-id** | <p>The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. </p><p>Interchangeable with **adapty-profile-id**, use any of them.</p><p> ⚠️ Works only if you [identify users](identifying-users) in your app code using the Adapty SDK.</p> |
 | **adapty-platform**         | (optional) Specify the platform of the device on which the app is installed. We recommend setting this parameter in the [Create profile](ss-create-profile) and [Update profile](ss-update-profile) requests when modifying the [Installation Meta](server-side-api-objects#installation-meta) object, as it depends on the device the user is using, and a single user may have multiple devices. Possible values: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`, or `web`. |
