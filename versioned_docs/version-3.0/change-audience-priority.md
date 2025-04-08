@@ -22,7 +22,9 @@ When you have different user audiences in one [placement](placements), a user ca
 
 In this scenario, we rely on audience priority. Audience priority is a numerical order, where #1 is the highest. It guides the sequence for audiences to check. In simpler terms, audience priority helps Adapty make decisions about which audience to apply first when selecting the paywall or A/B test to display. If the audience priority for a paywall or A/B test is low, users who potentially qualify for the paywall or test might bypass it. Instead, they could be directed to another audience with a higher priority.
 
-"All users" audience is always the last in the priority, as it's the fallback audience and include all users who do not fall into any other audience.
+Crossplacement audiences, meaning those created for [crossplacement A/B tests](ab-tests#ab-test-types), always take priority over regular audiences.
+
+The "All users" audience always has the lowest priority since it’s a fallback and includes everyone who doesn’t match any other audience.
 
 To adjust audience priorities for a placement:
 
