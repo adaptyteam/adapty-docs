@@ -21,7 +21,7 @@ Adapty supports two types of A/B tests:
   - You have only 1 placement in your app.
   - You want to run your A/B test for only one placement even if you have multiple placements in your app and see economics changes for this one placement only.
   - You want to run an A/B test on old users (those who have seen at least one Adapty paywall).
-- **Crossplacement A/B test:** An A/B test created for multiple placements in your app. This means the same variant once assigned by the A/b test will be consistently shown across different sections of your app. This is useful when:
+- **Crossplacement A/B test:** An A/B test created for multiple placements in your app. This means the same variant once determined by the A/b test will be consistently shown across different sections of your app. This is useful when:
   - You want to use the same variant in multiple sections, such as Onboarding and Settings. 
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
@@ -29,25 +29,22 @@ Adapty supports two types of A/B tests:
 
 ### Key differences
 
-| Feature                  | Regular A/B Test                                             | Crossplacement A/B Test                                     |
+| Feature                  | Regular A/B Test                                             | Cross-placement A/B Test                                     |
 | ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | **What is being tested** | One paywall                                                  | Set of paywalls belonging to one variant                     |
-| **Variant consistency**  | Variant is assigned separately for every placement | Same variant is used across all placements                   |
+| **Variant consistency**  | Variant is determined separately for every placement         | Same variant used across all placements                      |
 | **Audience targeting**   | Defined per placement                                        | Shared across all placements                                 |
-| **Analytics**            | You analyze one placement                                   | You analyze the whole app on those placements that are a part of the test |
+| **Analytics**            | You analyse one placement                                    | You analyze the whole app on those placements that are a part of the test |
 | **Variant weight distribution** | Per paywall  | Per set of paywalls   |
 | **Users**                | For all users                                                | Only new users (those who haven’t seen an Adapty paywall)    |
+| **Adapty SDK version** | Any | 3.5+ |
 | **Best for**             | Testing independent changes in a single placement without considering the overall app economics | Evaluating overall monetization strategies app-wide          |
 
 ## A/B test selection logic
 
-As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users** — those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). 
+As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users **— those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). This ensures consistency in results across placements.
 
-Once a cross-placement A/B test is triggered and a variant is assigned, the Adapty SDK saves it. That variant’s paywalls will then be shown across all placements included in the test for that user. The A/B test won’t be triggered again.
-
-This approach helps maintain consistency across placements.
-
-Here’s how Adapty decides which A/B test to run:
+The logic Adapty follows when deciding which A/B test to show is outlined below:
 
 <Zoom>
   <img src={require('./img/ab-tests-scheme.webp').default}
@@ -59,6 +56,20 @@ Here’s how Adapty decides which A/B test to run:
   }}
 />
 </Zoom>
+
+<!--- ### How each A/B test works
+
+- **Regular A/B Test:**
+  - Conducted separately for each placement.
+  - Different placements may show different paywalls.
+  - Analytics shown for one placement.
+  - Lower audience priority if a cross-placement test applies to the same audience/placement.
+- **Cross-placement A/B Test:**
+  - Conducted across multiple placements for the same audience.
+  - The same paywall variant is assigned and shown consistently across all included placements.
+  - Variant weight distribution remains uniform across all affected placements.
+  - Analytics shown for the entire app.
+  - Highest audience priority. If multiple crossplacement tests apply, the oldest runs first. --->
 
 Regular and cross-placement A/B tests are displayed in separate lists, which you can switch between.
 
@@ -77,8 +88,8 @@ Regular and cross-placement A/B tests are displayed in separate lists, which you
 
 Crossplacement A/B tests guarantee the same variant across all placements in the A/B test, but this causes several limitations:
 
-- They always have the highest priority.
-- They take only new users, i.e. the users who have not seen a single Adapty paywall before. That is done because it's not possible to guarantee for the old users that they will see the same paywall chain because an existing user could have seen something before the test was started.
+- They always have the highest priority 
+- They take only new users, i.e. the users who have not seen a single Adapty paywall before. That is done because it's not possible to garantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test is started
 
 ## Creating A/B tests
 
