@@ -1,5 +1,5 @@
 ---
-title: " Set user's consent to share data and refund preferences with server-side API"
+title: "Set user consent and refund settings with API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
