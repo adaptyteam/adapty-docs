@@ -191,7 +191,18 @@ If you don't call `reportTransaction`, Adapty won't recognize the transaction, i
 :::
 
 ```diff showLineNumbers
-.
+- #if UNITY_ANDROID && !UNITY_EDITOR
+-   Adapty.RestorePurchases((profile, error) => {
+-     // handle the error
+-   });
+- #endif
+
+ Adapty.ReportTransaction(
+   "YOUR_TRANSACTION_ID", 
+   "PAYWALL_VARIATION_ID", // optional
+   (error) => {
+   // handle the error
+ });
 ```
 
 </TabItem>
