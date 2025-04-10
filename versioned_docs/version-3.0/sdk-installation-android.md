@@ -31,7 +31,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 ```groovy showLineNumbers
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.3.0')
+    implementation platform('io.adapty:adapty-bom:3.4.0')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
 }
@@ -43,7 +43,7 @@ dependencies {
 ```kotlin showLineNumbers
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.3.0"))
+    implementation(platform("io.adapty:adapty-bom:3.4.0"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
 }
@@ -57,7 +57,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.3.0"
+adaptyBom = "3.4.0"
 
 [libraries]
 ..

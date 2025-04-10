@@ -13,7 +13,6 @@ Discover important data and insights from our [A/B tests](ab-tests), comparing d
 
 Here are three metrics that Adapty provides for A/B test results:
 
-
 <Zoom>
   <img src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.webp').default}
   style={{
@@ -25,11 +24,7 @@ Here are three metrics that Adapty provides for A/B test results:
 />
 </Zoom>
 
-
-
-
-
-**Revenue**: The revenue metric represents the total amount of money generated in USD from purchases and renewals. It includes both the initial purchase and subsequent subscription renewals. This metric helps you evaluate the financial performance of each A/B test variant and determine which option generates the highest revenue.
+**Revenue**: This metric shows the total amount of money generated in USD from purchases and renewals, minus any refunds given to users. It includes both the initial purchase and any follow-up subscription renewals. Revenue helps you understand how each A/B test variant is performing financially and figure out which one brings in the most money.
 
 **Probability to be best**: Adapty utilizes a robust mathematical analysis framework to analyze A/B test results and provides a metric called Probability to be best. This metric assesses the likelihood that a particular variant is the best-performing option (in terms of its long-term revenue) among all the variants tested. The metric is expressed as a percentage value ranging from 1% to 100%. For detailed information on how Adapty calculates this metric, please refer to the [documentation.](maths-behind-it)The best performing option, determined by Revenue per 1K user, is highlighted in green and automatically selected as the default choice.
 

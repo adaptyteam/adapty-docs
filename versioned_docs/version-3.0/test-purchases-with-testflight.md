@@ -47,8 +47,22 @@ Use a paywall in your app to make a test purchase.
 
 Once the purchase is complete, [validate the test purchase](validate-test-purchases) to confirm it was successful.
 
+## Subscriptions in TestFlight
+
+Keep in mind that in TestFlight, subscription renewals happen daily, regardless of the subscription's actual duration. Each subscription can renew up to six times within one week. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-a-beta-version/subscription-renewal-rate-in-testflight).
+
+| Production subscription period | Sandbox subscription renewal | TestFlight subscription renewal |
+| ------------------------------ | ---------------------------- | ------------------------------- |
+| 3 days                         | 2 minutes                    | 1 day                           |
+| 1 week                         | 3 minutes                    | 1 day                           |
+| 1 month                        | 5 minutes                    | 1 day                           |
+| 2 months                       | 10 minutes                   | 1 day                           |
+| 3 months                       | 15 minutes                   | 1 day                           |
+| 6 months                       | 30 minutes                   | 1 day                           |
+| 1 year                         | 1 hour                       | 1 day                           |
+
 :::note
 
-Please keep in mind that the subscription renewal rate is accelerated in TestFlight. Each subscription is renewed daily, up to 6 times within one week, regardless of the subscription's duration. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-a-beta-version/subscription-renewal-rate-in-testflight).
+**Example scenario:** If you start a 1-month subscription on February 1st, it'll renew every 24 hours for a total of 6 renewals before being canceled. Since subscriptions renew at an accelerated rate in TestFlight, you'll see a new transaction for each renewal on February 2nd, 3rd, 4th, 5th, 6th, and 7th. The subscription's auto-renewal will then be disabled on February 8th.
 
 :::

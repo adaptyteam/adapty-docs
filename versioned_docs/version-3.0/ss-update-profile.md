@@ -188,12 +188,30 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 
 </Tabs>
 
+Placeholders: 
+
+- `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
+- `<OPTIONAL_DEVICE_PLATFORM>`: The platform of the device where the user has your app installed. Useful when the user has installed your app on multiple devices.
+
 <!--- <CreateProfileRequestExample /> --->
 
 ## Parameters
 
-`Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](ss-authorization).
-  <ProfileRequest /> 
+ <ProfileRequest />
+
+:::tip
+
+`profile_id` and/or `customer_user_id` must be included in the request header, as described in the [Authorization](ss-authorization) section.
+
+If you're adding a `customer_user_id` to an existing profile:
+
+1. Use the `POST` method.
+2. Add both `profile_id` and `customer_user_id` to the request header.
+
+This will link the `customer_user_id` to the user's existing profile.
+
+:::
 
 ---
 

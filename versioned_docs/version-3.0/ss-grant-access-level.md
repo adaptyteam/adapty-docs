@@ -102,6 +102,11 @@ fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/acces
 </TabItem>  
 </Tabs>
 
+Placeholders: 
+
+- `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
+
 ## Parameters
 
 | Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
