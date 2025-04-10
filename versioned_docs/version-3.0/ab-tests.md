@@ -25,7 +25,13 @@ Adapty supports two types of A/B tests:
   - You want to use the same variant in multiple sections, such as Onboarding and Settings. 
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
-  
+
+
+:::warning
+Crossplacement A/B tests are only available for native iOS and Android SDKs starting from v3.5.0. Support for cross-platform SDKs is coming soon.
+
+Users from previous versions skip them and can only become a part of regular A/B tests.
+:::
 
 ### Key differences
 
@@ -37,12 +43,12 @@ Adapty supports two types of A/B tests:
 | **Analytics**            | You analyse one placement                                    | You analyze the whole app on those placements that are a part of the test |
 | **Variant weight distribution** | Per paywall  | Per set of paywalls   |
 | **Users**                | For all users                                                | Only new users (those who haven’t seen an Adapty paywall)    |
-| **Adapty SDK version** | Any | 3.5+ |
+| **Adapty SDK version** | Any | :warning: 3.5.0+ |
 | **Best for**             | Testing independent changes in a single placement without considering the overall app economics | Evaluating overall monetization strategies app-wide          |
 
 ## A/B test selection logic
 
-As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users **— those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). This ensures consistency in results across placements.
+As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users** — those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). This ensures consistency in results across placements.
 
 The logic Adapty follows when deciding which A/B test to show is outlined below:
 
@@ -88,8 +94,8 @@ Regular and cross-placement A/B tests are displayed in separate lists, which you
 
 Crossplacement A/B tests guarantee the same variant across all placements in the A/B test, but this causes several limitations:
 
-- They always have the highest priority 
-- They take only new users, i.e. the users who have not seen a single Adapty paywall before. That is done because it's not possible to garantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test is started
+- They always have the highest priority in a placement.
+- Only new users can participate, i.e. the users who have not seen a single Adapty paywall before (to be precise, `getPaywall` SDK method was called). That is done because it's not possible to guarantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test has been started.
 
 ## Creating A/B tests
 
@@ -179,7 +185,6 @@ To create a new A/B test:
     2. **Run A/B test**: Choose this if you’re ready to launch the test immediately. The test will go live as soon as you click this button.
 
 To learn more about launching A/B tests, check out our [guide on running A/B tests](run_stop_ab_tests). You’ll also be able to track performance using a variety of metrics — see the [metrics documentation](results-and-metrics) for more details.
-
 
 <!--- ### Creating A/B test from the placement
 
