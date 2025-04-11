@@ -193,15 +193,6 @@ Placeholders:
 
   <ProfileRequest /> 
 
-:::tip
-
-To authorize the request, make sure to include `profile_id` and/or `customer_user_id` in the header, as explained in the [Authorization](ss-authorization) section.
-
-- If you're adding a `customer_user_id` to a **new user profile**, include only the `customer_user_id` in the request header. This will create a new profile with a random `profile_id` and the specified `customer_user_id`.
-- If you're adding a `customer_user_id` to an **existing profile**, include both the `profile_id` and `customer_user_id` in the header. This will attach the `customer_user_id` to the existing profile.
-
-:::
-
 <!--- <CreateProfileRequestExample /> --->
 
 ---

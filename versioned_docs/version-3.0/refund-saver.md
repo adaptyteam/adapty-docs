@@ -124,7 +124,7 @@ You can set the refund preference in your app code individually for every instal
 
 ```swift showLineNumbers code  
 do {
-  try await Adapty.updateRefundPreference(<PREFERENCE_VALUE>) // possible values: .noPreference, .grant, .decline
+  try await Adapty.updateRefundPreference(<PREFERENCE_VALUE>)
 } catch {
   // handle the error
 }
@@ -134,7 +134,6 @@ do {
 
 ```javascript showLineNumbers code  
 try {
-  // possible values: AdaptyRefundPreference.noPreference, AdaptyRefundPreference.grant, AdaptyRefundPreference.decline
   await Adapty().updateRefundPreference(<PREFERENCE_VALUE>);
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -147,7 +146,7 @@ try {
 
 ```typescript showLineNumbers
 try {
-    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: RefundPreference.NoPreference, RefundPreference.Grant, RefundPreference.Decline
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>);
 } catch (error) {
     // handle the `AdaptyError`
 }

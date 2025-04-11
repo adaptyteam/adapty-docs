@@ -198,20 +198,8 @@ Placeholders:
 
 ## Parameters
 
- <ProfileRequest />
-
-:::tip
-
-`profile_id` and/or `customer_user_id` must be included in the request header, as described in the [Authorization](ss-authorization) section.
-
-If you're adding a `customer_user_id` to an existing profile:
-
-1. Use the `POST` method.
-2. Add both `profile_id` and `customer_user_id` to the request header.
-
-This will link the `customer_user_id` to the user's existing profile.
-
-:::
+`Profile_id` or `customer_user_id` must be set up as a header as described in [Authorization](ss-authorization).
+  <ProfileRequest /> 
 
 ---
 
