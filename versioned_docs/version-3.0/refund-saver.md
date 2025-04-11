@@ -266,7 +266,6 @@ You can check a user’s current consent status anytime. In the Adapty Dashboard
 
 - **Apple’s App Store only:** Refund Saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
 - **Requires Server Notifications V2:** Refund Saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](enable-app-store-server-notifications) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
-- **Not for consumables:** Refund Saver does not apply to consumable products.
 
 
 
