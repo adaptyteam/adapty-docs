@@ -40,8 +40,8 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/r
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --data '{
   "settings": {
-    "custom_preference": 0,
-    "consent": 0
+    "custom_preference": "grant",
+    "consent": true
   }
 }'
 ```
@@ -57,19 +57,20 @@ url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/refund-save
 
 payload = json.dumps({
   "settings": {
-    "custom_preference": 0,
-    "consent": 0
+    "custom_preference": "grant",
+    "consent": True
   }
 })
 headers = {
-  'adapty-customer-user-id': '<YOUR_CUSTOMER_USER_ID>',
-  'Content-Type': 'application/json',
-  'Authorization': 'Api-Key <YOUR_SECRET_API_KEY>'
+ "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID",
+  "Content-Type": "application/json",
+  "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
 
 print(response.text)
+
 ```
 
 </TabItem>  
@@ -83,8 +84,8 @@ myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
 const raw = JSON.stringify({
   "settings": {
-    "custom_preference": 0,
-    "consent": 0
+    "custom_preference": "grant",
+    "consent": true
   }
 });
 
@@ -118,16 +119,6 @@ Placeholders:
 
 ---
 
-## Successful response: 200: OK
-
-<ProfileResponse />
-
-### Successful response example
-
-<ResponseExample />  
-
----
-
 ## Errors
 
 ### 400: Bad request
@@ -144,16 +135,7 @@ Placeholders:
 
 ---
 
-### 404: Not found
-
-<ProfileResponseNotFound />  
-
-
-
----
-
 **See also:**
 
-- [Revoke access level](ss-revoke-access-level)
-- [Set transaction](ss-set-transaction)
-- [Validate Stripe purchases, manage access levels, and import transaction history](ss-purchase-in-stripe)
+- [Refund Saver](refund-saver.md) 
+- [Retrieve user consent and refund settings with API](ss-get-refund-saver-settings.md) 

@@ -99,16 +99,6 @@ No parameters
 
 ---
 
-## Successful response: 200: OK
-
-<ProfileResponse />
-
-### Successful response example
-
-<ResponseExample />  
-
----
-
 ## Errors
 
 ### 400: Bad request
@@ -125,16 +115,7 @@ No parameters
 
 ---
 
-### 404: Not found
-
-<ProfileResponseNotFound />  
-
-
-
----
-
 **See also:**
 
-- [Revoke access level](ss-revoke-access-level)
-- [Set transaction](ss-set-transaction)
-- [Validate Stripe purchases, manage access levels, and import transaction history](ss-purchase-in-stripe)
+- [Refund Saver](refund-saver.md) 
+-  [Set user consent and refund settings with API](ss-set-refund-saver-settings.md) 
