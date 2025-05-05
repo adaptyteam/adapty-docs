@@ -378,12 +378,12 @@ Additional request parameter:
 </TabItem>
 </Tabs>
 
-You can read more about subscriptions and proration modes in the Google Developer documentation:
+You can read more about subscriptions and replacement modes in the Google Developer documentation:
 
-- [About subscriptions](https://developer.android.com/google/play/billing/subscriptions#proration)
-- [Recommendations from Google for proration modes](https://developer.android.com/google/play/billing/subscriptions#proration-recommendations)
-- Proration mode [`IMMEDIATE_AND_CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#IMMEDIATE_AND_CHARGE_PRORATED_PRICE). Note: this method is available only for subscription upgrades. Downgrades are not supported.
-- Proration mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#DEFERRED). Note: in case of success, `profile` in the callback will be returned as `null` since a real subscription change will occur only when the current subscription's billing period ends.
+- [About replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommendations from Google for replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
+- Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
 ## In-app purchases from the App Store
 
