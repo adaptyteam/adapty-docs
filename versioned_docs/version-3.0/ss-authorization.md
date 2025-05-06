@@ -11,7 +11,7 @@ import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
 
 ## Authorization
 
-API requests must be authenticated with either your secret or your public API key as an Authorization header. You can find them in the [App Settings](https://app.adapty.io/settings/general). The format of the value is `Api-Key {your-secret-api-key}`, for example, `Api-Key secret_live_...`.
+API requests must be authenticated with either your secret or your public API key as an Authorization header. You can find them in the [**App Settings**](https://app.adapty.io/settings/general). The format of the value is `Api-Key {your-secret-api-key}`, for example, `Api-Key secret_live_...`.
 
 ## Request format
 

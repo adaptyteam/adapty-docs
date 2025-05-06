@@ -8,7 +8,7 @@ displayed_sidebar: APISidebar
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Validates a purchase using the provided Stripe token using the credentials of Stripe in your  [App Settings](https://app.adapty.io/settings/general) inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Stripe to the profile in Adapty with the specified `customer_user_id`. If there was no profile with this `customer_user_id` before — it will be created.
+Validates a purchase using the provided Stripe token using the credentials of Stripe in your App Settings inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Stripe to the profile in Adapty with the specified `customer_user_id`. If there was no profile with this `customer_user_id` before — it will be created.
 
 Profile events are generated along the way and imported transactions are counted towards MTR.
 
@@ -117,7 +117,7 @@ This request requires different authorization parameters:
 
 | Parameters         | Type   | Required          | Nullable           | Description                                                  |
 | :----------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
-| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard ->  [****Profiles****](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK. |
+| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK. |
 | stripe\_token      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
 
 ## Successful response: 200: OK
