@@ -26,6 +26,8 @@ This integration mainly relies on Adapty pulling subscription data from Stripe v
 The steps below are the same for Stripe's Production and Test modes, but you will need to use different API keys for each. 
 :::
 
+0. Determine if you are connecting Stripe in test mode or live mode. If you are initially doing this in test mode, you will need to repeat the steps below for live mode again.
+
 1. Go to the [Stripe App Marketplace](https://marketplace.stripe.com/apps/adapty) and install the Adapty app. Note that the sandbox mode doesn't support installing apps. You can only do it in the production or test mode.
 
 <Zoom>
@@ -34,13 +36,19 @@ The steps below are the same for Stripe's Production and Test modes, but you wil
 
 2. Give the app the required permissions. This will allow Adapty to access the subscription data and history. Then, click **Continue to app settings** to proceed.
 
-   At the bottom of the permission pop-up, you can select whether to install the app in live or test mode.
+At the bottom of the permission pop-up, you can select whether to install the app in live or test mode.
 
 <Zoom>
       <img src={require('./img/stripe2.png').default}/>
 </Zoom>
 
-3. Copy the restricted key from the pop-up and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key in the **Stripe App Restricted API Key** section depending on your mode. Note that you must generate different keys for test and live modes.
+3. In the pop-up, generate a new restricted key. You will need to verufy your identity using your email, Touch ID, or security key. Once you generate a key, you won't be able to see it again, so store it securely in a password manager or a secret store.
+
+<Zoom>
+      <img src={require('./img/stripe4.png').default}/>
+</Zoom>
+
+4. Copy the generated key from the pop-up and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key in the **Stripe App Restricted API Key** section depending on your mode. Note that you must generate different keys for test and live modes.
 
 <Zoom>
       <img src={require('./img/Stripe3.png').default}/>
