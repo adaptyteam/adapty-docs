@@ -134,7 +134,7 @@ do {
 
 ```javascript showLineNumbers code  
 try {
-  // possible values: RefundPreference.noPreference, RefundPreference.grant, RefundPreference.decline
+  // possible values: AdaptyRefundPreference.noPreference, AdaptyRefundPreference.grant, AdaptyRefundPreference.decline
   await Adapty().updateRefundPreference(<PREFERENCE_VALUE>);
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -147,7 +147,7 @@ try {
 
 ```typescript showLineNumbers
 try {
-    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: "noPreference", "grant", "decline"
+    await adapty.updateRefundPreference(<PREFERENCE_VALUE>); // possible values: RefundPreference.NoPreference, RefundPreference.Grant, RefundPreference.Decline
 } catch (error) {
     // handle the `AdaptyError`
 }
@@ -266,7 +266,6 @@ You can check a user’s current consent status anytime. In the Adapty Dashboard
 
 - **Apple’s App Store only:** Refund Saver is only available for refund requests made to Apple’s App Store. Google Play doesn’t offer consumption data analysis for refunds. Refund decisions on Google Play are based solely on Google’s policies and the information provided by the user.
 - **Requires Server Notifications V2:** Refund Saver is not compatible with App Store Server Notifications V1. If you’re currently using V1 in Adapty, you need to switch to V2, see the [Sending App Store server notifications to Adapty](enable-app-store-server-notifications) guide for details. Switching to V2 will also improve your analytics in Adapty by providing more accurate and comprehensive data.
-- **Not for consumables:** Refund Saver does not apply to consumable products.
 
 
 

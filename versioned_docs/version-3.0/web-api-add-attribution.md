@@ -1,5 +1,5 @@
 ---
-title: " Add attribution API request"
+title: " Add custom attribution API request"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
@@ -14,7 +14,7 @@ import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileRe
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnumerationMember.md';
 
-Adds marketing attribution data to a profile.
+Adds marketing custom attribution data to a profile.
 
 ## Endpoint and method
 
