@@ -3,6 +3,11 @@ title: "Web paywall"
 description: "Set up a web paywall to get paid without the App Store fees and audits."
 metadataTitle: "Accept payments in web for iOS apps in the US"
 ---
+import Zoom from 'react-medium-image-zoom';
+
+:::important
+Before you begin, make sure you have installed Adapty SDK version 3.6.0 or later.
+:::
 
 With Adapty, you can create a web paywall that redirects your users to their browser for payment and then brings them back to your app with the subscription activated.
 This allows you to bypass App Store fees and audits while effectively tracking user payments.
@@ -11,27 +16,56 @@ This allows you to bypass App Store fees and audits while effectively tracking u
 The App Store allows external payment options only in the USA. Duplicate your current paywall and establish a web paywall to utilize the new paywall for the US market exclusively. For details, see [Step 3](#step-3-set-up-a-placement). 
 :::
 
-Before you begin, make sure you have installed Adapty SDK version 3.6.0 or later. 
-
 ## How it works
 
 For web paywalls, each placement is a unique URL that allows users to go to the browser and pay there.
 
-1. You configure how the web paywall page will look and work in the editor.
-2. You link the web paywall in the paywall settings.
-3. In your app paywall, you add a button redirecting users to the browser.
-4. Once users tap the button, Adapty SDK generates a unique URL associating the paywall page with the placement.
-5. Users go to the web paywall page and pay for a subscription using an external payment method.
-6. When they return to the app, Adapty SDK gets information on whether the profile has been updated because of the purchases made.
+1. You **configure how the web paywall page will look** and work in the editor.
+2. You **link the web paywall** in the paywall settings.
+3. In your app paywall, you **add a button** redirecting users to the browser.
+4. Once users tap the button, Adapty SDK **generates a unique URL** associating the paywall page with the placement.
+5. Users **go to the web paywall page** and **pay** for a subscription using an external payment method.
+6. When they return to the app, Adapty SDK starts **tracking whether the profile has been updated** because of the purchases made.
 
 ## Step 1. Create a web paywall
 
-1. If you want to enable external payments for an existing paywall, you need to [duplicate](duplicate-paywalls.md) it so you can show it only to your U.S. users. If you want to start from scratch, [create](create-paywall.md) a new paywall.
+1. If you want to enable external payments for an existing paywall, you need to [duplicate](duplicate-paywalls.md) it so you can show it only to your U.S. user segment and show the old one to all the other users. If you want to start from scratch, [create](create-paywall.md) a new paywall.
 2. In the Paywall, switch to the **Web paywall** tab and click **Create web paywall**. You will be redirected to a new page.   
+   <Zoom>
+   <img src={require('./img/web-paywall-1.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 3. Set up how the paywall page will look and connect a payment method.
+   <Zoom>
+   <img src={require('./img/web-paywall-2.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 4. Publish the paywall and copy its link from the web paywall list.
+web-paywall-3.png
 5. Return to the **Web paywall** page and paste the paywall link.
-6. Click **Save**. 
+6. Click **Save**.
+   <Zoom>
+   <img src={require('./img/web-paywall-4.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 
 ## Step 2. Activate the paywall
 
@@ -49,8 +83,20 @@ If you are using the paywall from the Builder, you need to add a web paywall but
 
 1. Open the paywall and switch to the **Builder** tab.
 2. Click **Add element** and select **Web paywall button**. 
-   If you are using a template or an existing/duplicated paywall, add the web paywall button you just added the previous purchase button .
+   
+   If you are using a template or an existing/duplicated paywall, add the web paywall button you just added to the previous purchase button.
    You can set up the web paywall button just as you would the purchase button. 
+
+<Zoom>
+   <img src={require('./img/web-paywall-5.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 
 ### Step 2b. Set up the SDK method
 
@@ -135,8 +181,28 @@ class SubscriptionViewController: UIViewController {
 
 Since web paywalls are only allowed for iOS apps in the USA, set up a separate user segment for the USA and add a placement to target different paywalls at different segments:
 
-1. [Create a new segment](segments.md) that will have the following settings:
+1. [Create a new segment](segments.md) that will have the following attributes:
    - **Country from store account**: United States
-   - **Platform**: iOS
+   - **Platform**: iOS and iPadOS
    - **App version**: The latest one that uses our SDK version 3.6.0 or later.
+     <Zoom>
+     <img src={require('./img/web-paywall-6.png').default}
+     style={{
+     border: '1px solid #727272', /* border width and color */
+     width: '700px', /* image width */
+     display: 'block', /* for alignment */
+     margin: '0 auto' /* center alignment */
+     }}
+     />
+     </Zoom>
 2. [Create](create-placement.md) a placement or [edit](edit-placement.md) an existing one. [Add a new audience](add-audience-paywall-ab-test.md) with the web paywall and the segment created.
+   <Zoom>
+   <img src={require('./img/web-paywall-7.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
