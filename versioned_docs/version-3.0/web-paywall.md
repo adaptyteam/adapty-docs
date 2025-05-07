@@ -13,7 +13,9 @@ With Adapty, you can create a web paywall that redirects your users to their bro
 This allows you to bypass App Store fees and audits while effectively tracking user payments.
 
 :::tip
-The App Store allows external payment options only in the USA. Duplicate your current paywall and establish a web paywall to utilize the new paywall for the US market exclusively. For details, see [Step 3](#step-3-set-up-a-placement). 
+The App Store allows external payment options only in the USA. 
+
+To be able to utilize the new paywall exclusively for the US market, duplicate your current paywall and establish a web paywall. 
 :::
 
 ## How it works
@@ -71,9 +73,7 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
 To use your web paywall, you need to activate it, and the way you do it depends on your setup:
 
 - If you are using the Paywall created in the Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
-- If you are using the SDK, you will need to [set up two methods to handle web paywalls](#step-2b-set-up-the-sdk-method):
-  - `.createWebPaywallUrl` to create a web paywall URL for a specific user session.
-  - `.openWebPaywall` to update the user profile based on the purchases made when they return to the app.
+- If you are using the SDK, you must set up the [`openWebPaywall`](#step-2b-set-up-the-sdk-method) method to handle web paywalls.
 
 
 ### Step 2a. Add a web purchase button
@@ -97,37 +97,37 @@ If you are using the paywall from the Builder, you need to add a web paywall but
    />
    </Zoom>
 
-### Step 2b. Set up the SDK methods
+### Step 2b. Set up the SDK method
 
-#### Create a web payment URL for the variation
-Although you have already created a general URL, you need to set up a method called `.createWebPaywallUrl` that will allow Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
+The `.openWebPaywall` method:
+1. Generates a unique URL allowing Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
+2. Track when your users return to the app and then request `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
 
-When creating web paywall URLs, Adapty SDK **automatically** adds the following parameters to ensure proper tracking and user experience:
-
-| Parameter           | Description                                                 |
-|---------------------|-------------------------------------------------------------|
-| adapty_profile_id   | Unique identifier for the user's profile in Adapty's system |
-| adapty_variation_id | Variation ID of the paywall                                 |
+This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
 ```swift showLineNumbers title="Swift"
 do {
-    let url = try await Adapty.createWebPaywallUrl(for: paywall)
+    try await Adapty.openWebPaywall(for: paywall)
 } catch {
-    print("Failed to create web paywall URL: \(error)")
+    print("Failed to open web paywall: \(error)")
 }
 ```
-
 :::note
-You can call not only `.createWebPaywallUrl(paywall)` but also `.createWebPaywallUrl(product)` if you want to do it for a specific product.
+There are two versions of the `openWebPaywall` method:
+1. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs.
+2. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
 :::
 
-#### Update the user profile based on the purchases made
-Use `.openWebPaywall` when you have the URL. 
-This method will track when your users return to the app and then request `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
+#### Handle errors
 
-This way, if the access rights have been updated, the subscription activates in the app almost immediately.
+| Error                                   | Description                                            | Recommended action                                                        |
+|-----------------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | The paywall doesn't have a web purchase URL configured | Check if the paywall has been properly configured in the Adapty Dashboard |
+| AdaptyError.productWithoutPurchaseUrl   | The product doesn't have a web purchase URL            | Verify the product configuration in the Adapty Dashboard                  |
+| AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
+| AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
 
-Implementation example:
+#### Implementation example
 ```swift showLineNumbers title="Swift"
 class SubscriptionViewController: UIViewController {
     var paywall: AdaptyPaywall?
@@ -142,7 +142,7 @@ class SubscriptionViewController: UIViewController {
     func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
         do {
             // Attempt to open web paywall
-            try await Adapty.openWebPaywall(for: paywallProduct)
+            try await Adapty.openWebPaywall(for: paywall)
             
             // When user returns, update the UI if the subscription status has changed
             Task {
@@ -174,7 +174,6 @@ class SubscriptionViewController: UIViewController {
     private func updateUIBasedOnSubscriptionStatus(_ profile: AdaptyProfile) { /* ... */ }
 }
 ```
-
 
 ## Step 3. Set up a placement
 
