@@ -43,7 +43,7 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    }}
    />
    </Zoom>
-3. Set up how the paywall page will look and connect a payment method.
+3. [Set up](web-paywall-configuration.md) how the paywall page will look and connect a payment method.
    <Zoom>
    <img src={require('./img/web-paywall-2.png').default}
    style={{
@@ -115,8 +115,7 @@ do {
 :::note
 There are two versions of the `openWebPaywall` method:
 1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
-2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs.
-The first version is the recommended one, but, although you send the product data, it doesn't affect how your paywall works.
+2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
 :::
 
 #### Handle errors
@@ -134,27 +133,16 @@ class SubscriptionViewController: UIViewController {
     var paywall: AdaptyPaywall?
     
     @IBAction func purchaseButtonTapped(_ sender: UIButton) {
-        guard let paywall = paywall else { return }
-        Task {
-            await offerWebPurchase(for: paywall.products.first!)
-        }
+        guard let paywall = paywall, let product = paywall.products.first else { return }
+         Task {
+            await offerWebPurchase(for: product)
+         }
     }
     
     func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
         do {
             // Attempt to open web paywall
             try await Adapty.openWebPaywall(for: product)
-            
-            // When user returns, update the UI if the subscription status has changed
-            Task {
-                do {
-                    let profile = try await Adapty.getProfile()
-                    // Check if purchase was successful
-                    updateUIBasedOnSubscriptionStatus(profile)
-                } catch {
-                    print("Failed to refresh profile: \(error)")
-                }
-            }
         } catch let error as AdaptyError {
             
             switch error {
@@ -172,9 +160,11 @@ class SubscriptionViewController: UIViewController {
     
     // Helper methods
     private func showAlert(message: String) { /* ... */ }
-    private func updateUIBasedOnSubscriptionStatus(_ profile: AdaptyProfile) { /* ... */ }
 }
 ```
+:::note
+After users return to the app, refresh the UI to reflect the profile updates. `AdaptyDelegate` will receive and process profile update events.
+:::
 
 ## Step 3. Set up a placement
 
