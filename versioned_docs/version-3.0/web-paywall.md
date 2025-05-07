@@ -15,7 +15,7 @@ This allows you to bypass App Store fees and audits while effectively tracking u
 :::tip
 The App Store allows external payment options only in the USA. 
 
-To be able to utilize the new paywall exclusively for the US market, duplicate your current paywall and establish a web paywall. 
+To use a paywall exclusively for the US market, duplicate your current paywall and establish a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
 :::
 
 ## How it works
@@ -116,6 +116,7 @@ do {
 There are two versions of the `openWebPaywall` method:
 1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
 2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs.
+The first version is the recommended one, but, although you send the product data, it doesn't affect how your paywall works.
 :::
 
 #### Handle errors
