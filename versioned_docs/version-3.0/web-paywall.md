@@ -53,7 +53,6 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    />
    </Zoom>
 4. Publish the paywall and copy its link from the web paywall list.
-web-paywall-3.png
 5. Return to the **Web paywall** page and paste the paywall link.
 6. Click **Save**.
    <Zoom>
@@ -69,7 +68,7 @@ web-paywall-3.png
 
 ## Step 2. Activate the paywall
 
-To use your web paywall, you need to activate it, and the way do it depends on your setup:
+To use your web paywall, you need to activate it, and the way you do it depends on your setup:
 
 - If you are using the Paywall created in the Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
 - If you are using the SDK, you will need to [set up two methods to handle web paywalls](#step-2b-set-up-the-sdk-method):
@@ -98,7 +97,7 @@ If you are using the paywall from the Builder, you need to add a web paywall but
    />
    </Zoom>
 
-### Step 2b. Set up the SDK method
+### Step 2b. Set up the SDK methods
 
 #### Create a web payment URL for the variation
 Although you have already created a general URL, you need to set up a method called `.createWebPaywallUrl` that will allow Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
