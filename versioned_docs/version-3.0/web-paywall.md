@@ -107,15 +107,15 @@ This way, if the payment has been successful and access rights have been updated
 
 ```swift showLineNumbers title="Swift"
 do {
-    try await Adapty.openWebPaywall(for: paywall)
+    try await Adapty.openWebPaywall(for: product)
 } catch {
     print("Failed to open web paywall: \(error)")
 }
 ```
 :::note
 There are two versions of the `openWebPaywall` method:
-1. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs.
-2. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
+1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
+2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs.
 :::
 
 #### Handle errors
@@ -142,7 +142,7 @@ class SubscriptionViewController: UIViewController {
     func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
         do {
             // Attempt to open web paywall
-            try await Adapty.openWebPaywall(for: paywall)
+            try await Adapty.openWebPaywall(for: product)
             
             // When user returns, update the UI if the subscription status has changed
             Task {
