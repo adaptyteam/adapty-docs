@@ -28,7 +28,7 @@ In China, applications require explicit user permission to access the internet. 
 
 ## Step 1. Configure Adapty SDK for China region
 
-Install Adapty SDK version 3.6.0 or later as described in the [installation guide](installation-of-adapty-sdks.md).
+Install Adapty SDK as described in the [installation guide](installation-of-adapty-sdks.md).
 
 For the China region, when configuring the SDK during the installation, follow the instructions depending on your framework:
 
@@ -37,7 +37,7 @@ For the China region, when configuring the SDK during the installation, follow t
 
 During configuration, add the China cluster as follows:
 
-Include the `backendBaseUrl` parameter in your configuration:
+For Adapty iOS SDK 3.6.0 or later, set the cluster as `.with(serverCluster: .cn)`. For older versions, include the `backendBaseUrl` parameter in your configuration: `.with(backendBaseUrl: URL(string: "https://api-cn.adapty.io/api/v1")!)`.
 
 <Tabs groupId="current-os" queryString>
 
@@ -52,10 +52,8 @@ let configurationBuilder =
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
         .with(observerMode: false)
         .with(customerUserId: "YOUR_USER_ID")
-        .with(idfaCollectionDisabled: false)
-        .with(ipAddressCollectionDisabled: false)
         // highlight-next-line
-        .with(backendBaseUrl: URL(string: "https://api-cn.adapty.io/api/v1")!)
+        .with(serverCluster: .cn)
 
 Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
@@ -76,10 +74,8 @@ struct SampleApp: App {
           .Builder(withAPIKey: "PUBLIC_SDK_KEY")
           .with(observerMode: false) // optional
           .with(customerUserId: "YOUR_USER_ID") // optional
-          .with(idfaCollectionDisabled: false) // optional
-          .with(ipAddressCollectionDisabled: false) // optional
           // highlight-next-line
-          .with(backendBaseUrl: URL(string: "https://api-cn.adapty.io/api/v1")!)
+          .with(serverCluster: .cn)
   
         Adapty.activate(with: configurationBuilder.build()) { error in
           // handle the error
@@ -122,7 +118,6 @@ override fun onCreate() {
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
           .withObserverMode(false) //default false
           .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
           // highlight-next-line
           .withServerCluster(AdaptyConfig.ServerCluster.CN)
           .build()
@@ -142,7 +137,6 @@ public void onCreate() {
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
           .withObserverMode(false) //default false
           .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
           // highlight-next-line
           .withServerCluster(AdaptyConfig.ServerCluster.CN)
           .build()
@@ -193,13 +187,10 @@ For Flutter applications, configure the China cluster as follows:
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
 
-// Initialize Adapty with China servers
-await Adapty.activate(
-  sdkKey: 'PUBLIC_SDK_KEY',
-  observerMode: false, // optional, default false
-  customerUserId: 'YOUR_USER_ID', // optional
-  // highlight-next-line
-  serverCluster: AdaptyServerCluster.cn, // Use cn for China servers
+await Adapty().activate(
+    configuration: AdaptyConfiguration(apiKey: 'PUBLIC_SDK_KEY')
+      ..withServerCluster(AdaptyServerCluster.cn)
+      ..withCustomerUserId('YOUR_USER_ID'),
 );
 ```
 
@@ -225,26 +216,8 @@ It's important to dynamically choose between global and China-specific servers b
 <TabItem value="swift" label="iOS">
 
 ```swift showLineNumbers
-import CoreTelephony
-
 func shouldUseChinaServers() -> Bool {
-    // Get the user's locale
-    let locale = Locale.current
-    
-    // Check if the region code is China
-    if let regionCode = locale.regionCode, regionCode == "CN" {
-        return true
-    }
-    
-    // Check carrier info as a backup method
-    let networkInfo = CTTelephonyNetworkInfo()
-    if let carrier = networkInfo.subscriberCellularProvider, 
-       let mcc = carrier.mobileCountryCode,
-       mcc == "460" { // 460 is China's MCC
-        return true
-    }
-    
-    return false
+  Locale.current.regionCode == "CN"
 }
 
 // In your configuration
@@ -308,64 +281,6 @@ initializeAdapty();
 
 </TabItem>
 
-<TabItem value="flutter" label="Flutter">
-
-```dart showLineNumbers
-import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-
-Future<void> initializeAdapty() async {
-  // Determine if user is in China
-  final isInChina = await detectIfUserInChina();
-  
-  // Initialize with appropriate server
-  await Adapty.activate(
-    sdkKey: 'PUBLIC_SDK_KEY',
-    serverCluster: isInChina ? AdaptyServerCluster.cn : AdaptyServerCluster.default,
-    // other configuration options
-  );
-}
-
-Future<bool> detectIfUserInChina() async {
-  try {
-    // Get locale information
-    final String locale = Platform.localeName;
-    
-    // Check if locale contains CN
-    if (locale.contains('CN')) {
-      return true;
-    }
-    
-    // Additional checks if available
-    if (Platform.isAndroid) {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      
-      // Check if the device's network country is China
-      if (androidInfo.data.containsKey('networkCountryIso') && 
-          androidInfo.data['networkCountryIso'] == 'cn') {
-        return true;
-      }
-    }
-    
-    return false;
-  } catch (e) {
-    print('Error detecting region: $e');
-    return false; // Default to global servers on error
-  }
-}
-
-// Call the initialization function
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initializeAdapty();
-  runApp(MyApp());
-}
-```
-
-</TabItem>
 </Tabs>
 
 ### Option 2: Detect by app store
@@ -378,17 +293,17 @@ For applications distributed through different app stores, you can determine whi
 ```swift showLineNumbers
 import StoreKit
 
-func shouldUseChinaServers() -> Bool {
-    // Check if the app was downloaded from a Chinese app store
-    // This is a simplified example - implement store detection logic based on your app's distribution
-    
-    if let storeCountry = SKPaymentQueue.default().storefront?.countryCode, 
-       storeCountry == "CHN" {
-        return true
+func shouldUseChinaServers() async -> Bool {
+        let code: String?
+        
+        if #available(iOS 15.0, *) {
+            code = await Storefront.current?.countryCode
+        } else {
+            code = SKPaymentQueue.default().storefront?.countryCode
+        }
+        
+        return code == "CHN"
     }
-    
-    return false
-}
 
 // In your configuration
 let baseURL = shouldUseChinaServers() 
@@ -463,74 +378,4 @@ initializeAdapty();
 
 </TabItem>
 
-<TabItem value="flutter" label="Flutter">
-
-```dart showLineNumbers
-import 'dart:io';
-import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
-Future<void> initializeAdapty() async {
-  // Determine if app was installed from a Chinese store
-  final shouldUseChinaServers = await isFromChineseStore();
-  
-  // Initialize with appropriate server
-  await Adapty.activate(
-    sdkKey: 'PUBLIC_SDK_KEY',
-    serverCluster: shouldUseChinaServers ? AdaptyServerCluster.cn : AdaptyServerCluster.default,
-    // other configuration options
-  );
-}
-
-Future<bool> isFromChineseStore() async {
-  if (Platform.isAndroid) {
-    try {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      
-      // Get the installer package name
-      PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      final installerInfo = await methodChannel.invokeMethod('getInstallerPackageName', {
-        'packageName': packageInfo.packageName,
-      });
-      
-      // List of Chinese Android app stores
-      final chineseStores = [
-        'com.huawei.appmarket',  // Huawei AppGallery
-        'com.xiaomi.market',     // Xiaomi GetApps
-        'com.oppo.market',       // OPPO App Market
-        'com.vivo.appstore',     // Vivo App Store
-        // Add other Chinese app stores as needed
-      ];
-      
-      return chineseStores.contains(installerInfo);
-    } catch (e) {
-      print('Error detecting store: $e');
-      return false;
-    }
-  } else if (Platform.isIOS) {
-    // iOS implementation would depend on how you detect the App Store region
-    // This is a simplified placeholder
-    try {
-      final result = await methodChannel.invokeMethod('isChineseStorefront');
-      return result == true;
-    } catch (e) {
-      print('Error detecting iOS store: $e');
-      return false;
-    }
-  }
-  
-  return false;
-}
-
-// Call the initialization function
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initializeAdapty();
-  runApp(MyApp());
-}
-```
-
-</TabItem>
 </Tabs>
