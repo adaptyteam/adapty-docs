@@ -40,6 +40,10 @@ However, some coding is still required. You'll need to retrieve the paywall, dis
 
 ## How to display and process paywalls created in the Paywall Builder
 
+:::important
+For the paywall to be displayed, you must switch on the **SHow on device** toggle in the Paywall Builder.
+:::
+
 1. [Fetch the paywall to show in the specific placement](get-pb-paywalls).
 2. [Show the paywall](present-pb-paywalls).
 3. [Handle the events produced by the paywall](handling-pb-paywall-events).
