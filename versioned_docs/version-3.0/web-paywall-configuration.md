@@ -12,7 +12,7 @@ Once you click **Create web paywall** on the **Web paywall** page, you'll be red
 
 - **If you already use the Stripe integration** in Adapty, there is nothing else you need to do. Your products from Stripe will be pulled automatically so you can use them on the web paywall.
 
-- **If you don't use the Stripe integration** in Adapty, the easiest way to implement a payment method for the web paywall would be to connect Adapty to Stripe following the [instructions](stripe.md).
+- **If you don't use the Stripe integration** in Adapty, the easiest way to implement a payment method for the web paywall would be to connect Adapty to Stripe following the [instructions](stripe.md). Or, you connect Stripe only for web paywalls using the instructions [below](#other-payment-providers).
 
 ### Other payment providers
 
@@ -118,7 +118,8 @@ To set up payments in the web paywall:
 
 ### Go live
 When you are ready with the paywall, there are two steps left before you can activate this paywall in Adapty:
-1. Click **Publish** on the top right. This will make the paywall accessible via a link.
-2. Go back to the web paywall list page. Right-click the URL slug in the **URL** column and copy the link.
+
+1. Click **Publish** on the top right. If the paywall has been published successfully, it will open in the web view. 
+2. Copy the link from there.
 
 That's it! Use this link to [proceed with the setup](web-paywall.md#step-2-activate-the-paywall).
