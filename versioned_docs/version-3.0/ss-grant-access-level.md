@@ -19,7 +19,7 @@ import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDo
 
 Provides access level to your end-user without providing info on the transaction. This comes in handy if you have bonuses for referrals or other events related to your products. 
 
-The access level provided by this method will not be reflected in your [analytics](https://app.adapty.io/analytics). It will be sent to only webhook integration, and only in this case will appear in the **Event Feed**. If webhook integration is not enabled, granting access level will not be shown in the [Event Feed](https://app.adapty.io/event-feed).
+The access level provided by this method will not be reflected in your [analytics](https://app.adapty.io/analytics). It will be sent to only webhook integration, and only in this case will appear in the **Event Feed**. If webhook integration is not enabled, granting access level will not be shown in the [**Event Feed**](https://app.adapty.io/event-feed).
 
 To grant access and simultaneously provide the transaction details, please use the [Set Transaction request](ss-set-transaction) which is recommended.
 

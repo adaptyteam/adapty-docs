@@ -23,7 +23,7 @@ This integration mainly relies on Adapty pulling subscription data from Stripe v
 
 
 :::note
-The steps below are the same for Stripe's Production and Test modes, but you will need to use different API keys for each. 
+The steps below are the same for Stripe's Production and Test modes, but you will need to use different API keys for each.
 :::
 
 0. Determine if you are connecting Stripe in test mode or live mode. If you are initially doing this in test mode, you will need to repeat the steps below for live mode again.
@@ -60,7 +60,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 
 1. Go to [Developers → API Keys](https://dashboard.stripe.com/apikeys) in Stripe:
 
-   
+
 
 <Zoom>
   <img src={require('./img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp').default}
@@ -78,7 +78,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 
 2. Click the **Reveal live (test) key button** next to the **Secret key** title, then copy it and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key here:
 
-   
+
 
 <Zoom>
   <img src={require('./img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp').default}
@@ -96,7 +96,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 
 3. Next, copy the Webhook URL from the bottom of the same page in Adapty. Go to [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) in Stripe and click the **Add endpoint** button:
 
-   
+
 
 <Zoom>
   <img src={require('./img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp').default}
@@ -124,7 +124,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
    - invoice.updated
    - payment_intent.succeeded
 
-   
+
 
 <Zoom>
   <img src={require('./img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp').default}
@@ -142,7 +142,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 
 5. Press "Add endpoint" and then press "Reveal" under the "Signing secret". This is the key that is used to decode the webhook data on the Adapty's side, copy it after revealing:
 
-   
+
 
 <Zoom>
   <img src={require('./img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp').default}
@@ -160,7 +160,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 
 6. Finally, paste this key into Adapty's App Settings → Stripe under "Stripe Webhook Secret":
 
-   
+
 
 <Zoom>
   <img src={require('./img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp').default}
