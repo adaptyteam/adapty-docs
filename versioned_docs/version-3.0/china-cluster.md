@@ -12,29 +12,30 @@ no_index: true
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-If legal requirements mandate China-based servers for your application, Adapty provides a China cluster option. This ensures fast and reliable service for your users in mainland China while helping you comply with local regulations.
+To ensure that your application is not blocked in China and works efficiently, Adapty provides a China cluster option. This ensures fast and reliable service for your users in mainland China while helping you comply with local regulations.
 
-China's "Great Firewall" can significantly impact connectivity and performance for applications using servers hosted outside the country. Applications may experience:
-- Higher latency
-- Intermittent connection issues
-- Slower data transfers
+The Great Firewall of China can significantly impact connectivity and performance for applications using servers hosted outside the country. 
 
-By using Adapty's China-based infrastructure, your application can deliver consistent, reliable performance to users in mainland China.
+However, Adapty's China-based infrastructure allows your application to deliver consistent, reliable performance to users in mainland China.
 
 :::important 
 
 In China, applications require explicit user permission to access the internet. Until this permission is granted, **no network requests will work**. Ensure your application:
-1. Requests internet access permission appropriately
-2. Handles cases where permission is denied or not yet granted
-3. Provides clear user guidance about why internet access is needed
+- Requests internet access permission appropriately.
+- Handles cases where permission is denied or not yet granted.
+- Provides clear user guidance about why internet access is needed.
 :::
 
 ## Step 1. Configure Adapty SDK for China region
 
+Install Adapty SDK version 3.6.0 or later as described in the [installation guide](installation-of-adapty-sdks.md).
+
+For the China region, when configuring the SDK during the installation, follow the instructions depending on your framework:
+
 <Tabs groupId="current-os" queryString> 
 <TabItem value="swift" label="iOS"> 
 
-Install Adapty SDK 3.6.0 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the China cluster as follows:
+During configuration, add the China cluster as follows:
 
 Include the `backendBaseUrl` parameter in your configuration:
 
@@ -106,7 +107,7 @@ Parameters:
 </TabItem> 
 
 <TabItem value="kotlin" label="Android" default> 
-Install Adapty SDK 3.6.0 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the China cluster as follows:
+During configuration, add the China cluster as follows:
 
 Use the `.withServerCluster` method in your configuration:
 
@@ -214,11 +215,11 @@ Parameters:
 
 After configuring the China server cluster, you can use the Adapty Dashboard as usual at `app.adapty.io`. The dashboard experience is identical regardless of which server cluster you're using.
 
-## Step 2. Detecting When to Use China Servers
+## Step 2. Detect when to use China servers
 
 It's important to dynamically choose between global and China-specific servers based on user location. Here are two approaches:
 
-### Option 1: Detect by Region/Country
+### Option 1: Detect by region/country
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS">
@@ -367,7 +368,7 @@ void main() async {
 </TabItem>
 </Tabs>
 
-### Option 2: Detect by App Store
+### Option 2: Detect by app store
 
 For applications distributed through different app stores, you can determine which server to use based on the installation source:
 
