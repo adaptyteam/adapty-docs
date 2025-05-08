@@ -8,22 +8,15 @@ Once you click **Create web paywall** on the **Web paywall** page, you'll be red
 
 ## Set up a payment method
 
-### Stripe
-
-- **If you already use the Stripe integration** in Adapty, there is nothing else you need to do. Your products from Stripe will be pulled automatically so you can use them on the web paywall.
-
-- **If you don't use the Stripe integration** in Adapty, the easiest way to implement a payment method for the web paywall would be to connect Adapty to Stripe following the [instructions](stripe.md). Or, you connect Stripe only for web paywalls using the instructions [below](#other-payment-providers).
-
-### Other payment providers
-
 If you want to use a different payment provider for the web paywall, the available options are:
 
 - Braintree
 - Paddle
 - Paypal
 - Solidgate
+- Stripe
 
-To set up a different payment provider:
+To set up a payment provider:
 1. On the web paywall list page, click **Settings** and switch to the **Integrations** tab.
 2. From the **Payment providers** list, select a payment provider and follow the integration instructions on the screen.
 
