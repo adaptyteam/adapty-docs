@@ -15,7 +15,7 @@ This allows you to bypass App Store fees and audits while effectively tracking u
 :::tip
 The App Store allows external payment options only in the USA. 
 
-To use a paywall exclusively for the US market, duplicate your current paywall and establish a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
+To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
 :::
 
 ## How it works
@@ -43,17 +43,10 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    }}
    />
    </Zoom>
-3. [Set up](web-paywall-configuration.md) the paywall screens and connect a payment method.
-   <Zoom>
-   <img src={require('./img/web-paywall-2.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
+3. Set up the web paywall itself and connect a payment method.
+:::tip
+Use our [quickstart guide](web-paywall-configuration.md) that will help you to launch a working web paywall.
+:::
 4. Click **Publish** at the top right. If the paywall has been published successfully, it will open in the web view. Copy its link from there.
 5. Return to the **Web paywall** page and paste the paywall link.
 6. Click **Save**.

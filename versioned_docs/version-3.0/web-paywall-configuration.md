@@ -52,7 +52,23 @@ To be able to use Apple Pay with Stripe, you need to verify the paywall domains 
    }}
    />
    </Zoom>
-3. You will be redirected to a basic template with two subscription options and the Apple Pay purchase button. All the prices and plans you see on the screen are not added dynamically, so you need to configure them manually.
+3. You will be redirected to a basic template with two subscription options and the Apple Pay purchase button. 
+
+   The first screen lists the subscription plans. The second and third screens are checkout screens. Each screen corresponds to one plan you offer. If you have only one plan, delete the extra screen. If you have more, you need to duplicate the checkout screens. 
+
+   The last screen users see after a successful purchase is where you need to clearly indicate that they can return to your app.
+
+   <Zoom>
+   <img src={require('./img/web-paywall-configuration-10.gif').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+4. Set up the plan list: add or remove plans and prices. All the prices and plans you see on the screen are not added dynamically, so you need to configure them manually.
    <Zoom>
    <img src={require('./img/web-paywall-configuration-8.gif').default}
    style={{
@@ -63,8 +79,8 @@ To be able to use Apple Pay with Stripe, you need to verify the paywall domains 
    }}
    />
    </Zoom>
-4. Add or configure a checkout screen for each plan you have. We recommend adding a total amount to each checkout screen so users know how much they need to pay before they click the purchase button.
-5. On checkout screens, you already have the Apple Pay button. For it to work, on each screen, configure:
+5. Add or configure a checkout screen for each plan you have. We recommend adding a total amount to each checkout screen so users know how much they need to pay before they click the purchase button.
+6. On checkout screens, you already have the Apple Pay button. For it to work, on each screen, configure:
    1. **Product type**: Select whether you want to add a trial period or a discount.
    2. **Trial period**: Enter the trial period duration.
    3. **Product**: Select your product from your payment provider.
@@ -82,7 +98,7 @@ To be able to use Apple Pay with Stripe, you need to verify the paywall domains 
    }}
    />
    </Zoom>
-6. Now, you need to associate plans with checkout screens. On the plan selection screen, click the **Continue** button and select a destination screen for each plan.
+7. Now, you need to associate plans with checkout screens. On the plan selection screen, click the **Continue** button and select a destination screen for each plan.
    <Zoom>
    <img src={require('./img/web-paywall-configuration-9.png').default}
    style={{
