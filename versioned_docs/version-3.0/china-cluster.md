@@ -228,7 +228,7 @@ let baseURL = shouldUseChinaServers()
 let configurationBuilder =
     AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(backendBaseUrl: baseURL)
+        .with(serverCluster: .cn)
         // other configuration options
 ```
 
@@ -262,23 +262,22 @@ initializeAdapty();
 
 ```kotlin
 // Define the helper function
-private boolean shouldUseChinaServers() {
-return Locale.getDefault().getCountry().equals("CN");
-}
+private fun shouldUseChinaServers() = Locale.getDefault().country == "CN"
 
 // Use it in configuration
-private void setupAdapty() {
-String baseUrl = shouldUseChinaServers()
-? "https://api-cn.adapty.io/api/v1"
-: "https://api.adapty.io/api/v1"; // Default URL
+private fun setupAdapty() {
+    val serverCluster = if (shouldUseChinaServers())
+        AdaptyConfig.ServerCluster.CN
+    else
+        AdaptyConfig.ServerCluster.DEFAULT
 
     Adapty.activate(
-        getApplicationContext(),
-        new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-            .withServerBaseUrl(baseUrl)
+        context,
+        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
             // other configuration options
+            .withServerCluster(serverCluster)
             .build()
-    );
+    )
 }
 ```
 
@@ -316,7 +315,7 @@ let baseURL = shouldUseChinaServers()
 let configurationBuilder =
     AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(backendBaseUrl: baseURL)
+        .with(serverCluster: .cn)
         // other configuration options
 ```
 
