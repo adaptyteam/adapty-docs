@@ -38,11 +38,9 @@ curl --location 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/r
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
---data '{
-  "settings": {
+--data '{ 
     "custom_preference": "grant",
     "consent": true
-  }
 }'
 ```
 
@@ -56,10 +54,8 @@ import json
 url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/refund-saver/settings/"
 
 payload = json.dumps({
-  "settings": {
     "custom_preference": "grant",
     "consent": True
-  }
 })
 headers = {
  "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID",
@@ -83,10 +79,8 @@ myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
 const raw = JSON.stringify({
-  "settings": {
     "custom_preference": "grant",
     "consent": true
-  }
 });
 
 const requestOptions = {
@@ -117,7 +111,25 @@ Placeholders:
 | custom_preference | String  | :heavy_minus_sign:  | :heavy_plus_sign:   | Set the refund preference individually for the user. Possible values are: `grant`, `no_preference`, `decline`. The default value is `null`. |
 | consent           | Boolean | :heavy_minus_sign:  | :heavy_plus_sign:   | Record if the user gave their consent to share their data.<p>The default value is `null`.</p> |
 
----
+## Successful response: 200: OK
+
+| Parameter         | Type    | Description                                                                       |
+|-------------------|---------|-----------------------------------------------------------------------------------|
+| profile_id        | String  | Customer profile ID.                                                              |
+| consent           | Boolean | Defines whether the user consented to share their data.                           |
+| custom preference | String  | The refund preference. Possible values are: `grant`, `no_preference`, `decline`.  |
+
+## Successful response example
+
+``` json showLineNumbers
+{
+    "profile_id": "e5aab402-b1bd-4039-b632-57a91ebc0779",
+    "settings": {
+        "consent": true,
+        "custom_preference": "no_preference"
+    }
+}
+```
 
 ## Errors
 

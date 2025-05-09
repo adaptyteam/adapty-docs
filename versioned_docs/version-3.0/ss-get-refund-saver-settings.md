@@ -97,8 +97,25 @@ Placeholders:
 
 No parameters
 
----
+## Successful response: 200: OK
 
+| Parameter         | Type    | Description                                                                       |
+|-------------------|---------|-----------------------------------------------------------------------------------|
+| profile_id        | String  | Customer profile ID.                                                              |
+| consent           | Boolean | Defines whether the user consented to share their data.                           |
+| custom preference | String  | The refund preference. Possible values are: `grant`, `no_preference`, `decline`.  |
+
+## Successful response example
+
+``` json showLineNumbers
+{
+    "profile_id": "e5aab402-b1bd-4039-b632-57a91ebc0779",
+    "settings": {
+        "consent": true,
+        "custom_preference": "no_preference"
+    }
+}
+```
 ## Errors
 
 ### 400: Bad request
