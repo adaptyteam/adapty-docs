@@ -110,9 +110,21 @@ To be able to use Apple Pay with Stripe, you need to verify the paywall domains 
    />
    </Zoom>
 
-When you are ready with the paywall, there are two steps left before you can activate this paywall in Adapty:
+When you are ready with the paywall, you need to get its link to activate this paywall in Adapty. The way you get it depends on whether you are testing it or launching it in the production environment:
 
-1. Click **Publish** on the top right. If the paywall has been published successfully, it will open in the web view. 
-2. Copy the link from there.
+1. **For sandbox testing**: Click **Preview** on the top right and copy the link.
+2. **For production**: Click **Publish** on the top right. Click **Home** and copy the link from the **URL** column.
+
+   <Zoom>
+   <img src={require('./img/web-paywall-configuration-11.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
 
 That's it! Use this link to [proceed with the setup](web-paywall.md#step-2-activate-the-paywall).
