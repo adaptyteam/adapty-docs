@@ -43,7 +43,7 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    }}
    />
    </Zoom>
-3. [Set up](web-paywall-configuration.md) how the paywall page will look and connect a payment method.
+3. [Set up](web-paywall-configuration.md) the paywall screens and connect a payment method.
    <Zoom>
    <img src={require('./img/web-paywall-2.png').default}
    style={{
@@ -54,7 +54,7 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    }}
    />
    </Zoom>
-4. Publish the paywall and copy its link from the web paywall list.
+4. Click **Publish** at the top right. If the paywall has been published successfully, it will open in the web view. Copy its link from there.
 5. Return to the **Web paywall** page and paste the paywall link.
 6. Click **Save**.
    <Zoom>
