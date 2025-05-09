@@ -7,7 +7,7 @@ metadataTitle: "Managing New Trials in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The new trial chart displays the number of activated trials during the selected time period.
+The new trials chart displays the number of activated trials during the selected time period.
 
 
 <Zoom>
