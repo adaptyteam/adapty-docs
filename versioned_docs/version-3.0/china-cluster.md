@@ -296,27 +296,26 @@ For applications distributed through different app stores, you can determine whi
 import StoreKit
 
 func shouldUseChinaServers() async -> Bool {
-        let code: String?
-        
-        if #available(iOS 15.0, *) {
-            code = await Storefront.current?.countryCode
-        } else {
-            code = SKPaymentQueue.default().storefront?.countryCode
-        }
-        
-        return code == "CHN"
+    let code: String?
+    
+    if #available(iOS 15.0, *) {
+        code = await Storefront.current?.countryCode
+    } else {
+        code = SKPaymentQueue.default().storefront?.countryCode
     }
+    
+    return code == "CHN"
+}
 
 // In your configuration
-let baseURL = shouldUseChinaServers() 
-    ? URL(string: "https://api-cn.adapty.io/api/v1")!
-    : URL(string: "https://api.adapty.io/api/v1")! // Default URL
+let configurationBuilder = AdaptyConfiguration
+    .Builder(withAPIKey: "PUBLIC_SDK_KEY")
 
-let configurationBuilder =
-    AdaptyConfiguration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(serverCluster: .cn)
-        // other configuration options
+// Only set server cluster if it's China
+if await shouldUseChinaServers() {
+    configurationBuilder.with(serverCluster: .cn)
+}
+// other configuration options
 ```
 
 </TabItem>
