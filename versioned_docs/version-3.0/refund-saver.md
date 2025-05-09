@@ -153,6 +153,16 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="unity" label="Unity (3.3.0+)" default>
+```csharp showLineNumbers
+Adapty.UpdateAppStoreRefundPreference(<PREFERENCE_VALUE>, (error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+});
+```
+</TabItem>
 </Tabs>
 
 <!---
@@ -245,6 +255,16 @@ try {
 
 </TabItem>
 
+<TabItem value="unity" label="Unity (3.3.0+)" default>
+```csharp showLineNumbers
+Adapty.UpdateAppStoreCollectingRefundDataConsent(<CONSENT_VALUE>, (error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+});
+```
+</TabItem>
 </Tabs>
 
 ## Check user consent
