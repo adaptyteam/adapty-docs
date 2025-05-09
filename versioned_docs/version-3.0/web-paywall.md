@@ -47,9 +47,8 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
 :::tip
 Use our [quickstart guide](web-paywall-configuration.md) that will help you to launch a working web paywall.
 :::
-4. Click **Publish** at the top right. If the paywall has been published successfully, it will open in the web view. Copy its link from there.
-5. Return to the **Web paywall** page and paste the paywall link.
-6. Click **Save**.
+4. Return to the **Web paywall** page and paste the paywall link.
+5. Click **Save**.
    <Zoom>
    <img src={require('./img/web-paywall-4.png').default}
    style={{
