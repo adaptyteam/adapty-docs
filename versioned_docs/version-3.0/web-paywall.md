@@ -43,7 +43,7 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
    }}
    />
    </Zoom>
-3. [Set up](web-paywall-configuration.md) how the paywall page will look and connect a payment method.
+3. [Set up](web-paywall-configuration.md) the paywall screens and connect a payment method.
    <Zoom>
    <img src={require('./img/web-paywall-2.png').default}
    style={{
