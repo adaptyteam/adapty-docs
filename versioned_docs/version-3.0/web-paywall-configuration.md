@@ -31,6 +31,19 @@ To set up a payment provider:
    />
    </Zoom>
 
+3. ⚠️ If you choose Stripe, make sure you're using keys from the **Test Mode** environment despite the interface saying **Sandbox**. Otherwise your web paywall will not work. **Sandboxes** in Stripe are not yet supported.
+
+   <Zoom>
+   <img src={require('./img/web-paywall-configuration-stripe.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
 :::important
 To be able to use Apple Pay with Stripe, you need to verify the paywall domains in the Stripe settings:
 1. Go to [Payment method domain settings](https://dashboard.stripe.com/settings/payment_method_domains) and click **Add a new domain**.
