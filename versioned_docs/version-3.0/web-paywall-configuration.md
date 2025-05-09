@@ -10,11 +10,11 @@ Once you click **Create web paywall** on the **Web paywall** page, you'll be red
 
 First, you need to connect a payment provider that will handle purchases. The available options are:
 
-- Braintree
+- Stripe
 - Paddle
+- Braintree
 - Paypal
 - Solidgate
-- Stripe
 
 To set up a payment provider:
 1. On the web paywall list page, click **Settings** and switch to the **Integrations** tab.
@@ -34,8 +34,7 @@ To set up a payment provider:
 :::important
 To be able to use Apple Pay with Stripe, you need to verify the paywall domains in the Stripe settings:
 1. Go to [Payment method domain settings](https://dashboard.stripe.com/settings/payment_method_domains) and click **Add a new domain**.
-2. Add `app.funnelfox.com`.
-3. On the web paywall creation page, go to **Settings > Domains** and copy the **Hosted subdomain** value. Add this value as a new payment method in the Stripe settings as well.
+2. Add `app.funnelfox.com` and your personal paywall subdomain (it will look like `paywalls-....fnlfx.com`). To find your subdomain, on the web paywall creation page, go to **Settings > Domains** and copy the **Hosted subdomain** value. 
 :::
 
 ## Create and configure a web paywall

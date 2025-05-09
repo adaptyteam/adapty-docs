@@ -6,11 +6,11 @@ metadataTitle: "Accept payments in web for iOS apps in the US"
 import Zoom from 'react-medium-image-zoom';
 
 :::important
-Before you begin, make sure you have installed Adapty SDK version 3.6.0 or later.
+Before you begin, make sure you have installed Adapty iOS SDK version 3.6.0 or later.
 :::
 
-With Adapty, you can create a web paywall that redirects your users to their browser for payment and then brings them back to your app with the subscription activated.
-This allows you to bypass App Store fees and audits while effectively tracking user payments.
+With Adapty, you can create a paywall with a button that redirects your iOS app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
+This allows you to bypass App Store fees while effectively tracking user payments.
 
 :::tip
 The App Store allows external payment options only in the USA. 
@@ -20,14 +20,27 @@ To use a paywall exclusively for the US market, duplicate your current paywall a
 
 ## How it works
 
-For web paywalls, each placement is a unique URL that allows users to go to the browser and pay there.
+Web paywall is a unique URL for each of your in-app paywalls. It allows users to go to the browser and pay there.  It works with different payment providers (Stripe, Paddle, and others) and allows you to have either a single page with an Apple Pay button or more complex flows with upsells.
 
+   <Zoom>
+   <img src={require('./img/web-paywall-promo.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+Web paywalls work in the following way:
 1. You **configure how the web paywall page will look** and work in the editor.
 2. You **link the web paywall** in the paywall settings.
 3. In your app paywall, you **add a button** redirecting users to the browser.
-4. Once users tap the button, Adapty SDK **generates a unique URL** associating the paywall page with the placement.
+4. Once users tap the button, Adapty SDK **generates a unique URL**.
 5. Users **go to the web paywall page** and **pay** for a subscription using an external payment method.
 6. When they return to the app, Adapty SDK starts **tracking whether the profile has been updated** because of the purchases made.
+7. Adapty gets information about the purchase event, records it as an analytics event, and monitors it for any updates. 
 
 ## Step 1. Create a web paywall
 
@@ -48,6 +61,9 @@ For web paywalls, each placement is a unique URL that allows users to go to the 
 Use our [quickstart guide](web-paywall-configuration.md) that will help you to launch a working web paywall.
 :::
 4. Return to the **Web paywall** page and paste the paywall link.
+:::important
+When launching your paywall to the production environment, it is **crucial** to ensure you use the correct link generated after publishing your web paywall. The link format is `paywalls-....fnlfx.com`.
+:::
 5. Click **Save**.
    <Zoom>
    <img src={require('./img/web-paywall-4.png').default}
@@ -60,9 +76,9 @@ Use our [quickstart guide](web-paywall-configuration.md) that will help you to l
    />
    </Zoom>
 
-## Step 2. Activate the paywall
+## Step 2. Trigger the paywall {#activate-the-paywall}
 
-To use your web paywall, you need to activate it, and the way you do it depends on your setup:
+To use your web paywall, you need to trigger it, and the way you do it depends on your setup:
 
 - If you are using the Paywall created in the Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
 - If you are using the SDK, you must set up the [`openWebPaywall`](#step-2b-set-up-the-sdk-method) method to handle web paywalls.
@@ -70,7 +86,7 @@ To use your web paywall, you need to activate it, and the way you do it depends 
 
 ### Step 2a. Add a web purchase button
 
-If you are using the paywall from the Builder, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
+If you are using the **paywall from the Builder**, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
 
 1. Open the paywall and switch to the **Builder** tab.
 2. Click **Add element** and select **Web paywall button**. 
@@ -89,11 +105,11 @@ If you are using the paywall from the Builder, you need to add a web paywall but
    />
    </Zoom>
 
-### Step 2b. Set up the SDK method
+### Step 2b. Call the SDK method
 
-The `.openWebPaywall` method:
+If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. The `.openWebPaywall` method:
 1. Generates a unique URL allowing Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
-2. Track when your users return to the app and then request `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
+2. Tracks when your users return to the app and then requests `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
 
 This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
@@ -160,7 +176,7 @@ After users return to the app, refresh the UI to reflect the profile updates. `A
 
 ## Step 3. Set up a placement
 
-Since web paywalls are only allowed for iOS apps in the USA, set up a separate user segment for the USA and add a placement to target different paywalls at different segments:
+Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA and set up a placement to target different paywalls at different segments:
 
 1. [Create a new segment](segments.md) that will have the following attributes:
    - **Country from store account**: United States
