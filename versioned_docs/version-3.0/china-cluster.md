@@ -239,44 +239,47 @@ let configurationBuilder =
 ```javascript showLineNumbers
 import { NativeModules, Platform } from 'react-native';
 import Adapty from 'react-native-adapty';
+import { getCountry } from 'react-native-localize'; 
 
 async function initializeAdapty() {
   // Determine if user is in China
-  const isInChina = await detectIfUserInChina();
-  
+    const shouldUseChinaServers = () => getCountry() === "CN";
   // Initialize with appropriate server
   await Adapty.activate({
     sdkKey: 'PUBLIC_SDK_KEY',
-    serverCluster: isInChina ? 'cn' : 'default',
+    serverCluster: shouldUseChinaServers ? 'cn' : 'default',
     // other configuration options
   });
 }
 
-async function detectIfUserInChina() {
-  try {
-    // Get locale information
-    const locale = 
-      Platform.OS === 'ios'
-        ? NativeModules.SettingsManager.settings.AppleLocale ||
-          NativeModules.SettingsManager.settings.AppleLanguages[0]
-        : NativeModules.I18nManager.localeIdentifier;
-    
-    // Check if locale contains CN
-    if (locale && locale.includes('CN')) {
-      return true;
-    }
-    
-    // Additional checks could be implemented here
-    
-    return false;
-  } catch (error) {
-    console.error('Error detecting region:', error);
-    return false; // Default to global servers on error
-  }
-}
-
 // Call the initialization function
 initializeAdapty();
+```
+
+</TabItem>
+
+<TabItem value="kotlin" label="Android">
+
+```kotlin
+// Define the helper function
+private boolean shouldUseChinaServers() {
+return Locale.getDefault().getCountry().equals("CN");
+}
+
+// Use it in configuration
+private void setupAdapty() {
+String baseUrl = shouldUseChinaServers()
+? "https://api-cn.adapty.io/api/v1"
+: "https://api.adapty.io/api/v1"; // Default URL
+
+    Adapty.activate(
+        getApplicationContext(),
+        new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+            .withServerBaseUrl(baseUrl)
+            // other configuration options
+            .build()
+    );
+}
 ```
 
 </TabItem>
