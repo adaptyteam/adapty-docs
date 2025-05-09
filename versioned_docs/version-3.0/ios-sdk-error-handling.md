@@ -56,7 +56,7 @@ do {
 | noProductsFound | 1001 | This error indicates that the product requested for purchase is not available in the store. |
 | productRequestFailed | 1002 | Unable to fetch available products at the moment. |
 | cantMakePayments | 1003 | In-app purchases are not allowed on this device. |
-| noPurchasesToRestore | 1004 | This error indicates that Google Play did not find the purchase to restore. |
+| noPurchasesToRestore | 1004 | This error indicates that the App Store did not find the purchase to restore. |
 | [cantReadReceipt](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled) | 1005 | <p>There is no valid receipt available on the device. This can be an issue during sandbox testing.</p><p>In the sandbox, you won't have a valid receipt file until you actually make a purchase, so make sure you do one before accessing it. During sandbox testing also make sure you signed in on a device with a valid Apple sandbox account.</p> |
 | productPurchaseFailed | 1006 | Product purchase failed. |
 | missingOfferSigningParams | 1007 | <p>This error indicates issues with Adapty integration or with offers.</p><p>Refer to the [Configure App Store integration](app-store-connection-configuration) and to [Offers](offers) for details on how to set them up.</p> |

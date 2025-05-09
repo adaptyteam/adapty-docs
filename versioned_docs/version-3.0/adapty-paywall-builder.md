@@ -81,6 +81,10 @@ To use the Adapty Paywall Builder:
 
 6. By leveraging the Adapty Paywall Builder, you can create persuasive paywalls that seamlessly align with your app's branding and purpose based on the selected template.
 
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
+
 ## How to migrate your paywalls
 
 Currently, in Adapty two versions of the Paywall Builder work in parallel:
