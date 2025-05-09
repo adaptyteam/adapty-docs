@@ -1,21 +1,14 @@
 ---
 title: "Segments"
-description: ""
-metadataTitle: ""
+description: "Create and manage user segments for better targeting in Adapty."
+metadataTitle: "Managing User Segments | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SubscriptionState from '@site/src/components/reusable/SubscriptionState.md';
 
-A **Segment** is a set of filtering criteria used to group users with common properties. You can use segments to target paywalls and A/B tests more effectively.
+A Segment is a group of users with common properties.
 
-Once you've created a segment, you can [use it as an **audience** in Placements and A/B tests](add-audience-paywall-ab-test) to control which paywall (or multiple paywalls) users see. Here are some ways you might use segments:
-
-- Show a standard paywall to non-subscribers while offering a discount to users who previously canceled a subscription or trial.
-- Display different paywalls based on the user's country.
-- Target users based on Apple Search Ads attribution data.
-- Ensure users on older app versions continue seeing an existing paywall while newer versions get an updated one.
 
 <Zoom>
   <img src={require('./img/3244407-Segments.webp').default}
@@ -28,9 +21,21 @@ Once you've created a segment, you can [use it as an **audience** in Placements 
 />
 </Zoom>
 
+
+
+
+
+Segments are mainly used in [Placements](placements) and in [A/B tests](ab-tests) to create an Audience and target it with a paywall (or multiple paywalls). Here are some example scenarios where that can be useful:
+
+- targeting non-subscribed users with the default paywall and offering a discount for those who have previously canceled their subscription or a trial.
+- having different paywalls for different countries
+- basing your segment on the Apple Search Ads attribution data
+- creating segments based on your app's version, so that once you introduce a new paywall that is only supported by the recent versions of your app, the older versions would still continue to work
+
 ## Creation
 
-To create a segment, enter a name and select the attributes that define its filtering criteria.
+To create a segment, write a segment name, and choose attributes.
+
 
 <Zoom>
   <img src={require('./img/1af9744-new_cohort.webp').default}
@@ -43,54 +48,53 @@ To create a segment, enter a name and select the attributes that define its filt
 />
 </Zoom>
 
+
+
+
+
 ## Available attributes
 
-| Attribute                                           | Filter by                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| --------------------------------------------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Age                                                 | The user's age. Note that age is calculated when Adapty first receives it and is not updated later.                                                                                                                                                                                                                                                                                                                                                                  |
-| App User ID                                         | The user's identifier in your app (customer_user_id). You can filter by its presence or absence, for example, to show a paywall only to users who haven’t logged in.                                                                                                                                                                                                                                                                                                 |
-| App Version                                         | The current version of the app installed on the user's device where Adapty last received event data.                                                                                                                                                                                                                                                                                                                                                                 |
-| Attribution: Ad Group                               | The attribution ad group.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Attribution: Ad Set                                 | The attribution ad set.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Attribution: Campaign                               | The name of the marketing campaign.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Attribution: Creative                               | The attribution creative keyword.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Attribution: Channel                                | The name of the marketing channel.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Attribution Source                                  | Where the attribution originated. Possible values: <ul><li> **Organic** – The user installed the app without any paid marketing influence (e.g., direct search in the App Store/Google Play, word of mouth, or organic social media reach).</li><li> **Non-organic** – The user was acquired through a paid marketing channel (e.g., ads, influencer campaigns, referral programs).</li><li> **Unknown** – No attribution data is available for this user.</li></ul> |
-| Calculated subscription state                       | The user’s [current subscription status](#calculated-subscription-state), indicating if the subscription is active or canceled or if there was a billing issue that remains unresolved.                                                                                                                                                                                                                                                                              |
-| Calculated total revenue USD                        | The total revenue generated by this user.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Country                                             | The customer’s country, determined by their most recent IP address.                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Country from store account                          | The country associated with the user’s iOS or Android store account. Note that Adapty collects the country of the store only for iOS devices running version 13 or later.                                                                                                                                                                                                                                                                                            |
-| Creation date                                       | The date the profile was created (when the app was first installed on the user's device).                                                                                                                                                                                                                                                                                                                                                                            |
-| Device                                              | Device information based on metadata.                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Gender                                              | The user's gender.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Language                                            | The language of the user's device OS.                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| OS                                                  | The operating system version of the user's device.                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Platform                                            | The user’s device platform. Possible values: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. <br/> If users access your app from multiple platforms (e.g., iOS and Android), segment membership is evaluated separately for each platform using the latest data from that specific device. This allows for platform-specific targeting even for the same user profile.                                                                                                                                                                                                                                                                                                                                                                 |
-| Subscription expiration date                        | The subscription’s expiration date or its presence/absence. It shows `none` for lifetime purchases and remains empty if the user has a profile but has never had a trial, subscription, or lifetime purchase.                                                                                                                                                                                                                                                        |
-| Subscription product                                | The latest product ID of the customer’s active subscription.                                                                                                                                                                                                                                                                                                                                                                                                         |
-| [Custom Attributes](profiles-crm#custom-attributes) | Define your own attributes to create highly targeted segments based on properties unique to your app or business.                                                                                                                                                                                                                                                                                                                                                    |
+- Age of the user
+- App User ID
+- App Version
+- Calculated subscription state
+- Calculated total revenue USD
+- Country from IP
+- Country from store account
+- Creation date
+- Device
+- Gender
+- Language
+- OS
+- Platform
+- Subscription expiration date
+- Subscription product
+- Attribution Source: Organic, Non-Organic, Unknown
+- Attribution Channel
+- Attribution Campaign
+- Attribution Ad Group
+- Attribution Ad Set
+- Attribution Creative
+- [Custom Attributes](profiles-crm#custom-attributes)
 
 :::note
 Please note that these attributes are predefined and cannot be modified, except for the **App Version** attribute, which allows for adding new values.
 :::
 
-### Calculated subscription state
-
-The user’s current subscription status, indicating if the subscription is active or canceled or if there was a billing issue that remains unresolved.
-
-<SubscriptionState />
-
 ## Custom attributes
 
-To create even more targeted segments, you can define custom attributes. These attributes let you group users based on properties unique to your app or business.
+To create even more targeted segments, you can also create custom attributes. Custom attributes allow you to create user groups based on properties that are specific to your app or business.
 
 :::note
-You can set up custom attributes either in the mobile SDK or the Adapty Dashboard, and there's no required order. To configure them in the SDK, follow the instructions [here](setting-user-attributes#custom-user-attributes).
+To create custom attributes, you can set them up in either the mobile SDK or the dashboard, and there is no specific order in which they need to be created. To set up custom attributes in the mobile SDK, please [follow this link](setting-user-attributes#custom-user-attributes) to learn how to set them up.
 :::
 
-### How to configure a custom attribute
+:::warning
+Adapty collects the **country of the store** for iOS devices with version 13 or higher.
+:::
 
-To create a custom attribute in the Adapty Dashboard, select **Create Custom Attributes** from the attribute dropdown menu.
+To create custom attributes from the Adapty Dashboard, select the ** Create Custom Attributes** from the Select Attribute Dropdown options.
+
 
 <Zoom>
   <img src={require('./img/883d3b2-CleanShot_2023-03-16_at_17.20.452x.webp').default}
@@ -103,34 +107,15 @@ To create a custom attribute in the Adapty Dashboard, select **Create Custom Att
 />
 </Zoom>
 
-| Field  | Description                                                  |
-| ------ | ------------------------------------------------------------ |
-| Name   | A label for the custom attribute, used only in the Adapty Dashboard. |
-| Key    | A unique identifier for the attribute. This must match the key used in the SDK. |
-| Type   | Choose between:<ul><li>String: Requires a predefined list of possible values.</li><li>Number: Accepts only numeric values.</li></ul> |
-| Values | If you select `String`, enter the list of possible values. If you choose `Number`, the attribute will only accept numeric input. |
 
-Once you've filled in all the required fields, you can start using custom attributes in your segment definitions. These segments can be used to target [A/B tests](ab-tests) and more!
 
-### Custom attribute limitations
 
-- Each profile can have up to 30 custom attributes.
-- String attributes must match one of the predefined values exactly.
-- Numeric attributes support decimal values and can be used with comparison operators.
 
-## Total number and random sample
+Here's how to fill the fields for custom attributes. Also, you can read more about custom attribute validation rules [here](profiles-crm#custom-attributes).
 
-After you create a segment, Adapty displays the total number of users that match the segment's criteria.
+1. **Name** represents the name of the custom attribute and will be used in the Adapty dashboard only.
+2. **Key** is the unique identifier for the custom attribute. This key value should match the key value used in the SDK. 
+3. **Type** field has two options. If you select "String", you have to enter a list of possible values for the attribute. If you select "Number", the attribute will accept only numeric values.
+4. If you selected "String" as the type, enter a list of possible **values** for the attribute. If you selected "Number", the attribute will accept only numeric values.
 
-Additionally, a random sample of 40 users who fit the criteria is shown in a table. This sample is completely random and can be used to test your segment and ensure it’s configured correctly.
-
-<Zoom>
-  <img src={require('./img/segment-random-set.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Complete all the required fields first, and then you can begin utilizing the custom attribute in your segment definition. Once you've created your segments, you can use them to target [A/B testing](ab-tests), among other things!
