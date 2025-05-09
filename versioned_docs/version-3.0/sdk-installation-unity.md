@@ -174,11 +174,9 @@ Please keep in mind that for paywalls and products to be displayed in your mobil
 
 ## Add Kotlin Plugin to your project
 
-If you're using the Paywall Builder, make sure to add the Kotlin Plugin.
-
 :::warning
 
-Skipping this step can cause your mobile app to crash when the paywall is displayed.
+This step is required. If you skip it, your mobile app can crash when the paywall is displayed.
 
 :::
 
