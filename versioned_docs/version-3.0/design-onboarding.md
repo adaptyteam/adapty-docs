@@ -37,10 +37,15 @@ There are the following groups of elements you can add:
 :::tip
 As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough.
 :::
-- **Quiz**: 
-- **Inputs**:
-- **Buttons**:
-- **Loaders**:
-- **User engagement**:
+- **Quiz**: Create short questionnaires with text and image options to customize the onboarding experience and get to know your users better.
+- **Inputs**: Collect your users' data.
+- **Buttons**: Buttons let your users navigate between screens, close the onboarding or move to the paywall. You can also add glossy or moving buttons to attract user's attention and convert their install to a purchase.
+- **Loaders**: Animated loaders keep users engaged during the process.
+- **User engagement**: Add testimonials, user email lists and countdowns.
 
 ## Customization options
+
+You have the following customization options in the builder:
+- **Styles** tab: Adjust the element's look. 
+- **Element** tab: Set the element’s attributes, such as visibility, actions for pressing buttons or other properties unrelated to the element's look.
+- **Screen** tab: Set up the general screen configuration, such as a header or displaying a screen counter.
