@@ -28,7 +28,7 @@ Adapty supports two types of A/B tests:
 
 
 :::warning
-Crossplacement A/B tests are only available for native iOS and Android SDKs starting from v3.5.0. Support for cross-platform SDKs is coming soon.
+Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0. 
 
 Users from previous versions skip them and can only become a part of regular A/B tests.
 :::
