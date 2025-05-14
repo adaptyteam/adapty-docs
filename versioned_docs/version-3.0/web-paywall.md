@@ -12,6 +12,17 @@ Before you begin, make sure you have installed Adapty iOS SDK version 3.6.0 or l
 With Adapty, you can create a paywall with a button that redirects your iOS app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
 This allows you to bypass App Store fees while effectively tracking user payments.
 
+   <Zoom>
+   <img src={require('./img/web_paywall.gif').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
 :::tip
 The App Store allows external payment options only in the USA. 
 

@@ -228,7 +228,7 @@ let baseURL = shouldUseChinaServers()
 let configurationBuilder =
     AdaptyConfiguration
         .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(backendBaseUrl: baseURL)
+        .with(serverCluster: .cn)
         // other configuration options
 ```
 
@@ -262,23 +262,22 @@ initializeAdapty();
 
 ```kotlin
 // Define the helper function
-private boolean shouldUseChinaServers() {
-return Locale.getDefault().getCountry().equals("CN");
-}
+private fun shouldUseChinaServers() = Locale.getDefault().country == "CN"
 
 // Use it in configuration
-private void setupAdapty() {
-String baseUrl = shouldUseChinaServers()
-? "https://api-cn.adapty.io/api/v1"
-: "https://api.adapty.io/api/v1"; // Default URL
+private fun setupAdapty() {
+    val serverCluster = if (shouldUseChinaServers())
+        AdaptyConfig.ServerCluster.CN
+    else
+        AdaptyConfig.ServerCluster.DEFAULT
 
     Adapty.activate(
-        getApplicationContext(),
-        new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-            .withServerBaseUrl(baseUrl)
+        context,
+        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
             // other configuration options
+            .withServerCluster(serverCluster)
             .build()
-    );
+    )
 }
 ```
 
@@ -297,27 +296,26 @@ For applications distributed through different app stores, you can determine whi
 import StoreKit
 
 func shouldUseChinaServers() async -> Bool {
-        let code: String?
-        
-        if #available(iOS 15.0, *) {
-            code = await Storefront.current?.countryCode
-        } else {
-            code = SKPaymentQueue.default().storefront?.countryCode
-        }
-        
-        return code == "CHN"
+    let code: String?
+    
+    if #available(iOS 15.0, *) {
+        code = await Storefront.current?.countryCode
+    } else {
+        code = SKPaymentQueue.default().storefront?.countryCode
     }
+    
+    return code == "CHN"
+}
 
 // In your configuration
-let baseURL = shouldUseChinaServers() 
-    ? URL(string: "https://api-cn.adapty.io/api/v1")!
-    : URL(string: "https://api.adapty.io/api/v1")! // Default URL
+let configurationBuilder = AdaptyConfiguration
+    .Builder(withAPIKey: "PUBLIC_SDK_KEY")
 
-let configurationBuilder =
-    AdaptyConfiguration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(backendBaseUrl: baseURL)
-        // other configuration options
+// Only set server cluster if it's China
+if await shouldUseChinaServers() {
+    configurationBuilder.with(serverCluster: .cn)
+}
+// other configuration options
 ```
 
 </TabItem>
