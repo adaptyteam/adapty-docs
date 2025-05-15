@@ -9,12 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 The no-code mobile app onboarding builder is a powerful and customizable tool that will help you provide your users with the best onboarding experience. You don't even need to be a developer or designer to get a great result.
 
-The onboarding scenarios we fully support, both standalone and in combination with each other, are:
-
-- Demonstrating the app value and benefits along with client testimonials and stylish visuals.
-- Showing your clients how to use the app and get the most out of it.
-- Leading users to purchase or trial.
-
 ## Onboarding screens
 
 The onboarding flow consists of several screens that you add and design.

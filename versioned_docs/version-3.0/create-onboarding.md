@@ -9,7 +9,9 @@ import Details from '@site/src/components/Details';
 
 [Onboardings](onboardings.md) introduce new users to your mobile app's value, features, and usage tips.
 
-To create a new paywall in the Adapty dashboard:
+## Step 1. Create an onboarding
+
+To create a new onboarding in the Adapty dashboard:
 
 1. Go to **Onboardings** from the Adapty main menu. This page gives an overview of all onboardings you’ve set up, along with their metrics. Click **Create onboarding**.
 
@@ -61,7 +63,7 @@ To create a new paywall in the Adapty dashboard:
    }}
    />
    </Zoom>
-5. If everything works fine, click **Publish** at the top right.
+5. If everything works fine, click **Publish** at the top right. Please wait until it is published before getting back to Adapty. Otherwise, your progress will be lost.
    <Zoom>
    <img src={require('./img/create-onboarding5.png').default}
    style={{
@@ -73,3 +75,9 @@ To create a new paywall in the Adapty dashboard:
    />
    </Zoom>
 After your onboarding is published, click **Back to Adapty**. Your onboarding is created, and you can add it to a placement to start using it.
+
+## Step 2. Create a placement for your onboarding
+
+
+
+## Step 3. Integrate the onboarding into your app
