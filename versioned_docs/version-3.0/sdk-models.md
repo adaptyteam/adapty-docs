@@ -6,6 +6,36 @@ metadataTitle: "Understanding SDK Models | Adapty Docs"
 
 ## Interfaces
 
+### AdaptyOnboarding
+
+Information about an [onboarding](onboardings.md).
+
+| Name              | Type                               | Description                                            |
+|-------------------|------------------------------------|--------------------------------------------------------|
+| id                | String                             | Unique identifier of the onboarding configuration      |
+| name              | String                             | Name of the onboarding flow                            |
+| screens           | [AdaptyOnboardingScreen]           | Array of screen configurations for the onboarding flow |
+| viewConfiguration | AdaptyOnboarding.ViewConfiguration | Visual configuration settings                          |
+| metadata          | [String: Any]?                     | Optional custom metadata for the onboarding            |
+
+### AdaptyOnboardingScreen
+
+| Name     | Type                     | Description                        |
+|---------|--------------------------|------------------------------------|
+| id      | String                   | Unique identifier for the screen   |
+| order   | Int                      | Position of the screen in the flow |
+| content | AdaptyOnboardingContent  | Content to display on the screen   |
+| actions | [AdaptyOnboardingAction] | Available actions for this screen  |
+
+### AdaptyOnboardingViewConfiguration
+
+| Name           | Type | Description |
+|----------------| --- | --- |
+| backgroundColor | UIColor | Background color of onboarding screens |
+| navigationBarStyle | NavigationBarStyle | Style configuration for navigation bar |
+| transitionStyle | TransitionStyle | Animation style between screens |
+| isSwipeEnabled | Bool | Whether swipe navigation is enabled |
+
 ### AdaptyPaywallProduct
 
 An information about a [product.](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct)

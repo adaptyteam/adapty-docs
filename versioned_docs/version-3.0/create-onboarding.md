@@ -78,6 +78,31 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
 
 ## Step 2. Create a placement for your onboarding
 
+1. Go to **Placements** from the main menu and switch to the **Onboardings** tab. Click **Create placement**.
 
+   <Zoom>
+   <img src={require('./img/create-onboarding6.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '400px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+2. Enter the placement name and ID. Then, click **Run onboarding** and select an onboarding to show to all users.
+3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
+
+:::info
+You can also include [A/B tests](ab-tests.md) to understand which onboarding works better.
+:::
 
 ## Step 3. Integrate the onboarding into your app
+
+:::important
+Before you start, ensure you have Adapty SDK version 3.8.0 or later installed.
+:::
+
+To start displaying onboardings in your app, [integrate them using Adapty SDK](onboarding-sdk.md).
+
