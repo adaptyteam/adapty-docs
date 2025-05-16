@@ -10,13 +10,13 @@ metadataTitle: "Understanding SDK Models | Adapty Docs"
 
 Information about an [onboarding](onboardings.md).
 
-| Name              | Type                               | Description                                            |
-|-------------------|------------------------------------|--------------------------------------------------------|
-| id                | String                             | Unique identifier of the onboarding configuration      |
-| name              | String                             | Name of the onboarding flow                            |
-| screens           | [AdaptyOnboardingScreen]           | Array of screen configurations for the onboarding flow |
-| viewConfiguration | AdaptyOnboarding.ViewConfiguration | Visual configuration settings                          |
-| metadata          | [String: Any]?                     | Optional custom metadata for the onboarding            |
+| Name              | Type                                                                | Description                                            |
+|-------------------|---------------------------------------------------------------------|--------------------------------------------------------|
+| id                | String                                                              | Unique identifier of the onboarding configuration      |
+| name              | String                                                              | Name of the onboarding flow                            |
+| screens           | [[AdaptyOnboardingScreen]](#adaptyonboardingscreen)                 | Array of screen configurations for the onboarding flow |
+| viewConfiguration | [AdaptyOnboarding.ViewConfiguration](#adaptyonboardingviewconfiguration) | Visual configuration settings                          |
+| metadata          | [String: Any]?                                                      | Optional custom metadata for the onboarding            |
 
 ### AdaptyOnboardingScreen
 
@@ -29,12 +29,12 @@ Information about an [onboarding](onboardings.md).
 
 ### AdaptyOnboardingViewConfiguration
 
-| Name           | Type | Description |
-|----------------| --- | --- |
-| backgroundColor | UIColor | Background color of onboarding screens |
+| Name               | Type               | Description                            |
+|--------------------|--------------------|----------------------------------------|
+| backgroundColor    | UIColor            | Background color of onboarding screens |
 | navigationBarStyle | NavigationBarStyle | Style configuration for navigation bar |
-| transitionStyle | TransitionStyle | Animation style between screens |
-| isSwipeEnabled | Bool | Whether swipe navigation is enabled |
+| transitionStyle    | TransitionStyle    | Animation style between screens        |
+| isSwipeEnabled     | Bool               | Whether swipe navigation is enabled    |
 
 ### AdaptyPaywallProduct
 
