@@ -9,8 +9,9 @@ If you've designed an [onboarding](onboardings.md) using the no-code builder, yo
 However, some coding is still required. You'll need to:
 
 1. [Retrieve the onboarding.](get-onboardings.md)
-2. Display it within your app.
-3. Respond to the events it generates.
+2. [Display it within your app.](present-onboardings.md)
+3. [Respond to the events it generates.](handling-onboarding-events.md)
+4. [(Optional) Integrate the onboarding with your paywall.](get-paid-in-onboardings.md)
 
 Before you start, ensure that:
 
