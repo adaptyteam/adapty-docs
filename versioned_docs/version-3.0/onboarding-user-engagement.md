@@ -85,12 +85,45 @@ Let's say in your recipe app, you want to know whether your users are vegan/vege
    
 ## Use variables
 
-Variables are values set based on user input or environmental data. They play a key role in creating a more personalized and improved onboarding experience.
+Variables are values set based on user input or environmental data. They are key in creating a more personalized and improved onboarding experience.
 
 This is how you can use variables:
 
-1. Create a text input field, date picker or options element and set its ID.
+1. Create a text input field, date picker, or options element and set its ID.
 
+   <Zoom>
+   <img src={require('./img/onboarding-user-engagement6.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 
+2. Use the element ID in onboarding texts in the `{{element-id}}` format. For example, you can personalize your text using the user's name.
 
-2. Use the element ID in onboarding texts in the `{{element-id}}` format. For example, you 
+   <Zoom>
+   <img src={require('./img/onboarding-user-engagement7.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '400px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+3. When your users input their data during the onboarding process, it will be dynamically added to where you use variables.
+
+   <Zoom>
+   <img src={require('./img/onboarding-user-engagement8.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '400px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>

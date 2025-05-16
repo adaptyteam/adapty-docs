@@ -7,8 +7,6 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import DocCardList from '@theme/DocCardList';
 
-<DocCardList />
-
 Good onboarding introduces new users to your mobile app's value, features, and usage tips. A clear onboarding experience boosts initial engagement, improves retention rates, and helps users get more value from your app.
 
 ## What it is for
@@ -26,7 +24,7 @@ Good onboarding introduces new users to your mobile app's value, features, and u
 
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
-What makes Adapty's onboarding useful is the ability to customize the user experience with interactive questions and use variables that personalize the user journey.
+What makes Adapty's onboarding useful is the ability to [customize the user experience with interactive questions and use variables that personalize the user journey](onboarding-user-engagement.md).
 
 This personalization helps each user quickly find value in your app, making them more likely to continue using your product.
 
@@ -44,9 +42,9 @@ Onboardings are a paid feature in Adapty. Note the following about the pricing:
 
 To launch your onboarding:
 
-1. Design an onboarding in the no-code editor.
-2. Create a placement for the onboarding.
-3. Integrate the onboarding with your project using the Adapty SDK.
+1. [Design an onboarding in the no-code editor.](design-onboarding.md)
+2. [Create a placement for the onboarding.](create-onboarding#create-a-placement-for-your-onboarding)
+3. [Integrate the onboarding with your project using the Adapty SDK.](onboarding-sdk.md)
 4. Test the onboarding and release it for your users.
 
 To grow further, you can also try more advanced ways to work with onboardings:

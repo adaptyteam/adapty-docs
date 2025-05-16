@@ -12,6 +12,17 @@ Onboarding metrics are available on the onboarding list, providing you with an o
 
 For a more granular analysis of each onboarding, you can navigate to the onboarding detail metrics. In this section, you will find comprehensive metrics specific to the selected onboarding, offering deeper insights into its performance.
 
+  <Zoom>
+  <img src={require('./img/onboarding-metrics1.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
 ## Metrics controls
 
 The system displays the metrics based on the selected time period and organizes them according to the left-side column parameter with three indentation levels.
@@ -28,20 +39,64 @@ The paywall page offers two viewing options for metrics data:
 
 The dropdown at the top of the onboarding page allows you to select the preferred view.
 
+  <Zoom>
+  <img src={require('./img/onboarding-metrics2.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
 ### Filter metrics by install date
 
 The **Filter metrics by install date** checkbox lets you analyze data based on when users installed your app. This helps you measure how well you're acquiring new users during specific time periods. It's a handy option when you want to customize your analysis.
+
+  <Zoom>
+  <img src={require('./img/onboarding-metrics3.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
 
 ### Time ranges
 
 You can analyze metrics data using a time range, allowing you to focus on specific durations such as days, weeks, months, or custom date ranges.
 
+  <Zoom>
+  <img src={require('./img/onboarding-metrics4.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
 ### Filters and groups
 
-Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
+Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. Adapty's metrics page gives you access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Onboarding state.
-- ✅ Group by: Product.
+- ✅ Filter by: Attribution, Country, Onboarding audience, Onboarding A/B tests, Onboarding placement, Paywall, Store, State.
+- ✅ Group by: Product or Store.
+
+  <Zoom>
+  <img src={require('./img/onboarding-metrics5.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
 
 ### Single metric chart
 
@@ -54,6 +109,32 @@ The chart helps you quickly see:
 A total sum appears next to the chart, giving you the complete picture at a glance.
 
 Click the arrow icon to expand the chart.
+
+  <Zoom>
+  <img src={require('./img/onboarding-metrics6.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+### Total metrics summary
+
+Next to the single metrics chart, there is a total metrics summary section. This section shows the cumulative values for the selected metrics at a specific point in time. You can change the displayed metric using a dropdown menu.
+
+  <Zoom>
+  <img src={require('./img/onboarding-metrics7.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
 
 ## Metrics definitions
 
