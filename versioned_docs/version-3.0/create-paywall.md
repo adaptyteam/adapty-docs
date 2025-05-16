@@ -19,7 +19,7 @@ A [paywall](paywalls) serves as an in-app storefront where customers can browse 
 
 To create a new paywall in the Adapty dashboard:
 
-1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and open the **Paywall** tab. This page gives an overview of all paywalls you’ve set up, along with their metrics.
+1. Go to [**Paywalls**](https://app.adapty.io/paywalls) in the Adapty main menu and open the **Paywall** tab. This page gives an overview of all paywalls you’ve set up, along with their metrics.
 
 <Zoom>
   <img src={require('./img/c661ee3-paywalls.webp').default}
