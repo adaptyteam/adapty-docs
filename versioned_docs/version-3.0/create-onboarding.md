@@ -39,7 +39,9 @@ To create a new onboarding in the Adapty dashboard:
 />
 </Zoom>
 
-3. You will be redirected to the external onboarding builder. Design an onboarding experience there.
+3. You will be redirected to the onboarding builder. 
+   
+   It contains a default demo template, which you can study to understand how onboardings collect data and how you can [personalize them using variables and quizzes](onboarding-user-engagement.md). Feel free to remove any screens you don't need and [design your own onboarding experience](design-onboarding.md) there.
 
 <Zoom>
   <img src={require('./img/create-onboarding3.png').default}

@@ -38,9 +38,50 @@ There are the following groups of elements you can add:
 As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough.
 :::
 
+  <Zoom>
+  <img src={require('./img/design-onboarding4.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
 ## Customization options
 
 You have the following customization options in the builder:
-- **Styles** tab: Adjust the element's look. 
+- **Styles** tab: Adjust the element's look.
+  <Zoom>
+  <img src={require('./img/design-onboarding1.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
 - **Element** tab: Set the element’s attributes, such as visibility, actions for pressing buttons or other properties unrelated to the element's look.
+  <Zoom>
+  <img src={require('./img/design-onboarding2.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
 - **Screen** tab: Set up the general screen configuration, such as a header or displaying a screen counter.
+  <Zoom>
+  <img src={require('./img/design-onboarding3.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
