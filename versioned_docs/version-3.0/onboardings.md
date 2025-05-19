@@ -5,9 +5,8 @@ metadataTitle: "Overview of Onboardings in Adapty | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import DocCardList from '@theme/DocCardList';
 
-Good onboarding introduces new users to your mobile app's value, features, and usage tips. A clear onboarding experience boosts initial engagement, improves retention rates, and helps users get more value from your app.
+Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
 ## What it is for
 
@@ -22,19 +21,20 @@ Good onboarding introduces new users to your mobile app's value, features, and u
    />
    </Zoom>
 
-Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
+Good onboarding introduces users to your app by:
+- Showing your app's core value 
+- Explaining key features and functionality
+- Providing essential usage tips
 
-What makes Adapty's onboarding useful is the ability to [customize the user experience with interactive questions and use variables that personalize the user journey](onboarding-user-engagement.md).
-
-This personalization helps each user quickly find value in your app, making them more likely to continue using your product.
-
-You can also run A/B tests with different onboarding flows in Adapty to discover which versions perform better. This helps you refine your approach and create onboarding experiences that truly connect with users.
+Adapty's onboarding solution stands out with:
+- No-code onboarding builder that empowers non-technical teams
+- The ability to [personalize experiences through interactive questions and variables](onboarding-user-engagement.md)
+- A/B testing support to determine which onboarding flows perform best
 
 ## Pricing
 
 Onboardings are a paid feature in Adapty. Note the following about the pricing:
 
-- Onboardings are free for apps with less than $5000 MTR (monthly tracked revenue).
 - Using onboardings costs 0.2% of the MTR for all the other apps.
 - You can test onboardings in the sandbox freely. You start getting billed only after the first transaction in the production environment.
 

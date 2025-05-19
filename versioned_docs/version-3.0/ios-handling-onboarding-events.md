@@ -16,7 +16,20 @@ To control or monitor processes occurring on the onboarding screen within your m
 
 ### Custom actions
 
-In the builder, you can add a **custom** action to a button and assign it an ID. Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Action ID** from the builder. You can create your own IDs, like "allow_notifications".
+In the builder, you can add a **custom** action to a button and assign it an ID. 
+
+<Zoom>
+  <img src={require('./img/ios-events-1.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
 ```swift showLineNumbers    
 func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
@@ -32,7 +45,20 @@ func onboardingController(_ controller: AdaptyOnboardingController, didFailWithE
 
 ### Closing onboarding
 
-If a user closes the onboarding, this method will be invoked:
+Onboarding is considered closed when a user taps a button with the **Close** action assigned.
+
+<Zoom>
+  <img src={require('./img/ios-events-1.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+You need to manage what happens when a user closes the onboarding. For example:
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
@@ -46,7 +72,29 @@ If a user clicks a button that opens a paywall, this method will be invoked:
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
-    // Handle paywall opening with action.actionId where actionId is actually a placement ID for your paywall
+    Task {
+        do {
+            // Get the paywall using the placement ID from the action
+            let paywall = try await Adapty.getPaywall(placementId: action.actionId)
+            
+            // Get the paywall configuration
+            let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+                forPaywall: paywall
+            )
+            
+            // Create and present the paywall controller
+            let paywallController = try AdaptyUI.paywallController(
+                with: paywallConfig,
+                delegate: self
+            )
+            
+            // Present the paywall
+            controller.present(paywallController, animated: true)
+        } catch {
+            // Handle any errors that occur during paywall loading
+            print("Failed to present paywall: \(error)")
+        }
+    }
 }
 ```
 
@@ -59,9 +107,6 @@ func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoa
     // Handle loading completion
 }
 ```
-:::tip
-If you are using a splash view, you will need this method to understand when you need to st
-:::
 
 ### Updating field state
 
@@ -89,9 +134,12 @@ func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdat
 }
 ```
 
+:::note
+This example suggests you implement custom methods for saving user data depending on the data type. These methods are not built into the Adapty SDK.
+:::
+
 The `action` object contains:
-    - `elementId`: A unique identifier for the input element.
-    - `meta`: Additional metadata about the element.
+    - `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
     - `params`: The user's input data, which can be one of the following types:
         - `select`: Single selection from a list of options.
         - `multiSelect`: Multiple selections from a list of options.
@@ -103,25 +151,25 @@ The `action` object contains:
 The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow. 
 
 The `event` object can be one of the following types:
-    - `onboardingStarted`: When the onboarding flow begins.
-    - `screenPresented`: When a screen is shown.
-    - `screenCompleted`: When a screen is completed, includes:
-        - `elementId`: Optional identifier of the completed element.
-        - `reply`: Optional response from the user.
-    - `secondScreenPresented`: When the second screen is shown.
-    - `registrationScreenPresented`: When the registration screen is shown.
-    - `productsScreenPresented`: When the products screen is shown.
-    - `userEmailCollected`: Triggered when user's email is collected.
-    - `onboardingCompleted`: Triggered when the entire onboarding flow is completed.
-    - `unknown`: For any unrecognized event type, includes:
-        - `name`: The name of the unknown event
-        - `meta`: Additional metadata
+|Type | Description |
+|------------|-------------|
+| `onboardingStarted` | When the onboarding flow begins |
+| `screenPresented` | When a screen is shown |
+| `screenCompleted` | When a screen is completed. Includes optional `elementId` (identifier of the completed element) and optional `reply` (response from the user) |
+| `secondScreenPresented` | When the second screen is shown |
+| `registrationScreenPresented` | When the registration screen is shown |
+| `productsScreenPresented` | When the products screen is shown |
+| `userEmailCollected` | Triggered when user's email is collected |
+| `onboardingCompleted` | Triggered when the entire onboarding flow is completed |
+| `unknown` | For any unrecognized event type. Includes `name` (the name of the unknown event) and `meta` (additional metadata) |
 
 Each event includes `meta` information containing:
-- `onboardingId`: Unique identifier of the onboarding flow.
-- `screenClientId`: Identifier of the current screen.
-- `screenIndex`: Current screen's position in the flow.
-- `screensTotal`: Total number of screens in the flow.
+| Field | Description |
+|------------|-------------|
+| `onboardingId` | Unique identifier of the onboarding flow |
+| `screenClientId` | Identifier of the current screen |
+| `screenIndex` | Current screen's position in the flow |
+| `screensTotal` | Total number of screens in the flow |
 
 
 

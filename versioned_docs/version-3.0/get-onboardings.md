@@ -19,9 +19,9 @@ Before you start, ensure that:
 
 ## Fetch onboarding
 
-If you've [designed an onboarding using the builder](design-onboarding.md), you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+When you create an [onboarding](onboardings.md) with our no-code builder, it's stored as a container with configuration that your app needs to fetch and display. This container manages the entire experience - what content appears, how it's presented, and how user interactions (like quiz answers or form inputs) are processed. The container also automatically tracks analytics events, so you don't need to implement separate view tracking.
 
-To ensure optimal performance, it's crucial to retrieve the onboarding and its configuration as early as possible, allowing sufficient time for images to download before presenting them to the user.
+For best performance, fetch the onboarding configuration early to give images enough time to download before showing to users.
 
 To get an onboarding, use the `getOnboarding` method:
 
@@ -54,17 +54,15 @@ Response parameters:
 
 Typically, onboardings are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and onboardings, and your users have a weak internet connection, fetching a onboarding may take longer than you'd like. In such situations, you might want to display a default onboarding to ensure a smooth user experience rather than showing no onboarding at all.
 
-To address this, you can use the `getOnboardingForDefaultAudience`  method, which fetches the onboarding of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the onboarding by the `getOnboarding` method, as detailed in the [Fetch Onboarding Information](get-pb-onboardings#fetch-onboarding-designed-with-onboarding-builder) section above.
+To address this, you can use the `getOnboardingForDefaultAudience`  method, which fetches the onboarding of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the onboarding by the `getOnboarding` method, as detailed in the [Fetch Onboarding](#fetch-onboarding) section above.
 
 :::warning
-Why we recommend using `getOnboarding`
+Consider using `getOnboarding` instead of `getOnboardingForDefaultAudience`, as the latter has important limitations:
 
-The `getOnboardingForDefaultAudience` method comes with a few significant drawbacks:
+- **Compatibility issues**: May create problems when supporting multiple app versions, requiring either backward-compatible designs or accepting that older versions might display incorrectly.
+- **No personalization**: Only shows content for the "All Users" audience, removing targeting based on country, attribution, or custom attributes.
 
-- **Potential backward compatibility issues**: If you need to show different onboardings for different app versions (current and future), you may face challenges. You’ll either have to design onboardings that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered onboardings.
-- **Loss of targeting**: All users will see the same onboarding designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
-
-If you're willing to accept these drawbacks to benefit from faster onboarding fetching, use the `getOnboardingForDefaultAudience` method as follows. Otherwise stick to `getOnboarding` described [above](get-pb-onboardings#fetch-onboardings).
+If faster fetching outweighs these drawbacks for your use case, use `getOnboardingForDefaultAudience` as shown below. Otherwise, use `getOnboarding` as described [above](#fetch-onboarding).
 :::
 
 ```swift showLineNumbers
