@@ -51,7 +51,7 @@ Onboarding is considered closed when a user taps a button with the **Close** act
   <img src={require('./img/ios-events-1.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '300px', /* image width */
+    width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
