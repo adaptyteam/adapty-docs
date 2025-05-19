@@ -61,13 +61,13 @@ var body: some View {
     SomeView()
         .onAppear {
             Task {
-                 onboardingConfig = AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
-                 showOnboarding = true
-             }
+                onboardingConfig = AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+                showOnboarding = true
+            }
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             if let config = onboardingConfig {
-                OnboardingSplashController(
+                AdaptyUI.createOnboardingController(
                     configuration: config,
                     delegate: OnboardingDelegateImpl(onCloseAction: { _ in showOnboarding = false })
                 )
@@ -76,4 +76,32 @@ var body: some View {
 }
 ```
 
+## Add smooth transitions between the splash screen and onboarding
 
+By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can customize it and either extend the splash screen or display something else.
+
+To do this, instead of a regular onboarding controller, create a splash controller that will show the splash screen, load the onboarding in the background and then display it.
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+// Create splash controller instead of regular onboarding controller
+let splashController = AdaptyUI.createSplashController(
+    configuration: AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding),
+    delegate: self,
+    placeholderDelegate: self
+)
+present(splashController, animated: true)
+
+// Required delegate methods
+extension YourViewController: AdaptyOnboardingControllerDelegate, AdaptyOnboardingPlaceholderDelegate {
+    func onboardingsControllerPlaceholderController() -> UIViewController? {
+        return SplashViewController() // Your splash screen
+    }
+
+ func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
+        dismiss(animated: true)
+    }
+}
+```
