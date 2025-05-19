@@ -46,6 +46,12 @@ In order to display the visual onboarding on the device screen, do the following
 2. After the object has been successfully created, you can display it on the screen of the device:
 
    ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+        
+   let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
+   let visualOnboarding = AdaptyUI.onboardingViewController(onboarding)
+   visualOnboarding.delegate = self
    present(visualOnboarding, animated: true)
    ```
 

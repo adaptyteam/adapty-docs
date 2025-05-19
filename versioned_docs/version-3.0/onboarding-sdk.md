@@ -5,19 +5,13 @@ metadataTitle: "Display Onboardings in Adapty | Adapty Docs"
 import Collapse from '@site/src/components/Collapse';
 
 :::important
-Currently, onboardings are only available for the iOS SDK.
+Currently, onboardings are only available for the iOS and Android SDK.
 :::
 
-If you've designed an [onboarding](onboardings.md) using the no-code builder, you don’t need to worry about rendering it in your app’s code. The onboarding itself handles what to display, how to display it, and how to process user actions like quiz answers or manual inputs. Additionally, it automatically logs the onboarding view event, so you don’t need to ensure analytics receives the data.
+When you create an [onboarding](onboardings.md) with our no-code builder, it's stored as a container with configuration that your app needs to fetch and display. This container manages the entire experience - what content appears, how it's presented, and how user interactions (like quiz answers or form inputs) are processed. The container also automatically tracks analytics events, so you don't need to implement separate view tracking.
 
-However, some coding is still required. You'll need to:
+To integrate onboarding in your application:
 
-1. [Retrieve the onboarding.](get-onboardings.md)
-2. [Display it within your app.](present-onboardings.md)
-3. [Respond to the events it generates.](handling-onboarding-events.md)
-
-Before you start, ensure that:
-
-1. You have installed [Adapty iOS SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
-2. You have [created an onboarding](create-onboarding.md).
-3. You have added the onboarding to a [placement](placements.md).
+1. [Fetch the onboarding configuration](get-onboardings.md)
+2. [Render the onboarding in your UI](ios-present-onboardings.md)
+3. [Handle any events](ios-handling-onboarding-events.md)

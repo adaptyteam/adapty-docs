@@ -16,7 +16,9 @@ The onboarding flow consists of several screens that you add and design.
 Users will tap the button to navigate between them.
 
 :::tip
-If some of your users need a slightly different flow (for example, in your fitness app, you might want to show different 'goal' pictures based on the user's gender), you don't need to create separate onboardings. Instead, you can make some screens hidden by default and displayed only for some scenarios.
+If some of your users need a slightly different flow (for example, in your fitness app, you might want to show different 'goal' pictures based on the user's gender), you don't need to create separate onboardings. 
+
+Instead, you can [make some screens hidden by default and displayed only for some scenarios](onboarding-user-engagement.md).
 :::
 
 ## Onboarding elements
@@ -40,6 +42,34 @@ As a part of the **Media & Display** group, you can also add custom HTML code if
 
   <Zoom>
   <img src={require('./img/design-onboarding4.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+### Element ID and action ID
+
+If you want to use a button for custom actions, [assign it an **action ID** and then use it in your source code](http://adapty.io/docs/ios-handling-onboarding-events#custom-actions). Action IDs let you handle different buttons with the same action ID in the same way.
+
+  <Zoom>
+  <img src={require('./img/ios-events-1.webp').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+If you want to [process user input in a specific field](http://adapty.io/docs/ios-handling-onboarding-events) (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
+
+  <Zoom>
+  <img src={require('./img/design-onboarding5.png').default}
   style={{
   border: '1px solid #727272', /* border width and color */
   width: '700px', /* image width */
@@ -85,3 +115,7 @@ You have the following customization options in the builder:
   }}
   />
   </Zoom>
+
+:::tip
+If you use a background image, you can also set a background color similar to the image's primary color, so that transitions between screens are as smooth as possible.
+:::
