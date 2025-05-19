@@ -13,7 +13,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty iOS SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -25,9 +25,6 @@ To ensure optimal performance, it's crucial to retrieve the onboarding and its c
 
 To get an onboarding, use the `getOnboarding` method:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
 ```swift showLineNumbers
 do {
     let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
@@ -36,105 +33,6 @@ do {
     // handle the error
 }
 ```
-</TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
-
-```swift showLineNumbers
-Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
-    switch result {
-        case let .success(onboarding):
-            // the requested onboarding
-        case let .failure(error):
-            // handle the error
-    }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-import com.adapty.utils.seconds
-
-...
-
-Adapty.getOnboarding("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val onboarding = result.value
-            // the requested onboarding
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-import com.adapty.utils.TimeInterval;
-
-...
-
-Adapty.getOnboarding("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyOnboarding onboarding = ((AdaptyResult.Success<AdaptyOnboarding>) result).getValue();
-        // the requested onboarding
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-try {
-  final onboarding = await Adapty().getOnboarding(placementId: "YOUR_PLACEMENT_ID", locale: "en");
-  // the requested onboarding
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-Adapty.GetOnboarding("YOUR_PLACEMENT_ID", "en", (onboarding, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
-  
-  // onboarding - the resulting object
-});
-```
-
-</TabItem>
-
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    const placementId = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const onboarding = await adapty.getOnboarding(placementId, locale);
-  // the requested onboarding
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-
-</Tabs>
 
 Parameters:
 
@@ -169,8 +67,6 @@ The `getOnboardingForDefaultAudience` method comes with a few significant drawba
 If you're willing to accept these drawbacks to benefit from faster onboarding fetching, use the `getOnboardingForDefaultAudience` method as follows. Otherwise stick to `getOnboarding` described [above](get-pb-onboardings#fetch-onboardings).
 :::
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     switch result {
@@ -181,87 +77,6 @@ Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale:
     }
 }
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val onboarding = result.value
-            // the requested onboarding
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyOnboarding onboarding = ((AdaptyResult.Success<AdaptyOnboarding>) result).getValue();
-        // the requested onboarding
-
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```typescript showLineNumbers
-try {
-    final onboarding = await Adapty().getOnboardingForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
-} on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {
-    // handle unknown error
-}
-```
-</TabItem>
-
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-using AdaptySDK;
-
-Adapty.GetOnboardingForDefaultAudience(
-  "YOUR_PLACEMENT_ID", 
-  (onboarding, error) => {
-  
-  if (error != null) {
-    // handle the error
-  }
-  
-  // use the requested onboarding
-});
-```
-
-</TabItem>
-
-<TabItem value="rn" label="React Native" default>
-
-```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const onboarding = await adapty.getOnboardingForDefaultAudience(id, locale);
-  // the requested onboarding
-} catch (error) {
-    // handle the error
-}
-```
-
-</TabItem>
-
-</Tabs>
 
 Parameters:
 
