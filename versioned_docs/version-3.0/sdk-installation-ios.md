@@ -10,10 +10,13 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-Adapty SDK includes two key modules for seamless integration into your mobile app:
+:::danger
+Review the release checklist before launching your app
 
-- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+:::
+
+Watch the video instructions on how to install and set up Adapty's SDK for iOS:
 
 <div style={{ textAlign: 'center' }}>
   <iframe 
@@ -28,17 +31,8 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
   </iframe>
 </div>
 
-:::info
-If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
-:::
 
 You can install Adapty SDK via CocoaPods or Swift Package Manager.
-
-:::danger
-Review the release checklist before launching your app
-
-Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
 
 <Tabs groupId="current-os" queryString> 
 <TabItem value="3.0" label="Adapty SDK v3.x+ (current)" default> 

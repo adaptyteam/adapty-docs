@@ -7,89 +7,88 @@ metadataTitle: "Adapty Documentation Overview | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[Overview](https://app.adapty.io/overview) is a section of Adapty Dashboard that allows you to see multiple metrics in a single place. You can customize which charts you would like to see and view data for all of your apps at once (unlike in [Charts](charts) which you can use to dive deeper into a particular app).
+Overview is a section of the Adapty dashboard that provides analytical information through various chart views. This section includes the following parts:
+1. [Control panel](#control-panel-of-the-overview-section) of the Overview section.
+1. [Money](#money-analytics-section) analytics section.
+1. [Subscribers](#subscribers-analytics-section) analytics section.
+1. [Conversion](#conversion-analytics-section) analytics section.
+1. [Issues](#issues-analytics-section) analytics section.
 
-It's located right under Home in the left-side menu:
+The Overview section provides a high-level analytics view. For detailed information, refer to the [Analytics](https://app.adapty.io/analytics/charts/) section.
 
-
-<Zoom>
-  <img src={require('./img/016b5bb-CleanShot_2024-01-22_at_18.38.162x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-## Charts
-
-Overview has the following charts available (you can click on the name to learn more about how we calculate it):
-
-- [Revenue](revenue)
-- [MRR](mrr)
-- [ARR](arr)
-- [ARPPU](arppu)
-- [New trials](new-trials)
-- [New subscriptions](reactivated-subscriptions)
-- [Active trials](active-trials)
-- [Active subscriptions](active-subscriptions)
-- [New non-subscriptions](non-subscriptions)
-- [Refund events](refund-events)
-- [Refund money](refund-money)
-
-You can customize which charts to show as well as their order. To do that, press Edit in the top-right corner and then either remove charts you don't need, add more or rearrange existing ones by drag and dropping. You can also customize Overview contents in the "Add" menu:
-
-
-<Zoom>
-  <img src={require('./img/d6220fa-CleanShot_2024-01-22_at_20.01.05.gif').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-## Controls
-
-Controls for diving deeper into your data in Overview are very similar to what we have in [Charts](charts) — and most of them are described in [Analytics controls](controls-filters-grouping-compare-proceeds). 
-
-There is one important difference though: you can group and filter by country, store, and, most notably, by app — as Overview shows data for all of your apps at once by default. This can be helpful to understand how each of your app contributes to your business metrics:
-
-
-<Zoom>
-  <img src={require('./img/ae3a913-CleanShot_2024-01-22_at_19.56.302x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
+## Control panel of the Overview section
 
 :::note
-**Timezone and install settings**
 
-Note that these settings apply to all your apps and override what you have in [App settings](general).
-
-- **Installs**: By default, installs are counted by `device_id`—a new installation or reinstallation on a device is counted as a separate install. You can change it by clicking **Edit**. For a detailed explanation of other options, see the [Installs definition for analytics](general#4-installs-definition-for-analytics) section.
-- **Timezone**: By default, the timezone for the **Overview** page is inherited from one of your apps. If your apps have different reporting timezones, customize the Overview timezone by clicking **Edit** and selecting the appropriate option from the dropdown.
-
+All customization options are global for the Overview section and apply to all charts.
 
 :::
+
+The Control panel provides a set of tools to customize the view of the Overview section according to your preferences. 
+
+<Zoom>
+  <img src={require('./img/control-panel.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+On the left side of the panel, you’ll find the date and grouping tools:
+1. **Dropdown calendar** — allows you to select a date range for the analytics displayed in the charts. You can choose from predefined ranges (e.g., last 3 days, last month, last 28 days, last 3 months) or set a custom range. Additionally, you can select the time unit for the charts: day, week, month, quarter, or year.
+1. **Compare to** dropdown calendar — enables you to select a previous period for comparison with the current data range. Available presets include: previous period, previous month, previous quarter, previous year, or a custom period. On the chart, the compared data will appear as a differently colored line.
+1. The final tool in the data tools set is the **Group by** dropdown list, which allows grouping by: country, store, or app. The charts will display the grouped information accordingly.
+
+On the right side of the panel, you’ll find notification, metric editing, chart display, and data visualization tools:  
+
+1. **Email reports** button — redirects to account settings, where you can select the frequency of email reports: daily, weekly, or monthly.  
+1. **Edit metrics** button — opens additional control tools:  
+   - **+ Add** button — provides a list of Overview metrics that you can choose to display in the section. As an additional feature, you can rearrange the order of charts using drag-and-drop.  
+   - **Count installs** — clicking the dropdown list allows you to select the counting method: counting installs as new device_ids, customer_user_ids, or profiles in Adapty.  
+   - **Time zone** — select your time zone to ensure accurate data.  
+     Once the setup is complete, click the **Done** button to save the new preset.  
+1. **Chart type** switcher — allows you to change the type of charts. The following chart types are available: stacked column, stacked area, line, 100% stacked column, 100% stacked area, and pie chart.  
+1. **Revenue data** display switcher — offers three options for displaying revenue data on charts:  
+   - **Gross revenue** — displays the total revenue, including taxes and commission fees from both the App Store and Play Store.  
+   - **Proceeds after store commission** — displays the revenue amount after deducting the store commission fee.  
+   - **Proceeds after store commission and taxes** — displays the revenue amount after deducting both the store commission fee and taxes.  
+  See [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) for more information. 
+
+## Money analytics section
+
+This section contains charts reflecting financial metrics, such as:  
+1. [Revenue](revenue) chart — displays the total revenue earned from both subscriptions and one-time purchases, minus any revenue refunded later.  
+1. [MRR](mmr) (Monthly Recurring Revenue) chart — displays the normalized revenue generated by your active paid subscriptions on a monthly basis.  
+1. [ARR](arr) (Annual Recurring Revenue) chart — shows revenue from all active auto-renewable subscriptions, normalized to one year.  
+1. [ARPU](arpu) (Average Revenue Per User) chart — displays the average revenue generated per user for a given period.  
+1. [ARPPU](arppu) (Average Revenue Per Paying User) chart — displays the average revenue per paying user.  
+1. [ARPAS](placement-metrics.md#ARPAS) (Average Revenue Per Active Subscriber) chart — displays the total revenue divided by the number of active subscribers.
+
+## Subscribers analytics section
+
+This section contains charts reflecting subscriber-related metrics, such as:  
+1. [Installs](installs) chart — shows the total number of users who have installed the app for the first time, as well as reinstalls by existing users.  
+1. [Active trials](active-trials) chart — displays the number of unexpired free trials that are active at the end of a given period.  
+1. [New trials](new-trials) chart — displays the number of trials activated during the selected time period.  
+1. [New subscriptions](reactivated-subscriptions) chart — displays the number of new (first-time activated) subscriptions in your app.  
+1. [Active subscriptions](active-subscriptions) chart — displays the number of unique paid subscriptions that remain active at the end of each selected period.  
+1. [Non-subscriptions](non-subscriptions) chart — displays the number of in-app purchases, such as consumables, non-consumables, and non-renewing subscriptions.
+
+## Conversion analytics section
+
+This section contains charts reflecting conversion metrics, such as:  
+1. **Install → Paid** chart — displays the percentage of users who installed the app on the selected date and later paid for their first subscription (directly, without a trial). If X is the number of installs (consistent across all products since no product is chosen at the installation stage), and Y is the number of those from X who paid, then Conversion = (Y / X) × 100%.  
+1. **Install → Trial** chart — displays the percentage of users who installed the app on the selected date and later activated a trial. If X is the number of installs (consistent across all products since no product is chosen at the installation stage), and Y is the number of those from X who activated a trial, then Conversion = (Y / X) × 100%.  
+1. **Trial → Paid** chart — displays the percentage of trials started during the selected period that later converted to paid subscriptions. If X is the number of trials started, and Y is the number of subscriptions activated after those trials, then Conversion = (Y / X) × 100%.  
+
+See the [Analytics Conversion](analytics-conversion#main-controls-and-charts) article for detailed information.
+
+## Issues analytics section
+
+This section contains charts reflecting issues-related metrics, such as:  
+1. [Refund events](refund-events) chart — displays the number of refunded purchases and subscriptions.  
+1. [Refund money](refund-money) chart — displays the amount of money refunded during the selected period.  
+

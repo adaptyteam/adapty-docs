@@ -1,12 +1,14 @@
 ---
-title: "Server-side API"
+title: "Getting started with server-side api"
 description: "Get started with Adapty’s server-side API for subscription management."
-metadataTitle: "Getting Started with Server-Side API | Adapty Docs"
+metadataTitle: "Getting Started with server-Side API | Adapty Docs"
 
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+
+Adapty's server-side API empowers you to programmatically access and manage your subscription data, enabling seamless integration with your existing services and infrastructure. Whether you're syncing data across platforms, granting access levels, or validating purchases in Stripe, this API provides the tools to keep your systems in sync and your users engaged.
 
 With the API, you can:
 
