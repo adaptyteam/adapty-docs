@@ -12,5 +12,5 @@ When you create an [onboarding](onboardings.md) with our no-code builder, it's s
 To integrate onboarding in your application:
 
 1. [Fetch the onboarding configuration](get-onboardings.md)
-2. [Render the onboarding in your UI](ios-present-onboardings.md)
-3. [Handle any events](ios-handling-onboarding-events.md)
+2. [Render the onboarding in your UI](present-onboardings.md)
+3. [Handle any events](handling-onboarding-events.md)
