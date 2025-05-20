@@ -97,7 +97,7 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
 3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
 
 :::info
-You can also include [A/B tests](ab-tests.md) to understand which onboarding works better.
+You can also run [A/B tests](ab-tests.md) to understand which onboarding works better.
 :::
 
 ## Step 3. Integrate the onboarding into your app

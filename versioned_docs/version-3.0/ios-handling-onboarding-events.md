@@ -7,14 +7,13 @@ toc_max_heading_level: 4
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
 
 Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
 
-## Handle events in Swift
-
 To control or monitor processes occurring on the onboarding screen within your mobile app, implement the `AdaptyOnboardingControllerDelegate` methods.
 
-### Custom actions
+## Custom actions
 
 In the builder, you can add a **custom** action to a button and assign it an ID. 
 
@@ -43,12 +42,12 @@ func onboardingController(_ controller: AdaptyOnboardingController, didFailWithE
 }
 ```
 
-### Closing onboarding
+## Closing onboarding
 
 Onboarding is considered closed when a user taps a button with the **Close** action assigned.
 
 <Zoom>
-  <img src={require('./img/ios-events-1.webp').default}
+  <img src={require('./img/ios-events-2.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -58,7 +57,10 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 />
 </Zoom>
 
-You need to manage what happens when a user closes the onboarding. For example:
+:::important
+Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
+:::
+For example:
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
@@ -66,7 +68,137 @@ func onboardingController(_ controller: AdaptyOnboardingController, onCloseActio
 }
 ```
 
+### Updating field state
+
+When your users respond to a quiz question or input their data into an input field, the `onStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
+
+For example:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .select(let params):
+        // Handle single selection
+        saveUserPreference(elementId: action.elementId, value: params)
+    case .multiSelect(let params):
+        // Handle multiple selections
+        saveUserPreferences(elementId: action.elementId, values: params)
+    case .input(let params):
+        // Handle text input
+        saveUserInput(elementId: action.elementId, value: params)
+    case .datePicker(let params):
+        // Handle date selection
+        saveUserDate(elementId: action.elementId, value: params)
+    }
+}
+```
+
+:::note
+If you want to save or process data, you need to implement the methods yourself.
+:::
+
+The `action` object contains:
+- `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
+- `params`: The user's input data, which can be one of the following types:
+- `select`: Single selection from a list of options.
+- `multiSelect`: Multiple selections from a list of options.
+- `input`: Text input from the user.
+- `datePicker`: Date selected by the user.
+
+<Details>
+<summary>Saved data examples (Click to expand)</summary>
+
+```
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
 ### Opening a paywall
+
+:::tip
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
+:::
 
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
 
@@ -108,45 +240,7 @@ func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoa
 }
 ```
 
-### Updating field state
-
-When your users respond to a quiz question or input their data into an input field, the `onStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
-
-For example:
-
-```swift showLineNumbers
-func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
-    // Store user preferences or responses
-    switch action.params {
-    case .select(let params):
-        // Handle single selection
-        saveUserPreference(elementId: action.elementId, value: params)
-    case .multiSelect(let params):
-        // Handle multiple selections
-        saveUserPreferences(elementId: action.elementId, values: params)
-    case .input(let params):
-        // Handle text input
-        saveUserInput(elementId: action.elementId, value: params)
-    case .datePicker(let params):
-        // Handle date selection
-        saveUserDate(elementId: action.elementId, value: params)
-    }
-}
-```
-
-:::note
-This example suggests you implement custom methods for saving user data depending on the data type. These methods are not built into the Adapty SDK.
-:::
-
-The `action` object contains:
-    - `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
-    - `params`: The user's input data, which can be one of the following types:
-        - `select`: Single selection from a list of options.
-        - `multiSelect`: Multiple selections from a list of options.
-        - `input`: Text input from the user.
-        - `datePicker`: Date selected by the user.
-
-### Analytics events 
+### Tracking navigation
 
 The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow. 
 

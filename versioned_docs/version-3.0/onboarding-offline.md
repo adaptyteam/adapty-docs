@@ -21,9 +21,6 @@ If a user loses internet connectivity during the onboarding process, they will e
 - **Try again**: Upon tapping **Try again**, the system will reattempt to load the onboarding flow. If the connection is restored and the content is successfully loaded, the onboarding will resume from where the user left off, with all progress preserved.
 - **Close**: If the user decides to close the onboarding, the [close](ios-handling-onboarding-events#closing-onboarding) event with `"action_id": "error"` will be triggered.
 
-:::tip
-You can [download and set up fallback onboardings](local-fallback-paywalls.md) to access local fallback onboardings when there is no internet connection.
-:::
 
 <Zoom>
   <img src={require('./img/onboarding_offline.png').default}

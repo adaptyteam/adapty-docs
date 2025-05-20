@@ -6,6 +6,7 @@ toc_max_heading_level: 4
 ---
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
 
 Before you start, ensure that:
 
@@ -58,49 +59,16 @@ class YourActivity : AppCompatActivity() {
 
 Onboarding is considered closed when a user taps a button with the **Close** action assigned. You need to manage what happens when a user closes the onboarding. For example:
 
+:::important
+You need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
+:::
+
+For example:
+
 ```kotlin
 override fun onCloseAction(action: OnboardingsCloseAction) {
     // Dismiss the onboarding screen
     finish()
-}
-```
-
-### Opening a paywall
-
-If a user clicks a button that opens a paywall, you will get a button action ID that you set up manually. 
-
-The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `OnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
-
-```kotlin
-override fun onOpenPaywallAction(action: OnboardingsOpenPaywallAction) {
-    // Get the paywall using the placement ID from the action
-    Adapty.getPaywall(placementId = action.actionId) { result ->
-        result.onSuccess { paywall ->
-            // Get the paywall configuration
-            AdaptyUI.getViewConfiguration(paywall) { configResult ->
-                configResult.onSuccess { paywallConfig ->
-                    // Create and present the paywall
-                    val paywallController = AdaptyUI.getPaywallController(
-                        activity = this,
-                        viewConfig = paywallConfig,
-                        eventListener = paywallEventListener
-                    )
-                    // Add the paywall view to your layout
-                    binding.container.addView(paywallController)
-                }
-            }
-        }
-    }
-}
-```
-
-### Finishing loading onboarding
-
-When an onboarding finishes loading, this method will be invoked:
-
-```kotlin
-override fun onFinishLoading() {
-    // Handle loading completion
 }
 ```
 
@@ -141,12 +109,141 @@ This example suggests you implement custom methods for saving user data dependin
 The `action` object contains:
 - `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
 - `params`: The user's input data, which can be one of the following types:
-    - `Select`: Single selection from a list of options.
-    - `MultiSelect`: Multiple selections from a list of options.
-    - `Input`: Text input from the user.
-    - `DatePicker`: Date selected by the user.
+  - `Select`: Single selection from a list of options.
+  - `MultiSelect`: Multiple selections from a list of options.
+  - `Input`: Text input from the user.
+  - `DatePicker`: Date selected by the user.
 
-### Analytics events
+<Details>
+<summary>Saved data examples (Click to expand)</summary>
+
+```
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+### Opening a paywall
+
+:::tip
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
+:::
+
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
+
+```kotlin
+override fun onOpenPaywallAction(action: OnboardingsOpenPaywallAction) {
+    // Get the paywall using the placement ID from the action
+    Adapty.getPaywall(placementId = action.actionId) { result ->
+        result.onSuccess { paywall ->
+            // Get the paywall configuration
+            AdaptyUI.getViewConfiguration(paywall) { configResult ->
+                configResult.onSuccess { paywallConfig ->
+                    // Create and present the paywall
+                    val paywallController = AdaptyUI.getPaywallController(
+                        activity = this,
+                        viewConfig = paywallConfig,
+                        eventListener = paywallEventListener
+                    )
+                    // Add the paywall view to your layout
+                    binding.container.addView(paywallController)
+                }
+            }
+        }
+    }
+}
+```
+
+### Finishing loading onboarding
+
+When an onboarding finishes loading, this method will be invoked:
+
+```kotlin
+override fun onFinishLoading() {
+    // Handle loading completion
+}
+```
+
+### Navigation events
 
 The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow.
 
