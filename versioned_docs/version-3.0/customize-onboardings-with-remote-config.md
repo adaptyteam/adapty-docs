@@ -1,5 +1,5 @@
 ---
-title: "Design onboarding with remote config"
+title: "Customize onboarding with remote config"
 description: "Customize your onboarding with remote config in Adapty for better targeting."
 metadataTitle: "Customizing onboarding with Remote Config | Adapty Docs"
 ---
@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-The onboarding remote config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your onboardings precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
+The onboarding remote config is a tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your onboardings precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language. For example, you can use remote configs to send additional metadata.
 
 Before you start customizing an onboarding, [create an onboarding](create-onboarding.md).
 
@@ -51,79 +51,9 @@ You can switch between views by clicking on the **Table** or **JSON** tab whenev
 </Zoom>
 
 
-Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the `remoteConfig` property of `AdaptyOnboarding`, and make some adjustments to your onboarding. Here are some examples of how you can use a remote config.
+Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the `remoteConfig` property of `AdaptyOnboarding`, and make some adjustments to your onboarding. 
 
-<Tabs groupId="current-os" queryString>
-  <TabItem value="Titles" label="Titles" default>
-```json showLineNumbers
-{
-    "screen_title": "Today only: Subscribe, and get 7 days for free!"
-}
-
-# Test titles or others texts
-```
-</TabItem>
-<TabItem value="Images" label="Images" default>
-```json showLineNumbers
-{
-    "background_image": "https://adapty.io/media/paywalls/bg1.webp"
-}
-
-# Test images on your paywall
-```
-</TabItem>
-<TabItem value="Fonts" label="Fonts" default>
-```json showLineNumbers
-{
-    "font_family": "San Francisco",
-    "font_size": 16
-}
-
-# Test fonts
-```
-</TabItem>
-<TabItem value="Color" label="Color" default>
-```json showLineNumbers
-{
-    "subscribe_button_color": "purple"
-}
-
-# Test colors of buttons, texts etc.
-```
-</TabItem>
-<TabItem value="HTML" label="HTML" default>
-```json showLineNumbers
-{
-    "photo_gallery": "https://adapty.io/media/paywalls/link-to-html-snippet.html"
-}
-
-# Any HTML code that can be displayed on the paywall
-```
-</TabItem>
-<TabItem value="Soft/Hard Paywall" label="Soft/Hard Paywall" default>
-```json showLineNumbers
-{
-    "hard_onboarding": true
-}
-
-# By setting it to true, you disalow skipping onboarding
-# You have to handle this logic in your app
-```
-</TabItem>
-<TabItem value="Translations" label="Translations" default>
-```json showLineNumbers
-{
-    "title": {
-        "en": "Try for free!",
-        "es": "¡Prueba gratis!",
-        "ru": "Попробуй бесплатно!"
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-You can combine different options, and make up your own. This way you can test different titles, texts, images, fonts, colors, and so on.
+You can combine different options and create your own. 
 
 ### JSON view of the remote config
 
@@ -159,9 +89,9 @@ If you don't often work with code and need to correct some JSON values, Adapty h
 </Zoom>
 
 
-It is a copy of your JSON in the format of a table that is easy to read and understand. Color coding helps to recognize different data types.
+It is a copy of your JSON in a table format that is easy to read and understand. Color coding helps to recognize different data types.
 
-To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
+To add a key, click **Add row**. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 
 <Zoom>
@@ -174,26 +104,4 @@ To add a key, click the **Add row** button. We automatically check the values an
   }}
 />
 </Zoom>
-
-
-
-## Localize onboarding
-
-Additional rows are very useful for onboarding localizations:
-
-1. Click **Locales** at the top right and select the languages you want to add. 
-2. In each language column, add the translations. When you [get the onboarding configuration](get-onboardings.md), you can use the locale shortcode to retrieve the config you need.
-
-
-<Zoom>
-  <img src={require('./img/customize-onboarding-remote-config6.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
 
