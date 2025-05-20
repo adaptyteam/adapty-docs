@@ -12,8 +12,5 @@ Onboardings designed with the builder generate some events that require your att
 In the framework-specific sections, we'll dive into details of effective management and monitoring processes taking place on the onboarding screen within your mobile app using the Adapty SDK. Explore the configuration guides for every platform below:
 
 - [iOS](ios-handling-onboarding-events.md)
-- [Android]
-- [Flutter]
-- [React Native]
-- [Unity]
+- [Android](android-handle-onboarding-events.md)
 
