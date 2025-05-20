@@ -2,7 +2,6 @@
 title: "Display onboardings"
 metadataTitle: "Display Onboardings in Adapty | Adapty Docs"
 ---
-import Collapse from '@site/src/components/Collapse';
 
 :::important
 Currently, onboardings are only available for the iOS and Android SDK.

@@ -13,7 +13,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty iOS or Android SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -25,6 +25,8 @@ For best performance, fetch the onboarding configuration early to give images en
 
 To get an onboarding, use the `getOnboarding` method:
 
+<Tabs>
+<TabItem value="ios" label="iOS" default>
 ```swift showLineNumbers
 do {
     let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
@@ -33,6 +35,28 @@ do {
     // handle the error
 }
 ```
+</TabItem>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers
+import com.adapty.utils.seconds
+
+...
+
+Adapty.getOnboarding("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val onboarding = result.value
+            // the requested onboarding
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
 
 Parameters:
 
@@ -52,7 +76,7 @@ Response parameters:
 
 ## Speed up onboarding fetching with default audience onboarding
 
-Typically, onboardings are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and onboardings, and your users have a weak internet connection, fetching a onboarding may take longer than you'd like. In such situations, you might want to display a default onboarding to ensure a smooth user experience rather than showing no onboarding at all.
+Typically, onboardings are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and onboardings, and your users have a weak internet connection, fetching a onboarding may take longer than you'd like. In such situations, you might want to display a default onboarding to ensure a smooth user experience rather than showing no onboarding at all.
 
 To address this, you can use the `getOnboardingForDefaultAudience`  method, which fetches the onboarding of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the onboarding by the `getOnboarding` method, as detailed in the [Fetch Onboarding](#fetch-onboarding) section above.
 
