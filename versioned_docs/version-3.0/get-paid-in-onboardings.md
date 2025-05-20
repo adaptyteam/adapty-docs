@@ -23,7 +23,9 @@ Before you start, create a [paywall](paywalls.md) and [onboarding](onboardings.m
    }}
    />
    </Zoom>
-2. Go to the Adapty dashboard and find the paywall's placement ID. In the builder, paste the paywall placement ID in the ID field.
+2. You can assign any action ID to the button and use it to identify the paywall you need to open. However, the easiest way to open paywalls from onboardings is to make the action ID equal to a placement ID. This way, you can get and display paywalls right away without hardcoding placement IDs. 
+
+To do this, go to the Adapty dashboard and find the paywall's placement ID. In the builder, paste the paywall placement ID in the ID field.
 
  <Zoom>
    <img src={require('./img/get-paid-in-onboardings2.png').default}
@@ -39,9 +41,9 @@ Before you start, create a [paywall](paywalls.md) and [onboarding](onboardings.m
 
 ## Step 2. Handle an SDK action
    
-Now, when you have this button, each time your users tap it, it will generate an action containing the action ID. In this context, action ID is the placement ID.
+Now, when you have this button, each time your users tap it, it will generate an action containing the action ID. 
 
-To handle this action in your app code, use the placement ID to [get the paywall](fetch-paywalls-and-products.md) and then [display it](display-pb-paywalls.md).
+To handle this action in your app code, you will need to [get the paywall](fetch-paywalls-and-products.md) and then [display it](display-pb-paywalls.md).
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {

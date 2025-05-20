@@ -68,7 +68,7 @@ func onboardingController(_ controller: AdaptyOnboardingController, onCloseActio
 
 ### Opening a paywall
 
-If a user clicks a button that opens a paywall, this method will be invoked:
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
