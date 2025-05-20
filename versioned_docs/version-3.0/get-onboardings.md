@@ -38,11 +38,8 @@ do {
 </TabItem>
 <TabItem value="android" label="Android">
 ```kotlin showLineNumbers
-import com.adapty.utils.seconds
 
-...
-
-Adapty.getOnboarding("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) { result ->
+Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
             val onboarding = result.value
