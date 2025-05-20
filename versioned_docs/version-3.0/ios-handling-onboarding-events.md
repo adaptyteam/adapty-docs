@@ -153,14 +153,12 @@ The `onAnalyticsEvent` method is called when various analytics events occur duri
 The `event` object can be one of the following types:
 |Type | Description |
 |------------|-------------|
-| `onboardingStarted` | When the onboarding flow begins |
-| `screenPresented` | When a screen is shown |
-| `screenCompleted` | When a screen is completed. Includes optional `elementId` (identifier of the completed element) and optional `reply` (response from the user) |
+| `onboardingStarted` | When the onboarding has been loaded |
+| `screenPresented` | When any screen is shown |
+| `screenCompleted` | When a screen is completed. Includes optional `elementId` (identifier of the completed element) and optional `reply` (response from the user). Triggered when users perform any action to exit the screen. |
 | `secondScreenPresented` | When the second screen is shown |
-| `registrationScreenPresented` | When the registration screen is shown |
-| `productsScreenPresented` | When the products screen is shown |
-| `userEmailCollected` | Triggered when user's email is collected |
-| `onboardingCompleted` | Triggered when the entire onboarding flow is completed |
+| `userEmailCollected` | Triggered when the user's email is collected via the input field |
+| `onboardingCompleted` | Triggered when a user reaches a screen with the `final` ID. If you need this event, [assign the `final` ID to the last screen](design-onboarding.md). |
 | `unknown` | For any unrecognized event type. Includes `name` (the name of the unknown event) and `meta` (additional metadata) |
 
 Each event includes `meta` information containing:
