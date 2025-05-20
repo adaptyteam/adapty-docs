@@ -122,28 +122,28 @@ const config = {
             position: "left",
             label: "Documentation",
           },
-          /*{
+          {
             label: "SDK Reference",
             position: "left",
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                href: "/sdk-installation-ios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                href: "/sdk-installation-android",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                href: "/sdk-installation-flutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                href: "/sdk-installation-reactnative",
               },
             ],
-          },*/
+          },
           {
             label: "Server API",
             position: "left",
@@ -240,19 +240,19 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                href: "/sdk-installation-ios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                href: "/sdk-installation-android",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                href: "/sdk-installation-flutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                href: "/sdk-installation-reactnative",
               },
               {
                 label: "SDK Models",
