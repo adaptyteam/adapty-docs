@@ -1,8 +1,9 @@
 ---
-title: "What is Adapty?"
+title: "iOS SDK overview"
 description: "Learn what Adapty is and how it helps manage subscriptions."
 metadataTitle: "What is Adapty? | Adapty Docs"
 slug: /
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';

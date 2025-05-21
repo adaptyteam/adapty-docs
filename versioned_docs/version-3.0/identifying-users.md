@@ -2,6 +2,7 @@
 title: "Identify users"
 description: "Identify users in Adapty to improve personalized subscription experiences."
 metadataTitle: "Identifying Users in Adapty | Adapty Docs"
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';

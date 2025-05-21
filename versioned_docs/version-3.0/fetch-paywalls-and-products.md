@@ -2,6 +2,7 @@
 title: "Fetch paywalls and products for remote config paywalls"
 description: "Fetch paywalls and products in Adapty to enhance user monetization."
 metadataTitle: "Fetching Paywalls & Products | Adapty Docs"
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';

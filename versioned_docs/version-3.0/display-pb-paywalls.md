@@ -2,6 +2,7 @@
 title: "Display paywalls designed with new Paywall Builder"
 description: "Learn how to display PB paywalls effectively in Adapty to optimize revenue."
 metadataTitle: "Displaying PB Paywalls in Adapty | Adapty Docs"
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';

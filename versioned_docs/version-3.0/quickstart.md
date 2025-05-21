@@ -2,6 +2,7 @@
 title: "Quickstart guide"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';

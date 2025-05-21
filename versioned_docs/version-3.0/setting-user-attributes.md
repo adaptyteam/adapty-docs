@@ -1,7 +1,8 @@
 ---
-title: "Set user attributes"
+title: "Add optional user attributes"
 description: "Learn how to set user attributes in Adapty to enable better audience segmentation."
 metadataTitle: "Setting User Attributes | Adapty Docs"
+displayed_sidebar: sdkios
 ---
 
 import Zoom from 'react-medium-image-zoom';
