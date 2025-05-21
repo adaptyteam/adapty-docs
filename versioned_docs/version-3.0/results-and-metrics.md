@@ -7,14 +7,14 @@ metadataTitle: "Results and Metrics Analysis | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Discover important data and insights from our [A/B tests](ab-tests), comparing different paywalls to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
+Discover important data and insights from our [A/B tests](ab-tests), comparing different paywalls and onboardings to see how they affect user behavior, engagement, and conversion rates. By looking at the metrics and results here, you can make smart choices and improve your app's performance. Dive into the data to find actionable insights and enhance your app's success.
 
 ### A/B test results
 
 Here are three metrics that Adapty provides for A/B test results:
 
 <Zoom>
-  <img src={require('./img/c8399fb-CleanShot_2023-07-19_at_17.29.522x.webp').default}
+  <img src={require('./img/ab-test-results.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -40,11 +40,11 @@ By analyzing these metrics provided by Adapty, you can gain insights into the fi
 
 ## A/B test metrics
 
-Adapty provides a comprehensive set of metrics to help you effectively measure the performance of your A/B test conducted on your paywall variations. These metrics are continuously updated in real-time, except for views, which are updated periodically. Understanding these metrics will help you assess the effectiveness of different variations and make data-driven decisions to optimize your paywall strategy. 
+Adapty provides a comprehensive set of metrics to help you effectively measure the performance of your A/B test conducted on your paywall or onboarding variations. These metrics are continuously updated in real-time, except for views, which are updated periodically. Understanding these metrics will help you assess the effectiveness of different variations and make data-driven decisions to optimize your paywall or onboarding strategy. 
 
 A/B test metrics are available on the A/B test list, where you can gain an overview of the performance of all your A/B tests. This comprehensive view offers aggregated metrics for each test variation, enabling you to compare their performance and identify significant differences. For a more detailed analysis of each A/B test, you can access the A/B Test detail metrics. This section provides in-depth metrics specific to the selected A/B test, allowing you to delve into the performance of individual variations.
 
-All metrics, except for views, are attributed to the product within the paywall. 
+All metrics, except for views, are attributed to the product within the paywall or onboarding. 
 
 ## Metrics controls
 
@@ -68,7 +68,7 @@ The system displays the metrics based on the selected time period and organizes 
 
 
 
- The Filter metrics by install date checkbox enables the filtering of metrics based on the profile install date, instead of the default filters that use trial/purchase date for transactions or view date for paywall views. By selecting this checkbox, you can focus on measuring user acquisition performance for a specific period by aligning metrics with the profile install date. This option is useful for customizing the metrics analysis according to your specific needs.
+ The Filter metrics by install date checkbox enables the filtering of metrics based on the profile install date, instead of the default filters that use trial/purchase date for transactions or view date for paywall or onboarding views. By selecting this checkbox, you can focus on measuring user acquisition performance for a specific period by aligning metrics with the profile install date. This option is useful for customizing the metrics analysis according to your specific needs.
 
 ### Time ranges
 
@@ -76,7 +76,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 
 <Zoom>
-  <img src={require('./img/7878542-CleanShot_2023-07-19_at_17.39.052x.webp').default}
+  <img src={require('./img/ab-test-time-ranges.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -97,11 +97,11 @@ Adapty offers powerful tools for filtering and customizing metrics analysis to s
 - ✅ Filter by: Audience, country, paywall, paywall state, paywall group, placement, country, store, product, and product store. 
 - ✅ Group by: Product and store.
 
-You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them for paywall or onboarding analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ## Single metrics chart
 
-One of the key components of the paywall metrics page is the chart section, which visually represents the selected metrics and facilitates easy analysis.
+One of the key components of the paywall or onboarding metrics page is the chart section, which visually represents the selected metrics and facilitates easy analysis.
 
 
 <Zoom>
@@ -177,12 +177,12 @@ The conversion rate (CR) to trials is the number of trials started from A/B test
 
 ### Purchases
 
-The purchases metric represents the total number of transactions made within the paywall resulting from the A/B test. It includes the following types of purchases:
+The purchases metric represents the total number of transactions made within the paywall or onboarding resulting from the A/B test. It includes the following types of purchases:
 
-- New purchases made on the paywall.
-- Trial conversions of trials that were activated on the paywall.  
-  Downgrades, upgrades, and cross-grades of subscriptions on the paywall.
-- Subscription restores on the paywall (e.g. when a subscription is expired without auto-renewal and is subsequently restored).
+- New purchases made.
+- Trial conversions of trials that were activated.  
+- Downgrades, upgrades, and cross-grades of subscriptions.
+- Subscription restores (e.g. when a subscription is expired without auto-renewal and is subsequently restored).
 
 Please note that renewals are not included in the purchases metric.
 
@@ -196,19 +196,19 @@ The trials canceled metric represents the number of trials in which auto-renewal
 
 ### Refunds
 
-Refunds for the A/B test represent the number of refunded purchases and subscriptions specifically related to the tested paywall variations.
+Refunds for the A/B test represent the number of refunded purchases and subscriptions specifically related to the tested variations.
 
 ### Views
 
-Views are the number of views of the paywalls that the A/B test consits of. If the user visits the paywalls two times, this will be counted as two visits.
+Views are the number of views of the paywalls or onboardings that the A/B test consits of. If the user visits two times, this will be counted as two visits.
 
 ### Unique views
 
-Unique views are the number of unique views of the paywall. If the user visits the paywall two times, this will be counted as one unique view.
+Unique views are the number of unique views of the paywall or onboarding. If the user visits it two times, this will be counted as one unique view.
 
 ### Probability to be the best
 
-The Probability to be the best metric quantifies the likelihood that a specific paywall variant within an A/B test is the top-performing option among all the tested paywalls. It provides a numerical probability indicating the relative performance of each paywall. The metric is expressed as a percentage value ranging from 1% to 100%.
+The Probability to be the best metric quantifies the likelihood that a specific variant within an A/B test is the top-performing option among all the tested paywalls or onboardings. It provides a numerical probability indicating the relative performance of each paywall or onboarding. The metric is expressed as a percentage value ranging from 1% to 100%.
 
 ### ARPPU (Average revenue per paying user)
 
@@ -220,24 +220,24 @@ ARPAS is a metric that allows you to measure the average revenue generated per a
 
 ### Proceeds
 
-The proceeds metric for the A/B test represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue specifically associated with the paywall variations tested in the A/B test, contributing directly to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](analytics-cohorts#revenue-vs-proceeds)
+The proceeds metric for the A/B test represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue specifically associated with the variations tested in the A/B test, contributing directly to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](analytics-cohorts#revenue-vs-proceeds)
 
 ### Unique subscribers
 
-The unique subscribers metric represents the count of distinct individuals who has subscribed or activated a trial through the paywall variations in the A/B test. It considers each subscriber only once, irrespective of the number of subscriptions or trials they initiate.
+The unique subscribers metric represents the count of distinct individuals who has subscribed or activated a trial through the variations in the A/B test. It considers each subscriber only once, irrespective of the number of subscriptions or trials they initiate.
 
 ### Unique paid subscribers
 
-The unique paid subscribers metric represents the number of unique individuals who have successfully completed a purchase and become paying subscribers through the paywall variations in the A/B test.
+The unique paid subscribers metric represents the number of unique individuals who have successfully completed a purchase and become paying subscribers through the variations in the A/B test.
 
 ### Refund rate
 
-The refund rate for the A/B test is calculated by dividing the number of refunds specifically associated with the paywall variations in the test by the number of first-time purchases (renewals are excluded). For instance, if there are 5 refunds and 1000 first-time purchases, the refund rate would be 0.5%. 
+The refund rate for the A/B test is calculated by dividing the number of refunds specifically associated with the variations in the test by the number of first-time purchases (renewals are excluded). For instance, if there are 5 refunds and 1000 first-time purchases, the refund rate would be 0.5%. 
 
 ### Unique CR purchases
 
-The unique conversion rate to purchases for the A/B test is calculated by dividing the number of purchases specifically associated with the paywall variations in the test by the number of unique views. For example, if there are 10 purchases and 100 unique views, the unique conversion rate to purchases would be 10%.
+The unique conversion rate to purchases for the A/B test is calculated by dividing the number of purchases specifically associated with the variations in the test by the number of unique views. For example, if there are 10 purchases and 100 unique views, the unique conversion rate to purchases would be 10%.
 
 ### Unique CR trials
 
-The unique conversion rate to trials for the A/B test is calculated by dividing the number of trials started specifically associated with the paywall variations in the test by the number of unique views. For example, if there are 30 trials started and 100 unique views, the unique conversion rate to trials would be 30%.
+The unique conversion rate to trials for the A/B test is calculated by dividing the number of trials started specifically associated with the variations in the test by the number of unique views. For example, if there are 30 trials started and 100 unique views, the unique conversion rate to trials would be 30%.
