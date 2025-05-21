@@ -7,6 +7,8 @@ metadataTitle: "Presenting onboardings on iOS | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
@@ -20,15 +22,8 @@ Before you start, ensure that:
 
 In order to display the visual onboarding on the device screen, do the following:
 
-1. Initialize the visual onboarding you want to display by using the  `.onboardingController` method:
-
-     ```swift showLineNumbers title="Swift"
-     import Adapty
-     import AdaptyUI
-        
-     let visualOnboarding = AdaptyUI.onboardingViewController(onboarding)
-        visualOnboarding.delegate = self
-     ```
+1. Get the onboarding view configuration using the `.getOnboardingConfiguration` method.
+2. Initialize the visual onboarding you want to display by using the  `.onboardingController` method:
 
    Request parameters:
 
@@ -43,16 +38,26 @@ In order to display the visual onboarding on the device screen, do the following
    |:-------------------------------|:--------------------------------------------------------|
    | **AdaptyOnboardingController** | An object, representing the requested onboarding screen |
 
-2. After the object has been successfully created, you can display it on the screen of the device:
+3. After the object has been successfully created, you can display it on the screen of the device:
 
    ```swift showLineNumbers title="Swift"
    import Adapty
    import AdaptyUI
-        
+   
+   // 0. Get an onboarding if you haven't done it yet     
    let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
-   let visualOnboarding = AdaptyUI.onboardingViewController(onboarding)
-   visualOnboarding.delegate = self
-   present(visualOnboarding, animated: true)
+   
+   // 1. Obtain the onboarding view configuration:
+   let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+   // 2. Create Onboarding View Controller
+   let onboardingController = AdaptyUI.onboardingController(
+   configuration: configuration,
+   delegate: <AdaptyOnboardingControllerDelegate>
+   ) 
+
+   // 3. Present it to the user
+   present(onboardingController, animated: true)
    ```
 
 ## Present onboardings in SwiftUI
@@ -60,54 +65,53 @@ In order to display the visual onboarding on the device screen, do the following
 To display the visual onboarding on the device screen in SwiftUI:
 
 ```swift showLineNumbers title="SwiftUI"
-@State private var showOnboarding = false
-@State private var onboardingConfig: AdaptyUI.OnboardingConfiguration?
+// 1. Obtain the onboarding view configuration:
+let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
 
-var body: some View {
-    SomeView()
-        .onAppear {
-            Task {
-                onboardingConfig = AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
-                showOnboarding = true
-            }
-        }
-        .fullScreenCover(isPresented: $showOnboarding) {
-            if let config = onboardingConfig {
-                AdaptyUI.createOnboardingController(
-                    configuration: config,
-                    delegate: OnboardingDelegateImpl(onCloseAction: { _ in showOnboarding = false })
-                )
-            }
-        }
-}
+// 2. Display the Onboarding View within your view hierarchy
+AdaptyOnboardingView(
+    configuration: configuration,
+    onCloseAction: { action in
+        // hide the onboarding view
+    },
+    onError: { error in
+         // handle the error
+    }
+)
 ```
 
 ## Add smooth transitions between the splash screen and onboarding
 
 By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can customize it and either extend the splash screen or display something else.
 
-To do this, instead of a regular onboarding controller, create a splash controller that will show the splash screen, load the onboarding in the background and then display it.
+To do this, define a placeholder (what exactly will be shown while the onboarding is being loaded). If you define a placeholder, the onboarding will be loaded in the background and automatically displayed once ready.
 
+<Tabs>
+<TabItem value="swift" label="UIKit">
 ```swift showLineNumbers
 import Adapty
 import AdaptyUI
 
-// Create splash controller instead of regular onboarding controller
-let splashController = AdaptyUI.createSplashController(
-    configuration: AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding),
-    delegate: self,
-    placeholderDelegate: self
-)
-present(splashController, animated: true)
-
-// Required delegate methods
-extension YourViewController: AdaptyOnboardingControllerDelegate, AdaptyOnboardingPlaceholderDelegate {
-    func onboardingsControllerPlaceholderController() -> UIViewController? {
-        return SplashViewController() // Your splash screen
-    }
-
- func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
-        dismiss(animated: true)
-    }
+extension YourOnboardingManagerClass: AdaptyOnboardingControllerDelegate {
+   func onboardingsControllerLoadingPlaceholder(
+      _ controller: AdaptyOnboardingController
+      ) -> UIView? {
+         // instantiate and return the UIView which will be presented while onboarding is being loaded
+   }
 }
 ```
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI">
+```swift showLineNumbers
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { 
+        // define your placeholder view, which will be presented while onboarding is being loaded
+    },
+    // the rest of the implementation
+)
+```
+</TabItem>
+
+</Tabs>

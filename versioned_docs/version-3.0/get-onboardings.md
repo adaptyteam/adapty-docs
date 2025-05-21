@@ -29,7 +29,7 @@ To get an onboarding, use the `getOnboarding` method:
 <TabItem value="ios" label="iOS" default>
 ```swift showLineNumbers
 do {
-    let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
+    let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
     // the requested onboarding
 } catch {
     // handle the error
