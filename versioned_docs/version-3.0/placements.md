@@ -38,4 +38,4 @@ From here you can:
 - [Create a new placement](create-placement)
 - [Edit an existing placement](edit-placement)
 - [Delete an existing placement](delete-placement)
-- Download local fallback [paywalls](https://docs.adapty.io/docs/fallback-paywalls) or [onboardings](https://docs.adapty.io/docs/local-fallback-onboarding), those that will be used when a user opens the app and there's no connection with Adapty backend (e.g., no internet connection or in the rare case when the backend is down) and there's no cache on the device.
+- Download local fallback [paywalls](https://docs.adapty.io/docs/fallback-paywalls) or [onboardings](https://docs.adapty.io/docs/local-fallback-onboarding). Those for paywalls are especially useful and will be used when a user opens the app and there's no connection with Adapty backend (e.g., no internet connection or in the rare case when the backend is down) and there's no cache on the device.
