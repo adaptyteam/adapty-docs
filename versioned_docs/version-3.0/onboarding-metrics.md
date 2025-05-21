@@ -84,8 +84,8 @@ You can analyze metrics data using a time range, allowing you to focus on specif
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. Adapty's metrics page gives you access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Attribution, Country, Onboarding audience, Onboarding A/B tests, Onboarding placement, Paywall, Store, State.
-- ✅ Group by: Product or Store.
+- Filter by: Attribution, Country, Onboarding audience, Onboarding A/B tests, Onboarding placement, Paywall, Store, State.
+- Group by: Product or Store.
 
   <Zoom>
   <img src={require('./img/onboarding-metrics5.png').default}
