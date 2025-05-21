@@ -31,7 +31,7 @@ For Live onboardings, the metrics cover the period from the onboarding's start d
 
 ### View options for metrics data
 
-The paywall page offers two viewing options for metrics data: 
+The onboarding page offers two viewing options for metrics data: 
 
 - Placement-based view: Metrics are grouped by placements associated with the onboarding. This allows users to analyze metrics by different placements.
 
