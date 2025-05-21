@@ -13,6 +13,10 @@ Archiving ensures they're safely stored without permanent deletion, ready to be 
 
 Just a friendly reminder: Live paywalls that are currently active in at least one placement cannot be archived. If you wish to archive such a paywall, simply remove it from all placements beforehand.
 
+:::note
+You can't archive a paywall if it is used in a non-archived A/B test. This way, the user can view detailed metrics for a completed A/B test, and the linked paywall is part of that data.
+:::
+
 **To archive a paywall:**
 
 1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
@@ -50,3 +54,4 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 
 
 3. When you're in the **Archive paywall** window, simply type in the name of the paywall you wish to archive and then click the **Archive** button.
+
