@@ -14,6 +14,10 @@ You have the flexibility to showcase the same or different paywalls, onboardings
 
 Read the [Choose meaningful placements](choose-meaningful-placements) section for more recommendations on how to choose the right placement for a paywall.
 
+:::info
+Although the placement creation process is similar for paywalls and onboardings, you can't create one placement for both.
+:::
+
 To create a new placement:
 
 1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to create a placement for onboarding, switch to the **Onboardings** tab.
