@@ -17,8 +17,7 @@ Before you start, ensure that:
 
 If you've customized an onboarding using the Onboarding Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown and how it should be shown.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="views" label="Views" default>
+
 
 In order to display the visual onboarding on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getOnboardingView()` or create the `OnboardingView` directly:
 
@@ -73,20 +72,6 @@ onboardingView.show(onboardingConfig, eventListener);
 
 After the view has been successfully created, you can add it to the view hierarchy and display it on the device screen.
 
-</TabItem>
-<TabItem value="compose" label="Jetpack Compose">
-
-To display the visual onboarding on the device screen, you must first configure it. To do this, use this composable function:
-
-```kotlin
-AdaptyOnboardingScreen(
-    viewConfig = onboardingConfig,
-    eventListener = eventListener
-)
-```
-
-</TabItem>
-</Tabs>
 
 Request parameters:
 
