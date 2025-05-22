@@ -5,7 +5,7 @@ metadataTitle: "Stripe Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
-import Collapse from '@site/src/components/Collapse';
+import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
 
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
@@ -56,7 +56,9 @@ At the bottom of the permission pop-up, you can select whether to install the ap
 
 You're all set! Next, create your products on Stripe and add them to Adapty.
 
-<Collapse title="Deprecated installation flow">
+<Details>
+
+<summary>Deprecated installation flow</summary>
 
 1. Go to [Developers → API Keys](https://dashboard.stripe.com/apikeys) in Stripe:
 
@@ -172,7 +174,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
   }}
 />
 </Zoom>
-</Collapse>
+</Details>
 
 ### 2\. Create products on Stripe
 

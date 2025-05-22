@@ -4,9 +4,11 @@ description: "Set up a web paywall to get paid without the App Store fees and au
 metadataTitle: "Accept payments in web for iOS apps in the US"
 ---
 import Zoom from 'react-medium-image-zoom';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 :::important
-Before you begin, make sure you have installed Adapty iOS SDK version 3.6.0 or later.
+Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later.
 :::
 
 With Adapty, you can create a paywall with a button that redirects your iOS app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
@@ -124,6 +126,8 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
+<Tabs groupId="code-examples" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers title="Swift"
 do {
     try await Adapty.openWebPaywall(for: product)
@@ -131,6 +135,33 @@ do {
     print("Failed to open web paywall: \(error)")
 }
 ```
+</TabItem>
+<TabItem value="rn" label="React Native">
+```javascript showLineNumbers title="React Native"
+try {
+    await adapty.openWebPaywall(product);
+    // The web paywall for the product is now opened
+    } catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart showLineNumbers title="Flutter"
+try {
+  await Adapty().openWebPaywall(product: <YOUR_PRODUCT>);
+  // The web paywall will be opened
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+</TabItem>
+</Tabs>
+
+
 :::note
 There are two versions of the `openWebPaywall` method:
 1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
