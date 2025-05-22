@@ -15,7 +15,7 @@ Although you have the option to delete any placement, it is critical to ensure t
 
 To delete an existing placement:
 
-1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu.
+1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to delete a placement for onboarding, switch to the **Onboardings** tab.
 
 2. Click the **3-dot** button next to the placement and select the **Delete** option.  
 

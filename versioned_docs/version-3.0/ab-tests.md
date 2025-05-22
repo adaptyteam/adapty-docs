@@ -17,8 +17,8 @@ Be sure you [send paywall views to Adapty](present-remote-config-paywalls#track-
 
 Adapty supports three types of A/B tests:
 
-- **Regular A/B test:** An A/B test created for a single paywall placement.
-- **Onboarding A/B test:** An A/B test created for a single onboarding placement.
+- **Regular A/B test:** An A/B test created for a single [paywall](https://docs.adapty.io/docs/paywalls) placement.
+- **Onboarding A/B test:** An A/B test created for a single [onboarding](https://docs.adapty.io/docs/onboardings) placement.
 - **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. This means the same variant once determined by the A/B test will be consistently shown across different sections of your app.
 
 :::warning

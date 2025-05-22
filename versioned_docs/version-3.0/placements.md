@@ -7,15 +7,23 @@ metadataTitle: "Managing Placements in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With Adapty's placement system, you can create and run [paywalls](paywalls), [onboardings](https://docs.adapty.io/docs/onboardings), and [A/B tests](ab-tests) at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called Placements. 
+With Adapty's placement system, you can create and run [paywalls](paywalls), [onboardings](https://docs.adapty.io/docs/onboardings), and [A/B tests](ab-tests) at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called **Placements**. 
 
 A placement in your app can manage multiple paywalls, onboardings, or A/B tests at a time, each made for a certain group of users, which we call  [Audiences](audience). Moreover, you can experiment with paywalls and onboardings, replacing one with another over time without releasing a new app version. 
 
 The only thing you hardcode in the mobile app is the placement ID.
 
-Go to **Placements** from the Adapty main menu to see all your placements categorized by **Paywalls** and **Onboardings** tabs.
+## Placements list
 
-Each tab offers a comprehensive view of various locations in the user journey where paywalls, onboardings, or A/B tests can appear. Each item in the list corresponds to a specific placement, allowing easy management and modification. You can edit placement details, associate them with the desired paywall, onboarding, or A/B test for a specified audience, or remove unnecessary placements. The numbers in the table reflect the analytics for placements since their activation.
+There are two types of placements:
+- **Paywall placements**
+- **Onboarding placements**
+
+To view all your placements, go to **Placements** from the Adapty main menu. You will see them categorized by **Paywalls** and **Onboardings** tabs.
+
+Each tab offers a comprehensive view of various locations in the user journey where paywalls, onboardings, or A/B tests can appear. Each item in the list corresponds to a specific placement, allowing easy management and modification. 
+
+You can edit placement details, associate them with the desired paywall, onboarding, or A/B test for a specified audience, or remove unnecessary placements. The numbers in the table reflect the analytics for placements since their activation.
 
 
 <Zoom>
