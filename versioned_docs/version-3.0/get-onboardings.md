@@ -86,8 +86,10 @@ Consider using `getOnboarding` instead of `getOnboardingForDefaultAudience`, as 
 If faster fetching outweighs these drawbacks for your use case, use `getOnboardingForDefaultAudience` as shown below. Otherwise, use `getOnboarding` as described [above](#fetch-onboarding).
 :::
 
+<Tabs>
+<TabItem value="ios" label="iOS" default>
 ```swift showLineNumbers
-Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
     switch result {
         case let .success(onboarding):
             // the requested onboarding
@@ -96,7 +98,25 @@ Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale:
     }
 }
 ```
+</TabItem>
 
+<TabItem value="android" label="Android">
+```kotlin
+Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val onboarding = result.value
+            // Handle successful onboarding retrieval
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle error case
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
 Parameters:
 
 | Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

@@ -103,8 +103,8 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Audience, country, paywall, paywall state, paywall group, placement, country, store, product, and product store. 
-- ✅ Group by: Product and store.
+- Filter by: Audience, country, paywall, paywall state, paywall group, placement, country, store, product, and product store. 
+- Group by: Product and store.
 
 You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
 
