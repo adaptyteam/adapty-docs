@@ -28,11 +28,11 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 />
 </Zoom>
 
-Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `actionId` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
 ```swift showLineNumbers    
 func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
-    if action.id == "allowNotifications" {
+    if action.actionId == "allowNotifications" {
         // Request notification permissions
     }
 }
