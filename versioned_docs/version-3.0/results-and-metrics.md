@@ -26,6 +26,8 @@ Here are three metrics that Adapty provides for A/B test results:
 
 **Revenue**: This metric shows the total amount of money generated in USD from purchases and renewals, minus any refunds given to users. It includes both the initial purchase and any follow-up subscription renewals. Revenue helps you understand how each A/B test variant is performing financially and figure out which one brings in the most money.
 
+Learn more about [paywall](https://docs.adapty.io/docs/paywall-metrics) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics) metrics.
+
 **Probability to be best**: Adapty utilizes a robust mathematical analysis framework to analyze A/B test results and provides a metric called Probability to be best. This metric assesses the likelihood that a particular variant is the best-performing option (in terms of its long-term revenue) among all the variants tested. The metric is expressed as a percentage value ranging from 1% to 100%. For detailed information on how Adapty calculates this metric, please refer to the [documentation.](maths-behind-it)The best performing option, determined by Revenue per 1K user, is highlighted in green and automatically selected as the default choice.
 
 **Revenue per 1K users**: The revenue per 1K users metric calculates the average revenue generated per 1,000 users for each A/B test variant. This metric helps you understand the revenue efficiency of your variants, regardless of the total number of users. It allows you to compare the performance of different variants on a standardized scale and make informed decisions based on revenue generation efficiency.
@@ -167,6 +169,8 @@ Here are the key metrics that are available for the A/B tests:
 
 Revenue represents the total amount of money generated in USD from purchases and renewals resulting from the A/B test. It includes the initial purchase and subsequent subscription renewals. The revenue metric is calculated before deducting the App Store or Play Store commission.
 
+Learn more about [paywall](https://docs.adapty.io/docs/paywall-metrics#revenue) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics#revenue) revenue metrics.
+
 ### CR to purchases
 
 The conversion rate to purchases measures the effectiveness of your A/B test in converting views into actual purchases. It is calculated by dividing the number of purchases by the number of views. For example, if you had 10 purchases and 100 views, the conversion rate to purchases would be 10%.
@@ -209,6 +213,16 @@ Unique views are the number of unique views of the paywall or onboarding. If the
 ### Probability to be the best
 
 The Probability to be the best metric quantifies the likelihood that a specific variant within an A/B test is the top-performing option among all the tested paywalls or onboardings. It provides a numerical probability indicating the relative performance of each paywall or onboarding. The metric is expressed as a percentage value ranging from 1% to 100%.
+
+### ARPU (Average revenue per user)
+
+:::info
+ARPU is currently available only for Onboardings A/B tests.
+:::
+
+Measures the average revenue generated from each user over a specific period. It is calculated by dividing total revenue by the number of unique users.
+
+
 
 ### ARPPU (Average revenue per paying user)
 
