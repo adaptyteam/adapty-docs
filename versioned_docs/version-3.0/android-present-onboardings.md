@@ -35,7 +35,7 @@ val onboardingView = AdaptyUI.getOnboardingView(
   <TabItem value="kotlin2" label="Kotlin (option 2)">
 
 ```kotlin
-val onboardingView = OnboardingView(activity)
+val onboardingView = AdaptyOnboardingView(activity)
 onboardingView.show(
     viewConfig = onboardingConfig,
     delegate = eventListener
@@ -45,7 +45,7 @@ onboardingView.show(
   <TabItem value="java" label="Java (option 1)">
 
 ```java
-OnboardingView onboardingView = AdaptyUI.getOnboardingView(
+AdaptyOnboardingView onboardingView = AdaptyUI.getOnboardingView(
     activity,
     onboardingConfig,
     eventListener
@@ -55,14 +55,14 @@ OnboardingView onboardingView = AdaptyUI.getOnboardingView(
   <TabItem value="java2" label="Java (option 2)">
 
 ```java
-OnboardingView onboardingView = new OnboardingView(activity);
+AdaptyOnboardingView onboardingView = new AdaptyOnboardingView(activity);
 onboardingView.show(onboardingConfig, eventListener);
 ```
   </TabItem>
   <TabItem value="xml" label="XML">
 
 ```xml
-<com.adapty.ui.onboardings.OnboardingView
+<com.adapty.ui.onboardings.AdaptyOnboardingView
         android:id="@+id/onboardingView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -75,10 +75,10 @@ After the view has been successfully created, you can add it to the view hierarc
 
 Request parameters:
 
-| Parameter | Presence | Description |
-| :-------- | :------- | :---------- |
-| **viewConfig** | required | The onboarding configuration obtained from `AdaptyUI.getOnboardingConfiguration()` |
-| **eventListener** | required | An implementation of `OnboardingsDelegate` to handle onboarding events |
+| Parameter | Presence | Description                                                                              |
+| :-------- | :------- |:-----------------------------------------------------------------------------------------|
+| **viewConfig** | required | The onboarding configuration obtained from `AdaptyUI.getOnboardingConfiguration()`       |
+| **eventListener** | required | An implementation of `AdaptyOnboardingEventListener` to handle onboarding events (add default) |
 
 
 ## Change loading indicator color

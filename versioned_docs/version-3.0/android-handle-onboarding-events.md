@@ -16,7 +16,7 @@ Before you start, ensure that:
 
 Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
 
-To control or monitor processes occurring on the onboarding screen within your Android app, implement the `OnboardingsDelegate` interface.
+To control or monitor processes occurring on the onboarding screen within your Android app, implement the `AdaptyOnboardingEventListener` interface.
 
 ### Custom actions
 
@@ -37,8 +37,8 @@ For example, if a user taps a custom button, like **Login** or **Allow notificat
 
 ```kotlin showLineNumbers
 class YourActivity : AppCompatActivity() {
-    private val eventListener = object : OnboardingsDelegate {
-        override fun onCustomAction(action: OnboardingsCustomAction) {
+    private val eventListener = object : AdaptyOnboardingEventListener {
+        override fun onCustomAction(action: AdaptyOnboardingCustomAction, context: Context) {
             when (action.actionId) {
                 "allowNotifications" -> {
                     // Request notification permissions
@@ -46,7 +46,7 @@ class YourActivity : AppCompatActivity() {
             }
         }
         
-        override fun onError(error: OnboardingsError) {
+        override fun onError(error: AdaptyOnboardingError, context: Context) {
             // Handle errors
         }
         
@@ -66,9 +66,9 @@ You need to manage what happens when a user closes the onboarding. For instance,
 For example:
 
 ```kotlin
-override fun onCloseAction(action: OnboardingsCloseAction) {
+override fun onCloseAction(action: AdaptyOnboardingCloseAction, context: Context) {
     // Dismiss the onboarding screen
-    finish()
+    (context as? Activity)?.onBackPressed()
 }
 ```
 
@@ -79,24 +79,24 @@ When your users respond to a quiz question or input their data into an input fie
 For example:
 
 ```kotlin
-override fun onStateUpdatedAction(action: OnboardingsStateUpdatedAction) {
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
     // Store user preferences or responses
     when (val params = action.params) {
-        is OnboardingsStateUpdatedParams.Select -> {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
             // Handle single selection
             saveUserPreference(elementId = action.elementId, value = params.value)
         }
-        is OnboardingsStateUpdatedParams.MultiSelect -> {
+        is AdaptyOnboardingStateUpdatedParams.MultiSelect -> {
             // Handle multiple selections
-            saveUserPreferences(elementId = action.elementId, values = params.values)
+            saveUserPreferences(elementId = action.elementId, values = params.map { it.value })
         }
-        is OnboardingsStateUpdatedParams.Input -> {
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
             // Handle text input
             saveUserInput(elementId = action.elementId, value = params.value)
         }
-        is OnboardingsStateUpdatedParams.DatePicker -> {
+        is AdaptyOnboardingStateUpdatedParams.DatePicker -> {
             // Handle date selection
-            saveUserDate(elementId = action.elementId, value = params.value)
+            saveUserDate(elementId = action.elementId, value = "${params.month}-${params.day}-${params.year}")
         }
     }
 }
@@ -205,29 +205,43 @@ The `action` object contains:
 ### Opening a paywall
 
 :::tip
-Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
 :::
 
-If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
 
 ```kotlin
-override fun onOpenPaywallAction(action: OnboardingsOpenPaywallAction) {
+override fun onOpenPaywallAction(action: AdaptyOnboardingOpenPaywallAction, context: Context) {
     // Get the paywall using the placement ID from the action
     Adapty.getPaywall(placementId = action.actionId) { result ->
-        result.onSuccess { paywall ->
-            // Get the paywall configuration
-            AdaptyUI.getViewConfiguration(paywall) { configResult ->
-                configResult.onSuccess { paywallConfig ->
-                    // Create and present the paywall
-                    val paywallController = AdaptyUI.getPaywallController(
-                        activity = this,
-                        viewConfig = paywallConfig,
-                        eventListener = paywallEventListener
-                    )
-                    // Add the paywall view to your layout
-                    binding.container.addView(paywallController)
+        when (result) {
+            is AdaptyResult.Success -> {
+                val paywall = result.value
+                // Get the paywall configuration
+                AdaptyUI.getViewConfiguration(paywall) { result ->
+                    when(result) {
+                        is AdaptyResult.Success -> {
+                            val paywallConfig = result.value
+                            // Create and present the paywall
+                            val paywallView = AdaptyUI.getPaywallView(
+                                activity = this,
+                                viewConfig = paywallConfig,
+                                products,
+                                eventListener = paywallEventListener
+                            )
+                            // Add the paywall view to your layout
+                            binding.container.addView(paywallView)
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = result.error
+                            // handle the error
+                        }
+                    }
                 }
-            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // handle the error
+            }        
         }
     }
 }
@@ -238,7 +252,7 @@ override fun onOpenPaywallAction(action: OnboardingsOpenPaywallAction) {
 When an onboarding finishes loading, this method will be invoked:
 
 ```kotlin
-override fun onFinishLoading() {
+override fun onFinishLoading(context: Context) {
     // Handle loading completion
 }
 ```
@@ -264,30 +278,30 @@ Each event includes `meta` information containing:
 | `onboardingId` | Unique identifier of the onboarding flow |
 | `screenClientId` | Identifier of the current screen |
 | `screenIndex` | Current screen's position in the flow |
-| `screensTotal` | Total number of screens in the flow |
+| `totalScreens` | Total number of screens in the flow |
 
 Here's an example of how you can use analytics events for tracking:
 
 ```kotlin
-override fun onAnalyticsEvent(event: OnboardingsAnalyticsEvent) {
+override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Context) {
     when (event) {
-        is OnboardingsAnalyticsEvent.OnboardingStarted -> {
+        is AdaptyOnboardingAnalyticsEvent.OnboardingStarted -> {
             // Track onboarding start
             trackEvent("onboarding_started", event.meta)
         }
-        is OnboardingsAnalyticsEvent.ScreenPresented -> {
+        is AdaptyOnboardingAnalyticsEvent.ScreenPresented -> {
             // Track screen presentation
             trackEvent("screen_presented", event.meta)
         }
-        is OnboardingsAnalyticsEvent.ScreenCompleted -> {
+        is AdaptyOnboardingAnalyticsEvent.ScreenCompleted -> {
             // Track screen completion with user response
             trackEvent("screen_completed", event.meta, event.elementId, event.reply)
         }
-        is OnboardingsAnalyticsEvent.OnboardingCompleted -> {
+        is AdaptyOnboardingAnalyticsEvent.OnboardingCompleted -> {
             // Track successful onboarding completion
             trackEvent("onboarding_completed", event.meta)
         }
-        is OnboardingsAnalyticsEvent.Unknown -> {
+        is AdaptyOnboardingAnalyticsEvent.Unknown -> {
             // Handle unknown events
             trackEvent(event.name, event.meta)
         }
