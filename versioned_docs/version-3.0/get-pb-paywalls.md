@@ -7,7 +7,7 @@ metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
@@ -191,21 +191,23 @@ do {
             products: products,
             observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
             tagResolver: <AdaptyTagResolver>,
-            timerResolver: <AdaptyTimerResolver>
+            timerResolver: <AdaptyTimerResolver>,
+            assetsResolver: <AdaptyAssetsResolver>
     )
     // use loaded configuration
 } catch {
     // handle the error
 }
 ```
-| Parameter                | Presence       | Description                                                  |
-| :----------------------- | :------------- | :----------------------------------------------------------- |
-| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
-| **products**             | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
-| **observerModeResolver** | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step |
-| **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
-| **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+| Parameter                                 | Presence       | Description                                                                                                                                                                                                                                                                                                       |
+|:------------------------------------------|:---------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **paywall**                               | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                         |
+| **loadTimeout**                           | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.                    |
+| **products**                              | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                               |
+| **observerModeResolver**                  | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                   |
+| **tagResolver**                           | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**                         | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol.                              |
+| **assetsResolver**                        | optional       | Adapty SDK 3.7.0 or later: To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.                                                          |
 
 ## Set up developer-defined timers
 
@@ -327,7 +329,7 @@ try {
 | **tagResolver**               | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**             | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
 
-In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer IDs** of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
@@ -545,3 +547,215 @@ The method is not yet supported in Unity, but support will be added soon.
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+
+## Customize loading and caching assets
+
+To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.  
+
+The resolver is used throughout the AdaptyUI framework to:
+- Load images
+- Apply colors and gradients 
+- Handle fonts in text elements
+- Process background images and colors
+
+When a paywall needs to display an asset:
+1. The asset ID is passed to the resolver.
+2. The resolver attempts to find the asset in the app's asset catalog.
+3. If found, the asset is returned and used in the paywall.
+4. If not found, the paywall falls back to its default appearance.
+
+There is a default resolver, but you can implement a custom one:
+
+```swift
+@MainActor
+class CustomAssetsResolver: AdaptyAssetsResolver {
+    // Dictionary to store your custom assets
+    private var assets: [String: AdaptyCustomAsset] = [:]
+    
+    init() {
+        // Initialize your assets
+        setupAssets()
+    }
+    
+    private func setupAssets() {
+        // Example: Add a custom image
+        if let image = UIImage(named: "custom_image") {
+            assets["custom_image_id"] = .image(.uiImage(value: image))
+        }
+        
+        // Example: Add a custom color
+        assets["custom_color_id"] = .color(.uiColor(.systemBlue))
+        
+        // Example: Add a custom gradient
+        let gradient = Gradient(colors: [.blue, .purple])
+        assets["custom_gradient_id"] = .gradient(.linear(
+            gradient: gradient,
+            startPoint: .leading,
+            endPoint: .trailing
+        ))
+        
+        // Example: Add a custom font
+        if let font = UIFont(name: "CustomFont", size: 16) {
+            assets["custom_font_id"] = .font(font)
+        }
+    }
+    
+    func asset(for id: String) -> AdaptyCustomAsset? {
+        return assets[id]
+    }
+}
+```
+
+Then, you can use it when getting a paywall configuration:
+
+```swift
+// Create your custom resolver
+let customResolver = CustomAssetsResolver()
+
+// Use it in paywall configuration
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customResolver
+)
+```
+
+<Details>
+<summary>Customization options (click to expand)</summary>
+
+#### Box length 
+
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `fixed` | Fixed width/height | `Unit` |
+| `flexible` | Flexible size with optional min/max | `min: Unit?`, `max: Unit?` |
+| `shrinkable` | Shrinkable size with required min and optional max | `min: Unit`, `max: Unit?` |
+| `fillMax` | Fill all available space | None |
+
+#### Alignment 
+
+#### Horizontal 
+| Value | Description |
+|-------|-------------|
+| `leading` | Align to the leading edge |
+| `trailing` | Align to the trailing edge |
+| `center` | Center alignment |
+| `justified` | Justified alignment |
+| `left` | Left alignment (respects RTL) |
+| `right` | Right alignment (respects RTL) |
+
+#### Vertical 
+| Value | Description |
+|-------|-------------|
+| `top` | Align to the top |
+| `bottom` | Align to the bottom |
+| `center` | Center alignment |
+
+#### Asset types
+
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `image` | Image asset | `AdaptyCustomImageAsset` |
+| `video` | Video asset | `AdaptyCustomVideoAsset` |
+| `color` | Color asset | `AdaptyCustomColorAsset` |
+| `gradient` | Gradient asset | `AdaptyCustomGradientAsset` |
+| `font` | Font asset | `UIFont` |
+
+#### Custom image asset types
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `file` | Local file | `url: URL` |
+| `remote` | Remote URL | `url: URL`, `preview: UIImage?` |
+| `uiImage` | Direct UIImage | `value: UIImage` |
+
+#### Custom video asset types
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `file` | Local file | `url: URL`, `preview: AdaptyCustomImageAsset?` |
+| `remote` | Remote URL | `url: URL`, `preview: AdaptyCustomImageAsset?` |
+| `player` | Custom player | `item: AVPlayerItem`, `player: AVQueuePlayer`, `preview: AdaptyCustomImageAsset?` |
+
+#### Custom color asset types
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `uiColor` | UIKit color | `UIColor` |
+| `swiftUIColor` | SwiftUI color | `Color` |
+
+#### Custom gradient asset types
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `linear` | Linear gradient | `gradient: Gradient`, `startPoint: UnitPoint`, `endPoint: UnitPoint` |
+| `angular` | Angular gradient | `gradient: Gradient`, `center: UnitPoint`, `angle: Angle` |
+| `radial` | Radial gradient | `gradient: Gradient`, `center: UnitPoint`, `startRadius: CGFloat`, `endRadius: CGFloat` |
+
+#### Aspect ratio 
+
+| Value | Description |
+|-------|-------------|
+| `fit` | Fit content within bounds |
+| `fill` | Fill bounds while maintaining aspect ratio |
+| `stretch` | Stretch to fill bounds |
+
+#### Container types
+
+| Type | Description | Features                                                                                   |
+|------|-------------|--------------------------------------------------------------------------------------------|
+| `BasicContainer` | Basic container with fixed height | - Fixed height<br/>- Scrollable content<br/>- Optional footer<br/>- Optional overlay       |
+| `FlatContainer` | Flat container with scrollable content | - Scrollable content<br/>- Optional footer<br/>- Optional overlay<br/>- Full width content |
+
+#### Layout components
+
+#### Row
+| Property | Type | Description |
+|----------|------|-------------|
+| `items` | `[GridItem]` | Array of items in the row |
+| `spacing` | `Double` | Spacing between items |
+| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment of items |
+| `verticalAlignment` | `VerticalAlignment` | Vertical alignment of items |
+
+#### Column
+| Property | Type | Description |
+|----------|------|-------------|
+| `items` | `[GridItem]` | Array of items in the column |
+| `spacing` | `Double` | Spacing between items |
+| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment of items |
+| `verticalAlignment` | `VerticalAlignment` | Vertical alignment of items |
+
+#### Grid item properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `length` | `Length` | Size constraint (fixed/flexible/shrinkable) |
+| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment |
+| `verticalAlignment` | `VerticalAlignment` | Vertical alignment |
+| `content` | `Element` | Content element |
+
+#### EdgeInsets properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `top` | `Unit` | Top inset |
+| `leading` | `Unit` | Leading inset |
+| `bottom` | `Unit` | Bottom inset |
+| `trailing` | `Unit` | Trailing inset |
+
+#### 9. Pager properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `pageWidth` | `Unit` | Width of each page |
+| `pageHeight` | `Unit` | Height of each page |
+| `pagePadding` | `EdgeInsets` | Padding around pages |
+| `spacing` | `Double` | Spacing between pages |
+| `content` | `[Element]` | Array of page elements |
+| `interactionBehavior` | `InteractionBehavior` | How the pager responds to interaction |
+| `animation` | `Animation?` | Animation for page transitions |
+
+#### 10. Interaction behavior options
+
+| Value | Description |
+|-------|-------------|
+| `none` | No interaction allowed |
+| `pauseAnimation` | Pause animation during interaction |
+| `continueAnimation` | Continue animation during interaction |
+
+</Details>
