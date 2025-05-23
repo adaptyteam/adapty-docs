@@ -75,10 +75,10 @@ After the view has been successfully created, you can add it to the view hierarc
 
 Request parameters:
 
-| Parameter | Presence | Description                                                                              |
-| :-------- | :------- |:-----------------------------------------------------------------------------------------|
-| **viewConfig** | required | The onboarding configuration obtained from `AdaptyUI.getOnboardingConfiguration()`       |
-| **eventListener** | required | An implementation of `AdaptyOnboardingEventListener` to handle onboarding events (add default) |
+| Parameter | Presence | Description                                                                                                                                                                      |
+| :-------- | :------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **viewConfig** | required | The onboarding configuration obtained from `AdaptyUI.getOnboardingConfiguration()`                                                                                               |
+| **eventListener** | required | An implementation of `AdaptyOnboardingEventListener` to handle onboarding events. Refer to [Handling onboarding events](android-handle-onboarding-events) for more details.      |
 
 
 ## Change loading indicator color
