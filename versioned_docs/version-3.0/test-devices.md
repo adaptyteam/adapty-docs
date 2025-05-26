@@ -27,6 +27,7 @@ Flutter and Unity support will be added later.
 2. Scroll down to the **Test devices** section in the **General** tab.
 
    
+
 <Zoom>
   <img src={require('./img/14c581d-test_device_add.webp').default}
   style={{
@@ -43,6 +44,7 @@ Flutter and Unity support will be added later.
 3. Click the **Add test device** button.
 
    
+
 <Zoom>
   <img src={require('./img/f86d5e2-test_users_add_device.webp').default}
   style={{
@@ -89,12 +91,13 @@ Let's review all possible options in detail.
 Both identifiers can be obtained in the **Profile** details of the Adapty Dashboard:
 
 1. Find the user's profile in the [**Adapty Profiles** -> **Event feed** tab](https://app.adapty.io/event-feed).
-  :::note
-  To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
-  :::
+    :::note
+    To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [Event Feed](https://app.adapty.io/event-feed), you'll easily identify it.
+    :::
 2. Copy **Customer user ID** and **Adapty ID** field values in the profile details:
 
    
+
 <Zoom>
   <img src={require('./img/345d308-test_users_CUID_adapty_ID.webp').default}
   style={{
@@ -122,9 +125,9 @@ Both identifiers can be obtained in the **Profile** details of the Adapty Dashbo
 Apple does not provide the IDFA by default. Obtain it from the profile attribution in the Adapty Dashboard:
 
 1. Find the user's profile in the [**Adapty Profiles** -> **Event feed** tab](https://app.adapty.io/event-feed).
-  :::note
-  To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [**Event Feed**](https://app.adapty.io/event-feed), you'll easily identify it.
-  :::
+    :::note
+    To find the exact profile, make a rare type of transaction. In this case, once the transaction appears in the [Event Feed](https://app.adapty.io/event-feed), you'll easily identify it.
+    :::
 2. Open the profile details and copy the **IDFA** field value in the **Attributes** section:
 
 
