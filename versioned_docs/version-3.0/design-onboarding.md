@@ -36,8 +36,10 @@ There are the following groups of elements you can add:
 - **Loaders**: Animated loaders keep users engaged during the process.
 - **User engagement**: Add testimonials, user email lists and countdowns.
 
-:::tip
-As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough.
+:::note
+As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough. 
+
+However, custom HTML elements are neither preloaded nor cached, so it is recommended to use **Raw HTML** only for small, lightweight elements.
 :::
 
   <Zoom>
