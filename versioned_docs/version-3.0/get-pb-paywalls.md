@@ -550,12 +550,19 @@ The method is not yet supported in Unity, but support will be added soon.
 
 ## Customize assets
 
-To customize assets (images, videos, colors, gradients, and fonts) in your paywall, implement the `AdaptyAssetsResolver` protocol. The resolver is used to:
+To customize hero images and videos in your paywall, implement the `AdaptyAssetsResolver` protocol. 
 
-- Load images
-- Apply colors and gradients
-- Handle fonts
-- Process background images and colors
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset resolver, you target these elements by their IDs and customize their behavior. 
+
+For example, you can: 
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+:::important
+To use this feature, update the Adapty SDK to version 3.7.0 or later.
+:::
 
 Here's an example of how you can implement the `AdaptyAssetsResolver` protocol:
 
@@ -565,13 +572,20 @@ Here's an example of how you can implement the `AdaptyAssetsResolver` protocol:
 @MainActor
 class CustomAssetsResolver: AdaptyAssetsResolver {
     private var assets: [String: AdaptyCustomAsset] = [:]
-    
+
     init() {
         // Add your custom assets
-        assets["custom_image"] = .image(.uiImage(value: UIImage(named: "custom_image")!))
-        assets["custom_color"] = .color(.uiColor(.systemBlue))
-        assets["custom_font"] = .font(UIFont(name: "CustomFont", size: 16)!)
-    }
+        //Show a local preview image while a remote main image is loading
+        assets["hero_image"] = image(.remote(
+        url: URL(string: "https://example.com/image.jpg")!,
+        preview: UIImage(named: "preview_image")
+        ))
+
+        //Show a local video with a preview image
+        assets["hero_video"] = .video(.file(
+        url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+        preview: .uiImage(value: UIImage(named: "video_preview")!)
+        ))    }
     
     func asset(for id: String) -> AdaptyCustomAsset? {
         return assets[id]
@@ -583,19 +597,18 @@ class CustomAssetsResolver: AdaptyAssetsResolver {
 ```kotlin showLineNumbers
 class CustomAssetsResolver : AdaptyAssetsResolver {
     private val assets = mutableMapOf<String, AdaptyCustomAsset>()
-    
+
     init {
         // Add your custom assets
-        assets["custom_image"] = AdaptyCustomAsset.Image(
+        assets["hero_image"] = AdaptyCustomAsset.Image(
             AdaptyCustomImageAsset.Bitmap(
                 BitmapFactory.decodeResource(context.resources, R.drawable.custom_image)
             )
         )
-        assets["custom_color"] = AdaptyCustomAsset.Color(
-            AdaptyCustomColorAsset.ColorInt(ContextCompat.getColor(context, R.color.custom_color))
-        )
-        assets["custom_font"] = AdaptyCustomAsset.Font(
-            ResourcesCompat.getFont(context, R.font.custom_font)
+        assets["hero_video"] = AdaptyCustomAsset.Video(
+            AdaptyCustomVideoAsset.Url(
+                Uri.parse("android.resource://${context.packageName}/raw/custom_video")
+            )
         )
     }
     
@@ -613,9 +626,6 @@ You can manage the following asset types:
 |------|-------------|---------|
 | `image` | Image asset | `.image(.uiImage(value: UIImage(named: "image")!))` |
 | `video` | Video asset | `.video(.file(url: videoURL, preview: nil))` |
-| `color` | Color asset | `.color(.uiColor(.systemBlue))` |
-| `gradient` | Gradient asset | `.gradient(.linear(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))` |
-| `font` | Font asset | `.font(UIFont(name: "CustomFont", size: 16)!)` |
 
 
 Here's how you can use the custom asset resolver you created:
