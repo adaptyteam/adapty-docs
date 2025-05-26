@@ -165,6 +165,12 @@ Adapty.UpdateAppStoreRefundPreference(<PREFERENCE_VALUE>, (error) => {
 </TabItem>
 </Tabs>
 
+:::note
+You can also use the Server-side API to [set an individual refund preference](ss-set-refund-saver-settings.md):
+- Use the SDK when the preference setting is directly tied to client interactions, such as when users click a button to configure their preference.
+- Use the API when you need to perform server-side processing or when it better aligns with your application architecture.
+:::
+
 <!---
 
 ## Set an individual refund preference with API
@@ -267,6 +273,12 @@ Adapty.UpdateAppStoreCollectingRefundDataConsent(<CONSENT_VALUE>, (error) => {
 </TabItem>
 </Tabs>
 
+:::note
+You can also use the Server-side API to [set an individual data sharing preference](ss-set-refund-saver-settings.md):
+- Use the SDK when the preference setting is directly tied to client interactions, such as when users click a button to configure their preference.
+- Use the API when you need to perform server-side processing or when it better aligns with your application architecture.
+:::
+
 ## Check user consent
 
 You can check a user’s current consent status anytime. In the Adapty Dashboard, just open the user’s profile and look for the **Allow data sharing** setting in the **Refund Saver Preferences** section at the bottom left.
@@ -281,6 +293,10 @@ You can check a user’s current consent status anytime. In the Adapty Dashboard
   }}
 />
 </Zoom>
+
+:::note
+You can also use the Server-side API to [get individual refund and sharing preferences](ss-get-refund-saver-settings.md).
+:::
 
 ## Limitations
 

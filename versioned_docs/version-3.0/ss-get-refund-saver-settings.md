@@ -18,8 +18,8 @@ import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDo
 
 Use this endpoint to:
 
-- Learn the [Refund Saver preference for this user](refund-saver#set-a-default-refund-behavior) - whether Adapty should ask to decline or approve their refund request
-- Learn if the user gave their [consent](refund-saver#obtain-user-consent) to share their data with Apple.
+- Get the [Refund Saver preference for this user](refund-saver#set-a-default-refund-behavior) - whether Adapty should ask to decline or approve their refund request
+- Get the data sharing preference for this user – whether the user gave their [consent](refund-saver#obtain-user-consent) to share their data with Apple.
 
 ## Method and endpoint
 
