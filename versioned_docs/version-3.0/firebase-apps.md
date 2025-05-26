@@ -1,7 +1,7 @@
 ---
 title: "Firebase apps"
-description: "Firebase Integration for Apps | Adapty Docs"
-metadataTitle: "Integrate Firebase with Adapty to enhance user analytics and subscription tracking for your mobile app."
+description: "Integrate Firebase with Adapty to enhance user analytics and subscription tracking for your mobile app."
+metadataTitle: "Firebase Integration for Apps | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -21,8 +21,8 @@ This is not all steps required for Adapty to work, just some useful tips for int
 
 If you're using Firebase auth, this snippet may help you keep your users in sync between Firebase and Adapty. Note that it's just an example, and you should consider your app auth specifics.
 
-<Tabs>
-<TabItem value="Swift" label="iOS with Firebase" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS with Firebase" default>
 ```swift showLineNumbers
 import Adapty
 import Firebase

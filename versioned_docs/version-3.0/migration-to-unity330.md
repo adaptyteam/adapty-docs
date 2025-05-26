@@ -21,10 +21,11 @@ Adapty SDK 3.3.0 is a major release that brought some improvements which however
 10. Update handling of Paywall Builder paywall errors.
 11. Update integration configurations for Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 13. Update Observer mode implementation.
+14. Update the Unity plugin initialization with an explicit `Activate` call.
 
 ## Upgrade Adapty Unity SDK to 3.3.x
 
-Up to this version, Adapty SDK was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall builder.
+Up to this version, Adapty SDK was the core and mandatory SDK necessary for the proper functioning of Adapty within your app, and AdaptyUI SDK was an optional SDK that becomes necessary only if you use the Adapty Paywall Builder.
 
 Starting with version 3.3.0, AdaptyUI SDK is deprecated, and AdaptyUI is merged to Adapty SDK as a module. Because of these changes, you need to remove AdaptyUISDK and reinstall AdaptySDK.
 
@@ -621,3 +622,15 @@ Update how you link paywalls to transactions. Previously, you used the `setVaria
 + });
 ```
 
+## Update the Unity plugin initialization
+
+Starting from Adapty Unity SDK 3.3.0, calling the `Activate` method explicitly during the plugin initialization is required:
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

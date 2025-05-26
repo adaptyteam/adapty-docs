@@ -463,7 +463,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 Update your mobile app code as shown below. For the complete code example, check out the [SDK configuration for OneSignal integration](onesignal#sdk-configuration).
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
 

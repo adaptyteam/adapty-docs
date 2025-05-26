@@ -1,18 +1,21 @@
 ---
 title: "iOS - Handle paywall events"
-description: "Handling Events in iOS | Adapty Docs"
-metadataTitle: "Handle subscription-related events in iOS using Adapty for better app monetization."
+description: "Handle subscription-related events in iOS using Adapty for better app monetization."
+metadataTitle: "Handling Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
 This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [iOS - Handle paywall events designed with legacy Paywall Builder](ios-handling-events-legacy).
 :::
+
+<SampleApp />
 
 ## Handling events in Swift
 
@@ -81,6 +84,18 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
+#### Started purchase using a web paywall
+
+If a user initiates the purchase process using a web paywall, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
 #### Successful or canceled purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
@@ -114,6 +129,18 @@ func paywallController(
 ```
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+#### Failed purchase using a web paywall
+
+If `Adapty.openWebPaywall()` fails, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
 
 #### Successful restore
 

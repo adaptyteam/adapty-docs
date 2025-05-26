@@ -1,7 +1,7 @@
 ---
 title: "Create service account in the Google Cloud Console"
-description: "Enhance integration with Adapty by creating a service account in the Google Cloud Console, facilitating streamlined data access automation and seamless connectivity with the Google Play Console. Learn how to create a service account to optimize your app management process"
-metadataTitle: "Google Cloud Console: Creating a Service Account for Adapty"
+description: "Learn how to create a service account for secure API access in Adapty."
+metadataTitle: "Creating a Service Account | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

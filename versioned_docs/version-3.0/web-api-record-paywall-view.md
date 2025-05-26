@@ -22,8 +22,8 @@ Adapty can help you measure the conversion of your paywalls. However, to do so, 
 POST https://api.adapty.io/api/v2/web-api/paywall/visit/
 ```
 
-<Tabs> 
-<TabItem value="shell" label="cURL" default>  
+<Tabs groupId="api-lang" queryString> 
+<TabItem value="curl" label="cURL" default>  
 
 ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
@@ -38,7 +38,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/paywall/visit/' \
 ```
 
 </TabItem>  
-<TabItem value="javascript" label="JavaScript" default>   
+<TabItem value="js" label="JavaScript" default>   
 
 ```javascript showLineNumbers
 const myHeaders = new Headers();
@@ -137,7 +137,7 @@ echo $response;
 | customer_user_id | String        | :heavy_plus_sign:* | <p>An identifier of a user in your system.</p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 | profile_id       | String        | :heavy_plus_sign:* | <p>An identifier of a user in Adapty. </p><p>* Either `customer_user_id` or `profile_id` is required.</p> |
 | visited at       | ISO 8601 date | :heavy_minus_sign: | The datetime when the user opened the paywall.               |
-| store            | String        | :heavy_plus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](https://dev-docs.adapty.io/docs/initial-custom). |
+| store            | String        | :heavy_plus_sign:  | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**, or the **Store ID** of your [custom store](custom-store). |
 | variation_id     | String        | :heavy_plus_sign:  | The variation ID used to trace purchases to the specific paywall they were made from. |
 
 <!---

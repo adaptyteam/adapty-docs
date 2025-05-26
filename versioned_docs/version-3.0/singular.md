@@ -1,7 +1,7 @@
 ---
 title: "Singular"
-description: "Singular Integration Guide | Adapty Docs"
-metadataTitle: "Integrate Singular with Adapty to analyze marketing and subscription data."
+description: "Integrate Singular with Adapty to analyze marketing and subscription data."
+metadataTitle: "Singular Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -58,7 +58,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 Adapty will send subscription events to Singular using a server-to-server integration, allowing you to view all subscription events in your Singular dashboard and link them to your acquisition campaigns.
 
 :::warning
-Profiles created prior to configuring the integrations will not be able to deliver their events to Singular. You will see "The user profile is missing the required integration data." error in such cases.
+Profiles created prior to configuring the integrations will not be able to deliver their events to Singular. 
 :::
 
 ## No need for SDK configuration

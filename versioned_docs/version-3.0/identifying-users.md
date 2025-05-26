@@ -1,13 +1,14 @@
 ---
 title: "Identify users"
-description: ""
-metadataTitle: ""
+description: "Identify users in Adapty to improve personalized subscription experiences."
+metadataTitle: "Identifying Users in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty creates an internal profile ID for every user. However, if you have your own authentication system, you should set your own Customer User ID. You can find users by their Customer User ID in the [Profiles](profiles-crm) section and use it in the [server-side API](getting-started-with-server-side-api), which will be sent to all integrations.
 
@@ -15,23 +16,84 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
 ```swift showLineNumbers
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
 ```
 </TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
 <TabItem value="kotlin" label="Kotlin" default>
+
 ```kotlin showLineNumbers
 Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
-Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", observerMode, "YOUR_USER_ID");
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+          ..withCustomerUserId('YOUR_USER_ID')
+    );
+} catch (e) {
+    // handle the error
+}
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+
+<TabItem value="unity" label="Unity" default> 
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native (TS)" default>
+
 ```typescript showLineNumbers
 adapty.activate("PUBLIC_SDK_KEY", {
     customerUserId: "YOUR_USER_ID"
@@ -40,14 +102,14 @@ adapty.activate("PUBLIC_SDK_KEY", {
 </TabItem>
 </Tabs>
 
-You may notice that there are no snippets for Flutter and Unity. Unfortunately, there are technical limitations that won't allow passing the ID upon activation. 
+<SampleApp />
 
 ### Setting customer user ID after configuration
 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -57,7 +119,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.identify("YOUR_USER_ID") { error in
@@ -85,7 +147,7 @@ Adapty.identify("YOUR_USER_ID", error -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   await Adapty().identify(customerUserId);
@@ -95,7 +157,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.Identify("YOUR_USER_ID", (error) => {
   if(error == null) {
@@ -104,7 +166,7 @@ Adapty.Identify("YOUR_USER_ID", (error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     await adapty.identify("YOUR_USER_ID");
@@ -132,8 +194,8 @@ It's also important to note that you should re-request all paywalls and products
 
 You can logout the user anytime by calling `.logout()` method:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -143,7 +205,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.logout { error in
@@ -173,7 +235,7 @@ Adapty.logout(error -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -184,7 +246,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.Logout((error) => {
@@ -194,7 +256,7 @@ Adapty.Logout((error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {

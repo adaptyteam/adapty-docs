@@ -1,7 +1,7 @@
 ---
 title: "Apple app privacy"
-description: "Understanding Apple App Privacy Policies | Adapty Docs"
-metadataTitle: "Understand Apple app privacy policies and their impact on your subscription app."
+description: "Understand Apple app privacy policies and their impact on your subscription app."
+metadataTitle: "Understanding Apple App Privacy Policies | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

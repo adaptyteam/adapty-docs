@@ -1,7 +1,7 @@
 ---
-title: "Custom fonts in paywall builder"
-description: "Custom Fonts in Paywall Builder | Adapty Docs"
-metadataTitle: "Enhance Adapty’s Paywall Builder with custom fonts to improve design."
+title: "Custom fonts in Paywall Builder"
+description: "Enhance Adapty’s Paywall Builder with custom fonts to improve design."
+metadataTitle: "Custom Fonts in Paywall Builder | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -62,7 +62,6 @@ If you need more than what’s offered by default, you can add a custom font. On
 
 1. Choose **Add custom font** in any of the font dropdowns:
 
-
 <Zoom>
   <img src={require('./img/7498a5a-add_custom_font.webp').default}
   style={{
@@ -74,15 +73,11 @@ If you need more than what’s offered by default, you can add a custom font. On
 />
 </Zoom>
 
-
-
-
-
-2. In the **Add custom font** window:
-   1. Locate your font file and upload it to this form.
-   2. Provide a name to reference it in the Paywall Builder.
+2. In the **Add Custom Font** window:
+   1. Upload your font file (maximum size: 10MB).
+   2. Enter a name to reference it in the Paywall Builder.
    3. Specify the correct font names for both platforms.
-   4. Add the font file to your app's bundle if you haven't done it yet.
+   4. Ensure the font file is included in your app’s bundle if it hasn’t been added yet.
 
 
 <Zoom>

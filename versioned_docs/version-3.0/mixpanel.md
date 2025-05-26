@@ -1,7 +1,7 @@
 ---
 title: "Mixpanel"
-description: ""
-metadataTitle: ""
+description: "Connect Mixpanel with Adapty for powerful subscription analytics."
+metadataTitle: "Mixpanel Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -15,11 +15,11 @@ This integration enables you to bring all the Adapty events into Mixpanel. As a 
 
 ## How to set up Mixpanel integration
 
-To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**](https://app.adapty.io/integrations/mixpanel) in the Adapty Dashboard, turn on a toggle, and fill out fields.
-
+1. Open the [Integrations -> Mixpanel](https://app.adapty.io/integrations/mixpanel) page in the Adapty Dashboard.
+2. Enable the toggle and enter your **Mixpanel Token**. You can specify a token for all platforms or limit it to specific platforms if you only want to receive data from certain ones.
 
 <Zoom>
-  <img src={require('./img/ccecc5e-CleanShot_2023-08-17_at_14.21.392x.webp').default}
+  <img src={require('./img/mixpanel.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,14 +29,27 @@ To set up the integration with Mixpanel, go to [**Integrations** -> **Mixpanel**
 />
 </Zoom>
 
+### Finding Your Mixpanel Token
 
+To get your **Mixpanel Token**:
 
-
-
-You need only one variable such as **Mixpanel token**. You can find the token in your Mixpanel project. If you need help, [here's](https://help.mixpanel.com/hc/en-us/articles/115004502806-Find-Project-Token-) the official docs.
+1. Log in to your [Mixpanel Dashboard](https://mixpanel.com/settings/project/).
+2. Open **Settings** and select **Organization Settings**.
 
 <Zoom>
-  <img src={require('./img/3178322-CleanShot_2023-08-16_at_18.09.382x.webp').default}
+  <img src={require('./img/mixpanel-settings.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+3. From the left sidebar, go to **Projects** and select your project.
+
+<Zoom>
+  <img src={require('./img/mixpanel-project-id.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -46,15 +59,11 @@ You need only one variable such as **Mixpanel token**. You can find the token in
 />
 </Zoom>
 
+## How the integration works
 
+Adapty automatically maps relevant event properties—such as user ID and revenue—to [Mixpanel-native properties](https://help.mixpanel.com/hc/en-us/articles/115004708186-Profile-Properties). This ensures accurate tracking and reporting of subscription-related events.
 
-
-
-Adapty maps some properties such as user id and revenue of the event to [Mixpanel-native properties](https://help.mixpanel.com/hc/en-us/articles/115004708186-Profile-Properties). With such mapping, Mixpanel is able to show you the correct data in the profile and events timeline.
-
-Adapty also accumulates revenue from each user.
-
-Another thing worth mentioning is updating [User Profile Properties](https://docs.mixpanel.com/docs/tracking/how-tos/user-profiles). Adapty sends the `subscription state` and `subscription product id`. After Mixpanel gets an event, you can see the corresponding fields updated there.
+Additionally, Adapty accumulates revenue data per user and updates their [User Profile Properties](https://docs.mixpanel.com/docs/tracking/how-tos/user-profiles), including `subscription state` and `subscription product ID`. Once an event is received, Mixpanel updates the corresponding fields in real time.
 
 ## Events and tags
 
@@ -62,7 +71,7 @@ Below the credentials, there are three groups of events you can send to Mixpanel
 
 
 <Zoom>
-  <img src={require('./img/1b0c777-CleanShot_2023-08-11_at_14.56.362x.webp').default}
+  <img src={require('./img/mixpanel-events.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -82,8 +91,8 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Use `.setIntegrationIdentifier()` method to set `mixpanelUserId`.  If not set, Adapty uses your user ID (`customerUserId`) or if it's null Adapty ID. Make sure that the user id you use to send data to Mixpanel from your app is the same one you send to Adapty.
 
-<Tabs groupId="mixpanel">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 import Mixpanel
@@ -98,7 +107,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="iOS (Swift-Callback)" default>
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
 
 ```swift showLineNumbers
 import Mixpanel
@@ -119,7 +128,7 @@ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { er
 }
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 import 'package:mixpanel_flutter/mixpanel_flutter.dart';
@@ -139,7 +148,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -156,7 +165,7 @@ if (distinctId != null) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

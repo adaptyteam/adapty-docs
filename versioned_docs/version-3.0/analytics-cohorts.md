@@ -1,7 +1,7 @@
 ---
 title: "Cohort analysis"
-description: "Understanding Analytics Cohorts | Adapty Docs"
-metadataTitle: "Use analytics cohorts in Adapty to track user engagement and subscription trends."
+description: "Use analytics cohorts in Adapty to track user engagement and subscription trends."
+metadataTitle: "Understanding Analytics Cohorts | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -87,7 +87,7 @@ In the image below you can see a typical cohort.
 1. This cohort displays the data only for weekly products (mark #1).
 2. It doesn't exclude proceeds and shows the revenue as absolute values (mark #2).
 3. The time period we're working with is the last 6 months, and every cohort segment is 1 month long (mark #3).
-4. The **Total** row (mark #4) displays the cumulative value for each period. $395K in the first cell of the **Total** row accumulates the first period (subscription activation) revenue from all months (Nov, Dec, and so on) until the end of the timeframe. The Total cell shows the number of customers who installed the app during the whole period.
+4. The **Total** row (mark #4) displays the cumulative value for each period. $442K in the first cell of the **Total** row accumulates the first period (subscription activation) revenue from all months (Nov, Dec, and so on) until the end of the timeframe. The Total cell shows the number of customers who installed the app during the whole period.
 5. The first column of the Nov 2023 row (mark #5) shows the first period (subscription activation) revenue of $37.7K from the customers who installed the app in Nov 2023. The number of customers who installed the app in Nov 2023 which is 95,129, is shown in the header column.  
    The second column of the Nov 2023 row shows week 2 (subscriptions renewed to the 2nd week) revenue of $8,77K who installed the app in Nov 2023.
 6. On the table, you can see the Total revenue, ARPU, ARPPU, and ARPAS (mark #6). You can read more about them a little further in this article. 

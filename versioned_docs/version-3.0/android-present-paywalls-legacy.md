@@ -1,7 +1,7 @@
 ---
 title: "Android - Present legacy Paywall Builder paywalls"
-description: "Presenting Paywalls on Android (Legacy) | Adapty Docs"
-metadataTitle: "Present paywalls in Android (Legacy) and manage subscriptions effectively."
+description: "Present paywalls in Android (Legacy) and manage subscriptions effectively."
+metadataTitle: "Presenting Paywalls on Android (Legacy) | Adapty Docs"
 ---
 
 <!--- android-present-paywalls-legacy.md --->
@@ -23,7 +23,7 @@ This guide covers the process for **legacy Paywall Builder paywalls** only which
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -99,11 +99,11 @@ Request parameters:
 | **Insets**                    | required | Define an `AdaptyPaywallInsets` object containing information about the area overlapped by system bars, creating vertical margins for content. If neither the status bar nor the navigation bar overlaps the `AdaptyPaywallView`, pass `AdaptyPaywallInsets.NONE`. For fullscreen mode where system bars overlap part of your UI, obtain insets as shown under the table. |
 | **EventListener**             | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **PersonalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
-| **TagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
+| **TagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder)  topic for more details. |
 
 For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 import androidx.core.graphics.Insets

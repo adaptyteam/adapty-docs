@@ -1,7 +1,7 @@
 ---
 title: "Adapty Resources"
-description: "Feature Flag Resources | Adapty Docs"
-metadataTitle: "Access Adapty's feature flag resources to streamline subscription-based features."
+description: "Access Adapty's feature flag resources to streamline subscription-based features."
+metadataTitle: "Feature Flag Resources | Adapty Docs"
 ---
 ## Custom Actions
 
@@ -94,7 +94,7 @@ Contains details about an error. For a complete list of error codes, refer to [F
 
 ### AdaptyGetIntroEligibilitiesResult
 
-Contains the result of the [`getProductsIntroductoryOfferEligibility`](ff-resources#getproductsintroductoryoffereligibility) custom action.
+Contains the result of the `getProductsIntroductoryOfferEligibility` custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -103,7 +103,7 @@ Contains the result of the [`getProductsIntroductoryOfferEligibility`](ff-resour
 
 ### AdaptyGetPaywallResult
 
-Contains the result of the [`getPaywall`](ff-resources#getPaywall) custom action.
+Contains the result of the `getPaywall` custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -112,7 +112,7 @@ Contains the result of the [`getPaywall`](ff-resources#getPaywall) custom action
 
 ### AdaptyGetProductsResult
 
-Contains the result of the [`getPaywallProducts`](ff-resources#getPaywallProducts) custom action.
+Contains the result of the `getPaywallProducts` custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -121,7 +121,7 @@ Contains the result of the [`getPaywallProducts`](ff-resources#getPaywallProduct
 
 ### AdaptyGetProfileResult
 
-Contains the result of the [`getProfile`](ff-resources#getprofile) custom action.
+Contains the result of the `getProfile` custom action.
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -130,7 +130,7 @@ Contains the result of the [`getProfile`](ff-resources#getprofile) custom action
 
 ### AdaptyMakePurchaseResult
 
-Contains the result of the [`makePurchase`](ff-resources#makePurchase) custom action. 
+Contains the result of the `makePurchase` custom action. 
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|
@@ -185,8 +185,8 @@ Information about [product](product).
 | paywallVariationId   | String                                                       | The ID of a variation, used to attribute purchases to this paywall |
 | paywallABTestName    | String                                                       | Parent A/B test name                                         |
 | paywallName          | String                                                       | Parent paywall name                                          |
-| price                | Data ([AdaptyPriceData](ff-resources#AdaptyPriceData))       | The price of the product                                     |
-| subscriptionDetails  | Data ([AdaptySubscriptionDetails](ff-resources#AdaptySubscriptionDetails)) | Information on subscription                                  |
+| price                | Data ([AdaptyPriceData](#adaptyprice)                        | The price of the product                                     |
+| subscriptionDetails  | Data ([AdaptySubscriptionDetails](#adaptysubscriptiondetails)) | Information on subscription                                  |
 
 ### AdaptyPrice
 
@@ -235,8 +235,8 @@ Information on the user's profile
 | accessLevels     | List < Data ([AdaptyAccessLevelIdentifiers](ff-resources#adaptyaccesslevelidentifiers)) > | List of all access levels that belong to the user            |
 | profileId        | String                                                       | The ID of the user profile                                   |
 | customerUserId   | String                                                       | The ID of the user in the vendor's system                    |
-| subscriptions    | List < Data ([MapKeySubscriptions](ff-resources#MapKeySubscriptions)) > | The list of all subscriptions purchased by the user          |
-| nonSubscriptions | List < Data ([MapKeyNonSubscriptions](ff-resources#MapKeyNonSubscriptions)) > | The list of all non-subscription products purchased by the user |
+| subscriptions    | List < Data ([MapKeySubscriptions](#mapkeysubscriptions)) >  | The list of all subscriptions purchased by the user          |
+| nonSubscriptions | List < Data ([MapKeyNonSubscriptions](#mapkeynonsubscriptions)) > | The list of all non-subscription products purchased by the user |
 
 ### AdaptyProfileParameters
 
@@ -246,7 +246,7 @@ Information on the user.
 | ----------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | firstName                     | String                                                       | The first name of the user                                   |
 | lastName                      | String                                                       | The last name of the user                                    |
-| gender                        | [AdaptyGenderEnum](ff-resources#AdaptyGenderEnum)            | The gender of the user                                       |
+| gender                        | [AdaptyGenderEnum](#adaptygenderenum)                        | The gender of the user                                       |
 | birthday                      | String                                                       | The birthday of the user                                     |
 | email                         | String                                                       | The email of the user                                        |
 | phoneNumber                   | String                                                       | The phone number of the user                                 |
@@ -308,18 +308,18 @@ Scheme of a Subscription object as a part of the [AdaptyPaywallProduct](product)
 | promotionalOffer                    | Data ([AdaptySubscriptionPhase](ff-resources#adaptysubscriptionphase)) | The promotional offer details (use for iOS)                  |
 | promotionalOfferEligibility         | Boolean                                                      | Definition if the user qualifies for an promotional offer for an iOS subscription |
 | promotionalOfferId                  | String                                                       | The ID of the promotional offer (use for iOS)                |
-| renewalType                         | [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum)  | Defines if the subscription is auto-renewable or not via [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum) |
+| renewalType                         | [AdaptyRenewalTypeEnum](#adaptyrenewaltypeenum)              | Defines if the subscription is auto-renewable or not via [AdaptyRenewalTypeEnum](ff-resources#adaptyrenewaltypeenum) |
 | subscriptionGroupIdentifier         | String                                                       | The ID of the product group the product belongs to (use for iOS) |
-| subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The duration of the subscription                             |
+| subscriptionPeriod                  | Data ([AdaptySubscriptionPeriod](#adaptysubscriptionperiod)) | The duration of the subscription                             |
 
 ### AdaptySubscriptionPeriod
 
 The duration of the subscription.
 
-| Field Name    | Type                                                      | Description                                                 |
-| ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
-| numberOfUnits | Integer                                                   | Number of days/weeks/months/years the subscription lasts.   |
-| unit          | [AdaptyPeriodUnitEnum](ff-resources#adaptyperiodunitenum) | Measurement unit of the period: days, weeks, months, years. |
+| Field Name    | Type                                          | Description                                                 |
+| ------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| numberOfUnits | Integer                                       | Number of days/weeks/months/years the subscription lasts.   |
+| unit          | [AdaptyPeriodUnitEnum](#adaptyperiodunitenum) | Measurement unit of the period: days, weeks, months, years. |
 
 ### AdaptySubscriptionPhase
 
@@ -331,9 +331,9 @@ Represents a subscription phase, such as a free trial or an introductory offer p
 | localizedNumberOfPeriods    | String                                                       | The length of the phase. For example, a 6-month offer would display as `6 months` in the user's language. |
 | localizedSubscriptionPeriod | String                                                       | The subscription duration in the user's language, like `3 months`. |
 | numberOfPeriods             | Integer                                                      | The number of subscription periods in this phase. For instance, a 6-month offer would have two 3-month periods. |
-| paymentMode                 | [AdaptyPaymentModeEnum](ff-resources#AdaptyPaymentModeEnum)  | The payment model used for this phase.                       |
-| price                       | Data ([AdaptyPrice](ff-resources#adaptyprice))               | The price of this phase.                                     |
-| subscriptionPeriod          | Data ([AdaptySubscriptionPeriod](ff-resources#adaptysubscriptionperiod)) | The subscription period on which this phase is based.        |
+| paymentMode                 | [AdaptyPaymentModeEnum](#adaptypaymentmodeenum)              | The payment model used for this phase.                       |
+| price                       | Data ([AdaptyPrice](#adaptyprice))                           | The price of this phase.                                     |
+| subscriptionPeriod          | Data ([AdaptySubscriptionPeriod](#adaptysubscriptionperiod)) | The subscription period on which this phase is based.        |
 
 ### AdaptySubscriptionUpdateParameters
 

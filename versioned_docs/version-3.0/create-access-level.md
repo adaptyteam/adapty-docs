@@ -1,7 +1,7 @@
 ---
 title: "Create access level"
-description: "Creating Access Levels | Adapty Docs"
-metadataTitle: "Create and assign access levels in Adapty for better user segmentation."
+description: "Create and assign access levels in Adapty for better user segmentation."
+metadataTitle: "Creating Access Levels | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

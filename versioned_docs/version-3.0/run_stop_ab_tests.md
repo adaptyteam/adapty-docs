@@ -1,54 +1,58 @@
 ---
 title: "Run and stop A/B test"
-description: "Running and Stopping A/B Tests | Adapty Docs"
-metadataTitle: "Learn how to run and stop A/B tests in Adapty to optimize subscription conversions."
+description: "Learn how to run and stop A/B tests in Adapty to optimize subscription conversions."
+metadataTitle: "Running and Stopping A/B Tests | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Running A/B test in Adapty means adding it to a placement. In Adapty, you have two options to run an [A/B test](ab-tests): from the **Placement** page or the **A/B test** page.
+Running an A/B test in Adapty means assigning it to a placement so it can start showing paywalls to users.
 
-### How to run the A/B test
+## How to run the A/B test
 
-In Adapty, you have two ways to run an [A/B test](ab-tests): from the **Placement** page or the **A/B test** page.
+1. Go to the [A/B tests](ab-tests) section from the Adapty main menu.
 
-To run your A/B test for the chosen audience and placement:
+2. Make sure you're viewing the correct list — **regular** and **cross-placement** A/B tests are shown in separate tabs that you can switch between.
 
-1. Open the [**A/B tests**](ab-tests) section from the Adapty main menu.
+   <Zoom>
+     <img src={require('./img/ab-test-type.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+    />
+   </Zoom>
 
-   
+3. Switch to the **Drafts** tab. Only draft tests can be started.
+
+4. Click the **Run A/B test** button next to the test you want to launch.
+
+   <Zoom>
+     <img src={require('./img/run-ab-test.webp').default}
+     style={{
+       border: '1px solid #727272', /* border width and color */
+       width: '700px', /* image width */
+       display: 'block', /* for alignment */
+       margin: '0 auto' /* center alignment */
+     }}
+   />
+   </Zoom>
+
+5. The **Edit A/B test** window will open so you can review and make any final changes before launching the test. If something important is missing — like the placement or audience — you’ll be able to add it now. Keep in mind that once the test is live, you won’t be able to make any edits. To apply changes later, you’ll need to stop the test and create a new one.
+
+6. Once everything looks good, click **Run A/B test** to start.
+
+After launching the test, you can track its progress and view performance data on the [A/B test metrics](results-and-metrics) page. This helps you spot the best-performing variation and make smarter decisions. For more details on how Adapty calculates these metrics, check out Math behind the A/B tests.
+
+## How to stop the A/B test
+
+Stopping an A/B test means you're ready to end it and review the results. This step is key for wrapping up the test and deciding what to show users next.
+
 <Zoom>
-  <img src={require('./img/ebd94b2-run_ab_test.gif').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-2. Click on the **Run** button next to the A/B test you want to begin. The **Run** button only shows for A/B tests that are neither **Live** nor **Completed**.
-3. In the opened **Running A/B test** window, select a **Placement** from the drop-down list. This indicates where in your app the A/B test will display for the chosen audience. This list includes all [placements](placements)  you have in Adapty for your app.
-4. From the **Audience** drop-down list, choose user segment for your A/B test. This list includes all [segments](segments) you have in Adapty for your app.  
-   If you choose an audience that is a part of some other placement, it will automatically become a part of the chosen placement as well after you run the A/B test.  
-   Please note that every audience has a numerical **Priority** (starting from 1). If you add an audience with a priority lower than #1 to an A/B test, potential users for this A/B test may be directed to an audience with a higher priority instead, bypassing their participation in this A/B test. You can [adjust audience priority](change-audience-priority) in the placement itself.
-5. After you've chosen the audience and placement for the A/B test, click the **Run** button to launch it. 
-
-After launching, you can then track its progress and view metrics on the [A/B test metrics](results-and-metrics) page. This will help you identify the better-performing variation and make informed decisions to enhance your app's performance. For more details on Adapty A/B test metrics, refer to [Maths behind the A/B tests](maths-behind-it) section.
-
-### How to stop the A/B test
-
-When you choose to stop an A/B test, it means you have finished observing and analyzing the data. This step is essential for evaluating the test accurately and making informed decisions for future strategies. Stopping an A/B test is a crucial part of the testing process to optimize your outcomes effectively.
-
-There are two options available to stop an A/B test: you can do so either from the **A/B tests** list page or the placement detail page. Regardless of whether you are on the A/B test list page or the placement detail page, both paths lead to the same flow.
-
-
-<Zoom>
-  <img src={require('./img/5906809-CleanShot_2023-07-19_at_18.03.482x.webp').default}
+  <img src={require('./img/stop-ab-test.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -58,22 +62,21 @@ There are two options available to stop an A/B test: you can do so either from t
 />
 </Zoom>
 
+1. Open the [A/B tests](https://app.adapty.io/ab-tests) section and go to the **Live** tab.
 
+2. Click the three-dot menu next to the test you want to stop, then choose **Stop A/B test**.
 
+3. In the **Stop the A/B test** window, decide what should happen after the test ends. You have three options:
 
-
-1. Open the **A/B tests** section from the Adapty main menu and locate the A/B test you want to stop. Only tests that are currently running can be stopped.
-2. Click on the **Stop** button next to the A/B test.
-3. In the opened **Stop the A/B test** window, choose how to finish the A/B test. You have two options:
-
-- Select a winner paywall from the list of tested paywalls.  
-  Based on the included paywall metrics such as revenue, probability to be best (abbreviated as **P2BB**), and revenue per 1K users, you can choose the winning paywall from the list of tested paywalls. By selecting this option, after stopping the A/B test for the selected placement and audience, the winning paywall will be displayed in the app. This allows you to optimize your app's performance by showcasing the most effective paywall to your users.
-- Choose to stop the A/B test without selecting a winner paywall.  
-  For this, select the **Don't show a specific paywall for the audience** radio-button. In this case, for the selected placement and audience, no paywalls from that A/B test will be displayed in the app. This option is useful if you want to pause the display of any paywalls for that specific combination of placement and audience.
+   | Option                                             | Description                                                  |
+   | -------------------------------------------------- | ------------------------------------------------------------ |
+   | Show one of the tested paywalls                    | Choose the winning paywall based on test results like revenue, probability to be best (**P2BB**), and revenue per 1K users. This paywall will then be shown for the selected placement and audience. |
+   | Select paywalls that don’t participate in A/B test | In this case, you can choose any paywall that isn’t part of the current A/B test. This is helpful when the test results show that none of the tested paywalls performed well, and you want to continue with a more effective one instead. |
+   | Don’t show any specific paywall                    | For the selected placement and audience, no specific paywall will be selected after the A/B test ends. Instead, the next available paywall based on audience priority will be shown. This is a good choice if you’d rather let your existing setup decide which paywall to display, without manually selecting one. |
 
 4. Click the **Stop and complete this A/B test** button.
 
-Once the A/B test is stopped, it will no longer be active, and the paywalls will no longer be displayed to users. However, you can still access the A/B test results and metrics on the A/B test metrics page to analyze the data collected during the test.
+Once the A/B test is finished, it will no longer be active, and the paywalls from it will no longer be displayed to users. However, you can still access the A/B test results and metrics on the [A/B test metrics page](results-and-metrics#metrics-controls) to analyze the data collected during the test.
 
 :::note
 Stopping an A/B test is irreversible, and the test cannot be restarted once it has been stopped. Ensure that you have gathered sufficient data and insights before making the decision to stop an A/B test.

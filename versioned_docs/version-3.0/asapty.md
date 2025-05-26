@@ -1,7 +1,7 @@
 ---
 title: "Asapty"
-description: ""
-metadataTitle: ""
+description: "Discover Asapty and its role in Adapty’s subscription ecosystem."
+metadataTitle: "What is Asapty? | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -54,7 +54,7 @@ Troubleshooting
 
 - Make sure you've configured [Apple Search Ads](apple-search-ads) in Adapty and [uploaded credentials](https://app.adapty.io/settings/apple-search-ads), without them, Asapty won't work.
 - Only the profiles with detailed, non-organic ASA attribution will deliver their events to Asapty. You will see "The user profile is missing the required integration data." if the attribution is not sufficient.
-- Profiles created prior to configuring the integrations will not be able to deliver their events to Asapty. You will see the "The user profile is missing the required integration data." error in such cases.
+- Profiles created prior to configuring the integrations will not be able to deliver their events to Asapty.
 :::
 
 ## Troubleshooting

@@ -25,14 +25,13 @@ GET https://api.adapty.io/api/v2/server-side-api/profile/
 
 ## Example request
 
-<Tabs> 
+<Tabs groupId="api-lang" queryString> 
 
 <TabItem value="curl" label="cURL" default> 
 
 ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
@@ -49,7 +48,6 @@ url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
 headers = {
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "adapty-platform": "iOS",
     "Content-Type": "application/json",
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
@@ -67,7 +65,6 @@ print(response.text)
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
 
 const requestOptions = {
@@ -89,7 +86,6 @@ fetch("https://api.adapty.io/api/v2/server-side-api/profile/", requestOptions)
 Placeholders: 
 
 - `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
-- `<YOUR_USER_PROFILE_ID>`: The unique profile ID of the user in Adapty. 
 - `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
 
 ## Parameters

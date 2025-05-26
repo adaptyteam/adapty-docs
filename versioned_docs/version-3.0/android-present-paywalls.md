@@ -1,13 +1,14 @@
 ---
 title: "Android - Present new Paywall Builder paywalls"
-description: "Presenting Paywalls on Android | Adapty Docs"
-metadataTitle: "Learn how to present paywalls on Android for effective monetization."
+description: "Learn how to present paywalls on Android for effective monetization."
+metadataTitle: "Presenting Paywalls on Android | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -21,13 +22,13 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. 
 
 :::
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -62,7 +63,7 @@ In order to display the visual paywall on the device screen, you must first conf
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -129,8 +130,10 @@ Request parameters:
 | **eventListener**             | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **insets**                    | optional | <p>Insets are the spaces around the paywall that prevent tapable elements from getting hidden behind system bars.</p><p>Default: `UNSPECIFIED` which means Adapty will automatically adjust the insets, which works great for edge-to-edge paywalls. </p><p>If your paywall isn’t edge-to-edge, you might want to set custom insets. For how to do that, read in the [Change paywall insets](android-present-paywalls#change-paywall-insets) section below.</p> |
 | **personalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
-| **tagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **tagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**             | optional | Pass the resolver here if you are going to use custom timer functionality. |
+
+<SampleApp />
 
 ## Change paywall insets
 
@@ -141,7 +144,7 @@ If your paywall isn’t edge-to-edge, you might want to set custom insets:
 - If neither the status bar nor the navigation bar overlap with the `AdaptyPaywallView`, use `AdaptyPaywallInsets.NONE`.
 - For more custom setups, like if your paywall overlaps with the top status bar but not the bottom, you can set only the `bottomInset` to `0`, as shown in the example below:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 import androidx.core.graphics.Insets
@@ -198,7 +201,7 @@ ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
 
 To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the paywall is rendered. Here's an example:
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="kotlin" label="Kotlin" default> 
 
 ```kotlin showLineNumbers
@@ -251,7 +254,7 @@ In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined 
 
 To use custom tags in your mobile app, create a `tagResolver` object—a dictionary or map that pairs custom tags with the string values that will replace them when the paywall is rendered. Here's an example:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers

@@ -1,7 +1,7 @@
 ---
 title: "Refund money"
-description: "How to Handle Refunds | Adapty Docs"
-metadataTitle: "Learn how to process refunds for subscriptions in Adapty without revenue loss."
+description: "Learn how to process refunds for subscriptions in Adapty without revenue loss."
+metadataTitle: "How to Handle Refunds | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,12 +1,13 @@
 ---
 title: "Display paywalls designed with new Paywall Builder"
-description: "Displaying PB Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Learn how to display PB paywalls effectively in Adapty to optimize revenue."
+description: "Learn how to display PB paywalls effectively in Adapty to optimize revenue."
+metadataTitle: "Displaying PB Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, you can configure paywalls remotely and define which products to display in your app, eliminating the need to hardcode products.
 
@@ -23,6 +24,8 @@ If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder)
 
 However, some coding is still required. You'll need to retrieve the paywall, display it within your app, and respond to the events it generates.
 
+<SampleApp />
+
 <details>
    <summary>Before you start displaying paywalls (click to expand)</summary>
 
@@ -36,6 +39,10 @@ However, some coding is still required. You'll need to retrieve the paywall, dis
 </details>
 
 ## How to display and process paywalls created in the Paywall Builder
+
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
 
 1. [Fetch the paywall to show in the specific placement](get-pb-paywalls).
 2. [Show the paywall](present-pb-paywalls).

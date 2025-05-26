@@ -1,13 +1,13 @@
 ---
 title: "Tag variables for product info in legacy Paywall Builder"
-description: "Legacy Paywall Builder Tag Variables | Adapty Docs"
-metadataTitle: "Use tag variables in Adapty’s legacy paywall builder to optimize offers."
+description: "Use tag variables in Adapty’s legacy Paywall Builder to optimize offers."
+metadataTitle: "Legacy Paywall Builder Tag Variables | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty paywall builder has a way to customize all the text corresponding to your products and their offers. But if you have multiple locales — we strongly recommend using variables.
+Adapty Paywall Builder has a way to customize all the text corresponding to your products and their offers. But if you have multiple locales — we strongly recommend using variables.
 
 ### How it works
 

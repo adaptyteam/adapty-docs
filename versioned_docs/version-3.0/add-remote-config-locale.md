@@ -1,7 +1,7 @@
 ---
 title: "Remote config paywall localization"
-description: "Expand your paywall's reach across diverse markets by configuring locales in remote config. Learn how to optimize localization and cater to specific regional preferences"
-metadataTitle: "Implement Multi-Language Support: Adding Paywall Locale in Remote Config"
+description: "Add remote config locales to personalize Adapty paywalls."
+metadataTitle: "Adding Remote Config Locales | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -101,7 +101,7 @@ You can translate both **String** and **List** values. By default, all lines are
    />
    </Zoom>
 
-3. Click **Translate** to apply translations. The selected lines will be translated and added to the remote config, with the translated lines marked green.
+3. Click **AI Translate** to apply translations. The selected lines will be translated and added to the paywall, with the translated lines marked green.
 
 ## Exporting localization files for external translation
 

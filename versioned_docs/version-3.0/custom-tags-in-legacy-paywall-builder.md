@@ -1,7 +1,7 @@
 ---
-title: "Custom tags in paywall builder"
-description: "Custom Tags in Legacy Paywall | Adapty Docs"
-metadataTitle: "Implement custom tags in Adapty's legacy Paywall Builder to enhance subscription workflows."
+title: "Custom tags in legacy Paywall Builder"
+description: "Implement custom tags in Adapty's legacy Paywall Builder to enhance subscription workflows."
+metadataTitle: "Custom Tags in Legacy Paywall | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -41,7 +41,7 @@ To add a custom tag to a line:
 
    Please pay attention that:
 
-   - In the Adapty paywall builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`) while in mobile app code, you should refer to them directly (`CUSTOM_TAG`).
+   - In the Adapty Paywall Builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`) while in mobile app code, you should refer to them directly (`CUSTOM_TAG`).
    - Custom tags are case-sensitive.
    - Custom tags can't overlap with any of the [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
 
@@ -80,8 +80,8 @@ To add a custom tag to a line:
 
 To use custom tags in your mobile app, you need to create a `tagResolver` object. This is a dictionary/map containing custom tags and the string values to replace them with when rendering the paywall in your app. Here's an example:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers title="Swift"
 let tagResolver = [
     "USERNAME": "John",

@@ -1,13 +1,14 @@
 ---
 title: "Make purchases in mobile app"
-description: "Handling In-App Purchases in Adapty | Adapty Docs"
-metadataTitle: "Guide on handling in-app purchases and subscriptions using Adapty."
+description: "Guide on handling in-app purchases and subscriptions using Adapty."
+metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
 
@@ -29,8 +30,8 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
 :::
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -52,7 +53,7 @@ do {
 ```
 
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
@@ -132,7 +133,7 @@ Adapty.makePurchase(activity, product, result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 This snippet is valid for v.2.0 or later.
 
 ```javascript showLineNumbers
@@ -158,7 +159,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -183,7 +184,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -219,9 +220,9 @@ Request parameters:
 
 Response parameters:
 
-| Parameter | Description |
-|---------|-----------|
-| **Profile** | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
+| Parameter | Description                                                                                                                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
@@ -236,7 +237,7 @@ When a user opts for a new subscription instead of renewing the current one, the
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
@@ -301,7 +302,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -324,7 +325,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
@@ -344,7 +345,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -377,12 +378,12 @@ Additional request parameter:
 </TabItem>
 </Tabs>
 
-You can read more about subscriptions and proration modes in the Google Developer documentation:
+You can read more about subscriptions and replacement modes in the Google Developer documentation:
 
-- [About subscriptions](https://developer.android.com/google/play/billing/subscriptions#proration)
-- [Recommendations from Google for proration modes](https://developer.android.com/google/play/billing/subscriptions#proration-recommendations)
-- Proration mode [`IMMEDIATE_AND_CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#IMMEDIATE_AND_CHARGE_PRORATED_PRICE). Note: this method is available only for subscription upgrades. Downgrades are not supported.
-- Proration mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#DEFERRED). Note: in case of success, `profile` in the callback will be returned as `null` since a real subscription change will occur only when the current subscription's billing period ends.
+- [About replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommendations from Google for replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
+- Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
 ## In-app purchases from the App Store
 
@@ -420,14 +421,14 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.presentCodeRedemptionSheet()
 ```
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -441,7 +442,7 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.PresentCodeRedemptionSheet((error) => {
@@ -450,7 +451,7 @@ Adapty.PresentCodeRedemptionSheet((error) => {
 ```
 </TabItem>
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 adapty.presentCodeRedemptionSheet();

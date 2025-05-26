@@ -20,8 +20,8 @@ Receives the paywall from the provided placement.
 POST https://api.adapty.io/api/v2/web-api/paywall/
 ```
 
-<Tabs> 
-<TabItem value="shell" label="cURL" default>  
+<Tabs groupId="api-lang" queryString> 
+<TabItem value="curl" label="cURL" default>  
 
  ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/paywall/' \
@@ -36,7 +36,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/paywall/' \
  ```
 
 </TabItem>  
-<TabItem value="javascript" label="JavaScript" default>
+<TabItem value="js" label="JavaScript" default>
 
 ```javascript showLineNumbers
 const myHeaders = new Headers();

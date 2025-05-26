@@ -1,7 +1,7 @@
 ---
 title: "iOS - Present Paywall Builder paywalls in Observer mode"
-description: ""
-metadataTitle: ""
+description: "Learn how to present PB paywalls in observer mode for better insights."
+metadataTitle: "Presenting PB Paywalls in Observer Mode | Adapty Docs"
 ---
 
 
@@ -16,24 +16,25 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 :::warning
 This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [iOS - Present Paywall Builder paywalls](ios-present-paywalls).
 :::
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
 <details>
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
       1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
    3. [Create products](create-product) in the Adapty Dashboard.
    4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
    5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
    6. [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) in your mobile app code.
+
     </details>
 
 <p> </p>
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="Swift" default> 
+<TabItem value="swift" label="Swift" default> 
 
 1. Implement the `AdaptyObserverModeResolver` object:
 
@@ -110,7 +111,7 @@ present(visualPaywall, animated: true)
 Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase. 
 :::
 </TabItem> 
-<TabItem value="swiftUI" label="SwiftUI" default> 
+<TabItem value="swiftui" label="SwiftUI" default> 
 
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
@@ -144,7 +145,7 @@ Request parameters:
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
 | **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
+| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder)  topic for more details. |
 | **ObserverModeResolver** | optional | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                        |
 
 Closure parameters:
@@ -170,7 +171,7 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
    1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-1. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+1. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
 2. [Create products](create-product) in the Adapty Dashboard.
 3. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
 4. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
@@ -178,8 +179,8 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
 </details>
 
 <p> </p>
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 1. Implement the `AdaptyObserverModeDelegate` object:
 
    ```swift showLineNumbers title="Swift"
@@ -218,14 +219,14 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
 
 Request parameters:
 
-| Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                           |
-| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                             |
-| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
-| **ViewConfiguration**    | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                            |
-| **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.                                                                                                                                                                 |
-| **ObserverModeDelegate** | required | The  `AdaptyObserverModeDelegate` object you've implemented in the previous step                                                                                                                                                                                                                                      |
-| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| Parameter                | Presence | Description                                                  |
+| :----------------------- | :------- | :----------------------------------------------------------- |
+| **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **ViewConfiguration**    | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
+| **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details. |
+| **ObserverModeDelegate** | required | The  `AdaptyObserverModeDelegate` object you've implemented in the previous step |
+| **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder) topic for more details. |
 
 Returns:
 
@@ -243,7 +244,7 @@ present(visualPaywall, animated: true)
 Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
 :::
 </TabItem>
-<TabItem value="swiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
 
 ```swift showLineNumbers title="SwiftUI"

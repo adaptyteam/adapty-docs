@@ -1,7 +1,7 @@
 ---
 title: "Airbridge"
-description: "Airbridge Integration | Adapty Docs"
-metadataTitle: "Connect Adapty with Airbridge to track marketing and attribution insights."
+description: "Connect Adapty with Airbridge to track marketing and attribution insights."
+metadataTitle: "Airbridge Integration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -105,8 +105,8 @@ When subscription-related events happen, Adapty sends events to Airbridge. After
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `setIntegrationIdentifier` as it is shown in the example below: 
 
-<Tabs groupId="airbridge">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 import AirBridge
 
@@ -135,7 +135,7 @@ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<Strin
 })
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 ```javascript showLineNumbers
 import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
@@ -153,7 +153,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 import Airbridge from 'airbridge-react-native-sdk';
 import { adapty } from 'react-native-adapty';

@@ -1,7 +1,7 @@
 ---
 title: "Refund events"
-description: "Managing Refund Events in Adapty | Adapty Docs"
-metadataTitle: "Manage refund events in Adapty to reduce churn and optimize revenue."
+description: "Manage refund events in Adapty to reduce churn and optimize revenue."
+metadataTitle: "Managing Refund Events in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,11 +1,12 @@
 ---
-title: "Hide Paywall Builder paywalls (on cross-platform SDKs)"
-description: ""
-metadataTitle: ""
+title: "Hide new Paywall Builder paywalls"
+description: "Learn how to hide Paywall Builder paywalls for better user control."
+metadataTitle: "Hiding Paywall Builder Paywalls | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 While Paywall Builder seamlessly handles the purchasing process upon clicking "buy" buttons, you have to manage the closure of paywall screens within your mobile app.
 
@@ -17,9 +18,8 @@ This guide covers only hiding **new Paywall Builder paywalls**, which works with
 
 ## Dismiss a paywall screen
 
-<Tabs>
-
-<TabItem value="Unity" label="Unity" default> 
+<Tabs groupId="current-os" queryString>
+<TabItem value="unity" label="Unity" default> 
 
 You can hide a paywall view by calling the `view.Dismiss` method.
 
@@ -28,9 +28,9 @@ AdaptyUI.DismissView(view, (error) => {
   // handle the error
 });
 ```
+<SampleApp /> 
 
-  </TabItem> 
-
+</TabItem> 
 <TabItem value="RN" label="React Native (TS)" default> 
 
 - You can hide a paywall view in 2 ways: 
@@ -46,4 +46,5 @@ try {
 }
 ```
 
-</TabItem> </Tabs>
+</TabItem> 
+</Tabs>

@@ -1,7 +1,7 @@
 ---
 title: "Trials renewal cancelled"
-description: "Trial Renewals and Cancellations | Adapty Docs"
-metadataTitle: "Understand trial renewals, cancellations, and subscription flows with Adapty’s insights."
+description: "Understand trial renewals, cancellations, and subscription flows with Adapty’s insights."
+metadataTitle: "Trial Renewals and Cancellations | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

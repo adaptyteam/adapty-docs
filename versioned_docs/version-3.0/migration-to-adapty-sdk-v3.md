@@ -1,7 +1,7 @@
 ---
 title: "Migration guide to Adapty SDK v.3.x or later"
-description: "Migrating to Adapty SDK v3 | Adapty Docs"
-metadataTitle: "Migrate to Adapty SDK v3 for better performance and new monetization features."
+description: "Migrate to Adapty SDK v3 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty SDK v3 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -18,9 +18,9 @@ Adapty SDK v.3.0 brings support for the new exciting [Adapty Paywall Builder](ad
 
 ## Upgrading to Adapty SDK v3.0.x
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="iOS" label="For iOS" default> 
+<TabItem value="swift" label="For iOS" default> 
 
 :::info
 
@@ -61,8 +61,8 @@ This creates a `.xcworkspace` file for your app. Use this file for all future de
 
 Activate Adapty and AdaptyUI SDK modules. Before v3.0, you did not activate AdaptyUI, remember to **add AdaptyUI activation**. Parameters are not changes, so keep them as is. 
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -86,7 +86,7 @@ AdaptyUI.activate()
 ```
 
 </TabItem>
-<TabItem value="kotlin" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift title="" showLineNumbers
 import Adapty
@@ -124,13 +124,13 @@ struct SampleApp: App {
 
 </TabItem> 
 
-<TabItem value="Android" label="For Android" default> 
+<TabItem value="kotlin" label="For Android" default> 
 
 Adapty SDKs are delivered as a BoM (Bill of Materials), ensuring that the Adapty SDK and AdaptyUI SDK versions in your app remain consistent.
 
 To migrate to v3.0, update your code as follows:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```diff showLineNumbers
@@ -194,7 +194,7 @@ dependencies {
 
  </TabItem> 
 
-<TabItem value="Flutter" label="For Flutter" default> 
+<TabItem value="flutter" label="For Flutter" default> 
 
 :::info
 
@@ -262,7 +262,7 @@ Parameters:
 | **withLogLevel**                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 | **withObserverMode**                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
 | **withCustomerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
+| **withIdfaCollectionDisabled**      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
 | **withIpAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
 
 ### Activate AdaptyUI module of Adapty SDK
@@ -298,7 +298,7 @@ Parameters:
 
 </TabItem>
 
-<TabItem value="RN" label="For React Native" default> 
+<TabItem value="rn" label="For React Native" default> 
 
 1. Upgrade to version 3.0.1 as usual.
 2. Replace the fallback paywall files:

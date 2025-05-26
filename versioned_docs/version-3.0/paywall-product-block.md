@@ -1,7 +1,7 @@
 ---
 title: "Paywall product list"
-description: "Paywall Product Block Guide | Adapty Docs"
-metadataTitle: "Discover how to configure paywall product blocks in Adapty to optimize in-app purchases."
+description: "Discover how to configure paywall product blocks in Adapty to optimize in-app purchases."
+metadataTitle: "Paywall Product Block Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

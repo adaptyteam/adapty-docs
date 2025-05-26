@@ -1,7 +1,7 @@
 ---
 title: "API objects"
-description: "Server-Side API Objects in Adapty | Adapty Docs"
-metadataTitle: "Explore Adapty’s server-side API objects to manage subscriptions efficiently."
+description: "Explore Adapty’s server-side API objects to manage subscriptions efficiently."
+metadataTitle: "Server-Side API Objects in Adapty | Adapty Docs"
 displayed_sidebar: APISidebar
 ---
 
@@ -33,6 +33,12 @@ You can do the following action via Adapty server-side API:
 - [Revoke access level](ss-revoke-access-level) from your end user
 
 <AccessLevel />
+
+:::note
+
+Although the SDK includes the `is_active` parameter to check if a subscription is active, the server-side API does not provide this parameter. However, you can determine subscription status at any time by checking whether the current date falls between the `starts_at` and `expires_at` parameters.
+
+:::
 
 ---
 
@@ -192,3 +198,9 @@ Info about your end user subscription.  You can do the following action via Adap
 - [Set transaction to your user](ss-set-transaction) and grant a subscription to them
 
 <Subscription />
+
+:::note
+
+Although the SDK includes the `is_active` parameter to check if a subscription is active, the server-side API does not provide this parameter. However, you can determine subscription status at any time by checking whether the current date falls between the `starts_at` and `expires_at` parameters of the [Access Level](#access-level) object.
+
+:::

@@ -1,22 +1,24 @@
 ---
 title: "React Native - Adapty SDK installation & configuration"
-description: "Installing Adapty SDK for React Native | Adapty Docs"
-metadataTitle: "Install Adapty SDK for React Native and optimize your app’s monetization."
+description: "Install Adapty SDK for React Native and optimize your app’s monetization."
+metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-<Tabs groupId="sdk-installation-unity"> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
 
-Adapty SDK includes two key modules for seamless integration into your mobile app:
+[Adapty SDK](https://adapty.io/sdk/react-native/) includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
 ## Install Adapty SDK
 
 Currently, React Native provides two development paths: Expo and Pure React Native. Adapty seamlessly integrates with both. Please refer to the section below that matches your chosen setup.
+
+If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
 ### Install Adapty SDK for Expo React Native
 
@@ -58,7 +60,7 @@ You can streamline your development process with Expo Application Services (EAS)
    expo start --dev-client
    ```
 
-This should result in the working app with react-native-adapty.
+This should result in a working app with react-native-adapty.
 
 Possible errors:
 
@@ -122,7 +124,7 @@ To use Adapty SDKs, import `adapty` and invoke `activate` in your _core componen
 
 You can pass several optional parameters during activation:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Typescript" label="Typescript" default>
 
 ```typescript showLineNumbers
@@ -145,7 +147,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 ```
 
 </TabItem>
-<TabItem value="JavaScript" label="JavaScript" default>
+<TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
 import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
@@ -178,7 +180,7 @@ Parameters:
 | customerUserId         | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
 | logLevel               | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> **error:** Only errors will be logged.</li><li> **warn:** Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> **info:** Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> **verbose:** Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 | activateUi             | optional | Set to `false` to disable the Adapty UI module. This module is only required if you're using Paywall Builder paywalls. By default, it is always enabled. |
-| idfaCollectionDisabled | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section. |
+| idfaCollectionDisabled | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section. |
 | mediaCache             | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul> |
 
 </TabItem> 
@@ -188,7 +190,7 @@ Parameters:
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
+- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
 You currently need to have a `react-native-adapty` of version 2.4.7 or higher to use UI SDK.
 
@@ -267,7 +269,7 @@ Possible errors:
 
 ### Install Adapty SDKs with Pure React Native
 
-If you opt for a purely native approach, please consult the following instructions:
+If you opt for a purely native approach to manage React Native purchases, please consult the following instructions:
 
 1. In your project, run the installation command:
 
@@ -339,15 +341,13 @@ Activation parameters:
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
-| **PUBLIC_SDK_KEY** | required | <p>A Public SDK Key is the unique identifier used to integrate Adapty into your mobile app. You can copy it in the Adapty Dashboard:  [**App settings** -> **General **tab -> **API Keys** section](https://app.adapty.io/settings/general).</p><p>**SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.</p><p>Make sure you use the **Public SDK key** for the Adapty initialization, since the **Secret key** should be used for the [server-side API](getting-started-with-server-side-api) only.</p> |
-| **observerMode** | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| **customerUserId** | optional | <p>An identifier of a user in your system. We send it with subscription and analytical events, so we can match events to the right user profile. You can also find customers using the `customerUserId` in the [Profiles](profiles-crm)  section.</p><p></p><p>If you don't have a user ID when you start with Adapty, you can add it later using the `adapty.identify()` method. For more details, see the [Identifying users](identifying-users)  section.</p> |
-| **logLevel** | optional | A string parameter that makes Adapty record errors and other important information to help you understand what's happening. |
-| **\_\_debugDeferActivation** | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**. |
-| **ipAddressCollectionDisabled** | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa)   section.</p> |
-| **idfaCollectionDisabled** | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-idfa) section. |
-| activateUi |  |  |
-| mediaCache |  |  |
+| apiKey | required | <p>A Public SDK Key is the unique identifier used to integrate Adapty into your mobile app. You can copy it in the Adapty Dashboard:  [**App settings** -> **General **tab -> **API Keys** section](https://app.adapty.io/settings/general).</p><p>**SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.</p><p>Make sure you use the **Public SDK key** for the Adapty initialization, since the **Secret key** should be used for the [server-side API](getting-started-with-server-side-api) only.</p> |
+| observerMode | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| customerUserId | optional | <p>An identifier of a user in your system. We send it with subscription and analytical events, so we can match events to the right user profile. You can also find customers using the `customerUserId` in the [Profiles](profiles-crm)  section.</p><p></p><p>If you don't have a user ID when you start with Adapty, you can add it later using the `adapty.identify()` method. For more details, see the [Identifying users](identifying-users)  section.</p> |
+| logLevel | optional | A string parameter that makes Adapty record errors and other important information to help you understand what's happening. |
+| \_\_debugDeferActivation | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**. |
+| ipAddressCollectionDisabled | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
+| idfaCollectionDisabled | optional | A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section. |
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
@@ -368,13 +368,13 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 You can set `logLevel` at any time in the application's lifespan, but we recommend that you do this before configuring Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="Typescript" label="Typescript" default>
 ```typescript showLineNumbers
 adapty.setLogLevel('verbose');
 ```
 </TabItem>
-<TabItem value="Javascript" label="Javascript" default>
+<TabItem value="java" label="Javascript" default>
 ```javascript showLineNumbers
 import { LogLevel } from 'react-native-adapty';
 

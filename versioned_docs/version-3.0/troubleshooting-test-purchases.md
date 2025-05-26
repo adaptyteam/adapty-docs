@@ -1,7 +1,7 @@
 ---
 title: "Troubleshooting test purchases"
-description: "Troubleshooting Test Purchases | Adapty Docs"
-metadataTitle: "Troubleshoot test purchases in Adapty and resolve common in-app transaction issues."
+description: "Troubleshoot test purchases in Adapty and resolve common in-app transaction issues."
+metadataTitle: "Troubleshooting Test Purchases | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

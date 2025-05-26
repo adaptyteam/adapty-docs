@@ -1,7 +1,7 @@
 ---
 title: "Android – What's new"
-description: ""
-metadataTitle: ""
+description: "Migrate to Android 2 with Adapty for optimized subscription management."
+metadataTitle: "Migrating to Android 2 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Create offer"
-description: "Creating Special Offers | Adapty Docs"
-metadataTitle: "Create and manage special subscription offers using Adapty’s tools."
+description: "Create and manage special subscription offers using Adapty’s tools."
+metadataTitle: "Creating Special Offers | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Adapty Plugin for FlutterFlow"
-description: "FlutterFlow Integration with Adapty | Adapty Docs"
-metadataTitle: "Integrate FlutterFlow with Adapty for enhanced subscription management."
+description: "Integrate FlutterFlow with Adapty for enhanced subscription management."
+metadataTitle: "FlutterFlow Integration with Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

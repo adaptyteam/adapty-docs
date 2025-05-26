@@ -1,21 +1,27 @@
 ---
 title: "Track onboarding screens"
-description: "Tracking Onboarding Screens | Adapty Docs"
-metadataTitle: "Track onboarding screens in Adapty to measure user engagement and improve retention."
+description: "Track onboarding screens in Adapty to measure user engagement and improve retention."
+metadataTitle: "Tracking Onboarding Screens | Adapty Docs"
+no_index: true
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The onboarding stage is a very common situation in modern mobile apps. The quality of its implementation, content, and number of steps can have a rather significant influence on further user behavior, especially on his desire to become a subscriber or simply make some purchases.
+<head>
+  <!-- Will target all robots: Algolia Crawler, Google, Bing, etc... -->
+  <meta name="robots" content="noindex" />
+</head>
+
+The onboarding stage is very common in modern mobile apps. The quality of its implementation, content, and number of steps can have a rather significant influence on user behavior, especially on his desire to become a subscriber or simply make some purchases.
 
 In order for you to be able to analyze user behavior at this critical stage without leaving Adapty, we have implemented the ability to send dedicated events every time a user visits yet another onboarding screen.
 
 To do this, simply call the `.logShowOnboarding` function:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -29,7 +35,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.logShowOnboarding(
@@ -49,7 +55,7 @@ Adapty.logShowOnboarding(name = "onboarding_name", screenName = "first_screen", 
 Adapty.logShowOnboarding("onboarding_name", "first_screen", 1);
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   await Adapty().logShowOnboarding(name: 'onboarding_name', 
@@ -61,7 +67,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
     if(error != null) {
@@ -70,7 +76,7 @@ Adapty.LogShowOnboarding("onboarding_name", "first_screen", 1, (error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 await adapty.logShowOnboarding(
 	1, /* screenOrder */

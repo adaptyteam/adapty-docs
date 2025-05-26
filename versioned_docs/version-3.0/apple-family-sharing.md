@@ -1,7 +1,7 @@
 ---
 title: "Apple family sharing"
-description: "Apple Family Sharing with Adapty | Adapty Docs"
-metadataTitle: "Enable Apple Family Sharing in Adapty to support shared subscriptions."
+description: "Enable Apple Family Sharing in Adapty to support shared subscriptions."
+metadataTitle: "Apple Family Sharing with Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

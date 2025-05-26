@@ -1,18 +1,21 @@
 ---
 title: "Unity - Handle paywall events"
-description: "Handling Events in Unity with Adapty | Adapty Docs"
-metadataTitle: "Handle events in Unity using Adapty to track and manage subscriptions."
+description: "Handle events in Unity using Adapty to track and manage subscriptions."
+metadataTitle: "Handling Events in Unity with Adapty | Adapty Docs"
 toc_max_heading_level: 4
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
-This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](http://localhost:3000/docs/react-native-handling-events-legacy).
+This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](react-native-handling-events-legacy).
 :::
+
+<SampleApp />
 
 ### User-generated events
 

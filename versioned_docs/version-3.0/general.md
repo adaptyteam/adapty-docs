@@ -1,7 +1,7 @@
 ---
 title: "App settings"
-description: "General Settings and Configuration | Adapty Docs"
-metadataTitle: "Explore general settings and configurations in Adapty for seamless use."
+description: "Explore general settings and configurations in Adapty for seamless use."
+metadataTitle: "General Settings and Configuration | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

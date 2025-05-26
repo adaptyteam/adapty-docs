@@ -1,7 +1,7 @@
 ---
 title: "Google Play Data Safety"
-description: "Google Play Data Safety Compliance | Adapty Docs"
-metadataTitle: "Ensure compliance with Google Play Data Safety policies in Adapty."
+description: "Ensure compliance with Google Play Data Safety policies in Adapty."
+metadataTitle: "Google Play Data Safety Compliance | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

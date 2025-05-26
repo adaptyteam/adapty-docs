@@ -1,7 +1,7 @@
 ---
 title: "Archive paywall"
-description: "Archiving Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Learn how to archive outdated paywalls in Adapty without losing data."
+description: "Learn how to archive outdated paywalls in Adapty without losing data."
+metadataTitle: "Archiving Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -12,6 +12,10 @@ As you dive into Adapty and fine-tune your paywall settings, you might accumulat
 Archiving ensures they're safely stored without permanent deletion, ready to be accessed if needed in the future. Plus, archived paywalls can be filtered out from the default view, decluttering your workspace and simplifying your user interface. In this guide, we'll walk you through efficiently archiving paywalls in Adapty, giving you greater control over your paywall management process.
 
 Just a friendly reminder: Live paywalls that are currently active in at least one placement cannot be archived. If you wish to archive such a paywall, simply remove it from all placements beforehand.
+
+:::note
+You can't archive a paywall if it is used in a non-archived A/B test. This way, the user can view detailed metrics for a completed A/B test, and the linked paywall is part of that data.
+:::
 
 **To archive a paywall:**
 
@@ -50,3 +54,4 @@ Just a friendly reminder: Live paywalls that are currently active in at least on
 
 
 3. When you're in the **Archive paywall** window, simply type in the name of the paywall you wish to archive and then click the **Archive** button.
+

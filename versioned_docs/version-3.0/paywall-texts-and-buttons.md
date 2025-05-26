@@ -1,15 +1,15 @@
 ---
 title: "Paywall texts and buttons"
-description: "Customizing Paywall Texts & Buttons | Adapty Docs"
-metadataTitle: "Customize paywall texts and buttons to improve conversion rates."
+description: "Customize paywall texts and buttons to improve conversion rates."
+metadataTitle: "Customizing Paywall Texts & Buttons | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[Adapty paywall builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty Paywall Builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
-Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
+Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the Paywall Builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the Paywall Builder provides a user-friendly solution to accomplish these objectives.
 
 :::warning
 

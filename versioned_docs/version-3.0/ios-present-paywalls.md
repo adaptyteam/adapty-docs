@@ -1,11 +1,12 @@
 ---
 title: "iOS - Present new Paywall Builder paywalls"
-description: "Presenting Paywalls on iOS | Adapty Docs"
-metadataTitle: "Discover how to present paywalls on iOS to boost conversions and revenue."
+description: "Discover how to present paywalls on iOS to boost conversions and revenue."
+metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -53,6 +54,8 @@ In order to display the visual paywall on the device screen, do the following:
    ```swift showLineNumbers title="Swift"
    present(visualPaywall, animated: true)
    ```
+
+<SampleApp />
 
 ## Present paywalls in SwiftUI
 

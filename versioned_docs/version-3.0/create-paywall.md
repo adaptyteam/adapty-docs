@@ -1,7 +1,7 @@
 ---
 title: "Create paywall"
-description: "Creating a Paywall in Adapty | Adapty Docs"
-metadataTitle: "Learn how to create high-converting paywalls using Adapty’s paywall builder."
+description: "Learn how to create high-converting paywalls using Adapty’s Paywall Builder."
+metadataTitle: "Creating a Paywall in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -19,7 +19,7 @@ A [paywall](paywalls) serves as an in-app storefront where customers can browse 
 
 To create a new paywall in the Adapty dashboard:
 
-1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and open the **Paywall** tab. This page gives an overview of all paywalls you’ve set up, along with their metrics.
+1. Go to [**Paywalls**](https://app.adapty.io/paywalls) in the Adapty main menu and open the **Paywall** tab. This page gives an overview of all paywalls you’ve set up, along with their metrics.
 
 <Zoom>
   <img src={require('./img/c661ee3-paywalls.webp').default}
@@ -61,7 +61,7 @@ To create a new paywall in the Adapty dashboard:
 />
 </Zoom>
 
-6. If you’re offering free trials or other offers for your products, be sure to add them here; otherwise, they won’t be available. Choose an offer you [created earlier](http://localhost:3000/docs/create-offer) for this product from the **Offer** list. The list is available only for the products that have offers. 
+6. If you’re offering free trials or other offers for your products, be sure to add them here; otherwise, they won’t be available. Choose an offer you [created earlier](create-offer) for this product from the **Offer** list. The list is available only for the products that have offers. 
 
 7. Click **Create as a draft** to confirm the paywall creation.
 

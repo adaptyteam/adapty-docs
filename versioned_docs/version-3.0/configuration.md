@@ -1,7 +1,7 @@
 ---
 title: "Configure 3d-party integration"
-description: "Configuration Settings in Adapty | Adapty Docs"
-metadataTitle: "Learn how to configure Adapty settings to optimize subscription management."
+description: "Learn how to configure Adapty settings to optimize subscription management."
+metadataTitle: "Configuration Settings in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -29,16 +29,17 @@ Adapty effortlessly tracks in-app purchases and subscription events such as tria
 
 
 
-Each integration offers the following configuration options that impact all events sent through this integration:
+Integrations offer the following configuration options that impact all events sent through this integration:
 
-| Setting                       | Description                                                                                                                                                                                                                                                                                                                                                  |
-| :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Reporting Proceeds**        | Select how revenue values are presented: either net of App Store and Play Store commissions or gross (before deductions). Toggle the "Send sales as proceeds" checkbox to display sales as proceeds after App Store / Play Store commissions have been subtracted.                                                                                           |
-| **Send Trial Price**          | If checked, Adapty will transmit the subscription price for the Trial Started event.                                                                                                                                                                                                                                                                         |
-| **Exclude Historical Events** | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
-| **Report User's Currency**    | Choose whether sales are reported in the user's currency or in USD.                                                                                                                                                                                                                                                                                          |
-| **Send User Attributes**      | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors.                                                               |
-| **Send Attributions**         | Enable this option to transmit attribution information (e.g. AppsFlyer attribution) and receive relevant details.                                                                                                                                                                                                                                            |
+| Setting                            | Description                                                  |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Reporting Proceeds**             | Select how revenue values are presented: either net of App Store and Play Store commissions or gross (before deductions). Toggle the "Send sales as proceeds" checkbox to display sales as proceeds after App Store / Play Store commissions have been subtracted. |
+| **Send Trial Price**               | If checked, Adapty will transmit the subscription price for the Trial Started event. |
+| **Exclude Historical Events**      | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
+| **Report User's Currency**         | Choose whether sales are reported in the user's currency or in USD. |
+| **Send User Attributes**           | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors. |
+| **Send Attributions**              | Enable this option to transmit attribution information (e.g. AppsFlyer attribution) and receive relevant details. |
+| **Send Play Store purchase token** | Enable this option to receive the Play Store token needed to revalidate the purchase if required. It will add the `play_store_purchase_token` parameter to the event. |
 
 ## Configure the events
 

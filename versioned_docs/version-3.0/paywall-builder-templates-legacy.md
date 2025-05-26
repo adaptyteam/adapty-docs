@@ -1,17 +1,17 @@
 ---
 title: "Legacy Paywall Builder templates"
-description: "Paywall Builder Templates (Legacy) | Adapty Docs"
-metadataTitle: "Use legacy paywall builder templates in Adapty to streamline your monetization."
+description: "Use legacy Paywall Builder templates in Adapty to streamline your monetization."
+metadataTitle: "Paywall Builder Templates (Legacy) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[Adapty paywall builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
+[Adapty Paywall Builder](adapty-paywall-builder-legacy) simplifies the process of creating paywalls—specialized screens within your app where users can make purchases. This tool eliminates the need for technical expertise or design skills. You can effortlessly customize how your paywalls look, the messages they convey, and where essential buttons are positioned. What's more, you can even make real-time changes to these screens while your app is running — without App Store/Google Play reviews.
 
-Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the paywall builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the paywall builder provides a user-friendly solution to accomplish these objectives.
+Moreover, Adapty empowers you to optimize your paywalls further with [A/B testing](ab-tests). Alongside the Paywall Builder, this allows you to test different variations of your paywalls to find the most effective design and messaging. Whether you're striving to increase sales, promote content, or grant access to exclusive features, the Paywall Builder provides a user-friendly solution to accomplish these objectives.
 
-When creating or editing paywalls using Adapty's paywall builder, you have the flexibility to choose from three distinct layout options, each with its own corresponding templates. The template layout you select will dictate the visual appearance and user experience of the paywall in your iOS or Android app. Let's explore the three available template layout options:
+When creating or editing paywalls using Adapty's Paywall Builder, you have the flexibility to choose from three distinct layout options, each with its own corresponding templates. The template layout you select will dictate the visual appearance and user experience of the paywall in your iOS or Android app. Let's explore the three available template layout options:
 
 :::warning
 

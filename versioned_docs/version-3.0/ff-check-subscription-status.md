@@ -1,7 +1,7 @@
 ---
 title: "Step 5. Check access to paid content"
-description: "Checking Subscription Status | Adapty Docs"
-metadataTitle: "Learn how to check subscription status using Adapty's feature flags for better user segmentation."
+description: "Learn how to check subscription status using Adapty's feature flags for better user segmentation."
+metadataTitle: "Checking Subscription Status | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -24,7 +24,7 @@ Now, let’s allow users to purchase your product:
 5. In the **No Actions Created** window, click the **Add Conditional Action** button.
 
 6. In the **Actions Flow Editor** window, choose **Combine Conditions**.
-  <Zoom>
+    <Zoom>
     <img src={require('./FF_img/combined-condition.webp').default}
     style={{
    border: '1px solid #727272', /* border width and color */
@@ -32,8 +32,8 @@ Now, let’s allow users to purchase your product:
    display: 'block', /* for alignment */
    margin: '0 auto' /* center alignment */
     }}
-  />
-  </Zoom>
+    />
+    </Zoom>
 
 7. In the **Set Actions Arguments** section, choose `currentProfile` variable. This is the Adapty variable that holds data about the current user's profile.
 
@@ -129,7 +129,7 @@ Now, let’s allow users to purchase your product:
 
 | Parameter | Value |
 |--------------------------|----------|
-| Available Options| Item as Index |
+| Available Options| Item at Index |
 | List Index Options | First |
 | Available Options| Data Structure Field |
 | Select Field | accessLevels |

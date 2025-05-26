@@ -1,7 +1,7 @@
 ---
 title: "Design paywalls with legacy Paywall Builder"
-description: "Adapty Paywall Builder (Legacy) | Adapty Docs"
-metadataTitle: "Use the legacy Adapty Paywall Builder to manage in-app subscriptions."
+description: "Use the legacy Adapty Paywall Builder to manage in-app subscriptions."
+metadataTitle: "Adapty Paywall Builder (Legacy) | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -15,7 +15,7 @@ The information below refers to the legacy Paywall Builder. For the new Paywall 
 
 :::
 
-Whether you're aiming to boost sales, highlight content, or offer exclusive features, the paywall builder offers an easy way to achieve your goals.
+Whether you're aiming to boost sales, highlight content, or offer exclusive features, the Paywall Builder offers an easy way to achieve your goals.
 
 To use the Adapty Paywall Builder:
 
@@ -41,11 +41,11 @@ To use the Adapty Paywall Builder:
 
 By leveraging the Adapty Paywall Builder, you'll be able to create persuasive paywalls that seamlessly align with your app's branding and purpose. For more details on customizing templates, layout, products, text, and buttons, as well as localizing them, refer to the following sections:
 
-1. [Paywall builder templates](paywall-builder-templates)
+1. [Paywall Builder templates](paywall-builder-templates)
 2. [Paywall  layout and products](paywall-layout-and-products)
 3. [Paywall texts and buttons](paywall-texts-and-buttons)
 4. [Paywall fonts](using-custom-fonts-in-paywall-builder)
 5. [Paywall custom tags](custom-tags-in-paywall-builder) 
-6. [Paywall builder localization](add-paywall-locale-in-adapty-paywall-builder)
+6. [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder)
 
 After you configure your paywalls and [add them to placements](add-audience-paywall-ab-test), you can show them in your mobile app. Refer to the [Display Paywall Builder paywalls](display-pb-paywalls) topic for details on how to do it.

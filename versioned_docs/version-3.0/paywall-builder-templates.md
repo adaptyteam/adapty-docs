@@ -1,7 +1,7 @@
 ---
 title: "Paywall template"
-description: "Paywall Builder Templates | Adapty Docs"
-metadataTitle: "Use Adapty’s paywall builder templates to create high-converting paywalls."
+description: "Use Adapty’s Paywall Builder templates to create high-converting paywalls."
+metadataTitle: "Paywall Builder Templates | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -34,7 +34,7 @@ Templates serve as a fantastic starting point, offering beautifully structured l
 - **Consistency**: Ensure a cohesive look that aligns with proven design standards.
 - **Customizability**: Personalize each template with your brand elements to make it uniquely yours.
 
-For those who prefer a hands-on approach, templates with a minimal design offer a blank canvas. These templates come with basic placements, making it easier for you to unleash your creativity and build a paywall from scratch using Adapty's versatile, feature-rich, and user-friendly paywall builder.
+For those who prefer a hands-on approach, templates with a minimal design offer a blank canvas. These templates come with basic placements, making it easier for you to unleash your creativity and build a paywall from scratch using Adapty's versatile, feature-rich, and user-friendly Paywall Builder.
 
 <Zoom>
   <img src={require('./img/eba907e-PB_templates_minimal_design.webp').default}

@@ -1,7 +1,7 @@
 ---
 title: "Members"
-description: "Managing Member Settings in Adapty | Adapty Docs"
-metadataTitle: "Manage member settings and permissions in Adapty’s dashboard."
+description: "Manage member settings and permissions in Adapty’s dashboard."
+metadataTitle: "Managing Member Settings in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

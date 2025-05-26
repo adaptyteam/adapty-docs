@@ -1,7 +1,7 @@
 ---
 title: "Adapty on EU servers"
-description: ""
-metadataTitle: ""
+description: "Understand Adapty’s EU cluster and its data storage policies."
+metadataTitle: "EU Cluster & Data Storage | Adapty Docs"
 no_index: true
 ---
 <head>
@@ -22,16 +22,16 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 
 ## Step 1. Configure Adapty SDK for EU region
 
-<Tabs> 
-<TabItem value="iOS" label="iOS"> 
+<Tabs groupId="current-os" queryString> 
+<TabItem value="swift" label="iOS"> 
 
 Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Include the `backendBaseUrl` parameter in your configuration:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 
-<TabItem value="Swift" label="Swift" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
@@ -47,13 +47,13 @@ let configurationBuilder =
         // highlight-next-line
         .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
 
-Adapty.activate(with: configurationBuilder) { error in
+Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 ```
 
 </TabItem>
-<TabItem value="SwiftUI" label="SwiftUI" default>
+<TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift showLineNumbers
 import Adapty
@@ -71,7 +71,7 @@ struct SampleApp: App {
           // highlight-next-line
           .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
   
-        Adapty.activate(with: configurationBuilder) { error in
+        Adapty.activate(with: configurationBuilder.build()) { error in
           // handle the error
         }
     }
@@ -96,13 +96,13 @@ Parameters:
 
 </TabItem> 
 
-<TabItem value="Android" label="Android" default> 
+<TabItem value="kotlin" label="Android" default> 
 Install Adapty SDK 3.0.4 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
 
 Use the `.withServerCluster` method in your configuration:
 
-<Tabs>
-  <TabItem value="Kotlin" label="Kotlin" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -121,7 +121,7 @@ override fun onCreate() {
 ```
 
   </TabItem>
-  <TabItem value="Java" label="Java" default>
+  <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override

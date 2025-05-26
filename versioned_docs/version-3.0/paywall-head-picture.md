@@ -1,7 +1,7 @@
 ---
 title: "Paywall hero image"
-description: "Adding a Paywall Head Picture | Adapty Docs"
-metadataTitle: "Customize your paywall with a head picture to improve conversion rates in Adapty."
+description: "Customize your paywall with a head picture to improve conversion rates in Adapty."
+metadataTitle: "Adding a Paywall Head Picture | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -19,7 +19,7 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 
 Your main image is the centerpiece of your paywall's design, essential for captivating users and driving them to take action. Follow these guidelines to ensure your hero image is effective and visually appealing:
 
-- **Formats**: JPG, PNG, SVG.
+- **Formats**: JPG and PNG.
 - **Recommended Size**: Files up to 2 MB for faster loading.
 - **Image Composition**: Photos with the main object centered and surrounded by ample space usually communicate your message effectively.
 - **Impactful Visuals**: Emotional or vibrant photos work well.
@@ -47,7 +47,6 @@ You have control over the sizing of the main image, adjusting its proportions to
 
 The **overlay hero image** adds a layer of depth and dynamism to your paywall. Positioned as a fixed background at the bottom, it creates a stunning effect as other elements scroll over it. This makes the hero image appear stationary, providing a visually engaging experience as users scroll through the content.
 
-
 <Zoom>
   <img src={require('./img/01c702a-overlay_head_picture.gif').default}
   style={{
@@ -59,12 +58,7 @@ The **overlay hero image** adds a layer of depth and dynamism to your paywall. P
 />
 </Zoom>
 
-
-
-
-
 The **transparent layout** delivers a bold, full-screen hero image that instantly captures attention. This layout is perfect for showcasing a limited selection of products or content, filling the entire screen and making a powerful, direct impact without the need for scrolling.
-
 
 <Zoom>
   <img src={require('./img/0401532-transparent_hero_picture.webp').default}
@@ -77,16 +71,11 @@ The **transparent layout** delivers a bold, full-screen hero image that instantl
 />
 </Zoom>
 
-
-
-
-
 :::note
 Use the transparent layout for minimal content display, as it doesn’t involve scrolling, making your message clear and impactful.
 :::
 
 The **flat layout** mimics a seamless landing page, presenting all elements in a continuous, scrollable layer. Users enjoy a smooth, cohesive narrative as they scroll through the content, perfect for integrating your products or stories effectively in a unified flow.
-
 
 <Zoom>
   <img src={require('./img/7c13a16-flat_hero_picture.gif').default}
@@ -98,10 +87,6 @@ The **flat layout** mimics a seamless landing page, presenting all elements in a
   }}
 />
 </Zoom>
-
-
-
-
 
 :::note
 Ideal for storytelling or presenting a series of offerings, the flat layout lets you create a compelling sequence that captivates users.
@@ -148,6 +133,4 @@ To remove a hero image from a paywall:
 />
 </Zoom>
 
-
-
-2. Change its hight to zero.
+2. Change its height to zero.

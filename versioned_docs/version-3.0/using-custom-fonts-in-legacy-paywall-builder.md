@@ -1,7 +1,7 @@
 ---
 title: "Custom fonts in legacy Paywall Builder"
-description: "Custom Fonts in Legacy Paywall Builder | Adapty Docs"
-metadataTitle: "Enhance your legacy paywall builder with custom fonts for a better visual experience."
+description: "Enhance your legacy Paywall Builder with custom fonts for a better visual experience."
+metadataTitle: "Custom Fonts in Legacy Paywall Builder | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

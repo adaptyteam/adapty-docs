@@ -1,13 +1,16 @@
 ---
 title: "Present Paywall Builder paywalls"
-description: "Presenting PB Paywalls | Adapty Docs"
-metadataTitle: "Learn how to present PB paywalls effectively to drive more conversions."
+description: "Learn how to present PB paywalls effectively to drive more conversions."
+metadataTitle: "Presenting PB Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
+
+<SampleApp />
 
 For detailed guidance on presenting paywalls within different frameworks, please refer to the specified topics on each framework:
 

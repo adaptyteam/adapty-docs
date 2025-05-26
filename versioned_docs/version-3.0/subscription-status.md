@@ -1,7 +1,7 @@
 ---
 title: "Check subscription status"
-description: "Understanding Subscription Status | Adapty Docs"
-metadataTitle: "Track and manage user subscription status in Adapty for improved customer retention."
+description: "Track and manage user subscription status in Adapty for improved customer retention."
+metadataTitle: "Understanding Subscription Status | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -9,6 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
@@ -25,12 +26,14 @@ Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) ob
 
 To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-subscription-status-updates) section below.
 
+<SampleApp />
+
 ## Retrieving the access level from the server
 
 To get the access level from the server, use the `.getProfile()` method:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -44,7 +47,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getProfile { result in
@@ -88,7 +91,7 @@ Adapty.getProfile(result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
@@ -99,7 +102,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
@@ -111,7 +114,7 @@ Adapty.GetProfile((profile, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
@@ -133,8 +136,8 @@ The `.getProfile()` method provides you with the user profile from which you can
 
 Here is an example for checking for the default "premium" access level:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -146,7 +149,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.getProfile { result in
@@ -194,7 +197,7 @@ Adapty.getProfile(result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 try {
   final profile = await Adapty().getProfile();
@@ -207,7 +210,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 Adapty.GetProfile((profile, error) => {
   if (error != null) {
@@ -223,7 +226,7 @@ Adapty.GetProfile((profile, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 try {
     const profile = await adapty.getProfile();
@@ -245,8 +248,8 @@ Whenever the user's subscription changes, Adapty fires an event.
 
 To receive messages from Adapty, you need to make some additional configuration:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 Adapty.delegate = self
@@ -272,14 +275,14 @@ Adapty.setOnProfileUpdatedListener(profile -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 Adapty().didUpdateProfileStream.listen((profile) {
   // handle any changes to subscription state
 });
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 ```csharp showLineNumbers
 // Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
@@ -289,7 +292,7 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
 }
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 // Create an "onLatestProfileLoad" event listener
 adapty.addEventListener('onLatestProfileLoad', profile => {

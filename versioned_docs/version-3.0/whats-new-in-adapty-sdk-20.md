@@ -1,7 +1,7 @@
 ---
 title: "What's new in Adapty SDK 2.0"
-description: ""
-metadataTitle: ""
+description: "Discover the latest updates in Adapty SDK 2.0."
+metadataTitle: "What's New in Adapty SDK 2.0 | Adapty Docs"
 ---
 
 Explore what's new in the latest version of our SDK, and learn how to plan the migration process.

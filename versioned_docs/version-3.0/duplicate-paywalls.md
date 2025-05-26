@@ -1,7 +1,7 @@
 ---
 title: "Duplicate paywall"
-description: "Handling Duplicate Paywalls in Adapty | Adapty Docs"
-metadataTitle: "Learn how to manage duplicate paywalls and optimize paywall performance in Adapty."
+description: "Learn how to manage duplicate paywalls and optimize paywall performance in Adapty."
+metadataTitle: "Handling Duplicate Paywalls in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

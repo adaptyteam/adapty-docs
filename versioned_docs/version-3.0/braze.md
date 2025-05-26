@@ -1,7 +1,7 @@
 ---
 title: "Braze"
-description: "Braze Integration Guide | Adapty Docs"
-metadataTitle: "Integrate Braze with Adapty for seamless customer engagement and push notifications."
+description: "Integrate Braze with Adapty for seamless customer engagement and push notifications."
+metadataTitle: "Braze Integration Guide | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -17,7 +17,7 @@ Adapty sends subscription events, user properties and purchases over to Braze, s
 
 ## How to set up Braze integration
 
-To integrate Braze go to [**Integrations** -> **Braze**](https://app.adapty.io/integrations/braze), switch on the toggle, and fill out the fields.
+To integrate Braze go to [Integrations -> Braze](https://app.adapty.io/integrations/braze), switch on the toggle, and fill out the fields.
 
 The initial step of the integration process is to provide the necessary credentials to establish a connection between your Braze and Adapty profiles. You will need the **REST API Key**, your **Braze Instance ID**, and **App IDs** for iOS and Android for the integration to work properly:
 
@@ -114,7 +114,7 @@ Adapty will send subscription events and user attributes to Braze using a server
 
 For events that have revenue, such as trial conversions and renewals, Adapty will send this info to Braze as purchases.
 
-[Here](events#properties) you can find the complete specifications for the event properties sent to Braze.
+[Here](messaging#event-properties) you can find the complete specifications for the event properties sent to Braze.
 
 :::note
 Helpful user attributes
@@ -136,14 +136,14 @@ Adapty sends some user attributes for Braze integration by default. You can refe
 
 All float values will be rounded to int. Strings stay the same.
 
-In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Braze if the user marks the ** Send user attributes** checkbox from [the integration page](https://app.adapty.io/integrations/braze)
+In addition to the pre-defined list of tags available, it is possible to send [custom attributes](segments#custom-attributes) using tags. This allows for more flexibility in the type of data that can be included with the tag and can be useful for tracking specific information related to a product or service. All custom user attributes are sent automatically to Braze if the user marks the ** Send user attributes** checkbox from [the integration page](https://app.adapty.io/integrations/braze).
 
 ## SDK Configuration
 
 To link user profiles in Adapty and Braze you need to either configure Braze SDK with the same customer user ID as Adapty or use its `.changeUser()` method:
 
-<Tabs>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 ```swift showLineNumbers
 let braze = Braze(configuration: configuration)
 braze.changeUser(userId: "adapty_customer_user_id")

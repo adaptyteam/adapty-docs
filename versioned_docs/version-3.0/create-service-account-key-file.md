@@ -1,7 +1,7 @@
 ---
 title: "Generate service account key file  in the Google Play Console"
-description: "Creating Service Account Key File | Adapty Docs"
-metadataTitle: "Learn how to create a service account key file for seamless integration with Adapty."
+description: "Learn how to create a service account key file for seamless integration with Adapty."
+metadataTitle: "Creating Service Account Key File | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Paywall layout"
-description: ""
-metadataTitle: ""
+description: "Design paywall layouts and manage products in Adapty for better conversion."
+metadataTitle: "Paywall Layout & Products | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -56,7 +56,7 @@ Decide how users will complete purchases. There are two options:
 
 ## Background color
 
-Maintain visual consistency by setting a default font for your paywall. Options include the system font (SF Pro for iOS, Roboto for Android), available common fonts, or uploading a custom font.
+Maintain visual consistency by setting a default background for your paywall. Use the **Background color** field in the **Layout settings**. Click the colored square to open the configuration window, where you can choose a solid color or a gradient in separate tabs.
 
 
 <Zoom>
@@ -126,7 +126,6 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 
 
 3. To delay the appearance of the button, adjust the **Show after delay** slider.
-
 
 <Zoom>
   <img src={require('./img/9f9a159-PB_delay_slider.webp').default}

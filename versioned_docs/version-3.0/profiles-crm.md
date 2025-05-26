@@ -1,14 +1,12 @@
 ---
 title: "Profiles/CRM"
-description: "Managing Profiles & CRM | Adapty Docs"
-metadataTitle: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
+description: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
+metadataTitle: "Managing Profiles & CRM | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
-import SubscriptionState from '@site/src/components/reusable/SubscriptionState.md';
-
 
 Profiles is a CRM for your users. With Profiles, you can:
 
@@ -28,13 +26,20 @@ Profiles is a CRM for your users. With Profiles, you can:
 />
 </Zoom>
 
-## Subscription state
+In a full table of subscribers, you can filter, sort, and find users. The state describes user state in terms of a subscription and can be:
 
-In a full table of subscribers, you can filter, sort, and find users. The state describes the user state in terms of a subscription and can be:
+| User state                 | Description                                                                  |
+| :------------------------- | :--------------------------------------------------------------------------- |
+| **Subscribed**             | The user has an active subscription                                          |
+| **Active trial**           | The user has a subscription with an active trial period                      |
+| **Auto renew off**         | The user turned off auto-renewal. Check [events](events)  for more info  |
+| **Subscription cancelled** | The user cancelled a subscription. Check [events](events)  for more info |
+| **Trial cancelled**        | The user cancelled a trial                                                   |
+| **Never subscribed**       | The user has never subscribed, i.e. he's a freemium user                     |
+| **Billing issue**          | The user can't be charged                                                    |
+| **Grace period**           | A user entered a grace period                                                |
 
-<SubscriptionState />
-
-## User attributes
+## User properties
 
 <Zoom>
   <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.webp').default}
@@ -51,16 +56,14 @@ You can send any properties that you want for the user.
 
 By default, Adapty sets:
 
-| Property         | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| Customer user ID | An identifier of your end user in your system.               |
-| Adapty ID        | Internal Adapty identifier of your end user, called Profile ID. |
-| IDFA             | The Identifier for Advertisers, assigned by Apple to a user's device. |
-| Country          | Country of your end user.                                    |
-| OS               | The operating system used by the end user.                   |
-| Device           | The end-user-visible device model name.                      |
-| Install date     | The date when the user was first recorded in Adapty: <ul><li>The date the user was created. </li><li>If the user installed your app before you integrated Adapty, it reflects the date of their first transaction.</li><li>If applicable, the date provided during a historical data import.</li></ul> |
-| Created at       | The date the user was created.                               |
+- **Customer user ID**. Is a developer ID and can be any string
+- **Adapty ID**. Internal ID of a user in Adapty
+- **IDFA**
+- **Country**. From IP address country of the user
+- **OS**
+- **Device**
+- **Created at**. Profile creation date
+- **Last seen**
 
 For a better understanding of your user, we suggest sending at least your internal user ID or user email. This will help you to find a user.
 

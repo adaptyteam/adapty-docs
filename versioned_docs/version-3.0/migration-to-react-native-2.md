@@ -1,7 +1,7 @@
 ---
 title: "React Native — What's new"
-description: "Migrating to React Native 2 | Adapty Docs"
-metadataTitle: "Seamlessly migrate to React Native 2 with Adapty’s comprehensive migration guide."
+description: "Seamlessly migrate to React Native 2 with Adapty’s comprehensive migration guide."
+metadataTitle: "Migrating to React Native 2 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -44,7 +44,7 @@ In SDK v2 there are several changes:
 - `v2.0.0 (New)` is an example of basic and precise activations for SDK v2
 - `v1.x.x (Previous)` is an example of basic and precise activations for a latest `v1.x.x` version
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -154,7 +154,7 @@ In SDK v2, methods are renamed:
 - `v2.0.0 (New)` is an example of getting user profile for SDK v2
 - `v1.x.x (Previous)` is an example of getting user profile for a latest `v1.x.x` SDK version
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -350,7 +350,7 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can get a paywall in a new SDK v2
 - `v1.x.x (Previous)` is how you you could get a paywall and its products in SDK v1
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -379,7 +379,7 @@ In SDK v2 there are two separate methods now:
 **Fallback paywalls**  
 Previously, in SDK v1 there was `adapty.paywalls.setFallback` method. In SDK v2 it is now called `adapty.setFallbackPaywalls`.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -407,7 +407,7 @@ Below you can find all the changes introduced in v2.0.0 to `AdaptyPaywall` inter
 - `v2.0.0 (New)` is an interface representation in a new SDK v2
 - `v1.x.x (Previous)` is an interface representation in a latest `v1.x.x` version
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="Changes" default>
 ```diff showLineNumbers
 interface AdaptyPaywall {
@@ -481,7 +481,7 @@ Note, that you can switch tabs:
 - \`v2.0.0 (New) is how you can query products in SDK v2
 - `v1.x.x (Previous)` is how you could query products in SDK v1
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -588,7 +588,7 @@ Note, that you can switch tabs:
 - `v2.0.0 (New)` is how you can handle `introductoryOfferEligibility` in SDK v2
 - `v1.x.x (Previous)` is how you handled `introductoryOfferEligibility` in SDK v1
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0
@@ -653,7 +653,7 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can make a purchase in SDK v2
 - `v1.x.x (Previous)` is how you could make a purchase in SDK v1
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK v2.0.0
@@ -692,7 +692,7 @@ Note that you can switch tabs:
 - `v2.0.0 (New)` is how you can set a `variationId` in SDK v2
 - `v1.x.x (Previous)` is how you could set a `variationId` in SDK v1
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK v2.0.0
@@ -731,7 +731,7 @@ In SDK v2, there are several changes:
 - `v2.0.0 (New)` is an example of updating attribution for SDK v2
 - `v1.x.x (Previous)` is an example of updating attribution for a latest `v1.x.x` SDK version
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="v2.0.0 (New)" default>
 ```typescript showLineNumbers
 // AdaptySDK 2.0.0

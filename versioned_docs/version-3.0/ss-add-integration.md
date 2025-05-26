@@ -22,13 +22,12 @@ POST https://api.adapty.io/api/v2/server-side-api/integration/profile/set/integr
 
 ## Example request
 
-<Tabs>
+<Tabs groupId="api-lang" queryString>
 <TabItem value="curl" label="cURL" default> 
 
 ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/integration/profile/set/integration-identifiers/' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'adapty-platform: iOS' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --data '{
@@ -82,7 +81,6 @@ payload = {
 
 headers = {
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "adapty-platform": "iOS",
     "Content-Type": "application/json",
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
@@ -100,7 +98,6 @@ print(response.text)
 ```javascript showLineNumbers
 const myHeaders = new Headers();
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("adapty-platform", "iOS");
 myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 
@@ -140,6 +137,11 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 
 </Tabs>
 
+Placeholders: 
+
+- `<YOUR_CUSTOMER_USER_ID>`: The unique ID of the customer in your system.
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
+
 #### Parameters
 
 | Parameter                        | Type   | Required in request | Nullable in request | Description                                                  |
@@ -165,3 +167,12 @@ fetch("https://api.adapty.io/api/v2/server-side-api/integration/profile/set/inte
 ## Successful response: 200: OK
 
 The request is successful. The response body is blank.
+
+
+
+---
+
+**See also:**
+
+- [Get integration identifiers](ss-get-integration)
+- [Get profile](ss-get-profile)

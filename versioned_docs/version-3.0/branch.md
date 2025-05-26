@@ -1,7 +1,7 @@
 ---
 title: "Branch"
-description: "Branch Integration for Subscription Tracking | Adapty Docs"
-metadataTitle: "Integrate Branch with Adapty to track deep links and app conversions."
+description: "Integrate Branch with Adapty to track deep links and app conversions."
+metadataTitle: "Branch Integration for Subscription Tracking | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -107,8 +107,8 @@ It's very important to send Branch attribution data from the device to Adapty us
 
 To connect the Branch and Adapty user, make sure you provide your `customerUserId` to Branch. If you prefer not to use `customerUserId` in Branch, use the `setIntegrationIdentifier method to specify the Branch user ID.
 
-<Tabs groupId="branch">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 do {
@@ -140,19 +140,19 @@ Branch.getAutoInstance(this)
 Branch.getAutoInstance(context).logout()
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 ```javascript showLineNumbers
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.setIdentity('YOUR_USER_ID');
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 ```csharp showLineNumbers
 Branch.setIdentity("your user id");
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import branch from 'react-native-branch';
@@ -165,8 +165,8 @@ branch.setIdentity('YOUR_USER_ID');
 
 Next, pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
 
-<Tabs>
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 class YourBranchImplementation {
@@ -188,7 +188,7 @@ class YourBranchImplementation {
 //everything is in the above snippet for Android
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter (Dart)" default>
+<TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
 try {
@@ -203,7 +203,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity (C#)" default>
+<TabItem value="unity" label="Unity (C#)" default>
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -220,7 +220,7 @@ Branch.initSession(delegate(Dictionary<string, object> parameters, string error)
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty, AttributionSource } from 'react-native-adapty';

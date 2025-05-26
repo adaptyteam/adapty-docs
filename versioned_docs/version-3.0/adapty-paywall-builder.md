@@ -1,7 +1,7 @@
 ---
 title: "Design paywalls with new Paywall Builder"
-description: "Using Adapty Paywall Builder | Adapty Docs"
-metadataTitle: "Master Adapty's Paywall Builder to create high-converting in-app subscription offers."
+description: "Master Adapty's Paywall Builder to create high-converting in-app subscription offers."
+metadataTitle: "Using Adapty Paywall Builder | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -80,6 +80,10 @@ To use the Adapty Paywall Builder:
 
 
 6. By leveraging the Adapty Paywall Builder, you can create persuasive paywalls that seamlessly align with your app's branding and purpose based on the selected template.
+
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
 
 ## How to migrate your paywalls
 

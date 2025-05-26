@@ -1,7 +1,7 @@
 ---
 title: "ARPPU"
-description: "Understanding ARPPU Metrics | Adapty Docs"
-metadataTitle: "Understand ARPPU (Average Revenue Per Paying User) and how it impacts your app’s monetization."
+description: "Understand ARPPU (Average Revenue Per Paying User) and how it impacts your app’s monetization."
+metadataTitle: "Understanding ARPPU Metrics | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

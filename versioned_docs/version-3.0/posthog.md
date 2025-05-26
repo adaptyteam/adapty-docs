@@ -24,7 +24,7 @@ Integrating PostHog with Adapty enables seamless tracking of subscription-relate
 
 ## PostHog event structure
 
-Adapty sends selected events to PostHog as configured in the **Events names** section on the [**PostHog Integration page**](https://app.adapty.io/integrations/posthog). Each event is structured like this:
+Adapty sends selected events to PostHog as configured in the **Events names** section on the [PostHog Integration page](https://app.adapty.io/integrations/posthog). Each event is structured like this:
 
 ```json showLineNumbers
 {
@@ -53,8 +53,8 @@ Where
 | --------------- | -------------------- | ------------------------------------------------------------ |
 | **distinct_id** | String               | Unique identifier for the user (e.g., `profile.posthog_distinct_user_id`, `customer_user_id`, or `profile_id`). |
 | **timestamp**   | ISO 8601 date & time | The date and time of the event.                              |
-| **event**       | String               | The name of the event as you defined it in the Events names section of the [**PostHog configuration**](https://app.adapty.io/integrations/posthog). |
-| **properties**  | Object               | Contains the [properties.$set](posthog#propertiesset-parameters) and all the [event-specific properties](events#properties). Each property is optional and won't be sent to PostHog if missing. |
+| **event**       | String               | The name of the event as you defined it in the Events names section of the [PostHog configuration](https://app.adapty.io/integrations/posthog). |
+| **properties**  | Object               | Contains the [properties.$set](posthog#propertiesset-parameters) and all the [event-specific properties](messaging#event-properties). Each property is optional and won't be sent to PostHog if missing. |
 
 ### properties.$set parameters
 
@@ -71,7 +71,7 @@ Each `properties.$set` object parameter is optional and won't be sent to PostHog
 
 ## Setting up PostHog integration
 
-1. Open the [**Integrations -> PostHog**](https://app.adapty.io/integrations/posthog) page in the Adapty Dashboard and enable the toggle.
+1. Open the [Integrations -> PostHog](https://app.adapty.io/integrations/posthog) page in the Adapty Dashboard and enable the toggle.
 
    <Zoom>
      <img src={require('./img/posthog-on.webp').default}
@@ -122,9 +122,9 @@ Each `properties.$set` object parameter is optional and won't be sent to PostHog
 
 To enable receiving attribution data from PostHog, pass the `distinctId` value to Adapty as shown below:
 
-<Tabs groupId="posthog"> 
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="Swift" label="Swift" default> 
+<TabItem value="swift" label="Swift" default> 
 
 ```swift showLineNumbers
 do {
@@ -165,7 +165,7 @@ Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()
 
 </TabItem> 
 
-<TabItem value="Flutter" label="Flutter" default> 
+<TabItem value="flutter" label="Flutter" default> 
 
 ```javascript showLineNumbers
 try {
@@ -182,13 +182,13 @@ try {
 
 </TabItem> 
 
-<TabItem value="Unity" label="Unity" default> 
+<TabItem value="unity" label="Unity" default> 
 
 There is no official PostHog SDK for Unity.
 
 </TabItem> 
 
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { adapty } from 'react-native-adapty';

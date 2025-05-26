@@ -1,7 +1,7 @@
 ---
 title: "Grace period"
-description: ""
-metadataTitle: ""
+description: "Understand how subscription grace periods work and improve user retention."
+metadataTitle: "Understanding Subscription Grace Periods | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

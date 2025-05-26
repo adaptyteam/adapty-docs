@@ -1,5 +1,5 @@
 ---
-title: " Add attribution API request"
+title: " Add custom attribution API request"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
@@ -14,7 +14,7 @@ import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileRe
 import ProfileResponseNotFound from '@site/src/components/reusable/ProfileResponseNotFound.md';
 import InvalidEnumerationMember from '@site/src/components/reusable/InvalidEnumerationMember.md';
 
-Adds marketing attribution data to a profile.
+Adds marketing custom attribution data to a profile.
 
 ## Endpoint and method
 
@@ -24,7 +24,7 @@ POST https://api.adapty.io/api/v2/web-api/attribution/
 
 ## Request example
 
-<Tabs> <TabItem value="shell" label="cURL" default>
+<Tabs groupId="api-lang" queryString> <TabItem value="curl" label="cURL" default>
 
 ```shell showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
@@ -44,7 +44,7 @@ curl --location 'https://api.adapty.io/api/v2/web-api/attribution/' \
 ```
 
 </TabItem> 
-<TabItem value="javascript" label="JavaScript" default>  
+<TabItem value="js" label="JavaScript" default>  
 
 ```javascript showLineNumbers
 const myHeaders = new Headers();

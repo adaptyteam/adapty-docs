@@ -1,16 +1,17 @@
 ---
 title: "Android - Adapty SDK Installation and configuration"
-description: "Installing Adapty SDK on Android | Adapty Docs"
-metadataTitle: "Install and configure Adapty SDK for Android apps."
+description: "Install and configure Adapty SDK for Android apps."
+metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
+- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
 You can install Adapty SDK via Gradle.
 
@@ -20,17 +21,17 @@ Go through the release checklist before releasing your app
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
 
-<Tabs> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
 
 ## Install via Gradle
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```groovy showLineNumbers
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.3.0')
+    implementation platform('io.adapty:adapty-bom:3.4.0')
     implementation 'io.adapty:android-sdk'
     implementation 'io.adapty:android-ui'
 }
@@ -42,7 +43,7 @@ dependencies {
 ```kotlin showLineNumbers
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.3.0"))
+    implementation(platform("io.adapty:adapty-bom:3.4.0"))
     implementation("io.adapty:android-sdk")
     implementation("io.adapty:android-ui")
 }
@@ -56,7 +57,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.3.0"
+adaptyBom = "3.4.0"
 
 [libraries]
 ..
@@ -118,8 +119,8 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-<Tabs>
-  <TabItem value="Kotlin" label="Kotlin" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -137,7 +138,7 @@ override fun onCreate() {
 ```
 
 </TabItem>
-<TabItem value="Java" label="Java" default>
+<TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override
@@ -160,17 +161,19 @@ public void onCreate() {
 
 Configurational options:
 
-| Parameter                       | Presence | Description                                                  |
-| ------------------------------- | -------- | ------------------------------------------------------------ |
-| **PUBLIC_SDK_KEY**              | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
-| **observerMode**                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| **ipAddressCollectionDisabled** | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
-| **adIdCollectionDisabled**      | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248). The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| Parameter                   | Presence | Description                                                  |
+| --------------------------- | -------- | ------------------------------------------------------------ |
+| apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
+| observerMode                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
+| ipAddressCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| adIdCollectionDisabled      | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248). The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
 
 :::note
 **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
 :::
+
+<SampleApp />
 
  </TabItem> 
 
@@ -196,7 +199,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
 ## Install via Gradle
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```groovy showLineNumbers
@@ -288,8 +291,8 @@ You should add `-keep class com.adapty.** { *; }` to your Proguard configuration
 
 Add the following to your `Application` class:
 
-<Tabs>
-  <TabItem value="Kotlin" label="Kotlin" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 override fun onCreate() {
@@ -311,7 +314,7 @@ override fun onCreate() {
 ```
 
 </TabItem>
-<TabItem value="Java" label="Java" default>
+<TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
 @Override
@@ -338,12 +341,12 @@ public void onCreate() {
 
 Configurational options:
 
-| Parameter                       | Presence | Description                                                  |
-| ------------------------------- | -------- | ------------------------------------------------------------ |
-| **PUBLIC_SDK_KEY**              | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
-| **observerMode**                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| **customerUserId**              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| **IpAddressCollectionDisabled** | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| Parameter                   | Presence | Description                                                  |
+| --------------------------- | -------- | ------------------------------------------------------------ |
+| apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
+| observerMode                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
+| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
+| IpAddressCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
 
 :::note
 **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
@@ -370,7 +373,7 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
@@ -387,7 +390,7 @@ Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.setLogHandler { level, message ->

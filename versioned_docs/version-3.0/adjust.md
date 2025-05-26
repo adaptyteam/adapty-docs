@@ -1,7 +1,7 @@
 ---
 title: "Adjust"
-description: "Adjust Integration for Subscription Analytics | Adapty Docs"
-metadataTitle: "Connect Adjust with Adapty for better subscription tracking and analytics."
+description: "Connect Adjust with Adapty for better subscription tracking and analytics."
+metadataTitle: "Adjust Integration for Subscription Analytics | Adapty Docs"
 
 ---
 
@@ -171,10 +171,10 @@ Adapty will send subscription events to Adjust using a server-to-server integrat
 
 ## SDK configuration
 
-It's very important to send Adjust attribution data from the device to Adapty using `setIntegrationIdentifier()` SDK method. The example below shows how to do that. For Adjust version 5.0 or later, use the following:
+For Adapty to send subscription data to Adjust, pass the Adjust device ID using the `setIntegrationIdentifier()` SDK method. For Adjust version 5.0 or later, use the following example:
 
-<Tabs groupId="adjust">
-<TabItem value="Swift" label="iOS (Swift)" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
 
 ```swift showLineNumbers
 class AdjustModuleImplementation {
@@ -193,8 +193,6 @@ func updateAdjustAttribution() {
         
         Adapty.updateAttribution(attribution, source: "adjust")
     }
-}
-
 }
 ```
 
@@ -246,7 +244,7 @@ Adjust.getAttribution(attribution -> {
 
 </TabItem>
 
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 import 'package:adjust_sdk/adjust.dart';
@@ -288,7 +286,7 @@ try {
 ```
 
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 import { Adjust, AdjustConfig } from "react-native-adjust";

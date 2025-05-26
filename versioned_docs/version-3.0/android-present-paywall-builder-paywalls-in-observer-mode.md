@@ -1,7 +1,7 @@
 ---
 title: "Android - Present Paywall Builder paywalls in Observer mode"
-description: "Presenting Paywalls in Observer Mode | Adapty Docs"
-metadataTitle: "Learn how to present paywalls in observer mode using Adapty’s Paywall Builder."
+description: "Learn how to present paywalls in observer mode using Adapty’s Paywall Builder."
+metadataTitle: "Presenting Paywalls in Observer Mode | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -16,13 +16,13 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [Android - Present Paywall Builder paywalls](android-present-paywalls) topic instead.
 :::
 
-<Tabs> 
+<Tabs groupId="current-os" queryString> 
 <TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
 <details>
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
       1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for Android](sdk-installation-android), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
    3. [Create products](create-product) in the Adapty Dashboard.
    4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
    5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
@@ -34,7 +34,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
@@ -93,13 +93,13 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 2. In order to display the visual paywall on the device screen, you must first configure it.
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
 To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
-  <TabItem value="kotlin1" label="Kotlin (option 1)" default>
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
 
 ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -135,7 +135,7 @@ To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPay
 ```
 
 </TabItem>
-<TabItem value="java1" label="Java (option 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
@@ -201,10 +201,10 @@ AdaptyPaywallScreen(
 | **ViewConfiguration** | required | Supply an `AdaptyViewConfiguration` object containing visual details of the paywall. Use the `Adapty.getViewConfiguration(paywall)` method to load it. Refer to [Fetch the visual configuration of paywall](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) topic for more details. |
 | **EventListener** | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **PersonalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
-| **TagResolver** | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
+| **TagResolver** | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder)  topic for more details. |
 | **ObserverModeHandler** | required for Observer mode | The  `AdaptyUiObserverModeHandler` you've implemented in the previous step. |
 | **variationId** | required | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)   object. |
-| **transaction** | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)   object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)   object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase)  class.</p> | 
+| **transaction** | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)   object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)   object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase)  class.</p> |
 
 </TabItem> 
 <TabItem value="SDK2" label="Legacy Paywall Builder (SDK up to 2.x)" default> 
@@ -212,7 +212,7 @@ AdaptyPaywallScreen(
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
    1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for iOS](sdk-installation-ios#configure-adapty-sdk), [for Android](sdk-installation-android), [for Flutter](sdk-installation-flutter#configure-adapty-sdks-for-ios), [for React Native](sdk-installation-reactnative#configure-adapty-sdks), and [for Unity](sdk-installation-unity#initiate-adapty-unity-plugin-on-ios).
+2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for Android](sdk-installation-android), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
 3. [Create products](create-product) in the Adapty Dashboard.
 4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
 5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
@@ -221,7 +221,7 @@ AdaptyPaywallScreen(
 
 1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
@@ -280,7 +280,7 @@ AdaptyPaywallScreen(
 
 2. In order to display the visual paywall, you must first initialize it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val paywallView = AdaptyUI.getPaywallView(
@@ -348,21 +348,21 @@ AdaptyPaywallScreen(
 
    Request parameters:
 
-   | Parameter | Presence | Description |
+| Parameter | Presence | Description |
 |---------|--------|-----------|
 | **Products** | optional | Provide an array of `AdaptyPaywallProduct `to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
 | **ViewConfiguration** | required | Supply an `AdaptyViewConfiguration` object containing visual details of the paywall. Use the `Adapty.getViewConfiguration(paywall)` method to load it. Refer to [Fetch the visual configuration of paywall](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) topic for more details. |
 | **Insets** | required | Define an `AdaptyPaywallInsets` object containing information about the area overlapped by system bars, creating vertical margins for content. If neither the status bar nor the navigation bar overlaps the `AdaptyPaywallView`, pass `AdaptyPaywallInsets.NONE`. For fullscreen mode where system bars overlap part of your UI, obtain insets as shown under the table. |
 | **EventListener** | optional | Provide an `AdaptyUiEventListener` to observe paywall events. Extending AdaptyUiDefaultEventListener is recommended for ease of use. Refer to [Handling paywall events](android-handling-events)  topic for more details. |
 | **PersonalizedOfferResolver** | optional | To indicate personalized pricing ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)  ), implement `AdaptyUiPersonalizedOfferResolver`  and pass your own logic that maps `AdaptyPaywallProduct` to true if the product's price is personalized, otherwise false. |
-| **TagResolver** | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
+| **TagResolver** | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the paywall text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder)  topic for more details. |
 | **ObserverModeHandler** | required for Observer mode | The  `AdaptyUiObserverModeHandler` you've implemented in the previous step. |
 | **variationId** | required | The string identifier of the variation. You can get it using `variationId` property  of the [`AdaptyPaywall`](sdk-models#adaptypaywall)   object. |
 | **transaction** | required | <p>For iOS, StoreKit1: an [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction)   object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)   object.</p><p>For Android: String identifier (`purchase.getOrderId()`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase)  class.</p> |
 
    For fullscreen mode where system bars overlap part of your UI, obtain insets in the following way:
 
-<Tabs>
+<Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    import androidx.core.graphics.Insets

@@ -1,13 +1,14 @@
 ---
 title: "Restore purchases in mobile app"
-description: "Restoring Purchases in Adapty | Adapty Docs"
-metadataTitle: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+description: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+metadataTitle: "Restoring Purchases in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 Restoring Purchases in both iOS and Android is a feature that allows users to regain access to previously purchased content, such as subscriptions or in-app purchases, without being charged again. This feature is especially useful for users who may have uninstalled and reinstalled the app or switched to a new device and want to access their previously purchased content without paying again.
 
@@ -17,8 +18,8 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder), purchases are 
 
 To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -31,7 +32,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="Swift-Callback" label="Swift-Callback" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
 Adapty.restorePurchases { [weak self] result in
@@ -87,7 +88,7 @@ Adapty.restorePurchases(result -> {
 });
 ```
 </TabItem>
-<TabItem value="Flutter" label="Flutter" default>
+<TabItem value="flutter" label="Flutter" default>
 
 ```javascript showLineNumbers
 try {
@@ -101,7 +102,7 @@ try {
 }
 ```
 </TabItem>
-<TabItem value="Unity" label="Unity" default>
+<TabItem value="unity" label="Unity" default>
 
 ```csharp showLineNumbers
 Adapty.RestorePurchases((profile, error) => {
@@ -117,7 +118,7 @@ Adapty.RestorePurchases((profile, error) => {
 });
 ```
 </TabItem>
-<TabItem value="RN" label="React Native (TS)" default>
+<TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
 try {
@@ -139,3 +140,5 @@ Response parameters:
 | Parameter | Description |
 |---------|-----------|
 | **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+
+<SampleApp />

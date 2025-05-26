@@ -1,7 +1,7 @@
 ---
 title: "Grant permissions to service account in the Google Play Console"
-description: "Granting Permissions to Service Accounts | Adapty Docs"
-metadataTitle: "Grant permissions to service accounts for secure and efficient API access."
+description: "Grant permissions to service accounts for secure and efficient API access."
+metadataTitle: "Granting Permissions to Service Accounts | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

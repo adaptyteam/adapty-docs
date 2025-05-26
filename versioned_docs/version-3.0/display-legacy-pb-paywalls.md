@@ -1,7 +1,7 @@
 ---
 title: "Display legacy Paywall Builder paywalls"
-description: "Displaying Legacy PB Paywalls | Adapty Docs"
-metadataTitle: "Learn how to display legacy PB paywalls effectively for subscription optimization."
+description: "Learn how to display legacy PB paywalls effectively for subscription optimization."
+metadataTitle: "Displaying Legacy PB Paywalls | Adapty Docs"
 ---
 
 <!--- display-legacy-pb-paywalls.md --->

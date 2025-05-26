@@ -29,7 +29,7 @@ This request requires different authorization parameters:
 :::
 
 ## Example request
-<Tabs>
+<Tabs groupId="api-lang" queryString>
 <TabItem value="curl" label="cURL" default>
   ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
@@ -98,6 +98,10 @@ fetch("https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/", reques
 ```
 </TabItem>  
 </Tabs>
+
+Placeholders: 
+
+- `<YOUR_SECRET_API_KEY>`: Your secret API key for authorization.
 
 ## Parameters
 

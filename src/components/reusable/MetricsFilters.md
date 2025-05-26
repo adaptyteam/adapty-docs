@@ -14,13 +14,5 @@
 | attribution_adset        | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative     | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
 | offer_category       | array of String values       | :heavy_minus_sign: | Specify the offer categories you want to retrieve data for. Possible values are:<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
-| offer_type           | array of String values       | :heavy_minus_sign: | Specify the offer types you want to retrieve data for. Possible values are:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul>. |
+| offer_type           | array of String values       | :heavy_minus_sign: | Specify the offer types you want to retrieve data for. Possible values are:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul> |
 | offer_id             | array of String values       | :heavy_minus_sign: | Specify the specific offers you want to retrieve data for.   |
-
-<!--- | app_id                        | array of String values(uuid) | :heavy_minus_sign: | ???                                                          |
-| placement_id                  | array of String values(uuid) | :heavy_minus_sign: | Filtration with the specific placements.                     |
-| audience_id                   | array of String values(uuid) | :heavy_minus_sign: | Filtration with the specific audiences.                      |
-| ab_test_id                    | array of String values(uuid) | :heavy_minus_sign: | Filtration with the specific A/B tests.                      |
-| paywall_id                    | array of String values(uuid) | :heavy_minus_sign: | Filtration with the specific paywalls.                       |
-| placement_audience_version_id | array of String values(uuid) | :heavy_minus_sign: | ???                                                          |
---->

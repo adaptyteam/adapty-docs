@@ -1,7 +1,7 @@
 ---
 title: "Apple App Store credentials"
-description: "Configuring iOS Settings in Adapty | Adapty Docs"
-metadataTitle: "Configure iOS settings in Adapty for seamless subscription management."
+description: "Configure iOS settings in Adapty for seamless subscription management."
+metadataTitle: "Configuring iOS Settings in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -1,7 +1,7 @@
 ---
 title: "Step 2. Add data to paywall page"
-description: ""
-metadataTitle: ""
+description: "Add Feature Flag variables to paywalls in Adapty."
+metadataTitle: "Adding Feature Flag Variables to Paywalls | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
