@@ -548,56 +548,29 @@ The method is not yet supported in Unity, but support will be added soon.
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
-## Customize loading and caching assets
+## Customize assets
 
-To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.  
+To customize assets (images, videos, colors, gradients, and fonts) in your paywall, implement the `AdaptyAssetsResolver` protocol. The resolver is used to:
 
-The resolver is used throughout the AdaptyUI framework to:
 - Load images
-- Apply colors and gradients 
-- Handle fonts in text elements
+- Apply colors and gradients
+- Handle fonts
 - Process background images and colors
 
-When a paywall needs to display an asset:
-1. The asset ID is passed to the resolver.
-2. The resolver attempts to find the asset in the app's asset catalog.
-3. If found, the asset is returned and used in the paywall.
-4. If not found, the paywall falls back to its default appearance.
+Here's an example of how you can implement the `AdaptyAssetsResolver` protocol:
 
-There is a default resolver, but you can implement a custom one:
-
-```swift
+<Tabs>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
 @MainActor
 class CustomAssetsResolver: AdaptyAssetsResolver {
-    // Dictionary to store your custom assets
     private var assets: [String: AdaptyCustomAsset] = [:]
     
     init() {
-        // Initialize your assets
-        setupAssets()
-    }
-    
-    private func setupAssets() {
-        // Example: Add a custom image
-        if let image = UIImage(named: "custom_image") {
-            assets["custom_image_id"] = .image(.uiImage(value: image))
-        }
-        
-        // Example: Add a custom color
-        assets["custom_color_id"] = .color(.uiColor(.systemBlue))
-        
-        // Example: Add a custom gradient
-        let gradient = Gradient(colors: [.blue, .purple])
-        assets["custom_gradient_id"] = .gradient(.linear(
-            gradient: gradient,
-            startPoint: .leading,
-            endPoint: .trailing
-        ))
-        
-        // Example: Add a custom font
-        if let font = UIFont(name: "CustomFont", size: 16) {
-            assets["custom_font_id"] = .font(font)
-        }
+        // Add your custom assets
+        assets["custom_image"] = .image(.uiImage(value: UIImage(named: "custom_image")!))
+        assets["custom_color"] = .color(.uiColor(.systemBlue))
+        assets["custom_font"] = .font(UIFont(name: "CustomFont", size: 16)!)
     }
     
     func asset(for id: String) -> AdaptyCustomAsset? {
@@ -605,157 +578,81 @@ class CustomAssetsResolver: AdaptyAssetsResolver {
     }
 }
 ```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin">
+```kotlin showLineNumbers
+class CustomAssetsResolver : AdaptyAssetsResolver {
+    private val assets = mutableMapOf<String, AdaptyCustomAsset>()
+    
+    init {
+        // Add your custom assets
+        assets["custom_image"] = AdaptyCustomAsset.Image(
+            AdaptyCustomImageAsset.Bitmap(
+                BitmapFactory.decodeResource(context.resources, R.drawable.custom_image)
+            )
+        )
+        assets["custom_color"] = AdaptyCustomAsset.Color(
+            AdaptyCustomColorAsset.ColorInt(ContextCompat.getColor(context, R.color.custom_color))
+        )
+        assets["custom_font"] = AdaptyCustomAsset.Font(
+            ResourcesCompat.getFont(context, R.font.custom_font)
+        )
+    }
+    
+    override fun asset(id: String): AdaptyCustomAsset? {
+        return assets[id]
+    }
+}
+```
+</TabItem>
+</Tabs>
 
-Then, you can use it when getting a paywall configuration:
+You can manage the following asset types:
 
-```swift
-// Create your custom resolver
+| Type | Description | Example |
+|------|-------------|---------|
+| `image` | Image asset | `.image(.uiImage(value: UIImage(named: "image")!))` |
+| `video` | Video asset | `.video(.file(url: videoURL, preview: nil))` |
+| `color` | Color asset | `.color(.uiColor(.systemBlue))` |
+| `gradient` | Gradient asset | `.gradient(.linear(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))` |
+| `font` | Font asset | `.font(UIFont(name: "CustomFont", size: 16)!)` |
+
+
+Here's how you can use the custom asset resolver you created:
+
+<Tabs>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
 let customResolver = CustomAssetsResolver()
-
-// Use it in paywall configuration
 let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
     forPaywall: paywall,
     assetsResolver: customResolver
 )
 ```
+</TabItem>
 
-<Details>
-<summary>Customization options (click to expand)</summary>
+<TabItem value="kotlin" label="Kotlin">
+```kotlin showLineNumbers
+val customResolver = CustomAssetsResolver()
+AdaptyUI.getPaywallConfiguration(
+    paywall = paywall,
+    assetsResolver = customResolver
+) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val configuration = result.value
+            // Use the configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
 
-#### Box length 
-
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `fixed` | Fixed width/height | `Unit` |
-| `flexible` | Flexible size with optional min/max | `min: Unit?`, `max: Unit?` |
-| `shrinkable` | Shrinkable size with required min and optional max | `min: Unit`, `max: Unit?` |
-| `fillMax` | Fill all available space | None |
-
-#### Alignment 
-
-#### Horizontal 
-| Value | Description |
-|-------|-------------|
-| `leading` | Align to the leading edge |
-| `trailing` | Align to the trailing edge |
-| `center` | Center alignment |
-| `justified` | Justified alignment |
-| `left` | Left alignment (respects RTL) |
-| `right` | Right alignment (respects RTL) |
-
-#### Vertical 
-| Value | Description |
-|-------|-------------|
-| `top` | Align to the top |
-| `bottom` | Align to the bottom |
-| `center` | Center alignment |
-
-#### Asset types
-
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `image` | Image asset | `AdaptyCustomImageAsset` |
-| `video` | Video asset | `AdaptyCustomVideoAsset` |
-| `color` | Color asset | `AdaptyCustomColorAsset` |
-| `gradient` | Gradient asset | `AdaptyCustomGradientAsset` |
-| `font` | Font asset | `UIFont` |
-
-#### Custom image asset types
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `file` | Local file | `url: URL` |
-| `remote` | Remote URL | `url: URL`, `preview: UIImage?` |
-| `uiImage` | Direct UIImage | `value: UIImage` |
-
-#### Custom video asset types
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `file` | Local file | `url: URL`, `preview: AdaptyCustomImageAsset?` |
-| `remote` | Remote URL | `url: URL`, `preview: AdaptyCustomImageAsset?` |
-| `player` | Custom player | `item: AVPlayerItem`, `player: AVQueuePlayer`, `preview: AdaptyCustomImageAsset?` |
-
-#### Custom color asset types
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `uiColor` | UIKit color | `UIColor` |
-| `swiftUIColor` | SwiftUI color | `Color` |
-
-#### Custom gradient asset types
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `linear` | Linear gradient | `gradient: Gradient`, `startPoint: UnitPoint`, `endPoint: UnitPoint` |
-| `angular` | Angular gradient | `gradient: Gradient`, `center: UnitPoint`, `angle: Angle` |
-| `radial` | Radial gradient | `gradient: Gradient`, `center: UnitPoint`, `startRadius: CGFloat`, `endRadius: CGFloat` |
-
-#### Aspect ratio 
-
-| Value | Description |
-|-------|-------------|
-| `fit` | Fit content within bounds |
-| `fill` | Fill bounds while maintaining aspect ratio |
-| `stretch` | Stretch to fill bounds |
-
-#### Container types
-
-| Type | Description | Features                                                                                   |
-|------|-------------|--------------------------------------------------------------------------------------------|
-| `BasicContainer` | Basic container with fixed height | - Fixed height<br/>- Scrollable content<br/>- Optional footer<br/>- Optional overlay       |
-| `FlatContainer` | Flat container with scrollable content | - Scrollable content<br/>- Optional footer<br/>- Optional overlay<br/>- Full width content |
-
-#### Layout components
-
-#### Row
-| Property | Type | Description |
-|----------|------|-------------|
-| `items` | `[GridItem]` | Array of items in the row |
-| `spacing` | `Double` | Spacing between items |
-| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment of items |
-| `verticalAlignment` | `VerticalAlignment` | Vertical alignment of items |
-
-#### Column
-| Property | Type | Description |
-|----------|------|-------------|
-| `items` | `[GridItem]` | Array of items in the column |
-| `spacing` | `Double` | Spacing between items |
-| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment of items |
-| `verticalAlignment` | `VerticalAlignment` | Vertical alignment of items |
-
-#### Grid item properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `length` | `Length` | Size constraint (fixed/flexible/shrinkable) |
-| `horizontalAlignment` | `HorizontalAlignment` | Horizontal alignment |
-| `verticalAlignment` | `VerticalAlignment` | Vertical alignment |
-| `content` | `Element` | Content element |
-
-#### EdgeInsets properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `top` | `Unit` | Top inset |
-| `leading` | `Unit` | Leading inset |
-| `bottom` | `Unit` | Bottom inset |
-| `trailing` | `Unit` | Trailing inset |
-
-#### 9. Pager properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `pageWidth` | `Unit` | Width of each page |
-| `pageHeight` | `Unit` | Height of each page |
-| `pagePadding` | `EdgeInsets` | Padding around pages |
-| `spacing` | `Double` | Spacing between pages |
-| `content` | `[Element]` | Array of page elements |
-| `interactionBehavior` | `InteractionBehavior` | How the pager responds to interaction |
-| `animation` | `Animation?` | Animation for page transitions |
-
-#### 10. Interaction behavior options
-
-| Value | Description |
-|-------|-------------|
-| `none` | No interaction allowed |
-| `pauseAnimation` | Pause animation during interaction |
-| `continueAnimation` | Continue animation during interaction |
-
-</Details>
+:::note
+If an asset is not found in your custom resolver, the paywall will fall back to its default appearance.
+:::
