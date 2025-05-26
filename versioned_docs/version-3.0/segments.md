@@ -1,12 +1,11 @@
 ---
 title: "Segments"
-description: ""
-metadataTitle: ""
+description: "Create and manage user segments for better targeting in Adapty."
+metadataTitle: "Managing User Segments | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SubscriptionState from '@site/src/components/reusable/SubscriptionState.md';
 
 A **Segment** is a set of filtering criteria used to group users with common properties. You can use segments to target paywalls and A/B tests more effectively.
 
