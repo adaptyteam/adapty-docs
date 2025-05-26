@@ -33,6 +33,12 @@ You can add as many buttons as you want. Just be sure to [handle the actions](/d
 
 If you'd like your custom button to open another paywall, it can be done by triggering `getPaywall` yourself. That means fetching the paywall by `placement_id`, grabbing its configuration, and then showing it. You can also chain actions, like closing the current paywall and then opening another one in the same sequence.
 
+:::important
+The **purchase button** is a separate button type that allows you to **link buttons to offers**. 
+
+It also has more customization options to help you highlight your offers. If you add animation to a purchase button, update the Adapty SDK to version 3.9.0 or later to display the animation.
+:::
+
 **What's next:**
 
 - [Handle paywall actions in iOS](ios-handling-events#actions) 
