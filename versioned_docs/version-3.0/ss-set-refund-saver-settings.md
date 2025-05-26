@@ -106,10 +106,10 @@ Placeholders:
 
 ## Parameters
 
-| Parameter         | Type    | Required in request | Nullable in request | Description                                                  |
-| ----------------- | ------- | ------------------- | ------------------- | ------------------------------------------------------------ |
-| custom_preference | String  | :heavy_minus_sign:  | :heavy_plus_sign:   | Set the refund preference individually for the user. Possible values are: `grant`, `no_preference`, `decline`. The default value is `null`. |
-| consent           | Boolean | :heavy_minus_sign:  | :heavy_plus_sign:   | Record if the user gave their consent to share their data.<p>The default value is `null`.</p> |
+| Parameter         | Type    | Required in request | Nullable in request | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------- | ------- | ------------------- | ------------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| custom_preference | String  | :heavy_minus_sign:  | :heavy_plus_sign:   | Set the refund preference individually for the user.  <br/> Possible values are: <br/>– `grant`: approve each refund request <br/>– `no_preference`: do not provide any recommendations to Apple. In this case, Apple will determine the refund outcome based on its internal policies and user history) <br/>– `decline`: decline each refund request. <br/>The default value is `null`. So, if you don't set `custom_preference`, the [default behavior](refund-saver#set-a-default-refund-behavior) will be used. |
+| consent           | Boolean | :heavy_minus_sign:  | :heavy_plus_sign:   | Record if the user gave their consent to share their data. <br/>– `True` means that if you receive an in-app refund request, you may provide Apple with information about the user's in-app purchase activity. <br/>– `false` means Refund Saver won't share the user's data with Apple. <br/> The default value is `null`. So, if you don't set `consent`, the [default behavior](refund-saver#set-a-default-refund-behavior) will be used.                                                                             |
 
 ## Successful response: 200: OK
 
@@ -117,7 +117,7 @@ Placeholders:
 |-------------------|---------|-----------------------------------------------------------------------------------|
 | profile_id        | String  | Customer profile ID.                                                              |
 | consent           | Boolean | Defines whether the user consented to share their data.                           |
-| custom preference | String  | The refund preference. Possible values are: `grant`, `no_preference`, `decline`.  |
+| custom preference | String  | The refund preference.   |
 
 ## Successful response example
 
