@@ -10,7 +10,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
+The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more.
 
 <details>
    <summary>Before you start customizing a paywall (Click to Expand)</summary>
@@ -141,7 +141,7 @@ You can combine different options, and make up your own. This way you can test d
 
 ### JSON view of the remote config
 
-In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
+In the **JSON** view of the remote config, you can enter any JSON-formatted data:
 
 
 <Zoom>
