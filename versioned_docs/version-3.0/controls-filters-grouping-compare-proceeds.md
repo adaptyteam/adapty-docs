@@ -147,7 +147,11 @@ In addition to the chart view, Adapty also provides a table view for each chart.
 
 ### CSV data export
 
-To analyze the raw data behind charts, cohort analyses, funnels, retentions, or conversion analytics, you can export it in CSV format by clicking the **Export** button. 
+To analyze the raw data behind charts, cohort analyses, funnels, retention, or conversion analytics, you can export it in CSV format. This gives you access to the underlying data, which you can further explore in spreadsheet applications or other tools for deeper insights.
+
+To export your data:
+1. Apply the filters and grouping you need.
+2. Click the **Export** button on the right. 
 
 <Zoom>
   <img src={require('./img/03eee2c-CleanShot_2023-07-10_at_20.49.152x.webp').default}
@@ -160,9 +164,21 @@ To analyze the raw data behind charts, cohort analyses, funnels, retentions, or 
 />
 </Zoom>
 
+The exported CSV will reflect all applied filters and groupings. For revenue data, it includes all three values: gross revenue, revenue after store commissions, and revenue after store commissions and taxes. For example, here’s what the CSV might look like for a revenue data export:
+
+<Zoom>
+  <img src={require('./img/export-csv.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 You can also [retrieve the same data via the API](export-analytics-api). Regardless of the method, the data file will be identical.
 
-This feature gives you access to the underlying data, which you can further analyze in spreadsheet applications or other tools to gain deeper insights.
 
 ### Store commission and taxes
 
