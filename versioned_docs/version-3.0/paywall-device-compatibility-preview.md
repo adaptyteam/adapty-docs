@@ -22,6 +22,10 @@ From here, you can:
 - Zoom in or out of the preview.
 - Preview [tags variables for product info](https://adapty.io/docs/paywall-builder-tag-variables#how-to-use-tag-variables).
 
+:::tip
+Set the [maximum width](https://adapty.io/docs/paywall-layout-and-products#content-layout) of elements to optimize layout on iPads.
+:::
+
 <Zoom>
   <img src={require('./img/paywall-preview.gif').default}
   style={{
