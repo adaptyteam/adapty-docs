@@ -19,7 +19,7 @@ Adapty supports three types of A/B tests:
 
 - **Regular A/B test:** An A/B test created for a single [paywall](https://docs.adapty.io/docs/paywalls) placement.
 - **Onboarding A/B test:** An A/B test created for a single [onboarding](https://docs.adapty.io/docs/onboardings) placement.
-- **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. This means the same variant once determined by the A/B test will be consistently shown across different sections of your app.
+- **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. This means that once a variant (an alternative version of the paywall or onboarding screen) is assigned by the A/B test, it will be shown consistently across all selected sections of your app.
 
 :::warning
 Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0.
