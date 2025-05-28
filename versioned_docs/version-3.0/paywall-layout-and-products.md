@@ -98,10 +98,26 @@ Font settings in the **Layout settings** apply to all paywall components by defa
 
 ## Content layout
 
-You don't have to manually fine-tune margins for each content element of the paywall. Go to the **Content layout** to adjust all the following settings for all content elements at once:
+You don't have to manually fine-tune margins and width for each content element of the paywall. Go to the **Content layout** to adjust all the following settings for all content elements at once:
 
 - **Default child margin**: Defines space around each child element. 
 - **Spacing**: Defines space between elements inside a layout.
+- **Max width**: Sets the maximum width of elements to optimize layout on iPads. We recommend 600pt for a clean, balanced layout.
+
+:::warning
+Max width parametr is only available starting with Adapty SDK v3.7.0 and higher.
+:::
+
+<Zoom>
+  <img src={require('./img/content-layout.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Top buttons
 
