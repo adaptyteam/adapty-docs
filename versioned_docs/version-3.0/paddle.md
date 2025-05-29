@@ -8,18 +8,20 @@ metadataTitle: "Paddle Integration Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty supports tracking web payments and subscriptions made through [Paddle](https://www.paddle.com/). If you’re already selling your product on the web or considering doing so, this integration can help in two key ways:
+Adapty integrates with [Paddle](https://www.paddle.com/) to track web payments and subscriptions. This integration provides two main benefits:
 
-- Automatically granting access to paid features for users who purchased on the web but later installed the app and logged in.
-- Consolidating all subscription analytics in one Adapty Dashboard, including cohorts, predictions, and other analytics tools.
+- Users who purchase on your website can automatically access paid features when they install and log into your mobile app
+- All subscription data appears in your unified Adapty Dashboard with cohorts, predictions, and analytics
 
-While web-based purchases are becoming more common, keep in mind that Apple's App Store guidelines prohibit offering alternative payment systems for digital goods within your app. Promoting your web subscriptions inside the app may result in rejection or removal from the App Store.
+:::note
+Apple now allows US App Store apps to include links to external payment systems, though apps may still need to offer in-app purchases alongside external options. Check the current App Store guidelines for your region and app category.
+:::
 
-Follow these steps to set up the Paddle integration.
+To set up the Paddle integration, follow these steps:
 
 ## 1\. Connect Paddle to Adapty
 
-This integration mainly relies on Adapty receiving subscription data from Paddle via webhooks. To connect your Adapty and Paddle accounts, you’ll need to:
+The integration uses webhooks to send subscription data from Paddle to Adapty. To connect your Adapty and Paddle accounts, you’ll need to:
 
 1. Provide your Paddle API keys.
 2. Add Adapty's webhook URL to Paddle.
@@ -190,7 +192,7 @@ You can configure which value to use in the **Profile creation behavior** field 
 
 :::warning
 
-Be sure to add your Paddle products to the Adapty Dashboard or to add a Paddle product ID to your existing products. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won’t be created.
+Be sure to add your Paddle products to the Adapty Dashboard or add a Paddle product ID to your existing products. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won’t be created.
 
 :::
 
@@ -220,7 +222,7 @@ In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You’l
 />
 </Zoom>
 
-Once your products are added, the next step is ensuring Adapty can connect the purchase to the right user.
+Once your products are added, the next step is ensuring Adapty can link the purchase to the right user.
 
 ## 3\. Provide access to users on the mobile
 
@@ -230,7 +232,7 @@ To ensure users who buy on the web get access on mobile, call `Adapty.activate()
 
 Once everything’s set up, you can test your integration. Transactions made in Paddle’s Test Mode will appear as **Sandbox** in Adapty. Transactions from Live Mode will appear as **Production**.
 
-That’s it! Your users can now purchase on the web and access premium features in the app. And you get a full view of subscription analytics in one place.
+Your integration is now complete. Users can purchase subscriptions on your website and automatically access premium features in your mobile app, while you track all subscription analytics from your unified Adapty dashboard.
 
 ## Current limitations
 
