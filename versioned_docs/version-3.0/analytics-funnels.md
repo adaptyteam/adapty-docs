@@ -20,7 +20,7 @@ Funnels work with the data that we gather through SDK and store notifications an
 
 
 <Zoom>
-  <img src={require('./img/10c99f9-CleanShot_2022-06-24_at_10.08.53.webp').default}
+  <img src={require('./img/funnels-tab.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

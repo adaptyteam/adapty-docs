@@ -110,7 +110,7 @@ It's most useful for users without an active subscription so you can grant the i
 Adapty creates an internal profile ID for every user. However, if you have your own authentication system, [set your own Customer User ID](identifying-users), a unique identifier for each user in your system. In this case, Adapty will add this ID to the user profile, which will give you several advantages:
 
 1. All transactions and events will be tied to the same profile.
-2. You can find users by their customer user ID in the [Profiles](profiles-crm) section and view their transactions and events.
+2. You can find users by their customer user ID in the [**Profiles**](profiles-crm) section and view their transactions and events.
 3. You can use the customer user ID in the [server-side API](getting-started-with-server-side-api).
 4. The customer user ID will be sent to all integrations.
 
@@ -148,7 +148,7 @@ Why do events show future timestamps in profiles and integrations? Event timesta
 
 ## Sharing access levels between profiles
 
-When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> App settings -> General tab](https://app.adapty.io/settings/general):
+When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
 
 <Sharingaccesslevel />
 

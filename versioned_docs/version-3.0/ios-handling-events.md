@@ -84,6 +84,18 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
+#### Started purchase using a web paywall
+
+If a user initiates the purchase process using a web paywall, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
 #### Successful or canceled purchase
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
@@ -117,6 +129,18 @@ func paywallController(
 ```
 
 It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+#### Failed purchase using a web paywall
+
+If `Adapty.openWebPaywall()` fails, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
 
 #### Successful restore
 

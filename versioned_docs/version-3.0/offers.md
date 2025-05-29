@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Offers in the App Store and Google Play are special deals or discounts provided by these platforms for in-app purchases. 
 
-There are 2 types of offers:
+There are the following types of offers:
 
 - **Introductory offer**  
     An introductory offer is a special welcome for users who are exploring a subscription-based app for the first time. It's a promotion that you can set up to provide new subscribers with a discounted price, a free trial, or other enticing deals for a certain period. 
@@ -25,7 +25,7 @@ Introductory offers on iOS are applied automatically if the user is eligible. Do
 These offers help attract and keep users engaged, making the app experience more rewarding. By using these special incentives, you can boost user interest and loyalty, contributing to the overall success of their apps.
 
 :::note
-Checklist for Adapty to successfuly process offers from the App Store and Play Store:
+Checklist for Adapty to successfully process offers from the App Store and Play Store:
 
 1. [Create offers in the App Store Connect](app-store-offers) or [create offers in the Google Play Console](google-play-offers)
 2. (for iOS apps only) [Upload a special In-App Purchase Key from App Store Connect to Adapty](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file).

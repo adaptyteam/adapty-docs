@@ -9,14 +9,16 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
 
-Adapty SDK includes two key modules for seamless integration into your mobile app:
+[Adapty SDK](https://adapty.io/sdk/react-native/) includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
 ## Install Adapty SDK
 
 Currently, React Native provides two development paths: Expo and Pure React Native. Adapty seamlessly integrates with both. Please refer to the section below that matches your chosen setup.
+
+If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
 ### Install Adapty SDK for Expo React Native
 
@@ -58,7 +60,7 @@ You can streamline your development process with Expo Application Services (EAS)
    expo start --dev-client
    ```
 
-This should result in the working app with react-native-adapty.
+This should result in a working app with react-native-adapty.
 
 Possible errors:
 
@@ -267,7 +269,7 @@ Possible errors:
 
 ### Install Adapty SDKs with Pure React Native
 
-If you opt for a purely native approach, please consult the following instructions:
+If you opt for a purely native approach to manage React Native purchases, please consult the following instructions:
 
 1. In your project, run the installation command:
 

@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Before releasing your mobile app to production, it's crucial to test in-app purchases thoroughly. Please refer to our [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) topics for detailed guidance on testing. Once you begin testing, you need to verify the success of test purchases.
 
-Every time you make a test purchase on your mobile device, view the corresponding transaction in the [Event Feed](https://app.adapty.io/event-feed) in the Adapty Dashboard. If the purchase does not appear in the **Event Feed**, it's not being tracked by Adapty. 
+Every time you make a test purchase on your mobile device, view the corresponding transaction in the [**Event Feed**](https://app.adapty.io/event-feed) in the Adapty Dashboard. If the purchase does not appear in the **Event Feed**, it's not being tracked by Adapty. 
 
 ## ✅ Test purchase is successful
 
@@ -48,4 +48,5 @@ If you observe no transaction event within 10 minutes or encounter an error in t
   }}
 />
 </Zoom>
+
 

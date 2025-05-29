@@ -494,8 +494,6 @@ This is now what your products section should look like:
 
 Congratulations! You have successfully integrated the Adapty SDK, configured a paywall, and set up subscriptions for your iOS app. You can further refine your implementation by experimenting with different paywall designs and analyzing conversion rates in the Adapty dashboard.
 
-For more information, visit the [Adapty Documentation](https://adapty.io/docs) and explore additional features such as A/B testing, remote configuration, and analytics. 
-
 <!--- ### Integrations
 
 [Integrations](events) with third-party analytics and attribution services require [passing identifiers](analytics-integration) to the SDK. 

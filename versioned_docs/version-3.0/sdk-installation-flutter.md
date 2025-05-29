@@ -10,7 +10,7 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 
 
-<Tabs groupId="current-os" queryString> <TabItem value="3" label="v3.2.x and up (current)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="3" label="Current" default> 
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -30,7 +30,7 @@ Before releasing your application, make sure to carefully review the [Release Ch
 
    ```yaml showLineNumbers title="pubspec.yaml"
    dependencies:
-   adapty_flutter: ^3.3.2
+   adapty_flutter: ^3.4.0
    ```
 
 2. Run:

@@ -7,7 +7,9 @@ metadataTitle: "Enabling Paywall Dark Mode | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Dark mode has become an essential feature for improving user experience in mobile apps, especially for users who spend long periods interacting with content. Most apps that support dark mode also choose to have two different versions of the paywall (light and dark) for consistency, and Adapty allows to do exactly that.
+Dark mode has become an essential feature for improving user experience in mobile apps, especially for users who spend long periods interacting with content. Most apps that support dark mode also choose to have two different versions of the paywall (light and dark) for consistency, and Adapty allows doing exactly that. 
+
+When dark mode is enabled, the paywall automatically matches the device’s current mode: it shows the light version if the device is in light mode, and the dark one if it’s in dark mode.
 
 :::note
 
