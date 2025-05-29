@@ -29,6 +29,12 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 />
 </Zoom>
 
+You can add three main button types in the builder:
+
+- Custom buttons: 
+- Purchase buttons
+- Links
+
 You can add as many buttons as you want. Just be sure to [handle the actions](/docs/handling-pb-paywall-events) in your app’s code. Each button has a **Button action ID** you’ll use for this. For default buttons (like close, restore, or login), the IDs are already set, so you just need to copy and paste them into your code. For custom actions, you can define your own.
 
 If you'd like your custom button to open another paywall, it can be done by triggering `getPaywall` yourself. That means fetching the paywall by `placement_id`, grabbing its configuration, and then showing it. You can also chain actions, like closing the current paywall and then opening another one in the same sequence.
