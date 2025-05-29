@@ -17,7 +17,7 @@ While web-based purchases are becoming more common, keep in mind that Apple's Ap
 
 Follow these steps to set up the Paddle integration.
 
-### 1\. Connect Paddle to Adapty
+## 1\. Connect Paddle to Adapty
 
 This integration mainly relies on Adapty receiving subscription data from Paddle via webhooks. To connect your Adapty and Paddle accounts, you’ll need to:
 
@@ -30,12 +30,10 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 
 ### 1.1. Get and add Paddle API keys
 
-1. In Paddle, go to [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2).
-
-   
+1. In Paddle, go to [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2) and click **New API key**.
 
 <Zoom>
-  <img src={require('./img/paddle-api-list.webp').default}
+  <img src={require('./img/paddle-new-key.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -45,11 +43,33 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 />
 </Zoom>
 
+2. Give the key a name and set the expiration date. For the API key to work with Adapty, you need to grant it the **Read** permission for all entities. Click **Save**.
 
+<Zoom>
+  <img src={require('./img/paddle-key.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
+3. Click **Copy key**.
 
-2. Click the three-dot button next to the API key you plan to use, then click **Copy key**.
-3. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key:
+<Zoom>
+  <img src={require('./img/copy-paddle-key.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key in the **Paddle API key** section. If you set an expiration date for your key, remember to generate a new key in Paddle and update it in Adapty before the current key expires.
 
 <Zoom>
   <img src={require('./img/paddle-api-keys-adapty.webp').default}
@@ -62,10 +82,10 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 />
 </Zoom>
 
-### 1.2. Add Adapty’s webhook to Paddle
+### 1.2. Add events that will be sent to Adapty
 
-1. Copy the **Webhook URL** from the same **Paddle settings page** in Adapty.
-2. In Paddle, go to [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) and click **New destination**.
+1. Copy the **Webhook URL** from the same **Paddle** page in Adapty.
+2. In Paddle, go to [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) and click **New destination** to add a webhook.
 
 <Zoom>
   <img src={require('./img/paddle-webhook.webp').default}
@@ -78,9 +98,9 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 />
 </Zoom>
 
-3. Enter a descriptive name for the webhook. We recommend including "Adapty" in it.
+3. Enter a descriptive name for the webhook. We recommend including "Adapty" in it, so you can easily find it when needed.
 
-4. Paste the **Webhook URL** from Adapty into the **URL** field.
+4. Paste the **Webhook URL** from Adapty into the **URL** field. Ensure you are using the webhook for the right environment.
 
 5. Set **Notification type** to **Webhook**.
 
@@ -99,8 +119,6 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
    - `adjustment.updated`
 
 
-
-
 <Zoom>
   <img src={require('./img/paddle-create-webhook.webp').default}
   style={{
@@ -113,13 +131,11 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 </Zoom>
 
 
-
-
-5. Click **Save destination** to finalize the webhook setup.
+7. Click **Save destination** to finalize the webhook setup.
 
 ### 1.3. Retrieve and add the webhook secret key
 
-1. In the **Notifications** window, click the three-dot button next to the webhook you just created and select **Edit destination**.
+1. In the **Notifications** window, click the three dots next to the webhook you just created and select **Edit destination**.
 2. A new field called the **Secret key** will appear in the **Edit destination** panel. Copy it.
 
 <Zoom>
@@ -134,7 +150,7 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 </Zoom>
 
 
-5. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key into the **Notification secret key** field. This key is used to verify webhook data in Adapty.
+3. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key into the **Notification secret key** field. This key is used to verify webhook data in Adapty.
 
    
 
@@ -159,15 +175,26 @@ Adapty needs to link each purchase to a [customer profile](profiles-crm) so it c
 
 You can configure which value to use in the **Profile creation behavior** field in [App Settings → Paddle](https://app.adapty.io/settings/paddle).
 
+<Zoom>
+  <img src={require('./img/paddle-users.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## 2. Add Paddle products to Adapty
 
 :::warning
 
-Be sure to add your Paddle products to the Adapty Dashboard. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won’t be created.
+Be sure to add your Paddle products to the Adapty Dashboard or to add a Paddle product ID to your existing products. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won’t be created.
 
 :::
 
-Paddle works in Adapty just like App Store and Google Play — it’s another platform where you sell digital products. To configure it, simply add the relevant `product_id` and `price_id` values from Paddle to the [Products](https://app.adapty.io/products) section in Adapty.
+Paddle works in Adapty just like App Store and Google Play — it’s another platform where you sell digital products. To configure it, add the relevant `product_id` and `price_id` values from Paddle in the [Products](https://app.adapty.io/products) section in Adapty.
 
 <Zoom>
   <img src={require('./img/paddle-create-product.webp').default}
@@ -180,7 +207,7 @@ Paddle works in Adapty just like App Store and Google Play — it’s another pl
 />
 </Zoom>
 
-In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You’ll find them easily in your [Paddle product catalog](https://vendors.paddle.com/products-v2) once you open a specific product:
+In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You’ll find them in your [Paddle product catalog](https://vendors.paddle.com/products-v2) once you open a specific product:
 
 <Zoom>
   <img src={require('./img/paddle-product-price.webp').default}
@@ -193,31 +220,23 @@ In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You’l
 />
 </Zoom>
 
-Once your products are added, the next step is to make sure Adapty can connect the purchase to the right user.
+Once your products are added, the next step is ensuring Adapty can connect the purchase to the right user.
 
-### 3\. Provide access to users on the mobile
+## 3\. Provide access to users on the mobile
 
-To make sure users who buy on the web get access on mobile, call `Adapty.activate()` or `Adapty.identify()` using the same `customer_user_id` you passed when the purchase was made. See [Identifying users](identifying-users) for details.
+To ensure users who buy on the web get access on mobile, call `Adapty.activate()` or `Adapty.identify()` using the same `customer_user_id` you passed when the purchase was made. See [Identifying users](identifying-users) for details.
 
-### 4\. Test your integration
+## 4\. Test your integration
 
 Once everything’s set up, you can test your integration. Transactions made in Paddle’s Test Mode will appear as **Sandbox** in Adapty. Transactions from Live Mode will appear as **Production**.
 
-That’s it!
-
-:::success
-That's it!
-
-Your users can now purchase on the web and access premium features in the app. And you get a full view of subscription analytics in one place.
-:::
+That’s it! Your users can now purchase on the web and access premium features in the app. And you get a full view of subscription analytics in one place.
 
 ## Current limitations
 
-- **Upgrading, downgrading, and proration**
-  Subscription changes such as upgrading or downgrading can result in prorated charges. Adapty will not account for these charges in revenue calculations. It would be best to disable these options manually via the Paddle dashboard. You can also disable them by setting the `proration_billing_mode` attribute value to `do_not_bill` via the Stripe API.
+- **Upgrading, downgrading, and proration**: Subscription changes such as upgrading or downgrading can result in prorated charges. Adapty will not account for these charges in revenue calculations. It would be best to disable these options manually via the Paddle dashboard. You can also disable them by setting the `proration_billing_mode` attribute value to `do_not_bill` via the Stripe API.
 
-- **Cancellations**
-  Paddle has two subscription cancellation options:
+- **Cancellations**: Paddle has two subscription cancellation options:
 
   1. Immediate cancellation: The subscription is canceled immediately with or without any proration option
 
@@ -225,11 +244,10 @@ Your users can now purchase on the web and access premium features in the app. A
 
   Adapty supports both options, but the revenue calculation for immediate cancellation will disregard the proration option.
 
-- **Refunds**
-Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
+- **Refunds**: Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
 
 ---
 
 **See also:**
 
-- [Validate purchase in Paddle, provide access level, and import transaction history from Paddle with server-side API](ss-validate-paddle-token)
+- [Validate purchase in Paddle, get access level, and import transaction history from Paddle with server-side API](ss-validate-paddle-token)
