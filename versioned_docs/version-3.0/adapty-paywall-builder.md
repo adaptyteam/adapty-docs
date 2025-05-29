@@ -11,12 +11,12 @@ We’re excited to introduce our **New Paywall Builder**, compatible with Adapty
 
 ## Key features of the New Paywall Builder
 
-- We've added tons of new templates to choose from, so you can find something that actually fits your brand instead of starting from scratch. The designs cover different styles and use cases, which should save you some time upfront.
 
 - The builder itself is way more flexible now. You can layer different design elements and work with new components like carousels, card layouts, product grids, and custom footers. Basically, if you can think it up, you can probably build it.
 
 - We also improved all the existing tools. They're more powerful and give you better control over the details, so you're not fighting with the interface to get things looking right.
-- 
+
+- For apps published on the App Store, quickly create a unique, high-converting paywall tailored to your app using the built-in AI generator.
 :::warning
 This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
 :::
@@ -45,12 +45,12 @@ To use the Adapty Paywall Builder:
 
 3. Depending on whether you've added the products to the paywall in the **General** tab or not, Adapty will offer you to add products or build your paywall with the new Paywall Builder. We continue with the case when products are already added. Click the **Build no-code paywall** button to start designing your paywall.
 
-4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most. 
+4. In the **Choose a template** window, you’ll find a variety of professionally designed paywall templates, along with a [built-in AI generator](https://docs.adapty.io/docs/paywall-builder-templates#generate-paywalls-with-ai) to help you create one that best fits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most, or use the AI generator to create one automatically. 
 
    
 
 <Zoom>
-  <img src={require('./img/cdca1ee-builder_templates.webp').default}
+  <img src={require('./img/paywall-templates.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -59,26 +59,6 @@ To use the Adapty Paywall Builder:
   }}
 />
 </Zoom>
-
-
-
-
-5. Click the **Choose** button to confirm your choice.
-
-   
-
-<Zoom>
-  <img src={require('./img/795b91b-builder_main_window.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
 
 
 6. By leveraging the Adapty Paywall Builder, you can create persuasive paywalls that seamlessly align with your app's branding and purpose based on the selected template.

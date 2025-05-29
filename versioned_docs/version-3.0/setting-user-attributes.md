@@ -2,6 +2,7 @@
 title: "Set user attributes"
 description: "Learn how to set user attributes in Adapty to enable better audience segmentation."
 metadataTitle: "Setting User Attributes | Adapty Docs"
+keywords: ["updateProfile", "update profile", "user attributes"]
 ---
 
 import Zoom from 'react-medium-image-zoom';
