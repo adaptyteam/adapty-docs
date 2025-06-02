@@ -105,7 +105,7 @@ You don't have to manually fine-tune margins and width for each content element 
 - **Max width**: Sets the maximum width of elements to optimize layout on iPads. We recommend 600pt for a clean, balanced layout.
 
 :::warning
-Max width parametr is only available starting with Adapty SDK v3.7.0 and higher.
+Max width parameter is only available starting with Adapty SDK v3.7.0 and higher.
 :::
 
 <Zoom>
@@ -118,6 +118,8 @@ Max width parametr is only available starting with Adapty SDK v3.7.0 and higher.
   }}
 />
 </Zoom>
+
+To adjust the layout for a specific element—such as setting the maximum width for the footer—go to the **Layout** section under **App Icon, Header, Feature List, Products**, or **Footer**.
 
 ## Top buttons
 
