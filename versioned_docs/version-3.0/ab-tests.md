@@ -39,6 +39,19 @@ Each A/B test type is useful if:
    - You want to use the same variant in multiple sections, such as Onboarding and Settings.
    - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
    - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
+   - You want to use multiple paywalls within a single variant:
+
+<Zoom>
+  <img src={require('./img/variants.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 
    
 
@@ -154,10 +167,8 @@ To create a new A/B test:
 6. Click **Select placement** and choose a paywall placement for a regular A/B testб or an onboarding placement for an onboarding A/B test.   
 7. Now it’s time to set up the test content using the **Variants** table. Variants go in rows, placements go in columns, and paywalls are added where they intersect. By default, there are 2 variants and 1 placement, but you can add more of each. 
 
-   Once you add a second placement, the test becomes a cross-placement A/B test.
-
-
-   
+Once you add a second placement, the test becomes a cross-placement A/B test.
+      
       <Zoom>
           <img src={require('./img/abtest-variants.png').default}
           style={{
@@ -195,6 +206,8 @@ To create a new A/B test:
     </tr>
   </table>
 </div>
+
+
 7. Don’t forget to save your test. You have two options:
     1. **Save as draft**: This means the test won’t go live right away. You can launch it later from either the placement or A/B test list. This option is great if you’re not quite ready to start the test and want more time to review or tweak it.
     2. **Run A/B test**: Choose this if you’re ready to launch the test immediately. The test will go live as soon as you click this button.
