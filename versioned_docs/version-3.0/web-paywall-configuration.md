@@ -139,4 +139,4 @@ When you are ready with the paywall, you need to get its link to activate this p
    </Zoom>
 
 
-That's it! Use this link to [proceed with the setup](web-paywall.md#step-2-activate-the-paywall).
+That's it! Use this link to [proceed with the setup](https://docs.adapty.io/docs/web-paywall#step-2-activate-the-paywall).
