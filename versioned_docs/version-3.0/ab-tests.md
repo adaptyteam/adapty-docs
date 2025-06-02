@@ -24,7 +24,7 @@ Adapty supports three types of A/B tests:
 :::warning
 Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0.
 
-Onboarding A/B tests are only available for native iOS and Android SDKs starting from v3.8.0.
+Onboarding A/B tests are available only on the Enterprise plan and require the native iOS or Android SDK version 3.8.0 or higher.
 
 Users from previous versions skip them.
 ::: 
@@ -36,7 +36,7 @@ Each A/B test type is useful if:
   - You want to run your A/B test for only one placement even if you have multiple placements in your app and see economics changes for this one placement only.
   - You want to run an A/B test on old users (those who have seen at least one Adapty paywall).
 - **Crossplacement A/B test**:
-   - You want to use the same variant in multiple sections, such as Onboarding and Settings.
+   - You want to use the same variant across multiple placements—e.g., during the onboarding flow and in your app’s settings.
    - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
    - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
 

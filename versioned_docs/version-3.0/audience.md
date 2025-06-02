@@ -7,11 +7,15 @@ metadataTitle: "Managing Audience Segments | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-**Audiences** in Adapty are [user segments](segments), helping you customize paywalls, onboardings, or A/B tests for specific groups of your users. You can set up these segments using special filters to make sure the right users see the right paywall or onboarding in your mobile app.
+**Audiences** in Adapty are groups of users based on [segments](segments), helping you customize paywalls, onboardings, or A/B tests for specific user groups. You can define these segments using filters to ensure the right users see the right paywall or onboarding in your app.
+
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
+:::
 
 In Adapty, a **Placement** is where you can show paywalls, onboardings, or A/B tests. When you add an audience to a placement, you're targeting specific user groups with personalized content. For instance, you might show different paywalls based on a user's age, device, or subscription status. If a user falls into multiple groups, you can choose which group gets the priority, deciding which paywall they'll see.
 
-In the example below, we have a placement with the identifier `Onboarding` to display your onboarding and paywall. In your app code, you will access the placement using this identifier. If the user belongs to the "Yoga beginners" audience, they will see the first onboarding and its related paywall. Those who do not fit the "Yoga beginners" audience will see the second one.
+In the example below, we have an onboarding flow to display your onboarding and paywall placements with `Onboarding_ID` and `Paywall_ID` identifiers. In your app code, you will access the placement using these identifiers. If the user belongs to the "Yoga beginners" audience, they will see the first onboarding and its related paywall. Those who do not fit the "Yoga beginners" audience will see the second one.
 
 
 <Zoom>

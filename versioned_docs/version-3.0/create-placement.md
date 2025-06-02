@@ -10,17 +10,17 @@ import AddAudience from '@site/src/components/reusable/AddAudience.md';
 
 A [Placement](placements) designates a specific location within your mobile app where a paywall, onboarding, or A/B test can be displayed. For example, a subscription choice might appear in a startup flow, while a consumable product (such as golden coins) could be presented when a user runs out of coins in a game. 
 
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
+:::
+
 You have the flexibility to showcase the same or different paywalls, onboardings, or A/B tests in various placements or to different user segments — called "audiences" in Adapty. 
 
 Read the [Choose meaningful placements](choose-meaningful-placements) section for more recommendations on how to choose the right placement for a paywall.
 
-:::info
-Although the placement creation process is similar for paywalls and onboardings, you can't create one placement for both.
-:::
-
 To create a new placement:
 
-1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to create a placement for onboarding, switch to the **Onboardings** tab.
+1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to create a placement for [onboarding](https://adapty.io/docs/onboardings), switch to the **Onboardings** tab.
 
    
 
@@ -35,7 +35,9 @@ To create a new placement:
 />
 </Zoom>
 
-
+:::info
+Although the placement creation process is similar for paywalls and onboardings, you can't create one placement for both.
+:::
 
 2. Click **Create placement**.
 
