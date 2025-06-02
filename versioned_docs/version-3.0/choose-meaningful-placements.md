@@ -11,7 +11,7 @@ When [creating placements](create-placement), it's essential to consider the log
 
 
 <Zoom>
-  <img src={require('./img/5b47c03-user-flow-placements_1.webp').default}
+  <img src={require('./img/placement-flows.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
