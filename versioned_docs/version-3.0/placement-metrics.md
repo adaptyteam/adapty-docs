@@ -9,6 +9,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls, onboardings, or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
 
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
+:::
+
 To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls and onboardings. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
 
 The collected metrics are continuously updated in real-time and can be conveniently accessed and analyzed through Adapty's user-friendly dashboard. You have the freedom to customize the time range for analysis, apply filters based on different parameters, and compare metrics across various placements, user segments, or products.
@@ -59,7 +63,7 @@ The placement metrics page offers two view options for metrics data: paywall-bas
 
 In the paywall-based or onboarding-based view, metrics are grouped by placements associated with the paywall or onboarding. This allows users to analyze metrics by different placements.
 
-In the audience-based view, metrics are grouped by the target audience of the paywall or onboarding. Users can assess metrics specific to different audience segments.
+In the audience-based view, metrics are grouped by the target audience of the paywall or onboarding. Users can assess metrics specific to different audiences.
 
 #### Profile install date filtration
 
@@ -103,8 +107,8 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Audience, paywall, paywall group, placement, country, store, and more.
-- ✅ Group by: Segment, store, and product, and more.
+- ✅ Filter by: Attribution, audience, paywall, paywall group, onboarding, placement, country, store, offer type, offer ID, offer discount type, A/B test, .
+- ✅ Group by: Audience, store, and product.
 
 You can find more information about the available controls, filters, grouping options, and how to use [paywall](https://docs.adapty.io/docs/paywall-metrics) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics) metrics.
 
