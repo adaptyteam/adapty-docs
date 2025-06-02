@@ -12,6 +12,9 @@ A [Placement](placements) designates a specific location within your mobile app 
 :::danger
 Although you have the option to delete any placement, it is critical to ensure that you don't delete a placement that is actively used in your mobile app. Deleting an active paywall placement will result in a local fallback paywall being permanently shown if you've [set it up](fallback-paywalls), and you won't be able to ever replace it with a dynamic paywall in released app versions.
 :::
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
+:::
 
 To delete an existing placement:
 

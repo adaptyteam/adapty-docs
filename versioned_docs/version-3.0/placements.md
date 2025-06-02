@@ -7,7 +7,11 @@ metadataTitle: "Managing Placements in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With Adapty's placement system, you can create and run [paywalls](paywalls), [onboardings](https://docs.adapty.io/docs/onboardings), and [A/B tests](ab-tests) at different points in your app user's journey, such as Onboarding, Settings, etc. These points are called **Placements**. 
+With Adapty's placement system, you can create and run [paywalls](paywalls), [onboardings](https://adapty.io/docs/onboardings), and [A/B tests](ab-tests) at different points in your app user's journey, such as onboarding flow, app settings, etc. These points are called **Placements**. 
+
+:::info
+Onboardings are currently available only on the Enterprise plan.
+:::
 
 A placement in your app can manage multiple paywalls, onboardings, or A/B tests at a time, each made for a certain group of users, which we call  [Audiences](audience). Moreover, you can experiment with paywalls and onboardings, replacing one with another over time without releasing a new app version. 
 
