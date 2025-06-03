@@ -8,6 +8,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
+:::important
+Onboardings are currently available only for apps using Adapty iOS or Android SDK version 3.8.0 or higher. Support for React Native, Flutter, and Unity SDKs is coming soon.
+:::
+
 ## What it is for
 
    <Zoom>
