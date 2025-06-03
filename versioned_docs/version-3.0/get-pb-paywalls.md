@@ -564,33 +564,28 @@ For example, you can:
 To use this feature, update the Adapty SDK to version 3.7.0 or later.
 :::
 
-Here's an example of how you can implement the `AdaptyAssetsResolver` protocol:
+Here’s an example of how you can provide a custom assets resolver (via a simple dictionary):
 
 <Tabs>
 <TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
-@MainActor
-class CustomAssetsResolver: AdaptyAssetsResolver {
-    private var assets: [String: AdaptyCustomAsset] = [:]
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
 
-    init() {
-        // Add your custom assets
-        //Show a local preview image while a remote main image is loading
-        assets["hero_image"] = image(.remote(
-        url: URL(string: "https://example.com/image.jpg")!,
-        preview: UIImage(named: "preview_image")
-        ))
-
-        //Show a local video with a preview image
-        assets["hero_video"] = .video(.file(
-        url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
-        preview: .uiImage(value: UIImage(named: "video_preview")!)
-        ))    }
-    
-    func asset(for id: String) -> AdaptyCustomAsset? {
-        return assets[id]
-    }
-}
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin">
@@ -633,10 +628,9 @@ Here's how you can use the custom asset resolver you created:
 <Tabs>
 <TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
-let customResolver = CustomAssetsResolver()
 let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
     forPaywall: paywall,
-    assetsResolver: customResolver
+    assetsResolver: customAssets
 )
 ```
 </TabItem>
