@@ -47,7 +47,7 @@ Onboardings are a paid feature in Adapty. Note the following about the pricing:
 To launch your onboarding:
 
 1. [Design an onboarding in the no-code editor.](design-onboarding.md)
-2. [Create a placement for the onboarding.](create-onboarding#create-a-placement-for-your-onboarding)
+2. [Create a placement for the onboarding.](https://adapty.io/docs/create-onboarding#create-a-placement-for-your-onboarding)
 3. [Integrate the onboarding with your project using the Adapty SDK.](onboarding-sdk.md)
 4. Test the onboarding and release it for your users.
 

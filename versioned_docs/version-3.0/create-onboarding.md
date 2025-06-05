@@ -94,7 +94,7 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
    </Zoom>
 
 2. Enter the placement name and ID. Then, click **Run onboarding** and select an onboarding to show to all users.
-3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
+3. If you have a separate onboarding prepared for a specific user group, [add more audiences](https://adapty.io/docs/audience) and select a different onboarding for them.
 
 :::info
 You can also run [A/B tests](ab-tests.md) to understand which onboarding works better.
