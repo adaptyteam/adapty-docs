@@ -240,6 +240,10 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 
 After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
 
+:::important
+Once you start using products in live paywalls, avoid modifying the product's period, access level, product IDs, and price IDs. Changes to these product properties will create discrepancies in your analytics data.
+:::
+
 ### 4\. Enrich purchases made on the web with your user ID
 
 Adapty relies on the webhooks from Stripe to provide and update access levels for users as the only source of information. But you have to provide additional info from your end when working with Stripe for this integration to work properly.

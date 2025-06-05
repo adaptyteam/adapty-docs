@@ -29,7 +29,11 @@ There are the following groups of elements you can add:
 
 - **Containers**: Containers allow you to set up a flexible layout. For example, if you want to add a two-column text, you need to add **Columns** and then drag two text blocks into **Columns** on the left pane. Or, if you are adding a carousel, you'll need to add images to the **Media** elements inside.
 - **Typography**: Add pre-formatted text blocks and configure their look as needed.
-- **Media & Display**: Except for images and videos, you can add animated charts that demonstrate your app value and encourage users. If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
+- **Media & Display**: Except for images and videos, you can add animated charts that demonstrate your app value and encourage users. 
+  
+  The **supported video formats** are MP4 and WebM. The **maximum media file size** is 15 MB.
+
+  If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
 - **Quiz**: Create short questionnaires with text and image options to customize the onboarding experience and get to know your users better.
 - **Inputs**: Collect your users' data.
 - **Buttons**: Buttons let your users navigate between screens, close the onboarding or move to the paywall. You can also add glossy or moving buttons to attract user's attention and convert their install to a purchase.
