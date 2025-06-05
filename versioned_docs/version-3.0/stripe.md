@@ -208,7 +208,7 @@ At the moment Adapty only supports **Flat rate** ($9.99/month) or **Package pric
 
 :::warning
 
-Products are required! Be sure to create your Stripe products in the Adapty Dashboard. Adapty only tracks events for transactions linked to these products, so don’t skip this step—otherwise, transaction events won’t be created.
+Products are required! Be sure to create your Stripe products in the Adapty Dashboard. Adapty only tracks events for transactions linked to these products, so don't skip this step—otherwise, transaction events won't be created.
 
 :::
 
@@ -239,6 +239,10 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 </Zoom>
 
 After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
+
+:::important
+Once you start using products in live paywalls, avoid modifying the product's period, access level, product IDs, and price IDs. Changes to these product properties will create discrepancies in your analytics data.
+:::
 
 ### 4\. Enrich purchases made on the web with your user ID
 
@@ -329,4 +333,4 @@ Adapty tracks only full refunds. Proration or partial refunds are currently not 
 
 If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
 
-To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
+To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it's best to avoid deleting invoices whenever possible.
