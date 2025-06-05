@@ -59,7 +59,7 @@ ARPAS shows how much money each active subscriber generates on average. Simply d
 **Conversion rate to purchases** shows what percentage of paywall/onboarding/placement views lead to purchases. For example, 10 purchases from 100 views is 10% conversion rate.
 **Unique CR purchases** measures what percentage of unique users who view your onboarding end up making a purchase, counting each user only once, regardless of how many times they see it.
 
-### CR trials
+### CR to trials
 
 **Conversion rate to trials** shows what percentage of onboarding views lead to starting a trial. For example, 10 trials from 100 views is 10% conversion rate.
 
