@@ -51,7 +51,7 @@ You can switch between views by clicking on the **Table** or **JSON** tab whenev
 </Zoom>
 
 
-Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the `remoteConfig` property of `AdaptyOnboarding`, and make some adjustments to your onboarding. 
+Whatever view you've chosen to customize your onboarding, you can later access this data from SDK using the `remoteConfig` property of `AdaptyOnboarding`, and make some adjustments to your onboarding. 
 
 You can combine different options and create your own. 
 
