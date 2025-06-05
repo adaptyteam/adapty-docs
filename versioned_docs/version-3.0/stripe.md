@@ -338,9 +338,21 @@ To prevent this issue, set the **Invoice numbering** in the [**Stripe settings**
 ## Get more from your Stripe data
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
 
-Learn more about the integrations you can use to forward and analyze your Stripe events:
+Integrations you can use to forward and analyze your Stripe events:
 - [Amplitude](https://adapty.io/docs/amplitude/)
 - [Webhook](https://adapty.io/docs/webhook)
 - [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
 - [Mixpanel](https://adapty.io/docs/mixpanel)
 - [Posthog](https://adapty.io/docs/posthog)
+
+### Supported Stripe events
+Adapty supports the following Stripe events:
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded
