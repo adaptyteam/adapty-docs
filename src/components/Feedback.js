@@ -10,9 +10,24 @@ export default function Feedback() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [comment, setComment] = useState('');
 
-    const iframeRef = useRef(null);
     const formRef = useRef(null);
     const idleTimerRef = useRef(null);
+
+    // Handle initial rating
+    const handleRating = (isLike) => {
+        setUserRating(isLike);
+        setShowComment(true);
+        
+        // Set form values
+        if (formRef.current) {
+            const formArticleId = formRef.current.querySelector('#formArticleId');
+            const formRating = formRef.current.querySelector('#formRating');
+            if (formArticleId && formRating) {
+                formArticleId.value = `https://adapty.io${pathname}`;
+                formRating.value = isLike ? 'Liked' : 'Disliked';
+            }
+        }
+    };
 
     // Handle form submission
     const handleSubmitFeedback = (e) => {
@@ -24,89 +39,51 @@ export default function Feedback() {
             if (formComment) {
                 formComment.value = comment;
             }
-
-            if (iframeRef.current) {
-                iframeRef.current.formSubmitted = true;
-                formRef.current.submit();
-            }
+            formRef.current.submit();
+            setIsSubmitted(true);
         }
     };
 
-    // Handle initial rating
-    const handleRating = (isLike) => {
-        setUserRating(isLike);
-        setShowComment(true);
-        if (formRef.current) {
-            const formArticleId = formRef.current.querySelector('#formArticleId');
-            const formRating = formRef.current.querySelector('#formRating');
-
-            if (formArticleId && formRating) {
-                formArticleId.value = pathname;
-                formRating.value = isLike ? 'Liked' : 'Disliked';
-            }
-        }
-    };
-
-    // Handle auto-submission
+    // Setup auto-submission handlers
     useEffect(() => {
         if (!userRating || isSubmitted) return;
 
-        // Setup idle timer
-        const timer = setTimeout(() => {
-            handleSubmitFeedback();
-        }, 60000);
-
-        // Handle scroll
-        let lastKnownScrollPosition = window.scrollY;
-        const handleScroll = () => {
-            if (window.scrollY < lastKnownScrollPosition) {
-                handleSubmitFeedback();
+        // Handle idle timer
+        const resetIdleTimer = () => {
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
             }
-            lastKnownScrollPosition = window.scrollY;
+            idleTimerRef.current = setTimeout(() => {
+                handleSubmitFeedback();
+            }, 30000); // 30 seconds
         };
 
-        // Handle page visibility and unload
+        // Handle scroll
+        const handleScroll = () => {
+            handleSubmitFeedback();
+        };
+
+        // Handle visibility change
         const handleVisibility = () => {
             if (document.visibilityState === 'hidden') {
                 handleSubmitFeedback();
             }
         };
 
-        const handleUnload = (e) => {
-            if (!isSubmitted && userRating !== null) {
-                handleSubmitFeedback();
-            }
-        };
-
-        // Add event listeners
-        window.addEventListener('scroll', handleScroll);
+        // Setup event listeners
+        resetIdleTimer();
+        window.addEventListener('scroll', handleScroll, { passive: true });
         document.addEventListener('visibilitychange', handleVisibility);
-        window.addEventListener('beforeunload', handleUnload);
 
         // Cleanup
         return () => {
-            clearTimeout(timer);
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
+            }
             window.removeEventListener('scroll', handleScroll);
             document.removeEventListener('visibilitychange', handleVisibility);
-            window.removeEventListener('beforeunload', handleUnload);
         };
     }, [userRating, isSubmitted, comment, pathname]);
-
-    // Handle iframe load
-    useEffect(() => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-
-        const handleLoad = () => {
-            if (iframe.formSubmitted) {
-                setIsSubmitted(true);
-                iframe.formSubmitted = false;
-            }
-        };
-
-        iframe.addEventListener('load', handleLoad);
-        return () => iframe.removeEventListener('load', handleLoad);
-    }, []);
 
     return (
         <div className={styles.container}>
@@ -118,8 +95,8 @@ export default function Feedback() {
                             className={clsx(styles.ratingButton, userRating === true && styles.active)}
                             onClick={() => handleRating(true)}
                         >
-                            <svg viewBox="0 0 20 20" className={styles.icon}>
-                                <path d="M10 2.5L12.1832 7.00967L17.0734 7.75966L13.5367 11.2097L14.3664 16.0903L10 13.7897L5.63361 16.0903L6.46329 11.2097L2.92658 7.75966L7.81678 7.00967L10 2.5Z" />
+                            <svg viewBox="0 0 24 24" className={styles.icon}>
+                                <path d="M2 21h4V9H2v12zM22 10.5c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L13 2 6.59 8.41C6.22 8.78 6 9.3 6 9.83V19c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.5z"/>
                             </svg>
                             Yes
                         </button>
@@ -127,8 +104,12 @@ export default function Feedback() {
                             className={clsx(styles.ratingButton, userRating === false && styles.active)}
                             onClick={() => handleRating(false)}
                         >
-                            <svg viewBox="0 0 20 20" className={styles.icon}>
-                                <path d="M10 2.5L7.81678 7.00967L2.92658 7.75966L6.46329 11.2097L5.63361 16.0903L10 13.7897L14.3664 16.0903L13.5367 11.2097L17.0734 7.75966L12.1832 7.00967L10 2.5Z" />
+                            <svg
+                                viewBox="0 0 24 24"
+                                className={styles.icon}
+                                style={{ transform: 'rotate(180deg)' }}
+                            >
+                                <path d="M2 21h4V9H2v12zM22 10.5c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L13 2 6.59 8.41C6.22 8.78 6 9.3 6 9.83V19c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.5z"/>
                             </svg>
                             No
                         </button>
@@ -159,13 +140,6 @@ export default function Feedback() {
                     </div>
                 )}
 
-                {/* Hidden iframe for form submission */}
-                <iframe
-                    name="hidden_iframe"
-                    ref={iframeRef}
-                    style={{ display: 'none' }}
-                />
-
                 {/* Hidden Google Form */}
                 <form
                     ref={formRef}
@@ -177,6 +151,7 @@ export default function Feedback() {
                     <input type="text" name="entry.1120506438" id="formRating" />
                     <input type="text" name="entry.1198611431" id="formComment" />
                 </form>
+                <iframe name="hidden_iframe" style={{ display: 'none' }} />
             </div>
         </div>
     );
