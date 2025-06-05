@@ -9,32 +9,22 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-[AppMetrica](https://appmetrica.yandex.ru/en/about) is a no-cost tool that helps you track advertisements and analyze how your mobile app is doing. It works in real time, so you see things right away.
+[AppMetrica](https://appmetrica.yandex.ru/en/about) is a free analytics tool that helps you track user behavior and analyze your mobile app's performance in real time. By integrating AppMetrica with Adapty, you can gain deeper insights into your subscription metrics and user engagement.
 
 ## How to set up AppMetrica integration
 
-AppMetrica integration configuration is comprised of two major steps:
+Setting up the AppMetrica integration involves two main steps:
 
-1. Enable the integration in the Adapty Dashboard.
-2. Configure the integration in your app’s code.
+1. Configure the integration in the Adapty Dashboard
+2. Set up the integration in your app's code
 
-### Dashboard Configuration
+### Dashboard configuration
 
-To integrate AppMetrica go to [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica) and set credentials.
+To set up the AppMetrica integration:
 
-<Zoom>
-  <img src={require('./img/2500769-CleanShot_2023-08-18_at_14.57.352x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choose the app you want to send events to and go to **Settings**. Copy **Application ID** and **Post API key** and use them to set up the integration in Adapty.
-
+1. Open the [AppMetrica apps list](https://appmetrica.yandex.ru/application/list)
+2. Select the app you want to track
+3. Go to **Settings** and copy the **Application ID** and **Post API key** 
 <Zoom>
   <img src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.webp').default}
   style={{
@@ -45,12 +35,28 @@ Open AppMetrica [apps list](https://appmetrica.yandex.ru/application/list). Choo
   }}
 />
 </Zoom>
+4. Go to [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica) in the Adapty Dashboard
+5. Paste your AppMetrica credentials.
 
-AppMetrica syncs events every 4 hours, so it may take some time for events to appear in the dashboard. AppMetrica doesn't support sending events revenue, but we send it as regular property.
+<Zoom>
+  <img src={require('./img/appmetrica_creds.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 
 ### Events and tags
 
-Below the credentials, there are three groups of events you can send to AppMetrics from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
+Adapty allows you to send three groups of events to AppMetrica. You can enable the events you need to track your app's performance. For a complete list of available events, see our [events documentation](events).
+
+:::note
+AppMetrica syncs events every 4 hours, so there may be a delay before events appear in your dashboard. 
+:::
 
 <Zoom>
   <img src={require('./img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.webp').default}
@@ -63,13 +69,44 @@ Below the credentials, there are three groups of events you can send to AppMetri
 />
 </Zoom>
 
-We recommend using the default event names provided by Adapty. But you can change the event names based on your needs.
+:::tip
+We recommend using Adapty's default event names for consistency, but you can customize them to match your existing analytics setup.
+:::
+
+### Revenue settings
+
+By default, Adapty sends revenue data as properties in events, which appear in AppMetrica's Events report. You can configure how this revenue data is calculated and displayed:
+
+- **Revenue calculation**: Choose how revenue values are calculated to match your financial reporting needs:
+  - **Gross revenue**: Shows the total revenue before any deductions, useful for tracking the full amount customers pay
+  - **Proceeds after store commission**: Displays revenue after App Store/Play Store fees are deducted, helping you track actual earnings
+  - **Proceeds after store commission and taxes**: Shows net revenue after both store fees and applicable taxes, providing the most accurate picture of your earnings
+
+- **Report user's currency**: When enabled, sales are reported in the user's local currency, making it easier to analyze revenue by region. When disabled, all sales are converted to USD for consistent reporting across different markets.
+
+- **Send revenue events**: Enable this option to make revenue data appear not only in the Events report but also in AppMetrica's Revenue report. Make sure you’re not sending revenue from anywhere else, as this may result in duplication.
+
+- **Exclude historical events**: When enabled, Adapty won't send events that occurred before the user installed the app with Adapty SDK. This helps avoid data duplication if you were already sending events to analytics before integrating Adapty.
+
+<Zoom>
+  <img src={require('./img/appmetrica_revenue.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ### SDK configuration
 
-Use the `setIntegrationIdentifier()` method to set the `appmetrica_device_id` parameter. This is required to enable the integration.
+To enable the AppMetrica integration in your app, you need to set up two identifiers:
 
-If your app has user registration, you can also pass `appmetrica_profile_id`.
+1. `appmetrica_device_id`: Required for basic integration
+2. `appmetrica_profile_id`: Optional, but recommended if your app has user registration
+
+Use the `setIntegrationIdentifier()` method to set these values. Here's how to implement it for each platform:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="Swift" label="iOS (Swift)" default>
