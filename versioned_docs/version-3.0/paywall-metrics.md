@@ -152,7 +152,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 
 
-### Paywall metrics
+### Metrics definitions
 
 
 <Zoom>
@@ -166,20 +166,72 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 />
 </Zoom>
 
-The following metrics are available for paywalls. Click any metric to learn more:
 
-- [Revenue](https://adapty.io/docs/metrics#revenue)
-- [Proceeds](https://adapty.io/docs/metrics#proceeds)
-- [ARPPU](https://adapty.io/docs/metrics#arppu)
-- [ARPAS](https://adapty.io/docs/metrics#arpas)
-- [CR purchases & unique CR purchases](https://adapty.io/docs/metrics#cr-purchases--unique-cr-purchases)
-- [Unique CR to trials](https://adapty.io/docs/metrics#unique-cr-trials)
-- [Purchases](https://adapty.io/docs/metrics#purchases)
-- [Trials](https://adapty.io/docs/metrics#trials)
-- [Trials canceled](https://adapty.io/docs/metrics#trials-cancelled)
-- [Refunds](https://adapty.io/docs/metrics#refunds)
-- [Refund rate](https://adapty.io/docs/metrics#refund-rate)
-- [Views & unique views](https://adapty.io/docs/metrics#views--unique-views)
+
+
+
+#### Revenue
+
+This metric represents the total amount of money generated in USD from purchases and renewals. Please note that the revenue calculation does not include the App Store / Play Store commission and is calculated before deducting any fees.
+
+#### Proceeds
+
+ This metric represents the actual amount of money received by the app owner in USD from purchases and renewals after deducting the applicable App Store / Play Store commission. It reflects the net revenue that directly contributes to the app's earnings. For more information on how proceeds are calculated, you can refer to the Adapty [documentation.](analytics-cohorts#revenue-vs-proceeds)
+
+#### ARPPU
+
+ ARPPU is an average revenue per paying user. It’s calculated as total revenue divided by the number of unique paying users. $15000 revenue / 1000 paying users = $15 ARPPU.
+
+#### ARPAS
+
+The average revenue per active subscriber allows you to measure the average revenue generated per active subscriber. It is calculated by dividing the total revenue by the number of subscribers who have activated a trial or subscription. For example, if the total revenue is $5,000 and there are 1,000 subscribers, the ARPAS would be $5. This metric helps assess the average monetization potential per subscriber.
+
+#### Unique conversion rate (CR) to purchases
+
+The unique conversion rate to purchases is calculated by dividing the number of purchases by the number of unique views. For example, if there are 10 purchases and 100 unique views, the unique conversion rate to purchases would be 10%. This metric focuses on the ratio of purchases to the unique number of views, providing insights into the effectiveness of converting unique visitors into paying customers.
+
+#### CR to purchases
+
+The conversion rate to purchases is calculated by dividing the number of purchases by the total number of views. For example, if there are 10 purchases and 100 views, the conversion rate to purchases would be 10%. This metric indicates the percentage of views that result in purchases, providing insights into the effectiveness of your paywall in converting users into paying customers.
+
+#### Unique CR to trials
+
+The unique conversion rate to trials is calculated by dividing the number of trials started by the number of unique views. For example, if there are 30 trials started and 100 unique views, the unique conversion rate to trials would be 30%. This metric measures the percentage of unique views that result in trial activations, providing insights into the effectiveness of your paywall in converting unique visitors into trial users.
+
+#### Purchases
+
+Purchases represent the cumulative total of various transactions made on the paywall. The following transactions are included in this metric (renewals are not included):
+
+- New purchases, that are made directly on the paywall.
+- Trial conversions of trials that were initially activated on the paywall.
+- Downgrades, upgrades, and cross-grades of subscriptions made on the paywall.
+- Subscription restores on the paywall, such as when a subscription is reinstated after expiration without auto-renewal.
+
+By considering these different types of transactions, the purchases metric provides a comprehensive view of the overall acquisition and monetization activity on your paywall.
+
+#### Trials
+
+The trials metric represents the total number of trials that have been activated. It reflects the number of users who have initiated trial periods through your paywall. This metric helps track the effectiveness of your trial offering and can provide insights into user engagement and conversion from trials to paid subscriptions.
+
+#### Trials canceled
+
+The trials canceled metric represents the number of trials in which the auto-renewal feature has been switched off. This occurs when users manually unsubscribe from the trial, indicating their decision not to continue with the subscription after the trial period ends. Tracking trials canceled provides valuable information about user behavior and allows you to understand the rate at which users opt out of the trial.
+
+#### Refunds
+
+The refunds metric represents the number of refunded purchases and subscriptions. This includes transactions that have been reversed or refunded due to various reasons, such as customer requests, payment issues, or any other applicable refund policies.
+
+#### Refund rate
+
+The refund rate is calculated by dividing the number of refunds by the number of first-time purchases (renewals are not included). For example, if there are 5 refunds and 1000 first-time purchases, the refund rate would be 0.5%. 
+
+#### Views
+
+The views metric represents the total number of times the paywall has been viewed by users. Each time a user visits the paywall, it is counted as a separate view. For example, if a user visits the paywall two times, it will be recorded as two views. Tracking views helps you understand the level of engagement and user interaction with your paywall, providing insights into user behavior and the effectiveness of your paywall placement and design.
+
+#### Unique views
+
+The unique views metric represents the number of unique instances in which the paywall has been viewed by users. Unlike total views, which count each visit as a separate view, unique views count each user's visit to the paywall only once, regardless of how many times they access it. For example, if a user visits the paywall two times, it will be recorded as one unique view. Tracking unique views helps provide a more accurate measure of user engagement and the reach of your paywall, as it focuses on individual users rather than the total number of visits.
 
 :::warning
 Make sure to send paywall views to Adapty using `.logShowPaywall()` method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
