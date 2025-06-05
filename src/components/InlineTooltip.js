@@ -95,17 +95,11 @@ const InlineTooltip = ({ children, tooltip, className = '' }) => {
         };
     }, []);
 
-    // Handle close button
-    const handleClose = (e) => {
-        e.stopPropagation();
-        setIsVisible(false);
-    };
-
     // Determine which content to show in tooltip and trigger
     const tooltipContent = children;
     const triggerContent = tooltip;
 
-    // Tooltip content with close button
+    // Tooltip content
     const tooltipElement = (
         <div
             ref={tooltipRef}
@@ -119,13 +113,6 @@ const InlineTooltip = ({ children, tooltip, className = '' }) => {
             onMouseEnter={handleTooltipMouseEnter}
             onMouseLeave={handleTooltipMouseLeave}
         >
-            <button
-                className={styles.closeButton}
-                onClick={handleClose}
-                aria-label="Close tooltip"
-            >
-                ×
-            </button>
             <div className={styles.tooltipContent}>
                 {tooltipContent}
             </div>
