@@ -7,9 +7,13 @@ metadataTitle: "Analyzing Placement Metrics | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
+With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls, onboardings, or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
 
-To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
+:::
+
+To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls and onboardings. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
 
 The collected metrics are continuously updated in real-time and can be conveniently accessed and analyzed through Adapty's user-friendly dashboard. You have the freedom to customize the time range for analysis, apply filters based on different parameters, and compare metrics across various placements, user segments, or products.
 
@@ -19,7 +23,7 @@ For a more detailed analysis of each placements, you can navigate to the placeme
 
 
 <Zoom>
-  <img src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.webp').default}
+  <img src={require('./img/placement-metrics.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -39,7 +43,7 @@ The system displays the metrics based on the selected time period and organizes 
 
 #### View options for metrics data
 
-The placement metrics page offers two view options for metrics data: paywall-based and audience-based.
+The placement metrics page offers two view options for metrics data: paywall-based or onboarding-based, and audience-based.
 
 
 <Zoom>
@@ -57,9 +61,9 @@ The placement metrics page offers two view options for metrics data: paywall-bas
 
 
 
-In the paywall-based view, metrics are grouped by placements associated with the paywall. This allows users to analyze metrics by different placements.
+In the paywall-based or onboarding-based view, metrics are grouped by placements associated with the paywall or onboarding. This allows users to analyze metrics by different placements.
 
-In the audience-based view, metrics are grouped by the target audience of the paywall. Users can assess metrics specific to different audience segments.
+In the audience-based view, metrics are grouped by the target audience of the paywall or onboarding. Users can assess metrics specific to different audiences.
 
 #### Profile install date filtration
 
@@ -85,7 +89,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 
 <Zoom>
-  <img src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.webp').default}
+  <img src={require('./img/time-ranges.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -103,10 +107,10 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Audience, paywall, paywall group, placement, country, store.
-- ✅ Group by: Segment, store, and product
+- ✅ Filter by: Attribution, audience, paywall, paywall group, onboarding, placement, country, store, offer type, offer ID, offer discount type, A/B test, .
+- ✅ Group by: Audience, store, and product.
 
-You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use [paywall](https://docs.adapty.io/docs/paywall-metrics) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics) metrics.
 
 #### Single metrics chart
 
@@ -138,7 +142,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 
 <Zoom>
-  <img src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.webp').default}
+  <img src={require('./img/total-metrics-summary.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -155,7 +159,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 ### Placement metrics
 
 <Zoom>
-  <img src={require('./img/771a0f0-Export-1690375049771.gif').default}
+  <img src={require('./img/metrics-definitions.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -1,5 +1,5 @@
 ---
-title: "Enable Real-time developer notifications (RTDN) in Google Play Console"
+title: "Set up Real-time developer notifications (RTDN) in Google Play Console"
 description: "Stay informed about critical events and maintain data accuracy by enabling Real-time Developer Notifications (RTDN) in the Google Play Console for Adapty. Learn how to set up RTDN to receive instant updates about refunds and other important events from the Play Store"
 metadataTitle: "Google Play Console: Enabling Real-time Developer Notifications (RTDN) for Adapty"
 
@@ -9,6 +9,9 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 Setting up real-time developer notifications (RTDN) is crucial for ensuring data accuracy as it enables you to receive updates instantly from the Play Store, including information on refunds and other events.
+
+## Enable RTDN
+Follow these steps:
 
 1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
 
@@ -26,7 +29,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 </Zoom>
 
 
-2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
+2. Copy the **Pub/Sub topic name** from the field next to the **Google Play RTDN topic name** title.
 
    
 
@@ -48,8 +51,9 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (the cor
 
 :::
 
-3. Open the [Google Play Console](https://play.google.com/console/), choose your app, and scroll down the left menu to find **Monetize** -> **Monetization setup**.
-4. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
+3. Open the [Google Play Console](https://play.google.com/console/).
+4. Choose your app and scroll down the left menu to **Monetize** -> **Monetization setup**.
+5. In the **Google Play Billing** section, select the **Enable real-time notifications** checkbox.
 
 <Zoom>
   <img src={require('./img/e55ba0e-paste_topic_name.webp').default}
@@ -62,8 +66,44 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (the cor
 />
 </Zoom>
 
-5. Paste the contents of the **Enable Pub/Sub API** field you've copied in the Adapty **App Settings** into the **Topic name** field.
-6. Click the **Save changes** button in the Google Play Console.
+6. Paste the **Pub/Sub topic name** you've copied into the **Topic name** field below the **Enable real-time notifications** checkbox.
+7. Click the **Save changes** button in the Google Play Console.
+
+## Send test notification
+
+You can test your RTDN setup to make sure everything is configured correctly. To send a test notification:
+
+1. Open the [Google Play Console](https://play.google.com/console/).
+2. Choose your app and scroll down the left menu to **Monetize** -> **Monetization setup**.
+3. Click **Send test notification** in the **Google Play Billing** section.
+4. Go to the **Google Play RTDN topic name** section of your [**App settings**](https://app.adapty.io/settings/android-sdk) page to see the [notification status](https://adapty.io/docs/enable-real-time-developer-notifications-rtdn#notification-statuses). 
+
+<Zoom>
+  <img src={require('./img/rtdn-test.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Notification statuses
+You can quickly check your RTDN connection status in the in the **Google Play RTDN topic name** section of your [**App settings**](https://app.adapty.io/settings/android-sdk) page. There are two possible statuses:
+- **Active**: Notification has been received.
+- **Waiting**: Notification hasn't been received yet.
+  <Zoom>
+  <img src={require('./img/rtdn-status.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
 
 ## Fixing incorrect format in Enable Pub/Sub API field
 
