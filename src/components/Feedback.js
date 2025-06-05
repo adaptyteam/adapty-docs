@@ -120,7 +120,7 @@ export default function Feedback() {
                     <div className={styles.commentSection}>
                         <textarea
                             className={styles.textarea}
-                            placeholder="What was your experience? (optional)"
+                            placeholder="What was your experience?"
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
                             rows="3"
