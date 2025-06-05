@@ -94,7 +94,7 @@ When launching your paywall to the production environment, it is **crucial** to 
 To use your web paywall, you need to trigger it, and the way you do it depends on your setup:
 
 - If you are using the Paywall created in the Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
-- If you are using the SDK, you must set up the [`openWebPaywall`](#step-2b-set-up-the-sdk-method) method to handle web paywalls.
+- If you are using the SDK, you must set up the [`openWebPaywall`](https://adapty.io/docs/web-paywall#activate-the-paywall) method to handle web paywalls.
 
 
 ### Step 2a. Add a web purchase button
