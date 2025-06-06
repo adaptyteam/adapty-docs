@@ -18,3 +18,23 @@ Before you start, ensure that:
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
+To display an onboarding, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
+
+:::warning
+
+Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```

@@ -99,6 +99,26 @@ try {
     // handle the error
 }
 ```
+
+Then, call the `createOnboardingView` method to create a view instance.
+
+:::warning
+The result of the `createOnbaordingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```typescript showLineNumbers
+import {createOnboardingView} from '@adapty/react-native-ui';
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
 </TabItem>
 </Tabs>
 
