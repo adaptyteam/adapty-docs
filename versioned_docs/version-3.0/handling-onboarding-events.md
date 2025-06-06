@@ -13,4 +13,5 @@ In the framework-specific sections, we'll dive into details of effective managem
 
 - [iOS](ios-handling-onboarding-events.md)
 - [Android](android-handle-onboarding-events.md)
+- [Flutter](flutter-handling-onboarding-events.md)
 
