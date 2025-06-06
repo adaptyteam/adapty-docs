@@ -13,7 +13,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS or Android SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty iOS or Android SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher or Flutter or React Native SDK version 3.7.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -50,6 +50,73 @@ Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
             // handle the error
         }
     }
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+
+```javascript showLineNumbers
+try {
+  final onboarding = await Adapty().getOnboarding(placementId: "YOUR_PLACEMENT_ID");
+  // the requested onboarding
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Then, call the `createOnboardingView` method to get the view you will be displaying.
+
+:::warning
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```javascript showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createOnboardingView(
+        onboarding: onboarding,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="rn" label="React Native (TS)" default>
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const onboarding = await adapty.getOnboarding(placementId);
+  // the requested onboarding
+} catch (error) {
+    // handle the error
+}
+```
+
+Then, call the `createOnboardingView` method to create a view instance.
+
+:::warning
+The result of the `createOnbaordingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```typescript showLineNumbers
+import {createOnboardingView} from '@adapty/react-native-ui';
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
 }
 ```
 </TabItem>
@@ -115,6 +182,34 @@ Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
     }
 }
 ```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+
+```typescript showLineNumbers
+try {
+    final onboarding = await Adapty().getOnboardingForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+
+    const onboarding = await adapty.getOnboardingForDefaultAudience(id);
+  // the requested onboarding
+} catch (error) {
+    // handle the error
+}
+```
+
 </TabItem>
 </Tabs>
 Parameters:
