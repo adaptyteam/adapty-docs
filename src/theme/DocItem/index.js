@@ -1,7 +1,7 @@
 // src/theme/DocItem/index.js
 import React from 'react';
 import OriginalDocItem from '@theme-original/DocItem';
-import { Helmet } from 'react-helmet';
+import Head from '@docusaurus/Head';
 
 export default function DocItemWrapper(props) {
   const { content: DocContent } = props;
@@ -13,9 +13,9 @@ export default function DocItemWrapper(props) {
     <>
       {/* Inject rank as a meta tag if it exists */}
       {rank !== undefined && (
-        <Helmet>
+        <Head>
           <meta name="rank" content={String(rank)} />
-        </Helmet>
+        </Head>
       )}
       <OriginalDocItem {...props} footerProps={{ links: whatsNewLinks }} />
     </>
