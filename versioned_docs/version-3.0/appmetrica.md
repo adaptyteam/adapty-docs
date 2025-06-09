@@ -84,7 +84,7 @@ By default, Adapty sends revenue data as properties in events, which appear in A
 
 - **Report user's currency**: When enabled, sales are reported in the user's local currency, making it easier to analyze revenue by region. When disabled, all sales are converted to USD for consistent reporting across different markets.
 
-- **Send revenue events**: Enable this option to make revenue data appear not only in the Events report but also in AppMetrica's Revenue report. Make sure you’re not sending revenue from anywhere else, as this may result in duplication.
+- **Send revenue events**: Enable this option to make revenue data appear not only in the Events report but also in AppMetrica's [In-app and ad revenue](https://appmetrica.yandex.com/docs/en/mobile-reports/revenue-report) report. Make sure you’re not sending revenue from anywhere else, as this may result in duplication.
 
 - **Exclude historical events**: When enabled, Adapty won't send events that occurred before the user installed the app with Adapty SDK. This helps avoid data duplication if you were already sending events to analytics before integrating Adapty.
 
