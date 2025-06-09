@@ -197,6 +197,21 @@ try {
 ```
 </TabItem>
 
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+
+    const onboarding = await adapty.getOnboardingForDefaultAudience(id);
+  // the requested onboarding
+} catch (error) {
+    // handle the error
+}
+```
+
+</TabItem>
+
 </Tabs>
 Parameters:
 
