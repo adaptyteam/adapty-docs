@@ -33,12 +33,15 @@ export function useScrollTracker() {
                         [threshold]: true
                     }));
 
-                    // Send event to GA4
+                    // Send event to GA4 using Docusaurus's format
                     if (window.gtag) {
-                        window.gtag('event', 'scroll_depth', {
-                            'depth_percentage': parseInt(threshold),
+                        window.gtag('event', 'scroll', {
+                            'event_category': 'User Engagement',
+                            'event_label': `${threshold}%`,
+                            'value': parseInt(threshold),
                             'page_path': location.pathname,
-                            'page_title': document.title
+                            'page_title': document.title,
+                            'percent_scrolled': parseInt(threshold)
                         });
                     }
                 }
