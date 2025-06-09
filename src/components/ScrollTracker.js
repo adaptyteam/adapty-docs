@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from '@docusaurus/router';
 import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
 export function useScrollTracker() {
     const location = useLocation();
-    const [scrollMarkers, setScrollMarkers] = useState({
+    const markers = useRef({
         25: false,
         50: false,
         75: false
@@ -16,52 +16,71 @@ export function useScrollTracker() {
         }
 
         // Reset markers when page changes
-        setScrollMarkers({
+        markers.current = {
             25: false,
             50: false,
             75: false
-        });
+        };
 
-        const handleScroll = () => {
-            // Get scroll position and page height
+        const sendScrollEvent = (threshold) => {
+            if (typeof window !== 'undefined' && window.gtag) {
+                window.gtag('event', 'scroll_depth', {
+                    'event_category': 'Scroll Tracking',
+                    'event_label': location.pathname,
+                    'value': threshold,
+                    'percent_scrolled': threshold
+                });
+            }
+        };
+
+        const calculateScrollPercentage = () => {
             const contentHeight = document.documentElement.scrollHeight;
             const viewportHeight = window.innerHeight;
-            const scrollHeight = contentHeight - viewportHeight;
+            const scrollHeight = Math.max(1, contentHeight - viewportHeight); // Prevent division by zero
             const scrollPosition = Math.max(0, Math.min(window.scrollY, scrollHeight));
-            const scrollPercentage = Math.round((scrollPosition / scrollHeight) * 100);
+            return Math.round((scrollPosition / scrollHeight) * 100);
+        };
+
+        const handleScroll = () => {
+            const scrollPercentage = calculateScrollPercentage();
 
             // Check each threshold
-            Object.keys(scrollMarkers).forEach(threshold => {
-                const thresholdNum = parseInt(threshold);
-                if (!scrollMarkers[threshold] && scrollPercentage >= thresholdNum) {
-                    // Mark this threshold as tracked
-                    setScrollMarkers(prev => ({
-                        ...prev,
-                        [threshold]: true
-                    }));
-
-                    // Send event to GA4 using exact Docusaurus format
-                    if (typeof window !== 'undefined' && window.gtag) {
-                        window.gtag('event', 'scroll', {
-                            percent_scrolled: thresholdNum
-                        });
-                    }
+            [25, 50, 75].forEach(threshold => {
+                if (!markers.current[threshold] && scrollPercentage >= threshold) {
+                    markers.current[threshold] = true;
+                    sendScrollEvent(threshold);
                 }
             });
         };
 
-        // Add scroll listener
-        window.addEventListener('scroll', handleScroll, { passive: true });
+        // Check initial scroll position
+        setTimeout(handleScroll, 100);
+
+        // Add scroll listener with throttling
+        let ticking = false;
+        const scrollListener = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    handleScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        window.addEventListener('scroll', scrollListener, { passive: true });
 
         // Cleanup
         return () => {
-            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', scrollListener);
         };
-    }, [location.pathname, scrollMarkers]); // Reset on page change
+    }, [location.pathname]); // Remove scrollMarkers dependency
+
+    return null;
 }
 
 // Component that uses the hook
 export default function ScrollTracker() {
     useScrollTracker();
-    return null; // This component doesn't render anything
+    return null;
 }
