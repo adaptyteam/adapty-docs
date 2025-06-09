@@ -24,12 +24,7 @@ Anywhere you’d normally use a regular image or video:
 
 ## How to use custom media?
 
-1. Enable it with a toggle under the upload area. The toggle name depends on the media type you’re replacing. For example:  
-
-      - **Use custom media ID**  
-      - **Background custom image ID**
-
-   <Zoom>
+<Zoom>
      <img src={require('./img/custom-image.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
@@ -40,7 +35,9 @@ Anywhere you’d normally use a regular image or video:
    />
    </Zoom>
 
-2. Enter the media ID. Some fields (like the hero image or hero video) already have a predefined ID. If that's the case, you can skip this step. Here’s an example of a predefined custom media ID:
+1. Turn on the **Use custom media ID** or **Background image custom ID** toggle under the upload area. The toggle name depends on the media type you’re replacing.
+
+2. Enter the media ID. For hero images and hero videos, the field already include a predefined ID. If that's the case, you can skip this step. Here’s an example of a predefined custom media ID:
 
    <Zoom>
      <img src={require('./img/custom-media-predefined-id.webp').default}
@@ -53,30 +50,6 @@ Anywhere you’d normally use a regular image or video:
    />
    </Zoom>
 
-3. (optional) Upload a fallback image or video. This will be shown if, for any reason, the custom media can’t be loaded — like if the Adapty SDK version is below 3.5 or you forget to define the custom media ID in your code.
+3. (optional) Upload a fallback image or video. This will be shown if the custom media can't be loaded — for example, if the Adapty SDK version is below 3.7.0 or the custom media ID isn't defined in your code.
 
-4. Call the media by its ID in your code. Use the example below to load and display custom media by ID:
-
-<Tabs groupId="current-os" queryString> 
-<TabItem value="swift" label="Swift" default>   
-
-```swift showLineNumbers 
-code   
-```
-
-</TabItem> 
-<TabItem value="kotlin" label="Kotlin" default>  
-
- ```kotlin showLineNumbers 
- code   
- ```
-
-</TabItem> 
-<TabItem value="java" label="Java" default> 
-
-```java showLineNumbers 
-code   
-```
-
-</TabItem>
-</Tabs> 
+4. Follow the SDK documentation [section on assets customization](https://adapty.io/docs/get-pb-paywalls#customize-assets) and call the media by its ID in your code. 
