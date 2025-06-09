@@ -3,7 +3,7 @@ title: "Make purchases in mobile app"
 description: "Guide on handling in-app purchases and subscriptions using Adapty."
 metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
 keywords: ['makePurchase']
-weight: 100
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
