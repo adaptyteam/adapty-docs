@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from '@docusaurus/router';
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
 export function useScrollTracker() {
     const location = useLocation();
@@ -10,6 +11,10 @@ export function useScrollTracker() {
     });
 
     useEffect(() => {
+        if (!ExecutionEnvironment.canUseDOM) {
+            return;
+        }
+
         // Reset markers when page changes
         setScrollMarkers({
             25: false,
@@ -19,29 +24,26 @@ export function useScrollTracker() {
 
         const handleScroll = () => {
             // Get scroll position and page height
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight - windowHeight;
-            const scrollPosition = window.scrollY;
-            const scrollPercentage = (scrollPosition / documentHeight) * 100;
+            const contentHeight = document.documentElement.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            const scrollHeight = contentHeight - viewportHeight;
+            const scrollPosition = Math.max(0, Math.min(window.scrollY, scrollHeight));
+            const scrollPercentage = Math.round((scrollPosition / scrollHeight) * 100);
 
             // Check each threshold
             Object.keys(scrollMarkers).forEach(threshold => {
-                if (!scrollMarkers[threshold] && scrollPercentage >= parseInt(threshold)) {
+                const thresholdNum = parseInt(threshold);
+                if (!scrollMarkers[threshold] && scrollPercentage >= thresholdNum) {
                     // Mark this threshold as tracked
                     setScrollMarkers(prev => ({
                         ...prev,
                         [threshold]: true
                     }));
 
-                    // Send event to GA4 using Docusaurus's format
-                    if (window.gtag) {
+                    // Send event to GA4 using exact Docusaurus format
+                    if (typeof window !== 'undefined' && window.gtag) {
                         window.gtag('event', 'scroll', {
-                            'event_category': 'User Engagement',
-                            'event_label': `${threshold}%`,
-                            'value': parseInt(threshold),
-                            'page_path': location.pathname,
-                            'page_title': document.title,
-                            'percent_scrolled': parseInt(threshold)
+                            percent_scrolled: thresholdNum
                         });
                     }
                 }
