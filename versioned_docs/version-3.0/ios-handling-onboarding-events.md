@@ -3,6 +3,7 @@ title: "iOS - Handle onboarding events"
 description: "Handle onboarding-related events in iOS using Adapty."
 metadataTitle: "Handling Onboarding Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
 ---
 
 import Zoom from 'react-medium-image-zoom';
