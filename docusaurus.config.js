@@ -35,6 +35,11 @@ const config = {
     locales: ["en"],
   },
 
+  // Section for scroll tracking
+  clientModules: [
+    require.resolve('./src/components/ScrollTracker.js'),
+  ],
+
   presets: [
     [
       "classic",
