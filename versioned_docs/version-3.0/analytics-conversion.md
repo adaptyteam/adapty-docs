@@ -151,9 +151,24 @@ If a chosen date range is not enough to show any results, you may see a notifica
 />
 </Zoom>
 
+### Incomplete data period
 
+Sometimes, a conversion may include incomplete data—for example, if trials or subscriptions haven't had time to expire yet. This can happen with any conversion except Install → Trial and Install → Paid.
 
+In such cases:
+- Adapty marks the period with incomplete data using a dashed line on the chart. This may cover up to 30 days before the current date.
+- These incomplete trials or subscriptions are excluded from the overall conversion calculation.
 
+<Zoom>
+  <img src={require('./img/conversion-incomplete.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ### Table view, filters and CSV export
 
