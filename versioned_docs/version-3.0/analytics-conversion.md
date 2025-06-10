@@ -61,6 +61,10 @@ The main steps control is to the left of the chart. It contains a list of conver
 
 In general the logic of a conversion value X->Y for a particular day is that we use for a ratio the number of those who started their X state on the selected day and the number of those who then converted later (no matter when exactly) to the Y state, so conversions for the particular day are all associated with the date when a user activated an opportunity to convert to Y, which is the moment when he activated X. Using these we calculate a conversion = (Y / X) \* 100%.
 
+:::note
+The date shown on the chart corresponds to when users entered the initial state (X)—the point at which they became eligible to convert. If the conversion period is still ongoing, this date range may be marked as an [incomplete data period](#incomplete-data-period).
+:::
+
 Please see below each conversion explanation with an example for your reference.
 
 1. Install -> Paid  
