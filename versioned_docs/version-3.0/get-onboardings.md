@@ -2,6 +2,7 @@
 title: "Fetch onboardings and their configuration"
 description: "Learn how to retrieve onboardings in Adapty for."
 metadataTitle: "Retrieving onboardings in Adapty | Adapty Docs"
+keywords: ['getOnboarding', 'getOnboardingForDefaultAudience']
 ---
 
 import Zoom from 'react-medium-image-zoom';

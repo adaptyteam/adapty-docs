@@ -2,6 +2,8 @@
 title: "Quickstart guide"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+keywords: ['install sdk', 'sdk install', 'install sdk ios']
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';
