@@ -24,9 +24,9 @@ export function useScrollTracker() {
 
         const sendScrollEvent = (threshold) => {
             if (typeof window !== 'undefined' && window.gtag) {
-                window.gtag('event', 'scroll_depth', {
-                    'event_category': 'Scroll Tracking',
-                    'event_label': location.pathname,
+                window.gtag('event', 'scroll', {
+                    'custom_parameter_1': 'scroll_depth',
+                    'page_location': location.pathname,
                     'value': threshold,
                     'percent_scrolled': threshold
                 });
@@ -38,6 +38,12 @@ export function useScrollTracker() {
             const viewportHeight = window.innerHeight;
             const scrollHeight = Math.max(1, contentHeight - viewportHeight); // Prevent division by zero
             const scrollPosition = Math.max(0, Math.min(window.scrollY, scrollHeight));
+
+            // Handle case where page fits entirely in viewport
+            if (contentHeight <= viewportHeight) {
+                return 100; // Consider it fully scrolled if page fits in viewport
+            }
+
             return Math.round((scrollPosition / scrollHeight) * 100);
         };
 
