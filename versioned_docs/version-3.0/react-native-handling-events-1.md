@@ -3,6 +3,7 @@ title: "React Native - Handle paywall events"
 description: "Handle subscription events in React Native with Adapty’s SDK."
 metadataTitle: "Handling Events in React Native | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed']
 ---
 
 import Zoom from 'react-medium-image-zoom';

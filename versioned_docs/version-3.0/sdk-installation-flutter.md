@@ -2,6 +2,8 @@
 title: "Flutter - Adapty SDK Installation and configuration"
 description: "Installing Adapty SDK in Flutter | Adapty Docs"
 metadataTitle: "Install Adapty SDK in Flutter to handle subscriptions with ease."
+keywords: ['install sdk', 'sdk install', 'install sdk flutter']
+rank: 60
 ---
 
 import Tabs from '@theme/Tabs'; 

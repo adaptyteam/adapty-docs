@@ -2,6 +2,7 @@
 title: "Flutter - Handle paywall events"
 description: "Discover how to handle subscription-related events in Flutter using Adapty to track user interactions effectively."
 metadataTitle: "Handling Events in Flutter | Adapty Docs"
+keywords: ['paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 

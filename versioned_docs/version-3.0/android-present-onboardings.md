@@ -2,6 +2,7 @@
 title: "Android - Present onboardings"
 description: "Learn how to present onboardings on Android for effective user engagement."
 metadataTitle: "Presenting Onboardings on Android | Adapty Docs"
+keywords: ['getOnboardingConfiguration']
 ---
 
 import Zoom from 'react-medium-image-zoom';
