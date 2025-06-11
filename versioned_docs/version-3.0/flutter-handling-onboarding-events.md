@@ -14,6 +14,12 @@ Onboardings configured with the builder generate events your app can respond to.
 - **Full-screen presentation**: Requires setting up a global event observer that handles events for all onboarding views
 - **Embedded widget**: Handles events through inline callback parameters directly in the widget
 
+Before you start, ensure that:
+
+1. You have installed [Adapty Flutter SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
+
 ## Full-screen presentation events
 
 ### Set up event observer
@@ -65,7 +71,7 @@ void onboardingViewOnPaywallAction(
   AdaptyUIOnboardingMeta meta,
   String actionId,
 ) {
-  // Handle paywall action
+  _openPaywall(actionId);
 }
 
 void onboardingViewOnCustomAction(
@@ -96,7 +102,7 @@ void onboardingViewOnAnalyticsEvent(
 
 ## Embedded widget events
 
-When using `AdaptyUIOnboardingPlatformView`, you don't need to set up a global observer. Instead, handle events through inline callback parameters directly in the widget:
+When using `AdaptyUIOnboardingPlatformView`, you can handle events through inline callback parameters directly in the widget. Note that events will be sent to both the widget callbacks and the global observer (if set up), but the global observer is optional:
 
 ```javascript showLineNumbers title="Flutter"
 AdaptyUIOnboardingPlatformView(
@@ -111,7 +117,7 @@ AdaptyUIOnboardingPlatformView(
     // Handle close action
   },
   onPaywallAction: (meta, actionId) {
-    // Handle paywall action
+    _openPaywall(actionId);
   },
   onCustomAction: (meta, actionId) {
     // Handle custom actions
@@ -130,7 +136,22 @@ AdaptyUIOnboardingPlatformView(
 The following sections describe the different types of events you can handle, regardless of which presentation approach you're using.
 
 ### Handle custom actions
-For custom actions you've defined in your onboarding, you can handle them based on the action ID:
+
+In the builder, you can add a **custom** action to a button and assign it an ID.
+
+<Zoom>
+  <img src={require('./img/ios-events-1.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `actionId` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+
 ```javascript
 // Full-screen presentation
 void onboardingViewOnCustomAction(
@@ -139,11 +160,11 @@ void onboardingViewOnCustomAction(
     String actionId,
 ) {
     switch (actionId) {
-        case 'show_tutorial':
-            _showTutorial();
+        case 'login':
+            _login();
             break;
-        case 'skip_to_main':
-            _navigateToMainScreen();
+        case 'allow_notifications':
+            _allowNotifications();
             break;
     }
 }
@@ -223,9 +244,11 @@ void onboardingViewOnPaywallAction(
   AdaptyUIOnboardingMeta meta,
   String actionId,
 ) {
-  final paywall = await Adapty().getPaywall(placementId: actionId);
-  final paywallView = await AdaptyUI().createPaywallView(paywall: paywall);
-  await paywallView.present();
+  _openPaywall(actionId);
+}
+
+Future<void> _openPaywall(String actionId) async {
+  // Implement your paywall opening logic here
 }
 
 // Embedded widget
