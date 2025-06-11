@@ -1,5 +1,5 @@
 ---
-title: "Migration guide to Adapty Flutter SDK 3.7.0"
+title: "Migration guide to Adapty Flutter SDK 3.8.0"
 description: ""
 metadataTitle: ""
 ---
@@ -7,7 +7,7 @@ metadataTitle: ""
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty SDK 3.7.0 is a major release that brought some improvements which however may require some migration steps from you.
+Adapty SDK 3.8.0 is a major release that brought some improvements which however may require some migration steps from you.
 
 1. Update the observer class and method names.
 2. Update the fallback paywalls method name.
