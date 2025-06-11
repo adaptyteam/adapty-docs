@@ -9,14 +9,171 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
-Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
+Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
 
-To control or monitor processes occurring on the onboarding screen within your mobile app, implement the `AdaptyUIObserver` methods and set the observer before presenting any screen:
+- **Full-screen presentation**: Requires setting up a global event observer that handles events for all onboarding views
+- **Embedded widget**: Handles events through inline callback parameters directly in the widget
+
+## Full-screen presentation events
+
+### Set up event observer
+
+To handle events for full-screen onboardings, implement the `AdaptyUIOnboardingsEventsObserver` and set it before presenting:
 
 ```javascript showLineNumbers title="Flutter"
-AdaptyUI().setObserver(this);
+AdaptyUI().setOnboardingsEventsObserver(this);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
 ```
-## Closing onboarding
+
+### Handle events
+
+Implement these methods in your observer:
+
+```javascript showLineNumbers title="Flutter"
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  // Onboarding finished loading
+}
+
+void onboardingViewDidFailWithError(
+  AdaptyUIOnboardingView view,
+  AdaptyError error,
+) {
+  // Handle loading errors
+}
+
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle close action
+  view.dismiss();
+}
+
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle paywall action
+}
+
+void onboardingViewOnCustomAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle custom actions
+}
+
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle user input updates
+}
+
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  // Track analytics events
+}
+```
+
+## Embedded widget events
+
+When using `AdaptyUIOnboardingPlatformView`, you don't need to set up a global observer. Instead, handle events through inline callback parameters directly in the widget:
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Onboarding finished loading
+  },
+  onDidFailWithError: (error) {
+    // Handle loading errors
+  },
+  onCloseAction: (meta, actionId) {
+    // Handle close action
+  },
+  onPaywallAction: (meta, actionId) {
+    // Handle paywall action
+  },
+  onCustomAction: (meta, actionId) {
+    // Handle custom actions
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+    // Handle user input updates
+  },
+  onAnalyticsEvent: (meta, event) {
+    // Track analytics events
+  },
+)
+```
+
+## Event types
+
+The following sections describe the different types of events you can handle, regardless of which presentation approach you're using.
+
+### Handle custom actions
+For custom actions you've defined in your onboarding, you can handle them based on the action ID:
+```javascript
+// Full-screen presentation
+void onboardingViewOnCustomAction(
+    AdaptyUIOnboardingView view,
+    AdaptyUIOnboardingMeta meta,
+    String actionId,
+) {
+    switch (actionId) {
+        case 'show_tutorial':
+            _showTutorial();
+            break;
+        case 'skip_to_main':
+            _navigateToMainScreen();
+            break;
+    }
+}
+
+// Embedded widget
+onCustomAction: (meta, actionId) {
+    _handleCustomAction(actionId);
+}
+```
+
+### Finishing loading onboarding
+
+When an onboarding finishes loading, this event will be triggered:
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+
+// Embedded widget
+onDidFinishLoading: (meta) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+```
+
+### Closing onboarding
 
 Onboarding is considered closed when a user taps a button with the **Close** action assigned.
 
@@ -34,60 +191,102 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 :::important
 Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
 :::
-For example:
 
-```javascript showLineNumbers
-some code sample
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  await view.dismiss();
+}
+
+// Embedded widget
+onCloseAction: (meta, actionId) {
+  Navigator.of(context).pop();
+}
+```
+
+### Opening a paywall
+
+:::tip
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle the close action and open a paywall without relying on the event data.
+:::
+
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  final paywall = await Adapty().getPaywall(placementId: actionId);
+  final paywallView = await AdaptyUI().createPaywallView(paywall: paywall);
+  await paywallView.present();
+}
+
+// Embedded widget
+onPaywallAction: (meta, actionId) {
+  _openPaywall(actionId);
+}
 ```
 
 ### Updating field state
 
-When your users respond to a quiz question or input their data into an input field, the `onStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
-
-For example:
+When your users respond to a quiz question or input their data into an input field, the state update event will be triggered:
 
 ```javascript showLineNumbers title="Flutter"
-some code sample
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  saveUserResponse(elementId, params.value);
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  saveUserResponse(elementId, params.value);
+}
 ```
 
 :::note
 If you want to save or process data, you need to implement the methods yourself.
 :::
 
-The `action` object contains:
-- `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
-- `params`: The user's input data, which can be one of the following types:
-- `select`: Single selection from a list of options.
-- `multiSelect`: Multiple selections from a list of options.
-- `input`: Text input from the user.
-- `datePicker`: Date selected by the user.
-
-
-### Opening a paywall
-
-:::tip
-Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
-:::
-
-If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
-
-```javascript showLineNumbers title="Flutter"
-some code snippet
-```
-
-### Finishing loading onboarding
-
-When an onboarding finishes loading, this method will be invoked:
-
-```javascript showLineNumbers title="Flutter"
-some code snippet
-```
+The `params` object contains user input data, which can be one of the following types:
+- `select`: Single selection from a list of options
+- `multiSelect`: Multiple selections from a list of options
+- `input`: Text input from the user
+- `datePicker`: Date selected by the user
 
 ### Tracking navigation
 
-You receive an analytics event when various navigation-related events occur during the onboarding flow.
+You receive an analytics event when various navigation-related events occur during the onboarding flow:
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  trackEvent(event.type, meta.onboardingId);
+}
+
+// Embedded widget
+onAnalyticsEvent: (meta, event) {
+  trackEvent(event.type, meta.onboardingId);
+}
+```
 
 The `event` object can be one of the following types:
+
 |Type | Description |
 |------------|-------------|
 | `onboardingStarted` | When the onboarding has been loaded |
@@ -99,17 +298,10 @@ The `event` object can be one of the following types:
 | `unknown` | For any unrecognized event type. Includes `name` (the name of the unknown event) and `meta` (additional metadata) |
 
 Each event includes `meta` information containing:
+
 | Field | Description |
 |------------|-------------|
 | `onboardingId` | Unique identifier of the onboarding flow |
 | `screenClientId` | Identifier of the current screen |
 | `screenIndex` | Current screen's position in the flow |
 | `screensTotal` | Total number of screens in the flow |
-
-
-
-Here's an example of how you can use analytics events for tracking:
-
-```javascript showLineNumbers title="Flutter"
-some code snippet
-```

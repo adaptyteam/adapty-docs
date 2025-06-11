@@ -58,12 +58,8 @@ Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
 
 ```javascript showLineNumbers
 try {
-  final onboarding = await Adapty().getOnboarding(placementId: "YOUR_PLACEMENT_ID");
-  // the requested onboarding
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
+  final onboarding = await Adapty().getOnboarding(placementId: <PLACEMENT_ID>);
+} on AdaptyError catch (e) { } catch (e) { }
 ```
 
 Then, call the `createOnboardingView` method to get the view you will be displaying.
@@ -76,14 +72,8 @@ The result of the `createOnboardingView` method can only be used once. If you ne
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  final view = await AdaptyUI().createOnboardingView(
-        onboarding: onboarding,
-      );
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
+    final onboardingView = await Adapty().createOnboardingView(onboarding: onboarding);
+} on AdaptyError catch (e) { } catch (e) { }
 ```
 </TabItem>
 
