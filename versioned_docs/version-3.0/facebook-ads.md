@@ -1,7 +1,7 @@
 ---
-title: "Meta Ads"
-description: "Integrate Meta Ads with Adapty for effective subscription marketing."
-metadataTitle: "Meta Ads Integration | Adapty Docs"
+title: "Facebook Ads"
+description: "Integrate Facebook Ads with Adapty for effective subscription marketing."
+metadataTitle: "Facebook Ads Integration | Adapty Docs"
 keywords: ['Meta Ads', 'Facebook Ads']
 ---
 
@@ -10,16 +10,16 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-With the Meta Ads integration, you can easily check your app stats on Meta Analytics. Adapty sends events to Meta Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
+With the Facebook Ads integration, you can easily check your app stats in Meta Analytics. Adapty sends events to Meta Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
 
-The integration between Adapty and Meta Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Meta Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
+The integration between Adapty and Facebook Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Facebook Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up Meta Ads integration
+## How to set up Facebook Ads integration
 
-To integrate Meta Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Meta Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
+To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
 
 :::note
-Please consider that Meta Ads integration works on iOS 14.5+ only for users with ATT consent.
+Please consider that the Facebook Ads integration works on iOS 14.5+ only for users with ATT consent.
 :::
 
 
@@ -76,11 +76,11 @@ Please consider that Meta Ads integration works on iOS 14.5+ only for users with
 
 
 
-You can use this integration with Android apps as well. If you set up Android SDK configuration in the **App Settings**, setting up the **Meta App ID** is enough.
+You can use this integration with Android apps as well. If you set up Android SDK configuration in the **App Settings**, setting up the **Facebook App ID** is enough.
 
 ## Events and tags
 
-Please note that the Meta Ads integration specifically caters to companies using Meta for ad campaigns and optimizing them based on customer behavior. It supports Meta's standard events for optimization purposes. Consequently, modifying the event name is not available for the Meta Ads integration. Adapty effectively maps your customer events to their corresponding Meta events for accurate analysis.
+Please note that the Facebook Ads integration specifically caters to companies using Meta for ad campaigns and optimizing them based on customer behavior. It supports Meta's standard events for optimization purposes. Consequently, modifying the event name is not available for the Meta Ads integration. Adapty effectively maps your customer events to their corresponding Meta events for accurate analysis.
 
 | Adapty event                  | Meta Ads event          |
 | :---------------------------- | :-------------------------- |
