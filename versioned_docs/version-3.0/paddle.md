@@ -28,7 +28,7 @@ The integration uses webhooks to send subscription data from Paddle to Adapty. T
 2. Add Adapty's webhook URL to Paddle.
 
 :::note
-The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test Mode in Paddle). You can configure both simultaneously. The links provided are for **Live Mode** — to get **Test Mode** links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
+The steps below apply to both Production and Sandbox. You can configure both simultaneously. The links provided are for the Production environment — to get the Sandbox environment links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
 :::
 
 ### 1.1. Get and add Paddle API keys
@@ -190,6 +190,7 @@ Adapty needs to link each purchase to a [customer profile](profiles-crm) so it c
 1. **Default and recommended:** The `customer_user_id` you pass in the `custom_data` field (see [Paddle docs](https://developer.paddle.com/build/transactions/custom-data))
 2. The `email` from the Paddle Customer object (see [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
 3. The Paddle Customer ID in the `ctm-...` format (see [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+4. Don't create profiles. Choose this option if you want to have more control over your customer profiles and handle it yourself.
 
 You can configure which value to use in the **Profile creation behavior** field in [App Settings → Paddle](https://app.adapty.io/settings/paddle).
 
@@ -246,25 +247,31 @@ To ensure users who buy on the web get access on mobile, call `Adapty.activate()
 
 ## 4\. Test your integration
 
-Once everything's set up, you can test your integration. Transactions made in Paddle's Test Mode will appear as **Sandbox** in Adapty. Transactions from Live Mode will appear as **Production**.
+Once everything's set up, you can test your integration. Transactions made in Paddle's Sandbox environment will appear as **Sandbox** in Adapty. Transactions from the Production environment will appear as **Production**.
+
+:::note
+In Adapty's analytics, transaction amounts include taxes and Paddle fees, which differs from Paddle's dashboard where amounts are shown after taxes and fees. This means the numbers you see in Adapty will be higher than those in your Paddle dashboard.
+:::
+
+:::note
+Unlike other stores, refunds in Paddle only affect the specific transaction being refunded and do not automatically cancel the subscription. The subscription will continue to be active unless explicitly canceled.
+:::
 
 Your integration is now complete. Users can purchase subscriptions on your website and automatically access premium features in your mobile app, while you track all subscription analytics from your unified Adapty dashboard.
 
 ## Current limitations
 
-- **Upgrading, downgrading, and proration**: Subscription changes such as upgrading or downgrading can result in prorated charges. Adapty will not account for these charges in revenue calculations. It would be best to disable these options manually via the Paddle dashboard. You can also disable them by setting the `proration_billing_mode` attribute value to `do_not_bill` via the Stripe API.
-
 - **Cancellations**: Paddle has two subscription cancellation options:
 
-  1. Immediate cancellation: The subscription is canceled immediately with or without any proration option
+  1. Immediate cancellation: The subscription is canceled immediately.
 
   2. Cancellation at the end of the period: The subscription cancels at the end of the current billing period (similar to in-app subscriptions on the app stores).
 
-  Adapty supports both options, but the revenue calculation for immediate cancellation will disregard the proration option.
+- **Refunds**: Adapty tracks full and partial refunds. 
 
-- **Refunds**: Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
-
-- **Grace Period**: Paddle has a fixed grace period of 28-30 days for billing issues, which cannot be customized. During this period, the subscription remains active even if there are billing issues. This means users will continue to have access to premium features for the full grace period duration, regardless of payment status.
+- **Grace period**: Paddle has a fixed grace period of 30 days for billing issues, which cannot be customized. During this period, the subscription remains active even if there are billing issues. This means users will continue to have access to premium features for the full grace period duration, regardless of payment status. 
+  
+  Note that for trials, there is no grace period - if there is a billing issue after a trial, the subscription will be cancelled immediately.
 
 ---
 
