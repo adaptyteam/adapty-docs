@@ -28,7 +28,7 @@ The integration uses webhooks to send subscription data from Paddle to Adapty. T
 2. Add Adapty's webhook URL to Paddle.
 
 :::note
-The steps below apply to both Production and Sandbox. You can configure both simultaneously. The links provided are for the Production environment — to get the Sandbox environment links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
+The steps below apply to both Production and Test. You can configure both simultaneously. The links provided are for the Production environment — to get the Test environment links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
 :::
 
 ### 1.1. Get and add Paddle API keys
@@ -247,7 +247,7 @@ To ensure users who buy on the web get access on mobile, call `Adapty.activate()
 
 ## 4\. Test your integration
 
-Once everything's set up, you can test your integration. Transactions made in Paddle's Sandbox environment will appear as **Sandbox** in Adapty. Transactions from the Production environment will appear as **Production**.
+Once everything's set up, you can test your integration. Transactions made in Paddle's Test environment will appear as **Test** in Adapty. Transactions from the Production environment will appear as **Production**.
 
 :::note
 In Adapty's analytics, transaction amounts include taxes and Paddle fees, which differs from Paddle's dashboard where amounts are shown after taxes and fees. This means the numbers you see in Adapty will be higher than those in your Paddle dashboard.
