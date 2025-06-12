@@ -51,9 +51,9 @@ Once configured, you can reference Adapty documentation and SDKs using the `@` s
 
 **Example prompts:**
 
-- `@Adapty Docs help me implement paywall A/B testing for my premium subscription tier in React Native, focusing on conversion rates`
-- `Using @Adapty Flutter SDK, show me how to handle purchase restoration with proper error handling and user feedback`
-- `@Adapty Docs @Adapty iOS SDK help me track subscription analytics for my freemium to premium upgrade path`
+- `@Adapty Docs help me install the Adapty SDK`
+- `Using @Adapty Flutter SDK, show me how to handle purchase restoration with proper error handling`
+- `@Adapty Docs @Adapty iOS SDK help me show a paywall created in the paywall builder`
 
 ## Smart integration techniques
 
@@ -73,9 +73,9 @@ Looking at @files, show me how to implement the repository pattern for managing 
 
 ### Preparing for migration
 
-When migrating from services like RevenueCat, App Store Connect, or Google Play Billing to Adapty, leverage Cursor's file analysis capabilities:
+When migrating from other services like RevenueCat to Adapty, leverage Cursor's file analysis capabilities:
 
-1. **Upload your existing subscription files** using `@files` to give Cursor full context of your current implementation
+1. **Upload your existing files** using `@files` to give Cursor full context of your current implementation
 2. **Reference migration guides** from `@Adapty Docs` for service-specific migration paths
 3. **Analyze your current structure** before making changes
 
@@ -93,13 +93,5 @@ Using @Adapty Docs migration guide and @files, convert my existing purchase comp
 
 **Code transformation:**
 ```
-@files @Adapty iOS SDK help me implement a robust purchase flow with proper error handling for network issues and failed transactions
+@files @Adapty iOS SDK help me implement a robust paywall flow with proper error handling for network issues and failed transactions
 ```
-
-### Migration best practices
-
-- **Incremental migration**: Ask Cursor to migrate one component at a time
-- **Preserve existing patterns**: Reference your current code style and architecture
-- **Maintain backwards compatibility**: Request migration approaches that don't break existing functionality
-- **Test extensively**: Ask for testing strategies specific to your migration scenario
-
