@@ -8,10 +8,11 @@ metadataTitle: "Paddle Integration Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty integrates with [Paddle](https://www.paddle.com/) to track web payments and subscriptions. This integration provides two main benefits:
+Adapty lets you manage subscriptions and purchases from both your mobile app and website in one place. The [Paddle](https://www.paddle.com/) integration enables you to:
 
-- Users who purchase on your website can automatically access paid features when they install and log into your mobile app
-- All subscription data appears in your unified Adapty Dashboard with cohorts, predictions, and analytics
+- Collect subscription data from both in-app purchases and website purchases in a single system
+- Grant access to paid features in your mobile app to users who purchased on your website
+- View analytics and subscription data from all sales channels in one dashboard
 
 :::note
 Apple now allows US App Store apps to include links to external payment systems, though apps may still need to offer in-app purchases alongside external options. Check the current App Store guidelines for your region and app category.
@@ -21,13 +22,13 @@ To set up the Paddle integration, follow these steps:
 
 ## 1\. Connect Paddle to Adapty
 
-The integration uses webhooks to send subscription data from Paddle to Adapty. To connect your Adapty and Paddle accounts, you’ll need to:
+The integration uses webhooks to send subscription data from Paddle to Adapty. To connect your Adapty and Paddle accounts, you'll need to:
 
 1. Provide your Paddle API keys.
 2. Add Adapty's webhook URL to Paddle.
 
 :::note
-The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test Mode in Paddle). You can configure both simultaneously. The links provided are for **Live Mode** — to get **Test Mode** links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
+The steps below apply to both Production and Sandbox. You can configure both simultaneously. The links provided are for the Production environment — to get the Sandbox environment links, simply add `sandbox-` at the beginning of each URL. For example, use `https://sandbox-vendors.paddle.com/authentication-v2` instead of `https://vendors.paddle.com/authentication-v2`.
 :::
 
 ### 1.1. Get and add Paddle API keys
@@ -71,7 +72,11 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 />
 </Zoom>
 
-4. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key in the **Paddle API key** section. If you set an expiration date for your key, remember to generate a new key in Paddle and update it in Adapty before the current key expires.
+4. In Adapty, go to [App Settings → Paddle](https://app.adapty.io/settings/paddle) and paste the key in the **Paddle API key** section. 
+
+:::warning
+If you set an expiration date for your Paddle API key, you must manually generate a new key and update it in Adapty before expiration. The integration will stop working without warning when the key expires, and users won't be able to make purchases.
+:::
 
 <Zoom>
   <img src={require('./img/paddle-api-keys-adapty.webp').default}
@@ -106,6 +111,17 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 
 5. Set **Notification type** to **Webhook**.
 
+<Zoom>
+  <img src={require('./img/paddle-create-webhook.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 6. Select the following events:
 
    - `subscription.created`
@@ -122,7 +138,7 @@ The steps below apply to both Production (Live Mode in Paddle) and Sandbox (Test
 
 
 <Zoom>
-  <img src={require('./img/paddle-create-webhook.webp').default}
+  <img src={require('./img/paddle_events.png').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -174,6 +190,7 @@ Adapty needs to link each purchase to a [customer profile](profiles-crm) so it c
 1. **Default and recommended:** The `customer_user_id` you pass in the `custom_data` field (see [Paddle docs](https://developer.paddle.com/build/transactions/custom-data))
 2. The `email` from the Paddle Customer object (see [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
 3. The Paddle Customer ID in the `ctm-...` format (see [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+4. Don't create profiles. Choose this option if you want to have more control over your customer profiles and handle it yourself.
 
 You can configure which value to use in the **Profile creation behavior** field in [App Settings → Paddle](https://app.adapty.io/settings/paddle).
 
@@ -192,11 +209,11 @@ You can configure which value to use in the **Profile creation behavior** field 
 
 :::warning
 
-Be sure to add your Paddle products to the Adapty Dashboard or add a Paddle product ID to your existing products. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won’t be created.
+Be sure to add your Paddle products to the Adapty Dashboard or add a Paddle product ID to your existing products. Adapty only tracks events for transactions tied to these products. If you skip this step, transaction events won't be created.
 
 :::
 
-Paddle works in Adapty just like App Store and Google Play — it’s another platform where you sell digital products. To configure it, add the relevant `product_id` and `price_id` values from Paddle in the [Products](https://app.adapty.io/products) section in Adapty.
+Paddle works in Adapty just like App Store and Google Play — it's another platform where you sell digital products. To configure it, add the relevant `product_id` and `price_id` values from Paddle in the [Products](https://app.adapty.io/products) section in Adapty.
 
 <Zoom>
   <img src={require('./img/paddle-create-product.webp').default}
@@ -209,7 +226,7 @@ Paddle works in Adapty just like App Store and Google Play — it’s another pl
 />
 </Zoom>
 
-In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You’ll find them in your [Paddle product catalog](https://vendors.paddle.com/products-v2) once you open a specific product:
+In Paddle, product IDs look like `pro_...` and price IDs like `pri_...`. You'll find them in your [Paddle product catalog](https://vendors.paddle.com/products-v2) once you open a specific product:
 
 <Zoom>
   <img src={require('./img/paddle-product-price.webp').default}
@@ -230,23 +247,31 @@ To ensure users who buy on the web get access on mobile, call `Adapty.activate()
 
 ## 4\. Test your integration
 
-Once everything’s set up, you can test your integration. Transactions made in Paddle’s Test Mode will appear as **Sandbox** in Adapty. Transactions from Live Mode will appear as **Production**.
+Once everything's set up, you can test your integration. Transactions made in Paddle's Sandbox environment will appear as **Sandbox** in Adapty. Transactions from the Production environment will appear as **Production**.
+
+:::note
+In Adapty's analytics, transaction amounts include taxes and Paddle fees, which differs from Paddle's dashboard where amounts are shown after taxes and fees. This means the numbers you see in Adapty will be higher than those in your Paddle dashboard.
+:::
+
+:::note
+Unlike other stores, refunds in Paddle only affect the specific transaction being refunded and do not automatically cancel the subscription. The subscription will continue to be active unless explicitly canceled.
+:::
 
 Your integration is now complete. Users can purchase subscriptions on your website and automatically access premium features in your mobile app, while you track all subscription analytics from your unified Adapty dashboard.
 
 ## Current limitations
 
-- **Upgrading, downgrading, and proration**: Subscription changes such as upgrading or downgrading can result in prorated charges. Adapty will not account for these charges in revenue calculations. It would be best to disable these options manually via the Paddle dashboard. You can also disable them by setting the `proration_billing_mode` attribute value to `do_not_bill` via the Stripe API.
-
 - **Cancellations**: Paddle has two subscription cancellation options:
 
-  1. Immediate cancellation: The subscription is canceled immediately with or without any proration option
+  1. Immediate cancellation: The subscription is canceled immediately.
 
   2. Cancellation at the end of the period: The subscription cancels at the end of the current billing period (similar to in-app subscriptions on the app stores).
 
-  Adapty supports both options, but the revenue calculation for immediate cancellation will disregard the proration option.
+- **Refunds**: Adapty tracks full and partial refunds. 
 
-- **Refunds**: Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
+- **Grace period**: Paddle has a fixed grace period of 30 days for billing issues, which cannot be customized. During this period, the subscription remains active even if there are billing issues. This means users will continue to have access to premium features for the full grace period duration, regardless of payment status. 
+  
+  Note that for trials, there is no grace period - if there is a billing issue after a trial, the subscription will be cancelled immediately.
 
 ---
 
