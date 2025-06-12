@@ -152,6 +152,11 @@ Change the **Domain restricted contacts** and **Domain restricted sharing** poli
    </Zoom> 
 
 5. Click the ellipsis button in the **Actions** column and choose **Edit policy**.
+
+:::note
+If the **Edit policy** button is greyed out, see the [troubleshooting section](#troubleshooting) for how to fix it.
+:::
+
 6. In the policy editing window:
    1. Under **Policy source**, select the **Override parent's policy** radio-button.
    2. Under **Policy enforcement**, select the **Replace** radio button.
@@ -201,6 +206,33 @@ margin: '0 auto' /* center alignment */
 }}
 />
 </Zoom>
+
+## Troubleshooting
+
+If the **Edit policy** button is greyed out and unavailable when trying to [adjust domain policies](#2-adjust-domain-policies), it means you don’t have the necessary permissions to manage organization policies in [Google Cloud](https://console.cloud.google.com/).
+
+<Zoom>
+<img src={require('./img/edit-policy.png').default}
+style={{
+border: '1px solid #727272', /* border width and color */
+width: '700px', /* image width */
+display: 'block', /* for alignment */
+margin: '0 auto' /* center alignment */
+}}
+/>
+</Zoom>
+
+To resolve this issue, ask your Google Cloud administrator either:
+- Grant you the [Organization policy administrator](https://cloud.google.com/iam/docs/roles-permissions/orgpolicy#orgpolicy.policyAdmin) IAM role (```roles/orgpolicy.policyAdmin```) on the organization.
+- Grant you all of the following permissions individually:
+  - ```orgpolicy.policy.get```
+  - ```orgpolicy.policies.create``` 
+  - ```orgpolicy.policies.delete``` 
+  - ```orgpolicy.policies.update```
+
+Learn more in the Google Cloud documentation on [creating and managing custom organization policies](https://cloud.google.com/resource-manager/docs/organization-policy/creating-managing-custom-constraints).
+
+
 
 ---
 **What's next**

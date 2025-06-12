@@ -42,7 +42,7 @@ At the bottom of the permission pop-up, you can select whether to install the ap
       <img src={require('./img/stripe2.png').default}/>
 </Zoom>
 
-3. In the pop-up, generate a new restricted key. You will need to verufy your identity using your email, Touch ID, or security key. Once you generate a key, you won't be able to see it again, so store it securely in a password manager or a secret store.
+3. In the pop-up, generate a new restricted key. You will need to verify your identity using your email, Touch ID, or security key. Once you generate a key, you won't be able to see it again, so store it securely in a password manager or a secret store.
 
 <Zoom>
       <img src={require('./img/stripe4.png').default}/>
@@ -240,10 +240,6 @@ Product IDs in Stripe look like `prod_...` and price IDs look like `price_...`. 
 
 After you've added all the necessary products, the next step is to let Stripe know about which user is making the purchase, so it could get picked up by Adapty!
 
-:::important
-Once you start using products in live paywalls, avoid modifying the product's period, access level, product IDs, and price IDs. Changes to these product properties will create discrepancies in your analytics data.
-:::
-
 ### 4\. Enrich purchases made on the web with your user ID
 
 Adapty relies on the webhooks from Stripe to provide and update access levels for users as the only source of information. But you have to provide additional info from your end when working with Stripe for this integration to work properly.
@@ -334,25 +330,3 @@ Adapty tracks only full refunds. Proration or partial refunds are currently not 
 If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
 
 To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
-
-## Get more from your Stripe data
-Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
-
-Integrations you can use to forward and analyze your Stripe events:
-- [Amplitude](https://adapty.io/docs/amplitude/)
-- [Webhook](https://adapty.io/docs/webhook)
-- [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
-- [Mixpanel](https://adapty.io/docs/mixpanel)
-- [Posthog](https://adapty.io/docs/posthog)
-
-### Supported Stripe events
-Adapty supports the following Stripe events:
-- charge.refunded
-- customer.subscription.created
-- customer.subscription.deleted
-- customer.subscription.paused
-- customer.subscription.resumed
-- customer.subscription.updated
-- invoice.created
-- invoice.updated
-- payment_intent.succeeded
