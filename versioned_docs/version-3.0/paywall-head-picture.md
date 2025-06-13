@@ -38,10 +38,11 @@ Your main image is the centerpiece of your paywall's design, essential for capti
 </Zoom>
 
 
-
-
-
 You have control over the sizing of the main image, adjusting its proportions to achieve the desired visual balance on your paywall. Specify the image size as a percentage of the total screen area for perfect alignment.
+
+:::tip
+You can additionally customize a hero image using a [custom asset resolver](get-pb-paywalls#customize-assets). For example, you can show a personalized image after the user's [onboarding](onboardings.md) or show a local preview image while a main remote image is loading.
+:::
 
 ## Hero picture layout options
 
