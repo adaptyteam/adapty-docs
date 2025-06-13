@@ -207,7 +207,7 @@ do {
 | **observerModeResolver**                  | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                   |
 | **tagResolver**                           | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**                         | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol.                              |
-| **assetsResolver**                        | optional       | Adapty SDK 3.7.0 or later: To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.                                                          |
+| **assetsResolver**                        | optional       | Adapty SDK iOS/Android 3.7.0 or later or Flutter/React Native 3.8.0 or later: To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.       |
 
 ## Set up developer-defined timers
 
@@ -550,9 +550,11 @@ The method is not yet supported in Unity, but support will be added soon.
 
 ## Customize assets
 
-To customize hero images and videos in your paywall, implement the `AdaptyAssetsResolver` protocol. 
+To customize images and videos in your paywall, implement the `AdaptyAssetsResolver` protocol. 
 
 Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset resolver, you target these elements by their IDs and customize their behavior. 
+
+For other images and videos, you need to [set a custom ID](https://adapty.io/docs/custom-media) in the Adapty dashboard.
 
 For example, you can: 
 
@@ -561,7 +563,7 @@ For example, you can:
 - Show a preview image before running a video.
 
 :::important
-To use this feature, update the Adapty SDK to version 3.7.0 or later.
+To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter/React Native SDK to version 3.8.0 or higher.
 :::
 
 Here’s an example of how you can provide a custom assets resolver (via a simple dictionary):
@@ -570,6 +572,11 @@ Here’s an example of how you can provide a custom assets resolver (via a simpl
 <TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    )
+
     // Show a local preview image while a remote main image is loading
     "hero_image": .image(
         .remote(
@@ -590,27 +597,28 @@ let customAssets: [String: AdaptyCustomAsset] = [
 </TabItem>
 <TabItem value="kotlin" label="Kotlin">
 ```kotlin showLineNumbers
-class CustomAssetsResolver : AdaptyAssetsResolver {
-    private val assets = mutableMapOf<String, AdaptyCustomAsset>()
+val customAssets = mapOf(
+    // Show a local image using a custom ID
+    "custom_image" to AdaptyCustomImageAsset.file(
+        FileLocation.fromResId(context, R.drawable.image_name)
+    ),
 
-    init {
-        // Add your custom assets
-        assets["hero_image"] = AdaptyCustomAsset.Image(
-            AdaptyCustomImageAsset.Bitmap(
-                BitmapFactory.decodeResource(context.resources, R.drawable.custom_image)
-            )
+    // Show a local preview image while a remote main image is loading
+    "hero_image" to AdaptyCustomImageAsset.remote(
+        url = "https://example.com/image.jpg",
+        preview = AdaptyCustomImageAsset.file(
+            FileLocation.fromResId(context, R.drawable.preview_image)
         )
-        assets["hero_video"] = AdaptyCustomAsset.Video(
-            AdaptyCustomVideoAsset.Url(
-                Uri.parse("android.resource://${context.packageName}/raw/custom_video")
-            )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video" to AdaptyCustomVideoAsset.file(
+        fileLocation = FileLocation.fromResId(context, R.raw.custom_video),
+        preview = AdaptyCustomImageAsset.file(
+            FileLocation.fromResId(context, R.drawable.video_preview)
         )
-    }
-    
-    override fun asset(id: String): AdaptyCustomAsset? {
-        return assets[id]
-    }
-}
+    )
+)
 ```
 </TabItem>
 </Tabs>
