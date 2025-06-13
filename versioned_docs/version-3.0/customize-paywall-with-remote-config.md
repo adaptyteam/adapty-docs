@@ -181,7 +181,7 @@ If it's not common for you to work with code and there is a need to correct some
 
 It is a copy of your JSON in the format of a table that is easy to read and understand. Color coding helps to recognize different data types. 
 
-To add a key, click the **Add raw** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
+To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 
 <Zoom>
@@ -199,7 +199,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
 
 
 
-Additional raw options are mostly useful for [paywall localisations](add-remote-config-locale):
+Additional row options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 
 <Zoom>
