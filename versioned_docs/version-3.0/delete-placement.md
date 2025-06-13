@@ -7,21 +7,24 @@ metadataTitle: "How to Delete a Placement in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-A [Placement](placements) designates a specific location within your mobile app where a paywall or A/B test can be displayed. 
+A [Placement](placements) designates a specific location within your mobile app where a paywall, onboarding, or A/B test can be displayed. 
 
 :::danger
-Although you have the option to delete any placement, it is critical to ensure that you don't delete a placement that is actively used in your mobile app. Deleting such a placement will result in a local fallback paywall being permanently shown if you've [set it up](fallback-paywalls), and you won't be able to ever replace it with a dynamic paywall in released app versions.
+Although you have the option to delete any placement, it is critical to ensure that you don't delete a placement that is actively used in your mobile app. Deleting an active paywall placement will result in a local fallback paywall being permanently shown if you've [set it up](fallback-paywalls), and you won't be able to ever replace it with a dynamic paywall in released app versions.
+:::
+:::info
+[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
 :::
 
 To delete an existing placement:
 
-1. Open the **[Placements](https://app.adapty.io/placements)** section in Adapty main menu.
+1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to delete a placement for onboarding, switch to the **Onboardings** tab.
 
-2. In the **Placements** window, click the **3-dot** button next to the placement and select the **Delete** option.  
+2. Click the **3-dot** button next to the placement and select the **Delete** option.  
 
    
 <Zoom>
-  <img src={require('./img/6b971ea-delete_placement_list.webp').default}
+  <img src={require('./img/delete-placement.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
