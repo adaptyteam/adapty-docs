@@ -303,22 +303,23 @@ The result of the `createPaywallView` method can only be used once. If you need 
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  final view = await AdaptyUI().createPaywallView(
+    final view = await AdaptyUI().createPaywallView(
         paywall: paywall,
         customTags: {
-          'CUSTOM_TAG_NAME': 'John',
-        },
-        customTimers: {
-          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
-          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
-        },
-        preloadProducts: preloadProducts,
-      );
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
+        'CUSTOM_TAG_NAME': 'John',
+    },
+    customTimers: {
+        'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+        'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+    },
+    customAssets: <CUSTOM_ASSETS>, 
+    preloadProducts: preloadProducts,
+        );
+        } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+        // handle the error
+    }
 ```
 | Parameter                     | Presence       | Description                                                  |
 | :---------------------------- | :------------- | :----------------------------------------------------------- |
@@ -621,6 +622,21 @@ val customAssets = mapOf(
 )
 ```
 </TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+```
+</TabItem>
 </Tabs>
 
 You can manage the following asset types:
@@ -660,6 +676,30 @@ AdaptyUI.getPaywallConfiguration(
             // Handle the error
         }
     }
+}
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+    final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTags: {
+            'CUSTOM_TAG_NAME': 'John',
+        },
+        customTimers: {
+            'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+            'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+        customAssets: <CUSTOM_ASSETS>,
+        preloadProducts: preloadProducts,
+        );
+    } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+// handle the error
 }
 ```
 </TabItem>
