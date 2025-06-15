@@ -13,7 +13,7 @@ Every time you make a test purchase on your mobile device, view the correspondin
 
 ## ✅ Test purchase is successful
 
-If the test purchase is successful, its transaction event will be dsplayed in the **Event Feed**:
+If the test purchase is successful, its transaction event will be displayed in the **Event Feed**:
 
 
 <Zoom>
