@@ -7,7 +7,7 @@ metadataTitle: "Using Adapty Paywall Builder | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
+We're excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -26,7 +26,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 - [**Layout**](https://docs.adapty.io/v3.0/docs/paywall-layout-and-products): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
 - [**Hero Image**](paywall-head-picture): The main picture of the paywall.
 - **Main Area**: Here, you can place various elements like a product block, carousels, images, cards, texts, buttons, and lists.
-- **Footer**: Similar to the main area but it's a container that's always sticking to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to to bottom inside a footer in the same order shown in the left pane.
+- **Footer**: Similar to the main area but it's a container that's always sticking to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to bottom inside a footer in the same order shown in the left pane.
 - [**Elements**](adapty-paywall-builder#paywall-elements): The building blocks placed in the main area or footer to create your paywall. They are stacked in the order they appear in the left pane, from top to bottom. You can nest elements within each other, combine them into cards, or display them in a carousel.
 
 ## How to start designing a paywall with new Paywall Builder
@@ -203,12 +203,12 @@ Once configured, you can  [add paywalls to placements](add-audience-paywall-ab-t
 You can set up each element flexibly:
 
 - **Style** tab: Adjust the element's size, appearance, background color or image, frame, and transparency. Additional options like page control and slideshow settings are available for certain elements, such as carousels.
-- **Layout** tab: Set the element’s position and its child elements' positions using offset (moving an element without changing its size or the parent’s size) or padding (moving the element with possible resizing of the parent to fit the child’s size and position).
+- **Layout** tab: Set the element's position and its child elements' positions using offset (moving an element without changing its size or the parent's size) or padding (moving the element with possible resizing of the parent to fit the child's size and position).
 - **Contents** tab: Configure the content of compound elements.
 
 ## We Value Your Feedback
 
-Your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We’re here to support you and enhance your experience with the new Paywall Builder.
+Your feedback is invaluable to us. If you encounter any issues or have suggestions for improvements, please reach out to us. We're here to support you and enhance your experience with the new Paywall Builder.
 
 📧 **Contact Us**: [Adapty Support](mailto:support@adapty.io)
 
