@@ -20,47 +20,6 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 
 ### User-generated events
 
-#### Actions
-
-If a user has performed some action, this method will be invoked:
-
-```csharp showLineNumbers title="Unity"
-public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
-  AdaptyUIUserAction action
-) {
-  switch (action.Type) {
-    case AdaptyUIUserActionType.Close:
-      view.Dismiss(null);
-      break;
-    case AdaptyUIUserActionType.OpenUrl:
-      var urlString = action.Value;
-      if (urlString != null {
-      	Application.OpenURL(urlString); 
-      }
-    default:
-      // handle other events
-      break;
-  }
-}
-```
-
-The following action types are supported:
-
-- `Close`
-- `OpenUrl`
-- `Custom`
-- `SystemBack`. 
-
- At the very least you need to implement the reactions to both `close` and `openURL`.
-
-For example, if a user taps the close button, the action `Close` will occur and you are supposed to dismiss the paywall.  
-Note that `AdaptyUIUserAction` has optional value property: look at this in the case of `OpenUrl` and `Custom`.
-
-> 💡 Login Action
-> 
-> If you have configured Login Action in the dashboard, you should implement reaction for `Custom` action with value `"login"`
-
 #### Product selection
 
 If a product was selected for purchase (by a user or by the system), this method will be invoked.

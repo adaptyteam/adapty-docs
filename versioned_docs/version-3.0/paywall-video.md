@@ -76,10 +76,6 @@ Add the **Hero video** in place of the **Hero image** element:
 | Minimum size      | 640х480      |
 | Maximum length    | 30 sec       |
 
-:::tip
-You can customize a hero video using a [custom asset resolver](get-pb-paywalls#customize-assets). For example, you can show a personalized video after the user's [onboarding](onboardings.md) or show a local preview image while a remote video is loading.
-:::
-
 <!--- <Zoom>
   <img src={require('./img/paywall-video-config.png').default}
   style={{
