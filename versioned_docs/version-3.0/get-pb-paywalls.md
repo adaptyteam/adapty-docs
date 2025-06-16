@@ -551,9 +551,9 @@ The method is not yet supported in Unity, but support will be added soon.
 
 ## Customize assets
 
-To customize images and videos in your paywall, implement the `AdaptyAssetsResolver` protocol. 
+To customize images and videos in your paywall, implement the custom assets. 
 
-Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset resolver, you target these elements by their IDs and customize their behavior. 
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset bundle, you target these elements by their IDs and customize their behavior. 
 
 For other images and videos, you need to [set a custom ID](https://adapty.io/docs/custom-media) in the Adapty dashboard.
 
@@ -564,10 +564,10 @@ For example, you can:
 - Show a preview image before running a video.
 
 :::important
-To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter/React Native SDK to version 3.8.0 or higher.
+To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter SDK to version 3.8.0 or higher.
 :::
 
-Here’s an example of how you can provide a custom assets resolver (via a simple dictionary):
+Here’s an example of how you can provide custom asssets via a simple dictionary:
 
 <Tabs>
 <TabItem value="swift" label="Swift" default>
@@ -606,16 +606,19 @@ val customAssets = AdaptyCustomAssets.of(
                     FileLocation.fromAsset("images/hero_image_preview.png"),
                 )
             ),
-    "custom_hero_video" to
+    "hero_video" to
             AdaptyCustomVideoAsset.file(
                 FileLocation.fromResId(requireContext(), R.raw.custom_video),
                 preview = AdaptyCustomImageAsset.file(
                     FileLocation.fromResId(requireContext(), R.drawable.video_preview),
                 ),
             ),
-)```
+)
+```
 </TabItem>
+
 <TabItem value="flutter" label="Flutter">
+
 ```dart
 final customAssets = {
     // Show a local image using a custom ID
@@ -632,15 +635,7 @@ final customAssets = {
 </TabItem>
 </Tabs>
 
-You can manage the following asset types:
-
-| Type | Description | Example |
-|------|-------------|---------|
-| `image` | Image asset | `.image(.uiImage(value: UIImage(named: "image")!))` |
-| `video` | Video asset | `.video(.file(url: videoURL, preview: nil))` |
-
-
-Here's how you can use the custom asset resolver you created:
+Here's how you can use the custom assets you created:
 
 <Tabs>
 <TabItem value="swift" label="Swift" default>
@@ -695,5 +690,5 @@ try {
 </Tabs>
 
 :::note
-If an asset is not found in your custom resolver, the paywall will fall back to its default appearance.
+If an asset is not found, the paywall will fall back to its default appearance.
 :::
