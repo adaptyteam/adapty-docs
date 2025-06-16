@@ -26,8 +26,8 @@ Send subscription events with correct user properties and ID's to attributions s
 
 :::
 
-Follow our detailed guidance on configuring the following 3d-part attribution integrations:
-- MMP integrations:
+Follow our detailed guidance on configuring the following 3rd-party attribution integrations:
+- MMPs:
 
   - [Adjust](adjust)
   - [Airbridge](airbridge)
@@ -36,9 +36,10 @@ Follow our detailed guidance on configuring the following 3d-part attribution in
   - [Branch](branch)
   - [Singular](singular)
   - [Tenjin](tenjin)
-- Ads integrations:
+- Ad platforms:
   - [Apple Search Ads](apple-search-ads)
   - [Facebook Ads](facebook-ads)
+- [Custom integration](custom-attribution-integrations.md)
 
 :::note
 Don't see your attribution provider?
