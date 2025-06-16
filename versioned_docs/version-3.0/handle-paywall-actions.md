@@ -245,12 +245,14 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-   switch (action) {
-     case const LoginAction():
-       Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
-     default:
-       break;
-   }
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Handle login action
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        break;
+      default:
+        break;
+    }
 }
 ```
 </TabItem>
@@ -324,9 +326,19 @@ func paywallController(_ controller: AdaptyPaywallController,
 
 ```kotlin
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-    when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
-    }
+   when (action) {
+       is AdaptyUI.Action.Custom -> {
+           if (action.customId == "notification") {
+               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                   ActivityCompat.requestPermissions(
+                       context as Activity,
+                       arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                       NOTIFICATION_PERMISSION_REQUEST_CODE
+                   )
+               }
+           }
+       }
+   }
 }
 ```
 </TabItem>
@@ -335,14 +347,14 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-    switch (action) {
-      case const CloseAction():
-      case const AndroidSystemBackAction():
-        view.dismiss();
-        break;
-      default:
-        break;
-    }
+   switch (action) {
+     case CustomAction(action: 'notifications'):
+       // Request notification permissions
+       _requestNotificationPermission();
+       break;
+     default:
+       break;
+   }
 }
 ```
 </TabItem>
@@ -350,15 +362,13 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 <TabItem value="react-native" label="React Native">
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
-
-const view = await createPaywallView(paywall);
-
 const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-      view.dismiss();
-      return true;
-  }
+    onCustomAction(actionId) {
+        if (actionId === 'notifications') {
+            // Call your method for handling notification permissions
+            requestNotificationPermission();
+        }
+    },
 });
 ```
 </TabItem>
@@ -367,18 +377,22 @@ const unsubscribe = view.registerEventHandlers({
 
 ```javascript
 public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
-  AdaptyUIUserAction action
+    AdaptyUIView view,
+    AdaptyUIUserAction action
 ) {
-  switch (action.Type) {
-    case AdaptyUIUserActionType.Close:
-      view.Dismiss(null);
-      break;
-    default:
-      // handle other events
-      break;
-  }
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "notifications") {
+                // Call your method for handling notification permissions
+                RequestNotificationPermission();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
 }
+
 ```
 </TabItem>
 </Tabs>
