@@ -34,7 +34,10 @@ Overview has the following charts available (you can click on the name to learn 
 - [Revenue](revenue)
 - [MRR](mrr)
 - [ARR](arr)
+- [ARPU](arppu.md)
 - [ARPPU](arppu)
+- [ARPAS](https://adapty.io/docs/placement-metrics#arpas)
+- [Installs](installs.md)
 - [New trials](new-trials)
 - [New subscriptions](reactivated-subscriptions)
 - [Active trials](active-trials)
@@ -42,6 +45,8 @@ Overview has the following charts available (you can click on the name to learn 
 - [New non-subscriptions](non-subscriptions)
 - [Refund events](refund-events)
 - [Refund money](refund-money)
+- [Subscriptions renewal canceled](cancelled-subscriptions.md)
+- [Conversion rate from Install to Trial, Install to Paid, and Trial to Paid](analytics-conversion.md)
 
 You can customize which charts to show as well as their order. To do that, press Edit in the top-right corner and then either remove charts you don't need, add more or rearrange existing ones by drag and dropping. You can also customize Overview contents in the "Add" menu:
 
