@@ -59,7 +59,7 @@ When a user cancels their subscription, the following events are created:
 - **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access
 - The **Access level updated** event is created to disable auto-renewal for the access
 
-Once the subscription ends, the **Subscription expired (churned)** event is triggered to to mark the end of the subscription.
+Once the subscription ends, the **Subscription expired (churned)** event is triggered to mark the end of the subscription.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow.webp').default}
