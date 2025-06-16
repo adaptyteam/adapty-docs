@@ -9,14 +9,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 We’re excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
-## Key features of the New Paywall Builder
+## Key Features of the New Paywall Builder
 
-- We've added tons of new templates to choose from, so you can find something that actually fits your brand instead of starting from scratch. The designs cover different styles and use cases, which should save you some time upfront.
+- **Expanded Template Selection**: Choose from a wide array of professionally designed templates to kickstart your paywall creation. These templates offer various styles and layouts to meet different needs and preferences.
+- **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements like carousels, cards, product lists, and footers. These enhancements give you the creative freedom to build any type of paywall you envision.
+- **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
 
-- The builder itself is way more flexible now. You can layer different design elements and work with new components like carousels, card layouts, product grids, and custom footers. Basically, if you can think it up, you can probably build it.
-
-- We also improved all the existing tools. They're more powerful and give you better control over the details, so you're not fighting with the interface to get things looking right.
-- 
 :::warning
 This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
 :::
@@ -207,10 +205,6 @@ You can set up each element flexibly:
 - **Style** tab: Adjust the element's size, appearance, background color or image, frame, and transparency. Additional options like page control and slideshow settings are available for certain elements, such as carousels.
 - **Layout** tab: Set the element’s position and its child elements' positions using offset (moving an element without changing its size or the parent’s size) or padding (moving the element with possible resizing of the parent to fit the child’s size and position).
 - **Contents** tab: Configure the content of compound elements.
-
-:::tip
-You can additionally customize a hero image or video using a [custom asset resolver](get-pb-paywalls#customize-assets). For example, you can show a personalized image or video after the user's [onboarding](onboardings.md) or show a local preview image while a main remote image is loading.
-:::
 
 ## We Value Your Feedback
 
