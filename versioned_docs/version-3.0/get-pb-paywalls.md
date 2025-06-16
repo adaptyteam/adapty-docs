@@ -598,29 +598,22 @@ let customAssets: [String: AdaptyCustomAsset] = [
 </TabItem>
 <TabItem value="kotlin" label="Kotlin">
 ```kotlin showLineNumbers
-val customAssets = mapOf(
-    // Show a local image using a custom ID
-    "custom_image" to AdaptyCustomImageAsset.file(
-        FileLocation.fromResId(context, R.drawable.image_name)
-    ),
-
-    // Show a local preview image while a remote main image is loading
-    "hero_image" to AdaptyCustomImageAsset.remote(
-        url = "https://example.com/image.jpg",
-        preview = AdaptyCustomImageAsset.file(
-            FileLocation.fromResId(context, R.drawable.preview_image)
-        )
-    ),
-
-    // Show a local video with a preview image
-    "hero_video" to AdaptyCustomVideoAsset.file(
-        fileLocation = FileLocation.fromResId(context, R.raw.custom_video),
-        preview = AdaptyCustomImageAsset.file(
-            FileLocation.fromResId(context, R.drawable.video_preview)
-        )
-    )
-)
-```
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "custom_hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)```
 </TabItem>
 <TabItem value="flutter" label="Flutter">
 ```dart
@@ -661,22 +654,18 @@ let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
 
 <TabItem value="kotlin" label="Kotlin">
 ```kotlin showLineNumbers
-val customResolver = CustomAssetsResolver()
-AdaptyUI.getPaywallConfiguration(
-    paywall = paywall,
-    assetsResolver = customResolver
-) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val configuration = result.value
-            // Use the configuration
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle the error
-        }
-    }
-}
+val paywallView = AdaptyUI.getPaywallView(
+    activity,
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    personalizedOfferResolver,
+    customAssets,
+    tagResolver,
+    timerResolver,
+    observerModeHandler,
+)
 ```
 </TabItem>
 <TabItem value="flutter" label="Flutter">
