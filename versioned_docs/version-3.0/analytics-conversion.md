@@ -6,22 +6,23 @@ metadataTitle: "Subscription Conversion Analytics | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Details from '@site/src/components/Details';
 
-While funnels give you a high-level overview and retention focuses on user loyalty, conversion analysis is designed to help you evaluate effectiveness at every critical step in the user journey—over time.
+While funnels show the overall picture and retention is focused on working with users' loyalty, the conversion feature is a handy tool for tracking the effectiveness at every point over time. 
 
 Conversions assist with the following questions:
 
-1. How do app conversions change over time? Are there any seasonal trends?
-2. How conversions are changed in the moment of marketing activities or some other new circumstances?
-3. How do users in different regions respond to your app updates?
-4. Which product types convert better over time?
+1. How do your app conversions change over time? Are there any seasonal trends?
+2. How conversions are changed in the moment of marketing activities or some other new circumstances? 
+3. How do different regions react to your app updates?
+4. What types of products convert better over time?
 
-Conversion is performed with the data we gather through Adapty SDK and store notifications, and it doesn't require any additional configuration from your side.
+You could find valuable insights about user behavior setting filters and groups.   
+
+Conversion is performed with the data we gather through SDK and store notifications and doesn't require any additional configuration from your side.
 
 
 <Zoom>
-  <img src={require('./img/conversion-tab.png').default}
+  <img src={require('./img/28ebb72-CleanShot_2022-08-01_at_12.35.38.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,352 +36,78 @@ Conversion is performed with the data we gather through Adapty SDK and store not
 
 
 
-## Main controls and charts
+### Main controls and charts
 
-Though revenue is often the go-to metric for measuring success, it's just one part of the bigger picture. Understanding how your business performs over time—across different user behaviors and lifecycle stages—is equally important. That’s where conversion analytics come into play.
+It's a common practice to measure success in money, e.g. tracking revenue. But sometimes it's important to see how your business works as a system at different financial scales over time. And here conversions come on stage.  
+There is usually a number of marketing activities, technical updates, and external events that may impact the changes in user behavior. To validate this inspect how conversions change over days, months and years. 
 
-You can find more valuable insights about user behavior by setting filters and groups. To identify and analyze trends, monitor how your conversions evolve daily, monthly, or yearly.
+
 <Zoom>
-<img src={require('./img/conversion-chart.png').default}
-style={{
-border: '1px solid #727272', /* border width and color */
-width: '700px', /* image width */
-display: 'block', /* for alignment */
-margin: '0 auto' /* center alignment */
-}}
+  <img src={require('./img/39c99b2-CleanShot_2022-08-01_at_14.30.14.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
 />
 </Zoom>
 
 
 
-On the left side of the chart, you'll find the conversion steps control. This lets you choose which specific conversions to track—such as Install → Trial, Trial → Paid, or Paid → Renewal.
 
-Each conversion metric follows this logic:
 
-- Let **X** be the number of users who entered the starting state on a selected date (e.g., installs).
+The main steps control is to the left of the chart. It contains a list of conversions to track.
 
-- Let **Y** be the number of those users who eventually reached the target state (e.g., trial starts).
+In general the logic of a conversion value X->Y for a particular day is that we use for a ratio the number of those who started their X state on the selected day and the number of those who then converted later (no matter when exactly) to the Y state, so conversions for the particular day are all associated with the date when a user activated an opportunity to convert to Y, which is the moment when he activated X. Using these we calculate a conversion = (Y / X) \* 100%.
 
-- The conversion rate is calculated as: **Conversion = (Y / X) × 100%**
+Please see below each conversion explanation with an example for your reference.
 
-:::note
-The date shown on the chart corresponds to when users entered the initial state (X)—the point at which they became eligible to convert. If the conversion period is still ongoing, this date range may be marked as an [incomplete data period](#incomplete-data-period).
-:::
+1. Install -> Paid  
+   If Х - the number of installs (the same for all products because there is no product chosen at the stage of installation) for the selected date, and Y - the amount of those among Х who paid (any possible time) for the 1st subscription (directly, without trial), then Conversion = (Y / X) _ 100%. For example, we had 100 installs on the 1st of January and among them, 20 subscribed the same week. On the 8th of January we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more installs of the 1st on January bought the 1st subscription without trial by the end of January. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had installed the app on the 1st of January converted to the 1st subscription without trial by the current moment. 
 
-Please see below for each conversion explanation, along with an example for your reference.
+2. Install -> Trial  
+   If Х - the number of installs (the same for all products because there is no product chosen at the stage of installation) for the selected date, and Y - the amount of those among Х who activated a trial (any possible time), then Conversion = (Y / X) _ 100%. For example, we had 100 installs on the 1st of January and among them 20 activated a trial the same week. On the 8th of January, we open the chart and see the conversion of the 1st of January (20 / 100) _ 100% = 20%. Then 30 more installs on the 1st of January activated a trial by the end of January. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had installed the app on the 1st of January converted to the trial by the current moment. 
 
-### Install -> Paid
-This metric shows what percentage of users who installed the app on a specific date eventually purchased their first subscription.
+3. Trial -> Paid  
+   If Х - the number of trials taken during the selected date, and Y - the number of subscriptions after these trials taken any time later, then Conversion = (Y / X) _ 100%. For example, we had 100 trials taken on the 1st of January and among them, 20 bought a subscription the same week. On the 8th of January, we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more trials of the 1st of January paid by the end of January. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had activated the trial on the 1st of January converted to the 1st subscription by the current moment. 
 
+4. Paid -> 2nd Period  
+   If Х - the number of the 1st subscriptions taken during the selected date, and Y - the amount of the 2nd subscriptions taken after them any time later (normally the product duration time though grace period cases are also counted), then Conversion = (Y / X) _ 100%. For example, we had 100 1st subscriptions of various products on the 1st of January and among them 20 renewed in a week. On the 8th of January, we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 1st payment on the 1st of January converted to the 2nd subscription by the current moment. 
 
-<details>
+5. 2nd Period -> 3rd Period  
+   If Х - the number of the 2nd subscriptions taken during the selected date, and Y - the amount of the 3rd subscriptions taken after them any time later (normally the product duration time though grace period cases are also counted), than Conversion = (Y / X) _ 100%. For example, we had 100 2nd subscriptions of various products on the 1st of January and among them 20 renewed in a week. On the 8th of January we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st on January renewed by the start of February. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 2nd payment on the 1st of January converted to the 3rd subscription by the current moment. 
 
-   <summary>How it works</summary>
+6. 3rd Period -> 4th Period  
+   If Х - the number of the 3rd subscriptions taken during the selected date, and Y - the amount of the 4th subscriptions taken after them any time later (normally the product duration time though grace period cases are also counted), then Conversion = (Y / X) _ 100%. For example, we had 100 3rd subscriptions of various products on the 1st of January and among them 20 renewed in a week. On the 8th of January, we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 3rd payment on the 1st of January converted to the 4th subscription by the current moment. 
 
+7. 4th Period -> 5 the Period  
+   If Х - the number of the 4th subscriptions taken during the selected date, and Y - the amount of the 5th subscriptions taken after them any time later (normally the product duration time though grace period cases are also counted), then Conversion = (Y / X) _ 100%. For example, we had 100 4th subscriptions of various products on the 1st of January and among them 20 renewed in a week. On the 8th of January, we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February. We open the chart on the 1st of February and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 4th payment on the 1st of January converted to the 5th subscription by the current moment. 
 
-**Let**:
+8. 6 Months +  
+   If Х - the number of the 1st payments taken during the selected date, and Y - the amount of the renewals that happened after the 6 months since the selected date from those 1st payments, then Conversion = (Y / X) _ 100%. For example, we had 100 1st subscriptions of various products on the 1st of January and among them 20 renewed on the 1st week of July (the 25th payment). On the 8th of July, we open the chart and see the conversion of the 1st of January = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of August (the 8th payment). We open the chart on the 1st of August and see that the conversion of the 1st of January = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 1st payment on the 1st of January converted to the period > 6 months with any number of payments by the current moment. 
 
-- **X** = number of installs on a selected date (same for all products, as no product is chosen at the time of installation).
+9. 1 Year +  
+   If Х - the number of the 1st payments taken during the selected date, and Y - the amount of the renewals that happened after the 12 months since the selected date from those 1st payments, then Conversion = (Y / X) _ 100%. For example, we had 100 1st subscriptions of various products on the 1st of January 2021 and among them 20 renewed on the 1st week of January 2022. On the 8th of January 2022, we open the chart and see the conversion of the 1st of January 2021 = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February 2022. We open the chart on the 1st of February 2022 and see that the conversion of the 1st of January 2021 = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 1st payment on the 1st of January 2021 converted to the period > 12 months with any number of payments by the current moment. 
 
-- **Y** = number of those users who eventually purchased their first subscription (trial or non-trial).
+10. 2 Years +  
+    If Х - the number of the 1st payments taken during the selected date, and Y - the amount of the renewals that happened after the 24 months since the selected date from those 1st payments, then Conversion = (Y / X) _ 100%. For example, we had 100 1st subscriptions of various products on the 1st of January 2020 and among them 20 renewed on the 1st week of January 2022. On the 8th of January 2022, we open the chart and see the conversion of the 1st of January 2021 = (20 / 100) _ 100% = 20%. Then 30 more subscribers of the 1st of January renewed by the start of February 2022. We open the chart on the 1st of February 2022 and see that the conversion of the 1st of January 2020 = ((20+30) / 100) \* 100% = 50%. This number shows which part of those who had their 1st payment on the 1st of January 2020 converted to the period > 24 months with any number of payments by the current moment. 
 
-**Formula**: Conversion = (Y / X) × 100%
 
-**Example**:
+<Zoom>
+  <img src={require('./img/289b193-CleanShot_2022-08-02_at_07.46.15.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-- On January 1, there were 100 installs.
 
-- By January 8, 20 of those users had subscribed.
 
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
 
-- By February 1, 30 more users from the January 1 install group had purchased a subscription.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who installed the app on January 1 eventually converted to a paid subscription, up to the current moment.
-
-</details>
-
-### Install -> Trial
-This metric shows the percentage of users who installed the app on a specific date and eventually started a trial.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of installs on a selected date (same for all products, as no product is chosen at the time of installation).
-
-- **Y** = number of those users who eventually activated a trial, at any time.
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 installs.
-
-- By January 8, 20 of those users had started a trial.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users from the January 1 install group had started a trial.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who installed the app on January 1 eventually started a trial, up to the current moment.
-</details>
-
-### Trial -> Paid
-This metric shows the percentage of users who started a trial on a specific date and later purchased their first subscription.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of trials started on a selected date.
-
-- **Y** = number of those users who eventually purchased a subscription after their trial.
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, 100 trials were started.
-
-- By January 8, 20 of those users had subscribed.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users from the January 1 trial group had subscribed.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who started a trial on January 1 eventually converted to a paid subscription, up to the current moment.
-
-</details>
-
-### Paid -> 2nd Period
-This metric shows the percentage of users who renewed their subscription after the first payment.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of first-time subscriptions on a selected date.
-
-- **Y** = number of users who renewed for a second period, any time later (typically after one subscription cycle; includes grace period renewals).
-
-- **Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 first-time subscriptions.
-
-- By January 8, 20 of those had renewed.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users from that group had renewed.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This shows that 50% of users who made their first subscription payment on January 1 renewed for a second period, up to the current moment.
-
-</details>
-
-### 2nd Period -> 3rd Period
-This metric tracks how many users renewed again after their second subscription period.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of second-period subscriptions on a selected date.
-
-- **Y** = number of users who renewed for a third period, any time later (typically after one more billing cycle; includes grace period renewals).
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 second-period subscriptions.
-
-- By January 8, 20 of those users had renewed.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users had renewed.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This shows that 50% of users who entered their second subscription period on January 1 renewed for a third, up to the current moment.
-
-
-</details>
-
-### 3rd Period -> 4th Period
-
-This metric shows the percentage of users who renewed after their third subscription period.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of third-period subscriptions on a selected date.
-
-- **Y** = number of users who renewed for a fourth period any time later (typically after one billing cycle; includes grace period renewals).
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 third-period subscriptions.
-
-- By January 8, 20 users had renewed.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users renewed.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who entered their third subscription period on January 1 renewed for a fourth, up to the current moment.
-
-</details>
-
-### 4th Period -> 5 the Period
-
-This metric shows the percentage of users who renewed after their fourth subscription period.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of fourth-period subscriptions on a selected date.
-
-- **Y** = number of users who renewed for a fifth period any time later (typically after one billing cycle; includes grace period renewals).
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 fourth-period subscriptions.
-
-- By January 8, 20 users had renewed.
-
-   - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By February 1, 30 more users renewed.
-
-   - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who entered their fourth subscription period on January 1 renewed for a fifth, up to the current moment.
-
-</details>
-
-### 6 Months +
-
-This metric shows the percentage of users who remained subscribed for longer than 6 months from their first subscription.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of first-time subscriptions on a selected date.
-
-- **Y** = number of those users who renewed at least once after 6 months from the original subscription date.
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, there were 100 first-time subscriptions.
-
-- By the first week of July, 20 of them renewed (e.g. on their 25th weekly subscription).
-
-   - On July 8, the conversion for January 1 = (20 / 100) × 100% = 20%
-
-- By August 1, 30 more renewed after 6 months.
-
-   - On August 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who subscribed on January 1 remained subscribed past 6 months as of August 1.
-
-</details>
-
-### 1 Year +
-
-This metric shows the percentage of users who remained subscribed for longer than 12 months from their first subscription.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- **X** = number of first-time subscriptions on a selected date.
-
-- **Y** = number of those users who renewed at least once after 12 months from the original subscription date.
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, 2021, there were 100 first-time subscriptions.
-
-- By the first week of January 2022, 20 had renewed.
-
-   - On January 8, 2022, the conversion = (20 / 100) × 100% = 20%
-
-- By February 1, 2022, 30 more had renewed after 12 months.
-
-   - On February 1, 2022, the conversion = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of users who subscribed on January 1, 2021 stayed active for more than one year.
-
-</details>
-
-### 2 Years +
-
-This metric shows the percentage of users who stayed subscribed for more than 24 months from their first payment date.
-
-<details>
-<summary>How it works</summary>
-
-**Let**:
-
-- X = number of first-time subscriptions on a selected date.
-
-- Y = number of those users who renewed at least once after 24 months from the original subscription date.
-
-**Formula**: Conversion = (Y / X) × 100%
-
-**Example**:
-
-- On January 1, 2020, there were 100 first-time subscriptions.
-
-- By the first week of January 2022, 20 of them had renewed.
-
-   - On January 8, 2022, the conversion = (20 / 100) × 100% = 20%
-
-- By February 1, 2022, 30 more had renewed after 2 years.
-
-   - On February 1, 2022, the conversion = ((20 + 30) / 100) × 100% = 50%
-
-This means that 50% of the users who subscribed on January 1, 2020 were still active after 2 years, as of February 1, 2022.
-
-</details>
-
-
-
-
-## Grouping and time ranges
 
 The object for the analysis when the conversion is chosen is the chart. It performs how the conversion percentage changes over time. Using the date picker please select the quick options for the time period.  
 The chart usually contains several curves. Up to five of them are selected by default in the list of grouping and you may change the selection by choosing the checkboxes in the area to the right of the chart.  
@@ -389,7 +116,7 @@ The following groupings are available:
 
 - Product
 - Country
-- Store
+- Store 
 - Paywall
 - Duration
 - Marketing attribution
@@ -424,26 +151,11 @@ If a chosen date range is not enough to show any results, you may see a notifica
 />
 </Zoom>
 
-## Incomplete data period
 
-Sometimes, a conversion may include incomplete data—for example, if trials or subscriptions haven't had time to expire yet. This can happen with any conversion except Install → Trial and Install → Paid.
 
-In such cases:
-- Adapty marks the period with incomplete data using a dashed line on the chart. This may cover up to 30 days before the current date.
-- These incomplete trials or subscriptions are excluded from the overall conversion calculation.
 
-<Zoom>
-  <img src={require('./img/conversion-incomplete.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
 
-## Table view, filters and CSV export
+### Table view, filters and CSV export
 
 A comparison of the curves gives a bright picture, and to get more use the table view below the chart. The table is synchronized with the chart so hovering over a column you see the associated pop-up over the curves.
 
@@ -463,7 +175,7 @@ A comparison of the curves gives a bright picture, and to get more use the table
 
 
 
-The grouping that was mentioned above changes both the charts and the table. Set quick filter by product or use other advanced ones, including Product, Country, Store, Duration, Attribution.
+The grouping that was mentioned above changes both the charts and the table. Set quick filter by product or use other advanced ones, including Product, Country, Store, Duration, Attribution. 
 
 
 <Zoom>
@@ -481,7 +193,7 @@ The grouping that was mentioned above changes both the charts and the table. Set
 
 
 
-We know that it's important to have an option to work with numbers the way you like. So on the right of the control panel, there's a button to export funnel data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system to continue analysis and forecasting in your preferred environment.
+We know that it's important to have an option to work with numbers the way you like. So on the right of the control panel, there's a button to export funnel data to CSV. You can then open it in Excel, or Google Sheets, or import it into your own analytical system to continue analysis and forecasting in your preferred environment.  
 
 
 <Zoom>
