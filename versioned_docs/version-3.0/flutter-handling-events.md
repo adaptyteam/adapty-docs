@@ -25,47 +25,6 @@ AdaptyUI().setPaywallsEventsObserver(this);
 
 ### User-generated events
 
-#### Actions
-
-If a user has performed some action, this method will be invoked:
-
-```javascript showLineNumbers title="Flutter"
-// You have to install url_launcher plugin in order to handle urls:
-// https://pub.dev/packages/url_launcher
-import 'package:url_launcher/url_launcher_string.dart'; 
-
-void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-    switch (action) {
-      case const CloseAction():
-      case const AndroidSystemBackAction():
-        view.dismiss();
-        break;
-      case OpenUrlAction(url: final url):
-        final Uri uri = Uri.parse(url);
-        launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-        break;
-      default:
-        break;
-    }
-}
-```
-
-The following action types are supported:
-
-- `CloseAction`
-- `AndroidSystemBackAction`
-- `OpenUrlAction`
-- `CustomAction`
-
-Note that at the very least you need to implement the reactions to both `close` and `openURL`.
-
-For example, if a user taps the close button, the action `close` will occur and you are supposed to dismiss the paywall. Refer to the [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) topic for details on dismissing a paywall screen.  
-Note that `AdaptyUIAction` has optional value property: look at this in the case of `openUrl` and `custom`.
-
-> 💡 Login Action
-> 
-> If you have configured Login Action in the dashboard, you should implement reaction for `custom` action with value `"login"`
-
 #### Product selection
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
