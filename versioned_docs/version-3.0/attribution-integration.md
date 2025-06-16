@@ -26,8 +26,8 @@ Send subscription events with correct user properties and ID's to attributions s
 
 :::
 
-Follow our detailed guidance on configuring the following 3d-part attribution integrations:
-- MMP integrations:
+Follow our detailed guidance on configuring the following 3rd-party attribution integrations:
+- MMPs:
 
   - [Adjust](adjust)
   - [Airbridge](airbridge)
@@ -36,9 +36,10 @@ Follow our detailed guidance on configuring the following 3d-part attribution in
   - [Branch](branch)
   - [Singular](singular)
   - [Tenjin](tenjin)
-- Ads integrations:
+- Ad platforms:
   - [Apple Search Ads](apple-search-ads)
   - [Facebook Ads](facebook-ads)
+- [Custom integration](custom-attribution-integrations.md)
 
 :::note
 Don't see your attribution provider?
@@ -376,21 +377,3 @@ Adapty.updateProfile(builder.build(), error -> {
 </Tabs>
 
 -->
-
-
-### Custom
-
-If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
-To set attributes, use only the keys from the example below (all keys are optional). The system supports max 30 available attributes, where the keys are limited to 30 characters. Every value in the map should be no longer than 50 characters. `status` can only be `organic`, `non-organic` or `unknown`. Any additional keys will be omitted. 
-
-```swift showLineNumbers title="Swift"
-let attribution = [
-    "status": "non_organic|organic|unknown",
-    "channel": "Google Ads",
-    "campaign": "Christmas Sale",
-    "ad_group": "ad group",
-    "ad_set": "ad set",
-    "creative": "creative id"
-]
-Adapty.updateAttribution(attribution, source: "custom")
-```
