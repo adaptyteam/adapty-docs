@@ -8,7 +8,7 @@ keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'cre
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
@@ -192,21 +192,23 @@ do {
             products: products,
             observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
             tagResolver: <AdaptyTagResolver>,
-            timerResolver: <AdaptyTimerResolver>
+            timerResolver: <AdaptyTimerResolver>,
+            assetsResolver: <AdaptyAssetsResolver>
     )
     // use loaded configuration
 } catch {
     // handle the error
 }
 ```
-| Parameter                | Presence       | Description                                                  |
-| :----------------------- | :------------- | :----------------------------------------------------------- |
-| **paywall**              | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
-| **products**             | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
-| **observerModeResolver** | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step |
-| **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
-| **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+| Parameter                                 | Presence       | Description                                                                                                                                                                                                                                                                                                       |
+|:------------------------------------------|:---------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **paywall**                               | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                         |
+| **loadTimeout**                           | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.                    |
+| **products**                              | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                               |
+| **observerModeResolver**                  | optional       | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                   |
+| **tagResolver**                           | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**                         | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol.                              |
+| **assetsResolver**                        | optional       | Adapty SDK iOS/Android 3.7.0 or later or Flutter/React Native 3.8.0 or later: To customize loading and caching assets (images, videos, etc.) in your mobile app, create an object that follows the `AdaptyAssetsResolver` protocol. The object defines how assets are loaded and displayed in your paywall.       |
 
 ## Set up developer-defined timers
 
@@ -302,22 +304,23 @@ The result of the `createPaywallView` method can only be used once. If you need 
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  final view = await AdaptyUI().createPaywallView(
+    final view = await AdaptyUI().createPaywallView(
         paywall: paywall,
         customTags: {
-          'CUSTOM_TAG_NAME': 'John',
-        },
-        customTimers: {
-          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
-          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
-        },
-        preloadProducts: preloadProducts,
-      );
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
-}
+        'CUSTOM_TAG_NAME': 'John',
+    },
+    customTimers: {
+        'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+        'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+    },
+    customAssets: <CUSTOM_ASSETS>, 
+    preloadProducts: preloadProducts,
+        );
+        } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+        // handle the error
+    }
 ```
 | Parameter                     | Presence       | Description                                                  |
 | :---------------------------- | :------------- | :----------------------------------------------------------- |
@@ -328,7 +331,7 @@ try {
 | **tagResolver**               | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**             | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
 
-In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
+In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer IDs** of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
@@ -546,3 +549,152 @@ The method is not yet supported in Unity, but support will be added soon.
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+
+## Customize assets
+
+To customize images and videos in your paywall, implement the `AdaptyAssetsResolver` protocol. 
+
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset resolver, you target these elements by their IDs and customize their behavior. 
+
+For other images and videos, you need to [set a custom ID](https://adapty.io/docs/custom-media) in the Adapty dashboard.
+
+For example, you can: 
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+:::important
+To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter/React Native SDK to version 3.8.0 or higher.
+:::
+
+Here’s an example of how you can provide a custom assets resolver (via a simple dictionary):
+
+<Tabs>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    )
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin">
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "custom_hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)```
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+```
+</TabItem>
+</Tabs>
+
+You can manage the following asset types:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `image` | Image asset | `.image(.uiImage(value: UIImage(named: "image")!))` |
+| `video` | Video asset | `.video(.file(url: videoURL, preview: nil))` |
+
+
+Here's how you can use the custom asset resolver you created:
+
+<Tabs>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+</TabItem>
+
+<TabItem value="kotlin" label="Kotlin">
+```kotlin showLineNumbers
+val paywallView = AdaptyUI.getPaywallView(
+    activity,
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    personalizedOfferResolver,
+    customAssets,
+    tagResolver,
+    timerResolver,
+    observerModeHandler,
+)
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+    final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTags: {
+            'CUSTOM_TAG_NAME': 'John',
+        },
+        customTimers: {
+            'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+            'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+        customAssets: <CUSTOM_ASSETS>,
+        preloadProducts: preloadProducts,
+        );
+    } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+// handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+:::note
+If an asset is not found in your custom resolver, the paywall will fall back to its default appearance.
+:::
