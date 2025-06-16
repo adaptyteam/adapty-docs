@@ -58,7 +58,7 @@ payload = json.dumps({
     "consent": True
 })
 headers = {
- "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID",
+ "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
   "Content-Type": "application/json",
   "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
