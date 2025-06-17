@@ -2,13 +2,19 @@
 title: "Track onboarding screens"
 description: "Track onboarding screens in Adapty to measure user engagement and improve retention."
 metadataTitle: "Tracking Onboarding Screens | Adapty Docs"
+no_index: true
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The onboarding stage is a very common situation in modern mobile apps. The quality of its implementation, content, and number of steps can have a rather significant influence on further user behavior, especially on his desire to become a subscriber or simply make some purchases.
+<head>
+  <!-- Will target all robots: Algolia Crawler, Google, Bing, etc... -->
+  <meta name="robots" content="noindex" />
+</head>
+
+The onboarding stage is very common in modern mobile apps. The quality of its implementation, content, and number of steps can have a rather significant influence on user behavior, especially on his desire to become a subscriber or simply make some purchases.
 
 In order for you to be able to analyze user behavior at this critical stage without leaving Adapty, we have implemented the ability to send dedicated events every time a user visits yet another onboarding screen.
 

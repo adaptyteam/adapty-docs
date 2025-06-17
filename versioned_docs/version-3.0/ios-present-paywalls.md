@@ -2,7 +2,7 @@
 title: "iOS - Present new Paywall Builder paywalls"
 description: "Discover how to present paywalls on iOS to boost conversions and revenue."
 metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
-displayed_sidebar: sdkios
+keywords: ['paywallController']
 ---
 
 import Zoom from 'react-medium-image-zoom';
