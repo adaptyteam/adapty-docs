@@ -364,6 +364,34 @@ const config = {
       async: true,
     },
   ],
+  plugins: [
+    function copyMarkdownPlugin() {
+      return {
+        name: 'copy-markdown-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-markdown.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-markdown.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsTxtPlugin() {
+      return {
+        name: 'generate-llms-txt-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-txt.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-txt.js:', e);
+          }
+        },
+      };
+    },
+  ],
 };
 
 export default config;
