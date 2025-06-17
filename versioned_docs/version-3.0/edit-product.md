@@ -7,26 +7,24 @@ metadataTitle: "Editing Products in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-In Adapty you can combine similar products that you have in App Store and Play Store in a single internal [Product](product). This allows you to use a single Adapty product across all platforms, instead of using each vendor's products.
+In Adapty, you can combine similar products from the App Store, Play Store, Stripe, and custom stores into a single internal [Product](product). This allows you to use a single Adapty product across all platforms instead of using each vendor's product.
 
 :::warning
-While you have the option to edit any product, it's crucial to ensure that making changes to products already used in live paywalls doesn't lead to discrepancies in your analytics.
 
-Editing period, access level, App Store Product ID, and Play Store Product ID is not recommended because it may affect analytics clarity. Only edit them if you made a mistake, like setting the wrong period or typo in the product ID.
+For products already used in live paywalls, changing their details will create discrepancies in your analytics data. Avoid modifying period, access level, product IDs, and price IDs unless you're fixing an error (like incorrect period or typo in ID).
 
-If you no longer use the product and want to replace it with another one, we strongly advise you to create a new product and update Paywalls and A/B tests accordingly.
+If you need to replace an existing product, create a new one and update your Paywalls and A/B tests accordingly instead of editing the existing one.
 :::
 
 To edit the product:
 
-1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab.
-2. Click the **3-dot** button next to the product and select the **Edit** option.
-3. In the opened **Edit** window, make the changes you need. For more details on the options in this window, please read the [Create product](create-product) section.
-4. Click the **Save** button to confirm the changes.
+1. Open **[Products](https://app.adapty.io/products)** from the Adapty main menu and click the three dots next to the product. Then, select the **Edit** option.
+2. In the **Edit** window, make the changes you need. For more details on the options in this window, read the [Create product](create-product) article.
+3. Click **Save** to apply the changes.
 
 
 <Zoom>
-  <img src={require('./img/4218c22-edit_product.webp').default}
+  <img src={require('./img/edit-product.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

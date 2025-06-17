@@ -94,7 +94,7 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
    </Zoom>
 
 2. Enter the placement name and ID. Then, click **Run onboarding** and select an onboarding to show to all users.
-3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
+3. If you have a separate onboarding prepared for a specific user group, [add more audiences](https://adapty.io/docs/audience) and select a different onboarding for them.
 
 :::info
 You can also run [A/B tests](ab-tests.md) to understand which onboarding works better.
@@ -103,7 +103,7 @@ You can also run [A/B tests](ab-tests.md) to understand which onboarding works b
 ## Step 3. Integrate the onboarding into your app
 
 :::important
-Before you start, ensure you have Adapty SDK version 3.8.0 or later installed.
+Onboardings are available only for apps using Adapty iOS, Android, or Flutter SDK version 3.8.0 or higher.
 :::
 
 To start displaying onboardings in your app, [integrate them using Adapty SDK](onboarding-sdk.md).

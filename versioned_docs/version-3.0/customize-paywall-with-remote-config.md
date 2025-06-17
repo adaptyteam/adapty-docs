@@ -10,7 +10,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
+The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more.
 
 <details>
    <summary>Before you start customizing a paywall (Click to Expand)</summary>
@@ -141,7 +141,7 @@ You can combine different options, and make up your own. This way you can test d
 
 ### JSON view of the remote config
 
-In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
+In the **JSON** view of the remote config, you can enter any JSON-formatted data:
 
 
 <Zoom>
@@ -181,7 +181,7 @@ If it's not common for you to work with code and there is a need to correct some
 
 It is a copy of your JSON in the format of a table that is easy to read and understand. Color coding helps to recognize different data types. 
 
-To add a key, click the **Add raw** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
+To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 
 <Zoom>
@@ -199,7 +199,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
 
 
 
-Additional raw options are mostly useful for [paywall localisations](add-remote-config-locale):
+Additional row options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 
 <Zoom>

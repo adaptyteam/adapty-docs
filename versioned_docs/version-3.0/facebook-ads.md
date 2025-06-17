@@ -2,6 +2,7 @@
 title: "Facebook Ads"
 description: "Integrate Facebook Ads with Adapty for effective subscription marketing."
 metadataTitle: "Facebook Ads Integration | Adapty Docs"
+keywords: ['Meta Ads', 'Facebook Ads']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -9,16 +10,16 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-With the Facebook Ads integration, you can easily check your app stats on Facebook Analytics. Adapty sends events to Facebook Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
+With the Facebook Ads integration, you can easily check your app stats in Meta Analytics. Adapty sends events to Meta Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
 
 The integration between Adapty and Facebook Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Facebook Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
 ## How to set up Facebook Ads integration
 
-To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Facebook Analytics. By sending events to Facebook Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
+To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
 
 :::note
-Please consider that Facebook Ads integration works on iOS 14.5+ only for users with ATT consent.
+Please consider that the Facebook Ads integration works on iOS 14.5+ only for users with ATT consent.
 :::
 
 
@@ -38,8 +39,7 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 
 
 1. To find App ID, open your app page in [App Store Connect](https://appstoreconnect.apple.com/), go to the **App Information** page in **General** section, and find **Apple ID** in the left bottom part of the screen.
-2. You need an application on [Facebook Developers](https://developers.facebook.com/) platform. Log in to your app and then find advanced settings. You can find the **App ID** in the header.
-
+2. You need an application on [Meta for Developers](https://developers.facebook.com/) platform. Log in to your app and then find advanced settings. You can find the **App ID** in the header.
 
 <Zoom>
   <img src={require('./img/4b326c4-001563-August-23-4tO3JVso.webp').default}
@@ -52,15 +52,13 @@ Please consider that Facebook Ads integration works on iOS 14.5+ only for users 
 />
 </Zoom>
 
+3. Disable client-side tracking in your Meta SDK configuration to prevent double counting of revenue in Meta Ads Manager. You can find this setting in your Meta Developer Console under **App Settings > Advanced Settings**. Set **Log in-app events automatically** to "No". This will ensure that revenue events are only tracked through Adapty's integration. 
 
-
-
-
-:::warning
-Disable in-app events logging in the Facebook SDK to avoid duplications
-
-Open your App Dashboard and navigate to Analytics->Settings. Then set _Log In-App Events Automatically_ to _No_ and click _Save Changes_.
-:::
+   To track install and usage events, you'll need to activate Meta SDK in your code. You can find implementation details in the Meta SDK documentation for your platform:
+   - [iOS SDK](https://developers.facebook.com/docs/ios/getting-started)
+   - [Android SDK](https://developers.facebook.com/docs/android/getting-started)
+   - [Unity SDK](https://developers.facebook.com/docs/unity/getting-started)
+   - [React Native SDK](https://developers.facebook.com/docs/react-native/getting-started)
 
 
 <Zoom>
@@ -82,9 +80,9 @@ You can use this integration with Android apps as well. If you set up Android SD
 
 ## Events and tags
 
-Please note that the Facebook Ads integration specifically caters to companies using Facebook for ad campaigns and optimizing them based on customer behavior. It supports Facebook's standard events for optimization purposes. Consequently, modifying the event name is not available for the Facebook Ads integration. Adapty effectively maps your customer events to their corresponding Facebook events for accurate analysis.
+Please note that the Facebook Ads integration specifically caters to companies using Meta for ad campaigns and optimizing them based on customer behavior. It supports Meta's standard events for optimization purposes. Consequently, modifying the event name is not available for the Meta Ads integration. Adapty effectively maps your customer events to their corresponding Meta events for accurate analysis.
 
-| Adapty event                  | Facebook Ads event          |
+| Adapty event                  | Meta Ads event          |
 | :---------------------------- | :-------------------------- |
 | Subscription initial purchase | Subscribe                   |
 | Subscription renewed          | Subscribe                   |
@@ -123,7 +121,7 @@ To enable specific events, simply toggle on the ones you require. In case multip
 ## SDK configuration
 
 :::warning
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send `facebookAnonymousId` to Adapty via `.setIntegrationIdentifier()` method. It allows Facebook to handle events if IDFA is not available.
+Because of iOS IDFA changes in iOS 14.5, if you use Meta integration, make sure you send `facebookAnonymousId` to Adapty via `.setIntegrationIdentifier()` method. It helps Meta attribute users better.
 :::
 
 <Tabs groupId="current-os" queryString>

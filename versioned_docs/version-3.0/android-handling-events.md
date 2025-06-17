@@ -3,6 +3,7 @@ title: "Android - Handle paywall events"
 description: "Handle Android subscription events efficiently with Adapty's event tracking tools."
 metadataTitle: "Handling Events in Android | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingSubscriptionUpdateParams', 'onLoadingProductsFailure', 'onRenderingError']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -24,37 +25,6 @@ If you would like to leave the default behavior in some cases, you can extend `A
 Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 ### User-generated events
-
-#### Actions
-
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You’ll need to define what each action should do. 
-
-The following built-in actions are supported:
-
-- `Close`
-- `OpenUrl(url)`
-
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `onActionPerformed(…)` will be triggered with the `Custom(id)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
-
-Here’s an example, but feel free to handle the actions in your own way:
-
-```kotlin showLineNumbers title="Kotlin"
-override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-    when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
-        
-        is AdaptyUI.Action.OpenUrl -> //launching intent to open url
-       
-        is AdaptyUI.Action.Custom -> //no default action
-    }
-}
-```
-
-:::tip
-
-Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
-
-:::
 
 #### Product selection
 

@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-The onboarding remote config is a tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your onboardings precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language. For example, you can use remote configs to send additional metadata.
+The onboarding remote config is a tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your onboardings precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more. For example, you can use remote configs to send additional metadata.
 
 Before you start customizing an onboarding, [create an onboarding](create-onboarding.md).
 
@@ -57,7 +57,7 @@ You can combine different options and create your own.
 
 ### JSON view of the remote config
 
-In the **JSON** view of the remote config, you can enter any JSON-formatted data up to 10 kB per language:
+In the **JSON** view of the remote config, you can enter any JSON-formatted data:
 
 
 <Zoom>

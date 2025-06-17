@@ -17,9 +17,9 @@ Also, events related to the same action occur simultaneously and may appear in y
 
 <!--- :::warning
 
-Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [**Event Feed**](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
+Most events are created and sent to all configured integrations if they’re enabled. However, the **Access level updated** event only triggers if a [webhook integration](webhook) is configured and this event is enabled. This event will appear in the [Event Feed](https://app.adapty.io/event-feed) and will also be sent to the webhook, but it won’t be shared with other integrations.
 
-If a webhook integration isn’t configured or this event type isn’t enabled, the **Access level updated** event won’t be created and won’t appear in the [**Event Feed**](https://app.adapty.io/event-feed).
+If a webhook integration isn’t configured or this event type isn’t enabled, the **Access level updated** event won’t be created and won’t appear in the [Event Feed](https://app.adapty.io/event-feed).
 
 ::: --->
 
@@ -59,7 +59,7 @@ When a user cancels their subscription, the following events are created:
 - **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access
 - The **Access level updated** event is created to disable auto-renewal for the access
 
-Once the subscription ends, the **Subscription expired (churned)** event is triggered to to mark the end of the subscription.
+Once the subscription ends, the **Subscription expired (churned)** event is triggered to mark the end of the subscription.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Subscription_Cancellation_Flow.webp').default}

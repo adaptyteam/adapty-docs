@@ -98,7 +98,7 @@ If you need to change the Sandbox Apple ID associated with your device, you can 
 2. Tap the current Sandbox Apple ID in the **Sandbox Account** section.
 3. Tap the **Sign Out** button.
 4. Tap the **Sign In** button.
-5. In the **Use the Apple IS for Apple Media Services** window, tap the **Use Other Apple ID** button.
+5. In the **Use the Apple ID for Apple Media Services** window, tap the **Use Other Apple ID** button.
 6. In the **Apple ID Sign-In Requested** window, enter the new sandbox account credentials that you previously created. 
 7. Tap the **Done** button.
 8. In the **Apple ID Security** window, tap the **Other options** button.

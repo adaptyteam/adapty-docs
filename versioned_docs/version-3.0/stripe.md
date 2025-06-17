@@ -42,7 +42,7 @@ At the bottom of the permission pop-up, you can select whether to install the ap
       <img src={require('./img/stripe2.png').default}/>
 </Zoom>
 
-3. In the pop-up, generate a new restricted key. You will need to verufy your identity using your email, Touch ID, or security key. Once you generate a key, you won't be able to see it again, so store it securely in a password manager or a secret store.
+3. In the pop-up, generate a new restricted key. You will need to verify your identity using your email, Touch ID, or security key. Once you generate a key, you won't be able to see it again, so store it securely in a password manager or a secret store.
 
 <Zoom>
       <img src={require('./img/stripe4.png').default}/>

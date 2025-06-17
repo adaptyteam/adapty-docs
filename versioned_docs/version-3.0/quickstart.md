@@ -2,6 +2,8 @@
 title: "Quickstart guide"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+keywords: ['install sdk', 'sdk install', 'install sdk ios']
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -13,6 +15,19 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty
 
 After you sign up for Adapty and enter your mobile app's name and category, we’ll set up the app for you on the Adapty platform. Next, you’ll need to complete the initial integration with in-app purchase platforms.
+
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/n401moJDZjE?si=rDSRW_zwE0It22kc" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
 
 ## Configuring platforms
 

@@ -2,6 +2,7 @@
 title: "iOS - Present new Paywall Builder paywalls"
 description: "Discover how to present paywalls on iOS to boost conversions and revenue."
 metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
+keywords: ['paywallController']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -12,7 +13,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
 
 - For presenting **Legacy Paywall Builder paywalls**, check out [iOS - Present legacy Paywall Builder paywalls](ios-present-paywalls-legacy).
 - For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
