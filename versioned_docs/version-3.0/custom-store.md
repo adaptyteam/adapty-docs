@@ -1,5 +1,5 @@
 ---
-title: "Initial integration with other stores"
+title: "Initial integration with other app stores"
 description: "Adapty Initial Integration with App Store: A Quick Guide"
 metadataTitle: "Get started with Adapty's initial integration process with any app store"
 ---
@@ -8,7 +8,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 We're thrilled to have you on board with Adapty! Our priority is to help you hit the ground running and achieve the best possible outcomes for your app.
 
-The initial integration is only needed for [App Store](initial_ios), [Google Play](initial-android), [Stripe](stripe), and [Paddle](paddle.md) since Adapty verifies your apps, products, and offers with these stores. 
+The initial integration is only needed for [App Store](initial_ios), [Google Play](initial-android), and [Stripe](stripe) since Adapty verifies your apps, products, and offers with these stores. 
 
 Adapty doesn’t validate data with other app stores and does not process purchases made through them. However, you can still mark products sold through other stores for Adapty to grant access to paid content after a successful purchase, reflect transactions in your analytics, and share them via integrations.
 
