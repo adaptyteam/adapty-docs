@@ -7,7 +7,6 @@ import Feedback from '../../../components/Feedback';
 export default function DocItemFooter(props) {
   return (
     <>
-        <Feedback />
         <OriginalDocItemFooter {...props} />
       <SupportLink />
     </>
