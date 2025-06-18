@@ -2,6 +2,7 @@
 title: "Fetch Paywall Builder paywalls and their configuration"
 description: "Learn how to retrieve PB paywalls in Adapty for better subscription control."
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
+displayed_sidebar: sdkios
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 ---
 

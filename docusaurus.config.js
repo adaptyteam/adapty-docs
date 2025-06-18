@@ -128,7 +128,7 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "/sdk-installation-ios",
+                href: "/ios-sdk-overview",
               },
               {
                 label: "Android",
