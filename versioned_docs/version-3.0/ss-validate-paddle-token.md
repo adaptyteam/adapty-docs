@@ -106,7 +106,7 @@ Placeholders:
 | Parameters         | Type   | Required          | Nullable           | Description                                                  |
 | :----------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
 | customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must [identify the users](identifying-users) in your mobile app code via Adapty SDK. |
-| paddle_token       | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Paddle object that represents a unique purchase. Could be either a production transaction token (`live_...`) or a sandbox transaction todken (`sandbox_...`). |
+| paddle_token       | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Paddle object that represents a unique purchase. Could be either a transaction id (txn_...) or a subscription id (sub_...), |
 
 ## Successful response: 200: OK
 
