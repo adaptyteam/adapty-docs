@@ -130,15 +130,21 @@ You can pass several optional parameters during activation:
   <TabItem value="Typescript" label="Typescript" default>
 
 ```typescript showLineNumbers
+import { adapty, LogLevel } from 'react-native-adapty';
+
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
-  logLevel: 'error',
-  __debugDeferActivation: false,
+   logLevel: LogLevel.ERROR,
+  __debugDeferActivation: false, 
+  __ignoreActivationOnFastRefresh: true,
   ipAddressCollectionDisabled: false,
   ios: {
     idfaCollectionDisabled: false,
   },
+   android: {
+      adIdCollectionDisabled: false,
+   },
   activateUi: true,
   mediaCache: {
     memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
@@ -158,10 +164,15 @@ adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
   customerUserId: 'YOUR_USER_ID',
   logLevel: LogLevel.ERROR,
-  ipAddressCollectionDisabled: false,
+  ipAddressCollectionDisabled: false, 
+  __debugDeferActivation: false,
+  __ignoreActivationOnFastRefresh: true,
   ios: {
     idfaCollectionDisabled: false,
   },
+   android: {
+      adIdCollectionDisabled: false,
+   },
     activateUi: true,
     mediaCache: {
       memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
@@ -176,14 +187,17 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 Parameters:
 
-| Parameter              | Presence | Description                                                  |
-| :--------------------- | :------- | :----------------------------------------------------------- |
-| observerMode           | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself, and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId         | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| logLevel               | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> **error:** Only errors will be logged.</li><li> **warn:** Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> **info:** Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> **verbose:** Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| activateUi             | optional | Set to `false` to disable the Adapty UI module. This module is only required if you're using Paywall Builder paywalls. By default, it is always enabled. |
-| idfaCollectionDisabled | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section. |
-| mediaCache             | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul> |
+| Parameter                         | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|:----------------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| observerMode                      | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself, and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p>                                                                                                                                                                                                                                                                                 |
+| customerUserId                    | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                                                                                                                                          |
+| logLevel                          | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> **error:** Only errors will be logged.</li><li> **warn:** Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> **info:** Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> **verbose:** Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
+| activateUi                        | optional | Set to `false` to disable the Adapty UI module. This module is only required if you're using Paywall Builder paywalls. By default, it is always enabled.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| idfaCollectionDisabled            | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| adIdCollectionDisabled            | optional | Set to `true` to disable AdId collection and sharing. The default value is `false`. For more details on AdId collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| mediaCache                        | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul>                                                                                                                                                                                                                                       |
+| \_\_debugDeferActivation          | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| \_\_ignoreActivationOnFastRefresh | optional | A boolean parameter that lets you ignore multiple activation attempts on fast refresh. If `true`, it skips activation if the SDK is already activated. Useful during development when React Native's fast refresh might trigger multiple activation calls.                                                                                                                                                                                                                                                                                                                                                                                    |
 
 </TabItem> 
 
