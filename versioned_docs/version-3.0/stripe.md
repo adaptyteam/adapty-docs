@@ -179,7 +179,7 @@ You're all set! Next, create your products on Stripe and add them to Adapty.
 ### 2\. Create products on Stripe
 
 :::note
-If you're configuring Sandbox, make sure to switch to Test mode in Stripe, before proceeding with this step.
+If you're setting this up in test mode, make sure Stripe is also switched to Test mode before continuing with this step.
 :::
 
 Go to Stripe's [Product catalog](https://dashboard.stripe.com/products?active=true) and create the products you would like to sell as well as their pricing plans. Note that Stripe allows you to have multiple pricing plans per product, which is useful for tailoring your offering without the need to create additional products.
