@@ -3,6 +3,7 @@ title: "Unity - Handle paywall events"
 description: "Handle events in Unity using Adapty to track and manage subscriptions."
 metadataTitle: "Handling Events in Unity with Adapty | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import Zoom from 'react-medium-image-zoom';

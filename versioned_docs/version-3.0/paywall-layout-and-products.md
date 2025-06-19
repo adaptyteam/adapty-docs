@@ -7,7 +7,7 @@ metadataTitle: "Paywall Layout & Products | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-After selecting a template for your paywall in Adapty's Paywall Builder, you can customize the paywall's visual appearance to match your brand's style. The Layout settings provide a variety of controls for adjusting the layout, background, and overall look of the paywall. Let's explore these settings: The layout settings control the basic aspects of the paywall, including the template, background color, default fonts, purchase flow, and top buttons.
+After selecting a template for your paywall in Adapty's Paywall Builder, you can customize the paywall's visual appearance to match your brand's style. The Layout settings provide a variety of controls for adjusting the layout, background, and overall look of the paywall. Let's explore these settings: The layout settings control the basic aspects of the paywall, including the template, background color, default fonts, purchase flow, content layout, and top buttons.
 
 :::warning
 
@@ -95,6 +95,31 @@ It's important to keep your paywall visually consistent with the rest of your ap
 
 
 Font settings in the **Layout settings** apply to all paywall components by default. You can override these settings for specific elements, such as text boxes or lists, when editing those elements individually. If you change the default font in the **Layout settings**, it will not affect elements with individual fonts. Learn how to upload a custom font [here](using-custom-fonts-in-paywall-builder).
+
+## Content layout
+
+You don't have to manually fine-tune margins and width for each content element of the paywall. Go to the **Content layout** to adjust all the following settings for all content elements at once:
+
+- **Default child margin**: Defines space around each child element. 
+- **Spacing**: Defines space between elements inside a layout.
+- **Max width**: Sets the maximum width of elements to optimize layout on iPads. We recommend 600pt for a clean, balanced layout.
+
+:::warning
+Max width parameter is only available starting with Adapty SDK v3.7.0 and higher.
+:::
+
+<Zoom>
+  <img src={require('./img/content-layout.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+To adjust the layout for a specific element—such as setting the maximum width for the footer—go to the **Layout** section under **App Icon, Header, Feature List, Products**, or **Footer**.
 
 ## Top buttons
 

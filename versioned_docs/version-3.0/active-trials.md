@@ -7,7 +7,7 @@ metadataTitle: "Managing Active Trials | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The active trials chart in Adapty displays the number of unexpired free trials that are currently active at the end of a given period. Active means subscriptions that have not yet expired, and therefore, users still have access to the paid features of the app.
+The active trials chart in Adapty displays the number of unexpired free trials that are currently active at the end of a given period. Active means subscriptions that have not yet expired; therefore, users still have access to the paid features of the app.
 
 
 <Zoom>
@@ -27,7 +27,7 @@ The active trials chart in Adapty displays the number of unexpired free trials t
 
 ### Calculation
 
-Adapty calculates the number of active trials in a given period by referring to the count of unexpired free trials by the end of that period. This count remains the same until the trial expires, irrespective of its auto-renew status. At a daily resolution, the count of Active Trials represents the number of unexpired trials by the end of that day. 
+Adapty calculates the number of active trials in a given period by referring to the count of unexpired free trials by the end of that period. This count remains unchanged until the trial expires, regardless of its auto-renew status. At a daily resolution, the count of Active Trials represents the number of unexpired trials by the end of that day. 
 
 For example, if 100 trials were active yesterday, 10 new trials were activated today, and 5 trials have expired today, then there are 105 active trials today.
 
@@ -38,7 +38,7 @@ However, at a monthly resolution, the count of Active Trials represents the numb
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
 - ✅ Group by: Renewal status, period, product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
+You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 ### Active trials chart usage
 

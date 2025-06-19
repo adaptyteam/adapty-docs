@@ -3,6 +3,7 @@ title: "Android - Handle paywall events"
 description: "Handle Android subscription events efficiently with Adapty's event tracking tools."
 metadataTitle: "Handling Events in Android | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingSubscriptionUpdateParams', 'onLoadingProductsFailure', 'onRenderingError']
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -159,17 +159,17 @@ Information about non-subscription purchases. These can be one-time (consumable)
 
 Information about a [paywall](paywalls).
 
-| Field Name                | Type | Description |
-|--------------------------|----------|-------------|
-| abTestName | String | The name of the parent A/B test |
+| Field Name           | Type | Description |
+|----------------------|----------|-------------|
+| abTestName           | String | The name of the parent A/B test |
 | hasViewConfiguration | Boolean | Indicates if there is a view configuration for the paywall |
-| locale | String | The locale ID of the paywall |
-| name | String | Paywall name |
-| placementId | String | The ID of the parent placement |
-| remoteConfigString | String | A custom dictionary from Adapty Dashboard associated with this paywall |
-| revision | Integer | The current revision/version of the paywall. Every change generates a new revision |
-| variationId | String | The variation ID used to attribute purchases to this paywall |
-| vendorProductIds | String | Array of product IDs related to the paywall |
+| locale               | String | The locale ID of the paywall |
+| name                 | String | Paywall name |
+| placement.id         | String | The ID of the parent placement |
+| remoteConfigString   | String | A custom dictionary from Adapty Dashboard associated with this paywall |
+| placement.revision   | Integer | The current revision/version of the paywall. Every change generates a new revision |
+| variationId          | String | The variation ID used to attribute purchases to this paywall |
+| vendorProductIds     | String | Array of product IDs related to the paywall |
 
 ### AdaptyPaywallProduct
 

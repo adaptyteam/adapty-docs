@@ -3,6 +3,7 @@ title: "iOS - Handle paywall events"
 description: "Handle subscription-related events in iOS using Adapty for better app monetization."
 metadataTitle: "Handling Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
 ---
 
 import Zoom from 'react-medium-image-zoom';

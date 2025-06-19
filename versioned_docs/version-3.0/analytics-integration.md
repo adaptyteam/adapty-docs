@@ -293,13 +293,16 @@ Adapty.Activate(builder.Build(), (error) => {
 </TabItem>
 
 <TabItem value="rn" label="React Native" default>
-You also can disable IDFA collecting by using `idfaCollectionDisabled` property when activating the Adapty SDK. The AAID/GAID collection cannot be disabled now.
+You also can disable IDFA collecting by using the `idfaCollectionDisabled` property when activating the Adapty SDK or disable the AAID/GAID collection by using the `adIdCollectionDisabled` property.
 
 ```typescript showLineNumbers
 adapty.activate('PUBLIC_SDK_KEY', {
   // highlight-start 
   ios: {
-    idfaCollectionDisabled: true, // set to `true`
+      idfaCollectionDisabled: true, // set to `true`
+  }, 
+  android: {
+      adIdCollectionDisabled: true,
   },
   // highlight-end
 });
