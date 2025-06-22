@@ -21,27 +21,25 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 <p> </p>
 
-1. **You set up your endpoint:**
-   1. Ensure your server can process Adapty requests with the **Content-Type** header set to `application/json`.
-   2. Configure your server to receive Adapty's verification request and respond with any `2xx` status and a JSON body.
-   3. [Handle subscription events](#subscription-events) once the connection is verified.
-2. **You configure and enable the webhook integration** in the [Adapty Dashboard](#configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](#configure-webhook-integration-in-the-adapty-dashboard). We recommend testing in the **Sandbox environment** before switching to production.
-3. **Adapty sends a verification request** to your server.
-4. **Your server responds** with a `2XX` status and a JSON body.
-5. **Once Adapty receives a valid response, it starts sending subscription events.**
+1. **Prepare your endpoint**
+   1. Make sure your server accepts requests with **Content-Type: `application/json`**.
+   2. Configure it to handle Adapty's verification request and reply with any `2xx` status and a JSON body.
+   3. [Process subscription events](#subscription-events) after the connection is verified.
+2. **Enable the webhook integration** in the [Adapty Dashboard](#configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](#configure-webhook-integration-in-the-adapty-dashboard). Test everything in the **Sandbox environment** before going live.
+3. **Adapty sends a verification request**.
+4. **Your server replies** with `2xx` and JSON.
+5. **Adapty starts sending subscription events**.
 
 ## Set up your server to process Adapty requests
-
-Adapty will send to your webhook endpoint 2 types of requests:
-
-1. [Verification request](#verification-request): the initial request to verify the connection is set up correctly. This request will not contain any event and will be sent the moment you click the **Save** button in the Webhook integration of the Adapty Dashboard. To confirm your endpoint successfully received the verification request, your endpoint should answer with the verification response.
-2. [Subscription event](#subscription-events): A standard request Adapty server sends every time an event is created in it. Your server does not need to reply with any specific response. The only thing the Adapty server needs is to receive a standard 200-code HTTP response if it successfully receives the message.
+Adapty sends two kinds of requests to your webhook endpoint:
+1. [Verification request](#verification-request): Adapty uses this initial request to verify the connection. It contains no event data and is sent as soon as you click **Save** in the Webhook integration. Respond with a verification response to confirm you received it.
+2. [Subscription event](#subscription-events): Sent every time a subscription event occurs. Return any 200-level HTTP status to acknowledge receipt; no other response is required.
 
 ### Verification request
 
-After you enable webhook integration in the Adapty Dashboard, Adapty will send a POST verification request containing an empty JSON object `{}` as a body.
+After you enable the integration, Adapty sends a POST verification request with an empty JSON body `{}`.
 
-Set up your endpoint to have the **Content-Type header** as `application/json`, i.e. your server's endpoint should expect the incoming webhook request to have its payload formatted as JSON.
+Ensure your endpoint expects JSON (`Content-Type: application/json`).
 
 Your server must reply with a 2xx status code and send any valid JSON response, for example:
 
@@ -53,15 +51,15 @@ Once Adapty receives the verification response in the correct format and with a 
 
 ### Subscription events
 
-Subscription events are sent with the **Content-Type** header set to `application/json` and contain event data in JSON format. For possible event types and request structures, see [Webhook event types and fields](webhook-event-types-and-fields).
+Subscription events are also sent as JSON (`Content-Type: application/json`). For event types and payloads, see [Webhook event types and fields](webhook-event-types-and-fields).
 
 ## Configure webhook integration in the Adapty Dashboard
 
-Within Adapty, you can configure separate flows for production events and test events received from the Apple or Stripe sandbox environment or Google test account. 
+You can configure separate flows for production events and test events (Apple or Stripe sandbox, Google test accounts).
 
-For production events, use the **Production endpoint URL** field specifying the URL to which the callbacks will be sent. Additionally, configure the **Authorization header value for production endpoint** field - the header for your server to authenticate Adapty events. Note that we'll use the value specified in the **Authorization header value for production endpoint** field as the `Authorization` header exactly as provided, without any changes or additions.
+For production, enter the URL in **Production endpoint URL** and the auth header in **Authorization header value for production endpoint**. Adapty passes this value as the `Authorization` header unchanged.
 
-For test events, employ the  **Sandbox endpoint URL** and **Authorization header value for sandbox endpoint** fields accordingly.
+For sandbox, fill **Sandbox endpoint URL** and **Authorization header value for sandbox endpoint**.
 
 To set up the webhook integration:
 
@@ -78,8 +76,8 @@ To set up the webhook integration:
 />
 </Zoom>
 
-2. Turn on the toggle to initiate the integration.
-4. Fill out the integration fields:
+2. Enable the toggle to activate the integration.
+3. Fill out the integration fields:
 
     | Field                                                  | Description                                                  |
     | ------------------------------------------------------ | ------------------------------------------------------------ |
@@ -110,7 +108,7 @@ To set up the webhook integration:
 />
 </Zoom>
 
-5. Additional fields and options are not obligatory; use them as needed:
+5. The remaining fields are optional; use them as needed:
 
     | Setting                            | Description                                                  |
     | :--------------------------------- | :----------------------------------------------------------- |
@@ -120,13 +118,11 @@ To set up the webhook integration:
     | **Send attribution**               | Turn on this option to include attribution information (e.g., AppsFlyer data) in the `attributions` field. Refer to the [Attribution data](webhook-event-types-and-fields#attribution-data) section for details. |
     | **Send Play Store purchase token** | Turn on this option to receive the Play Store token required for purchase revalidation, if needed. Enabling it will add the `play_store_purchase_token` parameter to the event. For details on its content, refer to the [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token) section. |
 
-6. Remember to click the **Save** button to confirm the changes.
-
-The moment you click the **Save** button, Adapty will send a verification request and will wait for your server verification response.
+6. When you click the **Save** button, Adapty immediately sends a verification request and waits for your response.
 
 ### Choose events to send and map event names
 
-Choose the events you want to receive in your server by enabling the toggle next to it. If your event names differ from those used in Adapty and you need to keep your names as is, you can set up the mapping by replacing the default Adapty event names with your own in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
+Enable the toggle next to each event you want to receive. If your event names differ from Adapty's and you need to keep your own naming, replace the default names in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
 <Zoom>
   <img src={require('./img/86942b8-event_names_renaming.webp').default}
