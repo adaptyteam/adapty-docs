@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css'
 Adapty [webhook integration](webhook) consists of the following steps:
 
 <Zoom>
-  <img src={require('./img/webhook-setup.png').default}
+  <img src={require('./img/webhook-steps.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '300px', /* image width */
