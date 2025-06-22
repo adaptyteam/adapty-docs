@@ -7,19 +7,29 @@ toc_max_heading_level: 4
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
 
-Adapty sends webhooks in response to subscription events. This section defines these event types and the data contained in each webhook.
+Adapty sends webhooks in response to subscription-related events. This section outlines the available event types and the data included in each webhook.
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Event flows](event-flows) to learn what kind of incoming data to expect and how to build your business logic around it. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
+You can choose to send all event types to your webhook or select only the ones you need. Refer to our [Event flows](event-flows) to understand the expected data and how to structure your business logic around it.
+
+During [webhook setup](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard), you can:
+- Disable any event types you don’t need
+- Replace Adapty’s default event IDs with your own, if required
+
 
 <WebhookEvents />
 
 ## Webhook event structure
 
-Adapty will send you only those events you've chosen in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
+Adapty sends only the events you've selected in the **Event names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events follow the same structure, but their fields vary based on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
+Webhook events are sent as JSON-serialized data. The body of each `POST` request to your server contains the serialized event wrapped in a standard structure. All events follow the same format, but the fields may vary depending on the event type, app store, and your specific configuration
+
+- User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they contain what you've configured.
+- Attribution data fields are consistent across all event types, but the list of attributions depends on the sources integrated into your mobile app
+
+Below is an example of a webhook event:
 
 ```json title="Json" showLineNumbers
 {
@@ -89,33 +99,34 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
 
 ### Event fields
 
-Event parameters are the same for all event types.
+The following parameters are included in all event types:
 
-| **Field**                         | **Type** | **Description**                                              |
-| --------------------------------- | -------- | ------------------------------------------------------------ |
-| **advertising_id**                | UUID     | Advertising ID (Android only).                               |
-| **attributions**                  | JSON     | [Attribution data](webhook-event-types-and-fields#attribution-data). Included if **Send Attribution** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
-| **customer_user_id**              | String   | User ID from your app (UUID, email, or other ID). If not set, this field is `null`. **Customer User ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **email**                         | String   | User's email. **Email** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **event_api_version**             | Integer  | Adapty API version (current: `1`).                           |
-| **event_datetime**                | ISO 8601 | Event timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
-| **event_properties**              | JSON     | [Event properties](webhook-event-types-and-fields#event-properties). |
-| **event_type**                    | String   | Event name in Adapty format. See [Webhook events](webhook-event-types-and-fields#webhook-event-types) for the full list. |
-| **idfa**                          | UUID     | Advertising ID (Apple only). **IDFA** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). It may be `null` if unavailable due to tracking restrictions, kids mode, or privacy settings. |
-| **idfv**                          | UUID     | Identifier for Vendors (IDFV), unique per developer. **IDFV** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **integration_ids**               | JSON     | User integration IDs. `null` if unavailable or integrations are disabled. |
-| **play_store_purchase_token**     | JSON     | [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token), included if **Send Play Store purchase token** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
-| **profile_id**                    | UUID     | **Adapty ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
-| **profile_install_datetime**      | ISO 8601 | Installation timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
-| **profiles_sharing_access_level** | JSON     | List of users sharing access excluding the current user profile: <ul><li>**profile_id**: (UUID) Adapty ID</li><li>**customer_user_id**: (String) Customer User ID if provided</li></ul> Used for [Sharing purchases between accounts](general#6-sharing-purchases-between-user-accounts). |
-| **user_agent**                    | String   | Device browser user-agent.                                   |
-| **user_attributes**               | JSON     | [Custom user attributes](setting-user-attributes#custom-user-attributes). Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>While custom attribute values in the mobile app code can be set as floats or strings, attributes received via the server-side API or historical import may come in different formats. The boolean and integer values will be converted to floats in this case.</p> |
+| **Field**                         | **Type**         | **Description**                                              |
+| --------------------------------- |------------------| ------------------------------------------------------------ |
+| **advertising_id**                | UUID             | Advertising ID (Android only).                               |
+| **attributions**                  | Object             | [Attribution data](webhook-event-types-and-fields#attribution-data). Included if **Send Attribution** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
+| **customer_user_id**              | String           | User ID from your app (UUID, email, or other ID). If not set, this field is `null`. **Customer User ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **email**                         | String           | User's email. **Email** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **event_api_version**             | Integer          | Adapty API version (current: `1`).                           |
+| **event_datetime**                | ISO 8601         | Event timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
+| **event_properties**              | Object             | [Event properties](webhook-event-types-and-fields#event-properties). |
+| **event_type**                    | String           | Event name in Adapty format. See [Webhook events](webhook-event-types-and-fields#webhook-event-types) for the full list. |
+| **idfa**                          | UUID             | Advertising ID (Apple only). **IDFA** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). It may be `null` if unavailable due to tracking restrictions, kids mode, or privacy settings. |
+| **idfv**                          | UUID             | Identifier for Vendors (IDFV), unique per developer. **IDFV** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **integration_ids**               | Object             | User integration IDs. `null` if unavailable or integrations are disabled. |
+| **play_store_purchase_token**     | Object             | [Play Store purchase token](webhook-event-types-and-fields#play-store-purchase-token), included if **Send Play Store purchase token** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). |
+| **profile_id**                    | UUID             | **Adapty ID** in the profile in the [Adapty Dashboard](https://app.adapty.io/profiles/users). |
+| **profile_install_datetime**      | ISO 8601         | Installation timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
+| **profiles_sharing_access_level** | Array of Objects | List of users sharing access excluding the current user profile: <ul><li>**profile_id**: (UUID) Adapty ID</li><li>**customer_user_id**: (String) Customer User ID if provided</li></ul> Used for [Sharing purchases between accounts](general#6-sharing-purchases-between-user-accounts). |
+| **user_agent**                    | String           | Device browser user-agent.                                   |
+| **user_attributes**               | Object             | [Custom user attributes](setting-user-attributes#custom-user-attributes). Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>In the mobile app, custom attribute values can be set as floats or strings. However, attributes received via the server-side API or through historical import may have different formats. In such cases, boolean and integer values will be converted to float.</p> |
 
 ### Attribution data
 
-If you've chosen to send attribution data and if you have them, the data below will be sent with the event for every source. The same attribution data is sent to all event types.
+If attribution data is available and you've enabled the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page, it will be included with each event for every attribution source.
 
-To send the attribution, enable the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page. 
+The same attribution data structure is used across all event types.
+
 
 ```json title="Json" showLineNumbers
 {
@@ -148,7 +159,7 @@ To send the attribution, enable the **Send Attribution** option in the [Integrat
 
 ### Integration IDs
 
-The following integration IDs are used now in events: 
+The following integration IDs may be included in events: 
 
 - `adjust_device_id`
 - `airbridge_device_id`
@@ -168,7 +179,17 @@ The following integration IDs are used now in events:
 
 ### Play Store purchase token
 
-This field includes all the data needed to revalidate a purchase, if necessary. It is sent only if the **Send Play Store purchase token** option is enabled in the [Webhook integration settings](https://app.adapty.io/integrations/customwebhook).
+This field contains all the data needed to revalidate a purchase, if necessary. It is included only if the **Send Play Store purchase token** option is enabled in the [Webhook integration settings](https://app.adapty.io/integrations/customwebhook).
+
+```json title="Json" showLineNumbers
+{
+  "play_store_purchase_token": {
+    "product_id": "premium_monthly_no_trial",
+    "purchase_token": "APA91bHBmK4-Q0p…nxfj4H",
+    "is_subscription": true
+  }
+}
+```
 
 | Field               | Type    | Description                                                  |
 | :------------------ | :------ | :----------------------------------------------------------- |
@@ -178,56 +199,58 @@ This field includes all the data needed to revalidate a purchase, if necessary. 
 
 ### Event Properties
 
-Event properties can vary depending on the event type and even between events of the same type. For instance, an event originating from the App Store won’t include Android-specific properties like `base_plan_id`.
+Event properties may vary depending on the event type—and even between events of the same type. For example, an event from the App Store won’t include Android-specific properties like `base_plan_id`.
 
-The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updated-event) event has distinct properties, so we’ve dedicated a separate section to it. Similarly, we’ve separated [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties), as they are specific to only certain event types.
+The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updated-event) event has unique properties, so we've provided a dedicated section for it. Similarly, [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties) are separated, as they apply only to specific event types.
 
 #### For most event types
 
-The event properties for most event types are consistent (except for **Access Level Updated** event, which is described in its own section). Below is a comprehensive table highlighting properties and indicating if they belong to specific events.
+Event properties for most event types follow a consistent structure (with the exception of the [Access Level Updated](#for-access-level-updated-event) event, which is covered in its own section). 
 
-| Field                             | Type          | Description                                                  |
-| :-------------------------------- | :------------ | :----------------------------------------------------------- |
-| **ab_test_name**                  | String        | Name of the A/B test where the transaction originated.       |
-| **base_plan_id**                  | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
-| **cancellation_reason**           | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`. |
-| **cohort_name**                   | String        | Name of the audience to which the profile belongs.           |
-| **consecutive_payments**          | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
-| **currency**                      | String        | Local currency (defaults to USD).                            |
-| **developer_id**                  | String        | The ID of the placement where the transaction originated.    |
-| **environment**                   | String        | Possible values are `Sandbox` or `Production`.               |
-| **event_datetime**                | ISO 8601 date | The date and time of the event.                              |
-| **original_purchase_date**        | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction. |
-| **original_transaction_id**       | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p> |
-| **paywall_name**                  | String        | Name of the paywall where the transaction originated.        |
-| **paywall_revision**              | Integer       | Revision of the paywall where the transaction originated. The default value is 1. |
-| **price_local**                   | Float         | Product price before Apple/Google cut in local currency. Revenue. |
-| **price_usd**                     | Float         | Product price before Apple/Google cut in USD. Revenue.       |
-| **profile_country**               | String        | Determined by Adapty, based on profile IP.                   |
-| **profile_event_id**              | UUID          | Unique event ID that can be used for deduplication.          |
-| **profile_has_access_level**      | Boolean       | A boolean that indicates whether the profile has an active access level. |
-| **profile_id**                    | UUID          | Adapty internal user ID.                                     |
-| **profile_ip_address**            | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). |
-| **profile_total_revenue_usd**     | Float         | Total revenue for the profile, refunds included.             |
-| **profiles_sharing_access_level** | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
-| **promotional_offer_id**          | String        | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
-| **purchase_date**                 | ISO 8601 date | The date and time of the product purchase.                   |
-| **rate_after_first_year**         | Boolean       | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
-| **store**                         | String        | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**. |
-| **store_country**                 | String        | The country sent to us by the app store.                     |
-| **store_offer_category**          | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`. |
-| **store_offer_discount_type**     | String        | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
-| **subscription_expires_at**       | ISO 8601 date | The Expiration date of subscription. Usually in the future.  |
-| **transaction_id**                | String        | Unique identifier for a transaction.                         |
-| **trial_duration**                | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`. |
-| **variation_id**                  | UUID          | Unique ID of the paywall where the purchase was made.        |
-| **vendor_product_id**             | String        | Product ID in the Apple App Store, Google Play Store, or Stripe. |
+Below is a comprehensive table that lists these properties and indicates which ones are specific to certain event types.
+
+| Field                             | Type             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| :-------------------------------- |:-----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **ab_test_name**                  | String           | Name of the A/B test where the transaction originated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **base_plan_id**                  | String           | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe.                                                                                                                                                                                                                                                                                                                                 |
+| **cancellation_reason**           | String           | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`.                                                                                                                                                                                                |
+| **cohort_name**                   | String           | Name of the audience to which the profile belongs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **consecutive_payments**          | Integer          | The number of periods, that a user is subscribed to without interruptions. Includes the current period.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **currency**                      | String           | Local currency (defaults to `USD`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **developer_id**                  | String           | The ID of the placement where the transaction originated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **environment**                   | String           | Possible values are `Sandbox` or `Production`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **event_datetime**                | ISO 8601 date    | The date and time of the event.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **original_purchase_date**        | ISO 8601 date    | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction.                                                                                                                                                                                                                                                                               |
+| **original_transaction_id**       | String           | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>                                                                                                                                                                                                                                                                          |
+| **paywall_name**                  | String           | Name of the paywall where the transaction originated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **paywall_revision**              | Integer          | Revision of the paywall where the transaction originated. The default value is 1.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **price_local**                   | Float            | Product price before Apple/Google cut in local currency. Revenue.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **price_usd**                     | Float            | Product price before Apple/Google cut in USD. Revenue.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **profile_country**               | String           | Two‑letter country code derived from the user's IP, in [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format (e.g., `US`, `DE`).                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **profile_event_id**              | UUID             | Unique event ID that can be used for deduplication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **profile_has_access_level**      | Boolean          | A boolean that indicates whether the profile has an active access level.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **profile_id**                    | UUID             | Adapty internal user ID.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **profile_ip_address**            | String           | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **profile_total_revenue_usd**     | Float            | Total revenue for the profile, refunds included.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **profiles_sharing_access_level** | Array of Objects | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p>                                                                                    |
+| **promotional_offer_id**          | String           | ID of promotional offer as indicated in the Product section of the Adapty Dashboard                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **purchase_date**                 | ISO 8601 date    | The date and time of the product purchase.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **rate_after_first_year**         | Boolean          | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **store**                         | String           | Store where the product was bought. Possible values: `app_store`, `play_store`, `stripe`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **store_country**                 | String           | Two‑letter country code reported by the store, in [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format (e.g., `US`, `DE`).                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **store_offer_category**          | String           | Applied offer category. Possible values are `introductory`, `promotional`, `winback`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **store_offer_discount_type**     | String           | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **subscription_expires_at**       | ISO 8601 date    | The Expiration date of subscription. Usually in the future.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **transaction_id**                | String           | Unique identifier for a transaction.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **trial_duration**                | String           | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                                                                                                                                                                                                                  |
+| **variation_id**                  | UUID             | Unique ID of the paywall where the purchase was made.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **vendor_product_id**             | String           | Product ID in the Apple App Store, Google Play Store, or Stripe.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 #### Additional tax and revenue event properties
 
-The event properties related to taxes and revenue below are additional fields that apply only to certain event types. This means that the listed event types include the [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types), along with the extra fields listed below.
+The event properties related to taxes and revenue below are additional fields that apply only to certain event types. These event types include all [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types), plus the extra fields shown here.
 
-Event types that have the tax and revenue event properties:
+Event types that include the tax and revenue event properties:
 
 - `subscription_renewed`
 - `subscription_initial_purchase`
@@ -245,7 +268,13 @@ Event types that have the tax and revenue event properties:
 
 #### For Access Level Updated event
 
-The **Access Level Updated** event is a specific webhook event generated only when the Webhook integration is active, and this event type is enabled. If enabled, it is sent to the configured Webhook and appears in the **Event Feed**. If not enabled, the event will not be created.
+The **Access Level Updated** event is a specific webhook event that is generated only when the Webhook integration is active and this event type is enabled.
+
+If enabled, the event will be sent to the configured Webhook and will appear in the **Event Feed**. If not enabled, the event will not be generated.
+
+:::warning
+This structure may expand over time, as new data is introduced by Adapty or third-party services we work with. Make sure your processing code is robust and relies on specific fields, not the entire structure.
+:::
 
 | Property                           | Type          | Description                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
@@ -259,7 +288,7 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **billing_issue_detected_at**      | ISO 8601 date | Date and time of billing issue.                              |
 | **cancellation_reason**            | String        | Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`. |
 | **cohort_name**                    | String        | Name of the audience to which the profile belongs.           |
-| **currency**                       | String        | Local currency (defaults to USD).                            |
+| **currency**                       | String        | Local currency (defaults to `USD`).                            |
 | **developer_id**                   | String        | The ID of the placement where the transaction originated.    |
 | **environment**                    | String        | Possible values are `Sandbox` or `Production`.               |
 | **event_datetime**                 | ISO 8601 date | The date and time of the event.                              |
@@ -272,7 +301,7 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **original_transaction_id**        | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>The transaction identifier of the original purchase. |
 | **paywall_name**                   | String        | Name of the paywall where the transaction originated.        |
 | **paywall_revision**               | Integer       | Revision of the paywall where the transaction originated. The default value is 1. |
-| **profile_country**                | String        | Determined by Adapty, based on profile IP.                   |
+| **profile_country**                | String        | Two‑letter country code derived from the user's IP, in [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format (e.g., `US`, `DE`).                |
 | **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**       | Boolean       | Boolean indicating whether the profile has an active access level. |
 | **profile_id**                     | UUID          | Adapty internal user profile ID.                             |
@@ -281,8 +310,8 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **profiles_sharing_access_level**  | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
 | **renewed_at**                     | ISO 8601 date | Date and time when the access will be renewed.               |
-| **store**                          | String        | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**. |
-| **store_country**                  | String        | Country sent to Adapty by the app store.                     |
+| **store**                          | String        | Store where the product was bought. Possible values: `app_store`, `play_store`, `stripe`. |
+| **store_country**                  | String        | Two‑letter country code reported by the store, in [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) format (e.g., `US`, `DE`).                     |
 | **subscription_expires_at**        | ISO 8601 date | Expiration date of the subscription.                         |
 | **transaction_id**                 | String        | Unique identifier for a transaction.                         |
 | **trial_duration**                 | String        | Duration of a trial period in days (e.g., "7 days").         |
@@ -290,6 +319,4 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **vendor_product_id**              | String        | Product ID in the store (Apple/Google/Stripe).               |
 | **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
-:::warning
-Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on specific fields rather than the entire structure.
-:::
+
