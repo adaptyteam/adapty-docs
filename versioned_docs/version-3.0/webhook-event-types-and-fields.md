@@ -7,19 +7,29 @@ toc_max_heading_level: 4
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
 
-Adapty sends webhooks in response to subscription events. This section defines these event types and the data contained in each webhook.
+Adapty sends webhooks in response to subscription-related events. This section outlines the available event types and the data included in each webhook.
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Event flows](event-flows) to learn what kind of incoming data to expect and how to build your business logic around it. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
+You can choose to send all event types to your webhook or select only the ones you need. Refer to our [Event flows](event-flows) to understand the expected data and how to structure your business logic around it.
+
+During [webhook setup](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard), you can:
+- Disable any event types you don’t need
+- Replace Adapty’s default event IDs with your own, if required
+
 
 <WebhookEvents />
 
 ## Webhook event structure
 
-Adapty will send you only those events you've chosen in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
+Adapty sends only the events you've selected in the **Event names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
 
-Webhook events are serialized in JSON. The body of a `POST` request to your server will contain the serialized event wrapped into the structure below. All events follow the same structure, but their fields vary based on the event type, store, and your specific configuration. User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they contain what you've configured. Attribution data fields are the same for all event types as well, however, the list of attributions will depend on which attribution sources you use in your mobile app. See below an example of an event:
+Webhook events are sent as JSON-serialized data. The body of each `POST` request to your server contains the serialized event wrapped in a standard structure. All events follow the same format, but the fields may vary depending on the event type, app store, and your specific configuration
+
+- User attributes are the [custom user attributes](setting-user-attributes#custom-user-attributes) you set up, so they contain what you've configured.
+- Attribution data fields are consistent across all event types, but the list of attributions depends on the sources integrated into your mobile app
+
+Below is an example of a webhook event:
 
 ```json title="Json" showLineNumbers
 {
@@ -89,7 +99,7 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
 
 ### Event fields
 
-Event parameters are the same for all event types.
+The following parameters are included in all event types:
 
 | **Field**                         | **Type**         | **Description**                                              |
 | --------------------------------- |------------------| ------------------------------------------------------------ |
@@ -109,13 +119,14 @@ Event parameters are the same for all event types.
 | **profile_install_datetime**      | ISO 8601         | Installation timestamp in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g., `2020-07-10T15:00:00.000000+0000`). |
 | **profiles_sharing_access_level** | Array of Objects | List of users sharing access excluding the current user profile: <ul><li>**profile_id**: (UUID) Adapty ID</li><li>**customer_user_id**: (String) Customer User ID if provided</li></ul> Used for [Sharing purchases between accounts](general#6-sharing-purchases-between-user-accounts). |
 | **user_agent**                    | String           | Device browser user-agent.                                   |
-| **user_attributes**               | Object             | [Custom user attributes](setting-user-attributes#custom-user-attributes). Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>While custom attribute values in the mobile app code can be set as floats or strings, attributes received via the server-side API or historical import may come in different formats. The boolean and integer values will be converted to floats in this case.</p> |
+| **user_attributes**               | Object             | [Custom user attributes](setting-user-attributes#custom-user-attributes). Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>In the mobile app, custom attribute values can be set as floats or strings. However, attributes received via the server-side API or through historical import may have different formats. In such cases, boolean and integer values will be converted to float.</p> |
 
 ### Attribution data
 
-If you've chosen to send attribution data and if you have them, the data below will be sent with the event for every source. The same attribution data is sent to all event types.
+If attribution data is available and you've enabled the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page, it will be included with each event for every attribution source.
 
-To send the attribution, enable the **Send Attribution** option in the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page. 
+The same attribution data structure is used across all event types.
+
 
 ```json title="Json" showLineNumbers
 {
@@ -148,7 +159,7 @@ To send the attribution, enable the **Send Attribution** option in the [Integrat
 
 ### Integration IDs
 
-The following integration IDs are used now in events: 
+The following integration IDs may be included in events: 
 
 - `adjust_device_id`
 - `airbridge_device_id`
@@ -168,7 +179,7 @@ The following integration IDs are used now in events:
 
 ### Play Store purchase token
 
-This field includes all the data needed to revalidate a purchase, if necessary. It is sent only if the **Send Play Store purchase token** option is enabled in the [Webhook integration settings](https://app.adapty.io/integrations/customwebhook).
+This field contains all the data needed to revalidate a purchase, if necessary. It is included only if the **Send Play Store purchase token** option is enabled in the [Webhook integration settings](https://app.adapty.io/integrations/customwebhook).
 
 ```json title="Json" showLineNumbers
 {
@@ -188,13 +199,15 @@ This field includes all the data needed to revalidate a purchase, if necessary. 
 
 ### Event Properties
 
-Event properties can vary depending on the event type and even between events of the same type. For instance, an event originating from the App Store won’t include Android-specific properties like `base_plan_id`.
+Event properties may vary depending on the event type—and even between events of the same type. For example, an event from the App Store won’t include Android-specific properties like `base_plan_id`.
 
-The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updated-event) event has distinct properties, so we’ve dedicated a separate section to it. Similarly, we’ve separated [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties), as they are specific to only certain event types.
+The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updated-event) event has unique properties, so we've provided a dedicated section for it. Similarly, [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties) are separated, as they apply only to specific event types.
 
 #### For most event types
 
-The event properties for most event types are consistent (except for **Access Level Updated** event, which is described in its own section). Below is a comprehensive table highlighting properties and indicating if they belong to specific events.
+Event properties for most event types follow a consistent structure (with the exception of the [Access Level Updated](#for-access-level-updated-event) event, which is covered in its own section). 
+
+Below is a comprehensive table that lists these properties and indicates which ones are specific to certain event types.
 
 | Field                             | Type             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | :-------------------------------- |:-----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -235,9 +248,9 @@ The event properties for most event types are consistent (except for **Access Le
 
 #### Additional tax and revenue event properties
 
-The event properties related to taxes and revenue below are additional fields that apply only to certain event types. This means that the listed event types include the [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types), along with the extra fields listed below.
+The event properties related to taxes and revenue below are additional fields that apply only to certain event types. These event types include all [Event properties for most event types](webhook-event-types-and-fields#for-most-event-types), plus the extra fields shown here.
 
-Event types that have the tax and revenue event properties:
+Event types that include the tax and revenue event properties:
 
 - `subscription_renewed`
 - `subscription_initial_purchase`
@@ -255,7 +268,13 @@ Event types that have the tax and revenue event properties:
 
 #### For Access Level Updated event
 
-The **Access Level Updated** event is a specific webhook event generated only when the Webhook integration is active, and this event type is enabled. If enabled, it is sent to the configured Webhook and appears in the **Event Feed**. If not enabled, the event will not be created.
+The **Access Level Updated** event is a specific webhook event that is generated only when the Webhook integration is active and this event type is enabled.
+
+If enabled, the event will be sent to the configured Webhook and will appear in the **Event Feed**. If not enabled, the event will not be generated.
+
+:::warning
+This structure may expand over time, as new data is introduced by Adapty or third-party services we work with. Make sure your processing code is robust and relies on specific fields, not the entire structure.
+:::
 
 | Property                           | Type          | Description                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
@@ -300,6 +319,4 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **vendor_product_id**              | String        | Product ID in the store (Apple/Google/Stripe).               |
 | **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
-:::warning
-Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on specific fields rather than the entire structure.
-:::
+
