@@ -74,59 +74,116 @@ const AlgoliaAnalytics = () => {
         
         console.log('AlgoliaAnalytics: Looking for objectID with url_without_anchor:', urlWithoutAnchor);
         
-        // Search for the specific record
-        const searchUrl = `https://IPH9RRTSQS-dsn.algolia.net/1/indexes/adapty/query`;
-        const response = await fetch(searchUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Algolia-Application-Id': 'IPH9RRTSQS',
-            'X-Algolia-API-Key': '5e3fd9357b98f9f0d44bab0f0b7634c0',
-          },
-          body: JSON.stringify({
-            query: localUrl.pathname.split('/').pop() || 'quickstart',
-            hitsPerPage: 10,
-            attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title']
-          })
-        });
+        // Extract the document path from the URL
+        const pathParts = localUrl.pathname.split('/').filter(part => part.length > 0);
+        const lastPart = pathParts[pathParts.length - 1] || 'quickstart';
         
-        const data = await response.json();
-        console.log('AlgoliaAnalytics: Search response for query:', localUrl.pathname.split('/').pop(), data);
+        // Try multiple search strategies
+        const searchStrategies = [
+          // Strategy 1: Exact URL match with filters
+          { query: '', filters: `url_without_anchor:"${urlWithoutAnchor}"` },
+          // Strategy 2: Search by the last part with URL filter
+          { query: lastPart, filters: `url_without_anchor:"${urlWithoutAnchor}"` },
+          // Strategy 3: Search by the full pathname with URL filter
+          { query: localUrl.pathname, filters: `url_without_anchor:"${urlWithoutAnchor}"` },
+          // Strategy 4: Search by the last part (handle both hyphenated and space-separated)
+          { query: lastPart },
+          { query: lastPart.replace(/-/g, ' ') },
+          { query: lastPart.replace(/\s+/g, '-') },
+          // Strategy 5: Search by the document title (extracted from path)
+          { query: lastPart.replace(/-/g, ' ') },
+          // Strategy 6: Search by the full pathname
+          { query: localUrl.pathname },
+          // Strategy 7: Search by the parent directory + last part
+          { query: pathParts.length > 1 ? `${pathParts[pathParts.length - 2]} ${lastPart}` : lastPart },
+          // Strategy 8: Search by the last part with common variations
+          { query: lastPart.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) },
+          { query: lastPart.toLowerCase() }
+        ];
         
-        if (data.hits && data.hits.length > 0) {
-          // Try to find exact match first
-          const exactMatch = data.hits.find(hit => hit.url_without_anchor === urlWithoutAnchor);
-          if (exactMatch) {
-            console.log('AlgoliaAnalytics: Found exact match objectID:', exactMatch.objectID);
-            return exactMatch.objectID;
-          }
+        for (let i = 0; i < searchStrategies.length; i++) {
+          const strategy = searchStrategies[i];
+          console.log(`AlgoliaAnalytics: Trying search strategy ${i + 1}:`, strategy);
           
-          // If no exact match, try to find a close match
-          const closeMatch = data.hits.find(hit => 
-            hit.url && hit.url.startsWith(urlWithoutAnchor)
-          );
-          if (closeMatch) {
-            console.log('AlgoliaAnalytics: Found close match objectID:', closeMatch.objectID);
-            return closeMatch.objectID;
-          }
+          const searchUrl = `https://IPH9RRTSQS-dsn.algolia.net/1/indexes/adapty/query`;
+          const response = await fetch(searchUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Algolia-Application-Id': 'IPH9RRTSQS',
+              'X-Algolia-API-Key': '5e3fd9357b98f9f0d44bab0f0b7634c0',
+            },
+            body: JSON.stringify({
+              query: strategy.query,
+              filters: strategy.filters,
+              hitsPerPage: 20,
+              attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content']
+            })
+          });
           
-          // Try matching by pathname
-          const pathMatch = data.hits.find(hit => 
-            hit.url && hit.url.includes(localUrl.pathname)
-          );
-          if (pathMatch) {
-            console.log('AlgoliaAnalytics: Found path match objectID:', pathMatch.objectID);
-            return pathMatch.objectID;
-          }
+          const data = await response.json();
+          console.log(`AlgoliaAnalytics: Search strategy ${i + 1} response:`, data.hits?.length || 0, 'hits');
           
-          // Fallback to first hit
-          const objectID = data.hits[0].objectID;
-          console.log('AlgoliaAnalytics: Using first hit objectID:', objectID);
-          return objectID;
-        } else {
-          console.warn('AlgoliaAnalytics: No record found for URL:', urlWithoutAnchor);
-          return null;
+          if (data.hits && data.hits.length > 0) {
+            // Try to find exact match first
+            const exactMatch = data.hits.find(hit => hit.url_without_anchor === urlWithoutAnchor);
+            if (exactMatch) {
+              console.log('AlgoliaAnalytics: Found exact match objectID:', exactMatch.objectID);
+              return exactMatch.objectID;
+            }
+            
+            // If no exact match, try to find a close match
+            const closeMatch = data.hits.find(hit => 
+              hit.url && hit.url.startsWith(urlWithoutAnchor)
+            );
+            if (closeMatch) {
+              console.log('AlgoliaAnalytics: Found close match objectID:', closeMatch.objectID);
+              return closeMatch.objectID;
+            }
+            
+            // Try matching by pathname
+            const pathMatch = data.hits.find(hit => 
+              hit.url && hit.url.includes(localUrl.pathname)
+            );
+            if (pathMatch) {
+              console.log('AlgoliaAnalytics: Found path match objectID:', pathMatch.objectID);
+              return pathMatch.objectID;
+            }
+            
+            // Try matching by title similarity
+            const titleMatch = data.hits.find(hit => 
+              hit.title && hit.title.toLowerCase().includes(lastPart.toLowerCase())
+            );
+            if (titleMatch) {
+              console.log('AlgoliaAnalytics: Found title match objectID:', titleMatch.objectID);
+              return titleMatch.objectID;
+            }
+            
+            // Try matching by content similarity
+            const contentMatch = data.hits.find(hit => 
+              hit.content && hit.content.toLowerCase().includes(lastPart.toLowerCase())
+            );
+            if (contentMatch) {
+              console.log('AlgoliaAnalytics: Found content match objectID:', contentMatch.objectID);
+              return contentMatch.objectID;
+            }
+            
+            // Fallback to first hit if it's a document type
+            const documentHit = data.hits.find(hit => hit.type === 'lvl1' || hit.type === 'lvl2' || hit.type === 'lvl3');
+            if (documentHit) {
+              console.log('AlgoliaAnalytics: Using document hit objectID:', documentHit.objectID);
+              return documentHit.objectID;
+            }
+            
+            // Last resort: use first hit
+            const objectID = data.hits[0].objectID;
+            console.log('AlgoliaAnalytics: Using first hit objectID:', objectID);
+            return objectID;
+          }
         }
+        
+        console.warn('AlgoliaAnalytics: No record found for URL after trying all strategies:', urlWithoutAnchor);
+        return null;
       } catch (error) {
         console.error('AlgoliaAnalytics: Error finding objectID:', error);
         return null;
@@ -261,7 +318,7 @@ const AlgoliaAnalytics = () => {
 
     // Track clicks on search results using search-insights library
     const handleResultClick = async (event) => {
-      console.log('AlgoliaAnalytics: Click detected on:', event.target);
+      console.log('AlgoliaAnalytics: Click detected on:', event.target, 'Type:', event.type);
       
       // Find the closest DocSearch-Hit container
       const hitElement = event.target.closest('.DocSearch-Hit');
@@ -271,6 +328,16 @@ const AlgoliaAnalytics = () => {
       }
 
       console.log('AlgoliaAnalytics: Found hit element:', hitElement);
+
+      // Try to extract objectID directly from the clicked element first
+      const elementObjectID = hitElement.getAttribute('data-object-id') || 
+                             hitElement.getAttribute('data-objectid') ||
+                             hitElement.querySelector('[data-object-id]')?.getAttribute('data-object-id') ||
+                             hitElement.querySelector('[data-objectid]')?.getAttribute('data-objectid');
+      
+      if (elementObjectID) {
+        console.log('AlgoliaAnalytics: ✅ Found objectID in clicked element:', elementObjectID);
+      }
 
       // Try to extract queryID from the clicked element first
       const elementQueryID = hitElement.getAttribute('data-query-id') || 
@@ -299,22 +366,27 @@ const AlgoliaAnalytics = () => {
       // Find the position (1-based index)
       const position = Array.from(hitElement.parentNode.children).indexOf(hitElement) + 1;
 
-      // Find the correct objectID using Algolia API
-      const objectID = await findObjectIDByURL(link.href);
+      // Use objectID from element if available, otherwise find it using Algolia API
+      let objectID = elementObjectID;
+      if (!objectID) {
+        objectID = await findObjectIDByURL(link.href);
+      }
       
       if (!objectID) {
         console.warn('AlgoliaAnalytics: Could not find objectID for URL:', link.href);
         return;
       }
 
-      console.log('AlgoliaAnalytics: Sending click event with objectID:', objectID, 'at position:', position);
+      // Determine event name based on click type
+      const eventName = event.type === 'contextmenu' ? 'Item Right-Clicked' : 'Item Clicked';
+      console.log('AlgoliaAnalytics: Sending click event with objectID:', objectID, 'at position:', position, 'Event:', eventName);
 
       // Use search-insights library to send the click event
       try {
         if (currentQueryID && currentQueryID.length === 32) {
           // Send click event with queryID and position
           aa('clickedObjectIDsAfterSearch', {
-            eventName: 'Item Clicked',
+            eventName: eventName,
             index: 'adapty',
             objectIDs: [objectID],
             positions: [position],
@@ -325,7 +397,7 @@ const AlgoliaAnalytics = () => {
         } else {
           // Send click event without queryID (fallback)
           aa('clickedObjectIDs', {
-            eventName: 'Item Clicked',
+            eventName: eventName,
             index: 'adapty',
             objectIDs: [objectID],
             userToken: userToken,
@@ -339,6 +411,7 @@ const AlgoliaAnalytics = () => {
         console.log('   - QueryID:', currentQueryID || 'Not available');
         console.log('   - Search Query:', currentSearchQuery || 'Not available');
         console.log('   - User Token:', userToken);
+        console.log('   - Click Type:', event.type);
       } catch (error) {
         console.error('AlgoliaAnalytics: Error sending click event via search-insights:', error);
         
@@ -350,7 +423,7 @@ const AlgoliaAnalytics = () => {
           const eventData = {
             events: [{
               eventType: 'click',
-              eventName: 'Item Clicked',
+              eventName: eventName,
               index: 'adapty',
               objectIDs: [objectID],
               userToken: userToken,
@@ -384,7 +457,7 @@ const AlgoliaAnalytics = () => {
       }
     };
 
-    // Track search queries
+    // Track search queries - Note: search-insights doesn't have a 'search' method
     const handleSearchQuery = async (event) => {
       const searchInput = event.target;
       const query = searchInput.value.trim();
@@ -393,18 +466,10 @@ const AlgoliaAnalytics = () => {
         console.log('AlgoliaAnalytics: User typed search query:', query);
         currentSearchQuery = query;
         
-        // Track search event with user token
-        try {
-          aa('search', {
-            eventName: 'Search Query',
-            index: 'adapty',
-            query: query,
-            userToken: userToken,
-          });
-          console.log('AlgoliaAnalytics: ✅ Search event tracked for query:', query);
-        } catch (error) {
-          console.error('AlgoliaAnalytics: Error tracking search event:', error);
-        }
+        // Note: search-insights library doesn't have a 'search' method
+        // Search events are automatically tracked by Algolia when search requests are made
+        // We just store the query for linking with click events
+        console.log('AlgoliaAnalytics: ✅ Search query stored for linking with clicks:', query);
         
         // queryID will be captured from the actual Algolia search request
       }
@@ -414,15 +479,69 @@ const AlgoliaAnalytics = () => {
     window.refreshAlgoliaUserToken = refreshUserToken;
     console.log('AlgoliaAnalytics: 🔧 Global function available: window.refreshAlgoliaUserToken()');
 
+    // Expose debug functions globally
+    window.debugAlgoliaSearch = async (query) => {
+      console.log('AlgoliaAnalytics: 🔍 Debug search for query:', query);
+      const searchUrl = 'https://IPH9RRTSQS-dsn.algolia.net/1/indexes/adapty/query';
+      
+      try {
+        const response = await fetch(searchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Algolia-Application-Id': 'IPH9RRTSQS',
+            'X-Algolia-API-Key': '5e3fd9357b98f9f0d44bab0f0b7634c0',
+          },
+          body: JSON.stringify({
+            query: query,
+            hitsPerPage: 10,
+            attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content']
+          })
+        });
+        
+        const data = await response.json();
+        console.log('AlgoliaAnalytics: Debug search results:', data);
+        return data;
+      } catch (error) {
+        console.error('AlgoliaAnalytics: Debug search error:', error);
+        return null;
+      }
+    };
+
+    window.debugAlgoliaUrlLookup = async (url) => {
+      console.log('AlgoliaAnalytics: 🔍 Debug URL lookup for:', url);
+      const result = await findObjectIDByURL(url);
+      console.log('AlgoliaAnalytics: Debug URL lookup result:', result);
+      return result;
+    };
+
+    window.debugAlgoliaState = () => {
+      console.log('AlgoliaAnalytics: 📊 Current state:');
+      console.log('   - Current QueryID:', currentQueryID);
+      console.log('   - Current Search Query:', currentSearchQuery);
+      console.log('   - User Token:', userToken);
+      console.log('   - Event Tracking: Left-click ✅, Right-click ✅');
+      console.log('   - Available functions:');
+      console.log('     - window.debugAlgoliaSearch(query)');
+      console.log('     - window.debugAlgoliaUrlLookup(url)');
+      console.log('     - window.refreshAlgoliaUserToken()');
+    };
+
+    console.log('AlgoliaAnalytics: 🔧 Debug functions available:');
+    console.log('   - window.debugAlgoliaSearch(query)');
+    console.log('   - window.debugAlgoliaUrlLookup(url)');
+    console.log('   - window.debugAlgoliaState()');
+
     // Set up event listeners
     const setupListeners = () => {
       console.log('AlgoliaAnalytics: Setting up event listeners');
       
-      // Listen for clicks on search results
+      // Listen for clicks on search results (both left and right clicks)
       const searchResults = document.querySelectorAll('.DocSearch-Hit a');
       console.log('AlgoliaAnalytics: Found search result links:', searchResults.length);
       searchResults.forEach(result => {
         result.addEventListener('click', handleResultClick);
+        result.addEventListener('contextmenu', handleResultClick); // Add right-click support
       });
 
       // Listen for search queries
@@ -448,6 +567,7 @@ const AlgoliaAnalytics = () => {
               const newSearchResults = node.querySelectorAll('.DocSearch-Hit a');
               newSearchResults.forEach(result => {
                 result.addEventListener('click', handleResultClick);
+                result.addEventListener('contextmenu', handleResultClick); // Add right-click support
               });
 
               // Check for new search input
@@ -477,6 +597,7 @@ const AlgoliaAnalytics = () => {
       const searchResults = document.querySelectorAll('.DocSearch-Hit a');
       searchResults.forEach(result => {
         result.removeEventListener('click', handleResultClick);
+        result.removeEventListener('contextmenu', handleResultClick);
       });
     };
   }, []);
