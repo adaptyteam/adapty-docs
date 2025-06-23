@@ -78,9 +78,9 @@ const AlgoliaAnalytics = () => {
         const pathParts = localUrl.pathname.split('/').filter(part => part.length > 0);
         const lastPart = pathParts[pathParts.length - 1] || 'quickstart';
         
-        // Try multiple search strategies
+        // Try multiple search strategies - prioritize filters over queries to avoid tracking internal searches
         const searchStrategies = [
-          // Strategy 1: Exact URL match with filters
+          // Strategy 1: Exact URL match with filters only (no query)
           { query: '', filters: `url_without_anchor:"${urlWithoutAnchor}"` },
           // Strategy 2: Search by the last part with URL filter
           { query: lastPart, filters: `url_without_anchor:"${urlWithoutAnchor}"` },
@@ -117,7 +117,9 @@ const AlgoliaAnalytics = () => {
               query: strategy.query,
               filters: strategy.filters,
               hitsPerPage: 20,
-              attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content']
+              attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content'],
+              clickAnalytics: false, // Prevent internal searches from being tracked
+              analytics: false // Additional flag to prevent analytics tracking
             })
           });
           
@@ -495,7 +497,9 @@ const AlgoliaAnalytics = () => {
           body: JSON.stringify({
             query: query,
             hitsPerPage: 10,
-            attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content']
+            attributesToRetrieve: ['objectID', 'url_without_anchor', 'url', 'title', 'type', 'content'],
+            clickAnalytics: false, // Prevent debug searches from being tracked
+            analytics: false // Additional flag to prevent analytics tracking
           })
         });
         
