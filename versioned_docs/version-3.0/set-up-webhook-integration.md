@@ -140,6 +140,16 @@ The event name can be any string. You cannot leave the fields empty for enabled 
 
 ## Handle webhook events
 
-Webhooks are typically delivered within 5 to 60 seconds after the event occurs. Cancellation events, however, may take up to 2 hours to be delivered after a user cancels their subscription.
+Webhooks are usually delivered within 5 to 60 seconds after an event occurs. However, cancellation events may take up to 2 hours due to delays from the store.
 
-If your server's response status code is outside the 200-404 range, Adapty will retry sending the event up to 9 times over 24 hours with exponential backoff. We suggest you set up your webhook to do only basic validation of the event body from Adapty before responding. If your server can't process the event and you don't want Adapty to retry, use a status code within the 200-404 range. Also, handle any time-consuming tasks asynchronously and respond to Adapty quickly. If Adapty doesn't receive a response within 10 seconds, it will consider the attempt a failure and will retry.
+If your server responds with a status code outside the 200–404 range, Adapty will retry sending the event up to 9 times over 24 hours using exponential backoff.
+
+To ensure reliable delivery:
+
+- Set up your webhook to perform only basic validation of the event body before responding.
+
+- If your server can’t process an event and you don’t want retries, respond with a status code within the 200–404 range.
+
+- Handle any time-consuming tasks asynchronously, and respond to Adapty as quickly as possible.
+
+- If Adapty doesn’t receive a response within 10 seconds, the attempt is considered a failure and will be retried.
