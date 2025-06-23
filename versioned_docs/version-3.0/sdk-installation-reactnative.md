@@ -84,7 +84,6 @@ If you opt for a purely native approach, please consult the following instructio
 
    ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
-   pod install --project-directory=ios/
    ```
 
    The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
@@ -152,7 +151,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 <TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
-import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
+import { LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
