@@ -358,8 +358,12 @@ const AlgoliaAnalytics = () => {
         }
       }
 
-      // Get the link URL
-      const link = hitElement.querySelector('a');
+      // Get the link URL - handle both cases: hit element is link or contains link
+      let link = hitElement;
+      if (hitElement.tagName !== 'A') {
+        link = hitElement.querySelector('a');
+      }
+      
       if (!link || !link.href) {
         console.warn('AlgoliaAnalytics: No link found in hit element');
         return;
@@ -605,6 +609,60 @@ const AlgoliaAnalytics = () => {
       });
     };
   }, []);
+
+  // Function to override purple colors in search results
+  const overridePurpleColors = () => {
+    const selectedHits = document.querySelectorAll('.DocSearch-Hit[aria-selected="true"], .DocSearch-Hit[data-selected="true"], .DocSearch-Hit.selected');
+    selectedHits.forEach(hit => {
+      hit.style.backgroundColor = '#f3f4f6';
+      hit.style.color = '#1f2937';
+      hit.style.borderColor = 'transparent';
+      hit.style.boxShadow = 'none';
+      
+      // Override child elements
+      const title = hit.querySelector('.DocSearch-Hit-Title');
+      const description = hit.querySelector('.DocSearch-Hit-Description');
+      if (title) title.style.color = '#1f2937';
+      if (description) description.style.color = '#6b7280';
+    });
+  };
+
+  // Set up observer to watch for changes in the search results
+  const observer = new MutationObserver(overridePurpleColors);
+  
+  // Start observing when search modal opens
+  const startObserving = () => {
+    const searchContainer = document.querySelector('.DocSearch-Container');
+    if (searchContainer) {
+      observer.observe(searchContainer, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ['aria-selected', 'data-selected', 'class', 'style']
+      });
+      overridePurpleColors();
+    }
+  };
+
+  // Watch for search modal to open
+  const modalObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.classList?.contains('DocSearch-Container')) {
+              startObserving();
+            }
+          }
+        });
+      }
+    });
+  });
+
+  modalObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 
   return null;
 };

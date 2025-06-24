@@ -310,6 +310,39 @@ const config = {
       
       // Enable click analytics to get queryID for proper event attribution
       clickAnalytics: true,
+
+      // Search parameters to ensure we get the description field
+      searchParameters: {
+        attributesToRetrieve: [
+          'hierarchy',
+          'content',
+          'description',
+          'anchor',
+          'url',
+          'url_without_anchor',
+          'type',
+          'keywords',
+          'weight',
+        ],
+      },
+
+      transformItems(items) {
+        return items.map(item => ({
+          ...item,
+          // Use the actual description field from the index
+          description: item.description || '',
+          // Keep the hierarchy for titles
+          hierarchy: item.hierarchy || {},
+          // Remove content to prevent snippets from showing
+          content: undefined,
+          // Remove snippet results to prevent content snippets
+          _snippetResult: undefined,
+          _highlightResult: {
+            hierarchy: item._highlightResult?.hierarchy || {},
+            description: item._highlightResult?.description || {},
+          },
+        }));
+      },
       },
       
       prism: {
