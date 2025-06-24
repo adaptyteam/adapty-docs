@@ -123,7 +123,7 @@ const config = {
             label: "Documentation",
           },
           {
-            label: "SDK Reference",
+            label: "Mobile SDK",
             position: "left",
             items: [
               {
@@ -142,6 +142,10 @@ const config = {
                 label: "React Native",
                 href: "/sdk-installation-reactnative",
               },
+              {
+                label: "Unity",
+                href: "/sdk-installation-unity",
+              }
             ],
           },
           {
