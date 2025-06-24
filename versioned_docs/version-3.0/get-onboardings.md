@@ -90,16 +90,14 @@ try {
 ```typescript showLineNumbers
 try {
     const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-    const onboarding = await adapty.getOnboarding(placementId);
-  // the requested onboarding
+    const onboarding = await adapty.getOnboarding(placementId, locale);
+    // the requested onboarding
 } catch (error) {
     // handle the error
 }
 ```
-
-Then, call the `createOnboardingView` method to create a view instance.
-
 
 Then, call the `createOnboardingView` method to create a view instance.
 
@@ -111,11 +109,11 @@ The result of the `createOnboardingView` method can only be used once. If you ne
 import {createOnboardingView} from '@adapty/react-native-ui';
 
 if (onboarding.hasViewConfiguration) {
-  try {
-    const view = await createOnboardingView(onboarding);
-  } catch (error) {
-    // handle the error
-  }
+    try {
+        const view = await createOnboardingView(onboarding);
+    } catch (error) {
+        // handle the error
+    }
 } else {
     //use your custom logic
 }
@@ -202,10 +200,11 @@ try {
 
 ```typescript showLineNumbers
 try {
-    const id = 'YOUR_PLACEMENT_ID';
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-    const onboarding = await adapty.getOnboardingForDefaultAudience(id);
-  // the requested onboarding
+    const onboarding = await adapty.getOnboardingForDefaultAudience(placementId, locale);
+    // the requested onboarding
 } catch (error) {
     // handle the error
 }

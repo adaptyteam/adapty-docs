@@ -14,7 +14,7 @@ If you've customized an onboarding using the builder, you don't need to worry ab
 
 Before you start, ensure that:
 
-1. You have installed [Adapty React Native SDK](installation-of-adapty-sdks.md) 3.7.0 or later.
+1. You have installed [Adapty React Native SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -33,8 +33,8 @@ const view = await createOnboardingView(onboarding);
 view.registerEventHandlers(); // handle close press, etc
 
 try {
-  await view.present();
+    await view.present();
 } catch (error) {
-  // handle the error
+    // handle the error
 }
 ```
