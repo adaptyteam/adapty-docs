@@ -157,7 +157,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 <TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
-import { LogLevel } from 'react-native-adapty';
+import LogLevel  from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,
