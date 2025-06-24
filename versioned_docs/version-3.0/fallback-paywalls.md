@@ -23,7 +23,7 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting En
 To integrate fallback paywalls into your mobile app code, start by downloading them from the Adapty Dashboard. The downloaded JSON file will contain one paywall for each placement, specifically the paywall designated for the `All users` audience in the Adapty Dashboard.
 
 :::important
-To download fallbacks, you must have the Adapty SDK version 2.11 or later installed. Upgrade to the later version or use existing fallbacks.
+Downloading fallbacks is available only for Adapty SDK version 2.11 or later. Upgrade to the later version or use existing fallbacks.
 :::
 
 <details>
