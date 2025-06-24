@@ -31,8 +31,8 @@ Adapty calculates refund events by tracking the number of refunded purchases and
 
 ### Available filters and grouping
 
-- ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
-- ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
+- ✅ Filter by: Attribution, country, paywall, store, product, duration, and refund reason. 
+- ✅ Group by: Product, country, store, paywall, duration, refund reason, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
 You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
 
