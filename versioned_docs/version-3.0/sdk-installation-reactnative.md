@@ -1,6 +1,6 @@
 ---
 title: "React Native - Adapty SDK installation & configuration"
-description: "Install Adapty SDK for React Native and optimize your app’s monetization."
+description: "Install Adapty SDK for React Native and optimize your app's monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk react native']
 rank: 60
@@ -84,7 +84,6 @@ If you opt for a purely native approach, please consult the following instructio
 
    ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
-   pod install --project-directory=ios/
    ```
 
    The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
@@ -132,54 +131,65 @@ You can pass several optional parameters during activation:
 ```typescript showLineNumbers
 import { adapty, LogLevel } from 'react-native-adapty';
 
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-   logLevel: LogLevel.ERROR,
-  __debugDeferActivation: false, 
-  __ignoreActivationOnFastRefresh: true,
-  ipAddressCollectionDisabled: false,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-   android: {
-      adIdCollectionDisabled: false,
-   },
-  activateUi: true,
-  mediaCache: {
-    memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
-    memoryStorageCountLimit: 2147483647, // 2^31 - 1
-    diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
-  },
-});
+try {
+   await adapty.activate('PUBLIC_SDK_KEY', {
+      observerMode: false,
+      customerUserId: 'YOUR_USER_ID',
+      logLevel: LogLevel.ERROR,
+      __debugDeferActivation: false,
+      __ignoreActivationOnFastRefresh: __DEV__,
+      ipAddressCollectionDisabled: false,
+      ios: {
+         idfaCollectionDisabled: false,
+      },
+      android: {
+         adIdCollectionDisabled: false,
+      },
+      activateUi: true,
+      mediaCache: {
+         memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+         memoryStorageCountLimit: 2147483647, // 2^31 - 1
+         diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+      },
+   });
+
+   // SDK successfully activated
+} catch (error) {
+   // Handle activation error
+}
 ```
 
 </TabItem>
 <TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
-import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
+import LogLevel  from 'react-native-adapty';
 
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-  logLevel: LogLevel.ERROR,
-  ipAddressCollectionDisabled: false, 
-  __debugDeferActivation: false,
-  __ignoreActivationOnFastRefresh: true,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-   android: {
-      adIdCollectionDisabled: false,
-   },
-    activateUi: true,
-    mediaCache: {
-      memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
-      memoryStorageCountLimit: 2147483647, // 2^31 - 1
-      diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    observerMode: false,
+    customerUserId: 'YOUR_USER_ID',
+    logLevel: LogLevel.ERROR,
+    ipAddressCollectionDisabled: false, 
+    __debugDeferActivation: false,
+    __ignoreActivationOnFastRefresh: __DEV__,
+    ios: {
+      idfaCollectionDisabled: false,
     },
-});
+     android: {
+        adIdCollectionDisabled: false,
+     },
+      activateUi: true,
+      mediaCache: {
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+      },
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
 ```
 </TabItem> 
 
@@ -197,7 +207,7 @@ Parameters:
 | adIdCollectionDisabled            | optional | Set to `true` to disable AdId collection and sharing. The default value is `false`. For more details on AdId collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | mediaCache                        | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul>                                                                                                                                                                                                                                       |
 | \_\_debugDeferActivation          | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| \_\_ignoreActivationOnFastRefresh | optional | A boolean parameter that lets you ignore multiple activation attempts on fast refresh. If `true`, it skips activation if the SDK is already activated. Useful during development when React Native's fast refresh might trigger multiple activation calls.                                                                                                                                                                                                                                                                                                                                                                                    |
+| \_\_ignoreActivationOnFastRefresh | optional | A parameter that lets you ignore multiple activation attempts on fast refresh in the development environment. If set to `__DEV__`, in the development environment, it skips activation if the SDK is already activated. Useful during development when React Native's fast refresh might trigger multiple activation calls and cause errors.                                                                                                                                                                                                                                                                                                  |
 
 </TabItem> 
 
@@ -435,7 +445,25 @@ It's important to note that **this feature is intended for development use only*
 Here's the recommended approach for usage:
 
 ```typescript showLineNumbers title="Typescript"
-adapty.activate('PUBLIC_SDK_KEY', {
-  __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
-});
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+In the development environment, you may also encounter the SDK activation error when React Native's fast refresh triggers multiple activation calls. Set `__ignoreActivationOnFastRefresh` to `__DEV__` to skip activation if the SDK is already activated.
+
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __ignoreActivationOnFastRefresh: __DEV__, 
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
 ```
