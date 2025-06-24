@@ -2,7 +2,6 @@
 title: "Fetch onboardings and their configuration"
 description: "Learn how to retrieve onboardings in Adapty for."
 metadataTitle: "Retrieving onboardings in Adapty | Adapty Docs"
-keywords: ['getOnboarding', 'getOnboardingForDefaultAudience']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -14,7 +13,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS, Android, or Flutter SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher.
+1. You have installed [Adapty iOS, Android, Flutter, or React Native SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -91,9 +90,10 @@ try {
 ```typescript showLineNumbers
 try {
     const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-    const onboarding = await adapty.getOnboarding(placementId);
-  // the requested onboarding
+    const onboarding = await adapty.getOnboarding(placementId, locale);
+    // the requested onboarding
 } catch (error) {
     // handle the error
 }
@@ -102,18 +102,18 @@ try {
 Then, call the `createOnboardingView` method to create a view instance.
 
 :::warning
-The result of the `createOnbaordingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```typescript showLineNumbers
 import {createOnboardingView} from '@adapty/react-native-ui';
 
 if (onboarding.hasViewConfiguration) {
-  try {
-    const view = await createOnboardingView(onboarding);
-  } catch (error) {
-    // handle the error
-  }
+    try {
+        const view = await createOnboardingView(onboarding);
+    } catch (error) {
+        // handle the error
+    }
 } else {
     //use your custom logic
 }
@@ -200,10 +200,11 @@ try {
 
 ```typescript showLineNumbers
 try {
-    const id = 'YOUR_PLACEMENT_ID';
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
 
-    const onboarding = await adapty.getOnboardingForDefaultAudience(id);
-  // the requested onboarding
+    const onboarding = await adapty.getOnboardingForDefaultAudience(placementId, locale);
+    // the requested onboarding
 } catch (error) {
     // handle the error
 }
