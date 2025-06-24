@@ -307,6 +307,9 @@ const config = {
       apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
 
       indexName: 'adapty',
+      
+      // Enable click analytics to get queryID for proper event attribution
+      clickAnalytics: true,
       },
       
       prism: {

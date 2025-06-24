@@ -5,28 +5,6 @@ export default function SupportLink() {
   return (
     <div className="support">
       <button
-        className="support__button support__button--feedback"
-        onClick={() =>
-          (window.location.href = "https://ask.adapty.io/documentation-feedback")
-        }
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-        >
-          <path
-            fill-rule="evenodd"
-            clip-rule="evenodd"
-            d="M12.4144 1.91879C11.6333 1.13774 10.367 1.13775 9.58595 1.91879L1.3335 10.1712V14.1141H5.27631L13.5288 5.8616C14.3098 5.08055 14.3098 3.81423 13.5288 3.03318L12.4144 1.91879ZM10.5288 2.8616C10.7891 2.60125 11.2112 2.60125 11.4716 2.8616L12.586 3.97599C12.8463 4.23633 12.8463 4.65844 12.5859 4.91879L11.4999 6.00484L9.44271 3.94765L10.5288 2.8616ZM8.4999 4.89046L2.66683 10.7235V12.7807H4.72402L10.5571 6.94765L8.4999 4.89046Z"
-            fill="currentColor"
-          />
-        </svg>
-        Leave Feedback
-      </button>
-      <button
         className="support__button support__button--contact"
         onClick={() => (window.location.href = "mailto:support@adapty.io")}
       >

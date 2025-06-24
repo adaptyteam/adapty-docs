@@ -13,7 +13,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS or Android SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher or Flutter or React Native SDK version 3.7.0 or higher.
+1. You have installed [Adapty iOS, Android, Flutter, or React Native SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -59,10 +59,10 @@ Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
 ```javascript showLineNumbers
 try {
   final onboarding = await Adapty().getOnboarding(placementId: "YOUR_PLACEMENT_ID");
-  // the requested onboarding
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
+} on AdaptyError catch (e) {
+    //handle error
+} catch (e) { 
+    //handle error
 }
 ```
 
@@ -76,13 +76,11 @@ The result of the `createOnboardingView` method can only be used once. If you ne
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  final view = await AdaptyUI().createOnboardingView(
-        onboarding: onboarding,
-      );
-} on AdaptyError catch (e) {
-  // handle the error
-} catch (e) {
-  // handle the error
+    final onboardingView = await Adapty().createOnboardingView(onboarding: onboarding);
+} on AdaptyError catch (e) { 
+    //handle error
+} catch (e) { 
+    //handle error
 }
 ```
 </TabItem>
@@ -102,8 +100,11 @@ try {
 
 Then, call the `createOnboardingView` method to create a view instance.
 
+
+Then, call the `createOnboardingView` method to create a view instance.
+
 :::warning
-The result of the `createOnbaordingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 ```typescript showLineNumbers

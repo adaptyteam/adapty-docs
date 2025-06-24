@@ -3,6 +3,7 @@ title: "Android - Handle onboarding events"
 description: "Handle onboarding-related events in Android using Adapty."
 metadataTitle: "Handling Onboarding Events in Android | Adapty Docs"
 toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onCloseAction', 'onStateUpdatedAction', 'onOpenPaywallAction', 'onFinishLoading', 'onAnalyticsEvent', 'AdaptyOnboardingCustomAction']
 ---
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
