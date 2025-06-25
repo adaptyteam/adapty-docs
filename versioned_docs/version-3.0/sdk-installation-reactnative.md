@@ -2,7 +2,7 @@
 title: "React Native - Adapty SDK installation & configuration"
 description: "Install Adapty SDK for React Native and optimize your app’s monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk react native']
+keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native']
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
@@ -84,7 +84,6 @@ If you opt for a purely native approach, please consult the following instructio
 
    ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
-   pod install --project-directory=ios/
    ```
 
    The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
@@ -152,7 +151,7 @@ adapty.activate('PUBLIC_SDK_KEY', {
 <TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
-import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
+import { LogLevel } from 'react-native-adapty';
 
 adapty.activate('PUBLIC_SDK_KEY', {
   observerMode: false,

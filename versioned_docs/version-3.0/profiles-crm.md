@@ -2,11 +2,14 @@
 title: "Profiles/CRM"
 description: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
 metadataTitle: "Managing Profiles & CRM | Adapty Docs"
+keywords: ['profile', 'customer_user_id', 'customer user id']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
+import SubscriptionState from '@site/src/components/reusable/SubscriptionState.md';
+
 
 Profiles is a CRM for your users. With Profiles, you can:
 
@@ -26,20 +29,13 @@ Profiles is a CRM for your users. With Profiles, you can:
 />
 </Zoom>
 
-In a full table of subscribers, you can filter, sort, and find users. The state describes user state in terms of a subscription and can be:
+## Subscription state
 
-| User state                 | Description                                                                  |
-| :------------------------- | :--------------------------------------------------------------------------- |
-| **Subscribed**             | The user has an active subscription                                          |
-| **Active trial**           | The user has a subscription with an active trial period                      |
-| **Auto renew off**         | The user turned off auto-renewal. Check [events](events)  for more info  |
-| **Subscription cancelled** | The user cancelled a subscription. Check [events](events)  for more info |
-| **Trial cancelled**        | The user cancelled a trial                                                   |
-| **Never subscribed**       | The user has never subscribed, i.e. he's a freemium user                     |
-| **Billing issue**          | The user can't be charged                                                    |
-| **Grace period**           | A user entered a grace period                                                |
+In a full table of subscribers, you can filter, sort, and find users. The state describes the user state in terms of a subscription and can be:
 
-## User properties
+<SubscriptionState />
+
+## User attributes
 
 <Zoom>
   <img src={require('./img/ce8df4d-CleanShot_2023-06-26_at_20.32.232x.webp').default}
@@ -56,14 +52,16 @@ You can send any properties that you want for the user.
 
 By default, Adapty sets:
 
-- **Customer user ID**. Is a developer ID and can be any string
-- **Adapty ID**. Internal ID of a user in Adapty
-- **IDFA**
-- **Country**. From IP address country of the user
-- **OS**
-- **Device**
-- **Created at**. Profile creation date
-- **Last seen**
+| Property         | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| Customer user ID | An identifier of your end user in your system.               |
+| Adapty ID        | Internal Adapty identifier of your end user, called Profile ID. |
+| IDFA             | The Identifier for Advertisers, assigned by Apple to a user's device. |
+| Country          | Country of your end user.                                    |
+| OS               | The operating system used by the end user.                   |
+| Device           | The end-user-visible device model name.                      |
+| Install date     | The date when the user was first recorded in Adapty: <ul><li>The date the user was created. </li><li>If the user installed your app before you integrated Adapty, it reflects the date of their first transaction.</li><li>If applicable, the date provided during a historical data import.</li></ul> |
+| Created at       | The date the user was created.                               |
 
 For a better understanding of your user, we suggest sending at least your internal user ID or user email. This will help you to find a user.
 
@@ -86,7 +84,7 @@ You can see custom attributes that were set either from SDK or manually assign t
 
 ## Grant a subscription
 
-In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access. 
+In a profile, you can find an active subscription. At any time you can prolong the user's subscription or grant lifetime access.
 
 <Zoom>
   <img src={require('./img/b1d74fd-edit_paid_access_level.webp').default}
@@ -119,7 +117,7 @@ If no customer user ID is passed to Adapty, Adapty will create a new additional 
 - When a user launches your app for the first time after installation and reinstallation.
 - When a user logs out of your app.
 
-This means that a user who installs, then uninstalls, and reinstalls your app may have several profile records in Adapty if no customer user ID is used. All transactions in a chain are tied to the profile that generated the first transaction — the "original" profile. This helps keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile. 
+This means that a user who installs, then uninstalls, and reinstalls your app may have several profile records in Adapty if no customer user ID is used. All transactions in a chain are tied to the profile that generated the first transaction — the "original" profile. This helps keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
 
 A new profile record that generates a subsequent transaction, called a "non-original" profile, may not have any events associated with it but will retain the granted access level. In some cases, you will also see "access_level_updated" events here.
 
@@ -144,7 +142,7 @@ Why do events show future timestamps in profiles and integrations? Event timesta
 - **Event types affected**: Typically, this applies to subscription renewals and trial-to-paid conversions. These events may have future timestamps because Apple notifies systems about them ahead of time.
   All other events—like additional in-app purchases or subscription plan changes—are recorded with their actual timestamps since they cannot be predicted in advance.
 - **Impact on Analytics and Event Feed**: These events will only appear in **Analytics** and the **Event Feed** once their timestamps have passed. Events with future timestamps are not shown in either section.
-- **Impact on Integrations**: Adapty sends events to integrations as soon as they are received. If an event has a future timestamp, it will be shared with your integration exactly as received. 
+- **Impact on Integrations**: Adapty sends events to integrations as soon as they are received. If an event has a future timestamp, it will be shared with your integration exactly as received.
 
 ## Sharing access levels between profiles
 
@@ -166,4 +164,3 @@ When access levels are shared or transferred, you might want to know who granted
   }}
 />
 </Zoom>
-
