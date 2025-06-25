@@ -123,7 +123,7 @@ const config = {
             label: "Documentation",
           },
           {
-            label: "Mobile SDK",
+            label: "Mobile SDK ⏷",
             position: "left",
             items: [
               {
