@@ -16,7 +16,7 @@ After the integration is configured, test it. You can check both the sandbox and
 
 ## How to test
 
-Before you start testing the integration, make sure you have:
+To test the webhook integration:
 
 1. Set up the webhook integration as described in the [Set up webhook integration](set-up-webhook-integration) topic.
 2. Prepared the test environment as described in the [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) guides. Build your test app for the sandbox environment, not production.

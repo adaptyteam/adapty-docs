@@ -21,11 +21,11 @@ Adapty [webhook integration](webhook) consists of the following steps:
 
 <p> </p>
 
-1. **Prepare your endpoint**
+1. **You prepare your endpoint**
    1. Make sure your server accepts requests with **Content-Type: `application/json`**.
    2. Configure it to handle Adapty's verification request and reply with any `2xx` status and a JSON body.
    3. [Process subscription events](#subscription-events) after the connection is verified.
-2. **Enable the webhook integration** in the [Adapty Dashboard](#configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](#configure-webhook-integration-in-the-adapty-dashboard). Test everything in the **Sandbox environment** before going live.
+2. **You enable the webhook integration** in the [Adapty Dashboard](#configure-webhook-integration-in-the-adapty-dashboard). You can also [map Adapty events to custom event names](#configure-webhook-integration-in-the-adapty-dashboard). Test everything in the **Sandbox environment** before going live.
 3. **Adapty sends a verification request**.
 4. **Your server replies** with `2xx` and JSON.
 5. **Adapty starts sending subscription events**.
