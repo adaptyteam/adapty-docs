@@ -1,16 +1,19 @@
 import React, { useEffect } from 'react';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import aa from 'search-insights';
 
-// Initialize Algolia Insights
-aa('init', {
-  appId: 'IPH9RRTSQS',
-  apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
-  useCookie: true,
-});
+// Initialize Algolia Insights only on client side
+if (typeof window !== 'undefined') {
+  aa('init', {
+    appId: 'IPH9RRTSQS',
+    apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
+    useCookie: true,
+  });
+}
 
 console.log('AlgoliaAnalytics: Component loaded, aa initialized:', typeof aa);
 
-const AlgoliaAnalytics = () => {
+const AlgoliaAnalyticsComponent = () => {
   // Store current search query and queryID for linking with clicks
   let currentSearchQuery = '';
   let currentQueryID = '';
@@ -29,6 +32,11 @@ const AlgoliaAnalytics = () => {
 
   // Function to get or create user token
   const getUserToken = () => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+    
     // Try to get existing token from localStorage
     let token = localStorage.getItem('algolia_user_token');
     
@@ -46,6 +54,10 @@ const AlgoliaAnalytics = () => {
 
   // Function to refresh user token (useful for testing or user logout)
   const refreshUserToken = () => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+    
     const newToken = generateUserToken();
     localStorage.setItem('algolia_user_token', newToken);
     userToken = newToken;
@@ -275,6 +287,12 @@ const AlgoliaAnalytics = () => {
   };
 
   useEffect(() => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.log('AlgoliaAnalytics: Skipping setup - not in browser environment');
+      return;
+    }
+
     console.log('AlgoliaAnalytics: useEffect running, setting up event listeners');
     console.log('AlgoliaAnalytics: 🎯 Analytics Tracking Enabled');
     console.log('   - Search queries: ✅');
@@ -1293,117 +1311,6 @@ const AlgoliaAnalytics = () => {
       return null;
     };
 
-    // Expose refresh function globally for testing
-    window.refreshAlgoliaUserToken = refreshUserToken;
-    console.log('AlgoliaAnalytics: 🔧 Global function available: window.refreshAlgoliaUserToken()');
-
-    // Expose debug functions globally
-    window.debugAlgoliaState = () => {
-      console.log('AlgoliaAnalytics: 📊 Current state:');
-      console.log('   - Current QueryID:', currentQueryID);
-      console.log('   - Current Search Query:', currentSearchQuery);
-      console.log('   - User Token:', userToken);
-      console.log('   - Captured Search Results:', searchResultsData.length);
-      console.log('   - ObjectID Map Size:', objectIDMap.size);
-      console.log('   - QueryID Map Size:', queryIDMap.size);
-      console.log('   - Event Tracking: Left-click ✅, Right-click ✅');
-      
-      // Check search input
-      const searchInput = document.querySelector('.DocSearch-Input');
-      if (searchInput) {
-        console.log('   - Search Input Found: ✅');
-        console.log('   - Search Input Value:', searchInput.value);
-        console.log('   - Search Input Placeholder:', searchInput.placeholder);
-      } else {
-        console.log('   - Search Input Found: ❌');
-      }
-      
-      console.log('   - Available functions:');
-      console.log('     - window.debugAlgoliaState()');
-      console.log('     - window.refreshAlgoliaUserToken()');
-      console.log('     - window.testAlgoliaSearch(query)');
-      console.log('     - window.testAlgoliaAPI(query)');
-      console.log('     - window.captureSearchResults()');
-      console.log('     - window.updateCurrentSearchQuery(query)');
-      console.log('     - window.getCurrentSearchQuery()');
-      console.log('     - window.getCurrentSearchQueryFromInput()');
-      console.log('     - window.refreshSearchInputListeners()');
-      
-      if (objectIDMap.size > 0) {
-        console.log('AlgoliaAnalytics: 📋 ObjectID Map from API response:');
-        objectIDMap.forEach((objectID, url) => {
-          console.log(`   ${objectID} -> ${url}`);
-        });
-      }
-      
-      if (queryIDMap.size > 0) {
-        console.log('AlgoliaAnalytics: 📋 QueryID Map from API response:');
-        queryIDMap.forEach((queryID, query) => {
-          console.log(`   "${query}" -> ${queryID}`);
-        });
-      }
-      
-      if (searchResultsData.length > 0) {
-        console.log('AlgoliaAnalytics: 📋 Captured search results:');
-        searchResultsData.forEach((result, index) => {
-          console.log(`   ${index + 1}. ObjectID: ${result.objectID || 'Not found'}, URL: ${result.url}`);
-        });
-      }
-    };
-
-    window.testAlgoliaSearch = async (query = 'test') => {
-      console.log('AlgoliaAnalytics: 🔍 Testing search for query:', query);
-      
-      // Clear previous objectID map
-      objectIDMap.clear();
-      console.log('AlgoliaAnalytics: 🧹 Cleared previous objectID map');
-      
-      // Try to trigger a search through the search input
-      const searchInput = document.querySelector('.DocSearch-Input');
-      if (searchInput) {
-        // Set the value and trigger input event
-        searchInput.value = query;
-        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        console.log('AlgoliaAnalytics: ✅ Triggered search input event');
-        
-        // Also trigger other events that might be needed
-        searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-        searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        
-        // Wait a bit and then sync the objectID map with the current query
-        setTimeout(async () => {
-          console.log('AlgoliaAnalytics: 🔍 Syncing objectID map with current search...');
-          await syncObjectIDMapWithCurrentQuery();
-          
-          console.log('AlgoliaAnalytics: Current queryID after search:', currentQueryID);
-          console.log('AlgoliaAnalytics: ObjectID map size after search:', objectIDMap.size);
-          console.log('AlgoliaAnalytics: QueryID map size after search:', queryIDMap.size);
-          
-          if (objectIDMap.size > 0) {
-            console.log('AlgoliaAnalytics: 📋 ObjectID map contents:');
-            objectIDMap.forEach((objectID, url) => {
-              console.log(`   ${objectID} -> ${url}`);
-            });
-          } else {
-            console.log('AlgoliaAnalytics: ⚠️ No objectIDs captured from API response');
-            console.log('AlgoliaAnalytics: 🔍 Trying to manually capture objectIDs from current search results...');
-            captureObjectIDsFromCurrentResults();
-          }
-          
-          if (queryIDMap.size > 0) {
-            console.log('AlgoliaAnalytics: 📋 QueryID map contents:');
-            queryIDMap.forEach((queryID, searchQuery) => {
-              console.log(`   "${searchQuery}" -> ${queryID}`);
-            });
-          } else {
-            console.log('AlgoliaAnalytics: ⚠️ No queryIDs captured from API response');
-          }
-        }, 2000); // Reduced delay since we're using sync approach
-      } else {
-        console.log('AlgoliaAnalytics: ❌ Search input not found');
-      }
-    };
-
     // Function to manually capture objectIDs from current search results
     const captureObjectIDsFromCurrentResults = () => {
       console.log('AlgoliaAnalytics: 🔍 Manually capturing objectIDs from current search results...');
@@ -1500,84 +1407,199 @@ const AlgoliaAnalytics = () => {
       }
     };
 
-    window.syncObjectIDMapWithCurrentQuery = syncObjectIDMapWithCurrentQuery;
+    // Expose refresh function globally for testing
+    if (typeof window !== 'undefined') {
+      window.refreshAlgoliaUserToken = refreshUserToken;
+      console.log('AlgoliaAnalytics: 🔧 Global function available: window.refreshAlgoliaUserToken()');
+    }
 
-    window.captureObjectIDsFromCurrentResults = captureObjectIDsFromCurrentResults;
+    // Expose debug functions globally
+    if (typeof window !== 'undefined') {
+      window.debugAlgoliaState = () => {
+        console.log('AlgoliaAnalytics: 📊 Current state:');
+        console.log('   - Current QueryID:', currentQueryID);
+        console.log('   - Current Search Query:', currentSearchQuery);
+        console.log('   - User Token:', userToken);
+        console.log('   - Captured Search Results:', searchResultsData.length);
+        console.log('   - ObjectID Map Size:', objectIDMap.size);
+        console.log('   - QueryID Map Size:', queryIDMap.size);
+        console.log('   - Event Tracking: Left-click ✅, Right-click ✅');
+        
+        // Check search input
+        const searchInput = document.querySelector('.DocSearch-Input');
+        if (searchInput) {
+          console.log('   - Search Input Found: ✅');
+          console.log('   - Search Input Value:', searchInput.value);
+          console.log('   - Search Input Placeholder:', searchInput.placeholder);
+        } else {
+          console.log('   - Search Input Found: ❌');
+        }
+        
+        console.log('   - Available functions:');
+        console.log('     - window.debugAlgoliaState()');
+        console.log('     - window.refreshAlgoliaUserToken()');
+        console.log('     - window.testAlgoliaSearch(query)');
+        console.log('     - window.testAlgoliaAPI(query)');
+        console.log('     - window.captureSearchResults()');
+        console.log('     - window.updateCurrentSearchQuery(query)');
+        console.log('     - window.getCurrentSearchQuery()');
+        console.log('     - window.getCurrentSearchQueryFromInput()');
+        console.log('     - window.refreshSearchInputListeners()');
+        
+        if (objectIDMap.size > 0) {
+          console.log('AlgoliaAnalytics: 📋 ObjectID Map from API response:');
+          objectIDMap.forEach((objectID, url) => {
+            console.log(`   ${objectID} -> ${url}`);
+          });
+        }
+        
+        if (queryIDMap.size > 0) {
+          console.log('AlgoliaAnalytics: 📋 QueryID Map from API response:');
+          queryIDMap.forEach((queryID, query) => {
+            console.log(`   "${query}" -> ${queryID}`);
+          });
+        }
+        
+        if (searchResultsData.length > 0) {
+          console.log('AlgoliaAnalytics: 📋 Captured search results:');
+          searchResultsData.forEach((result, index) => {
+            console.log(`   ${index + 1}. ObjectID: ${result.objectID || 'Not found'}, URL: ${result.url}`);
+          });
+        }
+      };
 
-    window.captureSearchResults = () => {
-      console.log('AlgoliaAnalytics: 🔍 Manually capturing search results...');
-      captureSearchResultsData();
-    };
-
-    window.testAlgoliaAPI = async (query = 'stripe') => {
-      console.log('AlgoliaAnalytics: 🔍 Testing direct Algolia API call for query:', query);
-      
-      try {
-        const searchUrl = 'https://IPH9RRTSQS-dsn.algolia.net/1/indexes/adapty/query';
-        const response = await fetch(searchUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Algolia-Application-Id': 'IPH9RRTSQS',
-            'X-Algolia-API-Key': '5e3fd9357b98f9f0d44bab0f0b7634c0',
-          },
-          body: JSON.stringify({
-            query: query,
-            hitsPerPage: 20,
-            attributesToRetrieve: ['objectID', 'url', 'title', 'type', 'content'],
-            clickAnalytics: true, // Enable clickAnalytics to get queryID
-            analytics: true // Enable analytics for better tracking
-          })
-        });
+      window.testAlgoliaSearch = async (query = 'test') => {
+        console.log('AlgoliaAnalytics: 🔍 Testing search for query:', query);
         
-        const data = await response.json();
-        console.log('AlgoliaAnalytics: Direct API response:', data);
+        // Clear previous objectID map
+        objectIDMap.clear();
+        console.log('AlgoliaAnalytics: 🧹 Cleared previous objectID map');
         
-        // Extract queryID from response
-        const queryID = extractQueryIDFromResponse(data, query);
-        
-        if (data.hits && data.hits.length > 0) {
-          console.log('AlgoliaAnalytics: ✅ Found hits in direct API response');
+        // Try to trigger a search through the search input
+        const searchInput = document.querySelector('.DocSearch-Input');
+        if (searchInput) {
+          // Set the value and trigger input event
+          searchInput.value = query;
+          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('AlgoliaAnalytics: ✅ Triggered search input event');
           
-          // Clear previous objectID map
-          objectIDMap.clear();
+          // Also trigger other events that might be needed
+          searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+          searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
           
-          // Extract objectIDs and map them to URLs
-          data.hits.forEach((hit, index) => {
-            if (hit.objectID && hit.url) {
-              // Convert production URL to localhost URL for matching
-              const localUrl = hit.url.replace('https://adapty.io', 'http://localhost:3000');
-              objectIDMap.set(localUrl, hit.objectID);
-              objectIDMap.set(hit.url, hit.objectID); // Also store original URL
-              
-              console.log(`AlgoliaAnalytics: ✅ Mapped objectID ${hit.objectID} to URL ${localUrl}`);
+          // Wait a bit and then sync the objectID map with the current query
+          setTimeout(async () => {
+            console.log('AlgoliaAnalytics: 🔍 Syncing objectID map with current search...');
+            await syncObjectIDMapWithCurrentQuery();
+            
+            console.log('AlgoliaAnalytics: Current queryID after search:', currentQueryID);
+            console.log('AlgoliaAnalytics: ObjectID map size after search:', objectIDMap.size);
+            console.log('AlgoliaAnalytics: QueryID map size after search:', queryIDMap.size);
+            
+            if (objectIDMap.size > 0) {
+              console.log('AlgoliaAnalytics: 📋 ObjectID map contents:');
+              objectIDMap.forEach((objectID, url) => {
+                console.log(`   ${objectID} -> ${url}`);
+              });
+            } else {
+              console.log('AlgoliaAnalytics: ⚠️ No objectIDs captured from API response');
+              console.log('AlgoliaAnalytics: 🔍 Trying to manually capture objectIDs from current search results...');
+              captureObjectIDsFromCurrentResults();
             }
+            
+            if (queryIDMap.size > 0) {
+              console.log('AlgoliaAnalytics: 📋 QueryID map contents:');
+              queryIDMap.forEach((queryID, searchQuery) => {
+                console.log(`   "${searchQuery}" -> ${queryID}`);
+              });
+            } else {
+              console.log('AlgoliaAnalytics: ⚠️ No queryIDs captured from API response');
+            }
+          }, 2000); // Reduced delay since we're using sync approach
+        } else {
+          console.log('AlgoliaAnalytics: ❌ Search input not found');
+        }
+      };
+
+      window.syncObjectIDMapWithCurrentQuery = syncObjectIDMapWithCurrentQuery;
+
+      window.captureObjectIDsFromCurrentResults = captureObjectIDsFromCurrentResults;
+
+      window.captureSearchResults = () => {
+        console.log('AlgoliaAnalytics: 🔍 Manually capturing search results...');
+        captureSearchResultsData();
+      };
+
+      window.testAlgoliaAPI = async (query = 'stripe') => {
+        console.log('AlgoliaAnalytics: 🔍 Testing direct Algolia API call for query:', query);
+        
+        try {
+          const searchUrl = 'https://IPH9RRTSQS-dsn.algolia.net/1/indexes/adapty/query';
+          const response = await fetch(searchUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Algolia-Application-Id': 'IPH9RRTSQS',
+              'X-Algolia-API-Key': '5e3fd9357b98f9f0d44bab0f0b7634c0',
+            },
+            body: JSON.stringify({
+              query: query,
+              hitsPerPage: 20,
+              attributesToRetrieve: ['objectID', 'url', 'title', 'type', 'content'],
+              clickAnalytics: true, // Enable clickAnalytics to get queryID
+              analytics: true // Enable analytics for better tracking
+            })
           });
           
-          console.log(`AlgoliaAnalytics: 📊 Mapped ${objectIDMap.size} objectIDs to URLs`);
+          const data = await response.json();
+          console.log('AlgoliaAnalytics: Direct API response:', data);
           
-          return data;
-        } else {
-          console.log('AlgoliaAnalytics: ❌ No hits found in direct API response');
+          // Extract queryID from response
+          const queryID = extractQueryIDFromResponse(data, query);
+          
+          if (data.hits && data.hits.length > 0) {
+            console.log('AlgoliaAnalytics: ✅ Found hits in direct API response');
+            
+            // Clear previous objectID map
+            objectIDMap.clear();
+            
+            // Extract objectIDs and map them to URLs
+            data.hits.forEach((hit, index) => {
+              if (hit.objectID && hit.url) {
+                // Convert production URL to localhost URL for matching
+                const localUrl = hit.url.replace('https://adapty.io', 'http://localhost:3000');
+                objectIDMap.set(localUrl, hit.objectID);
+                objectIDMap.set(hit.url, hit.objectID); // Also store original URL
+                
+                console.log(`AlgoliaAnalytics: ✅ Mapped objectID ${hit.objectID} to URL ${localUrl}`);
+              }
+            });
+            
+            console.log(`AlgoliaAnalytics: 📊 Mapped ${objectIDMap.size} objectIDs to URLs`);
+            
+            return data;
+          } else {
+            console.log('AlgoliaAnalytics: ❌ No hits found in direct API response');
+            return null;
+          }
+        } catch (error) {
+          console.error('AlgoliaAnalytics: Error in direct API call:', error);
           return null;
         }
-      } catch (error) {
-        console.error('AlgoliaAnalytics: Error in direct API call:', error);
-        return null;
-      }
-    };
+      };
 
-    console.log('AlgoliaAnalytics: 🔧 Debug functions available:');
-    console.log('   - window.debugAlgoliaState()');
-    console.log('   - window.testAlgoliaSearch(query)');
-    console.log('   - window.testAlgoliaAPI(query)');
-    console.log('   - window.captureSearchResults()');
-    console.log('   - window.getQueryIDMap()');
-    console.log('   - window.getQueryIDForQuery(query)');
-    console.log('   - window.updateCurrentSearchQuery(query)');
-    console.log('   - window.getCurrentSearchQuery()');
-    console.log('   - window.getCurrentSearchQueryFromInput()');
-    console.log('   - window.refreshSearchInputListeners()');
+      console.log('AlgoliaAnalytics: 🔧 Debug functions available:');
+      console.log('   - window.debugAlgoliaState()');
+      console.log('   - window.testAlgoliaSearch(query)');
+      console.log('   - window.testAlgoliaAPI(query)');
+      console.log('   - window.captureSearchResults()');
+      console.log('   - window.getQueryIDMap()');
+      console.log('   - window.getQueryIDForQuery(query)');
+      console.log('   - window.updateCurrentSearchQuery(query)');
+      console.log('   - window.getCurrentSearchQuery()');
+      console.log('   - window.getCurrentSearchQueryFromInput()');
+      console.log('   - window.refreshSearchInputListeners()');
+    }
 
     // Set up event listeners
     const setupListeners = () => {
@@ -1631,162 +1653,181 @@ const AlgoliaAnalytics = () => {
     setupListeners();
 
     // Set up mutation observer to handle dynamically added search elements
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              // Check for new search results
-              const newSearchResults = node.querySelectorAll('.DocSearch-Hit a');
-              newSearchResults.forEach(result => {
-                result.addEventListener('click', handleResultClick);
-                result.addEventListener('contextmenu', handleResultClick); // Add right-click support
-              });
+    let observer = null;
+    if (typeof window !== 'undefined' && typeof MutationObserver !== 'undefined') {
+      observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                // Check for new search results
+                const newSearchResults = node.querySelectorAll('.DocSearch-Hit a');
+                newSearchResults.forEach(result => {
+                  result.addEventListener('click', handleResultClick);
+                  result.addEventListener('contextmenu', handleResultClick); // Add right-click support
+                });
 
-              // Check for new search input
-              const newSearchInput = node.querySelector('.DocSearch-Input');
-              if (newSearchInput) {
-                console.log('AlgoliaAnalytics: Found new search input, setting up query tracking');
-                setupSearchInputListeners(newSearchInput);
-              }
-              
-              // Also check if the node itself is a search input
-              if (node.matches && (node.matches('.DocSearch-Input') || node.matches('input[placeholder*="search"]'))) {
-                console.log('AlgoliaAnalytics: Found search input node, setting up query tracking');
-                setupSearchInputListeners(node);
-              }
-              
-              // Check for queryID in newly added search results
-              if (!currentQueryID) {
-                const newHits = node.querySelectorAll('.DocSearch-Hit');
-                for (const hit of newHits) {
-                  const queryID = hit.getAttribute('data-query-id') || 
-                                 hit.getAttribute('data-queryid') ||
-                                 hit.querySelector('[data-query-id]')?.getAttribute('data-query-id') ||
-                                 hit.querySelector('[data-queryid]')?.getAttribute('data-queryid');
-                  
-                  if (queryID && queryID.length === 32) {
-                    currentQueryID = queryID;
-                    console.log('AlgoliaAnalytics: ✅ Found queryID in new search results:', currentQueryID);
-                    break;
+                // Check for new search input
+                const newSearchInput = node.querySelector('.DocSearch-Input');
+                if (newSearchInput) {
+                  console.log('AlgoliaAnalytics: Found new search input, setting up query tracking');
+                  setupSearchInputListeners(newSearchInput);
+                }
+                
+                // Also check if the node itself is a search input
+                if (node.matches && (node.matches('.DocSearch-Input') || node.matches('input[placeholder*="search"]'))) {
+                  console.log('AlgoliaAnalytics: Found search input node, setting up query tracking');
+                  setupSearchInputListeners(node);
+                }
+                
+                // Check for queryID in newly added search results
+                if (!currentQueryID) {
+                  const newHits = node.querySelectorAll('.DocSearch-Hit');
+                  for (const hit of newHits) {
+                    const queryID = hit.getAttribute('data-query-id') || 
+                                   hit.getAttribute('data-queryid') ||
+                                   hit.querySelector('[data-query-id]')?.getAttribute('data-query-id') ||
+                                   hit.querySelector('[data-queryid]')?.getAttribute('data-queryid');
+                    
+                    if (queryID && queryID.length === 32) {
+                      currentQueryID = queryID;
+                      console.log('AlgoliaAnalytics: ✅ Found queryID in new search results:', currentQueryID);
+                      break;
+                    }
                   }
                 }
+                
+                // Capture search results data when new results are added
+                const newHits = node.querySelectorAll('.DocSearch-Hit');
+                if (newHits.length > 0) {
+                  setTimeout(() => {
+                    captureSearchResultsData();
+                  }, 100); // Small delay to ensure DOM is updated
+                }
               }
-              
-              // Capture search results data when new results are added
-              const newHits = node.querySelectorAll('.DocSearch-Hit');
-              if (newHits.length > 0) {
-                setTimeout(() => {
-                  captureSearchResultsData();
-                }, 100); // Small delay to ensure DOM is updated
-              }
-            }
-          });
-        }
+            });
+          }
+        });
       });
-    });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
 
-    console.log('AlgoliaAnalytics: Mutation observer set up');
+      console.log('AlgoliaAnalytics: Mutation observer set up');
+    }
 
     // Cleanup
     return () => {
       console.log('AlgoliaAnalytics: Cleaning up event listeners');
-      observer.disconnect();
       
-      // Clear the queryID monitoring interval
-      if (window.algoliaQueryIDMonitor) {
-        clearInterval(window.algoliaQueryIDMonitor);
-        delete window.algoliaQueryIDMonitor;
+      if (typeof window !== 'undefined') {
+        // Disconnect mutation observer
+        if (observer) {
+          observer.disconnect();
+        }
+        
+        // Clear the queryID monitoring interval
+        if (window.algoliaQueryIDMonitor) {
+          clearInterval(window.algoliaQueryIDMonitor);
+          delete window.algoliaQueryIDMonitor;
+        }
+        
+        // Restore original fetch
+        if (originalFetch) {
+          window.fetch = originalFetch;
+        }
+        
+        // Restore original XMLHttpRequest
+        if (originalXHROpen) {
+          XMLHttpRequest.prototype.open = originalXHROpen;
+        }
+        if (originalXHRSend) {
+          XMLHttpRequest.prototype.send = originalXHRSend;
+        }
+        
+        // Remove DocSearch event listeners
+        document.removeEventListener('docsearch:search', handleDocSearchEvent);
+        document.removeEventListener('docsearch:results', handleDocSearchEvent);
+        document.removeEventListener('docsearch:opened', handleDocSearchEvent);
+        document.removeEventListener('docsearch:closed', handleDocSearchEvent);
+        
+        // Remove Algolia event listeners
+        document.removeEventListener('algolia:search', handleAlgoliaEvent);
+        document.removeEventListener('algolia:results', handleAlgoliaEvent);
+        
+        // Remove search insights event listeners
+        document.removeEventListener('search-insights:search', handleSearchInsightsEvent);
+        document.removeEventListener('search-insights:click', handleSearchInsightsEvent);
+        
+        const searchResults = document.querySelectorAll('.DocSearch-Hit a');
+        searchResults.forEach(result => {
+          result.removeEventListener('click', handleResultClick);
+          result.removeEventListener('contextmenu', handleResultClick);
+        });
       }
-      
-      // Restore original fetch
-      if (originalFetch) {
-        window.fetch = originalFetch;
-      }
-      
-      // Restore original XMLHttpRequest
-      if (originalXHROpen) {
-        XMLHttpRequest.prototype.open = originalXHROpen;
-      }
-      if (originalXHRSend) {
-        XMLHttpRequest.prototype.send = originalXHRSend;
-      }
-      
-      // Remove DocSearch event listeners
-      document.removeEventListener('docsearch:search', handleDocSearchEvent);
-      document.removeEventListener('docsearch:results', handleDocSearchEvent);
-      document.removeEventListener('docsearch:opened', handleDocSearchEvent);
-      document.removeEventListener('docsearch:closed', handleDocSearchEvent);
-      
-      // Remove Algolia event listeners
-      document.removeEventListener('algolia:search', handleAlgoliaEvent);
-      document.removeEventListener('algolia:results', handleAlgoliaEvent);
-      
-      // Remove search insights event listeners
-      document.removeEventListener('search-insights:search', handleSearchInsightsEvent);
-      document.removeEventListener('search-insights:click', handleSearchInsightsEvent);
-      
-      const searchResults = document.querySelectorAll('.DocSearch-Hit a');
-      searchResults.forEach(result => {
-        result.removeEventListener('click', handleResultClick);
-        result.removeEventListener('contextmenu', handleResultClick);
-      });
     };
   }, []);
 
   // Expose queryID map globally for debugging
-  window.getQueryIDMap = () => {
-    console.log('AlgoliaAnalytics: 📋 QueryID Map:');
-    if (queryIDMap.size === 0) {
-      console.log('   No queryIDs stored');
-      return {};
-    }
-    
-    const map = {};
-    queryIDMap.forEach((queryID, query) => {
-      map[query] = queryID;
-      console.log(`   "${query}" -> ${queryID}`);
-    });
-    return map;
-  };
+  if (typeof window !== 'undefined') {
+    window.getQueryIDMap = () => {
+      console.log('AlgoliaAnalytics: 📋 QueryID Map:');
+      if (queryIDMap.size === 0) {
+        console.log('   No queryIDs stored');
+        return {};
+      }
+      
+      const map = {};
+      queryIDMap.forEach((queryID, query) => {
+        map[query] = queryID;
+        console.log(`   "${query}" -> ${queryID}`);
+      });
+      return map;
+    };
 
-  // Expose function to get queryID for a specific query
-  window.getQueryIDForQuery = getQueryIDForQuery;
+    // Expose function to get queryID for a specific query
+    window.getQueryIDForQuery = getQueryIDForQuery;
 
-  // Function to manually update current search query
-  window.updateCurrentSearchQuery = (query) => {
-    if (query && query.trim()) {
-      currentSearchQuery = query.trim();
-      console.log('AlgoliaAnalytics: ✅ Manually updated current search query:', currentSearchQuery);
+    // Function to manually update current search query
+    window.updateCurrentSearchQuery = (query) => {
+      if (query && query.trim()) {
+        currentSearchQuery = query.trim();
+        console.log('AlgoliaAnalytics: ✅ Manually updated current search query:', currentSearchQuery);
+        return currentSearchQuery;
+      } else {
+        console.log('AlgoliaAnalytics: ❌ Invalid query provided:', query);
+        return null;
+      }
+    };
+
+    // Function to get current search query
+    window.getCurrentSearchQuery = () => {
+      console.log('AlgoliaAnalytics: Current search query:', currentSearchQuery);
       return currentSearchQuery;
-    } else {
-      console.log('AlgoliaAnalytics: ❌ Invalid query provided:', query);
-      return null;
-    }
-  };
+    };
 
-  // Function to get current search query
-  window.getCurrentSearchQuery = () => {
-    console.log('AlgoliaAnalytics: Current search query:', currentSearchQuery);
-    return currentSearchQuery;
-  };
+    // Function to get current search query from input field
+    window.getCurrentSearchQueryFromInput = getCurrentSearchQueryFromInput;
 
-  // Function to get current search query from input field
-  window.getCurrentSearchQueryFromInput = getCurrentSearchQueryFromInput;
-
-  // Function to manually refresh search input listeners
-  window.refreshSearchInputListeners = () => {
-    console.log('AlgoliaAnalytics: 🔄 Manually refreshing search input listeners...');
-    findAndSetupSearchInput();
-    return 'Search input listeners refreshed';
-  };
+    // Function to manually refresh search input listeners
+    window.refreshSearchInputListeners = () => {
+      console.log('AlgoliaAnalytics: 🔄 Manually refreshing search input listeners...');
+      findAndSetupSearchInput();
+      return 'Search input listeners refreshed';
+    };
+  }
 
   return null;
+};
+
+const AlgoliaAnalytics = () => {
+  return (
+    <BrowserOnly fallback={<div />}>
+      {() => <AlgoliaAnalyticsComponent />}
+    </BrowserOnly>
+  );
 };
 
 export default AlgoliaAnalytics; 
