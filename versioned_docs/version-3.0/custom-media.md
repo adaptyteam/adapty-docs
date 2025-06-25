@@ -33,11 +33,11 @@ To set up custom media:
 
 2. Enter the media ID. For hero images and hero videos, IDs are predefined.
 
-3. Follow the SDK documentation [section on assets customization](https://adapty.io/docs/get-pb-paywalls#customize-assets) and call the media by its ID in your code.
+3. Upload a fallback image or video in the **Image file** or **Video file** upload section.
 
-:::tip
-If the Adapty SDK version is below 3.5.0, or if the custom media ID isn't defined in your code, upload a fallback image or video in the **Image file** or **Video file** upload section. This will display in place of the custom media if it can't be loaded. 
-:::
+4. Follow the SDK documentation [section on assets customization](https://adapty.io/docs/get-pb-paywalls#customize-assets) and call the media by its ID in your code.
+
+If the Adapty SDK version is below 3.5.0, or if the custom media ID isn't defined in your code, the fallback image or video will be displayed instead.
 
 <Zoom>
      <img src={require('./img/custom-media-predefined-id.webp').default}
