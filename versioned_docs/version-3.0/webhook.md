@@ -21,11 +21,9 @@ With webhooks integrated, you can:
 
 **Integration characteristics**
 
-| Integration characteristic | Description                                                 |
-| :------------------------- | :---------------------------------------------------------- |
-| Schedule                   | Real-time updates                                           |
-| Data direction             | One-way data transmission: from Adapty to your server       |
-| Adapty integration flow    | Events are sent by the Adapty server once they are received |
+- Schedule: Receive updates in real time—no polling needed.
+- Data direction: One-way transmission from Adapty to your backend.
+- Integration flow: As soon as Adapty processes an event, it pushes the payload to your webhook endpoint.
 
 ## Events sent to webhook
 
@@ -38,6 +36,6 @@ When [setting up your Webhook integration](set-up-webhook-integration#configure-
 **What's next:**
 
 - [Webhook event types and fields](webhook-event-types-and-fields): Explore detailed descriptions of each event and their data fields.
-- [Event flows](event-flows):  Learn how events are triggered and how they relate to each other.
 - [Set up webhook integration](set-up-webhook-integration): Follow step-by-step instructions to configure your webhook in the Adapty Dashboard.
 - [Test webhook integration](test-webhook): Use our testing tools to make sure your webhook is working correctly.
+- - [Event flows](event-flows):  Learn how events are triggered and how they relate to each other.
