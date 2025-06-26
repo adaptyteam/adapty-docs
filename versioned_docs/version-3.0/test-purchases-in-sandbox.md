@@ -9,7 +9,9 @@ rank: 100
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Once you've configured in-app purchases in your mobile app, it's crucial to test them thoroughly to ensure functionality and proper transmission of transactions to Adapty before releasing the app to production. Transactions and purchases that occur in the sandbox don’t incur charges. To conduct sandbox testing, you'll need to use a special test account - Sandbox Apple ID, and ensure the testing device is added to the Developer Account in the App Store Connect. 
+Once you've configured in-app purchases in your mobile app, it's crucial to test them thoroughly to ensure functionality and proper transmission of transactions to Adapty before releasing the app to production. 
+
+Transactions and purchases that occur in the sandbox don’t incur charges. To conduct sandbox testing, you'll need to use a special test account - Sandbox Apple ID, and ensure the testing device is added to the Developer Account in the App Store Connect. 
 
 Sandbox testing is ideal for developers who wish to personally test purchases on a device connected to their Mac via XCode.  
 For more details, you can refer to the [Apple's documentation on Testing in-app purchases with sandbox](https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchases_with_sandbox).
@@ -104,7 +106,7 @@ To test purchases using a sandbox account, you need to [enable the Developer mod
 </Zoom>
 
 3. Run the app from XCode. When a pop-up about the Developer mode appears, click **Cancel**.
-4. On our device, go to **Settings > Privacy & Security > Developer Mode** and toggle the **Developer Mode** on.
+4. On your device, go to **Settings > Privacy & Security > Developer Mode** and toggle the **Developer Mode** on.
 
 Your device is connected to the XCode and can be used for sandbox testing. You can run the app 
 
@@ -153,7 +155,9 @@ Now you can [validate that the test purchase is successful](validate-test-purcha
 
 ## Subscription renewal, billing retry, and grace period in Apple Sandbox
 
-Keep in mind that in the Apple Sandbox environment, subscription renewals happen faster, and both the billing retry and grace periods are shorter than in production. The default values are shown in the table below. You can adjust a tester’s subscription renewal rate, billing retry period, and grace period at any time. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings/#edit-subscription-renewal-speed).
+Keep in mind that in the Apple Sandbox environment, subscription renewals happen faster, and both the billing retry and grace periods are shorter than in production. The default values are shown in the table below. 
+
+You can adjust a tester’s subscription renewal rate, billing retry period, and grace period at any time. For more details, refer to the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings/#edit-subscription-renewal-speed).
 
 | Subscription duration          | 1 week     | 1 month    | 2 months   | 3 months   | 6 months   | 1 year     |
 | :----------------------------- | :--------- | :--------- | :--------- | :--------- | :--------- | :--------- |
