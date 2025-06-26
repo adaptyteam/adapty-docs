@@ -9,9 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 **Audiences** in Adapty are groups of users based on [segments](segments), helping you customize paywalls, onboardings, or A/B tests for specific user groups. You can define these segments using filters to ensure the right users see the right paywall or onboarding in your app.
 
-:::info
-[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
-:::
 
 In Adapty, a **Placement** is where you can show paywalls, onboardings, or A/B tests. When you add an audience to a placement, you're targeting specific user groups with personalized content. For instance, you might show different paywalls based on a user's age, device, or subscription status. If a user falls into multiple groups, you can choose which group gets the priority, deciding which paywall they'll see.
 
