@@ -26,37 +26,6 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 ### User-generated events
 
-#### Actions
-
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You’ll need to define what each action should do. 
-
-The following built-in actions are supported:
-
-- `Close`
-- `OpenUrl(url)`
-
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `onActionPerformed(…)` will be triggered with the `Custom(id)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
-
-Here’s an example, but feel free to handle the actions in your own way:
-
-```kotlin showLineNumbers title="Kotlin"
-override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-    when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
-        
-        is AdaptyUI.Action.OpenUrl -> //launching intent to open url
-       
-        is AdaptyUI.Action.Custom -> //no default action
-    }
-}
-```
-
-:::tip
-
-Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
-
-:::
-
 #### Product selection
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
