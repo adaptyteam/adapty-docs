@@ -394,6 +394,19 @@ const config = {
         },
       };
     },
+    function copyStaticToBuildPlugin() {
+      return {
+        name: 'copy-static-to-build-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-static-to-build.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-static-to-build.js:', e);
+          }
+        },
+      };
+    },
   ],
 };
 
