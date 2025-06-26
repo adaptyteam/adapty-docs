@@ -2,6 +2,7 @@
 title: "A/B test"
 description: "Optimize subscription pricing with A/B tests in Adapty for better conversion rates."
 metadataTitle: "A/B Testing for Paywalls | Adapty Docs"
+keywords: ['cross']
 ---
 
 import Zoom from 'react-medium-image-zoom';

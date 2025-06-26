@@ -2,6 +2,7 @@
 title: "Design paywalls with new Paywall Builder"
 description: "Master Adapty's Paywall Builder to create high-converting in-app subscription offers."
 metadataTitle: "Using Adapty Paywall Builder | Adapty Docs"
+keywords: ['paywall']
 ---
 
 import Zoom from 'react-medium-image-zoom';

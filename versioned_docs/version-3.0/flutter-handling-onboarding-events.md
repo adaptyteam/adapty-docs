@@ -357,7 +357,7 @@ The `params` object contains user input data, which can be one of the following 
 <Details>
 <summary>Saved data examples (Click to expand)</summary>
 
-```
+```javascript
 // Example of a saved select action
 {
     "elementId": "preference_selector",
@@ -486,7 +486,7 @@ Each event includes `meta` information containing:
 <Details>
 <summary>Event examples (Click to expand)</summary>
 
-```
+```javascript
 // onboardingStarted
 {
   "name": "onboarding_started",
