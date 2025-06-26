@@ -2,6 +2,7 @@
 title: "Fallback paywalls"
 description: "Use fallback paywalls to ensure seamless user experience in Adapty."
 metadataTitle: "Using Fallback Paywalls in Adapty | Adapty Docs"
+keywords: ['fallback', 'fallbacks']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -21,6 +22,10 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting En
 ## Download fallback paywalls as a file in the Adapty Dashboard
 
 To integrate fallback paywalls into your mobile app code, start by downloading them from the Adapty Dashboard. The downloaded JSON file will contain one paywall for each placement, specifically the paywall designated for the `All users` audience in the Adapty Dashboard.
+
+:::important
+Downloading fallbacks is available only for Adapty SDK version 2.11 or later. Upgrade to the later version or use existing fallbacks.
+:::
 
 <details>
    <summary>Before you can download a paywall fallback (Click to Expand)</summary>

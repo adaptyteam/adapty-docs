@@ -38,7 +38,7 @@ You can find more information about the available controls, filters, grouping op
 
 ### Subscriptions renewal canceled chart usage
 
-The Active subscriptions chart is useful to get valuable insights into the number of recurring, individual paid users from your app. This metric serves as a proxy for the size and growth potential of a business. Combining active subscriptions with filters and grouping helps you to gain a deeper understanding of their paid subscriber base composition, making it a powerful tool for data analysis.
+The Subscription renewal canceled chart is useful to get valuable insights into the number of recurring, individual paid users from your app. This metric serves as a proxy for the size and growth potential of a business. Combining active subscriptions with filters and grouping helps you to gain a deeper understanding of their paid subscriber base composition, making it a powerful tool for data analysis.
 
 ### Similar metrics
 
