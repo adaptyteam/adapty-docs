@@ -2,6 +2,8 @@
 title: "Event flows"
 description: "Discover detailed schemes of subscription event flows in Adapty. Learn how subscription events are generated and sent to integrations, helping you track key moments in your customers’ journeys."
 metadataTitle: "Understanding Event Flows in Adapty: Schemes and Scenarios"
+keywords: ['refund', 'trial', 'restore', 'events']
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';

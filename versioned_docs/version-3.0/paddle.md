@@ -2,7 +2,7 @@
 title: "Initial integration with Paddle"
 description: "Integrate Paddle with Adapty for seamless subscription payment processing."
 metadataTitle: "Paddle Integration Guide | Adapty Docs"
-
+keywords: ['paddle']
 ---
 
 import Zoom from 'react-medium-image-zoom';

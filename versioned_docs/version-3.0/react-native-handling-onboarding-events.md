@@ -1,7 +1,7 @@
 ---
-title: "Flutter - Handle onboarding events"
-description: "Handle onboarding-related events in Flutter using Adapty."
-metadataTitle: "Handling Onboarding Events in Flutter | Adapty Docs"
+title: "React Native - Handle onboarding events"
+description: "Handle onboarding-related events in React Native using Adapty."
+metadataTitle: "Handling Onboarding Events in React Native | Adapty Docs"
 toc_max_heading_level: 4
 ---
 
@@ -11,124 +11,93 @@ import Details from '@site/src/components/Details';
 
 Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
 
-- **Full-screen presentation**: Requires setting up a global event observer that handles events for all onboarding views
+- **Full-screen presentation**: Requires setting up event handlers that handle events for all onboarding views
 - **Embedded widget**: Handles events through inline callback parameters directly in the widget
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Flutter SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty React Native SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
 ## Full-screen presentation events
 
-### Set up event observer
+### Set up event handlers
 
-To handle events for full-screen onboardings, implement the `AdaptyUIOnboardingsEventsObserver` and set it before presenting:
+To handle events for full-screen onboardings, use the `view.registerEventHandlers` method:
 
-```javascript showLineNumbers title="Flutter"
-AdaptyUI().setOnboardingsEventsObserver(this);
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
 
 try {
-  await onboardingView.present();
-} on AdaptyError catch (e) {
+  await view.present();
+} catch (error) {
   // handle the error
-} catch (e) {
-  // handle the error
-}
-```
-
-### Handle events
-
-Implement these methods in your observer:
-
-```javascript showLineNumbers title="Flutter"
-void onboardingViewDidFinishLoading(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-) {
-  // Onboarding finished loading
-}
-
-void onboardingViewDidFailWithError(
-  AdaptyUIOnboardingView view,
-  AdaptyError error,
-) {
-  // Handle loading errors
-}
-
-void onboardingViewOnCloseAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String actionId,
-) {
-  // Handle close action
-  view.dismiss();
-}
-
-void onboardingViewOnPaywallAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String actionId,
-) {
-  _openPaywall(actionId);
-}
-
-void onboardingViewOnCustomAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String actionId,
-) {
-  // Handle custom actions
-}
-
-void onboardingViewOnStateUpdatedAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String elementId,
-  AdaptyOnboardingsStateUpdatedParams params,
-) {
-  // Handle user input updates
-}
-
-void onboardingViewOnAnalyticsEvent(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  AdaptyOnboardingsAnalyticsEvent event,
-) {
-  // Track analytics events
 }
 ```
 
 ## Embedded widget events
 
-When using `AdaptyUIOnboardingPlatformView`, you can handle events through inline callback parameters directly in the widget. Note that events will be sent to both the widget callbacks and the global observer (if set up), but the global observer is optional:
+When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
 
-```javascript showLineNumbers title="Flutter"
-AdaptyUIOnboardingPlatformView(
-  onboarding: onboarding,
-  onDidFinishLoading: (meta) {
-    // Onboarding finished loading
-  },
-  onDidFailWithError: (error) {
-    // Handle loading errors
-  },
-  onCloseAction: (meta, actionId) {
-    // Handle close action
-  },
-  onPaywallAction: (meta, actionId) {
-    _openPaywall(actionId);
-  },
-  onCustomAction: (meta, actionId) {
-    // Handle custom actions
-  },
-  onStateUpdatedAction: (meta, elementId, params) {
-    // Handle user input updates
-  },
-  onAnalyticsEvent: (meta, event) {
-    // Track analytics events
-  },
-)
+```javascript showLineNumbers title="React Native"
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={{ flex: 1 }}
+  eventHandlers={{
+    onAnalytics(event, meta) {
+      // Track analytics events
+    },
+    onClose(actionId, meta) {
+      // Handle close action
+    },
+    onCustom(actionId, meta) {
+      // Handle custom actions
+    },
+    onPaywall(actionId, meta) {
+      // Handle paywall actions
+    },
+    onStateUpdated(action, meta) {
+      // Handle user input updates
+    },
+    onFinishedLoading(meta) {
+      // Onboarding finished loading
+    },
+    onError(error) {
+      // Handle loading errors
+    },
+  }}
+/>
 ```
 
 ## Event types
@@ -150,29 +119,32 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 />
 </Zoom>
 
-Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `actionId` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
-```javascript
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewOnCustomAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    String actionId,
-) {
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
     switch (actionId) {
-        case 'login':
-            _login();
-            break;
-        case 'allow_notifications':
-            _allowNotifications();
-            break;
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
     }
-}
+  },
+});
 
 // Embedded widget
-onCustomAction: (meta, actionId) {
-    _handleCustomAction(actionId);
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onCustom(actionId, meta) {
+      handleCustomAction(actionId);
+    },
+  }}
+/>
 ```
 
 <Details>
@@ -180,7 +152,7 @@ onCustomAction: (meta, actionId) {
 
 ```json
 {
-  "actionId": "allowNotifications",
+  "actionId": "allow_notifications",
   "meta": {
     "onboardingId": "onboarding_123",
     "screenClientId": "profile_screen",
@@ -195,19 +167,23 @@ onCustomAction: (meta, actionId) {
 
 When an onboarding finishes loading, this event will be triggered:
 
-```javascript showLineNumbers title="Flutter"
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewDidFinishLoading(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-) {
-  print('Onboarding loaded: ${meta.onboardingId}');
-}
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
 
 // Embedded widget
-onDidFinishLoading: (meta) {
-  print('Onboarding loaded: ${meta.onboardingId}');
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onFinishedLoading(meta) {
+      console.log('Onboarding loaded:', meta.onboardingId);
+    },
+  }}
+/>
 ```
 
 <Details>
@@ -223,7 +199,6 @@ onDidFinishLoading: (meta) {
     }
 }
 ```
-
 </Details>
 
 ### Closing onboarding
@@ -245,20 +220,24 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
 :::
 
-```javascript showLineNumbers title="Flutter"
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewOnCloseAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String actionId,
-) {
-  await view.dismiss();
-}
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
 
 // Embedded widget
-onCloseAction: (meta, actionId) {
-  Navigator.of(context).pop();
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onClose(actionId, meta) {
+      // Handle navigation back or dismiss the view
+    },
+  }}
+/>
 ```
 
 <Details>
@@ -275,7 +254,6 @@ onCloseAction: (meta, actionId) {
   }
 }
 ```
-
 </Details>
 
 ### Opening a paywall
@@ -286,24 +264,27 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
 
-```javascript showLineNumbers title="Flutter"
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewOnPaywallAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String actionId,
-) {
-  _openPaywall(actionId);
-}
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    openPaywall(actionId);
+  },
+});
 
-Future<void> _openPaywall(String actionId) async {
+const openPaywall = async (actionId) => {
   // Implement your paywall opening logic here
-}
+};
 
 // Embedded widget
-onPaywallAction: (meta, actionId) {
-  _openPaywall(actionId);
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onPaywall(actionId, meta) {
+      openPaywall(actionId);
+    },
+  }}
+/>
 ```
 
 <Details>
@@ -320,39 +301,42 @@ onPaywallAction: (meta, actionId) {
     }
 }
 ```
-
 </Details>
 
 ### Updating field state
 
 When your users respond to a quiz question or input their data into an input field, the state update event will be triggered:
 
-```javascript showLineNumbers title="Flutter"
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewOnStateUpdatedAction(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  String elementId,
-  AdaptyOnboardingsStateUpdatedParams params,
-) {
-  saveUserResponse(elementId, params.value);
-}
+const unsubscribe = view.registerEventHandlers({
+  onStateUpdated(action, meta) {
+    saveUserResponse(action.elementId, action.params);
+  },
+});
 
 // Embedded widget
-onStateUpdatedAction: (meta, elementId, params) {
-  saveUserResponse(elementId, params.value);
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      saveUserResponse(action.elementId, action.params);
+    },
+  }}
+/>
 ```
 
 :::note
 If you want to save or process data, you need to implement the methods yourself.
 :::
 
-The `params` object contains user input data, which can be one of the following types:
-- `select`: Single selection from a list of options
-- `multiSelect`: Multiple selections from a list of options
-- `input`: Text input from the user
-- `datePicker`: Date selected by the user
+The `action` object contains:
+- `elementId`: A unique identifier for the input element. You can use it to associate questions with answers when saving them.
+- `params`: The user's input data, which can be one of the following types:
+  - `select`: Single selection from a list of options.
+  - `multiSelect`: Multiple selections from a list of options.
+  - `input`: Text input from the user.
+  - `datePicker`: Date selected by the user.
 
 <Details>
 <summary>Saved data examples (Click to expand)</summary>
@@ -446,20 +430,23 @@ The `params` object contains user input data, which can be one of the following 
 
 You receive an analytics event when various navigation-related events occur during the onboarding flow:
 
-```javascript showLineNumbers title="Flutter"
+```javascript showLineNumbers title="React Native"
 // Full-screen presentation
-void onboardingViewOnAnalyticsEvent(
-  AdaptyUIOnboardingView view,
-  AdaptyUIOnboardingMeta meta,
-  AdaptyOnboardingsAnalyticsEvent event,
-) {
-  trackEvent(event.type, meta.onboardingId);
-}
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.type, meta.onboardingId);
+  },
+});
 
 // Embedded widget
-onAnalyticsEvent: (meta, event) {
-  trackEvent(event.type, meta.onboardingId);
-}
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onAnalytics(event, meta) {
+      trackEvent(event.type, meta.onboardingId);
+    },
+  }}
+/>
 ```
 
 The `event` object can be one of the following types:
@@ -499,7 +486,6 @@ Each event includes `meta` information containing:
 }
 
 // screenPresented
-
 {
     "name": "screen_presented",
     "meta": {
@@ -511,7 +497,6 @@ Each event includes `meta` information containing:
 }
 
 // screenCompleted
-
 {
     "name": "screen_completed",
     "meta": {
@@ -527,7 +512,6 @@ Each event includes `meta` information containing:
 }
 
 // secondScreenPresented
-
 {
     "name": "second_screen_presented",
     "meta": {
@@ -539,7 +523,6 @@ Each event includes `meta` information containing:
 }
 
 // userEmailCollected
-
 {
     "name": "user_email_collected",
     "meta": {
@@ -551,7 +534,6 @@ Each event includes `meta` information containing:
 }
 
 // onboardingCompleted
-
 {
     "name": "onboarding_completed",
     "meta": {
@@ -561,7 +543,5 @@ Each event includes `meta` information containing:
         "total_screens": 4
     }
 }
-
 ```
-
 </Details>
