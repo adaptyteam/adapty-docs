@@ -2,6 +2,8 @@
 title: "Test in-app purchases in App Store Sandbox"
 description: "Test purchases in the sandbox environment to ensure smooth transactions."
 metadataTitle: "Testing Purchases in Sandbox Mode | Adapty Docs"
+keywords: ['test']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -116,13 +118,18 @@ You won't need to do anything else to test purchases.
 
 If you have worked with sandbox accounts before and want to use a new one now, here is how to change the account being used:
 
-1. On iOS 13 or higher, navigate to **Settings > App Store > Sandbox Account**.
-   
-   On iOS 12, navigate to **Settings > [Your Account] > App Store > Sandbox Account**.
-2. In the **Sandbox Account** section, tap the current ID and select **Sign Out**.
-3. Then, tap the **Sign In** button.
-4. Enter the new sandbox account credentials. 
-5. In the **Apple ID Security** window, verify your account if needed.
+If you need to change the Sandbox Apple ID associated with your device, you can do so directly on the device by following these steps:
+
+1. On iOS 12, navigate to **Settings > [Your Account] > App Store > Sandbox Account**.  
+   On iOS 13 or greater, navigate to **Settings > App Store > Sandbox Account**.
+2. Tap the current Sandbox Apple ID in the **Sandbox Account** section.
+3. Tap the **Sign Out** button.
+4. Tap the **Sign In** button.
+5. In the **Use the Apple ID for Apple Media Services** window, tap the **Use Other Apple ID** button.
+6. In the **Apple ID Sign-In Requested** window, enter the new sandbox account credentials that you previously created. 
+7. Tap the **Done** button.
+8. In the **Apple ID Security** window, tap the **Other options** button.
+9. In the **Protect your account** window, tap the **Do not upgrade** button.
 
 The added sandbox account is shown in the **Sandbox Account** section of your iOS device **Settings**.
 

@@ -1,4 +1,4 @@
-name: Deploy docs to S3 development
+name: Deploy docs to S3 developmentAdd commentMore actions
 on:
   push:
     branches:
@@ -19,27 +19,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Copy markdown files
-        run: |
-          mkdir -p build/md
-          cp -r versioned_docs/version-3.0/* build/md/
-
-      - name: Deploy CloudFront function
-        run: |
-          aws cloudfront create-function \
-            --name docs-routing \
-            --function-config Comment="Handle MD and HTML routing",Runtime=cloudfront-js-1.0 \
-            --function-code fileb://cloudfront-function.js || \
-          aws cloudfront update-function \
-            --name docs-routing \
-            --function-config Comment="Handle MD and HTML routing",Runtime=cloudfront-js-1.0 \
-            --function-code fileb://cloudfront-function.js
-
-      - name: Publish CloudFront function
-        run: |
-          aws cloudfront publish-function --name docs-routing
-
-      - name: Deploy to S3
+      - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
           folder: build
@@ -48,12 +28,6 @@ jobs:
           dist-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           invalidation: /*
           delete-removed: true
+          # no-cache: true
           private: true
-          files-to-include: '{.*/**,**}'
-
-      - name: Update CloudFront distribution
-        run: |
-          aws cloudfront get-distribution-config --id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --region ${{ secrets.S3_BUCKET_REGION }} > dist-config.json
-          jq '.DistributionConfig.DefaultCacheBehavior.FunctionAssociations.Items += [{"EventType": "viewer-request", "FunctionARN": "'$(aws cloudfront describe-function --name docs-routing --query 'FunctionSummary.FunctionARN' --output text)'"}]' dist-config.json > new-config.json
-          ETAG=$(jq -r '.ETag' dist-config.json)
-          aws cloudfront update-distribution --id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --distribution-config file://new-config.json --if-match $ETAG --region ${{ secrets.S3_BUCKET_REGION }}
+          # files-to-include: '{.*/**,**}'Add comment
