@@ -2,6 +2,7 @@
 title: "Test in-app purchases with TestFlight"
 description: "Learn how to test in-app purchases with TestFlight using Adapty for a smooth testing process."
 metadataTitle: "Test Purchases with TestFlight | Adapty Docs"
+rank: 30
 ---
 
 import Zoom from 'react-medium-image-zoom';
