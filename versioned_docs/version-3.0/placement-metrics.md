@@ -9,9 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls, onboardings, or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
 
-:::info
-[Onboardings](https://adapty.io/docs/onboardings) are currently available only on the Enterprise plan.
-:::
 
 To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls and onboardings. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
 
