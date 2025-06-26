@@ -7,9 +7,7 @@ metadataTitle: "Managing Test Devices | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Due to caching, changes made to paywalls or placements may take up to 20 minutes to reflect on the device. This delay is needed to speed up fetching a paywall for regular users, but it can be inconvenient when testing your changes.
-
-For testing purposes, you can assign your device as test, which will disable caching and ensure that your changes are immediately displayed.
+For testing purposes, you can assign your device as a test device, which disables caching and ensures that your changes are reflected immediately.
 
 :::note
 Testing devices are supported starting from specific SDK versions:
