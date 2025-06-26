@@ -151,7 +151,7 @@ The `action` object contains:
 <Details>
 <summary>Saved data examples (Click to expand)</summary>
 
-```
+```javascript
 // Example of a saved select action
 {
     "elementId": "preference_selector",
@@ -381,8 +381,8 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
 <Details>
 <summary>Event examples (Click to expand)</summary>
 
-```
-// onboardingStarted
+```javascript
+// OnboardingStarted
 {
   "name": "onboarding_started",
   "meta": {
@@ -393,7 +393,7 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
   }
 }
 
-// screenPresented
+// ScreenPresented
 
 {
     "name": "screen_presented",
@@ -405,7 +405,7 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
     }
 }
 
-// screenCompleted
+// ScreenCompleted
 
 {
     "name": "screen_completed",
@@ -421,7 +421,7 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
     }
 }
 
-// secondScreenPresented
+// SecondScreenPresented
 
 {
     "name": "second_screen_presented",
@@ -433,7 +433,7 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
     }
 }
 
-// userEmailCollected
+// UserEmailCollected
 
 {
     "name": "user_email_collected",
@@ -445,7 +445,7 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
     }
 }
 
-// onboardingCompleted
+// OnboardingCompleted
 
 {
     "name": "onboarding_completed",

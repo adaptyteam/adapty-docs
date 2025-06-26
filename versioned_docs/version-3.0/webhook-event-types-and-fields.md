@@ -3,6 +3,7 @@ title: "Webhook event types and fields"
 description: ""
 metadataTitle: ""
 toc_max_heading_level: 4
+keywords: ['events']
 ---
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';

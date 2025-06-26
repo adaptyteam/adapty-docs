@@ -144,7 +144,7 @@ The `action` object contains:
 <Details>
 <summary>Saved data examples (Click to expand)</summary>
 
-```
+```javascript
 // Example of a saved select action
 {
     "elementId": "preference_selector",
@@ -361,7 +361,7 @@ func onboardingController(_ controller: AdaptyOnboardingController, onAnalyticsE
 <Details>
 <summary>Event examples (Click to expand)</summary>
 
-```
+```javascript
 // onboardingStarted
 {
   "name": "onboarding_started",
