@@ -9,6 +9,7 @@ keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'o
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import Details from '@site/src/components/Details';
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -28,7 +29,7 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 #### Actions
 
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You’ll need to define what each action should do. 
+When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You'll need to define what each action should do. 
 
 The following built-in actions are supported:
 
@@ -37,7 +38,7 @@ The following built-in actions are supported:
 
 Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `onActionPerformed(…)` will be triggered with the `Custom(id)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
 
-Here’s an example, but feel free to handle the actions in your own way:
+Here's an example, but feel free to handle the actions in your own way:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
@@ -51,9 +52,32 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Close action
+{
+  "action": "Close"
+}
+
+// Open URL action
+{
+  "action": "OpenUrl",
+  "url": "https://example.com/terms"
+}
+
+// Custom action
+{
+  "action": "Custom",
+  "id": "login"
+}
+```
+</Details>
+
 :::tip
 
-Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
+Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you've set up in the Adapty Dashboard.
 
 :::
 
@@ -68,6 +92,23 @@ public override fun onProductSelected(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 #### Started purchase
 
 If a user initiates the purchase process, this method will be invoked:
@@ -78,6 +119,23 @@ public override fun onPurchaseStarted(
     context: Context,
 ) {}
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
@@ -96,6 +154,66 @@ public override fun onPurchaseFinished(
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 We recommend dismissing the screen in that case. 
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
@@ -112,6 +230,30 @@ public override fun onPurchaseFailure(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
 #### Successful restore
@@ -125,6 +267,31 @@ public override fun onRestoreSuccess(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
 We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
 
 #### Failed restore
@@ -137,6 +304,22 @@ public override fun onRestoreFailure(
     context: Context,
 ) {}
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
 
 #### Upgrade subscription
 
@@ -152,6 +335,26 @@ public override fun onAwaitingSubscriptionUpdateParams(
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
 ### Data fetching and rendering
 
 #### Product loading errors
@@ -165,6 +368,22 @@ public override fun onLoadingProductsFailure(
 ): Boolean = false
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
 If you return `true`, AdaptyUI will repeat the request in 2 seconds.
 
 #### Rendering errors
@@ -177,5 +396,21 @@ public override fun onRenderingError(
     context: Context,
 ) {}
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
