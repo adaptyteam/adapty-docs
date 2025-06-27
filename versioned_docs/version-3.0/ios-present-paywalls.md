@@ -13,7 +13,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
 
 - For presenting **Legacy Paywall Builder paywalls**, check out [iOS - Present legacy Paywall Builder paywalls](ios-present-paywalls-legacy).
 - For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
