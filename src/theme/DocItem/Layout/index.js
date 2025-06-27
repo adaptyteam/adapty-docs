@@ -10,7 +10,7 @@ export default function DocItemLayout(props) {
   // Try different ways to get the current URL
   const currentUrl = props.content?.metadata?.permalink?.replace(/\/$/, '') || 
                    props.metadata?.permalink?.replace(/\/$/, '') ||
-                   window.location.pathname.replace(/\/$/, '') || '';
+                   (typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '') || '';
 
   console.log('DocItemLayout rendered with:', { 
     currentUrl, 
@@ -18,7 +18,7 @@ export default function DocItemLayout(props) {
     permalink: props.content?.metadata?.permalink,
     hasContent: !!props.content,
     hasMetadata: !!props.content?.metadata,
-    windowLocation: window.location.pathname
+    windowLocation: typeof window !== 'undefined' ? window.location.pathname : 'server-side'
   });
 
   useEffect(() => {
