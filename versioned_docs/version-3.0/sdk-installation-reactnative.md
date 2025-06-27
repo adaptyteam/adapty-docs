@@ -455,8 +455,11 @@ try {
 }
 ```
 
-In the development environment, you may also encounter the SDK activation error when React Native's fast refresh triggers multiple activation calls. Set `__ignoreActivationOnFastRefresh` to `__DEV__` to skip activation if the SDK is already activated.
+## Troubleshoot SDK activation errors on React Native's Fast Refresh
 
+When developing with the Adapty SDK in React Native, you may encounter the error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+This occurs because React Native's fast refresh feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to `__DEV__` (React Native's development mode flag).
 ```typescript showLineNumbers title="Typescript"
 try {
   adapty.activate('PUBLIC_SDK_KEY', {

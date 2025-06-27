@@ -39,7 +39,7 @@ Adapty's onboarding solution stands out with:
 
 Onboardings are a paid feature in Adapty. Note the following about the pricing:
 
-- Using onboardings costs 0.2% of the MTR for all the other apps.
+- Using onboardings costs 0.2% of combined monthly revenue from all your apps.
 - You can test onboardings in the sandbox freely. You start getting billed only after the first transaction in the production environment.
 
 ## How it works
