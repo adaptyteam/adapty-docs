@@ -7,7 +7,7 @@ metadataTitle: "How to Handle Refunds | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The refund money chart displays the amount of money that was refunded for the selected period of time. Adapty attributes refund money to the moment when the refund was issued and the revenue decreases in the period when the refund occurred.
+The Refund money chart shows the amount refunded during the selected period. Adapty ties each refund event to the date it was issued, so revenue decreases in that same period.
 
 <Zoom>
   <img src={require('./img/7695e84-small-CleanShot_2023-05-09_at_11.54.462x.webp').default}
@@ -22,30 +22,32 @@ The refund money chart displays the amount of money that was refunded for the se
 
 ### Calculation
 
-Adapty calculates the refund money chart considering only transactions that generate revenue, such as new paid subscriptions, renewals, and one-time purchases. Free trials, which do not generate revenue and cannot be refunded, are excluded from the transaction count. The refund amount is attributed to the date when the refund was made (not to when the subscription started), and the revenue decrease caused by the refunded subscription is reflected in the period in which the refund was processed.
+Adapty counts only revenue-generating transactions—new paid subscriptions, renewals, and one-time purchases. Free trials, which produce no revenue and cannot be refunded, are excluded. Each refund amount is tied to the date it was processed, so the revenue decrease appears in that same period.
 
-It's important to note that Adapty calculates the refund amount before the store's fee is deducted.
+:::info
+The refund amount is calculated before the store's fee is deducted.
+:::
 
 ### Available filters and grouping
 
-- ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
-- ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
+- ✅ Filter by: Attribution, country, paywall, store, product, duration, and refund reason.
+- ✅ Group by: Product, country, store, paywall, duration, refund reason, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
-You can find more information about the available controls, filters, grouping options, and how to use them in the[ this documentation.](controls-filters-grouping-compare-proceeds)
+Learn more about controls, filters, and grouping in the [detailed guide](controls-filters-grouping-compare-proceeds).
 
 ### Refund Money chart usage
 
-The Refund money chart in Adapty helps businesses track the financial impact of refunds on their revenue. By monitoring refund amounts over time, you can identify patterns in customer behavior and make informed decisions to improve your revenue and reduce refund requests. With the refund money chart, you have a powerful tool to make data-driven decisions that optimize your business's bottom line.
+Use the Refund money chart to track the financial impact of refunds. Watching refund amounts over time helps you spot patterns and adjust your product or marketing strategies to reduce refund requests and protect revenue.
 
 ### Refund request management
 
-The Refund saver helps Adapty users handle refund requests from Apple’s App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple’s guidelines.
+The Refund saver helps Adapty users handle refund requests from Apple's App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple's guidelines.
 
-For more details, check out the [Auto-managed refunds](https://chatgpt.com/c/refunds) page.
+For more details, see [Auto-managed refunds](refund-saver.md).
 
 ### Similar metrics
 
-In addition to the Refund money chart, Adapty also provides metrics for other issues-related events, such as  Billing events, Billing issue, and Grace period. To learn more about these issue-related metrics, please refer to the following documentation:
+In addition to the Refund money chart, Adapty also tracks other issue-related events—Billing events, Billing issue, and Grace period. For details, see:
 
 - [Refund events](refund-events)
 - [Billing issue](billing-issue)

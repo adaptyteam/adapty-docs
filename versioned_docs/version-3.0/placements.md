@@ -2,6 +2,7 @@
 title: "Placements"
 description: "Manage placements in Adapty to optimize paywall visibility and revenue."
 metadataTitle: "Managing Placements in Adapty | Adapty Docs"
+keywords: ['placement']
 ---
 
 import Zoom from 'react-medium-image-zoom';
