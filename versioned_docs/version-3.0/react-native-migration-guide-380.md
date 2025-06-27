@@ -11,7 +11,7 @@ Adapty SDK 3.8.0 is a major release that brought some improvements which however
 
 ## Update input type for getting placement params
 
-The input type for getting placement params has been renamed to better reflect its purpose:
+`GetPaywallParamsInput` has been renamed to `GetPlacementParamsInput`:
 
 ```diff showLineNumbers
 - type GetPaywallParamsInput = {
@@ -23,30 +23,13 @@ The input type for getting placement params has been renamed to better reflect i
  }
 ```
 
-## Update fallback location type
-
-The type for specifying fallback locations has been renamed:
-
-```diff showLineNumbers
-- type FallbackPaywallsLocation = {
-+ type FileLocation = {
-   ios?: {
-     fileName: string;
-   };
-   android?: {
-     relativeAssetPath?: string;
-     rawResName?: string;
-   };
- }
-```
-
 ## Update fallback method
 
-The method for setting fallbacks has been updated:
+The method for setting fallbacks has been updated, and the type for specifying fallback locations has been renamed:
 
 ```diff showLineNumbers
-- await adapty.setFallbackPaywalls(paywallsLocation: Input.FallbackPaywallsLocation);
-+ await adapty.setFallback(fileLocation: Input.FileLocation);
+- adapty.setFallbackPaywalls(paywallsLocation: Input.FallbackPaywallsLocation);
++ adapty.setFallback(fileLocation: Input.FileLocation);
 ```
 
 ## Update paywall property access
