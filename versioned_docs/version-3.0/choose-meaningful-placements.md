@@ -29,8 +29,5 @@ When [creating placements](create-placement), it's essential to consider the log
 2. **App settings:** If the user hasn't subscribed during the onboarding flow, you can create a paywall placement within your app. This can be in the app settings or after the user has completed a specific target action. Since users inside the app tend to think more thoroughly about subscribing, the products on this paywall might be slightly less expensive compared to those in the onboarding stage.
 3. **Promo:** If the user hasn't subscribed after seeing the paywall multiple times, it could indicate that the prices are too high for them or they are hesitant about subscriptions. In this case, you can show a special offer to them with the most affordable subscription or even a lifetime product. This can help entice users who are price-sensitive or skeptical about subscriptions to make a purchase.  
 
-:::info
-Onboardings are currently available only on the Enterprise plan.
-:::
 
 Most apps will have similar logic and placements, following the user journey and key points where paywalls, onboardings, or A/B tests can be displayed to drive conversions and revenue. You can configure them in each placement to experiment and optimize your monetization strategies.
