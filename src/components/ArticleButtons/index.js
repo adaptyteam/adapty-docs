@@ -18,9 +18,31 @@ export default function ArticleButtons({ articleUrl }) {
   
   console.log('ArticleButtons rendered with articleUrl:', articleUrl);
 
+  // Helper function to determine the markdown URL
+  const getMarkdownUrl = () => {
+    console.log('getMarkdownUrl called with articleUrl:', articleUrl);
+    
+    // Normalize the articleUrl to handle both full URLs and pathnames
+    const normalizedUrl = articleUrl.replace(/\/$/, '');
+    console.log('normalizedUrl:', normalizedUrl);
+    
+    // Check if the current URL is the docs root path
+    if (normalizedUrl === 'http://localhost:3000/docs' || 
+        normalizedUrl === 'https://adapty.io/docs') {
+      console.log('Detected docs root, serving what-is-adapty.md');
+      return normalizedUrl + '/what-is-adapty.md';
+    }
+    
+    // For all other URLs, append .md as before
+    console.log('Not docs root, appending .md');
+    return `${normalizedUrl}.md`;
+  };
+
   const handleCopyMarkdown = async () => {
     try {
-      const response = await fetch(`${articleUrl}.md`);
+      const markdownUrl = getMarkdownUrl();
+      console.log('Fetching markdown from:', markdownUrl);
+      const response = await fetch(markdownUrl);
       const text = await response.text();
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -31,7 +53,9 @@ export default function ArticleButtons({ articleUrl }) {
   };
 
   const handleViewMarkdown = () => {
-    window.open(`${articleUrl}.md`, '_blank');
+    const markdownUrl = getMarkdownUrl();
+    console.log('Opening markdown URL:', markdownUrl);
+    window.open(markdownUrl, '_blank');
   };
 
   return (
