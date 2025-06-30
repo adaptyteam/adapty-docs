@@ -7,21 +7,19 @@ export default function DocItemLayout(props) {
   console.log('DocItemLayout props:', props);
   console.log('DocItemLayout props keys:', Object.keys(props));
 
-  // Try different ways to get the current URL
-  const currentUrl = props.content?.metadata?.permalink?.replace(/\/$/, '') || 
-                   props.metadata?.permalink?.replace(/\/$/, '') ||
-                   (typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '') || '';
-
-  console.log('DocItemLayout rendered with:', { 
-    currentUrl, 
-    content: props.content?.metadata,
-    permalink: props.content?.metadata?.permalink,
-    hasContent: !!props.content,
-    hasMetadata: !!props.content?.metadata,
-    windowLocation: typeof window !== 'undefined' ? window.location.pathname : 'server-side'
-  });
-
   useEffect(() => {
+    // Get the full current URL inside useEffect to ensure we're on the client side
+    const currentUrl = window.location.href.replace(/\/$/, '');
+    
+    console.log('DocItemLayout useEffect with:', { 
+      currentUrl, 
+      content: props.content?.metadata,
+      permalink: props.content?.metadata?.permalink,
+      hasContent: !!props.content,
+      hasMetadata: !!props.content?.metadata,
+      windowLocation: window.location.href
+    });
+
     console.log('useEffect triggered with currentUrl:', currentUrl);
     if (!currentUrl) {
       console.log('No currentUrl, skipping button injection');
@@ -95,7 +93,7 @@ export default function DocItemLayout(props) {
         existingButtons.remove();
       }
     };
-  }, [currentUrl]);
+  }, []); // Remove currentUrl dependency since we calculate it inside
 
   return <OriginalDocItemLayout {...props} />;
 } 
