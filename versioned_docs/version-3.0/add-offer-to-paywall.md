@@ -19,6 +19,7 @@ Paywalls created with the Adapty Paywall Builder will display only the first pha
 
 :::
 
+
 <Zoom>
   <img src={require('./img/3a727c2-add_offer_to_paywall.webp').default}
   style={{
