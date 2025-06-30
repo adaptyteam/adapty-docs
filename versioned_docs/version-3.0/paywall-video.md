@@ -68,13 +68,14 @@ Add the **Hero video** in place of the **Hero image** element:
 />
 </Zoom>
 
-## Supported formats and specifications
+## Formats and specifications
 
-| Specification     | Details      |
-| ----------------- | ------------ |
-| Supported formats | MP4 and WEBM |
-| Minimum size      | 640х480      |
-| Maximum length    | 30 sec       |
+| Specification     | Details       |
+|-------------------|---------------|
+| Supported formats | MP4 and WEBM  |
+| Minimum size      | 640х480       |
+| Maximum length    | 30 sec        |
+| Audio             | Not supported |
 
 <!--- <Zoom>
   <img src={require('./img/paywall-video-config.png').default}
