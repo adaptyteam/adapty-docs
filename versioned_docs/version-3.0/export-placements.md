@@ -7,7 +7,7 @@ metadataTitle: "How to Export Placement in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-When you work with multiple paywalls and onboardings, it's important to track which ones are shown to which users. You can export all your placement settings to a CSV file to see which paywall/onboarding appears for each audience and review your setup after making changes or running experiments.
+When you work with multiple paywalls and onboardings, it's important to track which ones are shown to which users. You can export all your [placement](placements.md) settings to a CSV file to see which paywall/onboarding appears for each audience and review your setup after making changes or running experiments.
 
 To export paywall/onboarding placements:
 
