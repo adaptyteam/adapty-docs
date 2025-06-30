@@ -19,7 +19,7 @@ Onboardings configured with the builder generate events your app can respond to.
 
 To control or monitor processes occurring on the onboarding screen within your Android app, implement the `AdaptyOnboardingEventListener` interface.
 
-### Custom actions
+## Custom actions
 
 In the builder, you can add a **custom** action to a button and assign it an ID. Then, you can use this ID in your code and handle it as a custom action. 
 
@@ -56,7 +56,23 @@ class YourActivity : AppCompatActivity() {
 }
 ```
 
-### Closing onboarding
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## Closing onboarding
 
 Onboarding is considered closed when a user taps a button with the **Close** action assigned. You need to manage what happens when a user closes the onboarding. For example:
 
@@ -73,7 +89,24 @@ override fun onCloseAction(action: AdaptyOnboardingCloseAction, context: Context
 }
 ```
 
-### Updating field state
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## Updating field state
 
 When your users respond to a quiz question or input their data into an input field, the `onStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
 
@@ -118,7 +151,7 @@ The `action` object contains:
 <Details>
 <summary>Saved data examples (Click to expand)</summary>
 
-```
+```javascript
 // Example of a saved select action
 {
     "elementId": "preference_selector",
@@ -203,7 +236,7 @@ The `action` object contains:
 ```
 </Details>
 
-### Opening a paywall
+## Opening a paywall
 
 :::tip
 Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
@@ -248,7 +281,24 @@ override fun onOpenPaywallAction(action: AdaptyOnboardingOpenPaywallAction, cont
 }
 ```
 
-### Finishing loading onboarding
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Finishing loading onboarding
 
 When an onboarding finishes loading, this method will be invoked:
 
@@ -258,7 +308,24 @@ override fun onFinishLoading(context: Context) {
 }
 ```
 
-### Navigation events
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Navigation events
 
 The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow.
 
@@ -310,3 +377,86 @@ override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Co
     }
 }
 ``` 
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// OnboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// ScreenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// ScreenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// SecondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// UserEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// OnboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

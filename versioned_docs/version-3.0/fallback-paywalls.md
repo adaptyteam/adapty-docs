@@ -15,8 +15,9 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting En
 
 1. Download the file from the Adapty Dashboard - one per app store and Adapty SDK version - as described below.
 2. Process the file in the mobile app code:
-   1. **For iOS, Android, and React Native:** Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), and [React Native](react-native-use-fallback-paywalls).
-   2. **For Flutter and Unity:** Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls) and [Unity](unity-use-fallback-paywalls).
+   1. **For iOS and Android:** Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls) and [Android](android-use-fallback-paywalls).
+   2. **For React Native:** Place it alongside your app on the user's device, and pass it to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
+   3. **For Flutter and Unity:** Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls) and [Unity](unity-use-fallback-paywalls).
 
 
 ## Download fallback paywalls as a file in the Adapty Dashboard
