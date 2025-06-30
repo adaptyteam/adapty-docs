@@ -33,7 +33,7 @@ To get started, just [add the Adapty library](ff-getting-started#add-the-adapty-
 Before you start, note the following limitations:
 
 - The Adapty library for FlutterFlow doesn’t support web apps. Avoid compiling web apps with it.
-- The Adapty library for FlutterFlow doesn't support paywalls creating using the Adapty paywall builder.
+- The Adapty library for FlutterFlow doesn't support paywalls creating using the Adapty paywall builder. You need to design your own paywall in FlutterFlow before enabling purchases with Adapty.
 
 :::
 
@@ -85,7 +85,7 @@ Before you start, note the following limitations:
      <img src={require('./img/ff_apikey.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
+    width: '400px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
      }}
@@ -96,10 +96,10 @@ The Adapty FF library will now be added as a dependency to your project. In the 
 
 ## Call the new activation action at application launch
 
-1. Navigate to `main.dart` in the **Custom Code** section.
+1. Go to **Custom Code** section from the left menu and open `main.dart`.
 
    <Zoom>
-     <img src={require('./FF_img/dartmain.webp').default}
+     <img src={require('./img/ff_dartmain.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
@@ -109,10 +109,10 @@ The Adapty FF library will now be added as a dependency to your project. In the 
    />
    </Zoom>
 
-2. Click the plus (**+**) button and choose `activate`.
+2. Click **+** and select `activate (Adapty)`.
 
    <Zoom>
-     <img src={require('./FF_img/activate.webp').default}
+     <img src={require('./img/ff_activate.webp').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
@@ -128,23 +128,13 @@ The Adapty FF library will now be added as a dependency to your project. In the 
 
 For the Adapty Dashboard to recognize your app, you’ll need to provide a special key in FlutterFlow.
 
-1. In your FlutterFlow project, open **Settings and Integrations** -> **Permissions** from the left menu.
-
-<Zoom>
-  <img src={require('./FF_img/initiate.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
+1. In your FlutterFlow project, go to **Settings and Integrations > Permissions** from the left menu.
 2. In the opened **Permissions** window, click the **Add Permission** button.
 3. In both the **iOS Permission Key** and **Android Permission Key** field, paste `AdaptyPublicSdkKey`.
+4. For the **Permission Message**, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
+
    <Zoom>
-     <img src={require('./FF_img/AdaptyPublicSdkKey.webp').default}
+     <img src={require('./img/ff_permissions.webp').default}
      style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -153,7 +143,6 @@ For the Adapty Dashboard to recognize your app, you’ll need to provide a speci
      }}
    />
    </Zoom>
-4. For the **Permission Message**, copy the **Public SDK key** from the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. Each app has its own SDK key, so if you have multiple apps, make sure you grab the right one. 
 
 After completing these steps, you'll be able to call your paywall in your FlutterFlow app and enable purchases through it.
 

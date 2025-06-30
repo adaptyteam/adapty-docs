@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 
-After adding the Adapty Plugin as a dependency to your FlutterFlow project, it's time to build the flow that retrieves Adapty paywall data and displays it on the paywall you've designed in FlutterFlow.
+After adding the Adapty library as a dependency to your FlutterFlow project, it's time to build the flow that **retrieves Adapty paywall and product data and displays it on the paywall you've designed in FlutterFlow**.
 
 We first need to receive the paywall data from Adapty. We'll start by requesting the Adapty paywall, then its associated products, and finally checking if the data was successfully received. If successful, we’ll display the product title and price on the paywall page. Otherwise, we'll show an error message.
 
@@ -22,10 +22,10 @@ Let's get started!
 ## Step 1.1. Request Adapty paywall
 As mentioned, to display data in your FlutterFlow paywall, we first need to retrieve it from Adapty. The initial step is to get the Adapty paywall itself. Here’s how:
 
-1. Open the **Actions** section in the right pane.
+1. Open your paywall screen and switch to the **Actions** section in the right pane. There, open the **Action Flow Editor**.
 
   <Zoom>
-    <img src={require('./FF_img/switch-to-actions.webp').default}
+    <img src={require('./img/ff_action_flow.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -35,10 +35,9 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
   />
   </Zoom>
 
-2. Open the **Action Flow Editor**.
-
+2. In the **Select Action Trigger** window, select **On Page Load**.
   <Zoom>
-    <img src={require('./FF_img/new-editor.webp').default}
+    <img src={require('./img/ff_action_trigger.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -48,9 +47,10 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
   />
   </Zoom>
 
-3. In the **Select Action Trigger** window, choose **On Page Load**.
+3. Click **Add Action**. Then, search for the `getPaywall` custom action and select it.
+
   <Zoom>
-    <img src={require('./FF_img/new-on-page-load.webp').default}
+    <img src={require('./img/ff_getpaywall.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -60,10 +60,10 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
   />
   </Zoom>
 
-4. In the **No Actions Created** window, click the **Add Action** button.
+4. In the **Set Actions Arguments** section, enter the real ID of the [placement you have created](create-placement) in the Adapty Dashboard that includes the paywall. In this example it's `monthly`. Be sure to use your real placement ID!
 
   <Zoom>
-    <img src={require('./FF_img/new-add-action.webp').default}
+    <img src={require('./img/ff_placementid.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -73,37 +73,13 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
   />
   </Zoom>
 
-5. In the **Actions Flow Editor** window, search for `getPaywall` custom action and choose it.
+5. If you have [localized](localizations-and-locale-codes.md) your paywall in the Adapty dashboard, you can also set up the **locale** argument.
 
-  <Zoom>
-    <img src={require('./FF_img/new-get-paywall.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
-
-6. In the **Set Actions Arguments** section, enter the real ID of the [placement you have created](create-placement) in the Adapty Dashboard that includes the paywall. In this example it's `example_ab_test`. Be sure to use your real placement ID!
-
-  <Zoom>
-    <img src={require('./FF_img/placement-id.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
-
-7. In the **Action Output Variable Name**, create a new variable and name it `getPaywallResult`. We'll use this in the next step to reference the Adapty paywall and request its products.
+6. In the **Action Output Variable Name**, create a new variable and name it `getPaywallResult`. We'll use this in the next step to reference the Adapty paywall and request its products.
 
 
   <Zoom>
-    <img src={require('./FF_img/new-getpaywallresult-output.webp').default}
+    <img src={require('./img/ff_getpaywallresult.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -117,23 +93,12 @@ As mentioned, to display data in your FlutterFlow paywall, we first need to retr
 
 Great! We’ve retrieved the Adapty paywall. Now, let's get the products associated with this paywall:
 
-1. Click the **plus (+)** button below, click the **Add Action** button to add an action to receive Adapty paywall products. For this, search and choose `getPaywallProducts`.
+1. Click **+** under the created action and select **Add Action**. This action will receive Adapty paywall products. For this, search and select `getPaywallProducts`.
+
+2. In the **Set Actions Arguments** section, select the `getPaywallResult` variable created earlier.
 
   <Zoom>
-    <img src={require('./FF_img/new-getpaywallproducts.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
-
-2. In the **Set Actions Arguments** section, choose `getPaywallResult` variable created earlier.
-
-  <Zoom>
-    <img src={require('./FF_img/action-getPaywallResult.webp').default}
+    <img src={require('./img/ff_getpaywallproduct.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -144,14 +109,13 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
   </Zoom>
 
 3. Fill in the other fields as follows:
+  - **Available Options**: Data Structured Field
+  - **Select Field**: value
+  - **Available Options**: No further changes
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Available Options| Data Structured Field |
-  | Select Field| value |
 
   <Zoom>
-    <img src={require('./FF_img/getPaywall_result-fields.webp').default}
+    <img src={require('./img/ff_getpaywallresult2.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -161,8 +125,19 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
   />
   </Zoom>
 
-4. Click the **Confirm** button.
+4. Click **Confirm**.
 5. In the **Action Output Variable Name**, create a new variable and name it `getPaywallProductsResult`. We'll use this to map the paywall you designed in FlutterFlow with the Adapty paywall data.
+
+  <Zoom>
+    <img src={require('./img/ff_getpaywallproductsresult.webp').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
 
 ## Step 1.3. Add check if the paywall uploaded successfully
 
