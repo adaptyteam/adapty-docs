@@ -1,7 +1,7 @@
 ---
-title: "Flutter, React Native, Unity - Handle errors"
-description: "Handle errors in Flutter, React Native, and Unity with Adapty’s SDK."
-metadataTitle: "Error Handling in Flutter, React Native & Unity | Adapty Docs"
+title: "Flutter, React Native, Unity, Kotlin Multiplatform - Handle errors"
+description: "Handle errors in Flutter, React Native, Unity, and Kotlin Multiplatform with Adapty's SDK."
+metadataTitle: "Error Handling in Flutter, React Native, Unity & Kotlin Multiplatform | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -49,9 +49,54 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyError
+import com.adapty.kmp.models.AdaptyResult
+
+// Using suspend functions with Result
+val result: AdaptyResult<AdaptyPurchaseResult> = Adapty.makePurchase(product)
+when (result) {
+    is AdaptyResult.Success -> {
+        // Purchase successful
+        val purchaseResult = result.data
+    }
+    is AdaptyResult.Error -> {
+        when (result.error.code) {
+            AdaptyError.Code.PAYMENT_CANCELLED -> {
+                // Payment cancelled
+            }
+            AdaptyError.Code.PAYMENT_INVALID -> {
+                // Payment invalid
+            }
+            // Handle other error codes
+        }
+    }
+}
+
+// Using callback-based approach
+Adapty.makePurchase(
+    product = product,
+    onError = { error ->
+        error?.let { adaptyError ->
+            when (adaptyError.code) {
+                AdaptyError.Code.PAYMENT_CANCELLED -> {
+                    // Payment cancelled
+                }
+                AdaptyError.Code.PAYMENT_INVALID -> {
+                    // Payment invalid
+                }
+                // Handle other error codes
+            }
+        }
+    }
+)
+```
+</TabItem>
 </Tabs>
 
-##  System StoreKit codes
+##  System StoreKit codes
 
 | Error | Code | Description |
 |-----|----|-----------|
@@ -83,9 +128,9 @@ try {
 | pendingPurchase | 25 | This error indicates that the purchase state is pending rather than purchased. Refer to the [Handling pending transactions](https://developer.android.com/google/play/billing/integrate#pending)  page in the Android Developer docs for details. |
 | billingServiceTimeout | 97 | This error indicates that the request has reached the maximum timeout before Google Play can respond. This could be caused, for example, by a delay in the execution of the action requested by the Play Billing Library call. |
 | featureNotSupported | 98 | The requested feature is not supported by the Play Store on the current device. |
-| billingServiceDisconnected | 99 | This fatal error indicates that the client app’s connection to the Google Play Store service via the `BillingClient` has been severed. |
+| billingServiceDisconnected | 99 | This fatal error indicates that the client app's connection to the Google Play Store service via the `BillingClient` has been severed. |
 | billingServiceUnavailable | 102 | This transient error indicates the Google Play Billing service is currently unavailable. In most cases, this means there is a network connection issue anywhere between the client device and Google Play Billing services. |
-| billingUnavailable | 103 | <p>This error indicates that a user billing error occurred during the purchase process. Examples of when this can occur include:</p><p></p><p>1\. The Play Store app on the user's device is out of date.</p><p>2. The user is in an unsupported country.</p><p>3. The user is an enterprise user, and their enterprise admin has disabled users from making purchases.</p><p>4. Google Play is unable to charge the user’s payment method. For example, the user's credit card might have expired.</p><p>5. The user is not logged into the Play Store app.</p> |
+| billingUnavailable | 103 | <p>This error indicates that a user billing error occurred during the purchase process. Examples of when this can occur include:</p><p></p><p>1\. The Play Store app on the user's device is out of date.</p><p>2. The user is in an unsupported country.</p><p>3. The user is an enterprise user, and their enterprise admin has disabled users from making purchases.</p><p>4. Google Play is unable to charge the user's payment method. For example, the user's credit card might have expired.</p><p>5. The user is not logged into the Play Store app.</p> |
 | developerError | 105 | This is a fatal error that indicates you're improperly using an API. |
 | billingError | 106 | This is a fatal error that indicates an internal problem with Google Play itself. |
 | itemAlreadyOwned | 107 | The consumable product has already been purchased. |
@@ -96,7 +141,7 @@ try {
 
 | Error | Code | Description |
 |-----|----|-----------|
-| noProductIDsFound | 1000 | <p>This error indicates that none of the products in the paywall is available in the store.</p><p>If you are encountering this error, please follow the steps below to resolve it:</p><p></p><p>1. Check if all the products have been added to Adapty Dashboard.</p><p>2. Ensure that the Bundle ID of your app matches the one from the Apple Connect.</p><p>3. Verify that the product identifiers from the app stores match with the ones you have added to the Dashboard. Please note that the identifiers should not contain Bundle ID, unless it is already included in the store.</p><p>4. Confirm that the app paid status is active in your Apple tax settings. Ensure that your tax information is up-to-date and your certificates are valid.</p><p>5. Check if a bank account is attached to the app, so it can be eligible for monetization.</p><p>6. Check if the products are available in all regions.Also, ensure that your products are in **“Ready to Submit”** state.</p> |
+| noProductIDsFound | 1000 | <p>This error indicates that none of the products in the paywall is available in the store.</p><p>If you are encountering this error, please follow the steps below to resolve it:</p><p></p><p>1. Check if all the products have been added to Adapty Dashboard.</p><p>2. Ensure that the Bundle ID of your app matches the one from the Apple Connect.</p><p>3. Verify that the product identifiers from the app stores match with the ones you have added to the Dashboard. Please note that the identifiers should not contain Bundle ID, unless it is already included in the store.</p><p>4. Confirm that the app paid status is active in your Apple tax settings. Ensure that your tax information is up-to-date and your certificates are valid.</p><p>5. Check if a bank account is attached to the app, so it can be eligible for monetization.</p><p>6. Check if the products are available in all regions.Also, ensure that your products are in **"Ready to Submit"** state.</p> |
 | productRequestFailed | 1002 | <p>Unable to fetch available products at the moment. Possible reason:</p><p></p><p>- No cache was yet created and no internet connection at the same time.</p> |
 | cantMakePayments | 1003 | In-App purchases are not allowed on this device. |
 | noPurchasesToRestore | 1004 | This error indicates that Google Play did not find the purchase to restore. |

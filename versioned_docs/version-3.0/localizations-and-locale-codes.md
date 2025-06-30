@@ -72,6 +72,26 @@ val localeCode = context.getString(R.string.adapty_paywalls_locale)
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
 </TabItem>
+<TabItem value="kotlin-multiplatform" label="Kotlin Multiplatform">
+```kotlin showLineNumbers
+// 1. Modify your strings.xml files
+
+/*
+strings.xml - Spanish
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+strings.xml - Portuguese (Brazil)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Extract and use the locale code
+
+val localeCode = context.getString(R.string.adapty_paywalls_locale)
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+</TabItem>
 </Tabs>
 
 

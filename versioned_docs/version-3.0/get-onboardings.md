@@ -119,6 +119,41 @@ if (onboarding.hasViewConfiguration) {
 }
 ```
 </TabItem>
+
+<TabItem value="kotlin-multiplatform" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+try {
+    val placementId = "YOUR_PLACEMENT_ID"
+    val locale = "en"
+    
+    val onboarding = Adapty.getOnboarding(placementId, locale)
+    // the requested onboarding
+} catch (error: AdaptyError) {
+    // handle the error
+}
+```
+
+Then, call the `createOnboardingView` method to create a view instance.
+
+:::warning
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.ui.onboardings.createOnboardingView
+
+if (onboarding.hasViewConfiguration) {
+    try {
+        val view = createOnboardingView(onboarding)
+    } catch (error: AdaptyError) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
+}
+```
+</TabItem>
 </Tabs>
 
 Parameters:
@@ -206,6 +241,22 @@ try {
     const onboarding = await adapty.getOnboardingForDefaultAudience(placementId, locale);
     // the requested onboarding
 } catch (error) {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="kotlin-multiplatform" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+try {
+    val placementId = "YOUR_PLACEMENT_ID"
+    val locale = "en"
+    
+    val onboarding = Adapty.getOnboardingForDefaultAudience(placementId, locale)
+    // the requested onboarding
+} catch (error: AdaptyError) {
     // handle the error
 }
 ```

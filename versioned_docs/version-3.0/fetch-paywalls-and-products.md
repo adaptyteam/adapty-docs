@@ -131,6 +131,28 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+import kotlin.time.Duration.Companion.seconds
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 | Parameter | Presence | Description |
@@ -249,6 +271,22 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallProduct
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getPaywallProducts(paywall).onSuccess { products ->
+    // the requested products
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 Response parameters:
@@ -290,11 +328,27 @@ Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallProduct
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getPaywallProductsWithoutDeterminingOffer(paywall).onSuccess { products ->
+    // the requested products without subscriptionOffer
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 ## Speed up paywall fetching with default audience paywall
 
-Typically, paywalls are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
+Typically, paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
 
 To address this, you can use the `getPaywallForDefaultAudience` method, which fetches the paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the paywall by the `getPaywall` method, as detailed in the [Fetch Paywall Information](fetch-paywalls-and-products#fetch-paywall-information) section above.
 
@@ -303,7 +357,7 @@ Why we recommend using `getPaywall`
 
 The `getPaywallForDefaultAudience` method comes with a few significant drawbacks:
 
-- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You’ll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
 - **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
 
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise, stick to the `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information).
@@ -377,6 +431,26 @@ try {
     const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
   // the requested paywall
 } catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
     // handle the error
 }
 ```

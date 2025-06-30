@@ -147,6 +147,28 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+import kotlin.time.Duration.Companion.seconds
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 
 </Tabs>
 
@@ -230,7 +252,7 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
 
 In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem>
@@ -330,7 +352,7 @@ try {
 
 In the example above, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value—for example:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem>
@@ -366,48 +388,39 @@ Parameters:
 | **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
 
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
 
-<TabItem value="unity" label="Unity" default>
-
-In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
+In Kotlin Multiplatform SDK, directly call the `getPaywallView` method without manually fetching the view configuration first.
 
 :::warning
-The result of the `CreateView` method can only be used once. If you need to use it again, call the `CreateView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+The result of the `getPaywallView` method can only be used once. If you need to use it again, call the `getPaywallView` method anew. Calling it twice without recreating may result in an error.
 :::
 
-```csharp showLineNumbers
-var parameters = new AdaptyUICreateViewParameters()
-  .SetPreloadProducts(preloadProducts)
-  .SetCustomTags(
-    new Dictionary<string, string> {
-      { "CUSTOM_TAG_NAME", "John Appleseed" }
-    }
-  )
-  .SetCustomTimers(
-    new Dictionary<string, DateTime> { 
-      { "CUSTOM_TIMER_1M", DateTime.Now.AddSeconds(60) }
-    }
-  )
-  .SetLoadTimeout(new TimeSpan(0, 0, 3));
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyPaywall
 
-AdaptyUI.CreateView(paywall, parameters, (view, error) => {
-  // handle the result
-});
+if (paywall.hasViewConfiguration) {
+    val paywallView = AdaptyUI.getPaywallView(
+        paywall = paywall,
+        products = null,
+        observer = yourObserver,
+        loadProducts = true
+    )
+    // use paywallView
+} else {
+    // use your custom logic
+}
 ```
 
 Parameters:
 
-| Parameter           | Presence       | Description                                                  |
-| :------------------ | :------------- | :----------------------------------------------------------- |
-| **paywall**         | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **loadTimeout**     | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
-| **PreloadProducts** | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
-| **tagResolver**     | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
-| **timerResolver**   | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
-
-In this example, `CUSTOM_TIMER_1M` is the **Timer ID** of the developer-defined timer you set in the Adapty Dashboard. The `CustomTimers` ensures your app dynamically updates the timer with the correct value. For example:
-
-- `CUSTOM_TIMER_1M`: The time left in a 1-month period that started when the user opened the paywall.
+| Parameter            | Presence | Description                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **products**         | optional | Provide an array of `AdaptyPaywallProduct` to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
+| **observer**         | optional | Provide an `AdaptyUIObserver` to observe paywall events. |
+| **loadProducts**     | optional | A boolean parameter that determines whether to load products automatically. Default is `false`. |
 
 </TabItem>
 
@@ -421,7 +434,7 @@ Once you have successfully loaded the paywall and its view configuration, you ca
 
 ## Speed up paywall fetching with default audience paywall
 
-Typically, paywalls are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
+Typically, paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
 
 To address this, you can use the `getPaywallForDefaultAudience`  method, which fetches the paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the paywall by the `getPaywall` method, as detailed in the [Fetch Paywall Information](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) section above.
 
@@ -430,7 +443,7 @@ Why we recommend using `getPaywall`
 
 The `getPaywallForDefaultAudience` method comes with a few significant drawbacks:
 
-- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You’ll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
 - **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
 
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
@@ -528,6 +541,28 @@ try {
 
 </TabItem>
 
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 :::note
@@ -545,4 +580,4 @@ The method is not yet supported in Unity, but support will be added soon.
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p> |
