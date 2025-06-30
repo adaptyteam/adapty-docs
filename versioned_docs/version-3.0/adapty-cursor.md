@@ -1,11 +1,27 @@
 ---
-title: "Use Adapty with Cursor"
-description: "Install and configure Adapty SDK in your project using Cursor."
-metadataTitle: "Use Adapty with Cursor | Adapty Docs"
+title: "Use LLMs to implement Adapty"
+description: "Install and configure Adapty SDK in your project using Cursor, ChatGPT, Claude, or other AI tools."
+metadataTitle: "Use Adapty with LLMs | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+
+You can use large language models (LLMs) to assist in the building of Adapty integrations. We provide a set of tools and best practices if you use LLMs during development.
+
+## Plain text docs
+
+You can access all of our documentation as plain text markdown files by adding `.md` to the end of any URL or clicking **View as Markdown** under article titles. To copy the whole Markdown content immediately, click **Copy for LLM**. For example, you can find the plain text version of this page itself at [https://adapty.io/docs/adapty-cursor.md](https://adapty.io/docs/adapty-cursor.md).
+
+This helps AI tools and agents consume our content and allows you to copy and paste the entire contents of a doc into an LLM. This format is preferable to scraping or copying from our HTML and JavaScript-rendered pages because:
+
+* Plain text contains fewer formatting tokens.
+* Content that isn't rendered in the default view (for example, it's hidden in a tab) of a given page is rendered in the plain text version.
+* LLMs can parse and understand markdown hierarchy.
+
+We also host an [llms.txt file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
+
+## Use with Cursor
 
 **Cursor**, the AI code editor, makes it easier to integrate and maintain apps with Adapty's infrastructure. This guide shows you how to configure Cursor for better results when working with Adapty's SDK.
 
