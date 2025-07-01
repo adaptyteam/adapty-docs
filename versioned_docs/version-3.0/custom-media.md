@@ -13,7 +13,7 @@ You can set up any image or video on a paywall, but sometimes you might want to 
 Custom media is an image or video that your app calls by ID from your code. It replaces a standard media file you’ve added to the paywall in the Paywall Builder.
 
 :::info
-To use this feature, update the Adapty SDK to version 3.5.0 or later.
+To use this feature, update the Adapty SDK to version 3.7.0 or later.
 :::
 
 ## Where can I use custom media?
@@ -29,18 +29,18 @@ Anywhere you’d normally use a regular image or video:
 ## How to use custom media?
 To set up custom media:
 
-1. Turn on the **Use custom media ID** or **Background image custom ID** toggle under the upload area.
+1. Select the **Use custom media ID** checkbox under the upload area.
 
 2. Enter the media ID. For hero images and hero videos, IDs are predefined.
 
-3. Upload a fallback image or video in the **Image file** or **Video file** upload section.
+3. Upload a fallback image or video in the file upload section.
 
 4. Follow the SDK documentation [section on assets customization](https://adapty.io/docs/get-pb-paywalls#customize-assets) and call the media by its ID in your code.
 
-If the Adapty SDK version is below 3.5.0, or if the custom media ID isn't defined in your code, the fallback image or video will be displayed instead.
+If the Adapty SDK version is below 3.7.0, or if the custom media ID isn't defined in your code, the fallback image or video will be displayed instead.
 
 <Zoom>
-     <img src={require('./img/custom-media-predefined-id.webp').default}
+     <img src={require('./img/custom-media.png').default}
      style={{
        border: '1px solid #727272', /* border width and color */
        width: '700px', /* image width */
