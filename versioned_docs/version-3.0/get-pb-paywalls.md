@@ -631,6 +631,21 @@ final customAssets = {
 };
 ```
 </TabItem>
+
+<TabItem value="react-native" label="React Native">
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+```
+</TabItem>
 </Tabs>
 
 Here's how you can use the custom assets you created:
@@ -668,13 +683,6 @@ import 'package:adapty_flutter/adapty_flutter.dart';
 try {
     final view = await AdaptyUI().createPaywallView(
         paywall: paywall,
-        customTags: {
-            'CUSTOM_TAG_NAME': 'John',
-        },
-        customTimers: {
-            'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
-            'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
-        },
         customAssets: <CUSTOM_ASSETS>,
         preloadProducts: preloadProducts,
         );
@@ -683,6 +691,12 @@ try {
     } catch (e) {
 // handle the error
 }
+```
+</TabItem>
+
+<TabItem value="react-native" label="React Native">
+```javascript
+view = await createPaywallView(paywall, { customAssets })
 ```
 </TabItem>
 </Tabs>
