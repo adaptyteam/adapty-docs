@@ -96,11 +96,6 @@ try {
 <TabItem value="kmp" label="Kotlin Multiplatform" default>
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
 Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID").onSuccess { paywall ->
     val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
     // use the remote config values
@@ -168,15 +163,10 @@ await adapty.logShowPaywall(paywall);
 <TabItem value="kmp" label="Kotlin Multiplatform" default>
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
-Adapty.logShowPaywall(paywall).onSuccess {
-    // paywall view logged successfully
-}.onError { error ->
-    // handle the error
+Adapty.logShowPaywall(paywall) { error ->
+    if (error != null) {
+        // handle the error
+    }
 }
 ```
 </TabItem>

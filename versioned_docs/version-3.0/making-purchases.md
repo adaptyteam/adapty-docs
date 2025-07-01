@@ -215,12 +215,6 @@ try {
 <TabItem value="kmp" label="Kotlin Multiplatform" default>
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.AdaptyPurchaseResult
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
 Adapty.makePurchase(product).onSuccess { purchaseResult ->
     when (purchaseResult) {
         is AdaptyPurchaseResult.Success -> {
@@ -407,6 +401,36 @@ Additional request parameter:
 | **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
 
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    product = product,
+    subscriptionUpdateParams = subscriptionUpdateParams
+).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            // successful cross-grade
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // user canceled the purchase flow
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+```
+Additional request parameter:
+
+| Parameter                    | Presence | Description                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | required | an [`AdaptyAndroidSubscriptionUpdateParameters`](sdk-models#AdaptySubscriptionUpdateParameters) object. |
+
+</TabItem>
 </Tabs>
 
 You can read more about subscriptions and replacement modes in the Google Developer documentation:
@@ -486,6 +510,16 @@ Adapty.PresentCodeRedemptionSheet((error) => {
 
 ```typescript showLineNumbers
 adapty.presentCodeRedemptionSheet();
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+Adapty.presentCodeRedemptionSheet { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
 ```
 </TabItem>
 </Tabs>
