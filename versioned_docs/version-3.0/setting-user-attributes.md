@@ -149,17 +149,21 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyProfileParameters
-import com.adapty.kmp.models.AdaptyIOSAppTrackingTransparencyStatus
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
 val builder = AdaptyProfileParameters.Builder()
-    .withAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.AUTHORIZED)
+    .withEmail("email@email.com")
+    .withPhoneNumber("+18888888888")
+    .withFirstName("John")
+    .withLastName("Appleseed")
+    .withGender(AdaptyProfile.Gender.OTHER)
+    .withBirthday(AdaptyProfile.Date(1970, 1, 3))
 
-Adapty.updateProfile(builder.build()).onSuccess {
-    // profile updated successfully
-}.onError { error ->
-    // handle the error
+Adapty.updateProfile(params = builder.build()) { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // profile updated successfully
+    }
 }
 ```
 </TabItem>
@@ -265,17 +269,18 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyProfileParameters
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
+// iOS App Tracking Transparency status values:
+// 0 = NOT_DETERMINED, 1 = RESTRICTED, 2 = DENIED, 3 = AUTHORIZED
 val builder = AdaptyProfileParameters.Builder()
-    .withRemovedCustomAttribute("key1")
-    .withRemovedCustomAttribute("key2")
+    .withAttStatus(3) // AUTHORIZED
 
-Adapty.updateProfile(builder.build()).onSuccess {
-    // profile updated successfully
-}.onError { error ->
-    // handle the error
+Adapty.updateProfile(params = builder.build()) { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // profile updated successfully
+    }
 }
 ```
 </TabItem>
@@ -347,6 +352,24 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfileParameters
+
+val builder = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("key1", "value1")
+    .withCustomAttribute("key2", 2.0)
+
+Adapty.updateProfile(params = builder.build()) { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // profile updated successfully
+    }
+}
+```
+</TabItem>
 </Tabs>
 
 To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
@@ -406,6 +429,24 @@ try {
   });
 } catch (error) {
     // handle `AdaptyError`
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfileParameters
+
+val builder = AdaptyProfileParameters.Builder()
+    .withRemovedCustomAttribute("key1")
+    .withRemovedCustomAttribute("key2")
+
+Adapty.updateProfile(params = builder.build()) { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // profile updated successfully
+    }
 }
 ```
 </TabItem>
