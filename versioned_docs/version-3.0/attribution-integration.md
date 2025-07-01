@@ -374,6 +374,8 @@ Adapty.updateProfile(builder.build(), error -> {
 </TabItem>
 </Tabs>
 
+-->
+
 ### Custom
 
 If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
