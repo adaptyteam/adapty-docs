@@ -592,6 +592,11 @@ let customAssets: [String: AdaptyCustomAsset] = [
         )
     ),
 ]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
 ```
 </TabItem>
 <TabItem value="kotlin" label="Kotlin">
@@ -612,12 +617,23 @@ val customAssets = AdaptyCustomAssets.of(
                 ),
             ),
 )
+
+val paywallView = AdaptyUI.getPaywallView(
+    activity,
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
 ```
 </TabItem>
 
 <TabItem value="flutter" label="Flutter">
 
 ```dart
+import 'package:adapty_flutter/adapty_flutter.dart';
+
 final customAssets = {
     // Show a local image using a custom ID
     'custom_image': AdaptyCustomAsset.localImageAsset(
@@ -629,56 +645,6 @@ final customAssets = {
         assetId: 'assets/videos/custom_video.mp4',
     ),
 };
-```
-</TabItem>
-
-<TabItem value="react-native" label="React Native">
-```javascript
-const customAssets: Record<string, AdaptyCustomAsset> = {
-  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
-  'hero_video': {
-    type: 'video',
-    fileLocation: {
-      ios: { fileName: 'custom_video.mp4' },
-      android: { relativeAssetPath: 'videos/custom_video.mp4' }
-    }
-  }
-};
-```
-</TabItem>
-</Tabs>
-
-Here's how you can use the custom assets you created:
-
-<Tabs>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
-    forPaywall: paywall,
-    assetsResolver: customAssets
-)
-```
-</TabItem>
-
-<TabItem value="kotlin" label="Kotlin">
-```kotlin showLineNumbers
-val paywallView = AdaptyUI.getPaywallView(
-    activity,
-    viewConfiguration,
-    products,
-    eventListener,
-    insets,
-    personalizedOfferResolver,
-    customAssets,
-    tagResolver,
-    timerResolver,
-    observerModeHandler,
-)
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter">
-```dart
-import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
     final view = await AdaptyUI().createPaywallView(
@@ -696,10 +662,23 @@ try {
 
 <TabItem value="react-native" label="React Native">
 ```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
 view = await createPaywallView(paywall, { customAssets })
+
 ```
 </TabItem>
 </Tabs>
+
 
 :::note
 If an asset is not found, the paywall will fall back to its default appearance.
