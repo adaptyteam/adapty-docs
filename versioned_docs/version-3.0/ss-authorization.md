@@ -33,7 +33,7 @@ The API expects a JSON-formatted body with the necessary data for the request.
 
 ## Rate limits
 
-To avoid throttling, ensure that the number of requests (per app) stays below 300 per minute.
+To avoid throttling, ensure that the number of requests (per app) stays below 40,000 per minute.
 
 If this limit is exceeded, the system may slow down or temporarily block further requests to maintain optimal performance for all users.
 
