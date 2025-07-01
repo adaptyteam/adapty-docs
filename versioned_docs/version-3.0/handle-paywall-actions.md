@@ -9,7 +9,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 
-If you are build paywalls using the Adapty paywall builder, it is crucial to understand how buttons work:
+If you are building paywalls using the Adapty paywall builder, it's crucial to understand how buttons work:
 
 1. **Design phase**: Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
 2. **Development phase**: Write code in your app to handle each action you've assigned.
