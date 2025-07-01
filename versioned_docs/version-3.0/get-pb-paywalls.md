@@ -562,7 +562,7 @@ For example, you can:
 - Show a preview image before running a video.
 
 :::important
-To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter SDK to version 3.8.0 or higher.
+To use this feature, update the Adapty iOS/Android SDK to version 3.7.0 or higher or Adapty Flutter/React Native SDK to version 3.8.0 or higher.
 :::
 
 Here’s an example of how you can provide custom asssets via a simple dictionary:
