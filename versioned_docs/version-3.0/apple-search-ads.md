@@ -2,6 +2,7 @@
 title: "Apple Search Ads (ASA)"
 description: "Integrate Apple Search Ads with Adapty to optimize subscription conversions."
 metadataTitle: "Apple Search Ads Integration | Adapty Docs"
+keywords: ['apple ads', 'asa', 'apple search ads']
 ---
 
 import Zoom from 'react-medium-image-zoom';

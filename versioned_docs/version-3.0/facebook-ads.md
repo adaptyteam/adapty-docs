@@ -58,7 +58,6 @@ Please consider that the Facebook Ads integration works on iOS 14.5+ only for us
    - [iOS SDK](https://developers.facebook.com/docs/ios/getting-started)
    - [Android SDK](https://developers.facebook.com/docs/android/getting-started)
    - [Unity SDK](https://developers.facebook.com/docs/unity/getting-started)
-   - [React Native SDK](https://developers.facebook.com/docs/react-native/getting-started)
 
 
 <Zoom>

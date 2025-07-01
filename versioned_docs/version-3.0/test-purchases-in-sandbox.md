@@ -2,6 +2,8 @@
 title: "Test in-app purchases in App Store Sandbox"
 description: "Test purchases in the sandbox environment to ensure smooth transactions."
 metadataTitle: "Testing Purchases in Sandbox Mode | Adapty Docs"
+keywords: ['test']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
