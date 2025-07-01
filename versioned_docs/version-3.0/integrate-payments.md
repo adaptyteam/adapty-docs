@@ -1,5 +1,5 @@
 ---
-title: "Add products"
+title: "Integrate with stores or payment platforms"
 description: "Integrate Adapty with App Store, Google Play, custom stores, Stripe, and Paddle."
 metadataTitle: "Integrate with stores or web payments and set up products | Adapty Docs"
 ---

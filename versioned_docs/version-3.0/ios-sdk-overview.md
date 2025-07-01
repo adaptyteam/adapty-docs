@@ -9,23 +9,21 @@ displayed_sidebar: sdkios
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Adapty iOS SDK is a powerful tool that helps you implement and manage in-app purchases and subscriptions in your iOS applications. It provides a seamless integration with the App Store and offers a comprehensive set of features for subscription management.
+First, we need to describe:
+- What is Adapty SDK and why do they need it
+- What are the main concepts
+- Probably redirect those who haven't set up the dashboard part to the UI quickstart
 
-### Key Features
+### Get started
 
-- **Easy Integration**: Simple setup process with CocoaPods or Swift Package Manager
-- **Subscription Management**: Handle subscriptions, purchases, and restorations with minimal code
-- **Paywall Builder**: Create and manage beautiful paywalls without coding
-- **Analytics**: Track subscription metrics and user behavior
-- **A/B Testing**: Test different pricing strategies and paywall designs
+Describe the main steps (1-2-3-4 in the **Get started section**) and provide links to them, like:
 
-### Getting Started
+1. [Install & configure SDK](sdk-installation-ios.md): something about installation and activation
+2. [Identify users](ios-quickstart-identify.md): something short about working with users in your app
+3. [Present a paywall](ios-quickstart-paywalls.md): something short about getting and showing paywalls
+4. [Check the subscription status](ios-check-subscription-status.md): something about checking the subscription status to understand whether the user can access paid content
 
-To start using the Adapty iOS SDK, you'll need to:
 
-1. Install the SDK using your preferred package manager
-2. Initialize Adapty with your public SDK key
-3. Set up your paywalls in the Adapty dashboard
-4. Implement the necessary SDK methods in your app
+As a tip, maybe we can prompt them to use LLMs for implementation and provide a link to the Use with Cursor page 
 
-For detailed installation instructions, check out our [iOS SDK installation guide](sdk-installation-ios). 
+Also, something about migration here in the form of a note
