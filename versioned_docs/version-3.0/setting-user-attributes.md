@@ -131,25 +131,37 @@ Adapty.UpdateProfile(builder.Build(), (error) => {
 <TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
-// Only for TypeScript validation
-import type { AdaptyProfileParameters } from 'react-native-adapty';
-
-const params: AdaptyProfileParameters = {
-    email: 'email@email.com',
-    phoneNumber: '+18888888888',
-    firstName: 'John',
-    lastName: 'Appleseed',
-    gender: 'other',
-    birthday: new Date().toISOString(),
-};
+import {AppTrackingTransparencyStatus} from 'react-native-adapty';
 
 try {
-    await adapty.updateProfile(params);
+  await adapty.updateProfile({
+    // you can also pass a string value (validated via tsc) if you prefer
+    appTrackingTransparencyStatus: AppTrackingTransparencyStatus.Authorized,
+  });
 } catch (error) {
-    // handle `AdaptyError`
+  // handle `AdaptyError`
 }
 ```
 
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.AdaptyIOSAppTrackingTransparencyStatus
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+val builder = AdaptyProfileParameters.Builder()
+    .withAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.AUTHORIZED)
+
+Adapty.updateProfile(builder.build()).onSuccess {
+    // profile updated successfully
+}.onError { error ->
+    // handle the error
+}
+```
 </TabItem>
 </Tabs>
 
@@ -238,11 +250,32 @@ import {AppTrackingTransparencyStatus} from 'react-native-adapty';
 
 try {
   await adapty.updateProfile({
-    // you can also pass a string value (validated via tsc) if you prefer
-    appTrackingTransparencyStatus: AppTrackingTransparencyStatus.Authorized,
+    codableCustomAttributes: {
+      key_1: null,
+      key_2: null,
+    },
   });
 } catch (error) {
-  // handle `AdaptyError`
+    // handle `AdaptyError`
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+val builder = AdaptyProfileParameters.Builder()
+    .withRemovedCustomAttribute("key1")
+    .withRemovedCustomAttribute("key2")
+
+Adapty.updateProfile(builder.build()).onSuccess {
+    // profile updated successfully
+}.onError { error ->
+    // handle the error
 }
 ```
 </TabItem>

@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), [Facebook Ads](facebook-ads), and more. Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
+Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), and [Facebook Ads](facebook-ads). Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
 
 Send subscription events with correct user properties and ID's to attributions services you use.
 
@@ -27,20 +27,17 @@ Send subscription events with correct user properties and ID's to attributions s
 
 :::
 
-Follow our detailed guidance on configuring the following 3rd-party attribution integrations:
-- MMPs:
+Follow our detailed guidance on configuring the following 3d-part attribution integrations:
 
-  - [Adjust](adjust)
-  - [Airbridge](airbridge)
-  - [AppsFlyer](appsflyer)
-  - [Asapty](asapty)
-  - [Branch](branch)
-  - [Singular](singular)
-  - [Tenjin](tenjin)
-- Ad platforms:
-  - [Apple Search Ads](apple-search-ads)
-  - [Facebook Ads](facebook-ads)
-- [Custom integration](custom-attribution-integrations.md)
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
 
 :::note
 Don't see your attribution provider?
@@ -377,4 +374,19 @@ Adapty.updateProfile(builder.build(), error -> {
 </TabItem>
 </Tabs>
 
--->
+### Custom
+
+If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
+To set attributes, use only the keys from the example below (all keys are optional). The system supports max 30 available attributes, where the keys are limited to 30 characters. Every value in the map should be no longer than 50 characters. `status` can only be `organic`, `non-organic` or `unknown`. Any additional keys will be omitted. 
+
+```swift showLineNumbers title="Swift"
+let attribution = [
+    "status": "non_organic|organic|unknown",
+    "channel": "Google Ads",
+    "campaign": "Christmas Sale",
+    "ad_group": "ad group",
+    "ad_set": "ad set",
+    "creative": "creative id"
+]
+Adapty.updateAttribution(attribution, source: "custom")
+```

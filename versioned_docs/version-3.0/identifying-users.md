@@ -101,6 +101,27 @@ adapty.activate("PUBLIC_SDK_KEY", {
 });
 ```
 </TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+val config = AdaptyConfig(
+    apiKey = "PUBLIC_SDK_KEY",
+    customerUserId = "YOUR_USER_ID"
+)
+
+Adapty.activate(config).onSuccess {
+    // Adapty activated successfully
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 <SampleApp />
@@ -173,6 +194,20 @@ try {
     await adapty.identify("YOUR_USER_ID");
     // successfully identified
 } catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successfully identified
+}.onError { error ->
     // handle the error
 }
 ```
@@ -264,6 +299,20 @@ try {
     await adapty.logout();
     // successful logout
 } catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
     // handle the error
 }
 ```

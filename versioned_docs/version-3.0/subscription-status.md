@@ -111,7 +111,11 @@ Adapty.GetProfile((profile, error) => {
     return;
   }
   
-  // check the access
+  // "premium" is an identifier of default access level
+  var accessLevel = profile.AccessLevels["premium"];
+  if (accessLevel != null && accessLevel.IsActive) {
+    // grant access to premium features
+  }
 });
 ```
 </TabItem>
@@ -121,6 +125,24 @@ try {
     const profile = await adapty.getProfile();
 } catch (error) {
   // handle the error
+}
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfile
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getProfile().onSuccess { profile ->
+    val isPremium = profile.accessLevels["premium"]?.isActive == true
+    if (isPremium) {
+        // grant access to premium features
+    }
+}.onError { error ->
+    // handle the error
 }
 ```
 </TabItem>
@@ -227,86 +249,4 @@ Adapty.GetProfile((profile, error) => {
 });
 ```
 </TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-    const profile = await adapty.getProfile();
-    
-  const isActive = profile.accessLevels["premium"]?.isActive;
-    if (isActive) {
-        // grant access to premium features
-    }
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
 </Tabs>
-
-### Listening for subscription status updates
-
-Whenever the user's subscription changes, Adapty fires an event. 
-
-To receive messages from Adapty, you need to make some additional configuration:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
-```swift showLineNumbers
-Adapty.delegate = self
-
-// To receive subscription updates, extend `AdaptyDelegate` with this method:
-nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
-    // handle any changes to subscription state
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.setOnProfileUpdatedListener { profile ->
-    // handle any changes to subscription state
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers t
-Adapty.setOnProfileUpdatedListener(profile -> {
-    // handle any changes to subscription state
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-Adapty().didUpdateProfileStream.listen((profile) {
-  // handle any changes to subscription state
-});
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
-public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-  public void OnLoadLatestProfile(AdaptyProfile profile) {
-    // handle any changes to subscription state
-  }
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-// Create an "onLatestProfileLoad" event listener
-adapty.addEventListener('onLatestProfileLoad', profile => {
-    // handle any changes to subscription state
-});
-```
-</TabItem>
-</Tabs>
-
-Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
-
-### Subscription status cache
-
-The cache implemented in the Adapty SDK stores the subscription status of the profile. This means that even if the server is unavailable, the cached data can be accessed to provide information about the profile's subscription status.
-
-However, it's important to note that direct data requests from the cache are not possible. The SDK periodically queries the server every minute to check for any updates or changes related to the profile. If there are any modifications, such as new transactions or other updates, they will be sent to the cached data in order to keep it synchronized with the server.
