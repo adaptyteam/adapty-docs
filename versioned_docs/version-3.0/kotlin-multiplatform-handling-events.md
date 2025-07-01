@@ -9,22 +9,23 @@ keywords: ['AdaptyUIObserver', 'paywallViewDidPerformAction', 'paywallViewDidSel
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import Details from '@site/src/components/Details';
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
-This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later.
+This guide is for **new Paywall Builder paywalls** only.
 :::
 
 <SampleApp />
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` interface methods.
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` interface methods. Some methods have default implementations that handle common scenarios automatically.
 
 ## User-generated events
 
 ### Actions
 
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `paywallViewDidPerformAction` method will be triggered. You'll need to define what each action should do.
+When a user performs an action (like clicking a close button, custom button, or opening a URL), the `paywallViewDidPerformAction` method will be triggered. You'll need to define what each action should do.
 
 The following built-in actions are supported:
 
@@ -32,7 +33,7 @@ The following built-in actions are supported:
 - `AndroidSystemBackAction`
 - `OpenUrlAction(url)`
 
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the observer method `paywallViewDidPerformAction` will be triggered with the `CustomAction(id)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall".
+Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the observer method `paywallViewDidPerformAction` will be triggered with the `CustomAction(action)` case and the `action` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall".
 
 Here's an example, but feel free to handle the actions in your own way:
 
@@ -61,7 +62,7 @@ override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAct
             }
         }
         is AdaptyUIAction.CustomAction -> {
-            when (action.id) {
+            when (action.action) {
                 "login" -> {
                     // Implement login flow
                 }
@@ -77,9 +78,53 @@ override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAct
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Close action
+{
+  "action": "CloseAction"
+}
+
+// Android system back action
+{
+  "action": "AndroidSystemBackAction"
+}
+
+// Open URL action
+{
+  "action": "OpenUrlAction",
+  "url": "https://example.com/terms"
+}
+
+// Custom action
+{
+  "action": "CustomAction",
+  "action": "login"
+}
+```
+</Details>
+
 :::tip
 Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you've set up in the Adapty Dashboard.
 :::
+
+### Paywall appearance and disappearance
+
+When a paywall appears or disappears, these methods will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidAppear(view: AdaptyUIView) {
+    // Handle paywall appearance
+    // You can track analytics or update UI here
+}
+
+override fun paywallViewDidDisappear(view: AdaptyUIView) {
+    // Handle paywall disappearance
+    // You can track analytics or update UI here
+}
+```
 
 ### Product selection
 
@@ -92,6 +137,16 @@ override fun paywallViewDidSelectProduct(view: AdaptyUIView, productId: String) 
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
 ### Started purchase
 
 If a user initiates the purchase process, this method will be invoked:
@@ -103,9 +158,26 @@ override fun paywallViewDidStartPurchase(view: AdaptyUIView, product: AdaptyPayw
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 ### Successful, canceled, or pending purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If `Adapty.makePurchase()` succeeds, this method will be invoked. By default, it automatically dismisses the paywall on successful purchase:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishPurchase(
@@ -130,6 +202,66 @@ override fun paywallViewDidFinishPurchase(
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
 We recommend dismissing the paywall screen in case of successful purchase.
 
 ### Failed purchase
@@ -152,6 +284,30 @@ override fun paywallViewDidFailPurchase(
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
 ### Successful restore
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
@@ -172,6 +328,31 @@ override fun paywallViewDidFinishRestore(view: AdaptyUIView, profile: AdaptyProf
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
 We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
 
 ### Failed restore
@@ -188,6 +369,22 @@ override fun paywallViewDidFailRestore(view: AdaptyUIView, error: AdaptyError) {
     )
 }
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
 
 ### Web payment navigation completion
 
@@ -207,6 +404,37 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
 ## Data fetching and rendering
 
 ### Product loading errors
@@ -225,6 +453,22 @@ override fun paywallViewDidFailLoadingProducts(view: AdaptyUIView, error: Adapty
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
 ### Rendering errors
 
 If an error occurs during the interface rendering, it will be reported by this method:
@@ -237,122 +481,21 @@ override fun paywallViewDidFailRendering(view: AdaptyUIView, error: AdaptyError)
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
 
-## Complete observer implementation
-
-Here's a complete example of implementing the `AdaptyUIObserver` interface:
-
-```kotlin showLineNumbers title="Kotlin"
-import com.adapty.kmp.AdaptyUIObserver
-import com.adapty.kmp.models.AdaptyError
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.AdaptyProfile
-import com.adapty.kmp.models.AdaptyPurchaseResult
-import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIDialogActionType
-import com.adapty.kmp.models.AdaptyUIView
-
-class MyPaywallObserver : AdaptyUIObserver {
-    override fun paywallViewDidFinishRestore(view: AdaptyUIView, profile: AdaptyProfile) {
-        view.showDialog(
-            title = "Success",
-            content = "Purchases were successfully restored.",
-            primaryActionTitle = "OK"
-        )
-        if (profile.accessLevels["premium"]?.isActive == true) {
-            view.dismiss()
-        }
-    }
-
-    override fun paywallViewDidFailRendering(view: AdaptyUIView, error: AdaptyError) {
-        // Handle rendering error
-    }
-
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
-        when (action) {
-            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
-            is AdaptyUIAction.OpenUrlAction -> {
-                val selectedAction = view.showDialog(
-                    title = "Open URL?",
-                    content = action.url,
-                    primaryActionTitle = "Cancel",
-                    secondaryActionTitle = "OK"
-                )
-
-                when (selectedAction) {
-                    AdaptyUIDialogActionType.PRIMARY -> {
-                        // User chose primary action
-                    }
-                    AdaptyUIDialogActionType.SECONDARY -> {
-                        // Open URL
-                    }
-                }
-            }
-            is AdaptyUIAction.CustomAction -> {
-                // Handle custom action
-            }
-        }
-    }
-
-    override fun paywallViewDidSelectProduct(view: AdaptyUIView, productId: String) {
-        // Handle product selection
-    }
-
-    override fun paywallViewDidStartPurchase(view: AdaptyUIView, product: AdaptyPaywallProduct) {
-        // Handle purchase start
-    }
-
-    override fun paywallViewDidFinishPurchase(
-        view: AdaptyUIView,
-        product: AdaptyPaywallProduct,
-        purchaseResult: AdaptyPurchaseResult
-    ) {
-        when (purchaseResult) {
-            is AdaptyPurchaseResult.Success -> {
-                if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
-                    view.dismiss()
-                }
-            }
-            AdaptyPurchaseResult.Pending -> {
-                // Handle pending purchase
-            }
-            AdaptyPurchaseResult.UserCanceled -> {
-                // Handle user cancellation
-            }
-        }
-    }
-
-    override fun paywallViewDidFailPurchase(
-        view: AdaptyUIView,
-        product: AdaptyPaywallProduct,
-        error: AdaptyError
-    ) {
-        // Handle purchase failure
-    }
-
-    override fun paywallViewDidStartRestore(view: AdaptyUIView) {
-        // Handle restore start
-    }
-
-    override fun paywallViewDidFailRestore(view: AdaptyUIView, error: AdaptyError) {
-        view.showDialog(
-            title = "Error",
-            content = error.message,
-            primaryActionTitle = "OK"
-        )
-    }
-
-    override fun paywallViewDidFailLoadingProducts(view: AdaptyUIView, error: AdaptyError) {
-        // Handle product loading failure
-    }
-
-    override fun paywallViewDidFinishWebPaymentNavigation(
-        view: AdaptyUIView,
-        product: AdaptyPaywallProduct?,
-        error: AdaptyError?
-    ) {
-        // Handle web payment navigation completion
-    }
-}
-``` 

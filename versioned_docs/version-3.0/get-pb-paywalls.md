@@ -152,7 +152,6 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 import com.adapty.kmp.models.onError
 import com.adapty.kmp.models.onSuccess
 import kotlin.time.Duration.Companion.seconds
@@ -160,7 +159,6 @@ import kotlin.time.Duration.Companion.seconds
 Adapty.getPaywall(
     placementId = "YOUR_PLACEMENT_ID",
     locale = "en",
-    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
     loadTimeout = 5.seconds
 ).onSuccess { paywall ->
     // the requested paywall
@@ -213,8 +211,7 @@ do {
             forPaywall: paywall,
             products: products,
             observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
-            tagResolver: <AdaptyTagResolver>,
-            timerResolver: <AdaptyTimerResolver>
+            tagResolver: <AdaptyTagResolver>
     )
     // use loaded configuration
 } catch {
@@ -230,7 +227,7 @@ do {
 | **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
 
-## Set up developer-defined timers
+#### Set up developer-defined timers
 
 To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
 
@@ -388,24 +385,73 @@ Parameters:
 | **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
 
 </TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
+<TabItem value="unity" label="Unity" default>
 
-In Kotlin Multiplatform SDK, directly call the `getPaywallView` method without manually fetching the view configuration first.
+In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
 
 :::warning
-The result of the `getPaywallView` method can only be used once. If you need to use it again, call the `getPaywallView` method anew. Calling it twice without recreating may result in an error.
+The result of the `CreateView` method can only be used once. If you need to use it again, call the `CreateView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetCustomTags(
+    new Dictionary<string, string> {
+      { "CUSTOM_TAG_NAME", "John Appleseed" }
+    }
+  )
+  .SetCustomTimers(
+    new Dictionary<string, DateTime> { 
+      { "CUSTOM_TIMER_1M", DateTime.Now.AddSeconds(60) }
+    }
+  )
+  .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+Parameters:
+
+| Parameter           | Presence       | Description                                                  |
+| :------------------ | :------------- | :----------------------------------------------------------- |
+| **paywall**         | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**     | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+| **PreloadProducts** | optional       | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **tagResolver**     | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](https://dev-docs.adapty.io/docs/custom-tags-in-paywall-builder) topic for more details. |
+| **timerResolver**   | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
+
+In this example, `CUSTOM_TIMER_1M` is the **Timer ID** of the developer-defined timer you set in the Adapty Dashboard. The `CustomTimers` ensures your app dynamically updates the timer with the correct value. For example:
+
+- `CUSTOM_TIMER_1M`: The time left in a 1-month period that started when the user opened the paywall.
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+In Kotlin Multiplatform SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
+
+:::warning
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in an error.
 :::
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.AdaptyUI
 import com.adapty.kmp.models.AdaptyPaywall
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlin.time.Duration.Companion.seconds
 
 if (paywall.hasViewConfiguration) {
-    val paywallView = AdaptyUI.getPaywallView(
+    val paywallView = AdaptyUI.createPaywallView(
         paywall = paywall,
-        products = null,
-        observer = yourObserver,
-        loadProducts = true
+        loadTimeout = 5.seconds,
+        preloadProducts = true,
+        androidPersonalizedOffers = mapOf(
+            "product_id" to true
+        )
     )
     // use paywallView
 } else {
@@ -415,12 +461,38 @@ if (paywall.hasViewConfiguration) {
 
 Parameters:
 
-| Parameter            | Presence | Description                                                  |
-| :------------------- | :------- | :----------------------------------------------------------- |
-| **paywall**          | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **products**         | optional | Provide an array of `AdaptyPaywallProduct` to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the required products. |
-| **observer**         | optional | Provide an `AdaptyUIObserver` to observe paywall events. |
-| **loadProducts**     | optional | A boolean parameter that determines whether to load products automatically. Default is `false`. |
+| Parameter                    | Presence       | Description                                                  |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**                  | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Default: `null`. |
+| **preloadProducts**          | optional       | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
+| **customTags**               | optional       | Define a map of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. |
+| **androidPersonalizedOffers** | optional       | A map indicating whether the price for a specific product is personalized. The key is a string combining `basePlanId` and `vendorProductId`, separated by a `:`. If `basePlanId` is `null` or empty, only `vendorProductId` is used. |
+
+#### Set up developer-defined timers
+
+To use custom timers in your mobile app, provide a map of custom timer IDs and their end dates as ISO 8601 strings. This allows you to display countdown timers in your paywall. Here is an example:
+
+```kotlin showLineNumbers
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlin.time.Duration.Companion.seconds
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_24H" to Clock.System.now().plus(86400.seconds)
+        .toLocalDateTime(TimeZone.UTC).toString(),
+    "CUSTOM_TIMER_1H" to Clock.System.now().plus(3600.seconds)
+        .toLocalDateTime(TimeZone.UTC).toString(),
+    "CUSTOM_TIMER_10M" to Clock.System.now().plus(600.seconds)
+        .toLocalDateTime(TimeZone.UTC).toString()
+)
+```
+
+In this example, `CUSTOM_TIMER_24H`, `CUSTOM_TIMER_1H`, and `CUSTOM_TIMER_10M` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `customTimers` ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_24H`: The time left in a 24-hour period that started when the user opened the paywall.
+- `CUSTOM_TIMER_1H`: The time left in a 1-hour period that started when the user opened the paywall.
+- `CUSTOM_TIMER_10M`: The time left in a 10-minute period that started when the user opened the paywall.
 
 </TabItem>
 
@@ -546,18 +618,21 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
-Adapty.getPaywallForDefaultAudience(
+// Using suspend function with Result
+val result: AdaptyResult<AdaptyPaywall> = Adapty.getPaywallForDefaultAudience(
     placementId = "YOUR_PLACEMENT_ID",
-    locale = "en",
-    fetchPolicy = AdaptyPaywallFetchPolicy.Default
-).onSuccess { paywall ->
-    // the requested paywall
-}.onError { error ->
-    // handle the error
+    locale = "en"
+)
+when (result) {
+    is AdaptyResult.Success -> {
+        val paywall = result.value
+        // the requested paywall
+    }
+    is AdaptyResult.Error -> {
+        val error = result.error
+        // handle the error
+    }
 }
 ```
 

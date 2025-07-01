@@ -13,7 +13,7 @@ While Paywall Builder seamlessly handles the purchasing process upon clicking "b
 In native iOS and Android SDKs, you have complete control over both presenting and hiding the paywalls. However in Flutter, React Native, and Unity SDKs this works a bit differently. Learn how below.
 
 :::warning
-This guide covers only hiding **new Paywall Builder paywalls**, which works with React Native SDK version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. To learn how to hide **legacy Paywall Builder paywalls**, read the [Hide legacy Paywall Builder paywalls (on cross-platform SDKs)](hide-legacy-paywall-builder-paywalls)
+This guide covers only hiding **new Paywall Builder paywalls**, which works with React Native SDK version 3.0 or higher, Flutter and Unity SDKs version 3.3.0 or higher, and Kotlin Multiplatform SDK version 3.6.0 or higher. To learn how to hide **legacy Paywall Builder paywalls**, read the [Hide legacy Paywall Builder paywalls (on cross-platform SDKs)](hide-legacy-paywall-builder-paywalls)
 :::
 
 ## Dismiss a paywall screen
@@ -43,6 +43,37 @@ try {
   await view.dismiss();
 } catch (error) {
   // handle the error
+}
+```
+
+</TabItem> 
+<TabItem value="kmp" label="Kotlin Multiplatform" default> 
+
+You can hide a paywall view in 2 ways:
+
+- call the `view.dismiss()` method
+- return from event handlers in your `AdaptyUIObserver` implementation
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+// Method 1: Direct dismiss
+view.dismiss()
+
+// Method 2: Through event observer
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> view.dismiss()
+            else -> {}
+        }
+    }
+    
+    override fun paywallViewDidFinishPurchase(
+        view: AdaptyUIView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        view.dismiss()
+    }
 }
 ```
 
