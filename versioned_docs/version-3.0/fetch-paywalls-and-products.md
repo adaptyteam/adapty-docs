@@ -136,18 +136,12 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.AdaptyPaywallProduct
 import com.adapty.kmp.models.onError
 import com.adapty.kmp.models.onSuccess
-import kotlin.time.Duration.Companion.seconds
 
-Adapty.getPaywall(
-    placementId = "YOUR_PLACEMENT_ID",
-    locale = "en",
-    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
-    loadTimeout = 5.seconds
-).onSuccess { paywall ->
-    // the requested paywall
+Adapty.getPaywallProducts(paywall).onSuccess { products ->
+    // the requested products
 }.onError { error ->
     // handle the error
 }
@@ -274,12 +268,6 @@ try {
 <TabItem value="kmp" label="Kotlin Multiplatform" default>
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
 Adapty.getPaywallProducts(paywall).onSuccess { products ->
     // the requested products
 }.onError { error ->
@@ -325,22 +313,6 @@ Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
     case let .failure(error):
         // handle the error
     }
-}
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
-Adapty.getPaywallProductsWithoutDeterminingOffer(paywall).onSuccess { products ->
-    // the requested products without subscriptionOffer
-}.onError { error ->
-    // handle the error
 }
 ```
 </TabItem>
