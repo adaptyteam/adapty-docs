@@ -107,18 +107,17 @@ adapty.activate("PUBLIC_SDK_KEY", {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
-val config = AdaptyConfig(
-    apiKey = "PUBLIC_SDK_KEY",
-    customerUserId = "YOUR_USER_ID"
-)
+val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("YOUR_USER_ID")
+    .build()
 
-Adapty.activate(config).onSuccess {
-    // Adapty activated successfully
-}.onError { error ->
-    // handle the error
+Adapty.activate(configuration = config) { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // Adapty activated successfully
+    }
 }
 ```
 </TabItem>
@@ -202,13 +201,13 @@ try {
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
-Adapty.identify("YOUR_USER_ID").onSuccess {
-    // successfully identified
-}.onError { error ->
-    // handle the error
+Adapty.identify("YOUR_USER_ID") { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // successfully identified
+    }
 }
 ```
 </TabItem>
@@ -307,13 +306,13 @@ try {
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
-Adapty.logout().onSuccess {
-    // successful logout
-}.onError { error ->
-    // handle the error
+Adapty.logout { error ->
+    if (error != null) {
+        // handle the error
+    } else {
+        // successful logout
+    }
 }
 ```
 </TabItem>

@@ -133,17 +133,15 @@ try {
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyProfile
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
-Adapty.getProfile().onSuccess { profile ->
-    val isPremium = profile.accessLevels["premium"]?.isActive == true
-    if (isPremium) {
-        // grant access to premium features
+Adapty.getProfile()
+    .onSuccess { profile ->
+        if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+            // grant access to premium features
+        }
+    }.onError { error ->
+        // handle the error
     }
-}.onError { error ->
-    // handle the error
-}
 ```
 </TabItem>
 </Tabs>
@@ -247,6 +245,22 @@ Adapty.GetProfile((profile, error) => {
     // grant access to premium features
   }
 });
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfile
+
+Adapty.getProfile()
+    .onSuccess { profile ->
+        val isPremium = profile.accessLevels["premium"]?.isActive == true
+        if (isPremium) {
+            // grant access to premium features
+        }
+    }.onError { error ->
+        // handle the error
+    }
 ```
 </TabItem>
 </Tabs>
