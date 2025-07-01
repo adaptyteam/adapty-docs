@@ -93,6 +93,22 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID").onSuccess { paywall ->
+    val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
+    // use the remote config values
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
@@ -147,6 +163,21 @@ Adapty.LogShowPaywall(paywall, (error) => {
 <TabItem value="rn" label="React Native (TS)" default>
 ```typescript showLineNumbers
 await adapty.logShowPaywall(paywall);
+```
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.logShowPaywall(paywall).onSuccess {
+    // paywall view logged successfully
+}.onError { error ->
+    // handle the error
+}
 ```
 </TabItem>
 </Tabs>

@@ -134,6 +134,23 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfile
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.restorePurchases().onSuccess { profile ->
+    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+        // successful access restore
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 Response parameters:

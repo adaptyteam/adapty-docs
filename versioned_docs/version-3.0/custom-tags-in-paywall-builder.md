@@ -20,8 +20,8 @@ This section describes the new Paywall Builder, compatible with iOS, Android, an
 
 Here are some ways you can use custom tags:
 
-- Display the user’s name or email on the paywall.
-- Show the current day of the week to boost sales (e.g., “Happy Thursday”).
+- Display the user's name or email on the paywall.
+- Show the current day of the week to boost sales (e.g., "Happy Thursday").
 - Add personalized details about the products you're selling (like the name of a fitness program or a phone number in a VoIP app).
 
 Custom tags help you create a flexible paywall that adapts to various situations, making your app's interface more personalized and engaging.
@@ -44,9 +44,9 @@ To add a custom tag:
 
    A few things to keep in mind:
 
-   - In the Adapty Paywall Builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`), but in your app’s code, they should be referenced directly (CUSTOM_TAG).
+   - In the Adapty Paywall Builder, custom tags are wrapped in angle brackets (`<CUSTOM_TAG/>`), but in your app's code, they should be referenced directly (CUSTOM_TAG).
    - Custom tags are case-sensitive.  
-   - Custom tags can’t overlap with any of the  [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
+   - Custom tags can't overlap with any of the  [Tag Variables](paywall-builder-tag-variables) reserved for product info in Adapty.
 
 
 <Zoom>
@@ -60,7 +60,7 @@ To add a custom tag:
 />
 </Zoom>
 
-2. After adding the custom tag, make sure to enter a fallback line. This fallback text will appear in your app if it doesn’t recognize a particular custom tag, ensuring users won’t see the tag displayed as code. The fallback text replaces the entire line containing the custom tag.
+2. After adding the custom tag, make sure to enter a fallback line. This fallback text will appear in your app if it doesn't recognize a particular custom tag, ensuring users won't see the tag displayed as code. The fallback text replaces the entire line containing the custom tag.
 
    
 
@@ -109,6 +109,22 @@ val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 Map<String, String> customTags = new HashMap<>();
 customTags.put("USERNAME", "John");
 AdaptyUiTagResolver tagResolver = customTags::get;
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "CUSTOM_TAG_NAME" to "Walter White",
+    "CUSTOM_TAG_PHONE" to "+1 234 567890"
+)
+
+val view = AdaptyUI.createPaywallView(
+    paywall = paywall,
+    customTags = customTags
+)
 ```
 </TabItem>
 

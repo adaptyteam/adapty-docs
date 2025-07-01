@@ -160,6 +160,60 @@ try {
 ```
 
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyError
+
+// Using suspend function with Result
+val result: AdaptyResult<Unit> = Adapty.openWebPaywall(product = product)
+when (result) {
+    is AdaptyResult.Success -> {
+        // Web paywall opened successfully
+    }
+    is AdaptyResult.Error -> {
+        // Handle error
+        when (result.error.code) {
+            AdaptyError.Code.PAYWALL_WITHOUT_PURCHASE_URL -> {
+                // Paywall doesn't have web purchase URL configured
+            }
+            AdaptyError.Code.PRODUCT_WITHOUT_PURCHASE_URL -> {
+                // Product doesn't have web purchase URL
+            }
+            AdaptyError.Code.FAILED_OPENING_WEB_PAYWALL_URL -> {
+                // Failed to open URL in browser
+            }
+            AdaptyError.Code.FAILED_DECODING_WEB_PAYWALL_URL -> {
+                // Failed to encode parameters in URL
+            }
+        }
+    }
+}
+
+// Using callback-based approach
+Adapty.openWebPaywall(
+    product = product,
+    onError = { error ->
+        error?.let { adaptyError ->
+            when (adaptyError.code) {
+                AdaptyError.Code.PAYWALL_WITHOUT_PURCHASE_URL -> {
+                    // Paywall doesn't have web purchase URL configured
+                }
+                AdaptyError.Code.PRODUCT_WITHOUT_PURCHASE_URL -> {
+                    // Product doesn't have web purchase URL
+                }
+                AdaptyError.Code.FAILED_OPENING_WEB_PAYWALL_URL -> {
+                    // Failed to open URL in browser
+                }
+                AdaptyError.Code.FAILED_DECODING_WEB_PAYWALL_URL -> {
+                    // Failed to encode parameters in URL
+                }
+            }
+        }
+    }
+)
+```
+</TabItem>
 </Tabs>
 
 

@@ -212,6 +212,35 @@ try {
 ```
 
 </TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallProduct
+import com.adapty.kmp.models.AdaptyPurchaseResult
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
+
+Adapty.makePurchase(product).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // Grant access to the paid features
+            }
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // Handle the case where the user canceled the purchase
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+```
+</TabItem>
 </Tabs>
 
 Request parameters:
@@ -394,7 +423,7 @@ When a user initiates a purchase in the App Store and the transaction carries ov
 - **Process the transaction immediately:** Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
 - **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
 
-Here’s the complete snippet:
+Here's the complete snippet:
 
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {

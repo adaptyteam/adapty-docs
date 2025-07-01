@@ -150,10 +150,15 @@ Adapty.updateProfile(parameters: builder.build())
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-val builder = AdaptyProfileParameters.Builder()
-    .withExternalAnalyticsDisabled(true)
-  
-Adapty.updateProfile(builder.build())
+val parameters = AdaptyProfileParameters(
+    analyticsDisabled = true
+)
+
+Adapty.updateProfile(parameters) { error ->
+    if (error == null) {
+        // successful update
+    }
+}
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>

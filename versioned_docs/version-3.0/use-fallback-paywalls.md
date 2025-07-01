@@ -16,4 +16,5 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting En
 - [Flutter](flutter-use-fallback-paywalls) - Use `Adapty.setFallbackPaywalls`
 - [React Native](react-native-use-fallback-paywalls) - Use `adapty.setFallback`
 - [Unity](unity-use-fallback-paywalls) - Use `Adapty.SetFallbackPaywalls`
+- [Kotlin Multiplatform](kotlin-multiplatform-use-fallback-paywalls) - Use `Adapty.setFallbackPaywalls`
 
