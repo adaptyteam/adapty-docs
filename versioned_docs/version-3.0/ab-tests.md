@@ -100,13 +100,13 @@ Crossplacement A/B tests guarantee the same variant across all placements in the
 
 ## Creating A/B tests
 
-When creating a new A/B test—whether it's a regular or cross-placement one—you need to include at least two [paywalls](paywalls). Each paywall is assigned a weight that determines how traffic is split during the test.
+An A/B test helps you compare different paywalls—so you can make smarter, data-driven decisions for your app’s monetization strategy—by splitting your users according to assigned weights.
 
-For example, if one paywall is given a weight of 70% and the other 30%, the first paywall will be shown to roughly 700 out of 1,000 users, and the second to about 300. The total weight across all variants must equal 100%.
+Each variant lists which paywall appears in each placement, and you assign each variant a weight so that all weights add up to 100%. For example, a 70/30 split means Variant A shows its paywall to roughly 700/1,000 users, and Variant B to 300/1,000.
 
-The key difference between regular and cross-placement A/B tests is that cross-placement tests allow you to show paywalls in multiple placements. These paywalls can be different or even partially the same depending on what you're testing. In cross-placement tests, weights are assigned per variant, not per paywall.
-
-Setting up your A/B test this way allows you to effectively compare different paywalls and make smarter, data-driven decisions for your app’s monetization strategy.
+:::tip
+You can test not only different paywalls, but also assign the same paywall across multiple variants (and placements). This lets you aggregate economics across all placements for a holistic financial view while validating your traffic-split logic before rolling out new designs.
+:::
 
 <!--- When it comes to creating A/B tests in Adapty, you have several options to choose from. Depending on your goals and needs, you can create a new A/B test directly from the A/B test section, from a specific placement page, or from a paywall page. Here's a step-by-step guide on how to create an A/B test using each of these options. --->
 
