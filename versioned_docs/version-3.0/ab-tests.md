@@ -20,7 +20,7 @@ Adapty supports three types of A/B tests:
 
 - **Regular A/B test:** An A/B test created for a single [paywall](https://adapty.io/docs/paywalls) placement.
 - **Onboarding A/B test:** An A/B test created for a single [onboarding](https://adapty.io/docs/onboardings) placement.
-- **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. This means the same variant once determined by the A/B test will be consistently shown across different sections of your app.
+- **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. This means that once a variant (an alternative version of the paywall or onboarding screen) is assigned by the A/B test, it will be shown consistently across all selected sections of your app.
 
 :::warning
 Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0.
@@ -40,7 +40,19 @@ Each A/B test type is useful if:
    - You want to use the same variant across multiple placements—e.g., during the onboarding flow and in your app’s settings.
    - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
    - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
-
+   - You want to use multiple paywalls within a single variant:
+  
+  
+<Zoom>
+  <img src={require('./img/variants.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 
 ### Key differences
