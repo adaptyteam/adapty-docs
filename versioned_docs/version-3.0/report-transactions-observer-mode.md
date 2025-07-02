@@ -15,19 +15,19 @@ import TabItem from '@theme/TabItem';
 <TabItem value="current" label="Adapty SDK v3.4+ (current)" default> 
 In Observer mode, the Adapty SDK can't track purchases made through your existing purchase system on its own. You need to report transactions from your app store. It's crucial to set this up **before** releasing your app to avoid errors in analytics.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
 Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
 
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 
 :::
 
 If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -47,17 +47,6 @@ Parameters:
 
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
-
-Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
-
-:::warning
-
-**Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
-
-:::
-
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```kotlin showLineNumbers
 val transactionInfo = TransactionInfo.fromPurchase(purchase)
@@ -79,17 +68,6 @@ Parameters:
 </TabItem>
 <TabItem value="java" label="Java" default>
 
-Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
-
-:::warning
-
-**Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
-
-:::
-
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
-
 ```java showLineNumbers
 TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
 
@@ -109,17 +87,6 @@ Parameters:
 
 </TabItem>
  <TabItem value="flutter" label="Flutter" default>
-
-Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
-
-:::warning
-
-**Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
-
-:::
-
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
 
 ```javascript showLineNumbers
 try {
@@ -145,17 +112,6 @@ Parameters:
 </TabItem>
 <TabItem value="unity" label="Unity" default>
 
-Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
-
-:::warning
-
-**Don't skip transaction reporting!**
-If you don't call `ReportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
-
-:::
-
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
-
 ```csharp showLineNumbers
 Adapty.ReportTransaction(
   "YOUR_TRANSACTION_ID", 
@@ -175,17 +131,6 @@ Parameters:
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
 
-Use `reportTransaction` to explicitly report each transaction for Adapty to recognize it.
-
-:::warning
-
-**Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
-
-:::
-
-If you use Adapty paywalls, include the `variationId` when reporting a transaction. This links the purchase to the paywall that triggered it, ensuring accurate paywall analytics.
-
 ```typescript showLineNumbers
 const variationId = paywall.variationId;
 
@@ -193,6 +138,28 @@ try {
     await adapty.reportTransaction(transactionId, variationId);
 } catch (error) {
     // handle the `AdaptyError`
+}
+```
+
+Parameters:
+
+| Parameter     | Presence | Description                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | required | <ul><li> For iOS: Identifier of the transaction.</li><li> For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
+| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+try {
+    val result = Adapty.reportTransaction(
+        transactionId = "YOUR_TRANSACTION_ID",
+        variationId = "PAYWALL_VARIATION_ID" // optional
+    )
+    // Transaction reported successfully
+} catch (error: AdaptyError) {
+    // handle the error
 }
 ```
 
@@ -218,7 +185,7 @@ Use `reportTransaction` to send the transaction data to Adapty.
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call `reportTransaction`, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 
 :::
 
@@ -274,7 +241,7 @@ Use `restorePurchases` to report the transaction to Adapty.
 :::warning
 
 **Don't skip purchase restoring!**
-If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations. 
 
 :::
 
@@ -310,7 +277,7 @@ Use `restorePurchases` to report the transaction to Adapty.
 :::warning
 
 **Don't skip purchase restoring!**
-If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations. 
+If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations. 
 
 :::
 
@@ -346,7 +313,7 @@ Use `reportTransaction` on both platforms to explicitly report each transaction,
 :::warning
 
 **Don't skip transaction reporting and purchase restoring!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call these methods, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 
 :::
 
@@ -392,7 +359,7 @@ Use `reportTransaction` on both platforms to explicitly report each transaction,
 :::warning
 
 **Don't skip transaction reporting and purchase restoring!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call these methods, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 
 :::
 
@@ -431,7 +398,7 @@ Use `reportTransaction` on both platforms to explicitly report each transaction,
 :::warning
 
 **Don't skip transaction reporting!**
-If you don't call these methods, Adapty won't recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call these methods, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 
 :::
 
@@ -487,7 +454,7 @@ Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as ex
 
 :::warning
 **Don't skip transaction reporting!**
-If you don’t call `restorePurchases`, Adapty won’t recognize the transaction, it won’t appear in analytics, and it won’t be sent to integrations.
+If you don't call `restorePurchases`, Adapty won't recognize the transaction, it won't appear in analytics, and it won't be sent to integrations.
 ::: 
 
 </TabItem>

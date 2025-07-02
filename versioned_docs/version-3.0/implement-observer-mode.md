@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 If you already have your own purchase infrastructure and aren't ready to fully switch to Adapty, you can explore [Observer mode](observer-vs-full-mode). In its basic form, Observer Mode offers advanced analytics and seamless integration with attribution and analytics systems.
 
 If this meets your needs, you only need to:
-1. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdk), and [Unity](sdk-installation-unity#configure-adapty-sdk).
+1. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdk), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md#configure-adapty-sdk), and [Unity](sdk-installation-unity#configure-adapty-sdk).
 2. [Report transactions](report-transactions-observer-mode) from your existing purchase infrastructure to Adapty.
 
 If you also need paywalls and A/B testing, additional setup is required, as described below.
