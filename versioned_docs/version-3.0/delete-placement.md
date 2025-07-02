@@ -7,7 +7,7 @@ metadataTitle: "How to Delete a Placement in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-A [Placement](placements) designates a specific location within your mobile app where a paywall, onboarding, or A/B test can be displayed. 
+A [Placement](placements) designates a specific location within your mobile app where a paywall, onboarding, or A/B test can be displayed.
 
 :::danger
 Although you have the option to delete any placement, it is critical to ensure that you don't delete a placement that is actively used in your mobile app. Deleting an active paywall placement will result in a local fallback paywall being permanently shown if you've [set it up](fallback-paywalls), and you won't be able to ever replace it with a dynamic paywall in released app versions.
@@ -17,9 +17,9 @@ To delete an existing placement:
 
 1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu. If you want to delete a placement for onboarding, switch to the **Onboardings** tab.
 
-2. Click the **3-dot** button next to the placement and select the **Delete** option.  
+2. Click the **3-dot** button next to the placement and select the **Delete** option.
 
-   
+
 <Zoom>
   <img src={require('./img/delete-placement.png').default}
   style={{
@@ -36,7 +36,7 @@ To delete an existing placement:
 
 3. In the opened **Delete placement** window, enter the product name you're about to delete.
 
-   
+
 <Zoom>
   <img src={require('./img/8177c51-delete_placement.webp').default}
   style={{

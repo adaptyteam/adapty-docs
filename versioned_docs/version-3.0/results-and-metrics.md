@@ -26,7 +26,7 @@ Here are three metrics that Adapty provides for A/B test results:
 
 **Revenue**: This metric shows the total amount of money generated in USD from purchases and renewals, minus any refunds given to users. It includes both the initial purchase and any follow-up subscription renewals. Revenue helps you understand how each A/B test variant is performing financially and figure out which one brings in the most money.
 
-Learn more about [paywall](https://docs.adapty.io/docs/paywall-metrics) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics) metrics.
+Learn more about [paywall](https://adapty.io/docs/paywall-metrics) and [onboarding](https://adapty.io/docs/onboarding-metrics) metrics.
 
 **Probability to be best**: Adapty utilizes a robust mathematical analysis framework to analyze A/B test results and provides a metric called Probability to be best. This metric assesses the likelihood that a particular variant is the best-performing option (in terms of its long-term revenue) among all the variants tested. The metric is expressed as a percentage value ranging from 1% to 100%. For detailed information on how Adapty calculates this metric, please refer to the [documentation.](maths-behind-it)The best performing option, determined by Revenue per 1K user, is highlighted in green and automatically selected as the default choice.
 
@@ -42,11 +42,11 @@ By analyzing these metrics provided by Adapty, you can gain insights into the fi
 
 ## A/B test metrics
 
-Adapty provides a comprehensive set of metrics to help you effectively measure the performance of your A/B test conducted on your paywall or onboarding variations. These metrics are continuously updated in real-time, except for views, which are updated periodically. Understanding these metrics will help you assess the effectiveness of different variations and make data-driven decisions to optimize your paywall or onboarding strategy. 
+Adapty provides a comprehensive set of metrics to help you effectively measure the performance of your A/B test conducted on your paywall or onboarding variations. These metrics are continuously updated in real-time, except for views, which are updated periodically. Understanding these metrics will help you assess the effectiveness of different variations and make data-driven decisions to optimize your paywall or onboarding strategy.
 
 A/B test metrics are available on the A/B test list, where you can gain an overview of the performance of all your A/B tests. This comprehensive view offers aggregated metrics for each test variation, enabling you to compare their performance and identify significant differences. For a more detailed analysis of each A/B test, you can access the A/B Test detail metrics. This section provides in-depth metrics specific to the selected A/B test, allowing you to delve into the performance of individual variations.
 
-All metrics, except for views, are attributed to the product within the paywall or onboarding. 
+All metrics, except for views, are attributed to the product within the paywall or onboarding.
 
 ## Metrics controls
 
@@ -70,7 +70,7 @@ The system displays the metrics based on the selected time period and organizes 
 
 
 
- The Filter metrics by install date checkbox enables the filtering of metrics based on the profile install date, instead of the default filters that use trial/purchase date for transactions or view date for paywall or onboarding views. By selecting this checkbox, you can focus on measuring user acquisition performance for a specific period by aligning metrics with the profile install date. This option is useful for customizing the metrics analysis according to your specific needs.
+The Filter metrics by install date checkbox enables the filtering of metrics based on the profile install date, instead of the default filters that use trial/purchase date for transactions or view date for paywall or onboarding views. By selecting this checkbox, you can focus on measuring user acquisition performance for a specific period by aligning metrics with the profile install date. This option is useful for customizing the metrics analysis according to your specific needs.
 
 ### Time ranges
 
@@ -96,7 +96,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Audience, attribution, country, paywall, paywall state, paywall group, onboarding, placement, country, store, product, and product store. 
+- ✅ Filter by: Audience, attribution, country, paywall, paywall state, paywall group, onboarding, placement, country, store, product, and product store.
 - ✅ Group by: Product and store.
 
 You can find more information about the available controls, filters, grouping options, and how to use them for paywall or onboarding analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
@@ -184,7 +184,7 @@ The conversion rate (CR) to trials is the number of trials started from A/B test
 The purchases metric represents the total number of transactions made within the paywall or onboarding resulting from the A/B test. It includes the following types of purchases:
 
 - New purchases made.
-- Trial conversions of trials that were activated.  
+- Trial conversions of trials that were activated.
 - Downgrades, upgrades, and cross-grades of subscriptions.
 - Subscription restores (e.g. when a subscription is expired without auto-renewal and is subsequently restored).
 
@@ -246,7 +246,7 @@ The unique paid subscribers metric represents the number of unique individuals w
 
 ### Refund rate
 
-The refund rate for the A/B test is calculated by dividing the number of refunds specifically associated with the variations in the test by the number of first-time purchases (renewals are excluded). For instance, if there are 5 refunds and 1000 first-time purchases, the refund rate would be 0.5%. 
+The refund rate for the A/B test is calculated by dividing the number of refunds specifically associated with the variations in the test by the number of first-time purchases (renewals are excluded). For instance, if there are 5 refunds and 1000 first-time purchases, the refund rate would be 0.5%.
 
 ### Unique CR purchases
 

@@ -3,7 +3,7 @@
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-1. In the **Placements/ Your placement** window, add a paywall, onboarding, or A/B test to display for default *All users* audience. To do this, click either the **Run paywall** or **Run A/B test** button, then select the desired paywall, onboarding, or A/B test from the dropdown list. Please note that only [previously created paywalls](create-paywall), [onboardings](https://docs.adapty.io/docs/create-onboarding), and [previously created A/B tests](https://docs.adapty.io/docs/ab-tests#creating-ab-test-from-ab-test-section) are available in the lists.
+1. In the **Placements/ Your placement** window, add a paywall, onboarding, or A/B test to display for default *All users* audience. To do this, click either the **Run paywall** or **Run A/B test** button, then select the desired paywall, onboarding, or A/B test from the dropdown list. Please note that only [previously created paywalls](create-paywall), [onboardings](https://adapty.io/docs/create-onboarding), and [previously created A/B tests](ab-tests#creating-ab-test-from-ab-test-section) are available in the lists.
 2. If you want to use more than one audience in the placement to create personalized paywalls tailored to different user groups, click the **Add audience** button and choose the desired user segment from the list. Please note that only [segments you have previously created](segments#creation) are accessible in the list. These segments signify different audience groups defined and created within Adapty.
 
 <Zoom>

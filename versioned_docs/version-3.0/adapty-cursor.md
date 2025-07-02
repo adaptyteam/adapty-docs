@@ -7,7 +7,7 @@ metadataTitle: "Use Adapty with LLMs | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-You can use large language models (LLMs) to assist in the building of Adapty integrations. We provide a set of tools and best practices if you use LLMs during development.
+You can use large language models (LLMs) to help you integrate Adapty into you app. We provide a set of tools and best practices if you use LLMs during development.
 
 ## Plain text docs
 
@@ -25,7 +25,7 @@ We also host an [llms.txt file](https://adapty.io/docs/llms.txt) which instructs
 
 **Cursor**, the AI code editor, makes it easier to integrate and maintain apps with Adapty's infrastructure. This guide shows you how to configure Cursor for better results when working with Adapty's SDK.
 
-## Add Adapty documentation to Cursor
+### Add Adapty documentation to Cursor
 
 Adding Adapty's documentation directly to Cursor means you don't have to switch between your code editor and browser. This setup gives you quick access to the latest implementation guides and best practices while coding.
 
@@ -47,7 +47,7 @@ To add Adapty documentation to Cursor:
 />
 </Zoom>
 
-## Add Adapty SDKs to Cursor
+### Add Adapty SDKs to Cursor
 
 For platform-specific development, we recommend adding the GitHub repositories for the Adapty SDKs you're using. This gives you access to the latest code examples, changelogs, and implementation details.
 
