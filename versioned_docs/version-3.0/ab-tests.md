@@ -63,6 +63,10 @@ The key difference between regular and cross-placement A/B tests is that cross-p
 
 Setting up your A/B test this way allows you to effectively compare different paywalls and make smarter, data-driven decisions for your app’s monetization strategy.
 
+:::tip
+You can test not only different paywalls, but also assign the same paywall across multiple variants (and placements). This lets you aggregate economics across all placements for a holistic financial view while validating your traffic-split logic before rolling out new designs.
+:::
+
 ## A/B test selection logic
 
 As you may have noticed from the table above, **cross-placement A/B tests take priority over regular A/B tests**. However, cross-placement tests are only shown to **new users** — those who haven’t seen a single Adapty paywall yet (to be precise, `getPaywall` SDK method was called). This ensures consistency in results across placements.
