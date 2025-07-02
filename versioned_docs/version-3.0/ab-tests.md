@@ -58,7 +58,7 @@ Each paywall/onboarding is assigned a weight that determines how traffic is spli
 
 For example, if one paywall is given a weight of 70% and the other 30%, the first paywall will be shown to roughly 700 out of 1,000 users, and the second to about 300. The total weight across all variants must equal 100%.
 
-The key difference between regular and cross-placement A/B tests is that cross-placement tests allow you to show paywalls in multiple placements. These paywalls can be different or even partially the same depending on what you're testing. In cross-placement tests, weights are assigned per variant, not per paywall.
+The key difference between regular and cross-placement A/B tests is that cross-placement tests allow you to show paywalls in multiple placements. In cross-placement tests, weights are assigned per variant, not per paywall.
 
 Setting up your A/B test this way allows you to effectively compare different paywalls and make smarter, data-driven decisions for your app’s monetization strategy.
 
