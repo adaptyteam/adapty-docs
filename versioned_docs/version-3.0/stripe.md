@@ -288,7 +288,7 @@ Your users can now complete purchases on the web and access paid features in you
 
 Adapty has to tie a purchase to a [customer profile](profiles-crm) for it to be available on the mobile — so by default it creates profiles upon receiving webhooks from Stripe. You can choose what to use as customer user ID in Adapty:
 
-1. **Default and recommended: **`customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+1. **Default and recommended:** `customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
 2. `email` in Stripe's Customer object (see [Stripe's docs](https://stripe.com/docs/api/customers/object#customer_object-email))
 3. `client_reference_id` in Stripe's Session object (see [Stripe's docs](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-client_reference_id))
 
