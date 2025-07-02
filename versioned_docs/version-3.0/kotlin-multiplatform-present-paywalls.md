@@ -14,8 +14,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 This guide is for **new Paywall Builder paywalls** only. The process for presenting paywalls differs for paywalls designed with remote config paywalls and [Observer mode](observer-vs-full-mode).
 
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
-- For presenting **Observer mode paywalls**, see [Kotlin Multiplatform - Present Paywall Builder paywalls in Observer mode](kotlin-multiplatform-present-paywall-builder-paywalls-in-observer-mode)
+For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
 
 :::
 
