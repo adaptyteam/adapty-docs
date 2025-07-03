@@ -121,16 +121,16 @@ Depending on how you are going to use the response, you can set `Accept` to `tex
 
 ## Successful response: 200: OK
 
-| Parameter                    | Type   | Description                    |
-|------------------------------|--------|--------------------------------|
-| developer_id                 | String | Placement ID.                  |
-| placement_name               | String | Placement name.                |
-| audience_name                | String | Audience name.                 |
-| segment_name                 | String | Audience ID.                   |
-| cross_placement_ab_test_name | String | Cross-placement A/B test name. |
-| ab_test_name                 | String | A/B test name.                 |
-| paywall_name                 | String | Paywall name.                  |
-| onboarding_name              | String | Onboarding name.               |
+| Parameter                    | Type   | Description                                                           |
+|------------------------------|--------|-----------------------------------------------------------------------|
+| developer_id                 | String | Placement ID.                                                         |
+| placement_name               | String | Placement name.                                                       |
+| audience_name                | String | Audience name.                                                        |
+| segment_name                 | String | Audience ID.                                                          |
+| cross_placement_ab_test_name | String | Cross-placement A/B test name. Can be `null` in JSON or empty in CSV. |
+| ab_test_name                 | String | A/B test name. Can be `null` in JSON or empty in CSV.                 |
+| paywall_name                 | String | Paywall name (only returned if `placement_type` is `paywall`).        |
+| onboarding_name              | String | Onboarding name (only returned if `placement_type` is `onboarding`).  |
 
 <Tabs>
 <TabItem value="json" label="JSON" default> 
