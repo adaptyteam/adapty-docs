@@ -2,7 +2,7 @@
 title: "Android - Adapty SDK Installation and configuration"
 description: "Install and configure Adapty SDK for Android apps."
 metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk android']
+keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl']
 rank: 70
 ---
 import Tabs from '@theme/Tabs';
