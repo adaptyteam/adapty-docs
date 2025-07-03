@@ -1,116 +1,85 @@
 ---
-title: "Listen for subscription status changes"
-description: "Learn how to listen for subscription status changes in your React Native app with Adapty SDK."
-metadataTitle: "Listen for Subscription Changes | React Native SDK | Adapty Docs"
-slug: /react-native-listen-subscription-changes
-displayed_sidebar: sdkreactnative
+title: "Check subscription status in React Native SDK"
+description: "Track and manage user subscription status in Adapty for improved customer retention in your React Native app."
+metadataTitle: "Understanding Subscription Status | Adapty Docs"
+keywords: ['getProfile']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-## Profile observer
+With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
-To listen for subscription status changes, use the `AdaptyProfileObserver`:
+<details>
+   <summary>Before you start checking subscription status (Click to Expand)</summary>
 
-```javascript
-import { AdaptyProfileObserver } from 'react-native-adapty';
+- For iOS, set up [App Store Server Notifications](enable-app-store-server-notifications)
+- For Android, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
 
-const observer = new AdaptyProfileObserver();
+## Access level and the AdaptyProfile object
 
-observer.on('profile_updated', (profile) => {
-  console.log('Profile updated:', profile);
-  
-  // Check if premium access changed
-  const hasPremium = profile.accessLevels.premium?.isActive;
-  if (hasPremium) {
-    console.log('User gained premium access');
-    // Enable premium features
-  } else {
-    console.log('User lost premium access');
-    // Disable premium features
-  }
-});
+Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
-observer.on('profile_loaded', (profile) => {
-  console.log('Profile loaded:', profile);
-});
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-subscription-status-updates) section below.
+
+<SampleApp />
+
+## Retrieving the access level from the server
+
+To get the access level from the server, use the `.getProfile()` method:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
 ```
 
-## Check access levels
+Response parameters:
 
-You can check specific access levels when the profile updates:
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object. Generally, you have to check only the access level status of the profile to determine whether the user has premium access to the app.</p><p></p><p>The `.getProfile` method provides the most up-to-date result as it always tries to query the API. If for some reason (e.g. no internet connection), the Adapty SDK fails to retrieve information from the server, the data from the cache will be returned. It is also important to note that the Adapty SDK updates `AdaptyProfile` cache regularly, to keep this information as up-to-date as possible.</p> |
 
-```javascript
-observer.on('profile_updated', (profile) => {
-  // Check premium access
-  const hasPremium = profile.accessLevels.premium?.isActive;
-  
-  // Check pro access
-  const hasPro = profile.accessLevels.pro?.isActive;
-  
-  // Check any active subscription
-  const hasAnySubscription = Object.values(profile.accessLevels)
-    .some(level => level?.isActive);
+
+The `.getProfile()` method provides you with the user profile from which you can get the access level status. You can have multiple access levels per app. For example, if you have a newspaper app and sell subscriptions to different topics independently, you can create access levels "sports" and "science". But most of the time, you will only need one access level, in that case, you can just use the default "premium" access level.
+
+Here is an example for checking for the default "premium" access level:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
     
-  console.log('Premium:', hasPremium);
-  console.log('Pro:', hasPro);
-  console.log('Any subscription:', hasAnySubscription);
-});
-```
-
-## Handle subscription changes
-
-React to subscription changes in your app:
-
-```javascript
-observer.on('profile_updated', (profile) => {
-  const hasPremium = profile.accessLevels.premium?.isActive;
-  
-  if (hasPremium) {
-    // User gained premium access
-    enablePremiumFeatures();
-    showPremiumWelcomeMessage();
-  } else {
-    // User lost premium access
-    disablePremiumFeatures();
-    showUpgradePrompt();
-  }
-});
-
-function enablePremiumFeatures() {
-  // Enable premium features in your app
-}
-
-function disablePremiumFeatures() {
-  // Disable premium features in your app
+  const isActive = profile.accessLevels["premium"]?.isActive;
+    if (isActive) {
+        // grant access to premium features
+    }
+} catch (error) {
+    // handle the error
 }
 ```
 
-## Clean up observer
 
-Don't forget to clean up the observer when it's no longer needed:
+### Listening for subscription status updates
 
-```javascript
-// In React component
-useEffect(() => {
-  const observer = new AdaptyProfileObserver();
-  
-  observer.on('profile_updated', handleProfileUpdate);
-  
-  return () => {
-    observer.off('profile_updated', handleProfileUpdate);
-  };
-}, []);
+Whenever the user's subscription changes, Adapty fires an event.
+
+To receive messages from Adapty, you need to make some additional configuration:
+
+```typescript showLineNumbers
+// Create an "onLatestProfileLoad" event listener
+adapty.addEventListener('onLatestProfileLoad', profile => {
+    // handle any changes to subscription state
+});
 ```
 
-## Manual profile refresh
 
-You can also manually refresh the profile:
+Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+### Subscription status cache
 
-const profile = await Adapty.getProfile();
-console.log('Current profile:', profile);
-``` 
+The cache implemented in the Adapty SDK stores the subscription status of the profile. This means that even if the server is unavailable, the cached data can be accessed to provide information about the profile's subscription status.
+
+However, it's important to note that direct data requests from the cache are not possible. The SDK periodically queries the server every minute to check for any updates or changes related to the profile. If there are any modifications, such as new transactions or other updates, they will be sent to the cached data in order to keep it synchronized with the server.

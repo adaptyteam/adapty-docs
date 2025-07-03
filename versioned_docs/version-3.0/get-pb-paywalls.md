@@ -1,6 +1,6 @@
 ---
-title: "Fetch Paywall Builder paywalls and their configuration"
-description: "Learn how to retrieve PB paywalls in Adapty for better subscription control."
+title: "Fetch Paywall Builder paywalls and their configuration in iOS SDK"
+description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your iOS app."
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 displayed_sidebar: sdkios
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
@@ -190,10 +190,7 @@ guard paywall.hasViewConfiguration else {
 do {
     let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
             forPaywall: paywall,
-            products: products,
-            observerModeResolver: <AdaptyObserverModeResolver>, // only for Observer Mode
-            tagResolver: <AdaptyTagResolver>,
-            timerResolver: <AdaptyTimerResolver>
+            products: products
     )
     // use loaded configuration
 } catch {
@@ -209,30 +206,6 @@ do {
 | **tagResolver**          | optional       | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
 | **timerResolver**        | optional       | To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. |
 
-## Set up developer-defined timers
-
-To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
-
-```Swift showLineNumbers
-@MainActor
-struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
-    func timerEndAtDate(for timerId: String) -> Date {
-        switch timerId {
-        case "CUSTOM_TIMER_6H":
-            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
-        case "CUSTOM_TIMER_NY":
-            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
-        default:
-            Date(timeIntervalSinceNow: 3600.0) // 1 hour
-        }
-    }
-}
-```
-
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
-
-- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
 
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -547,3 +520,28 @@ The method is not yet supported in Unity, but support will be added soon.
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+
+## Set up developer-defined timers
+
+To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
+
+```Swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.

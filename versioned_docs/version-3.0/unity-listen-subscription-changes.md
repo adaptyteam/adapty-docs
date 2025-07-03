@@ -1,128 +1,92 @@
 ---
-title: "Listen for subscription status changes"
-description: "Learn how to listen for subscription status changes in your Unity app with Adapty SDK."
-metadataTitle: "Listen for Subscription Changes | Unity SDK | Adapty Docs"
-slug: /unity-listen-subscription-changes
-displayed_sidebar: sdkunity
+title: "Check subscription status in Unity SDK"
+description: "Track and manage user subscription status in Adapty for improved customer retention in your Unity app."
+metadataTitle: "Understanding Subscription Status | Adapty Docs"
+keywords: ['getProfile']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-## Profile observer
+With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
-To listen for subscription status changes, use the `OnProfileUpdated` event:
+<details>
+   <summary>Before you start checking subscription status (Click to Expand)</summary>
 
-```csharp
-using Adapty;
+- For iOS, set up [App Store Server Notifications](enable-app-store-server-notifications)
+- For Android, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
 
-Adapty.OnProfileUpdated += (profile) =>
-{
-    Debug.Log($"Profile updated: {profile.ProfileId}");
-    
-    // Check if premium access changed
-    if (profile.AccessLevels.ContainsKey("premium") && profile.AccessLevels["premium"].IsActive)
-    {
-        Debug.Log("User gained premium access");
-        // Enable premium features
-    }
-    else
-    {
-        Debug.Log("User lost premium access");
-        // Disable premium features
-    }
-};
+## Access level and the AdaptyProfile object
 
-Adapty.OnProfileLoaded += (profile) =>
-{
-    Debug.Log($"Profile loaded: {profile.ProfileId}");
-};
+Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
+
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-subscription-status-updates) section below.
+
+<SampleApp />
+
+## Retrieving the access level from the server
+
+To get the access level from the server, use the `.getProfile()` method:
+
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
 ```
 
-## Check access levels
+Response parameters:
 
-You can check specific access levels when the profile updates:
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object. Generally, you have to check only the access level status of the profile to determine whether the user has premium access to the app.</p><p></p><p>The `.getProfile` method provides the most up-to-date result as it always tries to query the API. If for some reason (e.g. no internet connection), the Adapty SDK fails to retrieve information from the server, the data from the cache will be returned. It is also important to note that the Adapty SDK updates `AdaptyProfile` cache regularly, to keep this information as up-to-date as possible.</p> |
 
-```csharp
-Adapty.OnProfileUpdated += (profile) =>
-{
-    // Check premium access
-    var hasPremium = profile.AccessLevels.ContainsKey("premium") && profile.AccessLevels["premium"].IsActive;
-    
-    // Check pro access
-    var hasPro = profile.AccessLevels.ContainsKey("pro") && profile.AccessLevels["pro"].IsActive;
-    
-    // Check any active subscription
-    var hasAnySubscription = profile.AccessLevels.Values.Any(level => level.IsActive);
-    
-    Debug.Log($"Premium: {hasPremium}");
-    Debug.Log($"Pro: {hasPro}");
-    Debug.Log($"Any subscription: {hasAnySubscription}");
-};
-```
 
-## Handle subscription changes
+The `.getProfile()` method provides you with the user profile from which you can get the access level status. You can have multiple access levels per app. For example, if you have a newspaper app and sell subscriptions to different topics independently, you can create access levels "sports" and "science". But most of the time, you will only need one access level, in that case, you can just use the default "premium" access level.
 
-React to subscription changes in your app:
+Here is an example for checking for the default "premium" access level:
 
-```csharp
-Adapty.OnProfileUpdated += (profile) =>
-{
-    var hasPremium = profile.AccessLevels.ContainsKey("premium") && profile.AccessLevels["premium"].IsActive;
-    
-    if (hasPremium)
-    {
-        // User gained premium access
-        EnablePremiumFeatures();
-        ShowPremiumWelcomeMessage();
-    }
-    else
-    {
-        // User lost premium access
-        DisablePremiumFeatures();
-        ShowUpgradePrompt();
-    }
-};
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
 
-private void EnablePremiumFeatures()
-{
-    // Enable premium features in your app
+// "premium" is an identifier of default access level
+var accessLevel = profile.AccessLevels["premium"];
+if (accessLevel != null && accessLevel.IsActive) {
+// grant access to premium features
 }
+});
+```
 
-private void DisablePremiumFeatures()
-{
-    // Disable premium features in your app
+
+### Listening for subscription status updates
+
+Whenever the user's subscription changes, Adapty fires an event.
+
+To receive messages from Adapty, you need to make some additional configuration:
+
+```csharp showLineNumbers
+// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
+    // handle any changes to subscription state
+  }
 }
 ```
 
-## Clean up observer
+Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
 
-Don't forget to clean up the observer when it's no longer needed:
+### Subscription status cache
 
-```csharp
-// In MonoBehaviour
-void OnDestroy()
-{
-    Adapty.OnProfileUpdated -= HandleProfileUpdate;
-    Adapty.OnProfileLoaded -= HandleProfileLoaded;
-}
+The cache implemented in the Adapty SDK stores the subscription status of the profile. This means that even if the server is unavailable, the cached data can be accessed to provide information about the profile's subscription status.
 
-private void HandleProfileUpdate(AdaptyProfile profile)
-{
-    // Handle profile updates
-}
-
-private void HandleProfileLoaded(AdaptyProfile profile)
-{
-    // Handle profile loaded
-}
-```
-
-## Manual profile refresh
-
-You can also manually refresh the profile:
-
-```csharp
-var profile = await Adapty.GetProfile();
-Debug.Log($"Current profile: {profile.ProfileId}");
-``` 
+However, it's important to note that direct data requests from the cache are not possible. The SDK periodically queries the server every minute to check for any updates or changes related to the profile. If there are any modifications, such as new transactions or other updates, they will be sent to the cached data in order to keep it synchronized with the server.
