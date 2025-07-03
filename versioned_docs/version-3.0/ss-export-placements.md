@@ -30,7 +30,7 @@ POST https://api-admin.adapty.io/api/v1/client-api/exports/placements/
 
 ```bash showLineNumbers
 curl -X POST --location "https://api-admin.adapty.io/api/v1/client-api/exports/placements/" \
-    -H "Authorization: Api-Key <SECRET-KEY>" \
+    -H "Authorization: Api-Key <YOUR_SECRET_API_KEY>" \
     -H "Accept: application/json" \
     -H "Content-Type: application/json" \
     -d '{
