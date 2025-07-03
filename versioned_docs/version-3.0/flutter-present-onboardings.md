@@ -80,6 +80,18 @@ AdaptyUIOnboardingPlatformView(
 )
 ```
 
+:::note 
+For Android platform view to work, ensure your `MainActivity` extends `FlutterFragmentActivity`:
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::
+
 ## Loader during onboarding
 
 A loader is shown by default while onboarding content loads.  

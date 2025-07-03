@@ -7,11 +7,11 @@ metadataTitle: "Understanding Access Levels | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level for. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases).
+Access levels let you control what users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level for. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases).
 
-When you create an app in the Adapty Dashboard, the `premium` access level is automatically generated. This serves as the default access level and it cannot be deleted. 
+When you create an app in the Adapty Dashboard, the `premium` access level is automatically generated. This serves as the default access level, and it cannot be deleted. 
 
-You can have multiple access levels per app. This is when they can be useful:
+You can have multiple access levels per app. Here are some examples of when they can be useful:
 
 - In a newspaper app where you sell subscriptions to different topics independently, you can create access levels such as `sports` and `science`.
 - In a fitness app offering recorded video training under a regular subscription (using the default `premium` access level), customers may opt for a more expensive option providing access to live training with a coach. In this case, you can create a `live_coach_access` level.
@@ -19,7 +19,7 @@ You can have multiple access levels per app. This is when they can be useful:
 
 To begin working with access levels in Adapty, open the **[Paywalls and Products](https://app.adapty.io/access-levels)** section from the Adapty main menu, then select the **Access levels** tab.
 
-The **Access levels** list displays all access levels, including  the `premium` one that is added automatically and those added by you in Adapty.
+The **Access levels** list displays all access levels, including the `premium` one that is added automatically and those added by you in Adapty.
 
 
 <Zoom>

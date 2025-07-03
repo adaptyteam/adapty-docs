@@ -7,7 +7,7 @@ metadataTitle: "Exporting Data via API | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-If you need to download analytics into CSV or JSON files, you can use Adpty API.
+If you need to download analytics into CSV or JSON files, you can use Adapty API.
 
 ## Authorization
 

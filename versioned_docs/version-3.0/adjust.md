@@ -150,7 +150,7 @@ So first step here is to find event tokens for all events that you want Adapty t
 
 
 
-Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjsut from Adapty. Check the full list of the events offered by Adapty [here](events).
+Copy the event token and paste it to Adapty. Below the credentials, there are three groups of events you can send to Adjust from Adapty. Check the full list of the events offered by Adapty [here](events).
 
 <Zoom>
   <img src={require('./img/8940282-CleanShot_2023-08-11_at_14.55.222x.webp').default}

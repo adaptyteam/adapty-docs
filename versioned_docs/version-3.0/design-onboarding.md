@@ -2,6 +2,7 @@
 title: "Design onboardings"
 description: "Create meaningful onboardings."
 metadataTitle: "Using Adapty Onboarding Builder | Adapty Docs"
+rank: 80
 ---
 
 import Zoom from 'react-medium-image-zoom';

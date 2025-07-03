@@ -2,6 +2,7 @@
 title: "Display paywalls designed with remote config"
 description: "Display remote config paywalls in Adapty for improved conversions."
 metadataTitle: "Displaying Remote Config Paywalls | Adapty Docs"
+keywords: ['remote config', 'remote']
 displayed_sidebar: sdkios
 
 ---

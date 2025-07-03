@@ -2,6 +2,7 @@
 title: "Attribution integration"
 description: "Integrate Adapty with attribution tools to track user acquisition and LTV."
 metadataTitle: "Attribution Integration Guide | Adapty Docs"
+keywords: ['attribution', 'updateAttribution']
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -2,7 +2,7 @@
 title: "Flutter - Adapty SDK Installation and configuration"
 description: "Installing Adapty SDK in Flutter | Adapty Docs"
 metadataTitle: "Install Adapty SDK in Flutter to handle subscriptions with ease."
-keywords: ['install sdk', 'sdk install', 'install sdk flutter']
+keywords: ['install sdk', 'sdk install', 'install sdk flutter', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
 
@@ -19,6 +19,10 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **Core Adapty**: This essential module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is required if you’re using the Adapty Paywall Builder—a no-code, user-friendly tool for creating cross-platform paywalls. With a visual constructor right in the dashboard, you can build paywalls that run natively on devices and are designed to deliver high performance with minimal effort. 
   The module is installed and activated automatically with the Adapty SDK, but you can deactivate it if you don’t need it.
+
+:::info
+Adapty currently supports Google Play Billing Library up to 7.x; support for [Billing Library 8.0.0 (released 30 June 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) will be available soon.
+:::
 
 :::danger
 Go through the release checklist before releasing your app

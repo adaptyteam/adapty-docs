@@ -36,7 +36,7 @@ AdaptyUI.DismissView(view, (error) => {
 - You can hide a paywall view in 2 ways: 
 
   - call the `view.dismiss` method 
-  - return `true` from any [event ve-handlinhandler](handling-pb-paywall-events).
+  - return `true` from any [event we handle in handler](handling-pb-paywall-events).
 
 ```typescript showLineNumbers title="React Native (TSX)"
 try {

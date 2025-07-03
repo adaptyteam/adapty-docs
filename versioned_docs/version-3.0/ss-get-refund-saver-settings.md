@@ -52,7 +52,7 @@ url = "https://api.adapty.io/api/v2/server-side-api/purchase/profile/refund-save
 payload = json.dumps({})
 headers = {
   "adapty-customer-user-id": <YOUR_CUSTOMER_USER_ID>",
-  "Content-Type": "application/jso",
+  "Content-Type": "application/json",
   "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
