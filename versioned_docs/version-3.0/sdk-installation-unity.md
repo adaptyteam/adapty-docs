@@ -2,7 +2,7 @@
 title: "Unity - Adapty SDK installation & configuration"
 description: "Install Adapty SDK in Unity for subscription management."
 metadataTitle: "Installing Adapty SDK for Unity | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk unity', 'google play billing library', 'gpbl']
+keywords: ['install sdk', 'sdk install', 'install sdk unity', 'google play billing library', 'gpbl', 'billing library']
 rank: 30
 ---
 

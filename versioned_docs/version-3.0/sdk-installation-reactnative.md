@@ -2,7 +2,7 @@
 title: "React Native - Adapty SDK installation & configuration"
 description: "Install Adapty SDK for React Native and optimize your app's monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl']
+keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
