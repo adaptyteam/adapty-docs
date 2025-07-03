@@ -1,9 +1,9 @@
 ---
-title: "Unity - Handle paywall events"
-description: "Handle events in Unity using Adapty to track and manage subscriptions."
-metadataTitle: "Handling Events in Unity with Adapty | Adapty Docs"
-toc_max_heading_level: 4
-keywords: ['paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+title: "Handle paywall events"
+description: "Learn how to handle paywall events in your Unity app with Adapty SDK."
+metadataTitle: "Handle Paywall Events | Unity SDK | Adapty Docs"
+slug: /unity-handling-events
+displayed_sidebar: sdkunity
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -158,3 +158,217 @@ public void PaywallViewDidFailRendering(
 ```
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
+
+## Paywall observer
+
+To handle paywall events, use the `Adapty` event handlers:
+
+```csharp
+using Adapty;
+
+Adapty.OnPaywallPresented += (paywall) =>
+{
+    Debug.Log($"Paywall presented: {paywall.DeveloperId}");
+};
+
+Adapty.OnPaywallDismissed += (paywall) =>
+{
+    Debug.Log($"Paywall dismissed: {paywall.DeveloperId}");
+};
+```
+
+## Handle paywall actions
+
+Paywalls can trigger various actions:
+
+```csharp
+Adapty.OnPaywallAction += (action) =>
+{
+    switch (action.Type)
+    {
+        case "close":
+            Debug.Log("User closed paywall");
+            break;
+        case "purchase":
+            Debug.Log("User initiated purchase");
+            HandlePurchase(action.ProductId);
+            break;
+        case "restore":
+            Debug.Log("User initiated restore");
+            HandleRestore();
+            break;
+        case "custom":
+            Debug.Log($"Custom action: {action.Data}");
+            HandleCustomAction(action.Data);
+            break;
+    }
+};
+```
+
+## Track paywall interactions
+
+Track user interactions with paywalls:
+
+```csharp
+Adapty.OnPaywallPresented += (paywall) =>
+{
+    Debug.Log($"User viewed paywall: {paywall.DeveloperId}");
+    
+    // Track analytics
+    TrackPaywallView(paywall.DeveloperId);
+};
+
+Adapty.OnPaywallDismissed += (paywall) =>
+{
+    Debug.Log($"User dismissed paywall: {paywall.DeveloperId}");
+    
+    // Track analytics
+    TrackPaywallDismiss(paywall.DeveloperId);
+};
+```
+
+## Handle purchase events
+
+When user makes a purchase through paywall:
+
+```csharp
+Adapty.OnPaywallAction += async (action) =>
+{
+    if (action.Type == "purchase")
+    {
+        try
+        {
+            var paywalls = await Adapty.GetPaywalls();
+            var paywall = paywalls.FirstOrDefault(p => p.DeveloperId == action.PaywallId);
+            var product = paywall?.Products.FirstOrDefault(p => p.VendorProductId == action.ProductId);
+            
+            if (product != null)
+            {
+                var purchase = await Adapty.MakePurchase(product);
+                Debug.Log($"Purchase successful: {purchase.PurchaseId}");
+                // Close paywall and update UI
+            }
+        }
+        catch (Exception error)
+        {
+            Debug.LogError($"Purchase failed: {error.Message}");
+        }
+    }
+};
+```
+
+## Custom paywall actions
+
+Handle custom actions defined in your paywall:
+
+```csharp
+Adapty.OnPaywallAction += (action) =>
+{
+    if (action.Type == "custom")
+    {
+        switch (action.Data["action"])
+        {
+            case "open_settings":
+                OpenAppSettings();
+                break;
+            case "contact_support":
+                OpenSupportChat();
+                break;
+            case "skip_paywall":
+                SkipPaywall();
+                break;
+            default:
+                Debug.Log($"Unknown custom action: {action.Data}");
+                break;
+        }
+    }
+};
+```
+
+## Paywall state management
+
+Manage paywall state in your app:
+
+```csharp
+public class PaywallManager : MonoBehaviour
+{
+    private AdaptyPaywall currentPaywall;
+    
+    void Start()
+    {
+        Adapty.OnPaywallPresented += (paywall) =>
+        {
+            currentPaywall = paywall;
+            Debug.Log($"Paywall presented: {paywall.DeveloperId}");
+        };
+        
+        Adapty.OnPaywallDismissed += (paywall) =>
+        {
+            if (currentPaywall?.DeveloperId == paywall.DeveloperId)
+            {
+                currentPaywall = null;
+            }
+            Debug.Log($"Paywall dismissed: {paywall.DeveloperId}");
+        };
+    }
+}
+```
+
+## Error handling
+
+Handle paywall errors:
+
+```csharp
+Adapty.OnPaywallError += (error) =>
+{
+    Debug.LogError($"Paywall error: {error.Message}");
+    
+    switch (error.Code)
+    {
+        case "LOAD_ERROR":
+            Debug.Log("Failed to load paywall");
+            ShowFallbackPaywall();
+            break;
+        case "PRESENTATION_ERROR":
+            Debug.Log("Failed to present paywall");
+            break;
+        default:
+            Debug.Log($"Unknown paywall error: {error.Code}");
+            break;
+    }
+};
+```
+
+## Clean up events
+
+Don't forget to clean up event handlers:
+
+```csharp
+void OnDestroy()
+{
+    Adapty.OnPaywallPresented -= HandlePaywallPresented;
+    Adapty.OnPaywallDismissed -= HandlePaywallDismissed;
+    Adapty.OnPaywallAction -= HandlePaywallAction;
+    Adapty.OnPaywallError -= HandlePaywallError;
+}
+
+private void HandlePaywallPresented(AdaptyPaywall paywall)
+{
+    // Handle paywall presented
+}
+
+private void HandlePaywallDismissed(AdaptyPaywall paywall)
+{
+    // Handle paywall dismissed
+}
+
+private void HandlePaywallAction(AdaptyPaywallAction action)
+{
+    // Handle paywall action
+}
+
+private void HandlePaywallError(AdaptyError error)
+{
+    // Handle paywall error
+}
+```

@@ -1,13 +1,14 @@
 ---
-title: "Flutter – Present onboardings"
-description: "Discover how to present onboardings on Flutter to boost conversions and revenue."
-metadataTitle: "Presenting onboardings on Flutter | Adapty Docs"
+title: "Present onboardings"
+description: "Learn how to present onboardings effectively to drive more conversions."
+metadataTitle: "Presenting onboardings | Adapty Docs"
+displayed_sidebar: sdkflutter
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
+If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Flutter app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
 Before you start, ensure that:
 
@@ -92,3 +93,9 @@ This helps create seamless transitions and custom loading experiences.
 ## Next steps
 
 Once you've presented your onboarding, you'll want to [handle user interactions and events](flutter-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
+
+For detailed guidance on presenting onboardings within different frameworks, please refer to the specified topics on each framework:
+
+- [iOS](ios-present-onboardings.md)
+- [Android](android-present-onboardings.md)
+- [Flutter](flutter-present-onboardings.md)

@@ -132,19 +132,19 @@ const config = {
               },
               {
                 label: "Android",
-                href: "/sdk-installation-android",
+                href: "/android-sdk-overview",
               },
               {
                 label: "Flutter",
-                href: "/sdk-installation-flutter",
+                href: "/flutter-sdk-overview",
               },
               {
                 label: "React Native",
-                href: "/sdk-installation-reactnative",
+                href: "/react-native-sdk-overview",
               },
               {
                 label: "Unity",
-                href: "/sdk-installation-unity",
+                href: "/unity-sdk-overview",
               }
             ],
           },

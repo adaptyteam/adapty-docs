@@ -1,0 +1,212 @@
+---
+title: "Web paywall"
+description: "Set up a web paywall to get paid without the App Store fees and audits."
+metadataTitle: "Accept payments in web for Flutter apps in the US"
+displayed_sidebar: sdkflutter
+---
+import Zoom from 'react-medium-image-zoom';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::important
+Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later.
+:::
+
+With Adapty, you can create a paywall with a button that redirects your Flutter app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
+This allows you to bypass App Store fees while effectively tracking user payments.
+
+   <Zoom>
+   <img src={require('./img/web_paywall.gif').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+:::tip
+The App Store allows external payment options only in the USA. 
+
+To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
+:::
+
+## How it works
+
+Web paywall is a unique URL for each of your in-app paywalls. It allows users to go to the browser and pay there.  It works with different payment providers (Stripe, Paddle, and others) and allows you to have either a single page with an Apple Pay button or more complex flows with upsells.
+
+   <Zoom>
+   <img src={require('./img/web-paywall-promo.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+Web paywalls work in the following way:
+1. You **configure how the web paywall page will look** and work in the editor.
+2. You **link the web paywall** in the paywall settings.
+3. In your app paywall, you **add a button** redirecting users to the browser.
+4. Once users tap the button, Adapty SDK **generates a unique URL**.
+5. Users **go to the web paywall page** and **pay** for a subscription using an external payment method.
+6. When they return to the app, Adapty SDK starts **tracking whether the profile has been updated** because of the purchases made.
+7. Adapty gets information about the purchase event, records it as an analytics event, and monitors it for any updates. 
+
+## Step 1. Create a web paywall
+
+1. If you want to enable external payments for an existing paywall, you need to [duplicate](duplicate-paywalls.md) it so you can show it only to your U.S. user segment and show the old one to all the other users. If you want to start from scratch, [create](create-paywall.md) a new paywall.
+2. In the Paywall, switch to the **Web paywall** tab and click **Create web paywall**. You will be redirected to a new page.   
+   <Zoom>
+   <img src={require('./img/web-paywall-1.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+3. Set up the web paywall itself and connect a payment method.
+:::tip
+Use our [quickstart guide](web-paywall-configuration.md) that will help you to launch a working web paywall.
+:::
+4. Return to the **Web paywall** page and paste the paywall link.
+:::important
+When launching your paywall to the production environment, it is **crucial** to ensure you use the correct link generated after publishing your web paywall. The link format is `paywalls-....fnlfx.com`.
+:::
+5. Click **Save**.
+   <Zoom>
+   <img src={require('./img/web-paywall-4.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+## Step 2. Trigger the paywall {#activate-the-paywall}
+
+To use your web paywall, you need to trigger it, and the way you do it depends on your setup:
+
+- If you are using the Paywall created in the Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
+- If you are using the SDK, you must set up the [`openWebPaywall`](#step-2b-set-up-the-sdk-method) method to handle web paywalls.
+
+
+### Step 2a. Add a web purchase button
+
+If you are using the **paywall from the Builder**, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
+
+1. Open the paywall and switch to the **Builder** tab.
+2. Click **Add element** and select **Web paywall button**. 
+   
+   If you are using a template or an existing/duplicated paywall, add the web paywall button you just added to the previous purchase button.
+   You can set up the web paywall button just as you would the purchase button. 
+
+<Zoom>
+   <img src={require('./img/web-paywall-5.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+### Step 2b. Call the SDK method
+
+If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. The `.openWebPaywall` method:
+1. Generates a unique URL allowing Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
+2. Tracks when your users return to the app and then requests `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
+
+This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
+
+<Tabs groupId="code-examples" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product)
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```
+</TabItem>
+<TabItem value="rn" label="React Native">
+```javascript showLineNumbers title="React Native"
+try {
+    await adapty.openWebPaywall(product);
+    // The web paywall for the product is now opened
+    } catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart showLineNumbers title="Flutter"
+try {
+  await Adapty().openWebPaywall(product: <YOUR_PRODUCT>);
+  // The web paywall will be opened
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+</TabItem>
+</Tabs>
+
+
+:::note
+There are two versions of the `openWebPaywall` method:
+1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
+2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
+:::
+
+#### Handle errors
+
+| Error                                   | Description                                            | Recommended action                                                        |
+|-----------------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | The paywall doesn't have a web purchase URL configured | Check if the paywall has been properly configured in the Adapty Dashboard |
+| AdaptyError.productWithoutPurchaseUrl   | The product doesn't have a web purchase URL            | Verify the product configuration in the Adapty Dashboard                  |
+| AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
+| AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
+
+#### Implementation example
+```dart showLineNumbers title="Flutter"
+class SubscriptionViewController extends StatefulWidget {
+  @override
+  _SubscriptionViewControllerState createState() => _SubscriptionViewControllerState();
+}
+
+class _SubscriptionViewControllerState extends State<SubscriptionViewController> {
+  AdaptyPaywall? paywall;
+  
+  void purchaseButtonTapped() async {
+    if (paywall != null && paywall!.products.isNotEmpty) {
+      await offerWebPurchase(paywall!.products.first);
+    }
+  }
+  
+  Future<void> offerWebPurchase(AdaptyPaywallProduct product) async {
+    try {
+      // Attempt to open web paywall
+      await Adapty().openWebPaywall(product: product);
+    } on AdaptyError catch (error) {
+      switch (error) {
+        case AdaptyError.paywallWithoutPurchaseUrl:
+        case AdaptyError.productWithoutPurchaseUrl:
+          showAlert("Web purchase is not available for this product.");
+          break;
+        default:
+          showAlert("An error occurred while opening the web paywall.");
+      }
+    }
+  }
+} 
