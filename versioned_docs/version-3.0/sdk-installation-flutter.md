@@ -21,7 +21,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
   The module is installed and activated automatically with the Adapty SDK, but you can deactivate it if you don’t need it.
 
 :::info
-Adapty currently supports Google Play Billing Library up to 7.x; support for [Billing Library 8.0.0 (released 30 June 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) will be available soon.
+Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
 :::danger

@@ -17,7 +17,7 @@ import TabItem from '@theme/TabItem';
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
 :::info
-Adapty currently supports Google Play Billing Library up to 7.x; support for [Billing Library 8.0.0 (released 30 June 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) will be available soon.
+Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
 ## Install Adapty SDK
