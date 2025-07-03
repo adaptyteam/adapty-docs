@@ -9,8 +9,7 @@ keywords: ['export placements']
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
-import AccessLevelProfileNotFound from '@site/src/components/reusable/AccessLevelProfileNotFound.md';
-import AccessLevelDoesNotExist from '@site/src/components/reusable/AccessLevelDoesNotExist.md';
+import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 
 Retrieves information about paywall or onboarding placements: paywalls, segments, audiences, and A/B tests. This can help you ensure everything is set up correctly without having to open each placement you have separately.
 
@@ -175,3 +174,6 @@ weekly,Weekly,USA,USA,Weekly cross A/B,Weekly A/B,Weekly USA
 
 ## Errors
 
+### 401: Unauthorized
+
+<ProfileResponseUnauthorized /> 
