@@ -6,7 +6,8 @@ keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 're
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 <Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
@@ -99,7 +100,10 @@ If you opt for a purely native approach, please consult the following instructio
    +platform :ios, 15.0
    ```
 
-3. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
+<details>
+   <summary>For Android, if your React Native version is earlier than 0.73.0 (click to expand)</summary>
+
+Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
    ```groovy showLineNumbers title="/android/build.gradle"
    ...
@@ -112,6 +116,8 @@ If you opt for a purely native approach, please consult the following instructio
    }
    ...
    ```
+
+</details>
 
 ## Configure Adapty SDK
 
