@@ -13,6 +13,11 @@ To make an offer visible and selectable within a [paywall](paywalls) for your ap
 
 While [configuring the products on a paywall](create-paywall), choose an offer you [created earlier](create-offer) for this product from the **Offer** list. The list is available only for the products that have offers.
 
+:::info
+
+Paywalls created with the Adapty Paywall Builder will display only the first phase of a [multi-phase Google subscription offer](https://support.google.com/googleplay/android-developer/answer/12154973). However, rest assured that when a user purchases the product, all offer phases will be applied as configured in Google Play.
+
+:::
 
 
 <Zoom>
@@ -28,9 +33,5 @@ While [configuring the products on a paywall](create-paywall), choose an offer y
 
 <p></p>
 
-:::info
 
-Paywalls created with the Adapty Paywall Builder will display only the first phase of a [multi-phase Google subscription offer](https://support.google.com/googleplay/android-developer/answer/12154973). However, rest assured that when a user purchases the product, all offer phases will be applied as configured in Google Play.
-
-:::
 
