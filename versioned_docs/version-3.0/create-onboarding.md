@@ -1,6 +1,7 @@
 ---
 title: "Create onboarding"
 metadataTitle: "Create Onboardings in Adapty | Adapty Docs"
+rank: 90
 ---
 
 import Zoom from 'react-medium-image-zoom';

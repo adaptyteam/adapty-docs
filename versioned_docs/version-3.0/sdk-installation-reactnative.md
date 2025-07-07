@@ -2,7 +2,7 @@
 title: "React Native - Adapty SDK installation & configuration"
 description: "Install Adapty SDK for React Native and optimize your app's monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native']
+keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
@@ -15,6 +15,10 @@ import TabItem from '@theme/TabItem';
 
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+
+:::info
+Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+:::
 
 ## Install Adapty SDK
 
