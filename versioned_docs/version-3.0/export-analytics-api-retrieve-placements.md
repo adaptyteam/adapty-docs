@@ -1,5 +1,5 @@
 ---
-title: "Export placement info"
+title: "Retrieve placement info"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
