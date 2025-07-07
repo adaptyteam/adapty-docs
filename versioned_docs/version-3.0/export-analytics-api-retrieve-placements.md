@@ -51,7 +51,7 @@ url = 'https://api-admin.adapty.io/api/v1/client-api/exports/placements/'
 
 headers = {
     'Authorization': 'Api-key <YOUR_SECRET_API_KEY>',
-    'Accept': 'text/csv',  # or application/json
+    'Accept': 'text/csv',
 }
 
 payload = {
