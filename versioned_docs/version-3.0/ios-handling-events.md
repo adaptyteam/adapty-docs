@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle paywall events"
+title: "Handle paywall events in iOS SDK"
 description: "Handle subscription-related events in iOS using Adapty for better app monetization."
 metadataTitle: "Handling Events in iOS | Adapty Docs"
 toc_max_heading_level: 4

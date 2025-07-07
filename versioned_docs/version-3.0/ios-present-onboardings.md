@@ -72,6 +72,7 @@ let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboa
 // 2. Display the Onboarding View within your view hierarchy
 AdaptyOnboardingView(
     configuration: configuration,
+    placeholder: { Text("Your Placeholder View") },
     onCloseAction: { action in
         // hide the onboarding view
     },

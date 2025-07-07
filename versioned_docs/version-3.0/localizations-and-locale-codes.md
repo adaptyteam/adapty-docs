@@ -1,6 +1,6 @@
 ---
-title: "Use localizations and locale codes"
-description: "Manage app localizations and locale codes to reach a global audience."
+title: "Use localizations and locale codes in iOS SDK"
+description: "Manage app localizations and locale codes to reach a global audience in your iOS app."
 metadataTitle: "Managing Localizations & Locale Codes | Adapty Docs"
 ---
 

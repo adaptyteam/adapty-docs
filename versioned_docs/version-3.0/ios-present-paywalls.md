@@ -1,5 +1,5 @@
 ---
-title: "iOS - Present new Paywall Builder paywalls"
+title: "Present new Paywall Builder paywalls in iOS SDK"
 description: "Discover how to present paywalls on iOS to boost conversions and revenue."
 metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
 keywords: ['paywallController']
