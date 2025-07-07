@@ -2,11 +2,12 @@
 title: "React Native - Adapty SDK installation & configuration"
 description: "Install Adapty SDK for React Native and optimize your app's monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native']
+keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 <Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
@@ -15,6 +16,10 @@ import TabItem from '@theme/TabItem';
 
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+
+:::info
+Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+:::
 
 ## Install Adapty SDK
 
@@ -95,7 +100,10 @@ If you opt for a purely native approach, please consult the following instructio
    +platform :ios, 15.0
    ```
 
-3. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
+<details>
+   <summary>For Android, if your React Native version is earlier than 0.73.0 (click to expand)</summary>
+
+Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
    ```groovy showLineNumbers title="/android/build.gradle"
    ...
@@ -108,6 +116,8 @@ If you opt for a purely native approach, please consult the following instructio
    }
    ...
    ```
+
+</details>
 
 ## Configure Adapty SDK
 

@@ -2,7 +2,7 @@
 title: "Android - Adapty SDK Installation and configuration"
 description: "Install and configure Adapty SDK for Android apps."
 metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk android']
+keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl', 'billing library']
 rank: 70
 ---
 import Tabs from '@theme/Tabs';
@@ -16,6 +16,10 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 - **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
 
 You can install Adapty SDK via Gradle.
+
+:::info
+Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+:::
 
 :::danger
 Go through the release checklist before releasing your app

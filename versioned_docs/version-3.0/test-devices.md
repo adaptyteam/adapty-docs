@@ -7,9 +7,7 @@ metadataTitle: "Managing Test Devices | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Due to caching, changes made to paywalls or placements may take up to 20 minutes to reflect on the device. This delay is needed to speed up fetching a paywall for regular users, but it can be inconvenient when testing your changes.
-
-For testing purposes, you can assign your device as test, which will disable caching and ensure that your changes are immediately displayed.
+For testing purposes, you can assign your device as a test device, which disables caching and ensures that your changes are reflected immediately.
 
 :::note
 Testing devices are supported starting from specific SDK versions:
@@ -59,10 +57,10 @@ Flutter and Unity support will be added later.
 4. In the **Add test device** window, enter:
 
    | Field                                    | Description                                                                                                                                                                                                                             |
-   | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   |:-----------------------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
    | **Test device name**                     | Name of the test device(s) for your reference.                                                                                                                                                                                          |
    | **ID used to identify this test device** | Choose the identifier type you plan to use to identify the test device(s). Follow our recommendations in the [Which identifier you should use](test-devices#which-identifier-you-should-use) section below to pick the best option. |
-   | ** ID value**                            | Enter the value of the identifier.                                                                                                                                                                                                      |
+   | **ID value**                             | Enter the value of the identifier.                                                                                                                                                                                                      |
 5. Remember to click **Add test device** button to save the changes.
 
 ## Which identifier you should use
