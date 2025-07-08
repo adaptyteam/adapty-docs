@@ -11,6 +11,10 @@ Adapty's User Acquisition helps you connect ad spend with subscription revenue, 
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in Adapty.
 
+:::info
+Adapty's User Acquisition is not released yet and is coming soon.
+:::
+
 ## How to set up User Acquisition integration
 To enable the integration:
 1. Go to [Integrations > Adapty](https://app.adapty.io/integrations/user-acquisition) in the Adapty Dashboard.
