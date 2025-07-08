@@ -11,7 +11,7 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 To use fallback paywalls and onboardings:
 
 1. Place the fallback JSON file you downloaded in the Adapty Dashboard alongside your app in the user's device.
-2. Call the `.setFallback` method. Place this method in your code **before** fetching a paywall or onboarding, ensuring that the mobile app possesses it when a fallback paywall or onboarding is required to replace the standard one.
+2. Call the `.setFallbackPaywalls` method. Place this method in your code **before** fetching a paywall or onboarding, ensuring that the mobile app possesses it when a fallback paywall or onboarding is required to replace the standard one.
 
 Here's an example of retrieving fallback paywall or onboarding data from a locally stored JSON file named `ios_fallback.json`.
 

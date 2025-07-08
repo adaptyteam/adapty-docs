@@ -126,6 +126,22 @@ override fun paywallViewDidDisappear(view: AdaptyUIView) {
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Paywall appeared
+{
+  // No additional data
+}
+
+// Paywall disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
 ### Product selection
 
 If a user selects a product for purchase, this method will be invoked:

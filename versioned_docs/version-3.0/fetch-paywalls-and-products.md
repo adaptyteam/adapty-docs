@@ -134,17 +134,13 @@ try {
 <TabItem value="kmp" label="Kotlin Multiplatform" default>
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
-Adapty.getPaywallProducts(paywall).onSuccess { products ->
-    // the requested products
-}.onError { error ->
-    // handle the error
-}
+Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID", locale = "en")
+    .onSuccess { paywall ->
+        // the requested paywall
+    }
+    .onError { error ->
+        // handle the error
+    }
 ```
 </TabItem>
 </Tabs>
