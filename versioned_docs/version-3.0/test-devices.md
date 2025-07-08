@@ -59,10 +59,10 @@ Flutter and Unity support will be added later.
 4. In the **Add test device** window, enter:
 
    | Field                                    | Description                                                                                                                                                                                                                             |
-   | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   |:-----------------------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
    | **Test device name**                     | Name of the test device(s) for your reference.                                                                                                                                                                                          |
    | **ID used to identify this test device** | Choose the identifier type you plan to use to identify the test device(s). Follow our recommendations in the [Which identifier you should use](test-devices#which-identifier-you-should-use) section below to pick the best option. |
-   | ** ID value**                            | Enter the value of the identifier.                                                                                                                                                                                                      |
+   | **ID value**                             | Enter the value of the identifier.                                                                                                                                                                                                      |
 5. Remember to click **Add test device** button to save the changes.
 
 ## Which identifier you should use
