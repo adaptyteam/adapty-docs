@@ -1,20 +1,12 @@
 ---
 title: "Reference"
-description: "Reference documentation for React Native Adapty SDK."
+description: "Reference documentation for Adapty React Native SDK."
 metadataTitle: "Reference | React Native SDK | Adapty Docs"
-slug: /react-native-reference
 displayed_sidebar: sdkreactnative
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+This page contains reference documentation for Adapty React Native SDK. Choose the topic you need:
 
-## SDK Reference
-
-- [SDK models](react-native-sdk-models.md) - Data models and types
-- [React Native SDK reference](https://www.npmjs.com/package/react-native-adapty) - Complete API documentation
-
-## Additional Resources
-
-- [Sample apps](sample-apps.md) - Example implementations
-- [Migration guides](react-native-subscription-status.md) - SDK migration documentation 
+- **[SDK models](react-native-sdk-models)** - Data models and structures used by the SDK
+- **[Handle errors](react-native-handle-errors)** - Error handling and troubleshooting
+- **[React Native SDK reference](https://www.npmjs.com/package/react-native-adapty)** - Complete API documentation 

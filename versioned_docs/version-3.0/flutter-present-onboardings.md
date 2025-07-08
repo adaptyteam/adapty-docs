@@ -1,5 +1,5 @@
 ---
-title: "Present onboardings"
+title: "Present onboardings in Flutter SDK"
 description: "Learn how to present onboardings effectively to drive more conversions."
 metadataTitle: "Presenting onboardings | Adapty Docs"
 displayed_sidebar: sdkflutter
@@ -12,7 +12,7 @@ If you've customized an onboarding using the builder, you don't need to worry ab
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Flutter SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty Flutter SDK](sdk-installation-flutter.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

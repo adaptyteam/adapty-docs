@@ -121,101 +121,11 @@ If you are using the **paywall from the Builder**, you need to add a web paywall
 
 ### Step 2b. Call the SDK method
 
-If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. The `.openWebPaywall` method:
-1. Generates a unique URL allowing Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
-2. Tracks when your users return to the app and then requests `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
+If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. Read the framework-specific guides:
 
-This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
-
-<Tabs groupId="code-examples" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers title="Swift"
-do {
-    try await Adapty.openWebPaywall(for: product)
-} catch {
-    print("Failed to open web paywall: \(error)")
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native">
-```javascript showLineNumbers title="React Native"
-try {
-    await adapty.openWebPaywall(product);
-    // The web paywall for the product is now opened
-    } catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter">
-```dart showLineNumbers title="Flutter"
-try {
-  await Adapty().openWebPaywall(product: <YOUR_PRODUCT>);
-  // The web paywall will be opened
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-  // handle other errors
-}
-```
-
-</TabItem>
-</Tabs>
-
-
-:::note
-There are two versions of the `openWebPaywall` method:
-1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
-2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
-:::
-
-#### Handle errors
-
-| Error                                   | Description                                            | Recommended action                                                        |
-|-----------------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------|
-| AdaptyError.paywallWithoutPurchaseUrl   | The paywall doesn't have a web purchase URL configured | Check if the paywall has been properly configured in the Adapty Dashboard |
-| AdaptyError.productWithoutPurchaseUrl   | The product doesn't have a web purchase URL            | Verify the product configuration in the Adapty Dashboard                  |
-| AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
-| AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
-
-#### Implementation example
-```swift showLineNumbers title="Swift"
-class SubscriptionViewController: UIViewController {
-    var paywall: AdaptyPaywall?
-    
-    @IBAction func purchaseButtonTapped(_ sender: UIButton) {
-        guard let paywall = paywall, let product = paywall.products.first else { return }
-         Task {
-            await offerWebPurchase(for: product)
-         }
-    }
-    
-    func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
-        do {
-            // Attempt to open web paywall
-            try await Adapty.openWebPaywall(for: product)
-        } catch let error as AdaptyError {
-            
-            switch error {
-            case .paywallWithoutPurchaseUrl, .productWithoutPurchaseUrl:
-                showAlert(message: "Web purchase is not available for this product.")
-            case .failedOpeningWebPaywallUrl:
-                showAlert(message: "Could not open web browser. Please try again.")
-            default:
-                showAlert(message: "An error occurred: \(error.localizedDescription)")
-            }
-        } catch {
-            showAlert(message: "An unexpected error occurred.")
-        }
-    }
-    
-    // Helper methods
-    private func showAlert(message: String) { /* ... */ }
-}
-```
-:::note
-After users return to the app, refresh the UI to reflect the profile updates. `AdaptyDelegate` will receive and process profile update events.
-:::
+- [iOS](ios-web-paywall)
+- [Flutter](flutter-web-paywall)
+- [React Native](react-native-web-paywall)
 
 ## Step 3. Set up a placement
 

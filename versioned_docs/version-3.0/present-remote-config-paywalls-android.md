@@ -1,150 +1,87 @@
 ---
-title: "Present remote config paywalls"
-description: "Display paywalls designed with remote config in your Android app."
-metadataTitle: "Present remote config paywalls | Android SDK | Adapty Docs"
+title: "Render paywall designed by remote config in Android SDK"
+description: "Discover how to present remote config paywalls in Adapty Android SDK to personalize user experience."
+metadataTitle: "Presenting Remote Config Paywalls | Android SDK | Adapty Docs"
+keywords: ['remote config', 'Android']
 displayed_sidebar: sdkandroid
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-You can present paywalls that are designed using remote config in your Android app. This allows you to create and modify paywalls without updating your app.
+If you've customized a paywall using remote config, you'll need to implement rendering in your mobile app's code to display it to users. Since remote config offers flexibility tailored to your needs, you're in control of what's included and how your paywall view appears. We provide a method for fetching the remote configuration, giving you the autonomy to showcase your custom paywall configured via remote config.
 
-## Get paywalls
+## Get paywall remote config and present it
 
-First, fetch the paywalls data from Adapty:
+To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
-```kotlin
-Adapty.getPaywalls { result ->
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
     when (result) {
         is AdaptyResult.Success -> {
-            val paywalls = result.value
-            // Present paywall
+            val paywall = result.value
+            val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
         }
         is AdaptyResult.Error -> {
-            // Handle error
+            val error = result.error
+            // handle the error
         }
     }
 }
 ```
 
-## Present paywall
+</TabItem>
+<TabItem value="java" label="Java" default>
 
-Use the `Adapty.presentPaywall()` method to display a paywall:
-
-```kotlin
-Adapty.presentPaywall(paywall) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val purchase = result.value
-            // Handle successful purchase
-        }
-        is AdaptyResult.Error -> {
-            // Handle error
-        }
-    }
-}
-```
-
-## Handle paywall events
-
-You can listen for paywall events to track user interactions:
-
-```kotlin
-Adapty.setPaywallListener { event ->
-    when (event) {
-        is AdaptyPaywallEvent.PaywallShown -> {
-            // Paywall was displayed
-        }
-        is AdaptyPaywallEvent.PaywallClosed -> {
-            // Paywall was closed
-        }
-        is AdaptyPaywallEvent.PurchaseStarted -> {
-            // Purchase process started
-        }
-        is AdaptyPaywallEvent.PurchaseCancelled -> {
-            // Purchase was cancelled
-        }
-        is AdaptyPaywallEvent.PurchaseCompleted -> {
-            // Purchase completed successfully
-        }
-        is AdaptyPaywallEvent.PurchaseFailed -> {
-            // Purchase failed
-        }
-    }
-}
-```
-
-## Customize paywall presentation
-
-You can customize how the paywall is presented:
-
-```kotlin
-val options = AdaptyPaywallPresentationOptions.Builder()
-    .setStyle(AdaptyPaywallStyle.MODAL) // or SHEET
-    .setAnimated(true)
-    .build()
-
-Adapty.presentPaywall(paywall, options) { result ->
-    // Handle result
-}
-```
-
-## Handle purchase results
-
-After a successful purchase, you'll receive a purchase object:
-
-```kotlin
-Adapty.presentPaywall(paywall) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val purchase = result.value
-            // Access purchase details
-            val productId = purchase.productId
-            val transactionId = purchase.transactionId
-            val purchaseDate = purchase.purchaseDate
-        }
-        is AdaptyResult.Error -> {
-            // Handle purchase error
-        }
-    }
-}
-```
-
-## Error handling
-
-Handle various error scenarios:
-
-```kotlin
-Adapty.presentPaywall(paywall) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            // Handle success
-        }
-        is AdaptyResult.Error -> {
-            when (result.error) {
-                is AdaptyError.PurchaseCancelled -> {
-                    // User cancelled the purchase
-                }
-                is AdaptyError.PurchaseFailed -> {
-                    // Purchase failed
-                }
-                is AdaptyError.NetworkError -> {
-                    // Network issues
-                }
-                else -> {
-                    // Other errors
-                }
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        
+        AdaptyPaywall.RemoteConfig remoteConfig = paywall.getRemoteConfig();
+        
+        if (remoteConfig != null) {
+            if (remoteConfig.getDataMap().get("header_text") instanceof String) {
+                String headerText = (String) remoteConfig.getDataMap().get("header_text");
             }
         }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
     }
-}
+});
+```
+</TabItem>
+</Tabs>
+
+At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
+
+:::warning
+Make sure to [record the paywall view event](present-remote-config-paywalls-android#track-paywall-view-events) as described below, allowing Adapty analytics to capture information for funnels and A/B tests.
+:::
+
+After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](making-purchases-android).
+
+We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-android). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+
+## Track paywall view events
+
+Adapty assists you in measuring the performance of your paywalls. While we gather data on purchases automatically, logging paywall views needs your input because only you know when a customer sees a paywall. 
+
+To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
+
+```kotlin showLineNumbers
+Adapty.logShowPaywall(paywall)
 ```
 
-## Next steps
+Request parameters:
 
-After presenting paywalls, you can:
-
-1. [Handle paywall events](/android-handling-events)
-2. [Check subscription status](/android-check-subscription-status)
-3. [Restore purchases](/android-restore-purchase) 
+| Parameter   | Presence | Description                                                |
+| :---------- | :------- | :--------------------------------------------------------- |
+| **paywall** | required | An [`AdaptyPaywall`](sdk-models-android#adaptypaywall) object. | 

@@ -1,136 +1,57 @@
 ---
-title: "Present remote config paywalls"
-description: "Display paywalls designed with remote config in your Flutter app."
-metadataTitle: "Present remote config paywalls | Flutter SDK | Adapty Docs"
+title: "Render paywall designed by remote config in Flutter SDK"
+description: "Discover how to present remote config paywalls in Adapty Flutter SDK to personalize user experience."
+metadataTitle: "Presenting Remote Config Paywalls | Flutter SDK | Adapty Docs"
+keywords: ['remote config', 'Flutter']
 displayed_sidebar: sdkflutter
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-You can present paywalls that are designed using remote config in your Flutter app. This allows you to create and modify paywalls without updating your app.
+If you've customized a paywall using remote config, you'll need to implement rendering in your mobile app's code to display it to users. Since remote config offers flexibility tailored to your needs, you're in control of what's included and how your paywall view appears. We provide a method for fetching the remote configuration, giving you the autonomy to showcase your custom paywall configured via remote config.
 
-## Get paywalls
+## Get paywall remote config and present it
 
-First, fetch the paywalls data from Adapty:
+To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
-```dart
+```dart showLineNumbers
 try {
-  final paywalls = await Adapty.getPaywalls();
-  // Present paywall
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final String? headerText = paywall.remoteConfig?['header_text'];
+} on AdaptyError catch (adaptyError) {
+  // handle the error
 } catch (e) {
-  // Handle error
 }
 ```
 
-## Present paywall
+At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
 
-Use the `Adapty.presentPaywall()` method to display a paywall:
+:::warning
+Make sure to [record the paywall view event](present-remote-config-paywalls-flutter#track-paywall-view-events) as described below, allowing Adapty analytics to capture information for funnels and A/B tests.
+:::
 
-```dart
+After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](making-purchases-flutter).
+
+We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-flutter). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+
+## Track paywall view events
+
+Adapty assists you in measuring the performance of your paywalls. While we gather data on purchases automatically, logging paywall views needs your input because only you know when a customer sees a paywall. 
+
+To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
+
+```dart showLineNumbers
 try {
-  final purchase = await Adapty.presentPaywall(paywall);
-  // Handle successful purchase
+  final result = await Adapty().logShowPaywall(paywall: paywall);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
 } catch (e) {
-  // Handle error
 }
 ```
 
-## Handle paywall events
+Request parameters:
 
-You can listen for paywall events to track user interactions:
-
-```dart
-Adapty.setPaywallListener((event) {
-  switch (event.runtimeType) {
-    case AdaptyPaywallShownEvent:
-      // Paywall was displayed
-      break;
-    case AdaptyPaywallClosedEvent:
-      // Paywall was closed
-      break;
-    case AdaptyPurchaseStartedEvent:
-      // Purchase process started
-      break;
-    case AdaptyPurchaseCancelledEvent:
-      // Purchase was cancelled
-      break;
-    case AdaptyPurchaseCompletedEvent:
-      // Purchase completed successfully
-      break;
-    case AdaptyPurchaseFailedEvent:
-      // Purchase failed
-      break;
-  }
-});
-```
-
-## Customize paywall presentation
-
-You can customize how the paywall is presented:
-
-```dart
-final options = AdaptyPaywallPresentationOptions(
-  style: AdaptyPaywallStyle.modal, // or sheet
-  animated: true,
-);
-
-try {
-  final purchase = await Adapty.presentPaywall(paywall, options);
-  // Handle result
-} catch (e) {
-  // Handle error
-}
-```
-
-## Handle purchase results
-
-After a successful purchase, you'll receive a purchase object:
-
-```dart
-try {
-  final purchase = await Adapty.presentPaywall(paywall);
-  // Access purchase details
-  final productId = purchase.productId;
-  final transactionId = purchase.transactionId;
-  final purchaseDate = purchase.purchaseDate;
-} catch (e) {
-  // Handle purchase error
-}
-```
-
-## Error handling
-
-Handle various error scenarios:
-
-```dart
-try {
-  final purchase = await Adapty.presentPaywall(paywall);
-  // Handle success
-} catch (e) {
-  if (e is AdaptyError) {
-    switch (e.runtimeType) {
-      case AdaptyPurchaseCancelledError:
-        // User cancelled the purchase
-        break;
-      case AdaptyPurchaseFailedError:
-        // Purchase failed
-        break;
-      case AdaptyNetworkError:
-        // Network issues
-        break;
-      default:
-        // Other errors
-        break;
-    }
-  }
-}
-```
-
-## Next steps
-
-After presenting paywalls, you can:
-
-1. [Handle paywall events](/flutter-handling-events)
-2. [Check subscription status](/flutter-check-subscription-status)
-3. [Restore purchases](/flutter-restore-purchase) 
+| Parameter   | Presence | Description                                                |
+| :---------- | :------- | :--------------------------------------------------------- |
+| **paywall** | required | An [`AdaptyPaywall`](sdk-models-flutter#adaptypaywall) object. | 

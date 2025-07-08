@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle onboarding events"
+title: "Handle onboarding events in iOS SDK"
 description: "Handle onboarding-related events in iOS using Adapty."
 metadataTitle: "Handling Onboarding Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
@@ -9,6 +9,12 @@ keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedActio
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+
+Before you start, ensure that:
+
+1. You have installed [Adapty iOS SDK](sdk-installation-ios.md) 3.8.0 or later.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
 
 Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
 

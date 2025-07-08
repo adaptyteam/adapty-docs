@@ -1,69 +1,11 @@
 ---
-title: "Test & release"
+title: "Test & release in React Native SDK"
 description: "Learn how to test and release your React Native app with Adapty SDK."
 metadataTitle: "Test & Release | React Native SDK | Adapty Docs"
 slug: /react-native-test
 displayed_sidebar: sdkreactnative
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+If you've already implemented the Adapty SDK in your React Native app, you'll want to test that everything is set up correctly and that purchases work as expected across both iOS and Android platforms. This involves testing both the SDK integration and the actual purchase flow with Apple's sandbox environment and Google Play's testing environment.
 
-## Testing your integration
-
-Before releasing your app, thoroughly test your Adapty integration:
-
-### Test purchases
-
-1. Use sandbox accounts for testing
-2. Test all purchase flows
-3. Test restore purchases
-4. Test subscription upgrades/downgrades
-5. Test paywall presentation
-
-### Test paywalls
-
-1. Test paywall loading
-2. Test paywall presentation
-3. Test paywall events
-4. Test offline fallback paywalls
-5. Test localization
-
-### Test onboardings
-
-1. Test onboarding presentation
-2. Test onboarding actions
-3. Test onboarding completion
-4. Test onboarding events
-
-## Release checklist
-
-Before releasing to production:
-
-- [ ] All purchase flows tested
-- [ ] Paywalls working correctly
-- [ ] Onboardings functioning
-- [ ] Error handling implemented
-- [ ] Analytics tracking configured
-- [ ] App Store Connect configured
-- [ ] Google Play Console configured
-
-## Common issues
-
-### Purchase issues
-
-- Ensure sandbox accounts are properly configured
-- Check product IDs match App Store/Google Play
-- Verify app bundle ID matches store configuration
-
-### Paywall issues
-
-- Check paywall configuration in Adapty dashboard
-- Verify network connectivity
-- Test fallback paywalls
-
-### Integration issues
-
-- Ensure SDK is properly initialized
-- Check API keys are correct
-- Verify platform-specific setup 
+For comprehensive testing of your in-app purchases, see our platform-specific testing guides: [iOS testing guide](testing-purchases-ios.md) and [Android testing guide](testing-on-android.md). 

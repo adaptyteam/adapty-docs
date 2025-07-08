@@ -1,5 +1,5 @@
 ---
-title: "Android - Handle errors"
+title: "Handle errors in Android SDK"
 description: "Handle Android SDK errors effectively with Adapty’s troubleshooting guide."
 metadataTitle: "Handling Android SDK Errors | Adapty Docs"
 ---

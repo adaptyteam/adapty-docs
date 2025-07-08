@@ -1,5 +1,5 @@
 ---
-title: "React Native – Present onboardings"
+title: "Present onboardings in React Native SDK"
 description: "Discover how to present onboardings on React Native to boost conversions and revenue."
 metadataTitle: "Presenting onboardings on React Native | Adapty Docs"
 ---
@@ -14,7 +14,7 @@ If you've customized an onboarding using the builder, you don't need to worry ab
 
 Before you start, ensure that:
 
-1. You have installed [Adapty React Native SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty React Native SDK](sdk-installation-reactnative.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

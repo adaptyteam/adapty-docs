@@ -1,6 +1,6 @@
 ---
-title: "Fetch onboardings and their configuration"
-description: "Learn how to retrieve onboardings in Adapty for."
+title: "Get onboardings in Flutter SDK"
+description: "Learn how to retrieve onboardings in Adapty for Flutter."
 metadataTitle: "Retrieving onboardings in Adapty | Adapty Docs"
 keywords: ['getOnboarding', 'getOnboardingForDefaultAudience']
 displayed_sidebar: sdkflutter
@@ -8,8 +8,6 @@ displayed_sidebar: sdkflutter
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 After [you designed the visual part for your onboarding](design-onboarding.md) with the builder in the Adapty Dashboard, you can display it in your Flutter app. The first step in this process is to get the onboarding associated with the placement and its view configuration as described below.
 
@@ -26,37 +24,6 @@ When you create an [onboarding](onboardings.md) with our no-code builder, it's s
 For best performance, fetch the onboarding configuration early to give images enough time to download before showing to users.
 
 To get an onboarding, use the `getOnboarding` method:
-
-<Tabs>
-<TabItem value="ios" label="iOS" default>
-```swift showLineNumbers
-do {
-    let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
-    // the requested onboarding
-} catch {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="android" label="Android">
-```kotlin showLineNumbers
-
-Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val onboarding = result.value
-            // the requested onboarding
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-
-<TabItem value="flutter" label="Flutter" default>
 
 ```dart showLineNumbers
 try {
@@ -85,9 +52,6 @@ try {
     //handle error
 }
 ```
-</TabItem>
-
-</Tabs>
 
 Parameters:
 
@@ -96,7 +60,7 @@ Parameters:
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the onboarding localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](flutter-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this option because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores onboardings locally in two layers: regularly updated cache described above and fallback onboardings. We also use CDN to fetch onboardings faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your onboardings while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p><p>For Android: You can create `TimeInterval` with extension functions (like `5.seconds`, where `.seconds` is from `import com.adapty.utils.seconds`), or `TimeInterval.seconds(5)`. To set no limitation, use `TimeInterval.INFINITE`.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 Response parameters:
 
@@ -120,39 +84,6 @@ Consider using `getOnboarding` instead of `getOnboardingForDefaultAudience`, as 
 If faster fetching outweighs these drawbacks for your use case, use `getOnboardingForDefaultAudience` as shown below. Otherwise, use `getOnboarding` as described [above](#fetch-onboarding).
 :::
 
-<Tabs>
-<TabItem value="ios" label="iOS" default>
-```swift showLineNumbers
-Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
-    switch result {
-        case let .success(onboarding):
-            // the requested onboarding
-        case let .failure(error):
-            // handle the error
-    }
-}
-```
-</TabItem>
-
-<TabItem value="android" label="Android">
-```kotlin
-Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val onboarding = result.value
-            // Handle successful onboarding retrieval
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error case
-        }
-    }
-}
-```
-</TabItem>
-
-<TabItem value="flutter" label="Flutter" default>
-
 ```dart showLineNumbers
 try {
     final onboarding = await Adapty().getOnboardingForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
@@ -162,9 +93,7 @@ try {
     // handle unknown error
 }
 ```
-</TabItem>
 
-</Tabs>
 Parameters:
 
 | Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

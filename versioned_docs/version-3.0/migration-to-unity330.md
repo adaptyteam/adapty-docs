@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to Adapty Unity SDK 3.3.x"
-description: ""
-metadataTitle: ""
+title: "Migrate Adapty Unity SDK to v. 3.3"
+description: "Migrate to Adapty Unity SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty Unity SDK v3.3 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';

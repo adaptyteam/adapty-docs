@@ -1,9 +1,12 @@
 ---
 title: "Reference"
-description: "Learn how to check subscription status in your Android app with Adapty."
-metadataTitle: "Check Subscription Status | Adapty Docs"
+description: "Reference documentation for Adapty Android SDK."
+metadataTitle: "Reference | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid
 ---
 
+This page contains reference documentation for Adapty Android SDK. Choose the topic you need:
 
-Navigation page 
+- **[SDK models](android-sdk-models)** - Data models and structures used by the SDK
+- **[Handle errors](android-sdk-error-handling)** - Error handling and troubleshooting
+- **[Android SDK reference](https://kotlin.adapty.io)** - Complete API documentation 

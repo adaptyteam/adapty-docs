@@ -1,7 +1,7 @@
 ---
-title: "Get onboardings"
-description: "Learn how to get onboardings in your React Native app with Adapty SDK."
-metadataTitle: "Get Onboardings | React Native SDK | Adapty Docs"
+title: "Get onboardings in React Native SDK"
+description: "Learn how to retrieve onboardings in Adapty for React Native."
+metadataTitle: "Retrieving onboardings in Adapty | Adapty Docs"
 slug: /react-native-get-onboardings
 displayed_sidebar: sdkreactnative
 ---
@@ -9,131 +9,101 @@ displayed_sidebar: sdkreactnative
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-## Get onboardings
+After [you designed the visual part for your onboarding](design-onboarding.md) with the builder in the Adapty Dashboard, you can display it in your React Native app. The first step in this process is to get the onboarding associated with the placement and its view configuration as described below.
 
-To get available onboardings from Adapty:
+Before you start, ensure that:
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+1. You have installed [Adapty React Native SDK](sdk-installation-reactnative.md) version 3.8.0 or higher.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
 
-const onboardings = await Adapty.getOnboardings();
-console.log('Available onboardings:', onboardings);
-```
+## Fetch onboarding
 
-## Get onboardings with options
+When you create an [onboarding](onboardings.md) with our no-code builder, it's stored as a container with configuration that your app needs to fetch and display. This container manages the entire experience - what content appears, how it's presented, and how user interactions (like quiz answers or form inputs) are processed. The container also automatically tracks analytics events, so you don't need to implement separate view tracking.
 
-You can specify options when getting onboardings:
+For best performance, fetch the onboarding configuration early to give images enough time to download before showing to users.
 
-```javascript
-const onboardings = await Adapty.getOnboardings({
-  locale: 'en_US',
-  loadTimeout: 10000
-});
-```
+To get an onboarding, use the `getOnboarding` method:
 
-## Onboarding structure
-
-Each onboarding contains the following information:
-
-```javascript
-const onboardings = await Adapty.getOnboardings();
-
-onboardings.forEach(onboarding => {
-  console.log('Onboarding ID:', onboarding.developerId);
-  console.log('Onboarding name:', onboarding.name);
-  console.log('Screens:', onboarding.screens);
-  console.log('Visual onboarding:', onboarding.visualOnboarding);
-});
-```
-
-## Get specific onboarding
-
-To get a specific onboarding by ID:
-
-```javascript
-const onboardings = await Adapty.getOnboardings();
-const specificOnboarding = onboardings.find(o => o.developerId === 'welcome_onboarding');
-
-if (specificOnboarding) {
-  console.log('Found onboarding:', specificOnboarding);
-}
-```
-
-## Handle errors
-
-Always handle potential errors when getting onboardings:
-
-```javascript
+```typescript showLineNumbers
 try {
-  const onboardings = await Adapty.getOnboardings();
-  console.log('Onboardings loaded:', onboardings.length);
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const onboarding = await adapty.getOnboarding(placementId, locale);
+    // the requested onboarding
 } catch (error) {
-  console.error('Failed to get onboardings:', error);
-  // Handle error appropriately
+    // handle the error
 }
 ```
 
-## Cache onboardings
+Then, call the `createOnboardingView` method to create a view instance.
 
-Onboardings are cached locally for offline use:
+:::warning
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
 
-```javascript
-// Get onboardings (will use cache if available)
-const onboardings = await Adapty.getOnboardings();
+```typescript showLineNumbers
+import {createOnboardingView} from '@adapty/react-native-ui';
 
-// Force refresh from server
-const freshOnboardings = await Adapty.getOnboardings({
-  forceUpdate: true
-});
-```
-
-## Onboarding observer
-
-To listen for onboarding updates:
-
-```javascript
-import { AdaptyOnboardingObserver } from 'react-native-adapty';
-
-const observer = new AdaptyOnboardingObserver();
-
-observer.on('onboardings_updated', (onboardings) => {
-  console.log('Onboardings updated:', onboardings);
-});
-
-observer.on('onboardings_loaded', (onboardings) => {
-  console.log('Onboardings loaded:', onboardings);
-});
-```
-
-## Check onboarding availability
-
-You can check if specific onboardings are available:
-
-```javascript
-const onboardings = await Adapty.getOnboardings();
-
-// Check if welcome onboarding is available
-const hasWelcomeOnboarding = onboardings.some(o => o.developerId === 'welcome_onboarding');
-
-if (hasWelcomeOnboarding) {
-  console.log('Welcome onboarding is available');
+if (onboarding.hasViewConfiguration) {
+    try {
+        const view = await createOnboardingView(onboarding);
+    } catch (error) {
+        // handle the error
+    }
 } else {
-  console.log('Welcome onboarding is not available');
+    //use your custom logic
 }
 ```
 
-## Filter onboardings
+Parameters:
 
-You can filter onboardings based on criteria:
+| Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the onboarding localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this option because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores onboardings locally in two layers: regularly updated cache described above and fallback onboardings. We also use CDN to fetch onboardings faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your onboardings while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
-```javascript
-const onboardings = await Adapty.getOnboardings();
+Response parameters:
 
-// Get only active onboardings
-const activeOnboardings = onboardings.filter(o => o.isActive);
+| Parameter | Description                                                                                                                                                |
+|:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Onboarding      | An [`AdaptyOnboarding`](sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
-// Get onboardings for specific locale
-const localizedOnboardings = onboardings.filter(o => 
-  o.visualOnboarding?.localizations.some(l => l.locale === 'en_US')
-);
-``` 
+
+## Speed up onboarding fetching with default audience onboarding
+
+Typically, onboardings are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and onboardings, and your users have a weak internet connection, fetching a onboarding may take longer than you'd like. In such situations, you might want to display a default onboarding to ensure a smooth user experience rather than showing no onboarding at all.
+
+To address this, you can use the `getOnboardingForDefaultAudience`  method, which fetches the onboarding of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the onboarding by the `getOnboarding` method, as detailed in the [Fetch Onboarding](#fetch-onboarding) section above.
+
+:::warning
+Consider using `getOnboarding` instead of `getOnboardingForDefaultAudience`, as the latter has important limitations:
+
+- **Compatibility issues**: May create problems when supporting multiple app versions, requiring either backward-compatible designs or accepting that older versions might display incorrectly.
+- **No personalization**: Only shows content for the "All Users" audience, removing targeting based on country, attribution, or custom attributes.
+
+If faster fetching outweighs these drawbacks for your use case, use `getOnboardingForDefaultAudience` as shown below. Otherwise, use `getOnboarding` as described [above](#fetch-onboarding).
+:::
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const onboarding = await adapty.getOnboardingForDefaultAudience(placementId, locale);
+    // the requested onboarding
+} catch (error) {
+    // handle the error
+}
+```
+
+Parameters:
+
+| Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the onboarding localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this option because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores onboardings locally in two layers: regularly updated cache described above and fallback onboardings. We also use CDN to fetch onboardings faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your onboardings while ensuring reliability even in cases where internet connection is scarce.</p> | 

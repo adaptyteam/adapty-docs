@@ -1,134 +1,51 @@
 ---
-title: "Present remote config paywalls"
-description: "Display paywalls designed with remote config in your React Native app."
-metadataTitle: "Present remote config paywalls | React Native SDK | Adapty Docs"
+title: "Render paywall designed by remote config in React Native SDK"
+description: "Discover how to present remote config paywalls in Adapty React Native SDK to personalize user experience."
+metadataTitle: "Presenting Remote Config Paywalls | React Native SDK | Adapty Docs"
+keywords: ['remote config', 'React Native']
 displayed_sidebar: sdkreactnative
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-You can present paywalls that are designed using remote config in your React Native app. This allows you to create and modify paywalls without updating your app.
+If you've customized a paywall using remote config, you'll need to implement rendering in your mobile app's code to display it to users. Since remote config offers flexibility tailored to your needs, you're in control of what's included and how your paywall view appears. We provide a method for fetching the remote configuration, giving you the autonomy to showcase your custom paywall configured via remote config.
 
-## Get paywalls
+## Get paywall remote config and present it
 
-First, fetch the paywalls data from Adapty:
+To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
-```javascript
+```typescript showLineNumbers
 try {
-  const paywalls = await Adapty.getPaywalls();
-  // Present paywall
+  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
+  const headerText = paywall.remoteConfig?.["header_text"];
 } catch (error) {
-  // Handle error
+  // handle the error
 }
 ```
 
-## Present paywall
+At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
 
-Use the `Adapty.presentPaywall()` method to display a paywall:
+:::warning
+Make sure to [record the paywall view event](present-remote-config-paywalls-react-native#track-paywall-view-events) as described below, allowing Adapty analytics to capture information for funnels and A/B tests.
+:::
 
-```javascript
-try {
-  const purchase = await Adapty.presentPaywall(paywall);
-  // Handle successful purchase
-} catch (error) {
-  // Handle error
-}
+After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](making-purchases-react-native).
+
+We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-react-native). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+
+## Track paywall view events
+
+Adapty assists you in measuring the performance of your paywalls. While we gather data on purchases automatically, logging paywall views needs your input because only you know when a customer sees a paywall. 
+
+To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
+
+```typescript showLineNumbers
+await adapty.logShowPaywall(paywall);
 ```
 
-## Handle paywall events
+Request parameters:
 
-You can listen for paywall events to track user interactions:
-
-```javascript
-Adapty.setPaywallListener((event) => {
-  switch (event.type) {
-    case 'paywall_shown':
-      // Paywall was displayed
-      break;
-    case 'paywall_closed':
-      // Paywall was closed
-      break;
-    case 'purchase_started':
-      // Purchase process started
-      break;
-    case 'purchase_cancelled':
-      // Purchase was cancelled
-      break;
-    case 'purchase_completed':
-      // Purchase completed successfully
-      break;
-    case 'purchase_failed':
-      // Purchase failed
-      break;
-  }
-});
-```
-
-## Customize paywall presentation
-
-You can customize how the paywall is presented:
-
-```javascript
-const options = {
-  style: 'modal', // or 'sheet'
-  animated: true,
-};
-
-try {
-  const purchase = await Adapty.presentPaywall(paywall, options);
-  // Handle result
-} catch (error) {
-  // Handle error
-}
-```
-
-## Handle purchase results
-
-After a successful purchase, you'll receive a purchase object:
-
-```javascript
-try {
-  const purchase = await Adapty.presentPaywall(paywall);
-  // Access purchase details
-  const productId = purchase.productId;
-  const transactionId = purchase.transactionId;
-  const purchaseDate = purchase.purchaseDate;
-} catch (error) {
-  // Handle purchase error
-}
-```
-
-## Error handling
-
-Handle various error scenarios:
-
-```javascript
-try {
-  const purchase = await Adapty.presentPaywall(paywall);
-  // Handle success
-} catch (error) {
-  switch (error.code) {
-    case 'PURCHASE_CANCELLED':
-      // User cancelled the purchase
-      break;
-    case 'PURCHASE_FAILED':
-      // Purchase failed
-      break;
-    case 'NETWORK_ERROR':
-      // Network issues
-      break;
-    default:
-      // Other errors
-      break;
-  }
-}
-```
-
-## Next steps
-
-After presenting paywalls, you can:
-
-1. [Handle paywall events](/react-native-handling-events-1)
-2. [Check subscription status](/react-native-check-subscription-status)
-3. [Restore purchases](/react-native-restore-purchase) 
+| Parameter   | Presence | Description                                                |
+| :---------- | :------- | :--------------------------------------------------------- |
+| **paywall** | required | An [`AdaptyPaywall`](sdk-models-react-native#adaptypaywall) object. | 

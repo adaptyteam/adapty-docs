@@ -1,180 +1,42 @@
 ---
-title: "Restore purchases"
-description: "Learn how to restore purchases in your React Native app with Adapty SDK."
-metadataTitle: "Restore Purchases | React Native SDK | Adapty Docs"
-slug: /react-native-restore-purchase
-displayed_sidebar: sdkreactnative
+title: "Restore purchases in mobile app in React Native SDK"
+description: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+metadataTitle: "Restoring Purchases in Adapty | Adapty Docs"
+keywords: ['restorePurchases']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-## Restore purchases
+Restoring Purchases in both iOS and Android is a feature that allows users to regain access to previously purchased content, such as subscriptions or in-app purchases, without being charged again. This feature is especially useful for users who may have uninstalled and reinstalled the app or switched to a new device and want to access their previously purchased content without paying again.
 
-To restore purchases, use the `restorePurchases` method:
+:::note
+In paywalls built with [Paywall Builder](adapty-paywall-builder), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
+:::
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
+```typescript showLineNumbers
 try {
-  await Adapty.restorePurchases();
-  console.log('Purchases restored successfully');
-} catch (error) {
-  console.error('Restore failed:', error);
-}
-```
-
-## Check restored purchases
-
-After restoring, check the user's profile for active subscriptions:
-
-```javascript
-await Adapty.restorePurchases();
-
-const profile = await Adapty.getProfile();
-const activeSubscriptions = profile.subscriptions.filter(sub => sub.isActive);
-
-if (activeSubscriptions.length > 0) {
-  console.log('Found active subscriptions:', activeSubscriptions.length);
-  activeSubscriptions.forEach(sub => {
-    console.log('Product:', sub.vendorProductId);
-    console.log('Expires:', sub.expiresAt);
-  });
-} else {
-  console.log('No active subscriptions found');
-}
-```
-
-## Restore with progress
-
-You can track restore progress:
-
-```javascript
-import { AdaptyRestoreObserver } from 'react-native-adapty';
-
-const observer = new AdaptyRestoreObserver();
-
-observer.on('restore_started', () => {
-  console.log('Restore started');
-  // Show loading indicator
-});
-
-observer.on('restore_completed', (profile) => {
-  console.log('Restore completed');
-  // Hide loading indicator
-  // Update UI with restored purchases
-});
-
-observer.on('restore_failed', (error) => {
-  console.error('Restore failed:', error);
-  // Hide loading indicator
-  // Show error message
-});
-
-// Start restore
-await Adapty.restorePurchases();
-```
-
-## Handle restore errors
-
-Handle different types of restore errors:
-
-```javascript
-try {
-  await Adapty.restorePurchases();
-} catch (error) {
-  switch (error.code) {
-    case 'RESTORE_CANCELLED':
-      console.log('User cancelled restore');
-      break;
-    case 'RESTORE_FAILED':
-      console.log('Restore failed:', error.message);
-      break;
-    case 'NETWORK_ERROR':
-      console.log('Network error during restore');
-      break;
-    case 'NO_PURCHASES_TO_RESTORE':
-      console.log('No purchases to restore');
-      break;
-    default:
-      console.log('Unknown restore error:', error);
-  }
-}
-```
-
-## Restore specific products
-
-You can restore specific products if needed:
-
-```javascript
-// Get user profile to see what products they might have
-const profile = await Adapty.getProfile();
-
-// Check if user has any subscriptions
-if (profile.subscriptions.length > 0) {
-  console.log('User has subscription history');
-  await Adapty.restorePurchases();
-} else {
-  console.log('No subscription history found');
-}
-```
-
-## Restore UI integration
-
-Integrate restore functionality into your UI:
-
-```javascript
-const RestoreButton = () => {
-  const [isRestoring, setIsRestoring] = useState(false);
+    const profile = await adapty.restorePurchases();
+    const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
-  const handleRestore = async () => {
-    setIsRestoring(true);
-    
-    try {
-      await Adapty.restorePurchases();
-      const profile = await Adapty.getProfile();
-      
-      if (profile.subscriptions.some(sub => sub.isActive)) {
-        Alert.alert('Success', 'Your purchases have been restored!');
-      } else {
-        Alert.alert('No Purchases', 'No active purchases found to restore.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to restore purchases. Please try again.');
-    } finally {
-      setIsRestoring(false);
+    if (isSubscribed) {
+        // restore access
     }
-  };
-  
-  return (
-    <Button
-      title={isRestoring ? 'Restoring...' : 'Restore Purchases'}
-      onPress={handleRestore}
-      disabled={isRestoring}
-    />
-  );
-};
+} catch (error) {
+    // handle the error
+}
 ```
 
-## Automatic restore
 
-You can automatically restore purchases on app launch:
+Response parameters:
 
-```javascript
-// In your app initialization
-const initializeApp = async () => {
-  try {
-    // Activate Adapty
-    await Adapty.activate();
-    
-    // Automatically restore purchases
-    await Adapty.restorePurchases();
-    
-    // Get updated profile
-    const profile = await Adapty.getProfile();
-    console.log('App initialized with profile:', profile);
-  } catch (error) {
-    console.error('App initialization failed:', error);
-  }
-};
-``` 
+| Parameter | Description |
+|---------|-----------|
+| **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+
+<SampleApp />

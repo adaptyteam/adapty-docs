@@ -1,155 +1,43 @@
 ---
-title: "Restore purchases"
-description: "Learn how to restore purchases in your Unity app with Adapty SDK."
-metadataTitle: "Restore Purchases | Unity SDK | Adapty Docs"
-slug: /unity-restore-purchase
-displayed_sidebar: sdkunity
+title: "Restore purchases in mobile app in Unity SDK"
+description: "Learn how to restore purchases in Adapty to ensure seamless user experience."
+metadataTitle: "Restoring Purchases in Adapty | Adapty Docs"
+keywords: ['restorePurchases']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-## Restore purchases
+Restoring Purchases in both iOS and Android is a feature that allows users to regain access to previously purchased content, such as subscriptions or in-app purchases, without being charged again. This feature is especially useful for users who may have uninstalled and reinstalled the app or switched to a new device and want to access their previously purchased content without paying again.
 
-To restore purchases, use the `RestorePurchases` method:
+:::note
+In paywalls built with [Paywall Builder](adapty-paywall-builder), purchases are restored automatically without additional code from you. If that's your case — you can skip this step.
+:::
 
-```csharp
-using Adapty;
+To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
-try
-{
-    await Adapty.RestorePurchases();
-    Debug.Log("Purchases restored successfully");
-}
-catch (Exception error)
-{
-    Debug.LogError($"Restore failed: {error.Message}");
-}
-```
 
-## Check restored purchases
-
-After restoring, check the user's profile for active subscriptions:
-
-```csharp
-await Adapty.RestorePurchases();
-
-var profile = await Adapty.GetProfile();
-var activeSubscriptions = profile.Subscriptions.Where(sub => sub.IsActive).ToList();
-
-if (activeSubscriptions.Count > 0)
-{
-    Debug.Log($"Found active subscriptions: {activeSubscriptions.Count}");
-    foreach (var sub in activeSubscriptions)
-    {
-        Debug.Log($"Product: {sub.VendorProductId}");
-        Debug.Log($"Expires: {sub.ExpiresDate}");
+```csharp showLineNumbers
+Adapty.RestorePurchases((profile, error) => {
+    if (error != null) {
+        // handle the error
+        return;
     }
-}
-else
-{
-    Debug.Log("No active subscriptions found");
-}
-```
-
-## Restore with progress
-
-You can track restore progress:
-
-```csharp
-Adapty.OnRestoreStarted += () =>
-{
-    Debug.Log("Restore started");
-    // Show loading indicator
-};
-
-Adapty.OnRestoreCompleted += (profile) =>
-{
-    Debug.Log("Restore completed");
-    // Hide loading indicator
-    // Update UI with restored purchases
-};
-
-Adapty.OnRestoreFailed += (error) =>
-{
-    Debug.LogError($"Restore failed: {error.Message}");
-    // Hide loading indicator
-    // Show error message
-};
-
-// Start restore
-await Adapty.RestorePurchases();
-```
-
-## Handle restore errors
-
-Handle different types of restore errors:
-
-```csharp
-try
-{
-    await Adapty.RestorePurchases();
-}
-catch (Exception error)
-{
-    Debug.LogError($"Restore error: {error.Message}");
-}
-```
-
-## Restore UI integration
-
-Integrate restore functionality into your UI:
-
-```csharp
-public class RestoreButton : MonoBehaviour
-{
-    public async void OnRestoreClicked()
-    {
-        try
-        {
-            await Adapty.RestorePurchases();
-            var profile = await Adapty.GetProfile();
-            
-            if (profile.Subscriptions.Any(sub => sub.IsActive))
-            {
-                Debug.Log("Your purchases have been restored!");
-            }
-            else
-            {
-                Debug.Log("No active purchases found to restore.");
-            }
-        }
-        catch (Exception error)
-        {
-            Debug.LogError("Failed to restore purchases. Please try again.");
-        }
+  
+    var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+    if (accessLevel != null && accessLevel.IsActive) {
+        // restore access
     }
-}
+});
 ```
 
-## Automatic restore
+Response parameters:
 
-You can automatically restore purchases on app launch:
+| Parameter | Description |
+|---------|-----------|
+| **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
 
-```csharp
-// In your app initialization
-public async void InitializeApp()
-{
-    try
-    {
-        // Activate Adapty
-        await Adapty.Activate();
-        
-        // Automatically restore purchases
-        await Adapty.RestorePurchases();
-        
-        // Get updated profile
-        var profile = await Adapty.GetProfile();
-        Debug.Log($"App initialized with profile: {profile.ProfileId}");
-    }
-    catch (Exception error)
-    {
-        Debug.LogError($"App initialization failed: {error.Message}");
-    }
-}
-``` 
+<SampleApp />

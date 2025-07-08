@@ -1,8 +1,12 @@
 ---
 title: "Reference"
-description: "Learn how to check subscription status in your Flutter app with Adapty."
-metadataTitle: "Check Subscription Status | Adapty Docs"
+description: "Reference documentation for Adapty Flutter SDK."
+metadataTitle: "Reference | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter
 ---
 
-Navigation page 
+This page contains reference documentation for Adapty Flutter SDK. Choose the topic you need:
+
+- **[SDK models](flutter-sdk-models)** - Data models and structures used by the SDK
+- **[Handle errors](error-handling-on-flutter-react-native-unity)** - Error handling and troubleshooting
+- **[Flutter SDK reference](https://pub.dev/packages/adapty_flutter)** - Complete API documentation 

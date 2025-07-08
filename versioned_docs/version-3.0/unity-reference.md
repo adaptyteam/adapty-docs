@@ -1,20 +1,12 @@
 ---
 title: "Reference"
-description: "Reference documentation for Unity Adapty SDK."
+description: "Reference documentation for Adapty Unity SDK."
 metadataTitle: "Reference | Unity SDK | Adapty Docs"
-slug: /unity-reference
 displayed_sidebar: sdkunity
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+This page contains reference documentation for Adapty Unity SDK. Choose the topic you need:
 
-## SDK Reference
-
-- [SDK models](unity-sdk-models.md) - Data models and types
-- [Unity SDK reference](https://docs.adapty.io/unity/) - Complete API documentation
-
-## Additional Resources
-
-- [Sample apps](sample-apps.md) - Example implementations
-- [Migration guides](unity-migration-guide.md) - SDK migration documentation 
+- **[SDK models](unity-sdk-models)** - Data models and structures used by the SDK
+- **[Handle errors](unity-handle-errors)** - Error handling and troubleshooting
+- **[Unity SDK reference](https://github.com/adaptyteam/AdaptySDK-Unity)** - Complete API documentation 
