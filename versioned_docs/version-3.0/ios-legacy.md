@@ -1,9 +1,11 @@
 ---
 title: "Legacy"
-description: "Learn how to check subscription status in your iOS app with Adapty."
-metadataTitle: "Check Subscription Status | Adapty Docs"
+description: "Legacy documentation for Adapty iOS SDK."
+metadataTitle: "Legacy | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios
 ---
 
+This page contains legacy documentation for Adapty iOS SDK. Choose the topic you need:
 
-Navigation page
+- **[Legacy installation guide](ios-legacy-install)** - Install and configure legacy iOS SDK
+- **[Display legacy Paywall Builder paywalls](ios-display-legacy-pb-paywalls)** - Work with legacy paywall builder
