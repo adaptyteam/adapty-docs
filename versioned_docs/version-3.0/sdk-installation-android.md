@@ -1,6 +1,6 @@
 ---
-title: "Android - Adapty SDK Installation and configuration"
-description: "Install and configure Adapty SDK for Android apps."
+title: "Android - Adapty SDK installation & configuration"
+description: "Step-by-step guide on installing Adapty SDK on Android for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl', 'billing library']
 rank: 70
@@ -8,37 +8,42 @@ rank: 70
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import GetKey from '@site/src/components/reusable/GetKey.md';
 
-Adapty comprises two crucial SDKs for seamless integration into your mobile app:
+Adapty SDK includes two key modules for seamless integration into your mobile app:
 
-- Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
+- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-You can install Adapty SDK via Gradle.
+## Requirements
 
-:::info
-Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+- **Android API 19+** (Android 4.4+)
+- **Java 11+**
+- **Kotlin 1.8.0+**
+- **Google Play Billing Library 6.1.0** (compatible up to 7.x). Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+
+:::note
+While the core Adapty SDK supports Android API 19+, AdaptyUI requires Android API 21+ (Android 5.0+) for full functionality.
 :::
 
-:::danger
-Go through the release checklist before releasing your app
+## Install Adapty SDK
 
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
+Choose your dependency setup method:
+- Standard Gradle: Add dependencies to your **module-level** `build.gradle`
+- If your project uses `.gradle.kts` files, add dependencies to your module-level `build.gradle.kts`
+- If you use version catalogs, add dependencies to your `libs.versions.toml` file
 
-<Tabs groupId="current-os" queryString> <TabItem value="3.x" label="Adapty SDK v3.x+ (current)" default> 
-
-## Install via Gradle
-
-<Tabs groupId="current-os" queryString>
-  <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```groovy showLineNumbers
 dependencies {
     ...
     implementation platform('io.adapty:adapty-bom:3.8.0')
     implementation 'io.adapty:android-sdk'
+    
+    // Only add this line if you plan to use Paywall Builder
     implementation 'io.adapty:android-ui'
 }
 ```
@@ -51,6 +56,8 @@ dependencies {
     ...
     implementation(platform("io.adapty:adapty-bom:3.8.0"))
     implementation("io.adapty:android-sdk")
+    
+    // Only add this line if you plan to use Paywall Builder:
     implementation("io.adapty:android-ui")
 }
 ```
@@ -69,6 +76,8 @@ adaptyBom = "3.8.0"
 ..
 adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
 adapty = { module = "io.adapty:android-sdk" }
+
+// Only add this line if you plan to use Paywall Builder:
 adapty-ui = { module = "io.adapty:android-ui" }
 
 
@@ -78,6 +87,8 @@ dependencies {
     ...
     implementation(platform(libs.adapty.bom))
     implementation(libs.adapty)
+    
+    // Only add this line if you plan to use Paywall Builder:
     implementation(libs.adapty.ui)
 }
 ```
@@ -85,12 +96,10 @@ dependencies {
 </TabItem>
 </Tabs>
 
-
 If the dependency is not being resolved, please make sure that you have `mavenCentral()` in your Gradle scripts. 
 
 <details>
    <summary>The instruction on how to add it</summary>
-
 
    If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
 
@@ -117,255 +126,144 @@ dependencyResolutionManagement {
 
 </details>
 
-## Configure Proguard
+## Activate Adapty module of Adapty SDK
 
-You should add `-keep class com.adapty.** { *; }` to your Proguard configuration.
-
-## Configure Adapty SDK
-
-Add the following to your `Application` class:
+### Basic setup
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin" default>
+<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-override fun onCreate() {
-    super.onCreate()
-    Adapty.activate(
-      applicationContext,
-      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(false) //default false
-          .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
-          .withAdIdCollectionDisabled(false) // default false
-          .build()
-    )  
+// In your Application class
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Adapty.activate(
+            applicationContext,
+            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        )
+    }
 }
 ```
+
+Parameters:
+
+| Parameter                   | Presence | Description                                                  |
+| --------------------------- | -------- | ------------------------------------------------------------ |
+| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
+| observerMode                | optional | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-@Override
-public void onCreate() {
-    super.onCreate();
-    Adapty.activate(
-      applicationContext,
-      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(false) //default false
-          .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
-          .withAdIdCollectionDisabled(false) // default false
-          .build()
-    );
+// In your Application class
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Adapty.activate(
+            getApplicationContext(),
+            new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        );
+    }
 }
 ```
 
-</TabItem>
-</Tabs>
-
-Configurational options:
+Parameters:
 
 | Parameter                   | Presence | Description                                                  |
 | --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
-| observerMode                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| ipAddressCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
-| adIdCollectionDisabled      | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248). The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
 
-:::note
-**SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
-:::
+</TabItem>
+</Tabs>
 
 <SampleApp />
 
- </TabItem> 
-
-<TabItem value="2.x" label="Up to v2.x (legacy)" default> 
-
-Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
-
-| Adapty SDK version | AdaptyUI version |
-| :----------------- | :--------------- |
-| 2.7.x–2.9.x        | 2.0.x            |
-| 2.10.0             | 2.1.2            |
-| 2.10.2             | 2.1.3            |
-| 2.11.0 - 2.11.3    | 2.11.0 - 2.11.2  |
-| 2.11.5             | 2.11.3           |
-
-You can install Adapty SDK via Gradle.
-
-:::danger
-Go through release checklist before releasing your app
-
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
-
-## Install via Gradle
+### Observer mode setup
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
-
-```groovy showLineNumbers
-dependencies {
-    ...
-    implementation 'io.adapty:android-sdk:2.11.5'
-    implementation 'io.adapty:android-ui:2.11.3'
-}
-```
-
-</TabItem>
-<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-dependencies {
-    ...
-    implementation("io.adapty:android-sdk:2.11.5")
-    implementation("io.adapty:android-ui:2.11.3")
-}
-```
-
-</TabItem>
-<TabItem value="version catalog" label="version catalog" default>
-
-```toml showLineNumbers
-//libs.versions.toml
-
-[versions]
-..
-adapty = "2.11.5"
-adaptyUi = "2.11.3"
-
-[libraries]
-..
-adapty = { group = "io.adapty", name = "android-sdk", version.ref = "adapty" }
-adapty-ui = { group = "io.adapty", name = "android-ui", version.ref = "adaptyUi" }
-
-
-
-//module-level build.gradle.kts
-
-dependencies {
-    ...
-    implementation(libs.adapty)
-    implementation(libs.adapty.ui)
-}
-```
-
-</TabItem>
-</Tabs>
-
-
-If the dependency is not being resolved, please make sure that you have `mavenCentral()` in your Gradle scripts. 
-
-<details>
-   <summary>The instruction on how to add it</summary>
-
-
-   If your project doesn't have `dependencyResolutionManagement` in your `settings.gradle`, add the following to your top-level `build.gradle` at the end of repositories:
-
-```groovy showLineNumbers title="top-level build.gradle"
-allprojects {
-    repositories {
-        ...
-        mavenCentral()
-    }
-}
-```
-
-Otherwise, add the following to your `settings.gradle` in `repositories` of `dependencyResolutionManagement` section: 
-
-```groovy showLineNumbers title="settings.gradle"
-dependencyResolutionManagement {
-    ...
-    repositories {
-        ...
-        mavenCentral()
-    }
-}
-```
-
-</details>
-
-## Configure Proguard
-
-You should add `-keep class com.adapty.** { *; }` to your Proguard configuration.
-
-## Configure Adapty SDK
-
-Add the following to your `Application` class:
-
-<Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
+class MyApplication : Application() {
 override fun onCreate() {
     super.onCreate()
     Adapty.activate(
       applicationContext,
       AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(false) //default false
-          .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
+          .withObserverMode(true) //default false
           .build()
     )  
-      
-    //OR 
-    //the method is deprecated since Adapty SDK v2.10.5
-    
-    Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
 }
 ```
+
+Parameters:
+
+| Parameter                   | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
+public class MyApplication extends Application {
 @Override
 public void onCreate() {
     super.onCreate();
     Adapty.activate(
       applicationContext,
       new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(false) //default false
-          .withCustomerUserId(customerUserId) //default null
-          .withIpAddressCollectionDisabled(false) //default false
+          .withObserverMode(true) //default false
           .build()
     );
-  
-    //OR
-    //the method is deprecated since Adapty SDK v2.10.5
-  
-    Adapty.activate(getApplicationContext(), "PUBLIC_SDK_KEY", false, "YOUR_USER_ID");
 }
 ```
+
+Parameters:
+
+| Parameter                   | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 </TabItem>
 </Tabs>
 
-Configurational options:
+### Get the SDK key
 
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
-| observerMode                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| IpAddressCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
+<GetKey />
 
-:::note
-**SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
+## Activate AdaptyUI module of Adapty SDK
+
+If you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-android#install-adapty-sdk), you also need to activate AdaptyUI:
+
+:::important
+In your code, you must activate the core Adapty module before activating AdaptyUI.
 :::
 
- </TabItem> 
+```kotlin showLineNumbers title="Kotlin"
+import com.adapty.ui.AdaptyUI
 
-</Tabs>
+AdaptyUI.activate()
+```
 
+```java showLineNumbers title="Java"
+import com.adapty.ui.AdaptyUI;
 
+AdaptyUI.activate();
+```
 
+## Configure Proguard
 
-## Set up the logging system
+Before launching your app in the production, add `-keep class com.adapty.** { *; }` to your Proguard configuration.
+
+## Optional setup
+
+#### Set up the logging system
 
 Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
 
@@ -379,8 +277,8 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before configuring Adapty.
 
-<Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin" default>
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.logLevel = AdaptyLogLevel.VERBOSE
 ```
@@ -392,12 +290,12 @@ Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 </TabItem>
 </Tabs>
 
-## Redirect the logging system messages
+#### Redirect the logging system messages
 
 If you for some reason need to send messages from Adapty to your system or save them to a file, you can override the default behavior:
 
-<Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin" default>
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.setLogHandler { level, message ->
     //handle the log
@@ -412,3 +310,126 @@ Adapty.setLogHandler((level, message) -> {
 ```
 </TabItem>
 </Tabs>
+
+#### Disable IP address collection and sharing
+
+When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Disable advertising ID (Ad ID) collection and sharing
+
+When activating the Adapty module, set `adIdCollectionDisabled` to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248). The default value is `false`.
+
+Use this parameter to comply with Play Store policies, avoid triggering the advertising ID permission prompt, or if your app does not require advertising attribution or analytics based on Ad ID.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Set customer user ID
+
+When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
+
+If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](identifying-users) section.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Set up media cache configuration for AdaptyUI
+
+By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
+
+Use `AdaptyUI.configureMediaCache` to override the default cache size and validity period. This is optional—if you don't call this method, default values will be used (100MB disk size, 7 days validity).
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.ui.AdaptyUI
+import com.adapty.ui.AdaptyUI.MediaCacheConfiguration
+
+val cacheConfig = MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(3.days)
+    .build()
+
+AdaptyUI.configureMediaCache(cacheConfig)
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.ui.AdaptyUI;
+import com.adapty.ui.AdaptyUI.MediaCacheConfiguration;
+
+MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(TimeInterval.days(3))
+    .build();
+
+AdaptyUI.configureMediaCache(cacheConfig);
+```
+</TabItem>
+</Tabs>
+
+**Parameters:**
+
+| Parameter                | Presence | Description                                                                 |
+|-------------------------|----------|-----------------------------------------------------------------------------|
+| diskStorageSizeLimit    | optional | Total cache size on disk in bytes. Default is 100 MB.                       |
+| diskCacheValidityTime   | optional | How long cached files are considered valid. Default is 7 days.              |
+
+:::tip
+You can clear the media cache at runtime using `AdaptyUI.clearMediaCache(strategy)`, where `strategy` can be `CLEAR_ALL` or `CLEAR_EXPIRED_ONLY`.
+:::

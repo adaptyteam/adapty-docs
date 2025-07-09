@@ -11,35 +11,47 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import GetKey from '@site/src/components/reusable/GetKey.md';
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. 
 
 
 :::info
 If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
 :::
 
+## Requirements
 
+- **iOS 13.0+** 
+- **Swift 5.9+**
+- **Xcode 15.0+** (recommended – to support Swift 5.9+ and iOS 15.0+ deployment targets)
+
+:::note
+While the SDK technically supports iOS 13.0+ for the core module, iOS 15.0+ is effectively required for practical use since:
+- All StoreKit 2 features require iOS 15.0+
+- AdaptyUI module is iOS 15.0+ only
+:::
 
 ## Install Adapty SDK
 
 <Tabs>
-<TabItem value="spm" label="Swift Package Manager" default>
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
 In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
 
-1. Enter the repository URL: [https://github.com/adaptyteam/AdaptySDK-iOS.git](https://github.com/adaptyteam/AdaptySDK-iOS.git).
-2. Select the version and click Add Package.
-3. Choose the modules you need:
-    1. **Adapty** is the mandatory module.
-    2. **AdaptyUI** is optional and needed if you plan to use the Adapty Paywall Builder.
-4. Xcode will add the package dependency to your project. To import it, in the **Choose Package Products** window, click the **Add package** button once again. The package will then appear in the **Packages** list.
-   
+1. Enter the repository URL: `https://github.com/adaptyteam/AdaptySDK-iOS.git`
+2. Select the version (latest stable version is recommended) and click **Add Package**.
+3. In the **Choose Package Products** window, select the modules you need:
+   - **Adapty** (mandatory - always select this)
+   - **AdaptyUI** (optional - only if you plan to use Paywall Builder)
+4. Click **Add Package** to complete the installation.
+5. **Verify installation:** In your project navigator, you should see "Adapty" (and "AdaptyUI" if selected) under **Package Dependencies**.
+
 </TabItem>
    
-<TabItem value="cocoapods" label="CocoaPods" default>
+<TabItem value="cocoapods" label="CocoaPods (legacy)" default>
 
 :::info
 
@@ -53,8 +65,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
     2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 3.4.0'
-   pod 'AdaptyUI', '~> 3.4.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.8.0'
+   pod 'AdaptyUI', '~> 3.8.0' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -70,21 +82,71 @@ This will create a `.xcworkspace` file for your app. Use this file for all futur
 ## Activate Adapty module of Adapty SDK
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="AppDelegate">
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers
+import SwiftUI
+import Adapty
+
+@main
+struct YourApp: App {
+    @StateObject private var eventData = EventData()
+    
+    init() {
+        // Configure Adapty SDK
+        let configurationBuilder = AdaptyConfiguration
+            .builder(withAPIKey: "YOUR_SDK_KEY") // Get from Adapty dashboard
+            .with(observerMode: false) // optional
+
+        // Set log level – it is optional but recommended
+        Adapty.logLevel = .verbose
+
+        // Activate Adapty SDK asynchronously
+        Task {
+            do {
+                try await Adapty.activate(with: configurationBuilder.build())
+            } catch {
+                // Handle error appropriately for your app
+            }
+        }
+
+    var body: some Scene {
+        WindowGroup {
+            // Your content view
+        }
+    }
+}
+```
+Parameters:
+
+| Parameter                   | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p>                                                                                                                                                                                                                                              |
+| customerUserId              | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
+
+Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
+- `error`: Only errors will be logged. 
+- `warn`: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.
+- `info`: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.
+- `verbose`: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.
+
+</TabItem>
+<TabItem value="swift" label="UIKit" default>
 
 ```swift showLineNumbers
 // In your AppDelegate class:
 import Adapty
 
-let configurationBuilder =
-    AdaptyConfiguration
-        .builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(observerMode: false)
-        .with(customerUserId: "YOUR_USER_ID")
-        .with(loglevel: .verbose) // optional 
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+    .with(observerMode: false)
+    .with(logLevel: .verbose) // Recommended for development
 
 Adapty.activate(with: configurationBuilder.build()) { error in
-  // handle the error
+    if let error = error {
+        // Handle error appropriately for your app
+    }
 }
 ```
 Parameters:
@@ -98,80 +160,33 @@ Parameters:
 
 
 </TabItem>
-<TabItem value="swiftui" label="SwiftUI">
-
-```swift showLineNumbers
-import SwiftUI
-import Adapty
-import UIKit
-import AdaptyUI
-
-@main
-struct YourApp: App {
-    @StateObject private var eventData = EventData()
-    
-    init() {
-        // Configure Adapty SDK
-        let configurationBuilder = AdaptyConfiguration
-            .builder(withAPIKey: "YOUR_SDK_KEY")
-            .with(customerUserId: "YOUR_USER_ID") // optional but recommended
-            .with(observerMode: false) // optional
-
-        // Set log level – it is optional but recommended
-        Adapty.logLevel = .verbose
-
-        // Activate Adapty SDK asynchronously
-        Task {
-           try await Adapty.activate(with: configurationBuilder.build())
-        }
-
-    var body: some Scene {
-        WindowGroup {
-            // Your content view
-        }
-    }
-}
-```
-Parameters:
-
-| Parameter                   | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------- | -------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p>                                                                                                                                                                                                                                                     |
-| customerUserId              | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
-| logLevel                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-
-
-</TabItem>
 </Tabs>
 
-
-:::note
-
-- Note, that StoreKit 2 is available since iOS 15.0. Adapty will implement the legacy logic for older versions.
-- Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.
-- **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
-  :::
 
 Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
 <SampleApp />
 
+### Get the SDK key
+
+<GetKey />
+
 ## Activate AdaptyUI module of Adapty SDK
 
-You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
+If you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods), you also need to activate AdaptyUI.
+
+:::important
+In your code, you must activate the core Adapty module before activating AdaptyUI.
+:::
 
 ```swift showLineNumbers title="Swift"
-import AdaptyUI // Only if you are going to use AdaptyUI
+import AdaptyUI 
 
-AdaptyUI.activate( configuration: adaptyUIConfiguration
-)
+AdaptyUI.activate()
 ```
 
-:::danger
-Review the release checklist before launching your app
-
-Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+:::tip
+Optionally, when activating AdaptyUI, you can [override default caching settings for paywalls](#set-up-media-cache-configuration-for-adaptyui).
 :::
 
 ## Optional setup
@@ -183,7 +198,7 @@ When activating the Adapty module, set `idfaCollectionDisabled` to `true` to dis
 Use this parameter to comply with App Store Review Guidelines or avoid triggering the App Tracking Transparency prompt when IDFA isn't needed for your app. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.
 
 <Tabs>
-<TabItem value="swift" label="AppDelegate">
+<TabItem value="swift" label="UIKit">
 
 ```swift showLineNumbers
 let configurationBuilder =
@@ -204,12 +219,12 @@ let configurationBuilder =
 
 #### Disable IP collection and sharing
 
-Set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`
+When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`
 
 Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
 
 <Tabs>
-<TabItem value="swift" label="AppDelegate">
+<TabItem value="swift" label="UIKit">
 
 ```swift showLineNumbers
 let configurationBuilder =
