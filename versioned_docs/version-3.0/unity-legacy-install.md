@@ -4,6 +4,9 @@ description: "Legacy installation guide for Unity Adapty SDK."
 metadataTitle: "Legacy Installation Guide | Unity SDK | Adapty Docs"
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
 Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 
 - Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
