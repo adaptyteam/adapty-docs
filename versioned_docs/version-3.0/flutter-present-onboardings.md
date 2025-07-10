@@ -94,11 +94,11 @@ class MainActivity : FlutterFragmentActivity() {
 
 ## Loader during onboarding
 
-A loader is shown by default while onboarding content loads.  
-You can override this in your Flutter app:
+By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can override this in your Flutter app:
 
 - To customize the native loader on iOS, add `AdaptyOnboardingPlaceholderView.xib` to your Xcode project.
 - For full control, overlay your own widget above `AdaptyUIOnboardingPlatformView` and hide it on `onDidFinishLoading`.
+- To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
 
 This helps create seamless transitions and custom loading experiences.
 

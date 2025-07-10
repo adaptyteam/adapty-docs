@@ -303,7 +303,7 @@ override fun onOpenPaywallAction(action: AdaptyOnboardingOpenPaywallAction, cont
 When an onboarding finishes loading, this method will be invoked:
 
 ```kotlin
-override fun onFinishLoading(context: Context) {
+override fun onFinishLoading(action: AdaptyOnboardingLoadedAction, context: Context) {
     // Handle loading completion
 }
 ```
