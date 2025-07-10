@@ -93,3 +93,11 @@ You can override the default color of the loading indicator in the following way
     <item name="adapty_progressIndicatorColor">@color/yourColor</item>
 </style>
 ```
+
+## Add smooth transitions between the splash screen and onboarding
+
+By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can customize it and either extend the splash screen or display something else.
+
+To do this, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder (what exactly will be shown while the onboarding is being loaded) there. 
+
+If you define a placeholder, the onboarding will be loaded in the background and automatically displayed once ready.
