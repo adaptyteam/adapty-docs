@@ -6,7 +6,534 @@ keywords: ['install sdk', 'sdk install', 'install sdk ios']
 rank: 70
 ---
 
-1. Understand whether you want to show a paywall (get the profile access level)
-2. If you need to display a paywall, get it and display (don't include any optional configuration here)
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-Add a small note about adding paywalls manually
+This guide will help you to display a paywall created in the [Adapty Paywall builder](adapty-paywall-builder.md) in your app.
+
+Paywalls created with the Builder render automatically once configured, and, in your app code, you only need to:
+
+1. **Get the paywall**: Get the paywall from Adapty.
+2. **Display the paywall**: Show the paywall container you've got in your app.
+3. **Check subscription status before displaying the paywall to a specific user**: Get their current access level and don't display the paywall to your premium users.
+4. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
+
+
+## 1. Get the paywall
+
+Your paywalls are associated with [placements](placements.md) configured in the dashboard. Placements allow you to run different paywalls for different audiences or run [A/B tests](ab-tests.md). 
+
+That's why, to get a paywall to display, you need to:
+
+1. Get the `paywall` object by the placement ID using the `getPaywall` method and check whether it is a paywall created in the builder.
+
+2. If it is a paywall created in the builder, get its view configuration using the `getPaywallConfiguration` method. View configuration contains the UI elements and styling needed to display the paywall.
+
+:::tip
+This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](get-pb-paywalls).
+::: 
+
+<Tabs>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+```swift
+import Adapty
+import AdaptyUI
+
+@State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+@State private var isLoadingPaywall = false
+@State private var paywallError: Error?
+
+func loadPaywall() async {
+isLoadingPaywall = true
+defer { isLoadingPaywall = false }
+
+    do {
+        let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        
+        guard paywall.hasViewConfiguration else {
+            print("Paywall doesn't have view configuration")
+            return
+        }
+        
+        paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+        paywallError = nil
+    } catch {
+        paywallError = error
+        print("Failed to load paywall: \(error)")
+    }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+import Adapty
+import AdaptyUI
+
+func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    
+    guard paywall.hasViewConfiguration else {
+        print("Paywall doesn't have view configuration")
+        return nil
+    }
+    
+    return try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+}
+
+```
+</TabItem>
+</Tabs>
+
+## 2. Display the paywall
+
+Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall. 
+
+:::tip
+For more details on how to display a paywall, see our [guide](ios-present-paywalls.md).
+:::
+
+<Tabs>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+In SwiftUI, when displaying the paywall, you also need to handle events. Some of them are optional, but `didFailPurchase`, `didFinishRestore`, `didFailRestore`, and `didFailRendering` are required. When testing, you can just copy the code from the snippet below to log these errors.
+
+```swift
+struct ContentView: View {
+    @State private var paywallPresented = false
+    @State private var alertItem: AlertItem?
+    @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+
+    var body: some View {
+        VStack {
+            Text("Your App Content")
+        }
+        .paywall(
+            isPresented: $paywallPresented,
+            configuration: paywallConfiguration,
+            didFailPurchase: { product, error in
+                print("Purchase failed: \(error)")
+            },
+            didFinishRestore: { profile in
+                print("Restore finished successfully")
+            },
+            didFailRestore: { error in
+                print("Restore failed: \(error)")
+            },
+            didFailRendering: { error in
+                paywallPresented = false
+                print("Rendering failed: \(error)")
+            },
+            showAlertItem: $alertItem
+        )
+    }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+import UIKit
+import AdaptyUI
+
+func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+    let paywallController = AdaptyUI.paywallController(
+        with: config,
+        delegate: self
+    )
+    
+    present(paywallController, animated: true)
+}
+
+```
+</TabItem>
+</Tabs>
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](ios-implement-paywalls-manually).
+:::
+
+## 3. Check subscription status before displaying
+
+Now, you have implemented a paywall, but we want to show it only to users without the premium access. Before showing a paywall, check if the user already has premium access.
+
+You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
+
+By default, Adapty has the built-in `premium` access level, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
+
+:::tip
+Proceed with the quickstart guide to also [implement listening for subscription status changes](ios-check-subscription-status).
+:::
+
+<Tabs>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+The basic idea of how paywalls are displayed in SwiftUI is that `isPresented` must be set to `true` when you need to show the paywall and to `false` when you need to hide it. By default, we'll set it to `false` and temporarily set it to `true` when you check the subscription status.
+
+Check the access level in the view to change the `paywallPresented` state.
+
+```swift
+import SwiftUI
+import AdaptyUI
+
+// highlight-start
+func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["premium"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        // Return false to show paywall if access check fails
+        return false
+    }
+}    
+// highlight-end
+
+
+struct ContentView: View {
+    @State private var paywallPresented = false
+    @State private var alertItem: AlertItem? = nil
+    @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration? = nil // config from previous step
+    
+    var body: some View {
+        Text("Your App Content")
+        // highlight-start
+            .task {
+                await checkAccessLevel()
+            }
+        // highlight-end
+            .paywall(
+                isPresented: $paywallPresented,
+                configuration: paywallConfiguration,
+                // ...other required parameters
+            )
+    }
+    // highlight-start
+    .task {
+        await loadPaywall()
+        let hasAccess = await checkAccessLevel()
+        if !hasAccess && paywallConfiguration != nil {
+            paywallPresented = true
+        }
+    }
+    // highlight-end
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+In UIKit, you will probably want to display the paywall controller only if the access level is not premium. So, we will run `checkAccessLevel` and, if it is true, present the paywall.
+
+```swift
+func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["premium"]?.isActive ?? false
+}
+
+override func viewDidLoad() {
+    super.viewDidLoad()
+    
+    Task {
+        do {
+            let config = try await loadPaywall()
+            let hasAccess = try await checkAccessLevel()
+            
+            if !hasAccess, let config = config {
+                await MainActor.run {
+                    presentPaywall(with: config)
+                }
+            }
+        } catch {
+            print("Error: \(error)")
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## 4. Handle button actions
+
+When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+
+For example, your paywall probably has a close button. Let's see how you can handle it in your implementation.
+
+:::tip
+Read our [guide](ios-handling-events) on how to handle other button actions and events.
+:::
+
+
+<Tabs>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+For SwiftUI, if you get the `close` action, you change the `isPresented` value to `false`, so the paywall is hidden.
+
+```swift
+import SwiftUI
+import AdaptyUI
+
+struct ContentView: View {
+    @State private var paywallPresented = false
+    @State private var alertItem: AlertItem? = nil
+    @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration? = nil // from previous step
+
+    var body: some View {
+        VStack {
+            Text("Your App Content")
+        }
+        .paywall(
+            isPresented: $paywallPresented,
+            configuration: paywallConfiguration,
+            // highlight-start
+            didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+            },
+            // highlight-end
+            // other parameters
+        )
+    }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+For UIKit, you need to implement the `paywallController(_:didPerform:)` method that will dismiss the displayed controller when the user clicks the `close` button.
+
+```swift
+func paywallController(_ controller: AdaptyUI.PaywallController, 
+                       didPerform action: AdaptyUI.UserAction) {
+    switch action.type {
+    case .close:
+        controller.dismiss(animated: true)
+    default:
+        break
+    }
+}
+
+```
+</TabItem>
+</Tabs>
+
+## Full example
+
+
+<Tabs>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+import SwiftUI
+import Adapty
+import AdaptyUI
+
+struct ContentView: View {
+    @State private var paywallPresented = false
+    @State private var alertItem: AlertItem?
+    @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+    @State private var isLoading = false
+    @State private var hasInitialized = false
+
+    var body: some View {
+        VStack {
+            if isLoading {
+                ProgressView("Loading...")
+            } else {
+                Text("Your App Content")
+            }
+        }
+        .task {
+            guard !hasInitialized else { return }
+            hasInitialized = true
+            await initializePaywall()
+        }
+        .paywall(
+            isPresented: $paywallPresented,
+            configuration: paywallConfiguration,
+            didFailPurchase: { product, error in
+                print("Purchase failed: \(error)")
+            },
+            didFinishRestore: { profile in
+                print("Restore finished successfully")
+            },
+            didFailRestore: { error in
+                print("Restore failed: \(error)")
+            },
+            didFailRendering: { error in
+                print("Rendering failed: \(error)")
+            },
+            didPerformAction: { action in
+                switch action.type {
+                case .close:
+                    paywallPresented = false
+                default:
+                    break
+                }
+            },
+            showAlertItem: $alertItem
+        )
+    }
+
+    private func initializePaywall() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        await loadPaywall()
+        
+        let hasAccess = await checkAccessLevel()
+        if !hasAccess && paywallConfiguration != nil {
+            paywallPresented = true
+        }
+    }
+
+    private func loadPaywall() async {
+        do {
+            let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+            guard paywall.hasViewConfiguration else {
+                print("Paywall doesn't have view configuration")
+                return
+            }
+            paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+        } catch {
+            print("Failed to load paywall: \(error)")
+        }
+    }
+
+    private func checkAccessLevel() async -> Bool {
+        do {
+            let profile = try await Adapty.getProfile()
+            return profile.accessLevels["premium"]?.isActive ?? false
+        } catch {
+            print("Error checking access level: \(error)")
+            return false
+        }
+    }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+import UIKit
+import Adapty
+import AdaptyUI
+
+class ViewController: UIViewController {
+    private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        Task {
+            await initializePaywall()
+        }
+    }
+
+    private func initializePaywall() async {
+        do {
+            async let configTask = loadPaywall()
+            async let accessTask = checkAccessLevel()
+            
+            let (config, hasAccess) = try await (configTask, accessTask)
+            
+            if !hasAccess, let config = config {
+                await MainActor.run {
+                    presentPaywall(with: config)
+                }
+            }
+        } catch {
+            print("Error initializing paywall: \(error)")
+        }
+    }
+
+    private func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
+        let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        
+        guard paywall.hasViewConfiguration else {
+            print("Paywall doesn't have view configuration")
+            return nil
+        }
+        
+        return try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    }
+
+    private func checkAccessLevel() async throws -> Bool {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["premium"]?.isActive ?? false
+    }
+
+    private func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+        let paywallController = AdaptyUI.paywallController(with: config, delegate: self)        
+        present(paywallController, animated: true)
+    }
+}
+
+// MARK: - AdaptyPaywallControllerDelegate
+
+extension ViewController: AdaptyPaywallControllerDelegate {
+    func paywallController(_ controller: AdaptyUI.PaywallController, 
+                          didPerform action: AdaptyUI.UserAction) {
+        switch action.type {
+        case .close:
+            controller.dismiss(animated: true)
+        default:
+            break
+        }
+    }
+    
+    func paywallController(_ controller: AdaptyUI.PaywallController, 
+                          didFailPurchase product: AdaptyPaywallProduct, 
+                          error: AdaptyError) {
+        print("Purchase failed for \(product.vendorProductId): \(error)")
+        
+        guard error.adaptyErrorCode != .paymentCancelled else {
+            return // Don't show alert for user cancellation
+        }
+        
+        let message = switch error.adaptyErrorCode {
+        case .paymentNotAllowed:
+            "Purchases are not allowed on this device"
+        default:
+            "Purchase failed. Please try again."
+        }
+        
+    }
+    
+    func paywallController(_ controller: AdaptyUI.PaywallController, 
+                          didFinishRestore profile: AdaptyProfile) {
+        print("Restore finished successfully")
+        controller.dismiss(animated: true)
+    }
+    
+    func paywallController(_ controller: AdaptyUI.PaywallController, 
+                          didFailRestore error: AdaptyError) {
+        print("Restore failed: \(error)")
+    }
+    
+    func paywallController(_ controller: AdaptyUI.PaywallController, 
+                          didFailRendering error: AdaptyError) {
+        print("Rendering failed: \(error)")
+        controller.dismiss(animated: true)
+    }
+}
+
+```
+</TabItem>
+</Tabs>
