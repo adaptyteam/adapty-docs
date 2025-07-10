@@ -26,3 +26,6 @@ Paywalls can have four distinct states:
 - **Inactive**: These paywalls were previously active in placements but are currently not live. You can repurpose an inactive paywall for a new A/B test or choose to [archive it](archive-paywalls) if it is no longer required.
 - **Archived**: These paywalls are no longer in use and have been archived. You can always [restore the archived paywall to an active state](restore-paywall).
 
+:::info
+Changes to live paywalls are reflected immediately.
+:::
