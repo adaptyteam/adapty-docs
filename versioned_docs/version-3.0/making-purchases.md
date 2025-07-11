@@ -81,7 +81,7 @@ Adapty.makePurchase(product: product) { result in
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product) { result ->
+Adapty.makePurchase(activity, product, null) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -112,7 +112,7 @@ Adapty.makePurchase(activity, product) { result ->
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, result -> {
+Adapty.makePurchase(activity, product, null, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
@@ -242,7 +242,13 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -278,7 +284,13 @@ Additional request parameter:
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
