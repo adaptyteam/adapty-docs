@@ -81,7 +81,7 @@ Response parameters:
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 
-After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
+After fetching the paywall, check if it includes a view configuration, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the view configuration is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls).
 
 Use the `getPaywallConfiguration` method to load the view configuration.
 
