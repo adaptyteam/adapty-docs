@@ -467,3 +467,45 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Set obfuscated account and profile IDs in Android
+
+Google Play requires obfuscated account and profile IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
+        .build()
+) { result ->
+    // Handle result
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
+        .build(),
+    result -> {
+        // Handle result
+    }
+);
+```
+
+</TabItem>
+</Tabs>
