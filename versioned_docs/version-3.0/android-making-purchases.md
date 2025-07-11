@@ -34,55 +34,10 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 :::
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
-```swift showLineNumbers
-do {
-    let purchaseResult = try await Adapty.makePurchase(product: product)
-
-    switch purchaseResult {
-        case .userCancelled:
-            // Handle the case where the user canceled the purchase
-        case .pending:
-            // Handle deferred purchases (e.g., the user will pay offline with cash)
-        case let .success(profile, transaction):
-            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-            // Grant access to the paid features
-            }
-    }
-} catch {
-    // Handle the error
-}
-```
-
-</TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
-
-```swift showLineNumbers
-Adapty.makePurchase(product: product) { result in
-    switch result {
-    case let .success(purchaseResult):
-        switch purchaseResult {
-            case .userCancelled:
-                // Handle the case where the user canceled the purchase
-            case .pending:
-                // Handle deferred purchases (e.g., the user will pay offline with cash)
-            case let .success(profile, transaction):
-                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-                    // Grant access to the paid features
-                }
-        }
-    case let .failure(error):
-        // Handle the error
-    }
-}
-```
-
-</TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product) { result ->
+Adapty.makePurchase(activity, product, null) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -113,7 +68,7 @@ Adapty.makePurchase(activity, product) { result ->
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, result -> {
+Adapty.makePurchase(activity, product, null, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
@@ -136,83 +91,7 @@ Adapty.makePurchase(activity, product, result -> {
 });
 ```
 </TabItem>
-<TabItem value="flutter" label="Flutter" default>
-This snippet is valid for v.2.0 or later.
 
-```javascript showLineNumbers
-try {
-  final purchaseResult = await Adapty().makePurchase(product: product);
-    switch (purchaseResult) {
-      case AdaptyPurchaseResultSuccess(profile: final profile):
-        if (profile.accessLevels['premium']?.isActive ?? false) {
-          // Grant access to the paid features
-        }
-        break;
-      case AdaptyPurchaseResultPending():
-        break;
-      case AdaptyPurchaseResultUserCancelled():
-        break;
-      default:
-        break;
-    }
-} on AdaptyError catch (adaptyError) {
-    // Handle the error
-} catch (e) {
-    // Handle the error
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-using AdaptySDK;
-
-void MakePurchase(AdaptyPaywallProduct product) {
-  Adapty.MakePurchase(product, (result, error) => {
-    switch (result.Type) {
-      case AdaptyPurchaseResultType.Pending:
-        // handle pending purchase
-        break;
-      case AdaptyPurchaseResultType.UserCancelled:
-        // handle purchase cancellation
-        break;
-      case AdaptyPurchaseResultType.Success:
-        var profile = result.Profile;
-        // handle successfull purchase
-        break;
-      default:
-        break;
-    }
-  });
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    const purchaseResult = await adapty.makePurchase(product);
-    switch (purchaseResult.type) {
-      case 'success':
-        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
-
-        if (isSubscribed) {
-          // Grant access to the paid features
-        }
-        break;
-      case 'user_cancelled':
-        // Handle the case where the user canceled the purchase
-        break;
-      case 'pending':
-        // Handle deferred purchases (e.g., the user will pay offline with cash)
-        break;
-    }
-} catch (error) {
-    // Handle the error
-}
-```
-
-</TabItem>
 </Tabs>
 
 Request parameters:
@@ -243,7 +122,13 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -279,7 +164,13 @@ Additional request parameter:
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build(),
+    result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
