@@ -16,12 +16,6 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **AdaptyUI SDK**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
 
-:::danger
-Go through the release checklist before releasing your app
-
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
-
 ## Install via Gradle
 
 You can install Adapty SDK via Gradle.
@@ -91,7 +85,8 @@ kotlin {
 </TabItem>
 </Tabs>
 
-3. If the dependency is not being resolved, please make sure that you have `mavenCentral()` in your Gradle scripts.
+:::note
+If you get a Maven related error, make sure that you have `mavenCentral()` in your Gradle scripts.
 
 <details>
    <summary>The instruction on how to add it</summary>
@@ -121,6 +116,7 @@ dependencyResolutionManagement {
 ```
 
 </details>
+:::
 
 ## Install via Swift Package Manager
 
@@ -264,19 +260,18 @@ Configurational options:
 If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="Android" label="Android" default>
+  <TabItem value="Kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE)   // ERROR, WARN, INFO, VERBOSE, DEBUG
 ```
 </TabItem>
-<TabItem value="iOS" label="iOS" default>
-
-```swift showLineNumbers
-Adapty.setLogLevel(.verbose)                 // .error, .warn, .info, .verbose, .debug
-```
-
-</TabItem>
 </Tabs>
+
+:::danger
+Go through the release checklist before releasing your app
+
+Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+:::
 
 
