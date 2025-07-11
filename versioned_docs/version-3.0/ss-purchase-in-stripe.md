@@ -31,18 +31,23 @@ This request requires different authorization parameters:
 ## Example request
 <Tabs groupId="api-lang" queryString>
 <TabItem value="curl" label="cURL" default>
+
   ```bash showLineNumbers
-curl --location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
+curl
+--location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
 --header 'Content-Type: application/vnd.api+json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
---data '{
+--data-raw '{
+  "data": {
     "type": "stripe_receipt_validation_result",
     "attributes": {
-        "customer_user_id": "<YOUR_CUSTOMER_USER_ID>",
+        "customer_user_id": "<CUSTOMER_USER_ID>",
         "stripe_token": "<YOUR_STRIPE_TOKEN>"
     }
+  }
 }'
   ```
+
 </TabItem>  
 <TabItem value="python" label="Python" default>
 
