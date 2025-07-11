@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall"
+title: "Present a paywall in React Native SDK"
 description: "Learn how to present paywalls in your React Native app with Adapty SDK."
 metadataTitle: "Present a Paywall | React Native SDK | Adapty Docs"
 slug: /react-native-quickstart-paywalls
@@ -8,64 +8,175 @@ displayed_sidebar: sdkreactnative
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
-## Get paywalls
 
-To get available paywalls:
+<PaywallsIntro />
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+:::tip
+This is the minimum setup you need to get up and running with paywalls created using the builder. Read more detailed [guides on working with paywalls](react-native-paywalls.md).
+:::
 
-const paywalls = await Adapty.getPaywalls();
-console.log('Available paywalls:', paywalls);
-```
+## 1. Get the paywall
 
-## Present paywall
+Your paywalls are associated with [placements](placements.md) configured in the dashboard. Placements allow you to run different paywalls for different audiences or run [A/B tests](ab-tests.md).
 
-To present a paywall to the user:
+That's why, to get a paywall to display, you need to:
 
-```javascript
-// Get paywalls first
-const paywalls = await Adapty.getPaywalls();
+1. Get the `paywall` object by the placement ID using the `getPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
 
-// Present the first paywall
-if (paywalls.length > 0) {
-  const paywall = paywalls[0];
-  await Adapty.presentPaywall(paywall);
+2. If it is a paywall created in the builder, create its view using the `createPaywallView` method. View contains the UI elements and styling needed to display the paywall.
+
+:::tip
+This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](react-native-get-pb-paywalls).
+::: 
+
+```typescript showLineNumbers title="React Native"
+import {createPaywallView} from '@adapty/react-native-ui';
+
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const paywall = await adapty.getPaywall(placementId);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+    try {
+        const view = await createPaywallView(paywall);
+    } catch (error) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
 }
 ```
 
-## Handle paywall presentation
+## 2. Display the paywall
 
-You can also handle the paywall presentation manually:
+Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-```javascript
-const paywalls = await Adapty.getPaywalls();
+:::tip
+For more details on how to display a paywall, see our [guide](react-native-present-paywalls.md).
+:::
 
-if (paywalls.length > 0) {
-  const paywall = paywalls[0];
-  
-  // Show your custom UI with paywall data
-  // Then handle purchase when user taps buy
-  const purchase = await Adapty.makePurchase(paywall.products[0]);
-  console.log('Purchase successful:', purchase);
+To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+
+```typescript showLineNumbers title="React Native"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
 }
 ```
 
-## Paywall observer
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
+:::
 
-To listen for paywall presentation events:
+## 3. Check subscription status before displaying
 
-```javascript
-import { AdaptyPaywallObserver } from 'react-native-adapty';
+Now, you have implemented a paywall, but we want to show it only to users without the premium access. Before showing a paywall, check if the user already has premium access.
 
-const observer = new AdaptyPaywallObserver();
+You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
 
-observer.on('paywall_presented', (paywall) => {
-  console.log('Paywall presented:', paywall);
+By default, Adapty has the built-in `premium` access level, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
+
+:::tip
+Proceed with the quickstart guide to also [implement listening for subscription status changes](react-native-check-subscription-status).
+:::
+
+```typescript showLineNumbers title="React Native"
+// highlight-start
+try {
+    const profile = await adapty.getProfile();
+    const isPremiumActive = profile.accessLevels["premium"]?.isActive === true;
+
+    if (!isPremiumActive) {
+// highlight-end
+        try {
+            await view.present();
+        } catch (presentError) {
+            // handle paywall presentation error
+        }
+    }
+// highlight-start
+} catch (profileError) {
+    // handle profile fetching error
+}
+// highlight-end
+```
+
+## 4. Handle button actions
+
+When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+
+For example, your paywall probably has a close button. In React Native, returning `true` in `onCloseButtonPress` is the trigger. You don’t need to call any explicit close method.
+
+You need to register your event handler before presenting the view.
+
+:::tip
+Read our [guide](react-native-handling-events-1) on how to handle other button actions and events.
+:::
+
+```typescript showLineNumbers title="React Native"
+const unsubscribe = view.registerEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
 });
+```
 
-observer.on('paywall_dismissed', (paywall) => {
-  console.log('Paywall dismissed:', paywall);
-});
-``` 
+## Full example
+
+Here is how all those steps can be integrated in your app together.
+
+```javascript showLineNumbers title="React Native"
+import React, { useEffect } from 'react';
+import { Button, View } from 'react-native';
+import { adapty, createPaywallView } from '@adapty/react-native-ui';
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const profile = await adapty.getProfile();
+      const isPremiumActive = profile.accessLevels['premium']?.isActive === true;
+
+      if (isPremiumActive) {
+        return; // user already has access
+      }
+
+      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.registerEventHandlers({
+        onCloseButtonPress: () => {
+          // Return true to allow the paywall to close
+          return true;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  // you can add a button to manually trigger the paywall for testing purposes
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Show Paywall" onPress={showPaywall} />
+    </View>
+  );
+}
+
+```

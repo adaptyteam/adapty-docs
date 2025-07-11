@@ -2,22 +2,20 @@
 title: "Display paywalls"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk ios']
+keywords: ['paywalls ios', 'sdk ios']
 rank: 70
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
-This guide will help you to display a paywall created in the [Adapty Paywall builder](adapty-paywall-builder.md) in your app.
 
-Paywalls created with the Builder render automatically once configured, and, in your app code, you only need to:
+<PaywallsIntro />
 
-1. **Get the paywall**: Get the paywall from Adapty.
-2. **Display the paywall**: Show the paywall container you've got in your app.
-3. **Check subscription status before displaying the paywall to a specific user**: Get their current access level and don't display the paywall to your premium users.
-4. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
-
+:::tip
+This is the minimum setup you need to get up and running with paywalls created using the builder. Read more detailed [guides on working with paywalls](ios-paywalls.md).
+:::
 
 ## 1. Get the paywall
 
@@ -332,6 +330,7 @@ func paywallController(_ controller: AdaptyUI.PaywallController,
 
 ## Full example
 
+Here is how all those steps can be integrated in your app together.
 
 <Tabs>
 

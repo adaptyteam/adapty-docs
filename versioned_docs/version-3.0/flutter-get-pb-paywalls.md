@@ -73,12 +73,16 @@ Response parameters:
 After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not, [handle it as a remote config paywall](present-remote-config-paywalls-flutter).
 
 ```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
 try {
-  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
-  // the requested paywall
-} on AdaptyError catch (adaptyError) {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
   // handle the error
 } catch (e) {
+  // handle the error
 }
 ```
 
