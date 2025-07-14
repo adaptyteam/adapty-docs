@@ -18,14 +18,13 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 
 ## Install via Gradle
 
-You can install Adapty SDK via Gradle.
+Adapty SDK installation with Gradle is required for both Android and iOS apps.
+
+To install Adapty SDK via Graddle:
 
 1. Edit your version catalog in `libs.versions.toml`.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="libs.versions.toml" label="libs.versions.toml" default>
-
-```toml showLineNumbers
+```toml title="libs.versions.toml" showLineNumbers
 [versions]
 ..
 kotlin        = "2.1.10"  
@@ -48,16 +47,11 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 
 
 ```
-</TabItem>
-</Tabs>
 
 2. Edit your shared module's `build.gradle.kts`.
 
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="build.gradle.kts" label="build.gradle.kts" default>
-
-```kotlin showLineNumbers
+```kotlin title="build.gradle.kts" showLineNumbers
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
@@ -76,14 +70,12 @@ kotlin {
                 implementation(libs.adapty.kmp)
                 implementation(libs.kotlinx.coroutines)
                 implementation(libs.kotlinx.serialization)
+                
             }
         }
     }
 }
 ```
-
-</TabItem>
-</Tabs>
 
 :::note
 If you get a Maven related error, make sure that you have `mavenCentral()` in your Gradle scripts.
@@ -118,7 +110,17 @@ dependencyResolutionManagement {
 </details>
 :::
 
-## Install via Swift Package Manager
+## Add iOS wrapper
+
+You can skip this step for a pure Compose Multiplatform app.
+
+If your project includes a native Xcode module (for extra iOS-specific features), add the Adapty iOS wrapper with one of the package managers below.
+
+:::note
+Do not call `Adapty.activate` in Swift/Obj-C. Initialisation must stay in your shared Kotlin code; the iOS wrapper only forwards calls from the KMP layer.
+:::
+
+### Install via Swift Package Manager
 
 1. Enter the repository URL: [https://github.com/AdaptyTeam/AdaptySDK-iOS.git](https://github.com/AdaptyTeam/AdaptySDK-iOS.git).
 2. Select the version and click **Add Package**.
@@ -127,7 +129,7 @@ dependencyResolutionManagement {
    2. **AdaptyUI** is optional and needed if you plan to use the Adapty Paywall Builder.
 4. Xcode will add the package dependency to your project. To import it, in the **Choose Package Products** window, click the **Add package** button once again. The package will then appear in the **Packages** list.
 
-## Install via CocoaPods
+### Install via CocoaPods
 
 :::info
 
@@ -153,43 +155,55 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
 
 This will create a `.xcworkspace` file for your app. Use this file for all future development.
 
+## Build static frameworks for iOS targets
+
+:::note
+This step is optional — only if the build fails.
+:::
+
+In some projects Xcode insists on linking static Kotlin/Native frameworks. Add `isStatic = true` to every iOS target in your shared module:
+
+
+```kotlin title="build.gradle.kts" showLineNumbers
+kotlin {
+    // Make each generated framework static
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "Shared"      // adjust if your Xcode import expects another name
+            isStatic = true
+        }
+    }
+}
+```
+
 ## Configure Proguard (Android)
 
 You should add `-keep class com.adapty.** { *; }` to your Proguard configuration.
 
-## Configure Adapty SDK
+## Activate Adapty SDK
 
-Add the initialization as early as possible—typically in your shared Kotlin code for both platforms, then in the Android `Application` class or the iOS app entry point if you need platform-specific logging.
+### Get SDK key
+
+Before configuring the SDK, you need your **Public SDK Key**:
+
+1. Go to Adapty Dashboard and navigate to [App settings → General](https://app.adapty.io/settings/general).
+2. From the **Api keys** section, copy the **Public SDK Key** (NOT the Secret Key).
+3. Replace `"YOUR_PUBLIC_SDK_KEY"` in the code below.
 
 :::info
-
-If you plan to activate the **AdaptyUI** module to use the Adapty Paywall Builder, make sure to set `.withActivateUI(true)` in your configuration.
-
+- Make sure you use the Public SDK key for Adapty initialization, the Secret key should be used for [server-side API](getting-started-with-server-side-api) only.
+- SDK keys are unique for every app, so if you have multiple apps make sure you choose the right one.
 :::
 
-<Tabs groupId="current-os" queryString>
-  <TabItem value="Shared" label="Shared" default>
+### Basic setup
 
-```kotlin showLineNumbers
-// In your shared module (commonMain)
-val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withObserverMode(false)                  // true for observer‑mode only
-    .withCustomerUserId("CUSTOM_USER_ID")     // your own user id or default null
-    .withIpAddressCollectionDisabled(false)   // set true to skip IP collection
-    .withGoogleAdvertisingIdCollectionDisabled(false)        // Android only
-    .withAppleIdfaCollectionDisabled(false)                  // iOS only
-    .withActivateUI(true)                     // true for activating the AdaptyUI module
-    .build()
+Add the initialization as early as possible—typically in your shared Kotlin code for both platforms.
 
-Adapty.activate(configuration = config) { error ->
-    error?.let { println("Adapty initialization failed: ${'$'}{error.message}") }
-}
-```
-
-</TabItem>
-<TabItem value="Android" label="Android" default>
-
-```kotlin showLineNumbers
+```kotlin title="Kotlin" showLineNumbers
 // In your Application subclass
 class MyApp : Application() {
     override fun onCreate() {
@@ -197,8 +211,6 @@ class MyApp : Application() {
 
         val config = AdaptyConfig
             .Builder("PUBLIC_SDK_KEY")
-            .withActivateUI(true)                // true for activating the AdaptyUI module
-            .withLogLevel(AdaptyLogLevel.VERBOSE)
             .build()
 
         Adapty.activate(configuration = config) { error ->
@@ -212,66 +224,94 @@ class MyApp : Application() {
 }
 ```
 
-</TabItem>
-<TabItem value="iOS" label="iOS" default>
-
-```swift showLineNumbers
-// In your AppDelegate or SwiftUI App entry
-let config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withActivateUI(true)                     // true for activating the AdaptyUI module
-    .withLogLevel(.verbose)
-    .build()
-
-Adapty.activate(configuration: config) { error in
-    if let error {
-        print("Adapty init failed: \(error.localizedDescription)")
-    } else {
-        print("Adapty initialised")
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-
-
-Configurational options:
+Parameters:
 
 | Parameter                   | Presence | Description                                                  |
 | --------------------------- | -------- | ------------------------------------------------------------ |
 | apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
-| observerMode                | optional | <p>A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. If you don't have a user ID at the time of Adapty initialization, you can set it later using `.identify()` method. Read more in the [Identifying users](identifying-users) section. |
-| ipAddressCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IP address. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
-| googleAdvertisingIdCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248) on Android. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
-| appleIdfaCollectionDisabled | optional | <p>A boolean parameter. Set to `true` to disable the collection of the user IDFA on iOS. The default value is `false`.</p><p>Parameter works with `AdaptyConfig.Builder` only.</p> |
-| activateUI | optional | <p>A boolean parameter. Set to `true` to enable the AdaptyUI module, which is required to use the Adapty Paywall Builder. The default value is `false`.</p> |
-
-
-:::note
-**SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
-:::
 
 <SampleApp />
 
-## Redirect the logging system messages
+### Observer mode setup
 
-If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
-
-<Tabs groupId="current-os" queryString>
-  <TabItem value="Kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.setLogLevel(AdaptyLogLevel.VERBOSE)   // ERROR, WARN, INFO, VERBOSE, DEBUG
+```kotlin title="Kotlin" showLineNumbers
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .withObserverMode(true) // true for observer‑mode
+            .build()  
 ```
-</TabItem>
-</Tabs>
+
+## Activate AdaptyUI module of Adapty SDK
+
+If you plan to activate the **AdaptyUI** module to use the [Adapty Paywall Builder](display-pb-paywalls.md), make sure to set `.withActivateUI(true)` in your configuration.
+
+```kotlin title="Kotlin" showLineNumbers
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .withActivateUI(true)           // true for activating the AdaptyUI module
+            .build()  
+```
+
+## Optional setup
+
+#### Set up the logging system
+
+Adapty logs errors and other important information to help you understand what is going on. You can set up levels the following way:
+
+```kotlin title="Kotlin" showLineNumbers
+ val config = AdaptyConfig
+      .Builder("PUBLIC_SDK_KEY")
+      .withLogLevel(AdaptyLogLevel.VERBOSE) // ERROR, WARN, INFO, VERBOSE, DEBUG
+      .build()   
+```
+#### Disable IP address collection and sharing
+
+When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+```kotlin title="Kotlin" showLineNumbers
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .withIpAddressCollectionDisabled(false)   // set true to skip IP collection
+            .build()  
+```
+#### Disable advertising ID collection and sharing
+
+When activating the Adapty module, set `appleIdfaCollectionDisabled` (iOS) or `googleAdvertisingIdCollectionDisabled` (Android) to true to disable the collection of advertising identifiers. The default value is false.
+
+Use this parameter to comply with App Store/Play Store policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
+
+```kotlin title="Kotlin" showLineNumbers
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .withGoogleAdvertisingIdCollectionDisabled(true)        // Android only
+            .withAppleIdfaCollectionDisabled(true)                  // iOS only
+            .build()  
+```
+#### Set customer user ID
+
+When activating the Adapty module, you can set a customerUserId to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by customerUserId in the [Profiles and Segments](https://app.adapty.io/profiles/users) menu.
+
+If you don't have a user ID at the time of Adapty initialization, set to `null`. You can set it later using the `.identify()` method. Read more in the [Identifying users](identifying-users.md) section.
+
+```kotlin title="Kotlin" showLineNumbers
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .withCustomerUserId("CUSTOM_USER_ID")     // your own user id or default null
+            .build()  
+```
+
+#### Set up media cache configuration for AdaptyUI
+
+By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
+
+Use `mediaCache` to override the default cache settings:
+
+
 
 :::danger
 Go through the release checklist before releasing your app
 
 Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
 :::
-
-
