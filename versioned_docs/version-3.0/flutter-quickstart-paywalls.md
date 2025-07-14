@@ -1,5 +1,5 @@
 ---
-title: "Display paywalls"
+title: "Present a paywall in Flutter SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk flutter']
@@ -20,13 +20,13 @@ This is the minimum setup you need to get up and running with paywalls created u
 
 ## 1. Get the paywall
 
-Your paywalls are associated with [placements](placements.md) configured in the dashboard. Placements allow you to run different paywalls for different audiences or run [A/B tests](ab-tests.md).
+Your paywalls are associated with [placements](placements.md) configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests.md).
 
 That's why, to get a paywall to display, you need to:
 
 1. Get the `paywall` object by the placement ID using the `getPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
 
-2. If it is a paywall created in the builder, create its view using the `createPaywallView` method. View contains the UI elements and styling needed to display the paywall.
+2. If it is a paywall created in the builder, create its view using the `createPaywallView` method. The view contains the UI elements and styling needed to display the paywall.
 
 :::tip
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](flutter-get-pb-paywalls).
@@ -63,7 +63,7 @@ Now, when you have the paywall configuration, it's enough to add a few lines to 
 For more details on how to display a paywall, see our [guide](flutter-present-paywalls.md).
 :::
 
-To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -82,7 +82,7 @@ If you are not using the paywall builder for your paywalls, consider our [guide 
 
 ## 3. Check subscription status before displaying
 
-Now, you have implemented a paywall, but we want to show it only to users without the premium access. Before showing a paywall, check if the user already has premium access.
+Now that you've implemented the paywall, you will want to only show it to users who baven't already paid for premium access. Before showing a paywall, check if the user already has premium access.
 
 You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
 

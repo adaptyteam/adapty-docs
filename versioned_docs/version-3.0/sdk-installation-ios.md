@@ -41,7 +41,10 @@ While the SDK technically supports iOS 13.0+ for the core module, iOS 15.0+ is e
 <TabItem value="spm" label="Swift Package Manager (recommended)" default>
 In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
 
-1. Enter the repository URL: `https://github.com/adaptyteam/AdaptySDK-iOS.git`
+1. Enter the repository URL: 
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
 2. Select the version (latest stable version is recommended) and click **Add Package**.
 3. In the **Choose Package Products** window, select the modules you need:
    - **Adapty** (mandatory - always select this)
@@ -197,25 +200,12 @@ When activating the Adapty module, set `idfaCollectionDisabled` to `true` to dis
 
 Use this parameter to comply with App Store Review Guidelines or avoid triggering the App Tracking Transparency prompt when IDFA isn't needed for your app. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.
 
-<Tabs>
-<TabItem value="swift" label="UIKit">
-
 ```swift showLineNumbers
 let configurationBuilder =
     AdaptyConfiguration
-        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
         .with(idfaCollectionDisabled: true)
 ```
-</TabItem>
-<TabItem value="swiftui" label="SwiftUI">
-
-```swift showLineNumbers
- let configurationBuilder = AdaptyConfiguration
-            .builder(withAPIKey: "YOUR_SDK_KEY")
-            .with(idfaCollectionDisabled: true) 
-```
-</TabItem>
-</Tabs>
 
 #### Disable IP collection and sharing
 
@@ -223,25 +213,13 @@ When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` t
 
 Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
 
-<Tabs>
-<TabItem value="swift" label="UIKit">
 
 ```swift showLineNumbers
 let configurationBuilder =
     AdaptyConfiguration
-        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
         .with(ipAddressCollectionDisabled: true)
 ```
-</TabItem>
-<TabItem value="swiftui" label="SwiftUI">
-
-```swift showLineNumbers
- let configurationBuilder = AdaptyConfiguration
-            .builder(withAPIKey: "YOUR_SDK_KEY")
-            .with(ipAddressCollectionDisabled: true) 
-```
-</TabItem>
-</Tabs>
 
 #### Set up media cache configuration for AdaptyUI
 
