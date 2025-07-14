@@ -226,9 +226,9 @@ class MyApp : Application() {
 
 Parameters:
 
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | <p>The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).</p><p>Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api)  only.</p> |
+| Parameter                   | Presence | Description                               |
+| --------------------------- | -------- |-------------------------------------------|
+| apiKey                      | required | [Public SDK key - unique for your app](#get-sdk-key). |
 
 <SampleApp />
 
