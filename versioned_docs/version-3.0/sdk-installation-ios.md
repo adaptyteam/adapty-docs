@@ -84,6 +84,8 @@ This will create a `.xcworkspace` file for your app. Use this file for all futur
 
 ## Activate Adapty module of Adapty SDK
 
+### Basic setup
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swiftui" label="SwiftUI">
 
@@ -93,31 +95,32 @@ import Adapty
 
 @main
 struct YourApp: App {
-    @StateObject private var eventData = EventData()
+  init() {
+    // Configure Adapty SDK
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(customerUserId: "CUSTOMER_USER_ID") // optional
+  
+   Adapty.logLevel = .verbose // recommended for development
     
-    init() {
-        // Configure Adapty SDK
-        let configurationBuilder = AdaptyConfiguration
-            .builder(withAPIKey: "YOUR_SDK_KEY") // Get from Adapty dashboard
-            .with(observerMode: false) // optional
-
-        // Set log level – it is optional but recommended
-        Adapty.logLevel = .verbose
-
-        // Activate Adapty SDK asynchronously
-        Task {
-            do {
-                try await Adapty.activate(with: configurationBuilder.build())
-            } catch {
-                // Handle error appropriately for your app
-            }
-        }
-
-    var body: some Scene {
-        WindowGroup {
-            // Your content view
-        }
+    let config = configurationBuilder.build()
+    
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: configurationBuilder)
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
     }
+    
+    var body: some Scene {
+      WindowGroup {
+        // Your content view
+      }
+    }
+  }
 }
 ```
 Parameters:
@@ -125,7 +128,6 @@ Parameters:
 | Parameter                   | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------------------- | -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p>                                                                                                                                                                                                                                              |
 | customerUserId              | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
 
 Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
@@ -139,17 +141,27 @@ Adapty logs errors and other crucial information to provide insight into your ap
 
 ```swift showLineNumbers
 // In your AppDelegate class:
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
 import Adapty
 
-let configurationBuilder = AdaptyConfiguration
-    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-    .with(observerMode: false)
-    .with(logLevel: .verbose) // Recommended for development
-
-Adapty.activate(with: configurationBuilder.build()) { error in
-    if let error = error {
-        // Handle error appropriately for your app
-    }
+Task {
+  do {
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(customerUserId: "CUSTOMER_USER_ID") // optional
+      .with(logLevel: .verbose) // recommended for development
+    
+    let config = configurationBuilder.build()
+    try await Adapty.activate(with: config)
+  } catch {
+    // Handle error appropriately for your app
+    print("Adapty activation failed: ", error)
+  }
 }
 ```
 Parameters:
@@ -157,7 +169,6 @@ Parameters:
 | Parameter      | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 |----------------| -------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | apiKey         | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| observerMode   | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p>                                                                                                                                                                                                                                                     |
 | customerUserId | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
 | loglevel       | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
 
@@ -165,14 +176,80 @@ Parameters:
 </TabItem>
 </Tabs>
 
-
-Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
-
 <SampleApp />
 
 ### Get the SDK key
 
 <GetKey />
+
+### Observer mode setup
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers
+import SwiftUI
+import Adapty
+
+@main
+struct YourApp: App {
+  init() {
+    // Configure Adapty SDK
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(observerMode: true) 
+      
+    let config = configurationBuilder.build()
+    
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: configurationBuilder)
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+    
+    var body: some Scene {
+      WindowGroup {
+        // Your content view
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem value="swift" label="UIKit" default>
+
+```swift showLineNumbers
+import Adapty
+
+Task {
+  do {
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(observerMode: true) 
+    
+    let config = configurationBuilder.build()
+    try await Adapty.activate(with: config)
+  } catch {
+    // Handle error appropriately for your app
+    print("Adapty activation failed: ", error)
+  }
+}
+
+```
+
+</TabItem>
+</Tabs>
+
+Parameters:
+
+| Parameter                   | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 ## Activate AdaptyUI module of Adapty SDK
 
@@ -182,11 +259,66 @@ If you plan to use [Paywall Builder](display-pb-paywalls) and have [installed Ad
 In your code, you must activate the core Adapty module before activating AdaptyUI.
 :::
 
-```swift showLineNumbers title="Swift"
-import AdaptyUI 
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
 
-AdaptyUI.activate()
+```swift showLineNumbers title="Swift"
+import SwiftUI
+import Adapty
+import AdaptyUI
+
+@main
+struct YourApp: App {
+  init() {
+    // ...ConfigurationBuilder steps
+    
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: configurationBuilder)
+        try await AdaptyUI.activate()
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+    
+    // main body...
+  }
+}
 ```
+</TabItem>
+<TabItem value="uikit" label="UIKit" default>
+
+```swift showLineNumbers title="UIKit"
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+import Adapty
+import AdaptyUI
+
+Task {
+   do {
+      let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+         .with(customerUserId: "CUSTOMER_USER_ID") // optional
+         .with(observerMode: false) // optional
+         .with(logLevel: .verbose) // recommended for development
+
+   let config = configurationBuilder.build()
+   try await Adapty.activate(with: config)
+   try await AdaptyUI.activate()
+      } catch {
+      // Handle error appropriately for your app
+      print("Adapty activation failed: ", error)
+   }
+}
+```
+</TabItem>
+</Tabs>
 
 :::tip
 Optionally, when activating AdaptyUI, you can [override default caching settings for paywalls](#set-up-media-cache-configuration-for-adaptyui).

@@ -187,7 +187,7 @@ Now that you've implemented the paywall, you will want to only show it to users 
 
 You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
 
-By default, Adapty has the built-in `premium` access level, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
+By default, Adapty provides a built-in access level called `premium`, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
 
 :::tip
 Proceed with the quickstart guide to also [implement listening for subscription status changes](android-check-subscription-status).

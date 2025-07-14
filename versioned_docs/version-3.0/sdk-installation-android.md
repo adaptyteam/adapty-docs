@@ -152,7 +152,6 @@ Parameters:
 | Parameter                   | Presence | Description                                                  |
 | --------------------------- | -------- | ------------------------------------------------------------ |
 | apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-| observerMode                | optional | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
