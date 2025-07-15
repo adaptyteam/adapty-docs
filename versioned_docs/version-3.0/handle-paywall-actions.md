@@ -1,5 +1,5 @@
 ---
-title: "Handle paywall button actions"
+title: "Handle new Paywall Builder paywall button actions"
 description: "Handle subscription-related actions in iOS using Adapty for better app monetization."
 metadataTitle: "Handling paywall button actions | Adapty Docs"
 toc_max_heading_level: 4
@@ -15,6 +15,10 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to u
 2. **Development phase**: Write code in your app to handle each action you've assigned.
 3. **User interaction**: When a user taps the button, your app receives the corresponding action ID.
 4. **App response**: Your app executes the specific code you wrote for that action ID.
+
+:::important
+**Purchases and restorations** are handled automatically. All the **other button actions**, such as closing paywalls or opening links, **require implementing proper responses in the app code**.
+:::
 
 ## Close paywalls
 
@@ -200,10 +204,6 @@ public void PaywallViewDidPerformAction(
 </TabItem>
 </Tabs>
 
-## Restore purchases
-
-If you use the paywall builder, you don't need to implement the action handler in the code. You only need to add a button and assign it the **Restore** action.
-
 ## Log into the app
 
 To add a button that logs users into your app:
@@ -303,6 +303,8 @@ To add a button that handles any other actions:
 1. In the paywall builder, add a button, assign it the **Custom** action, and assign it an ID.
 2. In your app code, implement a handler for the action ID you've created.
 
+For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
 
@@ -311,9 +313,8 @@ func paywallController(_ controller: AdaptyPaywallController,
                       didPerform action: AdaptyUI.Action) {
    switch action {
        case let .custom(id):
-           if id == "notifications" {
-              UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-                  // Handle the result
+           if id == "openNewPaywall" {
+              // Display another paywall
               }
            }
            break
@@ -328,14 +329,8 @@ func paywallController(_ controller: AdaptyPaywallController,
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
    when (action) {
        is AdaptyUI.Action.Custom -> {
-           if (action.customId == "notification") {
-               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                   ActivityCompat.requestPermissions(
-                       context as Activity,
-                       arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                       NOTIFICATION_PERMISSION_REQUEST_CODE
-                   )
-               }
+           if (action.customId == "openNewPaywall") {
+               // Display another paywall
            }
        }
    }
@@ -348,9 +343,8 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
    switch (action) {
-     case CustomAction(action: 'notifications'):
-       // Request notification permissions
-       _requestNotificationPermission();
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another paywall
        break;
      default:
        break;
@@ -364,9 +358,8 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 ```javascript
 const unsubscribe = view.registerEventHandlers({
     onCustomAction(actionId) {
-        if (actionId === 'notifications') {
-            // Call your method for handling notification permissions
-            requestNotificationPermission();
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
         }
     },
 });
@@ -382,9 +375,8 @@ public void PaywallViewDidPerformAction(
 ) {
     switch (action.Type) {
         case AdaptyUIUserActionType.Custom:
-            if (action.Value == "notifications") {
-                // Call your method for handling notification permissions
-                RequestNotificationPermission();
+            if (action.Value == "openNewPaywall") {
+                // Display another paywall
             }
             break;
         default:
