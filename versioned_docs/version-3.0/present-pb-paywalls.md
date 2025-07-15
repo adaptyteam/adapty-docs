@@ -2,6 +2,7 @@
 title: "Present Paywall Builder paywalls"
 description: "Learn how to present PB paywalls effectively to drive more conversions."
 metadataTitle: "Presenting PB Paywalls | Adapty Docs"
+keywords: ['paywall builder', 'builder']
 ---
 
 import Zoom from 'react-medium-image-zoom';

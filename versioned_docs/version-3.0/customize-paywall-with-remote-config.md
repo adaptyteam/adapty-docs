@@ -21,11 +21,12 @@ The Paywall Remote Config is a powerful tool that provides flexible configuratio
 
 To start customizing a paywall using the remote config:
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. 
 
-   
+2. Click the paywall to open it.
+
 <Zoom>
-  <img src={require('./img/b7eb293-paywalls_edit.webp').default}
+  <img src={require('./img/remote-config.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,14 +36,10 @@ To start customizing a paywall using the remote config:
 />
 </Zoom>
 
+3. Switch to the **Remote config** tab.
 
-
-
-2. Click the **3-dot** button next to the paywall and select the **Edit** option.
-
-   
 <Zoom>
-  <img src={require('./img/d44fdb9-switch_to_remote_config.webp').default}
+  <img src={require('./img/remote-config-3.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,11 +48,6 @@ To start customizing a paywall using the remote config:
   }}
 />
 </Zoom>
-
-
-
-
-3. In the opened **Paywalls/ Your paywall** page, switch to the **Remote config** tab.
 
 Remote config has 2 views: 
 

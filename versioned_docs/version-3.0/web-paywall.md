@@ -102,7 +102,7 @@ To use your web paywall, you need to trigger it, and the way you do it depends o
 
 If you are using the **paywall from the Builder**, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
 
-1. Open the paywall and switch to the **Builder** tab.
+1. Open the paywall and switch to the **Builder & Generator** tab.
 2. Click **Add element** and select **Web paywall button**. 
    
    If you are using a template or an existing/duplicated paywall, add the web paywall button you just added to the previous purchase button.
