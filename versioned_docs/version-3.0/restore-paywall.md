@@ -13,12 +13,12 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 
 **To return a paywall back from the archive**
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
-2. Make sure that archived paywalls are displayed in the list. If not, change the **State** filter.
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. 
+2. Make sure that archived paywalls are displayed in the list. If not, update the filter on the right.
 
    
 <Zoom>
-  <img src={require('./img/1e80bd1-filter_paywalls.webp').default}
+  <img src={require('./img/paywall-filter.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,11 +30,11 @@ Archived paywalls may be filtered out of the default view. To see them, select *
 
 
 
-3. Click the **3-dot** button next to the archived paywall and select the **Back to active** option.
+3. Click the **3-dot** button next to the archived paywall and select **Back to active**.
 
    
 <Zoom>
-  <img src={require('./img/d090e08-paywalls_back_to_active.webp').default}
+  <img src={require('./img/restore-paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -13,13 +13,9 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 ## Setting up localization for remote configured paywalls
 
-1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in Adapty, select the **Paywall** tab, and click the **3-dot** button next to the paywall to choose **Edit**.
-
-
-
-2. In the paywall editor, navigate to the **Remote config** tab.
-
-   
+1. Go to the [**Paywalls**](https://app.adapty.io/paywalls) section in Adapty.
+2. Click the paywall to open it.
+3. Go to the **Remote config** tab.
 
 <Zoom>
   <img src={require('./img/switch_to_remote_config.webp').default}
@@ -35,7 +31,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 
 
-3. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
+4. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
 
    
 
