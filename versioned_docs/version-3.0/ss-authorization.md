@@ -4,6 +4,7 @@ description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
 toc_max_heading_level: 2
+keywords: ['rate limit', 'api rate limit']
 ---
 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
@@ -29,6 +30,12 @@ The server-side API requests require specific headers and a JSON body. Use the d
 **Body**
 
 The API expects a JSON-formatted body with the necessary data for the request.
+
+## Rate limits
+
+To avoid throttling, ensure that the number of requests (per app) stays below 40,000 per minute.
+
+If this limit is exceeded, the system may slow down or temporarily block further requests to maintain optimal performance for all users.
 
 ---
 

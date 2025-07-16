@@ -223,9 +223,9 @@ AdaptyUI.CreateView(paywall, parameters, (view, error) => {
  <TabItem value="rn" label="React Native (TS)" default> 
 
 ```typescript showLineNumbers
-let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
 //and then you can pass it to createPaywallView as follows:
-view = await createPaywallView(paywall, { timerInfo })
+view = await createPaywallView(paywall, { customTimers })
 ```
 
 In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
