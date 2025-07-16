@@ -11,7 +11,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require [implementing proper responses in the app code](handle-paywall-actions.md).
 :::
 
 A paywall button is a UI element that lets users:
