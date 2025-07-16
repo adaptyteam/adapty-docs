@@ -101,3 +101,61 @@ By default, between the splash screen and onboarding, you will see the loading s
 To do this, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder (what exactly will be shown while the onboarding is being loaded) there. 
 
 If you define a placeholder, the onboarding will be loaded in the background and automatically displayed once ready.
+
+## Disable safe area paddings
+
+By default, the onboarding view automatically applies safe area paddings to avoid system UI elements like status bar and navigation bar. However, if you want to disable this behavior and have full control over the layout, you can do so by setting the `safeAreaPaddings` parameter to `false`.
+
+<Tabs groupId="views-code-examples" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+
+```kotlin
+val onboardingView = AdaptyUI.getOnboardingView(
+    activity = this,
+    viewConfig = onboardingConfig,
+    eventListener = eventListener,
+    safeAreaPaddings = false
+)
+```
+  </TabItem>
+  <TabItem value="kotlin2" label="Kotlin (option 2)">
+
+```kotlin
+val onboardingView = AdaptyOnboardingView(activity)
+onboardingView.show(
+    viewConfig = onboardingConfig,
+    delegate = eventListener,
+    safeAreaPaddings = false
+)
+```
+  </TabItem>
+  <TabItem value="java" label="Java (option 1)">
+
+```java
+AdaptyOnboardingView onboardingView = AdaptyUI.getOnboardingView(
+    activity,
+    onboardingConfig,
+    eventListener,
+    false
+);
+```
+  </TabItem>
+  <TabItem value="java2" label="Java (option 2)">
+
+```java
+AdaptyOnboardingView onboardingView = new AdaptyOnboardingView(activity);
+onboardingView.show(onboardingConfig, eventListener, false);
+```
+  </TabItem>
+</Tabs>
+
+Alternatively, you can control this behavior globally by adding a boolean resource to your app:
+
+```xml
+<!-- res/values/bools.xml -->
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+When `safeAreaPaddings` is set to `false`, the onboarding will extend to the full screen without any automatic padding adjustments, giving you complete control over the layout and allowing the onboarding content to use the entire screen space.

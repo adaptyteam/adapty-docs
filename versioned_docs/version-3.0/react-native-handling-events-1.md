@@ -18,7 +18,8 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
 
-```typescript showLineNumbers title="React Native (TSX)"
+```javascript showLineNumbers title="React Native (TSX)"
+import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
@@ -40,7 +41,10 @@ const unsubscribe = view.registerEventHandlers({
   onProductSelected(productId) { /***/},
   onRenderingFailed(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
-  onUrlPress(url) { /* handle url */ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
 });
 ```
 
