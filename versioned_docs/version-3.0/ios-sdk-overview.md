@@ -9,12 +9,12 @@ displayed_sidebar: sdkios
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty SDK allows you to:
+Adapty SDK handles the complexity of in-app purchases so you can focus on building your app:
 
-- Enable in-app purchases in your app
-- Display paywalls and onboardings to your users
-- Implement analytics for in-app purchases
-- Automatically track user profile changes
+- Handle purchases, receipt validation, and subscription management out of the box
+- Create and test paywalls without app updates
+- Get detailed purchase analytics with zero setup - cohorts, LTV, churn, and funnel analysis included
+- Keep the user subscription status always up to date across app sessions and devices
 
 To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
 
@@ -26,11 +26,19 @@ Regardless of how you want to work with in-app purchases, you need to understand
 For the SDK to function properly, you need to set up products, paywalls, and placements in the Adapty dashboard. If you or your team haven't done it yet, use [this guide](quickstart.md) first.
 :::
 
+### User profiles
+
+A user profile contains all information about a user: their subscription status, purchase history, and custom attributes. 
+
+The SDK automatically creates and updates profiles, and you can store additional user data like preferences or onboarding progress to use later for targeting and personalization.
+
 ### Products
 
 A product is any item or content available for purchase. For example, it can be a subscription or a one-time purchase.
 
 Each product corresponds to one product in the App Store. 
+
+Products are organized into access levels that determine what content users can access.
 
 <Zoom>
   <img src={require('./img/app-store-products.webp').default}
