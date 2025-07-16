@@ -8,8 +8,11 @@ displayed_sidebar: sdkunity
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
+
+<PaywallAction />
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -20,75 +23,6 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 <SampleApp />
 
 ### User-generated events
-
-#### Actions
-
-If a user has performed some action, this method will be invoked:
-
-```csharp showLineNumbers title="Unity"
-public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
-  AdaptyUIUserAction action
-) {
-  switch (action.Type) {
-    case AdaptyUIUserActionType.Close:
-      view.Dismiss(null);
-      break;
-    case AdaptyUIUserActionType.OpenUrl:
-      var urlString = action.Value;
-      if (urlString != null {
-      	Application.OpenURL(urlString); 
-      }
-    default:
-      // handle other events
-      break;
-  }
-}
-```
-
-<Details>
-<summary>Event examples (Click to expand)</summary>
-
-```javascript
-// Close action
-{
-  "actionType": "Close"
-}
-
-// Open URL action
-{
-  "actionType": "OpenUrl",
-  "value": "https://example.com/terms"
-}
-
-// Custom action
-{
-  "actionType": "Custom",
-  "value": "login"
-}
-
-// System back action
-{
-  "actionType": "SystemBack"
-}
-```
-</Details>
-
-The following action types are supported:
-
-- `Close`
-- `OpenUrl`
-- `Custom`
-- `SystemBack`. 
-
- At the very least you need to implement the reactions to both `close` and `openURL`.
-
-For example, if a user taps the close button, the action `Close` will occur and you are supposed to dismiss the paywall.  
-Note that `AdaptyUIUserAction` has optional value property: look at this in the case of `OpenUrl` and `Custom`.
-
-> 💡 Login Action
-> 
-> If you have configured Login Action in the dashboard, you should implement reaction for `Custom` action with value `"login"`
 
 #### Product selection
 
