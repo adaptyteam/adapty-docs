@@ -1,8 +1,9 @@
 ---
-title: "Respond to button actions in iOS SDK"
-description: "Handle paywall button actions in iOS using Adapty for better app monetization."
+title: "Respond to button actions in Unity SDK"
+description: "Handle paywall button actions in Unity using Adapty for better app monetization."
 metadataTitle: "Handling paywall button actions | Adapty Docs"
 toc_max_heading_level: 4
+rank: 40
 keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
 ---
 import Tabs from '@theme/Tabs';
@@ -27,19 +28,20 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
-:::info
-In the iOS, Android SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
-:::
 
-
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                       didPerform action: AdaptyUI.Action) {
-    switch action {
-        case .close:
-            controller.dismiss(animated: true) // default behavior
-            break
-    }
+```javascript
+public void PaywallViewDidPerformAction(
+  AdaptyUIView view, 
+  AdaptyUIUserAction action
+) {
+  switch (action.Type) {
+    case AdaptyUIUserActionType.Close:
+      view.Dismiss(null);
+      break;
+    default:
+      // handle other events
+      break;
+  }
 }
 ```
 
@@ -54,18 +56,20 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
-:::info
-In the iOS SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed. 
-:::
-
-
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                       didPerform action: AdaptyUI.Action) {
-    switch action {
-        case let .openURL(url):
-            UIApplication.shared.open(url, options: [:]) // default behavior
-        break
+```javascript
+public void PaywallViewDidPerformAction(
+    AdaptyUIView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (urlString != null {
+                Application.OpenURL(urlString);
+            }
+        default:
+            // handle other events
+            break;
     }
 }
 ```
@@ -77,19 +81,23 @@ To add a button that logs users into your app:
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
-
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                      didPerform action: AdaptyUI.Action) {
-   switch action {
-       case .login:
-           // Show a login screen
-           let loginVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "LoginViewController")
-           controller.present(loginVC, animated: true)
-   }
+```javascript
+public void PaywallViewDidPerformAction(
+    AdaptyUIView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
 }
 ```
-
 ## Handle custom actions
 
 To add a button that handles any other actions:
@@ -99,16 +107,21 @@ To add a button that handles any other actions:
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                      didPerform action: AdaptyUI.Action) {
-   switch action {
-       case let .custom(id):
-           if id == "openNewPaywall" {
-              // Display another paywall
-              }
-           }
-           break
-   }
+```javascript
+public void PaywallViewDidPerformAction(
+    AdaptyUIView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewPaywall") {
+                // Display another paywall
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
 }
+
 ```

@@ -11,7 +11,9 @@ import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
 
-<PaywallAction />
+:::important
+This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](react-native-handle-paywall-actions.md) for details.
+:::
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 

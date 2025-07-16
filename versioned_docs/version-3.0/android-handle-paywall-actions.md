@@ -1,6 +1,6 @@
 ---
-title: "Respond to button actions in iOS SDK"
-description: "Handle paywall button actions in iOS using Adapty for better app monetization."
+title: "Respond to button actions in Android SDK"
+description: "Handle paywall button actions in Android using Adapty for better app monetization."
 metadataTitle: "Handling paywall button actions | Adapty Docs"
 toc_max_heading_level: 4
 keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
@@ -28,17 +28,14 @@ To add a button that will close your paywall:
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
 :::info
-In the iOS, Android SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+In the Android SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
 :::
 
 
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                       didPerform action: AdaptyUI.Action) {
-    switch action {
-        case .close:
-            controller.dismiss(animated: true) // default behavior
-            break
+```kotlin
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+    when (action) {
+        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed() // default behavior
     }
 }
 ```
@@ -55,18 +52,18 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
 :::info
-In the iOS SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed. 
+In the Android SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
 
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                       didPerform action: AdaptyUI.Action) {
-    switch action {
-        case let .openURL(url):
-            UIApplication.shared.open(url, options: [:]) // default behavior
-        break
-    }
+```kotlin
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+   when (action) {    
+       is AdaptyUI.Action.OpenUrl -> {
+           val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url)) // default behavior
+           context.startActivity(intent)
+       }
+   }
 }
 ```
 
@@ -77,15 +74,13 @@ To add a button that logs users into your app:
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
-
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                      didPerform action: AdaptyUI.Action) {
-   switch action {
-       case .login:
-           // Show a login screen
-           let loginVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "LoginViewController")
-           controller.present(loginVC, animated: true)
+```kotlin
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+   when (action) {
+       AdaptyUI.Action.Login -> {
+           val intent = Intent(context, LoginActivity::class.java)
+           context.startActivity(intent)
+       }
    }
 }
 ```
@@ -99,16 +94,14 @@ To add a button that handles any other actions:
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
-```swift
-func paywallController(_ controller: AdaptyPaywallController,
-                      didPerform action: AdaptyUI.Action) {
-   switch action {
-       case let .custom(id):
-           if id == "openNewPaywall" {
-              // Display another paywall
-              }
+```kotlin
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+   when (action) {
+       is AdaptyUI.Action.Custom -> {
+           if (action.customId == "openNewPaywall") {
+               // Display another paywall
            }
-           break
+       }
    }
 }
 ```
