@@ -208,13 +208,16 @@ const unsubscribe = view.registerEventHandlers({
 ```
 </Details>
 
-You can register event handlers you need, and miss those you do not need. In this case, unused event listeners would not be created.
-
-Note that at the very least you need to implement the reactions to both `onCloseButtonPress` and `onUrlPress`.
+You can register event handlers you need, and miss those you do not need. In this case, unused event listeners would not be created. There are no required event handlers.
 
 Event handlers return a boolean. If `true` is returned, the displaying process is considered complete, thus the paywall screen closes and event listeners for this view are removed. 
 
-Note, that `onCloseButtonPress`, `onAndroidSystemBack`, and `onRestoreCompleted` in the example above return `true`, and the `onPurchaseCompleted` returns `purchaseResult.type !== 'user_cancelled'`. This is their default behavior that you can override. 
+Some event handlers have a default behavior that you can override if needed:
+- `onCloseButtonPress`: closes paywall when close button pressed.
+- `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
+- `onRestoreCompleted`: closes paywall after successful restore.
+- `onPurchaseCompleted`: closes paywall unless user cancelled.
+- `onUrlPress`: opens URLs in system browser and keeps paywall open. Note that this behavior is supported only starting from the SDK version 3.9.0.
 
 ### Event handlers
 
