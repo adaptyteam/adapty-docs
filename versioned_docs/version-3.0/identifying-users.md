@@ -74,6 +74,19 @@ try {
 ```
 </TabItem>
 
+<TabItem value="flutter" label="Flutter" default>
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+          ..withCustomerUserId('YOUR_USER_ID')
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
 <TabItem value="unity" label="Unity" default> 
 
 ```csharp showLineNumbers
