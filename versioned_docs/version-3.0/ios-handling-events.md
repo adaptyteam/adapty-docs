@@ -10,6 +10,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
 
 <PaywallAction />
 
@@ -173,16 +174,6 @@ var body: some View {
           isPresented: $paywallPresented,
           paywall: paywall,
           viewConfiguration: viewConfig,
-          didPerformAction: { action in
-              switch action {
-                  case .close:
-                      paywallPresented = false
-                  case let .openURL(url):
-                      // handle opening the URL (incl. for terms and privacy)
-                  default:
-                      // handle other actions
-              }
-          },
           didSelectProduct: { /* Handle the event */  },
           didStartPurchase: { /* Handle the event */ },
           didFinishPurchase: { product, info in /* Handle the event */ },

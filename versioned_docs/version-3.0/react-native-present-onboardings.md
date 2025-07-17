@@ -20,9 +20,9 @@ Before you start, ensure that:
 
 Adapty React Native SDK provides two ways to present onboardings:
 
-- **Full-screen presentation (classic view)**: Best for modal-style onboardings that take over the entire screen with programmatic control over when they appear and disappear.
+- **Full-screen presentation (classic view)**: Modal presentation gives users native platform dismissal gestures (swipe, back button).
 
-- **Embedded component**: Best for integrating onboardings seamlessly within your existing component hierarchy, such as part of a larger screen or flow.
+- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic.
 
 ## Present as full-screen modal
 

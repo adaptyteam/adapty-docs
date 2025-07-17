@@ -10,53 +10,31 @@ metadataTitle: "Customizing Paywall Buttons | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+:::warning
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require [implementing proper responses in the app code](handle-paywall-actions.md).
+:::
+
 A paywall button is a UI element that lets users:
 - Buy products
 - Sign in
 - Restore purchases
 - Close the paywall
-- Run custom actions
+- Trigger custom actions (e.g., open another paywall)
 
-:::warning
+:::info
 
 This section describes the new Paywall Builder, which works with:
 - iOS, Android, and React Native SDKs version 3.0 or higher
 - Flutter and Unity SDKs version 3.3.0 or higher
 
-For information on the legacy Paywall Builder (compatible with Adapty SDK v2.x or earlier), see [Paywall texts and buttons in legacy Paywall Builder](paywall-texts-and-buttons).
-
 :::
-
-### Custom buttons
-You need custom buttons to:
-- Close the paywall (`close`)
-- Open a URL (`openUrl`)
-- Restore purchases (`restore`)
-- Sign in (`login`)
-- Run custom actions
-
-To make buttons work, you need to [handle their action IDs in your code](handling-pb-paywall-events.md). For example, a close button needs the `close` action handler.
-
-You can also:
-- Open another paywall with [`getPaywall`](get-pb-paywalls.md)
-- Run multiple actions in sequence (like close and open)
-
-<Zoom>
-  <img src={require('./img/pb-custom-button.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
 
 ### Purchase buttons
 Purchase buttons:
-- Connect to products in your paywall
-- Handle product selection
+- Connect to selected products in your paywall
 - Start the purchase when tapped
+
+When you add a purchase button to your paywall, it automatically processes purchases your users make. So, you don't need to handle purchases in the app code.
 
 <Zoom>
   <img src={require('./img/purchase-button.webp').default}
@@ -68,10 +46,6 @@ Purchase buttons:
   }}
 />
 </Zoom>
-
-:::important
-The purchase button has additional customization options to help you highlight your offers. If you add animation to a purchase button, update the Adapty SDK to version 3.9.0 or later to display the animation.
-:::
 
 ### Links
 To comply with some store requirements, you can add links to:
@@ -86,6 +60,40 @@ To add links:
 
 <Zoom>
   <img src={require('./img/pb-links.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Custom buttons
+You need custom buttons to:
+- Close the paywall (`close`)
+- Open a URL (`openUrl`)
+- Restore purchases (`restore`)
+- Sign in (`login`)
+- Trigger custom actions (e.g., open another paywall)
+
+To make most buttons work, you need to [**handle their action IDs in your code**](handle-paywall-actions.md). For example, a close button needs the `close` action handler.
+
+:::important
+`close` is handled automatically in the iOS, Android, and React Native SDKs. `openUrl` is handled automatically in the iOS and Android SDKs. However, if needed, you can override the default behavior.
+
+`restore` is always handled automatically.
+:::
+
+When handling custom actions in your code, you can implement scenarios like:
+
+- Opening another paywall
+- Running multiple actions in sequence (like close and open)
+
+Note that you would need to build these scenarios using the action handling system - they're not built-in features.
+
+<Zoom>
+  <img src={require('./img/pb-custom-button.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -1,5 +1,5 @@
 ---
-title: "Handle new Paywall Builder paywall button actions"
+title: "Respond to new Paywall Builder button actions"
 description: "Handle subscription-related actions in iOS using Adapty for better app monetization."
 metadataTitle: "Handling paywall button actions | Adapty Docs"
 toc_max_heading_level: 4
@@ -9,15 +9,15 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 
-If you are building paywalls using the Adapty paywall builder, it's crucial to understand how buttons work:
+If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
 
-1. **Design phase**: Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
-2. **Development phase**: Write code in your app to handle each action you've assigned.
-3. **User interaction**: When a user taps the button, your app receives the corresponding action ID.
-4. **App response**: Your app executes the specific code you wrote for that action ID.
+1. Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
+2. Write code in your app to handle each action you've assigned.
 
-:::important
-**Purchases and restorations** are handled automatically. All the **other button actions**, such as closing paywalls or opening links, **require implementing proper responses in the app code**.
+This guide shows how to handle custom and pre-existing actions in your code.
+
+:::warning
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
 :::
 
 ## Close paywalls
@@ -27,6 +27,10 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
+:::info
+In the iOS, Android, and React Native SDKs, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+:::
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
 
@@ -35,7 +39,7 @@ func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
     switch action {
         case .close:
-            controller.dismiss(animated: true)
+            controller.dismiss(animated: true) // default behavior
             break
     }
 }
@@ -47,7 +51,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 ```kotlin
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
     when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
+        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed() // default behavior
     }
 }
 ```
@@ -78,7 +82,7 @@ const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-      view.dismiss();
+      view.dismiss(); // default behavior
       return true;
   }
 });
@@ -107,14 +111,19 @@ public void PaywallViewDidPerformAction(
 
 ## Open URLs from paywalls
 
+:::tip
+If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the paywall builder and handle it the same way as buttons with the **Open URL** action.
+:::
+
 To add a button that opens a link from your paywall (e.g., **Terms of use** or **Privacy policy**):
 
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
-:::tip
-If you don't want your links to look like buttons, add a **Link** element in the paywall builder and handle it the same way as buttons with the **Open URL** action.
+:::info
+In the iOS, Android, and React Native SDKs (for React Native, you need to update the SDK to the version 3.9.0 or later), the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed. 
 :::
+
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -124,8 +133,7 @@ func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
     switch action {
         case let .openURL(url):
-      		// handle URL opens (incl. terms and privacy links)
-            UIApplication.shared.open(url, options: [:])
+            UIApplication.shared.open(url, options: [:]) // default behavior
         break
     }
 }
@@ -138,7 +146,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
    when (action) {    
        is AdaptyUI.Action.OpenUrl -> {
-           val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
+           val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url)) // default behavior
            context.startActivity(intent)
        }
    }
@@ -177,6 +185,7 @@ const view = await createPaywallView(paywall);
 const unsubscribe = view.registerEventHandlers({
     onUrlPress(url) {
         Linking.openURL(url);
+        return false; // default behavior
     },
 });
 ```

@@ -15,7 +15,7 @@ Profiles is a CRM for your users. With Profiles, you can:
 
 1. Find a user with any ID you have including email and phone number.
 2. Explore the full payment path of a user including billing issues, grace periods, and other [events](events).
-3. Analyze user's properties such as subscription state, total revenue/proceeds, last seen, and more.
+3. Analyze user's properties such as subscription state, total revenue/proceeds, and more.
 4. Grant the user a subscription.
 
 <Zoom>

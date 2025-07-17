@@ -7,6 +7,7 @@ keywords: ['paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywal
 
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
 
 <PaywallAction />
 
