@@ -11,9 +11,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
-import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
-
-<PaywallAction />
 
 <PaywallAction />
 
