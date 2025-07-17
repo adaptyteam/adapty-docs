@@ -56,7 +56,7 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
 :::info
-In the iOS and Android SDKs, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
+In the React Native SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
 ```javascript
