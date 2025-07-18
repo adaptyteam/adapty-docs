@@ -13,8 +13,8 @@ import GetKey from '@site/src/components/reusable/GetKey.md';
 
 Adapty SDK includes two key modules for seamless integration into your React Native app:
 
-- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
+- **Core Adapty**: This module is required for Adapty to function properly in your app.
+- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
 :::info
 If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
@@ -24,18 +24,11 @@ If you need a full tutorial on how to implement IAP in your React Native app, ch
 
 ## Requirements
 
-- **React Native 0.60.0+** (recommended 0.71.0+ for best compatibility)
-- **iOS:**
-   - Core SDK: iOS 13.0+
-   - AdaptyUI: iOS 15.0+
-- **Android API 19+** (for Android builds)
-- **Xcode 15.0+** (for iOS development)
-- **Android Studio / Gradle** (for Android development)
+The Adapty React Native SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.1+.
 
-:::note
-While the core Adapty SDK supports iOS 13.0+ and Android API 19+, AdaptyUI requires iOS 15.0+ and Android API 21+ for full functionality.
+:::info
+Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
-
 
 ## Install Adapty SDK
 
@@ -75,13 +68,6 @@ While the core Adapty SDK supports iOS 13.0+ and Android API 19+, AdaptyUI requi
    ```sh showLineNumbers title="Shell"
    cd ios && pod install
    ```
-   If you get a minimum iOS version error, update your Podfile:
-   ```diff
-   -platform :ios, min_ios_version_supported
-   +platform :ios, '13.0'  # For core SDK only
-   # OR
-   +platform :ios, '15.0'  # If using AdaptyUI
-   ```
 
 <details>
    <summary>For Android, if your React Native version is earlier than 0.73.0 (click to expand)</summary>
@@ -109,21 +95,27 @@ Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-p
 
 ### Basic setup
 
+Copy the following code to `App.tsx` to activate Adapty:
+
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
 
 adapty.activate('YOUR_PUBLIC_SDK_KEY');
 ```
 
-Parameters:
+:::tip
+To avoid activation errors in the development environment, use the [tips](#development-environment-tips).
+:::
 
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-
-<SampleApp />
+<GetKey />
 
 ### Observer mode setup
+
+Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty only for sending subscription events and analytics.
+
+:::important
+When running in the Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
+:::
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
@@ -137,11 +129,7 @@ Parameters:
 
 | Parameter                   | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
-
-### Get the SDK key
-
-<GetKey />
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
 ## Activate AdaptyUI module of Adapty SDK
 
@@ -236,7 +224,9 @@ Parameters:
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
-## Delay SDK activation for development purposes
+## Development environment tips
+
+#### Delay SDK activation for development purposes
 
 Adapty pre-fetches all necessary user data upon SDK activation, enabling faster access to fresh data.
 
@@ -259,7 +249,7 @@ try {
 }
 ```
 
-## Troubleshoot SDK activation errors on React Native's Fast Refresh
+#### Troubleshoot SDK activation errors on React Native's Fast Refresh
 
 When developing with the Adapty SDK in React Native, you may encounter the error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
 
@@ -273,4 +263,17 @@ try {
   console.error('Failed to activate Adapty SDK:', error);
   // Handle the error appropriately for your app
 }
+```
+
+## Troubleshooting
+
+#### Minimum iOS version error
+
+If you get a minimum iOS version error, update your Podfile:
+
+```diff
+-platform :ios, min_ios_version_supported
++platform :ios, '13.0'  # For core features only
+# OR
++platform :ios, '15.1'  # If using paywalls created in the paywall builder
 ```

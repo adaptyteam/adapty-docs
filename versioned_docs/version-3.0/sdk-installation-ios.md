@@ -25,15 +25,9 @@ If you’re using an older version of Adapty SDK and want to upgrade to version 
 
 ## Requirements
 
-- **iOS 13.0+** 
-- **Swift 5.9+**
-- **Xcode 15.0+** (recommended – to support Swift 5.9+ and iOS 15.0+ deployment targets)
-
-:::note
 While the SDK technically supports iOS 13.0+ for the core module, iOS 15.0+ is effectively required for practical use since:
 - All StoreKit 2 features require iOS 15.0+
 - AdaptyUI module is iOS 15.0+ only
-:::
 
 ## Install Adapty SDK
 
@@ -99,7 +93,6 @@ struct YourApp: App {
     // Configure Adapty SDK
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(customerUserId: "CUSTOMER_USER_ID") // optional
   
    Adapty.logLevel = .verbose // recommended for development
     
@@ -123,18 +116,6 @@ struct YourApp: App {
   }
 }
 ```
-Parameters:
-
-| Parameter                   | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| --------------------------- | -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| customerUserId              | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
-
-Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
-- `error`: Only errors will be logged. 
-- `warn`: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.
-- `info`: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.
-- `verbose`: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.
 
 </TabItem>
 <TabItem value="swift" label="UIKit" default>
@@ -153,7 +134,6 @@ Task {
   do {
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(customerUserId: "CUSTOMER_USER_ID") // optional
       .with(logLevel: .verbose) // recommended for development
     
     let config = configurationBuilder.build()
@@ -164,25 +144,19 @@ Task {
   }
 }
 ```
-Parameters:
-
-| Parameter      | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-|----------------| -------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| apiKey         | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general)                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| customerUserId | optional | An identifier of the user in your system. We recommend passing this parameter if it is known before you call `Adapty.activate`. <br/> We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                              |
-| loglevel       | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-
 
 </TabItem>
 </Tabs>
 
-<SampleApp />
-
-### Get the SDK key
-
 <GetKey />
 
 ### Observer mode setup
+
+Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
+
+:::important
+When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
+:::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swiftui" label="SwiftUI">
@@ -249,7 +223,7 @@ Parameters:
 
 | Parameter                   | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
 ## Activate AdaptyUI module of Adapty SDK
 
@@ -304,8 +278,6 @@ Task {
    do {
       let configurationBuilder = AdaptyConfiguration
          .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-         .with(customerUserId: "CUSTOMER_USER_ID") // optional
-         .with(observerMode: false) // optional
          .with(logLevel: .verbose) // recommended for development
 
    let config = configurationBuilder.build()
@@ -325,6 +297,23 @@ Optionally, when activating AdaptyUI, you can [override default caching settings
 :::
 
 ## Optional setup
+
+#### Set up the logging system
+
+Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
+
+| Level      | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Only errors will be logged                                    |
+| `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
+| `info`     | Errors, warnings, and various information messages will be logged |
+| `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+
+```swift showLineNumbers
+ let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") 
+         .with(logLevel: .verbose) // recommended for development
+```
 
 #### Disable IDFA collection and sharing
 

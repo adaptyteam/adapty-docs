@@ -14,17 +14,10 @@ import GetKey from '@site/src/components/reusable/GetKey.md';
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
+- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-## Requirements
-
-- **Android API 19+** (Android 4.4+)
-- **Java 11+**
-- **Kotlin 1.8.0+**
-- **Google Play Billing Library 6.1.0** (compatible up to 7.x). Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
-
-:::note
-While the core Adapty SDK supports Android API 19+, AdaptyUI requires Android API 21+ (Android 5.0+) for full functionality.
+:::info
+Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
 ## Install Adapty SDK
@@ -147,12 +140,6 @@ class MyApplication : Application() {
 }
 ```
 
-Parameters:
-
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-
 </TabItem>
 <TabItem value="java" label="Java" default>
 
@@ -171,18 +158,19 @@ public class MyApplication extends Application {
 }
 ```
 
-Parameters:
-
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-
 </TabItem>
 </Tabs>
 
-<SampleApp />
+<GetKey />
 
 ### Observer mode setup
+
+
+Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
+
+:::important
+When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
+:::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -199,12 +187,6 @@ override fun onCreate() {
     )  
 }
 ```
-
-Parameters:
-
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -223,18 +205,15 @@ public void onCreate() {
 }
 ```
 
+</TabItem>
+</Tabs>
+
 Parameters:
 
 | Parameter                   | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
-</TabItem>
-</Tabs>
-
-### Get the SDK key
-
-<GetKey />
 
 ## Activate AdaptyUI module of Adapty SDK
 

@@ -1,6 +1,6 @@
 <!--- GetKey--->
 
-Before configuring the SDK, you need your **Public SDK Key**:
+To get your **Public SDK Key**:
 
 1. Go to Adapty Dashboard and navigate to [**App settings → General**](https://app.adapty.io/settings/general).
 2. From the **Api keys** section, copy the **Public SDK Key** (NOT the Secret Key).

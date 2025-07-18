@@ -25,20 +25,10 @@ If you're using an older version of Adapty SDK and want to upgrade to version 3.
 
 ## Requirements
 
-- **Unity 2019.4+** (recommended 2022.3+ for best compatibility)
-- **iOS:**
-   - Core SDK: iOS 13.0+
-   - AdaptyUI: iOS 15.0+
-- **Android API 19+** (for Android builds)
-- **Xcode 15.0+** (for iOS development)
-- **Android Studio / Gradle** (for Android development)
-
-:::note
-While the core Adapty SDK supports iOS 13.0+ and Android API 19+, AdaptyUI requires iOS 15.0+ and Android API 21+ for full functionality.
-:::
+Adapty SDK supports iOS 13.0+, but requires iOS 15.0+ to work with paywalls created in the paywall builder.
 
 :::info
-Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
 ## Install Adapty SDK
@@ -93,15 +83,15 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
 }
 ```
 
-Parameters:
-
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-
-<SampleApp />
+<GetKey />
 
 ### Observer mode setup
+
+Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
+
+:::important
+When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
+:::
 
 ```csharp showLineNumbers title="C#"
 using UnityEngine;
@@ -127,13 +117,10 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
 
 Parameters:
 
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
+| Parameter    | Description                                                                                         |
+|--------------|-----------------------------------------------------------------------------------------------------|
+| observerMode | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
-### Get the SDK key
-
-<GetKey />
 
 ## Activate AdaptyUI module of Adapty SDK
 

@@ -7,6 +7,14 @@ rank: 70
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
+The way you will work with users' purchases depends on how you work with users:
+- If you don't have backend authentication in your app and don't store users' data, go to the section about anonymous users.
+- If you have backend authentication for your users or plan to implement it, go to the section about identified users.
+
+## Anonymous users
+
+
+
 Choose how to identify users in your app:
 
 - **Use customer user IDs (recommended):**
