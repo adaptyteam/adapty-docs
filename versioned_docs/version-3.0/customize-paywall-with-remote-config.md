@@ -2,6 +2,7 @@
 title: "Design paywall with remote config"
 description: "Customize your paywall with remote config in Adapty for better targeting."
 metadataTitle: "Customizing Paywall with Remote Config | Adapty Docs"
+keywords: ['remote config', 'remote']
 ---
 
 import Zoom from 'react-medium-image-zoom';
