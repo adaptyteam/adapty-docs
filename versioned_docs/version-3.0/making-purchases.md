@@ -389,6 +389,25 @@ Additional request parameter:
 | :--------- | :------- | :----------------------------------------------------------- |
 | **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
 
+:::info
+**Version 3.8.2+**: The `MakePurchaseParamsInput` structure has been updated. `oldSubVendorProductId` and `prorationMode` are now nested under `subscriptionUpdateParams`, and `isOfferPersonalized` is moved to the upper level.
+
+Example:
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true, 
+        obfuscatedAccountId: 'account_123',
+        obfuscatedProfileId: 'profile_456'
+    }
+});
+```
+:::
+
 </TabItem>
 </Tabs>
 
