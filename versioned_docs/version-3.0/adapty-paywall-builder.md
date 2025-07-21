@@ -53,7 +53,7 @@ To use the Adapty Paywall Builder:
 
 5. Select a template and click **Choose**. 
 
-6. Click the **Choose** button to confirm your choice.
+6. Click **Choose** to confirm your choice.
 
 7. [Add](#paywall-elements) and [customize](#customization-options) paywall elements.
 
@@ -96,7 +96,7 @@ To migrate a paywall to the new Paywall Builder:
 
 1. Open the paywall you want to migrate.
 2. Open the **Builder & Generator** tab.
-3. Click the **Migrate paywall** button.
+3. Click **Migrate paywall**.
    
 <Zoom>
    <img src={require('./img/migrate-paywall.png').default}
@@ -111,7 +111,7 @@ To migrate a paywall to the new Paywall Builder:
 
 4. After the migration is done, review the result and make sure the paywall looks as it should. If not, correct it.
 5. Click the **Save** button. 
-6. If there are issues, they will be highlighted in red and you will see them immediately. Fix them and save the paywall again.
+6. If there are any issues, they will be highlighted in red and you will see them immediately. Fix them and save the paywall again.
 
 <Zoom>
   <img src={require('./img/migration-issues.png').default}

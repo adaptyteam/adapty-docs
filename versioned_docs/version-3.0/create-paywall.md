@@ -21,7 +21,7 @@ To create a new paywall in the Adapty dashboard:
 
 1. Go to [**Paywalls**](https://app.adapty.io/paywalls) in the Adapty main menu. This page shows an overview of all your paywalls and their metrics.
 2. Click **Create paywall**.
-3. In the **Paywalls / New paywall** page, enter a **Paywall name** to identify this paywall throughout the Adapty Dashboard.
+3. On the **Paywalls / New paywall** page, enter a **Paywall name** to identify this paywall throughout the Adapty Dashboard.
 4. Click **Add product**.
 5. Select products to be shown to your customers. 
 
