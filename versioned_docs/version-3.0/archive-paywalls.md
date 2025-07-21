@@ -19,29 +19,13 @@ You can't archive a paywall if it is used in a non-archived A/B test. This way, 
 
 **To archive a paywall:**
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
-
-
-<Zoom>
-  <img src={require('./img/c38cb41-paywalls_archive.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. 
 
 
 2. Click the **3-dot** button next to the paywall and select the **Archive** option.
-
    
 <Zoom>
-  <img src={require('./img/3d70992-archive_paywall.webp').default}
+  <img src={require('./img/archive-paywall.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
