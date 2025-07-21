@@ -94,8 +94,8 @@ Our docs are optimized for use with LLMs. Check out [this article](adapty-cursor
 Basic integration of the Adapty SDK into your app comprises four main steps:
 
 1. [Install & configure SDK](sdk-installation-ios.md): Add the SDK as a dependency to your project and activate it in the code.
-2. [Identify users](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
-3. [Present a paywall](ios-quickstart-paywalls.md): Present a paywall to enable in-app purchases.
+2. [Present a paywall](ios-quickstart-paywalls.md): Present a paywall to enable in-app purchases.
+3. [Identify users](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
 4. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 
 

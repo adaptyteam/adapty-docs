@@ -1,81 +1,39 @@
 ---
-title: "Check the subscription status"
-description: "Learn how to check subscription status in your React Native app with Adapty SDK."
-metadataTitle: "Check Subscription Status | React Native SDK | Adapty Docs"
-slug: /react-native-check-subscription-status
+title: "Check subscription status in React Native SDK"
+description: "Learn how to check subscription status in your React Native app with Adapty."
+metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkreactnative
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
 
-## Get access level
+- Call [`getProfile`](subscription-status.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
+- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
 
-To check if a user has access to premium content:
+To automatically receive profile updates in your app:
+
+1. Use `adapty.addEventListener('onLatestProfileLoad')` to listen for profile changes - Adapty will automatically call this method whenever the user's subscription status changes.
+2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.
 
 ```javascript
-import { Adapty } from 'react-native-adapty';
-
-const profile = await Adapty.getProfile();
-
-if (profile.accessLevels.premium?.isActive) {
-  // User has active premium subscription
-  console.log('Premium access granted');
-} else {
-  // User doesn't have premium access
-  console.log('Premium access denied');
+class SubscriptionManager {
+    private currentProfile: any = null;
+    
+    constructor() {
+        // Listen for profile updates
+        adapty.addEventListener('onLatestProfileLoad', (profile) => {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    hasAccess(): boolean {
+        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
+    }
 }
 ```
 
-## Check specific access level
-
-You can check specific access levels:
-
-```javascript
-const profile = await Adapty.getProfile();
-
-// Check premium access
-const hasPremium = profile.accessLevels.premium?.isActive;
-
-// Check pro access
-const hasPro = profile.accessLevels.pro?.isActive;
-
-// Check any active subscription
-const hasAnySubscription = Object.values(profile.accessLevels)
-  .some(level => level?.isActive);
-```
-
-## Listen for subscription changes
-
-To listen for subscription status changes:
-
-```javascript
-import { AdaptyProfileObserver } from 'react-native-adapty';
-
-const observer = new AdaptyProfileObserver();
-
-observer.on('profile_updated', (profile) => {
-  if (profile.accessLevels.premium?.isActive) {
-    console.log('User gained premium access');
-  } else {
-    console.log('User lost premium access');
-  }
-});
-```
-
-## Get subscription details
-
-To get detailed subscription information:
-
-```javascript
-const profile = await Adapty.getProfile();
-
-// Get active subscriptions
-const activeSubscriptions = profile.subscriptions.filter(sub => sub.isActive);
-
-activeSubscriptions.forEach(subscription => {
-  console.log('Product ID:', subscription.vendorProductId);
-  console.log('Expires at:', subscription.expiresAt);
-  console.log('Store:', subscription.store);
-});
-``` 
+:::note
+Adapty automatically calls the `onLatestProfileLoad` event listener when your app starts, providing cached subscription data even if the device is offline.
+::: 
