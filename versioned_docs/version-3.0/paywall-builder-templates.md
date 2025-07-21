@@ -58,7 +58,7 @@ When creating a new paywall, Adapty offers a selection of templates. You can eas
 However, it's important to note that replacing a template will discard any changes made to your paywall design. To avoid losing your work, we recommend duplicating the paywall before changing templates so you can return to the saved paywall if needed.
 
 1. Go to the **Layout settings** of the paywall.
-2. Click the **Change template** button.
+2. Click **Change template**.
 
 <Zoom>
   <img src={require('./img/change-template.png').default}
@@ -84,4 +84,4 @@ However, it's important to note that replacing a template will discard any chang
 />
 </Zoom>
 
-4. Click the **Choose** button to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.
+4. Click **Choose** to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.

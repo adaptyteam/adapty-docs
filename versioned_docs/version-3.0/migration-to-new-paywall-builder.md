@@ -34,7 +34,7 @@ To migrate a paywall to the new Paywall Builder:
 
 1. Open the paywall you want to migrate.
 2. Open the **Builder & Generator** tab.
-3. Click the **Migrate paywall** button.
+3. Click **Migrate paywall**.
 
 <Zoom>
    <img src={require('./img/migrate-paywall.png').default}
@@ -48,7 +48,7 @@ To migrate a paywall to the new Paywall Builder:
 </Zoom>
 
 4. After the migration is done, review the result and make sure the paywall looks as it should. If not, correct it.
-5. Click the **Save** button.
+5. Click **Save**.
 6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
 
 <Zoom>

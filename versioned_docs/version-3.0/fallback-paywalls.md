@@ -44,7 +44,7 @@ Downloading fallbacks is available only for Adapty SDK version 2.11 or later. Up
 
 To download the JSON file with the fallback paywalls:
 
-1. Open the **[Paywalls](https://app.adapty.io/products)** or **[Placements](https://app.adapty.io/placements)** section from the Adapty main menu.
+1. Open the **Paywalls** tab of the **[Placements](https://app.adapty.io/placements)** section from the Adapty main menu.
 
    
 
