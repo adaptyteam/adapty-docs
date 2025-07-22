@@ -94,6 +94,9 @@ Adapty allows you to send three groups of events to OneSignal. Toggle on the one
 
 Adapty sends subscription events to OneSignal using a server-to-server integration, allowing you to track all subscription-related activity in OneSignal.
 
+:::note
+For the **Subscription expired** event, Adapty sends the `last_event_type` property as `subscription_cancelled`.
+:::
 :::warning
 
 Starting April 17, 2023, OneSignal's Free Plan no longer supports this integration. It is available only on **Growth**, **Professional**, and **higher** plans. For details, see [OneSignal Pricing](https://onesignal.com/pricing).
