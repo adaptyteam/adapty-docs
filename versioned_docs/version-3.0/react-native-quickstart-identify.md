@@ -1,60 +1,155 @@
 ---
-title: "Identify users"
-description: "Learn how to identify users in your React Native app with Adapty SDK."
-metadataTitle: "Identify Users | React Native SDK | Adapty Docs"
-slug: /react-native-quickstart-identify
-displayed_sidebar: sdkreactnative
+title: "Identify users in React Native SDK"
+description: "Quickstart guide to setting up Adapty for in-app subscription management in React Native."
+metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+rank: 70
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+How you manage users' purchases depends on your app's authentication model:
+- If your app doesn't use backend authentication and doesn't store user data, see the [section about anonymous users](#anonymous-users).
+- If your app has (or will have) backend authentication, see the [section about identified users](#identified-users).
 
-## Identify users
+Here is what is different for anonymous and identified users:
 
-To identify a user, call the `identify` method:
+- **Purchase management:**
+    - Anonymous users rely on store-level purchase restoration
+    - Identified users maintain purchase history across devices through their customer user ID
+- **Profile management:**
+    - Anonymous users get new profiles on each reinstall
+    - Identified users maintain the same profile across sessions and devices
+- **Data persistence:**
+    - Anonymous users' data is tied to device/installation
+    - Identified users' data persists across devices and sessions
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+## Anonymous users
 
-// Identify user with custom ID
-await Adapty.identify('user123');
+If you don't have backend authentication:
 
-// Or identify user with profile
-await Adapty.identify('user123', {
-  email: 'user@example.com',
-  phoneNumber: '+1234567890'
+1. When activating the Adapty SDK with the `activate` method, don't set `customerUserId` in the configuration:
+
+```typescript showLineNumbers title="App.tsx"
+import { adapty } from 'react-native-adapty';
+
+adapty.activate('YOUR_PUBLIC_SDK_KEY');
+// don't set customerUserId even to null
+```
+2. When the SDK is activated on the app's first launch, Adapty **creates a new profile for the user**.
+3. When the user purchases anything in the app, this purchase is **associated with their Adapty profile and their store account**.
+4. When the user **reinstalls** the app or installs it from a **new device**, Adapty **creates a new empty profile on activation**.
+5. If the user has previously made purchases in your app, you can provide the best user experience by **automatically [restoring](react-native-restore-purchase.md) their purchases on the first launch**. To do this, Adapty retrieves the store purchase history for the user.
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.restorePurchases();
+    const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+  
+    if (isSubscribed) {
+        // restore access
+    }
+} catch (error) {
+    // handle the error
+}
+```
+
+:::important
+Since restoring purchases happens for the new profile, the way it works will depend on how you set up [sharing access levels between user accounts](general#6-sharing-purchases-between-user-accounts) in **App settings**.
+
+For anonymous users, we recommend keeping it **Enabled**, as it is by default. When sharing access levels is enabled, the old profile access levels will be copied to the new profile. The old profile (e.g., if they still use their old device) will keep access.
+
+If you set it to **Transfer access to new user** the old profile loses access. It is not recommended, since many users, for example, install the same app on their iPhone and iPad.
+
+**Don't disable** sharing paid access for anonymous users. This would block restoring purchases.
+:::
+
+## Identified users
+
+:::tip
+**Key concept**:
+**Customer user IDs** are identifiers **you create** for Adapty to link your users to their Adapty profiles.
+
+**Adapty automatically creates** a **profile ID** for each user:
+
+- If a profile doesn't have a customer user ID yet (meaning, **the user isn't signed in**), when you send a customer user ID, it gets associated with that profile.
+- If it is a **re-install, sign in, or install from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we switch to the existing profile associated with the customer user ID.
+  :::
+
+You have two options to identify users in the app:
+
+- **During login/signup:** If users sign in after your app starts, call `identify()` with a customer user ID when they authenticate.
+
+- **During the SDK activation:** If you already have a customer user ID stored when the app launches, send it during Adapty activation.
+
+### During login/signup
+
+If you're identifying users after the app launch (for example, after they log into your app or sign up), use the `identify` method to set their customer user ID.
+
+- If you **haven't used this customer user ID before**, Adapty will automatically link it to the current profile.
+- If you **have used this customer user ID to identify the user before**, Adapty will switch to working with the profile associated with this customer user ID.
+
+:::tip
+When creating a customer user ID, save it with your user data so you can send the same ID when they log in from new devices or reinstall your app.
+:::
+
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+### During the SDK activation
+
+If you already know a customer user ID when you activate the SDK, you can send it during the SDK activation instead of calling `identify` separately. If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new empty profile and switch to the existing one only after you call `identify`. To prevent creating unwanted empty profiles, **set the customer user ID as soon as you know it**.
+
+You can pass either an existing customer user ID (the one you have used before) or a new one. If you pass a new one, a new profile created on the activation will be automatically linked to the customer user ID.
+
+:::important
+If you don't know a customer user ID during the SDK activation and only set it later using the `identify` method, you will have an extra anonymous profile created. This anonymous profile affects your installation counts in the analytics.
+:::
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID"
 });
 ```
 
-## Get user profile
 
-To get the current user profile:
+### Log users out
 
-```javascript
-const profile = await Adapty.getProfile();
-console.log('User ID:', profile.profileId);
-console.log('Email:', profile.email);
+If you have a button for logging users out, use the `logout` method. This creates a new anonymous profile ID for the user.
+
+```typescript showLineNumbers
+try {
+    await adapty.logout();
+    // successful logout
+} catch (error) {
+    // handle the error
+}
 ```
 
-## Set user attributes
+:::info
+To log users back into the app, use the `identify` method.
+:::
 
-You can set custom attributes for the user:
+### Allow purchases without login
 
-```javascript
-await Adapty.setProfile({
-  email: 'user@example.com',
-  phoneNumber: '+1234567890',
-  customAttributes: {
-    'user_type': 'premium',
-    'registration_date': '2024-01-01'
-  }
-});
-```
+If your users can make purchases both before and after they log into your app, you need to do additional setup, as logging in will switch them to the different Adapty profile.
 
-## Clear user data
+Here's how it works:
+1. When a logged-out user makes a purchase, Adapty ties it to their anonymous profile ID.
+2. When the user logs into their account, Adapty switches to working with their identified profile.
+3. For purchases to appear in the identified user profile, you need to [restore](react-native-restore-purchase.md) their purchases on login, so they are retrieved from the store and tied to the identified user profile.
 
-To clear user data (useful for logout):
+For this to work properly, go to **App settings** and set **Sharing paid access between user accounts** to **Transfer access to new user**, so only the new profile has access.
 
-```javascript
-await Adapty.logout();
-``` 
+## Troubleshoot sandbox users issues
+
+When working with a sandbox user, if you try to make a purchase after deleting the Adapty profile, you might encounter an issue where the app launches with premium access already enabled.
+
+That is because Adapty may be restoring your purchases associated with the store account.
+
+To resolve the issue, clear the purchase history for the sandbox account in App Store Connect.

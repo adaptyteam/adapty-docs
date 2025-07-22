@@ -89,7 +89,7 @@ If you set it to **Transfer access to new user** the old profile loses access. I
 **Adapty automatically creates** a **profile ID** for each user:
 
 - If a profile doesn't have a customer user ID yet (meaning, **the user isn't signed in**), when you send a customer user ID, it gets associated with that profile.
-- If it is a **re-install, sign in, or install from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we use the existing profile associated with the customer user ID. 
+- If it is a **re-install, sign in, or install from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we switch to the existing profile associated with the customer user ID. 
 :::
 
 You have two options to identify users in the app:
@@ -100,7 +100,10 @@ You have two options to identify users in the app:
 
 ### During login/signup
 
-If you're identifying users after the app launch (for example, after they log into your app or sign up), use the `identify` method to set their customer user ID. If the customer user ID doesn't exist yet, Adapty will automatically create it and link it to their current profile.
+If you're identifying users after the app launch (for example, after they log into your app or sign up), use the `identify` method to set their customer user ID. 
+
+- If you **haven't used this customer user ID before**, Adapty will automatically link it to the current profile. 
+- If you **have used this customer user ID to identify the user before**, Adapty will switch to working with the profile associated with this customer user ID.
 
 :::tip
 When creating a customer user ID, save it with your user data so you can send the same ID when they log in from new devices or reinstall your app.
@@ -129,27 +132,21 @@ Adapty.identify("YOUR_USER_ID") { error in
 </TabItem>
 </Tabs>
 
-:::tip
-Most users prefer to set `customerUserId` to the user email or device ID.
-:::
-
 ### During the SDK activation
 
-If you already store a customer user ID, you can send it during Adapty activation instead of calling `identify` separately.
+If you already know a customer user ID when you activate the SDK, you can send it during the SDK activation instead of calling `identify` separately. If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new empty profile and switch to the existing one only after you call `identify`. To prevent creating unwanted empty profiles, **set the customer user ID as soon as you know it**.
 
-:::tip
-If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new empty profile and switch to the existing one only after you call `identify`. To prevent creating unwanted empty profiles, set the customer user ID as soon as you know it.
+You can pass either an existing customer user ID (the one you have used before) or a new one. If you pass a new one, a new profile created on the activation will be automatically linked to the customer user ID.
 
-For example, if your users can't make purchases until they log into the app, you can try activating the SDK when users log in and set their `customerUserId` at that point if you store it. If you don't have a saved `customerUserId` for this user, activate the SDK without `customerUserId` and then set it using `identify`.
-
-However, note that, in this case, user actions won't be tracked before they log in.
+:::important
+If you don't know a customer user ID during the SDK activation and only set it later using the `identify` method, you will have an extra anonymous profile created. This anonymous profile affects your installation counts in the analytics.
 :::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
-// In your AppDelegate class:
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
 import Adapty
 
 let configurationBuilder =
@@ -168,7 +165,7 @@ do {
 <TabItem value="swift-callback" label="Swift-Callback" default>
 
 ```swift showLineNumbers
-// In your AppDelegate class:
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
 import Adapty
 
 let configurationBuilder =
@@ -188,7 +185,7 @@ Adapty.activate(with: configurationBuilder.build()) { error in
 
 ### Log users out
 
-If you have a button for logging users out, use the `logout` method. This removes the customer user ID from the current session and creates a new anonymous profile ID for the user.
+If you have a button for logging users out, use the `logout` method. This creates a new anonymous profile ID for the user.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
