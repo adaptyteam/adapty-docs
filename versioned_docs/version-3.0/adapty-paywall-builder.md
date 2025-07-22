@@ -8,7 +8,9 @@ keywords: ['paywall', 'paywall builder']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-We're excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever, allowing you to craft beautiful, engaging paywalls with ease—no technical or design expertise required!
+We're excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! 
+
+This advanced no-code tool makes creating custom paywalls more intuitive and powerful than ever. You can craft beautiful, engaging paywalls with ease—no technical or design expertise required!
 
 ## Key Features of the New Paywall Builder
 
@@ -27,7 +29,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 - [**Layout**](https://docs.adapty.io/v3.0/docs/paywall-layout-and-products): This is the foundational layer of the paywall, setting the background color and defining how products are displayed and top buttons positioned.
 - [**Hero Image**](paywall-head-picture): The main picture of the paywall.
 - **Main Area**: Here, you can place various elements like a product block, carousels, images, cards, texts, buttons, and lists.
-- **Footer**: Similar to the main area but it's a container that's always sticking to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to bottom inside a footer in the same order shown in the left pane.
+- **Footer**: Similar to the main area, but it's a container that always sticks to the bottom of the paywall on top of the main area. You can add as many elements as needed, and they will be arranged from top to bottom inside the footer in the same order shown in the left pane.
 - [**Elements**](adapty-paywall-builder#paywall-elements): The building blocks placed in the main area or footer to create your paywall. They are stacked in the order they appear in the left pane, from top to bottom. You can nest elements within each other, combine them into cards, or display them in a carousel.
 
 ## How to start designing a paywall with new Paywall Builder
@@ -38,97 +40,78 @@ The new Paywall Builder is available for iOS and Android only and requires Adapt
 
 To use the Adapty Paywall Builder:
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it.
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu.
 
-2. Click the **Builder** tab to open it.
+2. Open an existing paywall or [create a new one](create-paywall.md).
 
-3. Depending on whether you've added the products to the paywall in the **General** tab or not, Adapty will offer you to add products or build your paywall with the new Paywall Builder. We continue with the case when products are already added. Click the **Build no-code paywall** button to start designing your paywall.
+3. Go to the **Builder & Generator** tab.
 
-4. In the **Choose a template** window, you'll find a selection of paywall templates designed by professionals, ready for you to pick the one that best suits your needs. We have both templates that require a couple of minor adjustments like your logo to launch as well as templates with a minimal design that give full scope for your creativity. Choose the template that fits your design the most. 
+4. Add products to the paywall if you haven't yet. Otherwise, click **Build no-code paywall**.
 
-   
+5. Select a template and click **Choose**. 
 
-<Zoom>
-  <img src={require('./img/cdca1ee-builder_templates.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+6. Click **Choose** to confirm your choice.
 
-
-
-
-5. Click the **Choose** button to confirm your choice.
-
-   
-
-<Zoom>
-  <img src={require('./img/795b91b-builder_main_window.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-6. By leveraging the Adapty Paywall Builder, you can create persuasive paywalls that seamlessly align with your app's branding and purpose based on the selected template.
+7. [Add](#paywall-elements) and [customize](#customization-options) paywall elements.
 
 :::important
 For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
 :::
 
+<Zoom>
+  <img src={require('./img/design-paywall.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## How to migrate your paywalls
 
-Currently, in Adapty two versions of the Paywall Builder work in parallel:
+Currently, two versions of the Paywall Builder work in parallel in Adapty:
 
-- The new version is located in the **Builder** tab of the Paywall functionality in the Adapty Dashboard. That is the most recent and flexible version that provides you with many design features to build your perfect paywalls.  
-  The paywalls designed with this Paywall Builder version require Adapty SDK v3.0 or later.
-- The legacy version is located in the **Legacy Builder** tab of the Paywall functionality in the Adapty Dashboard. This version is outdated and should be used only to support app versions with installed SDK below v.3.х.х. We do not recommend using it for new paywalls as it will be deprecated soon.
+- **New version**: Located in the **Builder & Generator** tab of the Paywall functionality in the Adapty Dashboard. This is the most recent and flexible version that provides many design features to build your perfect paywalls.
 
-The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder** tab of the paywall. This version can be edited with the new Paywall Builder and will be displayed in the apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x](migration-to-adapty-sdk-v3) and [Migration guide to Adapty SDK v.3.3.x](migration-to-330) for detailed reference for upgrading to Adapty SDK.
+:::note  
+Paywalls designed with this version require Adapty SDK v3.0 or later.
+:::
 
-The existing version of your paywall will stay in the Legacy Builder tab, you will be able to continue adjusting it with the legacy Paywall Builder and it will be displayed in the apps with the installed Adapty SDK version 2.x or earlier.
+- **Legacy version**: Located in the **Legacy Builder** tab of the Paywall functionality in the Adapty Dashboard. This version is outdated and should only be used to support app versions with installed SDK below v.3.х.х. We don't recommend using it for new paywalls as it will be deprecated soon.
 
-Therefore, you will have paywalls in both Paywall Builder formats in parallel and separately until you need them. Changes made with the paywall configuration made for one version will not affect the configuration build for another one.
+The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder & Generator** tab. 
+
+This version can be edited with the new Paywall Builder and will be displayed in apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x](migration-to-adapty-sdk-v3) and [Migration guide to Adapty SDK v.3.3.x](migration-to-330) for detailed reference on upgrading to Adapty SDK.
+
+The existing version of your paywall will stay in the Legacy Builder tab. You can continue adjusting it with the legacy Paywall Builder and it will be displayed in apps with installed Adapty SDK version 2.x or earlier.
+
+You will have paywalls in both Paywall Builder formats in parallel and separately until you need them. Changes made to the paywall configuration for one version will not affect the configuration built for another one.
 
 To migrate a paywall to the new Paywall Builder:
 
 1. Open the paywall you want to migrate.
-2. Open the **Builder** tab.
-
+2. Open the **Builder & Generator** tab.
+3. Click **Migrate paywall**.
    
-
 <Zoom>
-  <img src={require('./img/3f4d4c2-PB_migrate_paywall.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
+   <img src={require('./img/migrate-paywall.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
 </Zoom>
 
-
-
-3. Click the **Migrate paywall** button.
 4. After the migration is done, review the result and make sure the paywall looks as it should. If not, correct it.
 5. Click the **Save** button. 
-6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
-
-   
+6. If there are any issues, they will be highlighted in red and you will see them immediately. Fix them and save the paywall again.
 
 <Zoom>
-  <img src={require('./img/78f63f0-PB_hughlighted_issues.webp').default}
+  <img src={require('./img/migration-issues.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -138,10 +121,7 @@ To migrate a paywall to the new Paywall Builder:
 />
 </Zoom>
 
-
-
-
-You can migrate your paywalls one by one so that you could review and fix them if necessary.
+You can migrate your paywalls one by one so you can review and fix them if necessary.
 
 ## Paywall elements
 
@@ -151,9 +131,8 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 
 - **Simple Elements**: These are individual items that cannot contain other elements. Examples include text, images, and buttons.
 
-
 <Zoom>
-  <img src={require('./img/210c8e2-simple_elements.webp').default}
+  <img src={require('./img/simple-elements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -162,21 +141,16 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
   }}
 />
 </Zoom>
-
-
-
-
 
 - **Compound Elements**: These can contain other elements or have their own structure. Examples include:
-  - [Product lists](paywall-product-block) with  products
+  - [Product lists](paywall-product-block) with products
   - [Carousels](paywall-carousel) with child elements
   - [Cards](paywall-card) with child elements
-  - Lists with its list items
+  - Lists with list items
   - Link blocks with links inside
 
-
 <Zoom>
-  <img src={require('./img/8a23be4-compound_elements.webp').default}
+  <img src={require('./img/compound-elements.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -185,10 +159,6 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
   }}
 />
 </Zoom>
-
-
-
-
 
 **Enhancements** you can add include:
 
@@ -197,7 +167,7 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 3. [Custom fonts](using-custom-fonts-in-paywall-builder)
 4. [Localization](add-paywall-locale-in-adapty-paywall-builder)
 
-Once configured, you can  [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
+Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
 
 ## Customization Options
 
