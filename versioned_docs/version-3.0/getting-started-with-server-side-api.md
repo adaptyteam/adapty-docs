@@ -14,6 +14,7 @@ With the API, you can:
 2. Activate a user's subscription with an access level.
 3. Retrieve user attributes.
 4. Set user attributes.
+5. Get and update paywall configurations.
 
 <Zoom>
   <img src={require('./img/server.webp').default}
@@ -73,6 +74,10 @@ If you have custom attributes for your users—such as the number of words learn
 
 These custom attributes can be used to create segments and run A/B tests.
 
+## Case 5: Manage paywall configurations
+
+You can [update remote configs in paywalls](ss-update-paywall.md) to dynamically adjust your paywall appearance and behavior without redeploying your app.
+
 ---
 
 **What's next:**
@@ -87,4 +92,7 @@ These custom attributes can be used to create segments and run A/B tests.
   - [Revoke access level](ss-revoke-access-level)
   - [Set transaction](ss-set-transaction)
   - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
-  - [Add integration identifiers](ss-add-integration)
+- [Add integration identifiers](ss-add-integration)
+- [Get paywall](ss-get-paywall)
+- [List paywalls](ss-list-paywalls)
+- [Update paywall](ss-update-paywall)
