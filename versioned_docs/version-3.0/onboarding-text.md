@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 
-Text elements help you create clear, personalized conversations with your users. Add titles, paragraphs, or lists with a single click, style them to match your brand, and use [dynamic variables](onboarding-user-engagement#use-variables) to personalize content for each user.
+Text elements help you create clear, personalized conversations with your users. Add titles, paragraphs, or lists with a single click, style them to match your brand, and use [dynamic variables](onboarding-variables.md) to personalize content for each user.
 
 ## Add text
 
@@ -20,7 +20,7 @@ You can add various text elements to your onboarding screens. To add text elemen
 - **Text**: body copy for feature descriptions, disclaimers, or inspirational blurbs.
 - **Rich text**: mixed formatting for FAQs, terms of service, or any copy that needs links and emphasis.
 3. Click the new element to edit its content.
-4. *(Optional)* Select any part of the text to open a tooltip for quick customization—such as bold, italic, links, text color, or resetting styles.
+4. (Optional) Select any part of the text to open a tooltip for quick customization—such as bold, italic, links, text color, or resetting styles.
 
 To edit an existing text element, simply click on it and make changes in WYSIWYG mode.
 

@@ -17,7 +17,7 @@ Learn more about branching onboarding flows in the detailed article.
 
 The configuration process depends on the element you attach the action to. You can add actions to the following elements:
 - **Buttons**: Configure actions in the [**On Press** dropdown of the **Element** tab](onboarding-buttons.md#add-buttons).
-- **Quizzes**: Configure actions in the **Behaviour** section of the **Element** tab.
+- **Quizzes**: Configure actions in the [**Behaviour** section of the **Element** tab](onboarding-quizzes.md#step-2-configure-navigation).
 - **Loaders**: Configure actions in the **Complete action** section of the **Element** tab.
 
 For example, here's where to find it for quizzes:
@@ -62,3 +62,21 @@ Actions fire depending on the element they’re attached to:
 - **Button**: Runs when a user clicks a button or when a timer completes.
 - **Quiz**: Executes when an option is selected.
 - **Loader**: Triggers after a Loader or Processing finishes.
+
+## Action ID
+
+When setting up custom actions for buttons, you may want to handle different buttons the same way using action IDs:
+
+1. When [adding a button](onboarding-buttons.md#add-buttons), assign it an ID in the **On Press** section of the **Element** tab.
+2. [Use the assigned action ID in your source code](ios-handling-onboarding-events.md#custom-actions).
+
+  <Zoom>
+  <img src={require('./img/ios-events-1.webp').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>

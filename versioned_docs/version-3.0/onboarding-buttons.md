@@ -22,7 +22,7 @@ To add a button:
    - **Glossy Button**: A button with a moving glossy line animation.
    - **Pulse Glossy Button**: A pulsing button with a moving glossy line.
    - **Countdown Button**: A button that shows a live countdown.
-3. Choose the button action from the **On Press** dropdown on the right:
+3. Choose the [button action](onboarding-actions.md) from the **On Press** dropdown on the right:
    - **Navigate**: Moves the user to a specified onboarding screen.
    - **Show/Hide element**: Shows or hides a target element.
    - **Open paywall**: Opens the paywall screen for purchases.

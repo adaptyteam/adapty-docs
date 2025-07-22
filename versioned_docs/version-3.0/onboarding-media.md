@@ -1,6 +1,6 @@
 ---
 title: "Onboarding media"
-description: "Create engaging Adapty onboarding flows with images, videos, animated charts, custom backgrounds, and raw HTML"
+description: "Create engaging Adapty onboarding flows with images, videos, animated charts, and custom backgrounds."
 metadataTitle: "Onboarding media | Adapty Docs"
 ---
 
@@ -52,48 +52,11 @@ Charts are animations that visualize results and personalize the user experience
    - **Animation Duration**: Set the animation duration to fit your design.
 
 :::tip
-Use variables for dynamic data visualization in charts.
+Use [variables](onboarding-variables.md) for dynamic data visualization in charts.
 :::
 
 <Zoom>
   <img src={require('./img/chart-onboarding.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Background customization
-
-The background affects not only your onboarding design but also the loading screen until the onboarding is fully loaded. 
-
-You can fill your onboarding background with a color or upload an image/video:
-
-1. Select the screen on the left.
-2. Go to the **Styles** tab on the right.
-3. In the **Background** section, select a background color or click the upload area to upload an image/video.
-
-For media uploads, follow the [supported formats and size](#supported-formats-and-size) requirements.
-
-:::tip
-For smooth screen transitions, choose a background color that matches your overall onboarding design (e.g., use grey or black for onboardings with mostly dark screens) or customize the [splash screen](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
-:::
-
-## Custom HTML elements
-
-Custom HTML lets you create unique interactions, embed third-party widgets, or quickly test experimental elements without app updates. Since it's not preloaded or cached, use it only for small and lightweight elements.
-
-To add raw HTML:
-
-1. Click **Add** at the top left.
-2. Go to **Media & Display** and choose **Raw HTML**.
-3. Insert or edit your HTML code on the right.
-
-<Zoom>
-  <img src={require('./img/onboarding-html.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

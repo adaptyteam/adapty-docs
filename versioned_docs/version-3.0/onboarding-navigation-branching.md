@@ -1,6 +1,6 @@
 ---
-title: "Onboarding navigation & branching"
-description: "Configure static and dynamic navigation in Adapty’s no-code onboarding builder to guide users through flows and branch based on their choices."
+title: "Onboarding navigation"
+description: "Configure static and dynamic navigation in Adapty’s no-code onboarding builder to guide users through flows."
 metadataTitle: "Onboarding navigation & branching | Adapty Docs"
 ---
 
@@ -92,64 +92,3 @@ For example, if you selected 'goal' as quiz ID, 'Has' as operator, and 'Educatio
 />
 </Zoom>
 
-## Onboarding flow branching
-
-Branching onboarding flows let you split users into separate paths within a single onboarding, delivering tailored content based on their responses or behavior.
-
-Adapty's onboardings offer the following features to branch flows:
-
-- Dynamic navigation: connect quiz answers to different screens and use buttons or quizzes to lead specific users there.
-- Conditional visibility: show or hide elements on the same screen without navigating away.
-- Variables: personalize later screens with user inputs and quiz answers.
-
-For example, you could branch flows in a recipe app like this:
-1. Add a new screen with a quiz. Each option represents a user group.
-
-<Zoom>
-  <img src={require('./img/quiz-options.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '250px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-2. Set up different next screens for each group. These screens may include another quiz to gather more data.
-
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement2.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-3. Set up dynamic navigation so quiz answers lead each group to the appropriate screen.
-
-<Zoom>
-  <img src={require('./img/branching-quiz.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-4. Use conditional elements on the last screen to show different visuals for each user group.
-
-<Zoom>
-  <img src={require('./img/conditional-visual.gif').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>

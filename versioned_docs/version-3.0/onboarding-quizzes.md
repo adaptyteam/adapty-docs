@@ -7,7 +7,7 @@ metadataTitle: "Onboarding quizzes | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Turn your onboarding into a two‑way conversation: add quizzes in Adapty's no‑code builder to collect preferences, segment users, and branch flows based on real‑time answers. You'll be gathering insights in minutes—no code required.
+Turn your onboarding into a two‑way conversation: add quizzes in Adapty's no‑code builder to collect preferences, segment users, and [branch flows](onboarding-user-engagement.md#onboarding-flow-branching) based on real‑time answers. You'll be gathering insights in minutes—no code required.
 
 ## Add quizzes
 
@@ -89,7 +89,7 @@ Let's say you have a recipe app and want to know if your users are vegan or vege
 
 #### Step 2. Configure navigation
 
-1. To set up conditional navigation, select the **Options** element on the first quiz screen. In the **Behavior** section, add **Action on Option**. 
+1. To set up dynamic navigation, select the **Options** element on the first quiz screen. In the **Behavior** section, add **Action on Option**. 
 
     Since we want to redirect users to different screens based on their answers, select **Navigate** as the action, choose **Dynamic** for **Data**, and select your **Options** element in **State**. Then associate each option with a screen.
 
