@@ -1,20 +1,12 @@
 ---
-title: "iOS quickstart guide"
-description: "Quickstart guide to setting up Adapty for in-app subscription management."
-metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk ios']
-rank: 70
+title: "Quickstart guide"
+description: "Integrate Adapty with App Store, Google Play, custom stores, Stripe, and Paddle."
+metadataTitle: "Integrate with stores or web payments and set up products | Adapty Docs"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+It's going to be a simple landing page listing and explaining the main steps inside it:
 
-This article will be basically a list of the quickstart articles inside
-
-1. Install & configure
-2. Identify users (login() + identify ())
-3. Show a paywall (get & display a paywall from the builder + handle a basic event – e.g., close)
-4. Check the subscription status (here, we will also say how to display different content based on subscription)
+1. Products and stores
+2. Paywalls and placements
+3. SDK integration
+4. Test

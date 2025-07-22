@@ -7,6 +7,8 @@ metadataTitle: "Using Local Fallback Onboardings | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Typically, [onboardings](onboardings.md) are fetched from the server when a customer accesses them, and you need to get their configuration before accessing them. However, if you can't get an onboarding config URL at the moment, you can use fallbacks to get the onboarding config URL and other data. 
 
@@ -25,7 +27,7 @@ Even if you use onboarding configs, handle the [onboarding offline mode](onboard
 2. [Create placements and add paywalls and onboardings to the placements](create-placement). Placement is the location where the paywall/onboarding will be shown.
 </details>
 
-The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. [Use its contents in the `.setFallback` method in your mobile app code](use-fallback-paywalls).
+The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. Use its contents in the <InlineTooltip tooltip="setFallback">[iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), [React Native](react-native-use-fallback-paywalls), [Flutter](flutter-use-fallback-paywalls), and [Unity](unity-use-fallback-paywalls)</InlineTooltip> method in your mobile app code.
 
 <Zoom>
   <img src={require('./img/9c63367-placements.webp').default}

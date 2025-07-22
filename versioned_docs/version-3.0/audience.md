@@ -7,6 +7,8 @@ keywords: ['segment']
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 **Audiences** in Adapty are [user segments](segments), helping you customize paywalls or A/B tests for specific groups of your users. You can set up these segments using special filters to make sure the right users see the right paywalls in your mobile app.
 

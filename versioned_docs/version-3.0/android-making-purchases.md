@@ -112,10 +112,7 @@ Response parameters:
 
 ## Change subscription when making a purchase
 
-When a user opts for a new subscription instead of renewing the current one, the way it works depends on the app store:
-
-- For the App Store, the subscription is automatically updated within the subscription group. If a user purchases a subscription from one group while already having a subscription from another, both subscriptions will be active at the same time.
-- For Google Play, the subscription isn't automatically updated. You'll need to manage the switch in your mobile app code as described below.
+When a user opts for a new subscription instead of renewing the current one, the way it works depends on the app store. For Google Play, the subscription isn't automatically updated. You'll need to manage the switch in your mobile app code as described below.
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
@@ -196,80 +193,7 @@ Additional request parameter:
 | **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
 
 </TabItem>
-<TabItem value="flutter" label="Flutter" default>
 
-```javascript showLineNumbers
-try {
-  final result = await adapty.makePurchase(
-    product: product,
-    subscriptionUpdateParams: subscriptionUpdateParams,
-  );
-  
-  // successful cross-grade
-} on AdaptyError catch (adaptyError) {
-  // Handle the error
-} catch (e) {
-  // Handle the error
-}
-```
-Additional request parameter:
-
-| Parameter                    | Presence | Description                                                  |
-| :--------------------------- | :------- | :----------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
-
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
-  if(error != null) {
-      // Handle the error
-      return;
-  }
-  
-  // successful cross-grade
-});
-```
-
-Additional request parameter:
-
-| Parameter                    | Presence | Description                                                  |
-| :--------------------------- | :------- | :----------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
-
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    const purchaseResult = await adapty.makePurchase(product, params);
-    switch (purchaseResult.type) {
-      case 'success':
-        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
-
-        if (isSubscribed) {
-          // Grant access to the paid features
-        }
-        break;
-      case 'user_cancelled':
-        // Handle the case where the user canceled the purchase
-        break;
-      case 'pending':
-        // Handle deferred purchases (e.g., the user will pay offline with cash)
-        break;
-    }
-} catch (error) {
-    // Handle the error
-}
-```
-Additional request parameter:
-
-| Parameter  | Presence | Description                                                  |
-| :--------- | :------- | :----------------------------------------------------------- |
-| **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
-
-</TabItem>
 </Tabs>
 
 You can read more about subscriptions and replacement modes in the Google Developer documentation:
