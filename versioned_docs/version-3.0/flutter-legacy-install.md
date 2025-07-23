@@ -108,7 +108,7 @@ Parameters:
    } catch (e) {}
    ```
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to display the paywalls and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
 ### Set up the logging system
 

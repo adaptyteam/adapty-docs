@@ -19,7 +19,12 @@ There are two ways to customize a paywall in the Adapty Dashboard:
 - The no-code [**Paywall Builder**](adapty-paywall-builder)
 - The flexible [**remote config**](customize-paywall-with-remote-config), a JSON file that contains the data needed to render the paywall on the device
 
-This guide covers **Remote Config paywalls** only. The process for displaying and handling interactive elements is different for Paywall Builder paywalls. If you’d like to learn more about that, check out the [Display paywalls designed with Paywall Builder](display-pb-paywalls) guide.
+This guide covers **Remote Config paywalls** only. The process for displaying and handling interactive elements is different for Paywall Builder paywalls. If you’d like to learn more about that, check out the guides on displaying paywalls designed with Paywall Builder:
+- [iOS](ios-quickstart-paywalls.md)
+- [Android](android-quickstart-paywalls.md)
+- [Flutter](flutter-quickstart-paywalls.md)
+- [React Native](react-native-quickstart-paywalls.md)
+- [Unity](unity-quickstart-paywalls.md)
 
 <SampleApp />
 

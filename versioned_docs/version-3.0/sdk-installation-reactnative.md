@@ -133,7 +133,7 @@ Parameters:
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](display-pb-paywalls) and have installed AdaptyUI module, you need AdaptyUI to be active. It is done automatically when you activate the core module; you don't need to do anything else.
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. It is done automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
 

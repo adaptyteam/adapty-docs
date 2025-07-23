@@ -10,4 +10,6 @@ This page contains guides for implementing paywalls manually in your React Nativ
 - **[Fetch paywalls and products](fetch-paywalls-and-products-react-native)** - Retrieve paywalls and product data
 - **[Present remote config paywalls](present-remote-config-paywalls-react-native)** - Display remote config paywalls
 - **[Accept purchases](react-native-making-purchases)** - Handle purchase transactions
-- **[Restore purchases](react-native-restore-purchase)** - Restore previous purchases 
+- **[Restore purchases](react-native-restore-purchase)** - Restore previous purchases
+- **[Implement Observer mode](implement-observer-mode-react-native)** - Set up Observer mode for analytics and paywall integration
+- **[Report transactions in Observer Mode](report-transactions-observer-mode-react-native)** - Report purchase transactions in Observer Mode 

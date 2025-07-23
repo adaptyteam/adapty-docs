@@ -55,7 +55,12 @@ To comply with some store requirements, you can add links to:
 
 To add links:
 1. Add a **Link** element in the paywall builder.
-2. Add the [`openUrl`](handling-pb-paywall-events.md) handler to your code.
+2. Add the `openUrl` handler to your code:
+    - [iOS](handle-paywall-actions.md)
+    - [Android](android-handle-paywall-actions.md)
+    - [React Native](react-native-handle-paywall-actions.md)
+    - [Flutter](flutter-handle-paywall-actions.md)
+    - [Unity](unity-handle-paywall-actions.md)
 
 
 <Zoom>

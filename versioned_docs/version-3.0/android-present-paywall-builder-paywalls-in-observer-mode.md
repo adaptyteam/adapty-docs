@@ -22,7 +22,7 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
       1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for Android](sdk-installation-android), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
+   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions [for Android](sdk-installation-android).
    3. [Create products](create-product) in the Adapty Dashboard.
    4. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
    5. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
@@ -420,7 +420,7 @@ AdaptyPaywallScreen(
    | `AdaptyPaywallView` | object, representing the requested paywall screen. |
 
 :::warning
-Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
+Don't forget to [Associate paywalls to purchase transactions](report-transactions-observer-mode-android.md). Otherwise, Adapty will not determine the source paywall of the purchase.
 :::
 
 </TabItem> 

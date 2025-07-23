@@ -124,7 +124,7 @@ Parameters:
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](display-pb-paywalls) and have installed AdaptyUI module, you need AdaptyUI to be active. You can activate it during the configuration:
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. You can activate it during the configuration:
 
 ```csharp showLineNumbers title="C#"
 var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
@@ -300,4 +300,4 @@ This step is required. If you skip it, your mobile app can crash when the paywal
    }
    ```
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](unity-quickstart-paywalls.md) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.

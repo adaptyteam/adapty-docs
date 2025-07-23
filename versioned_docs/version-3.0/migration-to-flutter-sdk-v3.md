@@ -82,7 +82,7 @@ Parameters:
 
 ### Activate AdaptyUI module of Adapty SDK
 
-You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls):
+You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](adapty-paywall-builder.md):
 
 ```dart showLineNumbers title="Dart"
 try {

@@ -7,6 +7,8 @@ keywords: ['paywall', 'paywall builder']
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 We're excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! 
 
@@ -167,7 +169,12 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 3. [Custom fonts](using-custom-fonts-in-paywall-builder)
 4. [Localization](add-paywall-locale-in-adapty-paywall-builder)
 
-Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
+Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see the platform-specific articles:
+- [iOS](ios-quickstart-paywalls.md)
+- [Android](android-quickstart-paywalls.md)
+- [Flutter](flutter-quickstart-paywalls.md)
+- [React Native](react-native-quickstart-paywalls.md)
+- [Unity](unity-quickstart-paywalls.md)
 
 ## Customization Options
 

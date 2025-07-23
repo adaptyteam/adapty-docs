@@ -601,7 +601,7 @@ using AdaptySDK;
 
 ## Update Observer mode implementation
 
-Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode).
+Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode-unity.md).
 
 ```diff showLineNumbers
  // every time when calling transaction.finish()

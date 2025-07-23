@@ -160,7 +160,7 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
 ```
 </Details>
 
-We recommend dismissing the screen in that case. Refer to the [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) for details on dismissing a paywall screen.
+We recommend dismissing the screen in that case. Refer to [Respond to button actions](flutter-handle-paywall-actions.md) for details on dismissing a paywall screen.
 
 #### Failed purchase
 
@@ -231,7 +231,7 @@ void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile
 ```
 </Details>
 
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it and to [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) topic to learn how to dismiss a paywall screen.
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it and to [Respond to button actions](flutter-handle-paywall-actions.md) topic to learn how to dismiss a paywall screen.
 
 #### Failed restore
 

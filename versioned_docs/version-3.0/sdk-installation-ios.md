@@ -227,7 +227,7 @@ Parameters:
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods), you also need to activate AdaptyUI.
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods), you also need to activate AdaptyUI.
 
 :::important
 In your code, you must activate the core Adapty module before activating AdaptyUI.
