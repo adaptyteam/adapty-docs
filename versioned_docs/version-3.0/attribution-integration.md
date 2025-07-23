@@ -12,9 +12,10 @@ import TabItem from '@theme/TabItem';
 
 Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), and [Facebook Ads](facebook-ads). Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
 
-Send subscription events with correct user properties and ID's to attributions services you use.
+You can also integrate with [Adapty's User Acquisition](user-acquisition.md) to connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
 
 ### Important
+Send subscription events with correct user properties and ID's to attributions services you use.
 
 :::warning
 
