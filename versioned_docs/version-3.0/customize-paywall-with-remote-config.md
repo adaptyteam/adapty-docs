@@ -2,6 +2,7 @@
 title: "Design paywall with remote config"
 description: "Customize your paywall with remote config in Adapty for better targeting."
 metadataTitle: "Customizing Paywall with Remote Config | Adapty Docs"
+keywords: ['remote config', 'remote']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -10,7 +11,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
 
-The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more, ensuring that the overall size remains within 10 KB per language.
+The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more.
 
 <details>
    <summary>Before you start customizing a paywall (Click to Expand)</summary>
@@ -21,11 +22,12 @@ The Paywall Remote Config is a powerful tool that provides flexible configuratio
 
 To start customizing a paywall using the remote config:
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. 
 
-   
+2. Click the paywall to open it.
+
 <Zoom>
-  <img src={require('./img/b7eb293-paywalls_edit.webp').default}
+  <img src={require('./img/remote-config.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,14 +37,10 @@ To start customizing a paywall using the remote config:
 />
 </Zoom>
 
+3. Switch to the **Remote config** tab.
 
-
-
-2. Click the **3-dot** button next to the paywall and select the **Edit** option.
-
-   
 <Zoom>
-  <img src={require('./img/d44fdb9-switch_to_remote_config.webp').default}
+  <img src={require('./img/remote-config-3.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,11 +49,6 @@ To start customizing a paywall using the remote config:
   }}
 />
 </Zoom>
-
-
-
-
-3. In the opened **Paywalls/ Your paywall** page, switch to the **Remote config** tab.
 
 Remote config has 2 views: 
 
@@ -141,7 +134,7 @@ You can combine different options, and make up your own. This way you can test d
 
 ### JSON view of the remote config
 
-In the **JSON** view of the remote config, you can enter any JSON formatted data up to 10 kB per language:
+In the **JSON** view of the remote config, you can enter any JSON-formatted data:
 
 
 <Zoom>
@@ -181,7 +174,7 @@ If it's not common for you to work with code and there is a need to correct some
 
 It is a copy of your JSON in the format of a table that is easy to read and understand. Color coding helps to recognize different data types. 
 
-To add a key, click the **Add raw** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
+To add a key, click the **Add row** button. We automatically check the values and types mapping and show an alert if your corrections may lead to an invalid JSON.
 
 
 <Zoom>
@@ -199,7 +192,7 @@ To add a key, click the **Add raw** button. We automatically check the values an
 
 
 
-Additional raw options are mostly useful for [paywall localisations](add-remote-config-locale):
+Additional row options are mostly useful for [paywall localisations](add-remote-config-locale):
 
 
 <Zoom>

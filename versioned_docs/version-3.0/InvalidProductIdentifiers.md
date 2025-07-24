@@ -159,7 +159,7 @@ If you’re encountering the `noProductIDsFound` error, follow these steps to re
 
     
 
-    ## Step 5. Check app paid status, back account, and tax forms are active
+    ## Step 5. Check app paid status, bank account, and tax forms are active
 
     1. In **App Store Connect**](https://appstoreconnect.apple.com/) homepage, click **Business**.
 

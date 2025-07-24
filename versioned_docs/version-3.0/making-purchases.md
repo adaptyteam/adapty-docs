@@ -2,6 +2,8 @@
 title: "Make purchases in mobile app"
 description: "Guide on handling in-app purchases and subscriptions using Adapty."
 metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
+keywords: ['makePurchase', 'pending']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -79,7 +81,7 @@ Adapty.makePurchase(product: product) { result in
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product) { result ->
+Adapty.makePurchase(activity, product, null) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -110,7 +112,7 @@ Adapty.makePurchase(activity, product) { result ->
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, result -> {
+Adapty.makePurchase(activity, product, null, result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
@@ -240,7 +242,13 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams) { result ->
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
     when (result) {
         is AdaptyResult.Success -> {
             when (val purchaseResult = result.value) {
@@ -276,7 +284,13 @@ Additional request parameter:
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(activity, product, subscriptionUpdateParams, result -> {
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
 
@@ -375,6 +389,25 @@ Additional request parameter:
 | :--------- | :------- | :----------------------------------------------------------- |
 | **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
 
+:::info
+**Version 3.8.2+**: The `MakePurchaseParamsInput` structure has been updated. `oldSubVendorProductId` and `prorationMode` are now nested under `subscriptionUpdateParams`, and `isOfferPersonalized` is moved to the upper level.
+
+Example:
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true, 
+        obfuscatedAccountId: 'account_123',
+        obfuscatedProfileId: 'profile_456'
+    }
+});
+```
+:::
+
 </TabItem>
 </Tabs>
 
@@ -465,3 +498,45 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Set obfuscated account and profile IDs in Android
+
+Google Play requires obfuscated account and profile IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
+        .build()
+) { result ->
+    // Handle result
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
+        .build(),
+    result -> {
+        // Handle result
+    }
+);
+```
+
+</TabItem>
+</Tabs>

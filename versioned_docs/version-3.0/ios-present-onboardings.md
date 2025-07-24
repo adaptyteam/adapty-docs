@@ -2,6 +2,7 @@
 title: "iOS – Present onboardings"
 description: "Discover how to present onboardings on iOS to boost conversions and revenue."
 metadataTitle: "Presenting onboardings on iOS | Adapty Docs"
+keywords: ['getOnboardingConfiguration']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -71,6 +72,7 @@ let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboa
 // 2. Display the Onboarding View within your view hierarchy
 AdaptyOnboardingView(
     configuration: configuration,
+    placeholder: { Text("Your Placeholder View") },
     onCloseAction: { action in
         // hide the onboarding view
     },

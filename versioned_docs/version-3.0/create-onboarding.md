@@ -1,6 +1,7 @@
 ---
 title: "Create onboarding"
 metadataTitle: "Create Onboardings in Adapty | Adapty Docs"
+rank: 90
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -103,7 +104,7 @@ You can also run [A/B tests](ab-tests.md) to understand which onboarding works b
 ## Step 3. Integrate the onboarding into your app
 
 :::important
-Before you start, ensure you have Adapty SDK version 3.8.0 or later installed.
+Onboardings are available only for apps using Adapty iOS, Android, or Flutter SDK version 3.8.0 or higher.
 :::
 
 To start displaying onboardings in your app, [integrate them using Adapty SDK](onboarding-sdk.md).

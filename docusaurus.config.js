@@ -307,6 +307,9 @@ const config = {
       apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
 
       indexName: 'adapty',
+      
+      // Enable click analytics to get queryID for proper event attribution
+      clickAnalytics: true,
       },
       
       prism: {
@@ -362,6 +365,47 @@ const config = {
     {
       src: 'https://survey.survicate.com/workspaces/af55d3f51f8189593de1c948b75c88f6/web_surveys.js',
       async: true,
+    },
+  ],
+  plugins: [
+    function copyMarkdownPlugin() {
+      return {
+        name: 'copy-markdown-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-markdown.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-markdown.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsTxtPlugin() {
+      return {
+        name: 'generate-llms-txt-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-txt.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-txt.js:', e);
+          }
+        },
+      };
+    },
+    function copyStaticToBuildPlugin() {
+      return {
+        name: 'copy-static-to-build-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-static-to-build.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-static-to-build.js:', e);
+          }
+        },
+      };
     },
   ],
 };

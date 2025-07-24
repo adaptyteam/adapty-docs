@@ -2,6 +2,8 @@
 title: "Refund Saver"
 description: "Use Adapty Refund Saver to minimize refunds and maximize revenue."
 metadataTitle: "Using Adapty Refund Saver to Reduce Refunds | Adapty Docs"
+keywords: ['refund', 'refund saver']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -153,7 +155,23 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="unity" label="Unity (3.3.0+)" default>
+```csharp showLineNumbers
+Adapty.UpdateAppStoreRefundPreference(<PREFERENCE_VALUE>, (error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+});
+```
+</TabItem>
 </Tabs>
+
+:::note
+You can also use the Server-side API to [set an individual refund preference](ss-set-refund-saver-settings.md):
+- Use the SDK when the preference setting is directly tied to client interactions, such as when users click a button to configure their preference.
+- Use the API when you need to perform server-side processing or when it better aligns with your application architecture.
+:::
 
 <!---
 
@@ -245,7 +263,23 @@ try {
 
 </TabItem>
 
+<TabItem value="unity" label="Unity (3.3.0+)" default>
+```csharp showLineNumbers
+Adapty.UpdateAppStoreCollectingRefundDataConsent(<CONSENT_VALUE>, (error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+});
+```
+</TabItem>
 </Tabs>
+
+:::note
+You can also use the Server-side API to [set an individual data sharing preference](ss-set-refund-saver-settings.md):
+- Use the SDK when the preference setting is directly tied to client interactions, such as when users click a button to configure their preference.
+- Use the API when you need to perform server-side processing or when it better aligns with your application architecture.
+:::
 
 ## Check user consent
 
@@ -261,6 +295,10 @@ You can check a user’s current consent status anytime. In the Adapty Dashboard
   }}
 />
 </Zoom>
+
+:::note
+You can also use the Server-side API to [get individual refund and sharing preferences](ss-get-refund-saver-settings.md).
+:::
 
 ## Limitations
 

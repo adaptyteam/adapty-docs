@@ -2,6 +2,7 @@
 title: "Design onboardings"
 description: "Create meaningful onboardings."
 metadataTitle: "Using Adapty Onboarding Builder | Adapty Docs"
+rank: 80
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -29,12 +30,22 @@ There are the following groups of elements you can add:
 
 - **Containers**: Containers allow you to set up a flexible layout. For example, if you want to add a two-column text, you need to add **Columns** and then drag two text blocks into **Columns** on the left pane. Or, if you are adding a carousel, you'll need to add images to the **Media** elements inside.
 - **Typography**: Add pre-formatted text blocks and configure their look as needed.
-- **Media & Display**: Except for images and videos, you can add animated charts that demonstrate your app value and encourage users. If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
+- **Media & Display**: Except for images and videos, you can add animated charts that demonstrate your app value and encourage users. 
+  
+  The **supported video formats** are MP4 and WebM. The **maximum media file size** is 15 MB.
+
+  If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
 - **Quiz**: Create short questionnaires with text and image options to customize the onboarding experience and get to know your users better.
 - **Inputs**: Collect your users' data.
 - **Buttons**: Buttons let your users navigate between screens, close the onboarding or move to the paywall. You can also add glossy or moving buttons to attract user's attention and convert their install to a purchase.
 - **Loaders**: Animated loaders keep users engaged during the process.
 - **User engagement**: Add testimonials, user email lists and countdowns.
+
+:::note
+As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough. 
+
+However, custom HTML elements are neither preloaded nor cached, so it is recommended to use **Raw HTML** only for small, lightweight elements.
+:::
 
   <Zoom>
   <img src={require('./img/design-onboarding4.png').default}

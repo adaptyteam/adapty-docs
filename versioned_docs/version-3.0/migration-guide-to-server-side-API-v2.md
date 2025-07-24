@@ -167,7 +167,7 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 
 | **Parameter**             | **Change** | **Description**                                              |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
-| `base_plan_id`            | Removed    | Removed. Ass the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
+| `base_plan_id`            | Removed    | Removed. Add the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
 | `duration_days`           | Removed    | Removed as not needed. The duration is calculated automatically. |
 | `introductory_offer_type` | Removed    | Offer types are now in the `offer` object.                   |
 | `is_lifetime`             | Removed    | Removed as it's replaced with the `purchase_type` parameter. |
@@ -182,9 +182,9 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | `price`                                                      | Changed          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Now represented as a [Price](server-side-api-objects#price) object and includes `price_locale`, `country`, and `value` fields. |
 | `store`                                                      | Changed          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>The field became mandatory.</li><li>In addition to standard app stores, you can now use custom stores as well.</li></ol> |
-| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
 
 ---
 
@@ -220,7 +220,7 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 
 | **Parameter**             | **Change** | **Description Change**                                       |
 | ------------------------- | ---------- | ------------------------------------------------------------ |
-| `base_plan_id`            | Removed    | Removed. Ass the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
+| `base_plan_id`            | Removed    | Removed. Add the base plan ID to the `store_product_id` field in the format `product_id:base_plan_id`. |
 | `duration_days`           | Removed    | Removed as not needed. The duration is calculated automatically. |
 | `expires_at`              | Removed    | Removed as not relevant to a one-time purchase.              |
 | `introductory_offer_type` | Removed    | Offer types are now in the `offer` object.                   |
@@ -236,9 +236,9 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 | ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | `price`                                                      | Changed          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Now represented as a [Price](server-side-api-objects#price) object and includes `price_locale`, `country`, and `value` fields. |
 | `store`                                                      | Changed          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>The field became mandatory.</li><li>In addition to standard app stores, you can now use custom stores as well.</li></ol> |
-| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
-| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field beca,e mandatory.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Renamed, changed | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li> The field is renamed.</li><li> The field became mandatory.</li></ol> |
 
 ---
 

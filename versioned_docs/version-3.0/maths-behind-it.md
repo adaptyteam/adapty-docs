@@ -2,6 +2,7 @@
 title: "Maths behind the A/B tests"
 description: "Understand the math behind subscription analytics for better revenue insights."
 metadataTitle: "The Math Behind Subscription Analytics | Adapty Docs"
+keywords: ['a/b test']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -15,7 +16,7 @@ Adapty employs a comprehensive approach to statistical analysis in order to eval
 
 1. **Metric definition:** To conduct an AB test successfully, you need to identify and define the key metric that aligns with the specific goals and objectives of the analysis. Adapty leveraged a huge amount of historical subscription app data to determine which fits the role of a proxy metric for the long-term goal of average revenue after 1 year - and it is ARPU after 14 days.
 2. **Hypothesis formulation:** We create two hypotheses for the A/B test. The null hypothesis (H0) assumes that there is no significant difference between the control group (A) and the test group (B). The alternative hypothesis (H1) suggests that there is a significant difference between the two or more groups.
-3. ** Distribution selection: ** We choose the best distribution family based on the data characteristics and the metric we observe. The most frequent choice here is log-normal distribution (taking into account zero values).
+3. **Distribution selection:** We choose the best distribution family based on the data characteristics and the metric we observe. The most frequent choice here is log-normal distribution (taking into account zero values).
 4. **Probability-to-be-best calculation:** Utilising the Bayesian approach to A/B testing, we calculate the probability to be the best option for every paywall variant participating in the test. This value is surely connected to the p-values we used before, but it is essentially a different approach, more robust, and easier to understand.
 5. **Results interpretation:** Probability to be best is exactly how it sounds. The larger the probability is, the higher the likelihood of a specific option being the best choice for the task. You need to determine the threshold for decision-making yourself, it should depend on many other factors of your specific situation, but a common probability choice is 95%.
 6. **Prediction intervals:** Adapty calculates prediction intervals for the performance metrics of each group, providing a range of values within which the true population parameter is likely to fall. This helps quantify the uncertainty associated with the estimated performance metrics.

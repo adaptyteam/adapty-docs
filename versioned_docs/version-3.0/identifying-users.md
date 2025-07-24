@@ -2,6 +2,7 @@
 title: "Identify users"
 description: "Identify users in Adapty to improve personalized subscription experiences."
 metadataTitle: "Identifying Users in Adapty | Adapty Docs"
+keywords: ['identify']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -62,6 +63,19 @@ Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USE
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+          ..withCustomerUserId('YOUR_USER_ID')
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+```dart showLineNumbers
 try {
     await Adapty().activate(
         configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')

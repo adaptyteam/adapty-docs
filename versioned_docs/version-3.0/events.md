@@ -2,6 +2,7 @@
 title: "Events to send to 3d-party integrations"
 description: "Track key subscription events using Adapty’s analytics tools."
 metadataTitle: "Tracking Subscription Events | Adapty Docs"
+keywords: ['events', 'subscription_started', 'subscription_renewed', 'subscription_renewal_cancelled', 'subscription_renewal_reactivated', 'subscription_expired', 'subscription_paused', 'non_subscription_purchase', 'trial_started', 'trial_converted', 'trial_renewal_cancelled', 'trial_renewal_reactivated', 'trial_expired', 'entered_grace_period', 'billing_issue_detected', 'subscription_refunded', 'non_subscription_purchase_refunded', 'access_level_updated']
 ---
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';

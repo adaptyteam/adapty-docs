@@ -2,6 +2,7 @@
 title: "Lifetime Value (LTV)"
 description: "Learn how to calculate and optimize Lifetime Value (LTV) in Adapty."
 metadataTitle: "Understanding Lifetime Value (LTV) | Adapty Docs"
+keywords: ['ltv']
 ---
 
 import Zoom from 'react-medium-image-zoom';

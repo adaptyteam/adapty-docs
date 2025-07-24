@@ -2,7 +2,7 @@
 title: "Server-side API"
 description: "Get started with Adapty’s server-side API for subscription management."
 metadataTitle: "Getting Started with Server-Side API | Adapty Docs"
-
+keywords: ['api']
 ---
 
 import Zoom from 'react-medium-image-zoom';

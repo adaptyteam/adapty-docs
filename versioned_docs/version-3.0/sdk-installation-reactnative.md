@@ -1,10 +1,13 @@
 ---
 title: "React Native - Adapty SDK installation & configuration"
-description: "Install Adapty SDK for React Native and optimize your app’s monetization."
+description: "Install Adapty SDK for React Native and optimize your app's monetization."
 metadataTitle: "Installing Adapty SDK for React Native | Adapty Docs"
+keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']
+rank: 60
 ---
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 <Tabs groupId="current-os" queryString> 
 <TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
@@ -13,6 +16,10 @@ import TabItem from '@theme/TabItem';
 
 - **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](https://adapty.io/paywall-builder/), a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+
+:::info
+Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+:::
 
 ## Install Adapty SDK
 
@@ -82,7 +89,6 @@ If you opt for a purely native approach, please consult the following instructio
 
    ```sh showLineNumbers title="Shell"
    pod install --project-directory=ios
-   pod install --project-directory=ios/
    ```
 
    The minimum supported iOS version is 13.0, but the [new Paywall Builder](adapty-paywall-builder) requires iOS 15.0 or higher.
@@ -94,7 +100,10 @@ If you opt for a purely native approach, please consult the following instructio
    +platform :ios, 15.0
    ```
 
-3. For Android: Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
+<details>
+   <summary>For Android, if your React Native version is earlier than 0.73.0 (click to expand)</summary>
+
+Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
 
    ```groovy showLineNumbers title="/android/build.gradle"
    ...
@@ -107,6 +116,8 @@ If you opt for a purely native approach, please consult the following instructio
    }
    ...
    ```
+
+</details>
 
 ## Configure Adapty SDK
 
@@ -128,45 +139,67 @@ You can pass several optional parameters during activation:
   <TabItem value="Typescript" label="Typescript" default>
 
 ```typescript showLineNumbers
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-  logLevel: 'error',
-  __debugDeferActivation: false,
-  ipAddressCollectionDisabled: false,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-  activateUi: true,
-  mediaCache: {
-    memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
-    memoryStorageCountLimit: 2147483647, // 2^31 - 1
-    diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
-  },
-});
+import { adapty, LogLevel } from 'react-native-adapty';
+
+try {
+   await adapty.activate('PUBLIC_SDK_KEY', {
+      observerMode: false,
+      customerUserId: 'YOUR_USER_ID',
+      logLevel: LogLevel.ERROR,
+      __debugDeferActivation: false,
+      __ignoreActivationOnFastRefresh: __DEV__,
+      ipAddressCollectionDisabled: false,
+      ios: {
+         idfaCollectionDisabled: false,
+      },
+      android: {
+         adIdCollectionDisabled: false,
+      },
+      activateUi: true,
+      mediaCache: {
+         memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+         memoryStorageCountLimit: 2147483647, // 2^31 - 1
+         diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+      },
+   });
+
+   // SDK successfully activated
+} catch (error) {
+   // Handle activation error
+}
 ```
 
 </TabItem>
 <TabItem value="java" label="JavaScript" default>
 
 ```javascript showLineNumbers
-import { IosStorekit2Usage, LogLevel } from 'react-native-adapty';
+import LogLevel  from 'react-native-adapty';
 
-adapty.activate('PUBLIC_SDK_KEY', {
-  observerMode: false,
-  customerUserId: 'YOUR_USER_ID',
-  logLevel: LogLevel.ERROR,
-  ipAddressCollectionDisabled: false,
-  ios: {
-    idfaCollectionDisabled: false,
-  },
-    activateUi: true,
-    mediaCache: {
-      memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
-      memoryStorageCountLimit: 2147483647, // 2^31 - 1
-      diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    observerMode: false,
+    customerUserId: 'YOUR_USER_ID',
+    logLevel: LogLevel.ERROR,
+    ipAddressCollectionDisabled: false, 
+    __debugDeferActivation: false,
+    __ignoreActivationOnFastRefresh: __DEV__,
+    ios: {
+      idfaCollectionDisabled: false,
     },
-});
+     android: {
+        adIdCollectionDisabled: false,
+     },
+      activateUi: true,
+      mediaCache: {
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+      },
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
 ```
 </TabItem> 
 
@@ -174,14 +207,17 @@ adapty.activate('PUBLIC_SDK_KEY', {
 
 Parameters:
 
-| Parameter              | Presence | Description                                                  |
-| :--------------------- | :------- | :----------------------------------------------------------- |
-| observerMode           | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself, and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId         | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| logLevel               | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> **error:** Only errors will be logged.</li><li> **warn:** Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> **info:** Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> **verbose:** Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| activateUi             | optional | Set to `false` to disable the Adapty UI module. This module is only required if you're using Paywall Builder paywalls. By default, it is always enabled. |
-| idfaCollectionDisabled | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section. |
-| mediaCache             | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul> |
+| Parameter                         | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|:----------------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| observerMode                      | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself, and use Adapty for sending subscription events and analytics. The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p>                                                                                                                                                                                                                                                                                 |
+| customerUserId                    | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.                                                                                                                                                                                                                                                                                                                                                                          |
+| logLevel                          | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> **error:** Only errors will be logged.</li><li> **warn:** Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> **info:** Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> **verbose:** Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
+| activateUi                        | optional | Set to `false` to disable the Adapty UI module. This module is only required if you're using Paywall Builder paywalls. By default, it is always enabled.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| idfaCollectionDisabled            | optional | Set to `true` to disable IDFA collection and sharing. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| adIdCollectionDisabled            | optional | Set to `true` to disable AdId collection and sharing. The default value is `false`. For more details on AdId collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| mediaCache                        | optional | <p>Define the limits for the cache of the media files: video and images.</p><ul><li>**memoryStorageTotalCostLimit:** (required) Total cost limit of the storage in bytes.</li><li>**memoryStorageCountLimit:** (required) The item count limit of the memory storage.</li><li>**diskStorageSizeLimit:** (required) The file size limit on the disk of the storage in bytes. 0 means no limit.</li></ul>                                                                                                                                                                                                                                       |
+| \_\_debugDeferActivation          | optional | A boolean parameter, that lets you delay SDK activation until your next Adapty call. This is intended solely for development purposes and **should not be used in production**.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| \_\_ignoreActivationOnFastRefresh | optional | A parameter that lets you ignore multiple activation attempts on fast refresh in the development environment. If set to `__DEV__`, in the development environment, it skips activation if the SDK is already activated. Useful during development when React Native's fast refresh might trigger multiple activation calls and cause errors.                                                                                                                                                                                                                                                                                                  |
 
 </TabItem> 
 
@@ -419,7 +455,28 @@ It's important to note that **this feature is intended for development use only*
 Here's the recommended approach for usage:
 
 ```typescript showLineNumbers title="Typescript"
-adapty.activate('PUBLIC_SDK_KEY', {
-  __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
-});
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+## Troubleshoot SDK activation errors on React Native's Fast Refresh
+
+When developing with the Adapty SDK in React Native, you may encounter the error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+This occurs because React Native's fast refresh feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to `__DEV__` (React Native's development mode flag).
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __ignoreActivationOnFastRefresh: __DEV__, 
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
 ```

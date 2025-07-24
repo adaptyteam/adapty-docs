@@ -2,6 +2,7 @@
 title: "Custom tags in Paywall Builder"
 description: "Learn how to use custom tags in Adapty's Paywall Builder to personalize user experiences and optimize conversions."
 metadataTitle: "Custom Tags in Paywall Builder | Adapty Docs"
+keywords: ['tags', 'tag']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -13,7 +14,7 @@ Custom tags let you avoid creating separate paywalls for different scenarios. Im
 
 :::warning
 
-This section describes the new Paywall Builder, compatible with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-paywall-builder).
+This section describes the new Paywall Builder, compatible with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-legacy-paywall-builder).
 
 :::
 

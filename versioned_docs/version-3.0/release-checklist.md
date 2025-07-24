@@ -69,7 +69,7 @@ const App: React.FC = () => {
 
 ### Configuring processing of purchases
 
-Adding  **App Store shared secret** for [iOS](app-store-connection-configuration#step-4-enter-app-store-shared-secret) and both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be neccessary to allow Adapty to successfully process purchasing events.
+Adding  **App Store shared secret** for [iOS](app-store-connection-configuration#step-4-enter-app-store-shared-secret) and both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be necessary to allow Adapty to successfully process purchasing events.
 
 ### Subscription Events
 
