@@ -44,4 +44,3 @@ async function copyStaticMarkdownAndLlms() {
 }
 
 copyStaticMarkdownAndLlms(); 
-copyStaticMarkdownAndLlms(); 
