@@ -288,7 +288,7 @@ Your users can now complete purchases on the web and access paid features in you
 
 Adapty has to tie a purchase to a [customer profile](profiles-crm) for it to be available on the mobile — so by default it creates profiles upon receiving webhooks from Stripe. You can choose what to use as customer user ID in Adapty:
 
-1. **Default and recommended:** `customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+1. **Default and recommended: **`customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
 2. `email` in Stripe's Customer object (see [Stripe's docs](https://stripe.com/docs/api/customers/object#customer_object-email))
 3. `client_reference_id` in Stripe's Session object (see [Stripe's docs](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-client_reference_id))
 
@@ -330,3 +330,25 @@ Adapty tracks only full refunds. Proration or partial refunds are currently not 
 If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
 
 To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
+
+## Get more from your Stripe data
+Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+Integrations you can use to forward and analyze your Stripe events:
+- [Amplitude](https://adapty.io/docs/amplitude/)
+- [Webhook](https://adapty.io/docs/webhook)
+- [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
+- [Mixpanel](https://adapty.io/docs/mixpanel)
+- [Posthog](https://adapty.io/docs/posthog)
+
+### Supported Stripe events
+Adapty supports the following Stripe events:
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded

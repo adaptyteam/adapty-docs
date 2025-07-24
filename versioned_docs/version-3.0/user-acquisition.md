@@ -11,10 +11,10 @@ import TabItem from '@theme/TabItem';
 
 User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place. 
 
-This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard and configure the Adapty SDK.
+This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
-User Acquisition is only available with iOS Adapty SDK version 3.9.0 or higher. Compatibility with Adapty SDK for Android and Flutter will be available soon.
+User Acquisition is only available with iOS Adapty SDK version 3.9.0 or higher. Compatibility with Adapty SDK for Android and Flutter is coming soon.
 :::
 
 ## How to set up User Acquisition integration
@@ -43,7 +43,7 @@ Once your events begin firing, you’ll see the following details for each event
 
 By default, Adapty sends three groups of events to User Acquisition:
 - Trials
-- Subscription
+- Subscriptions
 - Issues
 
 You can check the full list of supported events [here](events.md).

@@ -36,6 +36,20 @@ Purchase buttons:
 
 When you add a purchase button to your paywall, it automatically processes purchases your users make. So, you don't need to handle purchases in the app code.
 
+:::tip
+You can attract more attention to purchase buttons by animating them. 
+
+The Paywall builder currently supports two types:
+
+- **Arrow** – moves an arrow icon back and forth
+
+- **Pulse** – gently scales the button up and down
+
+Each animation lets you choose an easing option (Linear, Ease In, Ease Out, Ease In Out) to control how it speeds up or slows down.
+
+Animations are available in the Adapty iOS, Android, Flutter, and React Native SDKs starting from version 3.10.0.
+:::
+
 <Zoom>
   <img src={require('./img/purchase-button.webp').default}
   style={{
