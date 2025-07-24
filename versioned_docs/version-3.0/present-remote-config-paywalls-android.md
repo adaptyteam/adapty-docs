@@ -66,7 +66,7 @@ At this point, once you've received all the necessary values, it's time to rende
 Make sure to [record the paywall view event](present-remote-config-paywalls-android#track-paywall-view-events) as described below, allowing Adapty analytics to capture information for funnels and A/B tests.
 :::
 
-After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](making-purchases-android).
+After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](android-making-purchases).
 
 We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-android). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
 

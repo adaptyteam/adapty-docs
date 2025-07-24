@@ -9,6 +9,8 @@ displayed_sidebar: sdkunity
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
 Adapty SDK handles the complexity of in-app purchases so you can focus on building your app:
 
 - Handle purchases, receipt validation, and subscription management out of the box

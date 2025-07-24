@@ -128,5 +128,5 @@ The `getPaywallForDefaultAudience` method is available starting from React Nativ
 After fetching paywalls and products, you can:
 
 1. [Present paywalls manually](/react-native-present-paywalls)
-2. [Handle purchase events](/react-native-making-purchases)
+2. [Handle purchase events](react-native-making-purchases)
 3. [Restore purchases](/react-native-restore-purchase) 

@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
 
-- Call [`getProfile`](android-subscription-status.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
+- Call [`getProfile`](android-identifying-users.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
 - Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
 
 To automatically receive profile updates in your app:

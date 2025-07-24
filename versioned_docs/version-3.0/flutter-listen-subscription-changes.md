@@ -19,9 +19,9 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
 
 ## Access level and the AdaptyProfile object
 
-Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
+Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](flutter-identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
-To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](subscription-status#listening-for-subscription-status-updates) section below.
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](flutter-listen-subscription-changes.md) section below.
 
 <SampleApp />
 

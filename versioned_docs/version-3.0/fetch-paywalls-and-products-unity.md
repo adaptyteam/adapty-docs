@@ -116,5 +116,5 @@ The `getPaywallForDefaultAudience` method is not yet supported in Unity SDK, but
 After fetching paywalls and products, you can:
 
 1. [Present paywalls manually](/unity-present-paywalls)
-2. [Handle purchase events](/unity-making-purchases)
+2. [Handle purchase events](unity-making-purchases)
 3. [Restore purchases](/unity-restore-purchase) 

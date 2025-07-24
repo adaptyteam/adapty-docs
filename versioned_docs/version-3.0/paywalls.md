@@ -28,7 +28,7 @@ How you display these paywalls in your mobile app depends on the tool you choose
 
 2. **Paywalls customized using remote config** can be tailored to your specific requirements, giving you complete freedom to design and process them as needed. 
 
-   Refer to [Design paywall with remote config](customize-paywall-with-remote-config) for design details and [Display paywalls created by remote config](display-remote-config-paywalls) for implementation guidance.
+   Refer to [Design paywall with remote config](customize-paywall-with-remote-config) for design details and <InlineTooltip tooltip="developer docs">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> for implementation guidance.
 
 ## Paywall states
 

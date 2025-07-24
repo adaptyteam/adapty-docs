@@ -79,7 +79,7 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 
 ## Change how the paywall view is created
 
-For the complete code example, check out the [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) section.
+For the complete code example, check out [Fetch the view configuration of paywall designed using Paywall Builder](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
 
 ```diff showLineNumbers
 + var parameters = new AdaptyUICreateViewParameters()
@@ -163,7 +163,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 }
 ```
 
-Check out the final code example in the [Make purchases in mobile app](making-purchases) page.
+Check out the final code example in the [Make purchases in mobile app](unity-making-purchases) page.
 
 ## Update handling of Paywall Builder events
 

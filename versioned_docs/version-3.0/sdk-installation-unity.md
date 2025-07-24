@@ -20,7 +20,7 @@ Adapty SDK includes two key modules for seamless integration into your Unity app
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::info
-If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
+If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-unity-sdk-v3).
 :::
 
 ## Requirements
@@ -32,6 +32,8 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 :::
 
 ## Install Adapty SDK
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
 
 1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project.
 
@@ -178,7 +180,7 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 
 When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
 
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.Identify()` method. Read more in the [Identifying users](identifying-users) section.
+If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.Identify()` method. Read more in the [Identifying users](unity-identifying-users) section.
 
 ```csharp showLineNumbers title="C#"
 var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")

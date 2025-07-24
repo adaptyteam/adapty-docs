@@ -20,7 +20,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 
 
 :::info
-If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
+If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-ios-sdk-v3.md).
 :::
 
 ## Requirements
@@ -30,6 +30,8 @@ While the SDK technically supports iOS 13.0+ for the core module, iOS 15.0+ is e
 - AdaptyUI module is iOS 15.0+ only
 
 ## Install Adapty SDK
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
 
 <Tabs>
 <TabItem value="spm" label="Swift Package Manager (recommended)" default>
@@ -62,8 +64,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
     2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 3.8.0'
-   pod 'AdaptyUI', '~> 3.8.0' # optional module needed only for Paywall Builder
+   pod 'Adapty'
+   pod 'AdaptyUI'  # optional module needed only for Paywall Builder
    ```
 
 2. Run:

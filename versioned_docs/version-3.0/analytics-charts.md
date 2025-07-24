@@ -6,6 +6,8 @@ metadataTitle: "Analyzing Subscription Analytics Charts | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Install Adapty SDK and start analyzing real-time metrics of your iOS or Android app with advanced filters and grouping, such as ad network, ad campaign, country, paywall, product, and more.
 
@@ -222,7 +224,7 @@ The Installs chart shows the total number of users who have installed the app fo
 />
 </Zoom>
 
-Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details please check our [SDK documentation](identifying-users) for identifying users.
+Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details, see <InlineTooltip tooltip="the guides on how to identify users in your app">[iOS](identifying-users.md), [Android](android-identifying-users.md), [Flutter](flutter-identifying-users.md), [React Native](react-native-identifying-users.md), and [Unity](unity-identifying-users.md)</InlineTooltip>.
 
 ### Subscriptions
 

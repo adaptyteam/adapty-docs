@@ -11,8 +11,8 @@ After [you designed the visual part for your paywall](adapty-paywall-builder-leg
 
 This guide is for **legacy Paywall Builder paywalls** only which require SDK v2.x or earlier. The process for fetching paywalls differs for paywalls designed with different versions of Paywall Builder and remote config paywalls.
 
-- For fetching **New Paywall Builder paywalls**, check out [Fetch new Paywall Builder paywalls and their configuration](get-pb-paywalls).
-- For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
+- For fetching **New Paywall Builder paywalls**, check out [Fetch new Paywall Builder paywalls and their configuration](flutter-get-pb-paywalls).
+- For fetching **Remote config paywalls**, see [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products-flutter).
 
 :::
 

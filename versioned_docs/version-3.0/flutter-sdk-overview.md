@@ -9,6 +9,8 @@ displayed_sidebar: sdkflutter
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
+
 Adapty SDK handles the complexity of in-app purchases so you can focus on building your app:
 
 - Handle purchases, receipt validation, and subscription management out of the box

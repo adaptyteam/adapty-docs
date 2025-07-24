@@ -19,5 +19,5 @@ If you also need paywalls and A/B testing, additional setup is required, as desc
 
 If you also want to use Adapty's paywalls and A/B testing features, you can — but it requires some extra setup in Observer mode. Here's what you'll need to do in addition to the steps above:
 
-1. Display paywalls as usual for [remote config paywalls](display-remote-config-paywalls). For Paywall Builder paywalls, follow the specific setup guides for [Android](android-present-paywall-builder-paywalls-in-observer-mode).
+1. Display paywalls as usual for [remote config paywalls](present-remote-config-paywalls-android.md). For Paywall Builder paywalls, follow the specific setup guides for [Android](android-present-paywall-builder-paywalls-in-observer-mode).
 3. [Associate paywalls](report-transactions-observer-mode-android) with purchase transactions. 

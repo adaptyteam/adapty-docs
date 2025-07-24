@@ -22,6 +22,8 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Install Adapty SDK
 
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+
 Choose your dependency setup method:
 - Standard Gradle: Add dependencies to your **module-level** `build.gradle`
 - If your project uses `.gradle.kts` files, add dependencies to your module-level `build.gradle.kts`
@@ -33,7 +35,7 @@ Choose your dependency setup method:
 ```groovy showLineNumbers
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:3.8.0')
+    implementation platform('io.adapty:adapty-bom:+')
     implementation 'io.adapty:android-sdk'
     
     // Only add this line if you plan to use Paywall Builder
@@ -47,7 +49,7 @@ dependencies {
 ```kotlin showLineNumbers
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:3.8.0"))
+    implementation(platform("io.adapty:adapty-bom:+"))
     implementation("io.adapty:android-sdk")
     
     // Only add this line if you plan to use Paywall Builder:
@@ -63,7 +65,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "3.8.0"
+adaptyBom = "+"
 
 [libraries]
 ..
@@ -343,7 +345,7 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 
 When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
 
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](identifying-users) section.
+If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](android-identifying-users) section.
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>

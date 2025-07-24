@@ -9,4 +9,4 @@ This page contains all guides for working with onboardings in your React Native 
 
 - **[Get onboardings](react-native-get-onboardings)** - Retrieve onboardings from Adapty
 - **[Display onboardings](react-native-present-onboardings)** - Present onboardings to users
-- **[Handle onboarding events](react-native-handle-onboarding-events)** - Manage onboarding interactions 
+- **[Handle onboarding events](react-native-handling-onboarding-events)** - Manage onboarding interactions 

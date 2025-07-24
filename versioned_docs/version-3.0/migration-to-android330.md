@@ -56,7 +56,7 @@ Adapty.makePurchase(activity, product) { result ->
  }
 ~~~
 
-For the complete code example, check out the [Make purchases in mobile app](making-purchases#make-purchase) page. 
+For the complete code example, check out the [Make purchases in mobile app](making-purchases-android#make-purchase) page. 
 
 ## Modify Paywall Builder purchase events
 

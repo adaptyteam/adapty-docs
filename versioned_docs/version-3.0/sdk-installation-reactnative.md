@@ -16,10 +16,6 @@ Adapty SDK includes two key modules for seamless integration into your React Nat
 - **Core Adapty**: This module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
-:::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
-:::
-
 If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
 ## Requirements
@@ -31,6 +27,8 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 :::
 
 ## Install Adapty SDK
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
 
 <Tabs>
 <TabItem value="expo" label="Expo" default>
@@ -193,7 +191,7 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 
 When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
 
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](identifying-users) section.
+If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](react-native-identifying-users) section.
 
 ```typescript showLineNumbers title="App.tsx"
 adapty.activate('YOUR_PUBLIC_SDK_KEY', {

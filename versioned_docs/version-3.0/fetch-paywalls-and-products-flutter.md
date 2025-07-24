@@ -114,5 +114,5 @@ The `getPaywallForDefaultAudience` method is not yet supported in Flutter SDK, b
 After fetching paywalls and products, you can:
 
 1. [Present paywalls manually](/flutter-present-paywalls)
-2. [Handle purchase events](/flutter-making-purchases)
+2. [Handle purchase events](flutter-making-purchases)
 3. [Restore purchases](/flutter-restore-purchase) 

@@ -49,4 +49,4 @@ As soon as users close onboarding, the [event](ios-handling-onboarding-events#cl
 
    3. Now, when you have this button, each time your users tap it, it will generate an action containing the action ID. 
 
-   To handle this action in your app code, you will need to [get the paywall](fetch-paywalls-and-products.md) and then <InlineTooltip tooltip="displaying it">[iOS](ios-quickstart-paywalls.md), [Android](android-quickstart-paywalls.md), [Flutter](flutter-quickstart-paywalls.md), [React Native](react-native-quickstart-paywalls.md), and [Unity](unity-quickstart-paywalls.md)</InlineTooltip>.
+   To handle this action in your app code, you will need to [get the paywall](fetch-paywalls-and-products.md) and then [display it](ios-quickstart-paywalls.md).

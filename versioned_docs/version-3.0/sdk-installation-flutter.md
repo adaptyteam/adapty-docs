@@ -18,7 +18,7 @@ Adapty SDK includes two key modules for seamless integration into your Flutter a
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::info
-If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
+If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-flutter-sdk-v3.md).
 :::
 
 ## Requirements
@@ -31,6 +31,8 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Install Adapty SDK
 
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
+
 1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
 
    ```yaml showLineNumbers title="pubspec.yaml"
@@ -39,10 +41,10 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
        sdk: flutter
      
      # Core Adapty SDK (required)
-     adapty_flutter: ^3.8.0
+     adapty_flutter: any
      
      # AdaptyUI SDK (optional - only if you plan to use Paywall Builder)
-     adapty_ui_flutter: ^3.8.0
+     adapty_ui_flutter: any
    ```
 
 2. Run the following command to install dependencies:
@@ -237,7 +239,7 @@ await Adapty().activate(
 
 When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
 
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](identifying-users) section.
+If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](flutter-identifying-users) section.
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

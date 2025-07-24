@@ -9,4 +9,4 @@ This page contains all guides for working with onboardings in your Flutter app. 
 
 - **[Get onboardings](flutter-get-onboardings)** - Retrieve onboardings from Adapty
 - **[Display onboardings](flutter-present-onboardings)** - Present onboardings to users
-- **[Handle onboarding events](flutter-handle-onboarding-events)** - Manage onboarding interactions 
+- **[Handle onboarding events](flutter-handling-onboarding-events)** - Manage onboarding interactions 

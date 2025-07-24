@@ -21,7 +21,7 @@ If your paywall has an active promotional offer for the product a user is trying
 :::warning
 Keep in mind that the introductory offer will be applied automatically only if you use the paywalls set up using the Paywall Builder.
 
-In other cases, you'll need to [verify the user's eligibility for an introductory offer on iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios).  Skipping this step may result in your app being rejected during release. Moreover, it could lead to charging the full price to users who are eligible for an introductory offer.
+In other cases, you'll need to [verify the user's eligibility for an introductory offer on iOS](fetch-paywalls-and-products-unity#check-intro-offer-eligibility-on-ios).  Skipping this step may result in your app being rejected during release. Moreover, it could lead to charging the full price to users who are eligible for an introductory offer.
 :::
 
 Make sure you've [done the initial configuration](quickstart) without skipping a single step. Without it, we can't validate purchases.

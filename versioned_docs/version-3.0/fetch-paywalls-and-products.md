@@ -10,9 +10,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
-Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
+Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult the <InlineTooltip tooltip="guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
 
 <SampleApp />
 
@@ -25,7 +27,7 @@ Before showcasing remote config and custom paywalls, you need to fetch the infor
 
 3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
 
-4. [Install Adapty SDK](installation-of-adapty-sdks) in your mobile app.
+4. <InlineTooltip tooltip="Install Adapty SDK">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-react-native), and [Unity](sdk-installation-unity)</InlineTooltip> in your mobile app.
 </details>
 
 ## Fetch paywall information

@@ -101,13 +101,3 @@ By default, between the splash screen and onboarding, you will see the loading s
 - To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
 
 This helps create seamless transitions and custom loading experiences.
-
-## Next steps
-
-Once you've presented your onboarding, you'll want to [handle user interactions and events](flutter-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
-
-For detailed guidance on presenting onboardings within different frameworks, please refer to the specified topics on each framework:
-
-- [iOS](ios-present-onboardings.md)
-- [Android](android-present-onboardings.md)
-- [Flutter](flutter-present-onboardings.md)

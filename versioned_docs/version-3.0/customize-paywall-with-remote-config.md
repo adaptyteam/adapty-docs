@@ -10,6 +10,8 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more.
 
@@ -210,4 +212,4 @@ Additional row options are mostly useful for [paywall localisations](add-remote-
 
 
 
-Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can [display your remote config paywalls](display-remote-config-paywalls) in your mobile app.
+Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can <InlineTooltip tooltip="display your remote config paywalls">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> in your mobile app.
