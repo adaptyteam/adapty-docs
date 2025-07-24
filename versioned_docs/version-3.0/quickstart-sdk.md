@@ -12,11 +12,11 @@ Integrate Adapty SDK into your app to:
 - Automatically track user profile changes
 
 Currently, Adapty has the following SDKs available:
-- [**Adapty iOS SDK.**](ios-sdk-overview.md) The latest version of the iOS SDK is 3.8.2.
-- [**Adapty Android SDK.**](android-sdk-overview.md) The latest version of the Android SDK is 3.8.4.
-- [**Adapty Flutter SDK.**](flutter-sdk-overview.md) The latest version of the Flutter SDK is 3.8.0.
-- [**Adapty React Native SDK.**](react-native-sdk-overview.md) The latest version of the React Native SDK is 3.8.0.
-- [**Adapty Unity SDK.**](unity-sdk-overview.md) The latest version of the Unity SDK is 3.6.0.
+- [**Adapty iOS SDK.**](ios-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
+- [**Adapty Android SDK.**](android-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+- [**Adapty Flutter SDK.**](flutter-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
+- [**Adapty React Native SDK.**](react-native-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+- [**Adapty Unity SDK.**](unity-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
 
 ## How does it work
 
