@@ -105,7 +105,9 @@ An A/B test helps you compare different paywalls—so you can make smarter, data
 Each variant lists which paywall appears in each placement, and you assign each variant a weight so that all weights add up to 100%. For example, a 70/30 split means Variant A shows its paywall to roughly 700/1,000 users, and Variant B to 300/1,000.
 
 :::tip
-You can test not only different paywalls, but also assign the same paywall across multiple variants (and placements). This lets you aggregate economics across all placements for a holistic financial view while validating your traffic-split logic before rolling out new designs.
+You can test not only different paywalls, but also assign the same paywall across multiple variants (and placements). This lets you:
+- Combine results from all placements for a complete view.
+- Verify your traffic‑split logic before launching new designs.
 :::
 
 <!--- When it comes to creating A/B tests in Adapty, you have several options to choose from. Depending on your goals and needs, you can create a new A/B test directly from the A/B test section, from a specific placement page, or from a paywall page. Here's a step-by-step guide on how to create an A/B test using each of these options. --->
