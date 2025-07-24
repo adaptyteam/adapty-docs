@@ -103,53 +103,8 @@ The `getPaywallForDefaultAudience` method comes with a few significant drawbacks
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](#fetch-paywall-designed-with-paywall-builder).
 :::
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
-    switch result {
-        case let .success(paywall):
-            // the requested paywall
-        case let .failure(error):
-            // handle the error
-    }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            // the requested paywall
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // the requested paywall
 
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```typescript showLineNumbers
+```dart showLineNumbers
 try {
     final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 } on AdaptyError catch (adaptyError) {
@@ -158,44 +113,6 @@ try {
     // handle unknown error
 }
 ```
-</TabItem>
-
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-using AdaptySDK;
-
-Adapty.GetPaywallForDefaultAudience(
-  "YOUR_PLACEMENT_ID", 
-  (paywall, error) => {
-  
-  if (error != null) {
-    // handle the error
-  }
-  
-  // use the requested paywall
-});
-```
-
-</TabItem>
-
-<TabItem value="rn" label="React Native" default>
-
-```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
-  // the requested paywall
-} catch (error) {
-    // handle the error
-}
-```
-
-</TabItem>
-
-</Tabs>
 
 :::note
 The `getPaywallForDefaultAudience` method is available starting from Flutter SDK version 3.2.0.

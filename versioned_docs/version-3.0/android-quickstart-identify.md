@@ -180,6 +180,7 @@ Adapty.identify("YOUR_USER_ID", error -> {
 });
 ```
 </TabItem>
+</Tabs>
 
 ### During the SDK activation
 
@@ -208,8 +209,6 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .build();
 ```
 </TabItem>
-</Tabs>
-
 </Tabs>
 
 
