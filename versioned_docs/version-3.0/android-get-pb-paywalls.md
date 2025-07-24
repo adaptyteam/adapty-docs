@@ -6,14 +6,6 @@ displayed_sidebar: sdkandroid
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 ---
 
----
-title: "Fetch Paywall Builder paywalls and their configuration in iOS SDK"
-description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your iOS app."
-metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
-displayed_sidebar: sdkandroid
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
----
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';

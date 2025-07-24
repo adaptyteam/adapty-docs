@@ -15,11 +15,14 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
-```swift showLineNumbers title="Swift"
-do {
-    try await Adapty.openWebPaywall(for: product)
-} catch {
-    print("Failed to open web paywall: \(error)")
+```swift showLineNumbers title="Flutter"
+try {
+  await Adapty().openWebPaywall(product: <YOUR_PRODUCT>);
+  // The web paywall will be opened
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
 }
 ```
 
