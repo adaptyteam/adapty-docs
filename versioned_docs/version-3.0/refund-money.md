@@ -43,7 +43,7 @@ Use the Refund money chart to track the financial impact of refunds. Watching re
 
 The Refund saver helps Adapty users handle refund requests from Apple's App Store more efficiently through automation. It saves time and reduces revenue loss by streamlining the process. With real-time notifications and actionable insights, this tool makes it easier to address refund requests while staying compliant with Apple's guidelines.
 
-For more details, see [Auto-managed refunds](refund-saver.md).
+Learn more about [Refund saver](refund-saver.md).
 
 ### Similar metrics
 
