@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall in Unity SDK"
+title: "Show paywalls and enable purchases in Unity SDK"
 description: "Learn how to present paywalls in your Unity app with Adapty SDK."
 metadataTitle: "Present a Paywall | Unity SDK | Adapty Docs"
 slug: /unity-quickstart-paywalls
@@ -31,6 +31,10 @@ That's why, to get a paywall to display, you need to:
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](unity-get-pb-paywalls).
 ::: 
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](unity-implement-paywalls-manually).
+:::
+
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
   if(error != null) {
@@ -57,15 +61,15 @@ For more details on how to display a paywall, see our [guide](unity-present-payw
 
 To display the paywall, use the `view.Зresent()` method on the `view` created by the `СreateView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](unity-implement-paywalls-manually).
+:::
+
 ```csharp showLineNumbers title="Unity"
 view.Present((error) => {
   // handle the error
 });
 ```
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](unity-implement-paywalls-manually).
-:::
 
 ## 3. Check subscription status before displaying
 
@@ -97,10 +101,14 @@ Adapty.GetProfile((profile, error) => {
 
 When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
 
-For example, your paywall probably has a close button. So, you need to respond to actions with the `Close` ID.
+For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy). So, you need to respond to actions with the `Close` and `OpenUrl` IDs.
 
 :::tip
-Read our [guide](unity-handling-events) on how to handle other button actions and events.
+Read our guides on how to handle other button [actions](unity-handle-paywall-actions.md) and [events](unity-handling-events.md).
+:::
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](unity-implement-paywalls-manually).
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -112,8 +120,11 @@ public void PaywallViewDidPerformAction(
     case AdaptyUIUserActionType.Close:
       view.Dismiss(null);
       break;
+    case AdaptyUIUserActionType.OpenUrl:
+      // Open the URL using Unity's Application.OpenURL
+      Application.OpenURL(action.Value);
+      break;
     default:
-      // handle other events
       break;
   }
 }
@@ -215,7 +226,10 @@ public class PaywallManager : MonoBehaviour
                 Debug.Log("Close button pressed");
                 view.Dismiss(null);
                 break;
-                
+            case AdaptyUIUserActionType.OpenUrl:
+              // Open the URL using Unity's Application.OpenURL
+              Application.OpenURL(action.Value);
+              break;
             default:
                 break;
         }

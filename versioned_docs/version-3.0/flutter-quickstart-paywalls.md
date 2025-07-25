@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall in Flutter SDK"
+title: "Show paywalls and enable purchases in Flutter SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk flutter']
@@ -32,6 +32,9 @@ That's why, to get a paywall to display, you need to:
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](flutter-get-pb-paywalls).
 ::: 
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
+:::
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -65,6 +68,10 @@ For more details on how to display a paywall, see our [guide](flutter-present-pa
 
 To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
+:::
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -74,10 +81,6 @@ try {
   // handle the error
 }
 ```
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
-:::
 
 
 ## 3. Check subscription status before displaying
@@ -112,10 +115,14 @@ When users click buttons in the paywall, purchases and restoration are handled a
 
 To control or monitor processes on the paywall screen, implement the `AdaptyUIPaywallsEventsObserver` methods and set the observer before presenting any screen. If a user has performed some action, te `paywallViewDidPerformAction` will be invoked, and your app needs to respond depending on the action ID.
 
-For example, your paywall probably has a close button. So, you need to respond to actions with the `Close` ID.
+For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy). So, you need to respond to actions with the `Close` and `OpenUrl` IDs.
 
 :::tip
-Read our [guide](flutter-handling-events) on how to handle other button actions and events.
+Read our guides on how to handle other button [actions](flutter-handle-paywall-actions.md) and [events](flutter-handling-events.md).
+:::
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
 :::
 
 ```dart showLineNumbers title="Flutter"
@@ -130,8 +137,31 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
   // This method is called when user performs an action on the paywall UI
   @override
   void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-    if (action is CloseAction) {
-      view.dismiss();
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
     }
   }
 }
@@ -145,7 +175,7 @@ Here is how all those steps can be integrated in your app together.
 ```dart
 import 'package:flutter/material.dart';
 import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:adapty_flutter/models/adapty_ui_action.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   runApp(MaterialApp(home: PaywallScreen()));
@@ -156,11 +186,12 @@ class PaywallScreen extends StatefulWidget {
   State<PaywallScreen> createState() => _PaywallScreenState();
 }
 
-class _PaywallScreenState extends State<PaywallScreen> {
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
   @override
   void initState() {
     super.initState();
-    AdaptyUI().setPaywallsEventsObserver(_handleAction);
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
     _showPaywallIfNeeded();
   }
 
@@ -184,9 +215,34 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
-  void _handleAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-    if (action is CloseAction) {
-      view.dismiss();
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
     }
   }
 
@@ -204,6 +260,5 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 }
-
 
 ```

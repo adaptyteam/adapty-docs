@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall in React Native SDK"
+title: "Show paywalls and enable purchases in React Native SDK"
 description: "Learn how to present paywalls in your React Native app with Adapty SDK."
 metadataTitle: "Present a Paywall | React Native SDK | Adapty Docs"
 slug: /react-native-quickstart-paywalls
@@ -30,6 +30,10 @@ That's why, to get a paywall to display, you need to:
 :::tip
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](react-native-get-pb-paywalls).
 ::: 
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
+:::
 
 ```typescript showLineNumbers title="React Native"
 import {createPaywallView} from '@adapty/react-native-ui';
@@ -64,6 +68,10 @@ For more details on how to display a paywall, see our [guide](react-native-prese
 
 To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
+:::
+
 ```typescript showLineNumbers title="React Native"
 try {
   await view.present();
@@ -71,10 +79,6 @@ try {
   // handle the error
 }
 ```
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
-:::
 
 ## 3. Check subscription status before displaying
 
@@ -111,20 +115,25 @@ try {
 
 ## 4. Handle button actions
 
-When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+When users click buttons in the paywall, purchases, restoration, and closing the paywall are handled automatically in the React Native SDK.
 
-For example, your paywall probably has a close button. In React Native, returning `true` in `onCloseButtonPress` is the trigger. You don’t need to call any explicit close method.
+However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
-You need to register your event handler before presenting the view.
+For example, you may want to keep the paywall open after your app users open a web link. Let's see how you can handle it in your implementation.
 
 :::tip
-Read our [guide](react-native-handling-events-1) on how to handle other button actions and events.
+Read our guides on how to handle other button [actions](react-native-handle-paywall-actions.md) and [events](react-native-handling-events-1.md).
+:::
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
 :::
 
 ```typescript showLineNumbers title="React Native"
 const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-    return true;
+    onUrlPress(url) {
+      Linking.openURL(url);
+      return false;
   },
 });
 ```
@@ -158,9 +167,9 @@ export default function PaywallScreen() {
       const view = await createPaywallView(paywall);
 
       view.registerEventHandlers({
-        onCloseButtonPress: () => {
-          // Return true to allow the paywall to close
-          return true;
+          onUrlPress(url) {
+              Linking.openURL(url);
+              return false;
         },
       });
 

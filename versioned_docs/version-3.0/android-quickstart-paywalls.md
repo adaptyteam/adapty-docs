@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall in Android SDK"
+title: "Show paywalls and enable purchases in Android SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
 keywords: ['paywalls android', 'sdk android']
@@ -29,6 +29,10 @@ That's why, to get a paywall to display, you need to:
 
 :::tip
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](android-get-pb-paywalls).
+:::
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -114,6 +118,10 @@ Now, when you have the paywall configuration, it's enough to add a few lines to 
 For more details on how to display a paywall, see our [guide](android-present-paywalls.md).
 :::
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
+:::
+
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs groupId="current-os" queryString>
@@ -176,10 +184,6 @@ paywallView.showPaywall(viewConfiguration, products, eventListener);
 </Tabs>
 
 After the view has been successfully created, you can add it to the view hierarchy and display it on the screen of the device.
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
-:::
 
 ## 3. Check subscription status before displaying
 
@@ -265,12 +269,18 @@ Adapty.getProfile(result -> {
 
 ## 4. Handle button actions
 
-When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+When users click buttons in the paywall, purchases, restoration, closing the paywall, and opening links are handled automatically in the Android SDK.
 
-For example, your paywall probably has a close button. Let's see how you can handle it in your implementation.
+However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
+
+For example, you may want to close the paywall after your app users open a web link. Let's see how you can handle it in your implementation.
 
 :::tip
-Read our [guide](android-handling-events) on how to handle other button actions and events.
+Read our guides on how to handle other button [actions](android-handle-paywall-actions.md) and [events](android-handling-events.md).
+:::
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -280,7 +290,15 @@ Read our [guide](android-handling-events) on how to handle other button actions 
 ```kotlin showLineNumbers title="Kotlin"
 override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
     when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
+        is AdaptyUI.Action.OpenUrl -> {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
+            try {
+                context.startActivity(Intent.createChooser(intent, ""))
+            } catch (e: Throwable) {
+                // Handle error if needed
+            }
+            (context as? Activity)?.onBackPressed()
+        }
     }
 }
 ```
@@ -290,7 +308,14 @@ override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
 ```java showLineNumbers
 @Override
 public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
-    if (action == AdaptyUI.Action.Close) {
+    if (action instanceof AdaptyUI.Action.OpenUrl) {
+        String url = ((AdaptyUI.Action.OpenUrl) action).getUrl();
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        try {
+            context.startActivity(Intent.createChooser(intent, ""));
+        } catch (Throwable e) {
+            // Handle error if needed
+        }
         if (context instanceof Activity) {
             ((Activity) context).onBackPressed();
         }
@@ -341,12 +366,17 @@ class MainActivity : AppCompatActivity() {
                                     viewConfiguration,
                                     null, // products = null means auto-fetch
                                     object : AdaptyUIEventListener {
-                                        override fun onActionPerformed(
-                                            action: AdaptyUI.Action,
-                                            context: Context
-                                        ) {
-                                            if (action == AdaptyUI.Action.Close) {
-                                                finish()
+                                        override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+                                            when (action) {
+                                                is AdaptyUI.Action.OpenUrl -> {
+                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
+                                                    try {
+                                                        context.startActivity(Intent.createChooser(intent, ""))
+                                                    } catch (e: Throwable) {
+                                                        // Handle error if needed
+                                                    }
+                                                    (context as? Activity)?.onBackPressed()
+                                                }
                                             }
                                         }
                                     }
@@ -402,15 +432,21 @@ public class MainActivity extends AppCompatActivity {
                                     viewConfiguration,
                                     null, // products = null means auto-fetch
                                     new AdaptyUIEventListener() {
-                                        @Override
-                                        public void onActionPerformed(
-                                            @NonNull AdaptyUI.Action action,
-                                            @NonNull Context context
-                                        ) {
-                                            if (action == AdaptyUI.Action.Close && context instanceof Activity) {
-                                                ((Activity) context).finish();
+                                       @Override
+                                            public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+                                                if (action instanceof AdaptyUI.Action.OpenUrl) {
+                                                    String url = ((AdaptyUI.Action.OpenUrl) action).getUrl();
+                                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                                    try {
+                                                        context.startActivity(Intent.createChooser(intent, ""));
+                                                    } catch (Throwable e) {
+                                                        // Handle error if needed
+                                                    }
+                                                    if (context instanceof Activity) {
+                                                        ((Activity) context).onBackPressed();
+                                                    }
+                                                }
                                             }
-                                        }
                                     }
                                 );
 

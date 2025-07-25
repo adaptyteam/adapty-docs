@@ -1,5 +1,5 @@
 ---
-title: "Present a paywall in iOS SDK"
+title: "Show paywalls and enable purchases in iOS SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
 keywords: ['paywalls ios', 'sdk ios']
@@ -30,6 +30,10 @@ That's why, to get a paywall to display, you need to:
 :::tip
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](get-pb-paywalls).
 ::: 
+
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](ios-implement-paywalls-manually).
+:::
 
 <Tabs>
 
@@ -104,6 +108,10 @@ In SwiftUI, when displaying the paywall, you also need to handle events. Some of
 Handling `didFinishPurchase` isn't required, but is useful when you want to perform actions after a successful purchase. If you don't implement that callback, the paywall will dismiss automatically.
 :::
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](ios-implement-paywalls-manually).
+:::
+
 ```swift
 struct ContentView: View {
     @State private var paywallPresented = false
@@ -157,9 +165,6 @@ func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
 </TabItem>
 </Tabs>
 
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](ios-implement-paywalls-manually).
-:::
 
 ## 3. Check subscription status before displaying
 
@@ -255,20 +260,25 @@ override func viewDidLoad() {
 
 ## 4. Handle button actions
 
-When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+When users click buttons in the paywall, purchases, restoration, closing the paywall, and opening links are handled automatically in the iOS SDK. 
 
-For example, your paywall probably has a close button. Let's see how you can handle it in your implementation.
+However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
+
+For example, you may want to close the paywall after your app users open a web link. Let's see how you can handle it in your implementation.
 
 :::tip
-Read our [guide](ios-handling-events) on how to handle other button actions and events.
+Read our guides on how to handle button [actions](handle-paywall-actions.md) and [events](ios-handling-events.md).
 :::
 
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](ios-implement-paywalls-manually).
+:::
 
 <Tabs>
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-For SwiftUI, if you get the `close` action, you change the `paywallPresented` value to `false`, so the paywall is hidden.
+For SwiftUI, if you get the `openUrl` action, you change the `paywallPresented` value to `false`, so the paywall is hidden.
 
 ```swift
 import SwiftUI
@@ -289,7 +299,8 @@ struct ContentView: View {
             // highlight-start
             didPerformAction: { action in
               switch action {
-                  case .close:
+                  case let .openURL(url):
+                      UIApplication.shared.open(url, options: [:]) 
                       paywallPresented = false
                   default:
                       // Handle other actions
@@ -306,19 +317,18 @@ struct ContentView: View {
 </TabItem>
 
 <TabItem value="uikit" label="UIKit" default>
-For UIKit, you need to implement the `paywallController(_:didPerform:)` method from the delegate that will dismiss the displayed controller when the user clicks the `close` button.
+For UIKit, you need to implement the `paywallController(_:didPerform:)` method from the delegate that will dismiss the displayed controller when the user opens a link.
 
 ```swift
-func paywallController(_ controller: AdaptyUI.PaywallController, 
-                       didPerform action: AdaptyUI.UserAction) {
-    switch action.type {
-    case .close:
-        controller.dismiss(animated: true)
-    default:
+func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .openURL(url):
+            UIApplication.shared.open(url, options: [:]) 
+            controller.dismiss(animated: true)
         break
     }
 }
-
 ```
 </TabItem>
 </Tabs>
@@ -361,10 +371,11 @@ struct ContentView: View {
       configuration: paywallConfiguration,
       didPerformAction: { action in
         switch action.type {
-          case .close:
-            paywallPresented = false
+          case let .openURL(url):
+              UIApplication.shared.open(url, options: [:]) 
+              paywallPresented = false
           default:
-            break
+              break
         }
       },
       didFailPurchase: { product, error in
@@ -481,15 +492,15 @@ class ViewController: UIViewController {
 // MARK: - AdaptyPaywallControllerDelegate
 
 extension ViewController: AdaptyPaywallControllerDelegate {
-  func paywallController(_ controller: AdaptyUI.PaywallController,
-                         didPerform action: AdaptyUI.UserAction) {
-    switch action.type {
-      case .close:
-        controller.dismiss(animated: true)
-      default:
+  func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .openURL(url):
+            UIApplication.shared.open(url, options: [:]) 
+            controller.dismiss(animated: true)
         break
     }
-  }
+ }
   
   func paywallController(_ controller: AdaptyUI.PaywallController,
                          didFailPurchase product: AdaptyPaywallProduct,
