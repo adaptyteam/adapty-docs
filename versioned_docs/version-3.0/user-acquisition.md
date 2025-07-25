@@ -14,7 +14,7 @@ User Acquisition helps you connect ad spend with subscription revenue, giving yo
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
-User Acquisition is only available with iOS Adapty SDK version 3.9.0 or higher. Compatibility with Adapty SDK for Android and Flutter is coming soon.
+User Acquisition is only available with iOS and Android Adapty SDK version 3.9.0 or higher. Compatibility with the Adapty SDK for Flutter is coming soon.
 :::
 
 ## How to set up User Acquisition integration
@@ -64,7 +64,7 @@ You can check the full list of supported events [here](events.md).
 To listen for installation details updates, extend `AdaptyDelegate` with these two methods:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 Adapty.delegate = self
@@ -79,12 +79,27 @@ nonisolated func onInstallationDetailsFail(error: AdaptyError) {
 ```
 
 </TabItem>
+
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        // use installation details
+    }
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // installation details update failed
+    }
+})
+```
+
+</TabItem>
 </Tabs>
 
 You can also retrieve the installation status manually:
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS (Swift)" default>
+<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 do {
@@ -100,6 +115,32 @@ do {
     }
 } catch {
     // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.getCurrentInstallationStatus { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (result.value) {
+                is AdaptyInstallationStatus.Determined.Success -> {
+                    // Use the installation details
+                }
+                is AdaptyInstallationStatus.Determined.NotAvailable -> {
+                    // Installation details are not available on this device
+                }
+                is AdaptyInstallationStatus.NotDetermined -> {
+                    // Installation details have not been determined yet
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
 }
 ```
 
