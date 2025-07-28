@@ -94,9 +94,6 @@ Adapty allows you to send three groups of events to OneSignal. Toggle on the one
 
 Adapty sends subscription events to OneSignal using a server-to-server integration, allowing you to track all subscription-related activity in OneSignal.
 
-:::note
-For the **Subscription expired** event, Adapty sends the `last_event_type` property as `subscription_cancelled`.
-:::
 :::warning
 
 Starting April 17, 2023, OneSignal's Free Plan no longer supports this integration. It is available only on **Growth**, **Professional**, and **higher** plans. For details, see [OneSignal Pricing](https://onesignal.com/pricing).
@@ -110,17 +107,17 @@ This integration updates and assigns various properties to your Adapty users as 
 OneSignal has a tag limit. This includes both Adapty-generated tags and any existing tags in OneSignal. Exceeding the limit may cause errors when sending events.
 :::
 
-| Tag | Type | Description |
-|---|----|-----------|
-| `adapty_customer_user_id` | String | The unique identifier of the user in your app. It must be consistent across your system, Adapty, and OneSignal. |
-| `adapty_profile_id` | String | The Adapty user profile ID, available in your [Adapty Dashboard](profiles-crm). |
-| `environment` | String | `Sandbox` or `Production`, indicating the user’s current environment. |
-| `store` | String | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store). |
-| `vendor_product_id` | String | The product ID in the app store (e.g., `org.locals.12345`). |
-| `subscription_expires_at` | String | Expiration date of the latest subscription (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`). |
-| `last_event_type` | String | The latest event type from the [Adapty event list](events). |
-| `purchase_date` | String | Last transaction date (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`). |
-| `active_subscription` | String | `true` if the user has an active subscription and `false` if the subscription has expired. |
+| Tag | Type | Description                                                                                                                                     |
+|---|----|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `adapty_customer_user_id` | String | The unique identifier of the user in your app. It must be consistent across your system, Adapty, and OneSignal.                                 |
+| `adapty_profile_id` | String | The Adapty user profile ID, available in your [Adapty Dashboard](profiles-crm).                                                                 |
+| `environment` | String | `Sandbox` or `Production`, indicating the user’s current environment.                                                                           |
+| `store` | String | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store).       |
+| `vendor_product_id` | String | The product ID in the app store (e.g., `org.locals.12345`).                                                                                     |
+| `subscription_expires_at` | String | Expiration date of the latest subscription (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                               |
+| `last_event_type` | String | The latest event type from the [Adapty event list](events). For the **Subscription expired** event, Adapty sends the `last_event_type` property as `subscription_cancelled`.                                                                                    |
+| `purchase_date` | String | Last transaction date (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                                                    |
+| `active_subscription` | String | `true` if the user has an active subscription and `false` if the subscription has expired.                                                      |
 | `period_type` | String | Indicates the most recent period type for the purchase or renewal. Possible values: `trial` for a trial period or `normal` for all other cases. |
 
 All float values are rounded to integers. The strings remain unchanged.
