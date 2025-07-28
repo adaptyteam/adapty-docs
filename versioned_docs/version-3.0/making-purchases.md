@@ -2,7 +2,7 @@
 title: "Make purchases in mobile app in iOS SDK"
 description: "Guide on handling in-app purchases and subscriptions using Adapty."
 metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
-keywords: ['makePurchase', 'pending']
+keywords: ['makePurchase', 'pending', 'purchase']
 rank: 100
 ---
 
