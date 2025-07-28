@@ -7,22 +7,13 @@ metadataTitle: "Onboarding custom HTML | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-## Custom HTML elements
+
 
 Custom HTML lets you create unique interactions, embed third-party widgets, or quickly test experimental elements without app updates.
-
-This is ideal when you need to embed or test interactive components that go beyond built-in elements. For example:
-- Map previews
-- Social media embeds
-- Dynamic banners
-- Advanced countdowns and charts
-- Custom interactive elements
 
 :::note
 Custom HTML elements are not preloaded or cached, so we recommend using raw HTML only for small, lightweight elements.
 :::
-
-## Add custom HTML
 
 To insert custom HTML code:
 

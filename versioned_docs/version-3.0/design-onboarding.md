@@ -19,7 +19,7 @@ If some users need a slightly different flow (for example, in a fitness app, you
 Instead, you can [personalize onboarding for different user groups](onboarding-user-engagement.md) using flows based on user choices.
 
 :::tip
-For smooth screen transitions, choose a [background color](onboarding-media.md#background-customization) that matches your overall onboarding design (e.g., use grey or black for onboardings with mostly dark screens) or customize the [splash screen](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
+For smooth screen transitions, choose a [background color](onboarding-media.md#background-customization) that matches your overall onboarding design (e.g., use grey or black for onboardings with mostly dark screens).
 :::
 
 
@@ -43,21 +43,6 @@ You can add the following groups of elements:
 
   <Zoom>
   <img src={require('./img/design-onboarding4.png').default}
-  style={{
-  border: '1px solid #727272', /* border width and color */
-  width: '700px', /* image width */
-  display: 'block', /* for alignment */
-  margin: '0 auto' /* center alignment */
-  }}
-  />
-  </Zoom>
-
-### Element ID
-
-To process user input in a specific field (e.g., save their age or email), assign it an **element ID** and then [use it in your source code](ios-handling-onboarding-events.md) to associate questions with answers. Element IDs can only be used once in your onboarding.
-
-  <Zoom>
-  <img src={require('./img/design-onboarding5.png').default}
   style={{
   border: '1px solid #727272', /* border width and color */
   width: '700px', /* image width */
@@ -104,7 +89,7 @@ The builder offers the following customization options:
   }}
   />
   </Zoom>
-- **Screen** tab: Set up general screen configuration, such as headers or screen counter display.
+- **Screen** tab: Set up general screen configuration, such as headers or screen counters.
   <Zoom>
   <img src={require('./img/design-onboarding3.png').default}
   style={{
