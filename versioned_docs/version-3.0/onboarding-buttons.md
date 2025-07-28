@@ -17,18 +17,18 @@ Use a Pulse Button to draw attention and boost click-through rates. Or add a Cou
 To add a button:
 1. Click **Add** at the top left.
 2. Select **Buttons** and choose one:
-   - **Button**: A basic button with a custom label.
-   - **Pulse Button**: A button with a subtle pulsing animation.
-   - **Glossy Button**: A button with a moving glossy line animation.
-   - **Pulse Glossy Button**: A pulsing button with a moving glossy line.
-   - **Countdown Button**: A button that shows a live countdown.
+   - **Button**
+   - **Pulse Button**
+   - **Glossy Button**
+   - **Pulse Glossy Button**
+   - **Countdown Button**
 3. Choose the [button action](onboarding-actions.md) from the **On Press** dropdown on the right:
    - **Navigate**: Moves the user to a specified onboarding screen.
    - **Show/Hide element**: Shows or hides a target element.
-   - **Open paywall**: Opens the paywall screen for purchases.
+   - **Open paywall**: Opens the paywall screen for purchases. Learn how to handle opening paywall on [iOS](ios-handling-onboarding-events.md#opening-a-paywall), [Android](android-handle-onboarding-events.md#opening-a-paywall), [Flutter](flutter-handling-onboarding-events.md#opening-a-paywall), and [React Native](react-native-handling-onboarding-events.md#opening-a-paywall).
    - **Scroll to**: Scrolls the page to a specific element.
-   - **Custom**: Runs your custom event logic.
-   - **Close onboarding**: Closes the onboarding flow.
+   - **Custom**: Runs your custom event logic. Learn how to handle custom action on [iOS](ios-handling-onboarding-events.md#custom-actions), [Android](android-handle-onboarding-events.md#custom-actions), [Flutter](flutter-handling-onboarding-events.md#handle-custom-actions), and [React Native](react-native-handling-onboarding-events.md#handle-custom-actions).
+   - **Close onboarding**: Closes the onboarding flow. Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [Flutter](flutter-handling-onboarding-events.md#closing-onboarding), and [React Native](react-native-handling-onboarding-events.md#closing-onboarding).
 
 To edit button text, click the button preview and make your changes in WYSIWYG mode.
 

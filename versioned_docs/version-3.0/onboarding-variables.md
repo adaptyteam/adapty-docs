@@ -19,6 +19,10 @@ You can use variables to capture data from these onboarding elements:
 - **Inputs**: The variable contains data entered by the user.
 - [**Quizzes**](onboarding-quizzes.md): The variable contains the label data of selected options. If multiple answers are allowed, the variable will contain all selected options, separated by a comma and space.
 
+:::note
+Element ID is not the same as the [action ID](onboarding-actions.md#action-id) used for custom actions logic. Be sure not to mix them up.
+:::
+
 ## Use variables
 
 Here's how to use variables:

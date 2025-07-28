@@ -72,7 +72,9 @@ In addition to the basic [element layout](onboarding-layout.md#element-layout), 
     - **List**: Text and marker text color and font, marker image width, height, and roundness.
 
 :::tip
-After customizing a text element, you can click **Apply styles to all paragraphs** below to apply the same styles across all onboarding screens in bulk.
+To speed things up:
+- After customizing a text element, you can click **Apply styles to all paragraphs** below to apply the same styles across all onboarding screens in bulk.
+- To change the font for all text elements on a specific screen, select the screen, then go to **Styles > Text** on the right menu.
 :::
 
 <Zoom>

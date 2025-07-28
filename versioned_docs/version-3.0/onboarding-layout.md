@@ -11,13 +11,17 @@ The no-code mobile app onboarding builder offers two layout layers:
 - Screen layout: global padding and grid via containers.
 - Element layout: per-element spacing, position, borders, and shadows.
 
+:::tip
+To reorder screens or elements, simply drag and drop them in the left pane.
+:::
+
 ## Screen layout
 You can adjust a screen in two ways:
 - [Using screen style settings](#screen-style-settings)
 - [Using containers](#containers)
 
 ### Screen style settings
-To adjust the space between elements and the screen edge:
+To reduce or increase the distance between elements and the screen edge:
 1. Select the screen on the left.
 2. Go to the **Styles** tab on the right.
 3. Set the top, bottom, and horizontal padding in the **Padding** section.
@@ -34,15 +38,15 @@ To adjust the space between elements and the screen edge:
 </Zoom>
 
 ### Containers
-Containers create flexible grids or side-by-side layouts and hold other elements such as typography or media.
+You may want to add side-by-side text and images, swipeable galleries, or modal pop-ups. Containers make this easy by letting you create columns, rows, carousels, and centered overlays.
 
 To add a container:
 1. Click **Add** at the top left.
 2. Go to **Containers** and choose one:
-- **Columns**: Splits the screen into equal vertical sections so you can place elements side-by-side (e.g., two-column text or image-plus-copy layouts).
-- **Rows**: Lays out several elements in one horizontal band, keeping them aligned and evenly spaced.
-- **Carousel**: Holds a set of cards in a swipeable gallery, letting users flip through multiple pieces of content without leaving the current screen.
-- **Popup**: Displays content inside a centred overlay that floats above the page, great for attention-grabbing promos or notices.
+- **Columns**: Split the screen into vertical sections for side‑by‑side content (e.g., two-column text or image-plus-copy layouts).
+- **Rows**: Line up items in a single horizontal band with even spacing.
+- **Carousel**: Let users swipe through a series of cards.
+- **Popup**: Show content in a centered overlay above the page.
 3. Create the elements you want to hold, then drag&drop them into the container from the left menu.
 
 <Zoom>
