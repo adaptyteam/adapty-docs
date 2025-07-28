@@ -26,7 +26,7 @@ PUT https://api.adapty.io/api/v2/server-side-api/paywalls/{paywall_id}/
 <TabItem value="curl" label="cURL" default> 
 
 ```bash showLineNumbers
-curl --location --request PUT 'https://api.adapty.io/api/v2/server-side-api/paywalls/12345678-1234-1234-1234-123456789012/' \
+curl --location --request PUT 'https://api.adapty.io/api/v2/server-side-api/paywalls/{paywall_id}/' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>' \
 --data '{
@@ -55,7 +55,7 @@ curl --location --request PUT 'https://api.adapty.io/api/v2/server-side-api/payw
 import requests
 import json
 
-url = "https://api.adapty.io/api/v2/server-side-api/paywalls/12345678-1234-1234-1234-123456789012/"
+url = "https://api.adapty.io/api/v2/server-side-api/paywalls/{paywall_id}/"
 
 payload = {
     "remote_configs": [
@@ -117,7 +117,7 @@ const requestOptions = {
   redirect: "follow"
 };
 
-fetch("https://api.adapty.io/api/v2/server-side-api/paywalls/12345678-1234-1234-1234-123456789012/", requestOptions)
+fetch("https://api.adapty.io/api/v2/server-side-api/paywalls/{paywall_id}/", requestOptions)
   .then((response) => response.text())
   .then((result) => console.log(result))
   .catch((error) => console.error(error));
