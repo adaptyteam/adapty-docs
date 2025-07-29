@@ -12,19 +12,24 @@ Integrate Adapty SDK into your app to:
 - Automatically track user profile changes
 
 Currently, Adapty has the following SDKs available:
-- [**Adapty iOS SDK.**](ios-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
-- [**Adapty Android SDK.**](android-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
-- [**Adapty Flutter SDK.**](flutter-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
-- [**Adapty React Native SDK.**](react-native-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
-- [**Adapty Unity SDK.**](unity-sdk-overview.md) [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
+[**Adapty iOS SDK**](ios-sdk-overview.md) | [**Adapty Android SDK**](android-sdk-overview.md) | [**Adapty Flutter SDK**](flutter-sdk-overview.md)
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases) &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases) &nbsp; &nbsp; &nbsp; &nbsp; [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
+
+
+[**Adapty React Native SDK**](react-native-sdk-overview.md) | [**Adapty Unity SDK**](unity-sdk-overview.md)
+
+&nbsp; &nbsp; &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
 
 ## How does it work
 
 For the basic implementation of the Adapty SDK, you need to take care of five things only:
 
 - `activate`: Install and initialize the SDK.
+- `getPaywall`: To enable in-app purchases.
 - `identify`: To link the user to their Adapty profile, access their subscription history and sync profiles across devices.
-- `getPaywall`: To get your paywall created in the [Adapty paywall builder](adapty-paywall-builder.md). When you display it, it will automatically render, and purchases will be handled automatically.
 - **Handle button actions**: Implement responses to paywall button actions in your app code.
 - **Listen for subscription status updates**: Update the profile information to control whether paid content is available.
 
@@ -48,3 +53,7 @@ You have three paths to get started depending on your preferences:
   - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
   - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
   - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity)
+
+## Next steps
+
+Once you've configured the Adapty SDK in the app code, you can move on to [testing the implementation](quickstart-test.md).

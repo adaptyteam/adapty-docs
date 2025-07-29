@@ -22,12 +22,12 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Install Adapty SDK
 
-[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
-
 Choose your dependency setup method:
 - Standard Gradle: Add dependencies to your **module-level** `build.gradle`
 - If your project uses `.gradle.kts` files, add dependencies to your module-level `build.gradle.kts`
 - If you use version catalogs, add dependencies to your `libs.versions.toml` file
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
 
 <Tabs>
 <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
@@ -35,7 +35,7 @@ Choose your dependency setup method:
 ```groovy showLineNumbers
 dependencies {
     ...
-    implementation platform('io.adapty:adapty-bom:+')
+    implementation platform('io.adapty:adapty-bom:<the latest SDK version>')
     implementation 'io.adapty:android-sdk'
     
     // Only add this line if you plan to use Paywall Builder
@@ -49,7 +49,7 @@ dependencies {
 ```kotlin showLineNumbers
 dependencies {
     ...
-    implementation(platform("io.adapty:adapty-bom:+"))
+    implementation(platform("io.adapty:adapty-bom:<the latest SDK version>"))
     implementation("io.adapty:android-sdk")
     
     // Only add this line if you plan to use Paywall Builder:
@@ -65,7 +65,7 @@ dependencies {
 
 [versions]
 ..
-adaptyBom = "+"
+adaptyBom = "<the latest SDK version>"
 
 [libraries]
 ..

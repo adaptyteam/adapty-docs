@@ -100,6 +100,10 @@ Basic integration of the Adapty SDK into your app comprises four main steps:
 3. [Identify users](react-native-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
 4. [Check the subscription status](react-native-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 
+For a complete implementation walkthrough, you can also see the video:
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
 :::note
 Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenuecat.md) to make this experience as simple as possible.

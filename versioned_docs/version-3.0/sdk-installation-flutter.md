@@ -33,18 +33,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
 
-1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
+1. Add Adapty to your `pubspec.yaml` file:
 
    ```yaml showLineNumbers title="pubspec.yaml"
-   dependencies:
-     flutter:
-       sdk: flutter
-     
-     # Core Adapty SDK (required)
-     adapty_flutter: any
-     
-     # AdaptyUI SDK (optional - only if you plan to use Paywall Builder)
-     adapty_ui_flutter: any
+   dependencies: 
+     adapty_flutter: ^<the latest SDK version>
    ```
 
 2. Run the following command to install dependencies:
@@ -57,7 +50,6 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
    ```dart showLineNumbers title="main.dart"
    import 'package:adapty_flutter/adapty_flutter.dart';
-   import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
    ```
 
 ## Activate Adapty module of Adapty SDK

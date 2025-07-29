@@ -8,6 +8,8 @@ displayed_sidebar: sdkios
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
 
@@ -100,6 +102,23 @@ Basic integration of the Adapty SDK into your app comprises four main steps:
 3. [Identify users](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
 4. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 
+
+For a complete implementation walkthrough, you can also see the videos:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
 
 :::note
 Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenuecat.md) to make this experience as simple as possible.
