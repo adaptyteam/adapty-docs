@@ -94,6 +94,21 @@ Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
 ```
 
 </TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```javascript showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+    // use installation details
+});
+
+Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
+    // installation details update failed
+});
+```
+
+</TabItem>
+
 </Tabs>
 
 You can also retrieve the installation status manually:
@@ -145,4 +160,28 @@ Adapty.getCurrentInstallationStatus { result ->
 ```
 
 </TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```javascript showLineNumbers
+try {
+    final status = await Adapty().getCurrentInstallationStatus();
+
+    switch (status) {
+        case AdaptyInstallationStatusNotAvailable():
+        // Installation details are not available on this device
+        case AdaptyInstallationStatusNotDetermined():
+        // Installation details have not been determined yet
+        case AdaptyInstallationStatusDetermined(details: final details):
+        // Use the installation details
+    }
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+
 </Tabs>
