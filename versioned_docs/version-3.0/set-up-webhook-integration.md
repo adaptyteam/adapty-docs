@@ -2,6 +2,7 @@
 title: "Set up webhook integration"
 description: "Set up webhook integration in Adapty to automate event tracking."
 metadataTitle: "Setting Up Webhook Integration | Adapty Docs"
+rank: 100
 ---
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
