@@ -11,7 +11,13 @@ import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
 import PaywallObject from '@site/src/components/reusable/PaywallObject.md';
 
-Updates the [remote config](customize-paywall-with-remote-config.md) of a specific paywall. This endpoint allows you to modify the remote config values that helps you to customize the paywall's appearance and behavior.
+Updates the [remote config](customize-paywall-with-remote-config.md) of a specific paywall. This endpoint allows you to modify the remote config values that help you to customize the paywall's appearance and behavior.
+
+:::important
+If you update a remote config, it will overwrite all the existing remote configs!
+
+If you need to preserve the existing remote configs, first, [get the paywall](ss-get-paywall.md). Then, copy the `remote_configs` from there and modify the objects you need in the update request.
+:::
 
 ## Method and endpoint
 
@@ -32,16 +38,8 @@ curl --location --request PUT 'https://api.adapty.io/api/v2/server-side-api/payw
 --data '{
   "remote_configs": [
     {
-      "key": "paywall_title",
-      "value": "Unlock Premium Features"
-    },
-    {
-      "key": "paywall_subtitle", 
-      "value": "Get access to all premium content"
-    },
-    {
-      "key": "button_text",
-      "value": "Subscribe Now"
+      "locale": "en",
+      "data": "{\"title\":\"Premium Features\",\"subtitle\":\"Unlock all premium content\"}"
     }
   ]
 }'
@@ -59,17 +57,9 @@ url = "https://api.adapty.io/api/v2/server-side-api/paywalls/{paywall_id}/"
 
 payload = {
     "remote_configs": [
-        {
-            "key": "paywall_title",
-            "value": "Unlock Premium Features"
-        },
-        {
-            "key": "paywall_subtitle",
-            "value": "Get access to all premium content"
-        },
-        {
-            "key": "button_text",
-            "value": "Subscribe Now"
+       {
+            "locale": "en",
+            "data": "{\"title\":\"Premium Features\",\"subtitle\":\"Unlock all premium content\"}"
         }
     ]
 }
@@ -95,18 +85,10 @@ myHeaders.append("Content-Type", "application/json");
 
 const raw = JSON.stringify({
   "remote_configs": [
-    {
-      "key": "paywall_title",
-      "value": "Unlock Premium Features"
-    },
-    {
-      "key": "paywall_subtitle",
-      "value": "Get access to all premium content"
-    },
-    {
-      "key": "button_text",
-      "value": "Subscribe Now"
-    }
+      {
+          "locale": "en",
+          "data": "{\"title\":\"Premium Features\",\"subtitle\":\"Unlock all premium content\"}"
+      }
   ]
 });
 
@@ -142,70 +124,186 @@ Placeholders:
 
 ### Request body
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `remote_configs` | array | Yes | Array of remote configuration key-value pairs to update |
-
-#### Remote config object
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `key` | string | Yes | The configuration key |
-| `value` | string | Yes | The configuration value |
+| Parameter | Type | Required | Description                                                                    |
+|-----------|------|----------|--------------------------------------------------------------------------------|
+| `remote_configs` | array | Yes | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects to update |
 
 ---
 
 ## Successful response: 200: OK
 
-The object that contains information on a paywall.
+Returns the updated paywall information. The `paywall` object contains the following properties:
 
-#### Properties
 
-| Name          | Type             | Required           | Description                                                  |
-| ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |
-| placement_id  | String           | :heavy_plus_sign:  | The ID of the [Placement](https://adapty.io/docs/placements) where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard. |
-| variation_id  | String(uuid)     | :heavy_plus_sign:  | The variation ID used to track purchases linked to this specific paywall. |
-| paywall_id    | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                        |
-| ab_test_name  | String           | :heavy_minus_sign: | The name of the parent A/B test.                             |
-| paywall_name  | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard. |
-| products      | Array of objects | :heavy_plus_sign:  | Array of [Products](server-side-api-objects#product) objects containing product information for the paywall. |
-| remote_config | JSON             | :heavy_minus_sign: | A [RemoteConfig](web-api-objects#remoteconfig-object) object in JSON format containing the full [remote config](customize-paywall-with-remote-config) of the paywall. |
+| Name                                  | Type             | Required           | Description                                                                                 |
+|---------------------------------------|------------------|--------------------|---------------------------------------------------------------------------------------------|
+| title                                 | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard.                               |
+| use_paywall_builder                   | Boolean          | :heavy_plus_sign:  | Whether the paywall uses the legacy paywall builder.                                        |
+| use_paywall_builder_v4                | Boolean          | :heavy_minus_sign: | Whether the paywall uses the [New paywall builder](adapty-paywall-builder).                 |
+| remote_config_legacy                  | String           | :heavy_minus_sign: | Legacy remote config string.                                                                |
+| paywall_id                            | String           | :heavy_minus_sign: | The unique identifier of the paywall.                                                       |
+| screenshot_id                         | Integer          | :heavy_minus_sign: | ID of the main screenshot.                                                                  |
+| builder_screenshot_id                 | Integer          | :heavy_minus_sign: | ID of the builder screenshot.                                                               |
+| updated_at                            | String           | :heavy_minus_sign: | Timestamp when the paywall was last updated.                                                |
+| created_at                            | String           | :heavy_minus_sign: | Timestamp when the paywall was created.                                                     |
+| state                                 | String           | :heavy_minus_sign: | The current state of the paywall: `draft`, `live`, `inactive`, or `archived`.               |
+| is_deleted                            | Boolean          | :heavy_minus_sign: | Whether the paywall is marked as deleted.                                                   |
+| type                                  | String           | :heavy_minus_sign: | The paywall type.                                                                           |
+| has_transactions                      | Boolean          | :heavy_minus_sign: | Whether the paywall has associated transactions.                                            |
+| allow_to_update                       | Boolean          | :heavy_minus_sign: | Whether the paywall can be updated.                                                         |
+| web_purchase_url                      | String           | :heavy_minus_sign: | URL for [web purchases](web-paywall), if applicable.                                        |
+| has_deprecated_paywall_builder_config | Boolean          | :heavy_minus_sign: | Whether the paywall has deprecated builder config.                                          |
+| screenshot                            | Object           | :heavy_minus_sign: | Main screenshot object with `image_id` and `url`.                                           |
+| builder_screenshot                    | Object           | :heavy_minus_sign: | Builder screenshot object with `image_id` and `url`.                                        |
+| products                              | Array of objects | :heavy_plus_sign:  | Array of [Product](web-api-objects#products-object) objects containing product information. |
+| remote_configs                        | Array of objects | :heavy_minus_sign: | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects with locale and data.  |
+| builder                               | Object           | :heavy_minus_sign: | The legacy paywall builder configuration object.                                            |
+| paywall_builder_v3                    | Object           | :heavy_minus_sign: | The new paywall builder configuration object.                                               |
 
-#### Example
+### Example response
 
 ```json showLineNumbers
 {
-    "placement_id": "premium_paywall_placement",
-    "variation_id": "12345678-1234-1234-1234-123456789012",
-    "paywall_id": "internal_paywall_id_123",
-    "ab_test_name": "Premium Offer A | Premium Offer B",
-    "paywall_name": "Premium Subscription",
-    "products": [
-        {
-            "title": "Premium Monthly",
-            "is_consumable": false,
-            "adapty_product_id": "prod_123456",
-            "vendor_product_id": "premium_monthly",
-            "introductory_offer_eligibility": true,
-            "promotional_offer_eligibility": true,
-            "base_plan_id": "B1",
-            "offer": {
-                "category": "introductory",
-                "type": "free_trial",
-                "id": "free_trial_offer_123"
-            }
-        }
-    ],
-    "remote_config": {
-        "lang": "en",
-        "data": {
-            "paywall_title": "Unlock Premium Features",
-            "paywall_subtitle": "Get access to all premium content",
-            "button_text": "Subscribe Now",
-            "background_color": "#ffffff",
-            "text_color": "#000000"
-        }
+  "paywall": {
+    "title": "Premium Subscription",
+    "use_paywall_builder": true,
+    "use_paywall_builder_v4": false,
+    "remote_config_legacy": "",
+    "paywall_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "screenshot_id": 123,
+    "builder_screenshot_id": 124,
+    "updated_at": "2025-07-29T06:18:53.536Z",
+    "created_at": "2025-07-29T06:18:53.536Z",
+    "state": "draft",
+    "is_deleted": false,
+    "type": "normal",
+    "has_transactions": true,
+    "allow_to_update": false,
+    "web_purchase_url": "https://example.com/purchase",
+    "has_deprecated_paywall_builder_config": false
+  },
+  "screenshot": {
+    "image_id": 123,
+    "url": "https://public-media.adapty.io/public/screenshot.jpg"
+  },
+  "builder_screenshot": {
+    "image_id": 124,
+    "url": "https://public-media.adapty.io/public/builder-screenshot.jpg"
+  },
+  "products": [
+    {
+      "product_id": "b136422f-8153-402a-afbb-986929c68f6a",
+      "title": "Premium Monthly",
+      "product_set": "uncategorised",
+      "offer": {
+        "product_offer_id": "e31a4296-f250-4faf-ac80-3cc93c2da8f5",
+        "title": "Free Trial"
+      },
+      "ordering_index": 0
     }
+  ],
+  "remote_configs": [
+    {
+      "locale": "en",
+      "data": "{\"title\":\"Premium Features\",\"subtitle\":\"Unlock all premium content\"}"
+    }
+  ],
+  "builder": {
+    "paywall_builder_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "config": {
+      "format": "2.0.0",
+      "template_id": "basic",
+      "template_revision": 2,
+      "assets": [
+        {
+          "id": "primary-color",
+          "type": "color",
+          "value": "#b8180F"
+        },
+        {
+          "id": "background-gradient",
+          "type": "linear-gradient",
+          "values": [
+            {
+              "color": "#686bDf",
+              "p": 0
+            }
+          ],
+          "points": {
+            "x0": 0,
+            "y0": 0,
+            "x1": 0,
+            "y1": 0
+          }
+        }
+      ],
+      "default_localization": "en-GB",
+      "localizations": [
+        {
+          "id": "en-GB",
+          "strings": [
+            {
+              "id": "str-title",
+              "value": "Become a Premium user",
+              "has_tags": false,
+              "fallback": "Premium Subscription"
+            }
+          ]
+        }
+      ],
+      "is_hard_paywall": false,
+      "main_image_relative_height": 0.56
+    },
+    "paywall_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  },
+  "paywall_builder_v3": {
+    "paywall_builder_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "paywall_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "builder_config": {
+      "format": "4.0.0",
+      "template_id": "premium_template",
+      "template_revision": 1,
+      "assets": [
+        {
+          "id": "primary-color",
+          "type": "color",
+          "value": "#b8180F"
+        },
+        {
+          "id": "accent-color",
+          "type": "linear-gradient",
+          "values": [
+            {
+              "color": "#686bDf",
+              "p": 0
+            }
+          ],
+          "points": {
+            "x0": 0,
+            "y0": 0,
+            "x1": 0,
+            "y1": 0
+          }
+        },
+        {
+          "id": "main-font",
+          "type": "font",
+          "value": "system",
+          "resources": [
+            "font-resource"
+          ],
+          "family_name": "adapty_system",
+          "weight": 400,
+          "italic": true,
+          "size": 15,
+          "color": "#000000FF"
+        }
+      ],
+      "default_localization": "en",
+      "styles": "premium_style"
+    },
+    "front_config": {}
+  }
 }
 ```
 
