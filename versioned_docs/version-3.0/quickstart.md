@@ -16,6 +16,28 @@ We’re thrilled you’ve decided to use Adapty! We want you to get the best res
 
 After you sign up for Adapty and enter your mobile app's name and category, we’ll set up the app for you on the Adapty platform. Next, you’ll need to complete the initial integration with in-app purchase platforms.
 
+See our quickstart videos for a complete implementation walkthrough:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="reactnative" label="React Native (Expo)" default> 
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
+
 ## Configuring platforms
 
 <Tabs groupId="current-os" queryString> 
