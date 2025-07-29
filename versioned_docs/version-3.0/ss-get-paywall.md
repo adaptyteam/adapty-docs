@@ -85,9 +85,9 @@ Placeholders:
 
 ### Path parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `paywall_id` | string | Yes | The unique identifier of the paywall to retrieve |
+| Parameter | Type | Required          | Description |
+|-----------|------|-------------------|-------------|
+| `paywall_id` | string | :heavy_plus_sign: | The unique identifier of the paywall to retrieve |
 
 ---
 
@@ -120,7 +120,7 @@ The `paywall` object in the response contains the following properties:
 | builder                               | Object           | :heavy_minus_sign: | The legacy paywall builder configuration object.                                            |
 | paywall_builder_v3                    | Object           | :heavy_minus_sign: | The new paywall builder configuration object.                                               |
 
-### Example response
+### Example
 
 ```json showLineNumbers
 {

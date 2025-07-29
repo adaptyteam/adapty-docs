@@ -120,13 +120,13 @@ Placeholders:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `paywall_id` | string | Yes | The unique identifier of the paywall to update |
+| `paywall_id` | string | :heavy_plus_sign: | The unique identifier of the paywall to update |
 
 ### Request body
 
 | Parameter | Type | Required | Description                                                                    |
 |-----------|------|----------|--------------------------------------------------------------------------------|
-| `remote_configs` | array | Yes | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects to update |
+| `remote_configs` | array | :heavy_plus_sign: | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects to update |
 
 ---
 
@@ -160,7 +160,7 @@ Returns the updated paywall information. The `paywall` object contains the follo
 | builder                               | Object           | :heavy_minus_sign: | The legacy paywall builder configuration object.                                            |
 | paywall_builder_v3                    | Object           | :heavy_minus_sign: | The new paywall builder configuration object.                                               |
 
-### Example response
+### Example
 
 ```json showLineNumbers
 {

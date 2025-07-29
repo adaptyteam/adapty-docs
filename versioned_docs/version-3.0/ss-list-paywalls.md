@@ -90,8 +90,8 @@ Placeholders:
 
 | Parameter   | Type    | Required | Description                                      |
 |-------------|---------|----------|--------------------------------------------------|
-| `page`      | integer | No       | Page number for pagination (default: 1)          |
-| `page_size` | integer | No       | Number of items per page (default: 20, max: 100) |
+| `page`      | integer | :heavy_minus_sign:       | Page number for pagination (default: 1)          |
+| `page_size` | integer | :heavy_minus_sign:       | Number of items per page (default: 20, max: 100) |
 
 ---
 
@@ -132,7 +132,7 @@ The response includes a `meta` object with the `pagination` object inside. The `
 | pages | Integer | :heavy_plus_sign: | Total number of pages.    |
 
 
-### Successful response example
+### Example
 
 ```javascript showLineNumbers
 {
