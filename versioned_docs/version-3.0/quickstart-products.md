@@ -17,15 +17,15 @@ In Adapty, anything your app sells is a **product**. If the same item exists in 
 
 Let’s add your first product.
 
-## Example: Add monthly subscription as product
+## Add your first product
 
 :::tip
-This quickstart covers the basics you need to create a product. For more details on each step, see the guides on [creating products](create-product.md) and [offers](create-offer.md).
+This quickstart covers the basics you need to create a product. For more details, see the guide on [creating products](create-product.md).
 :::
 
 Let's say you want to add a monthly subscription as a product.
 
-1. Go to [Products > Products](https://app.adapty.io/products) from the Adapty main menu.
+1. Go to [Products](https://app.adapty.io/products) from the Adapty main menu.
 2. Click **Create product** at the top right.
 
 <Zoom>
@@ -43,16 +43,16 @@ Let's say you want to add a monthly subscription as a product.
 - **Product name**: The name visible only to you across the Adapty dashboard.
 - **Access level ID**: The unique identifier that determines which features are unlocked after purchasing the product. Learn more about [access levels](access-level.md).
 - **Period**: The subscription duration. This matches the period configured in the store.
+  
+  :::note
+  
+    By default, all products have an **Uncategorized** period. Make sure to set the correct one, otherwise there might be problems with granting access to your customers.  
+    If the product is not a subscription, use the following options:
+  
+  :::
   - **Lifetime**: Use a lifetime period for products that unlock the premium features of the app forever.
-  - **Non-Subscriptions**: For products that are not subscriptions and therefore have no duration, use non-subscriptions. These can unlock additional features, consumable products, etc.
+  - **Non-Subscriptions**: For products that are not subscriptions and therefore have no duration, use non-subscriptions. These can unlock additional features.
   - **Consumables**: Consumable items can be purchased multiple times. They can be used up during the life of the application. Examples are in-game currency and extras. Note that consumable products don't affect access levels.
-
-:::note
-
-By default, all products have an **Uncategorized** period. Make sure to set the correct one, otherwise there might be problems with granting access to your customers.  
-If the product is not a subscription, use the following options:
-
-:::
 
 <Zoom>
   <img src={require('./img/product-details.png').default}
@@ -163,6 +163,9 @@ Keep in mind that Adapty only tracks transactions from the App Store, Google Pla
 </Zoom>
 
 5. (Optional) [Create offers](create-offer.md) for the product if needed.
+:::tip
+For the quickstart, skip offers for now and explore them later, since they’re an advanced topic.
+:::
 
 Your product will appear in the product list.
 
