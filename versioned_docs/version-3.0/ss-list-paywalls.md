@@ -26,7 +26,7 @@ GET https://api.adapty.io/api/v2/server-side-api/paywalls/
 <TabItem value="curl" label="cURL" default> 
 
 ```bash showLineNumbers
-curl --location 'https://api.adapty.io/api/v2/server-side-api/paywalls/?page=1&page_size=2' \
+curl --location 'https://api.adapty.io/api/v2/server-side-api/paywalls/paywalls/?page%5Bnumber%5D=1&page%5Bsize%5D=10' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
@@ -41,8 +41,8 @@ import json
 
 url = "https://api.adapty.io/api/v2/server-side-api/paywalls/"
 params = {
-    "page": 1,
-    "page_size": 2
+    "page[number]": 1,
+    "page[size]": 2
 }
 
 headers = {
@@ -70,7 +70,7 @@ const requestOptions = {
   redirect: "follow"
 };
 
-fetch("https://api.adapty.io/api/v2/server-side-api/paywalls/?page=1&page_size=2", requestOptions)
+fetch("https://api.adapty.io/api/v2/server-side-api/paywalls/paywalls/?page%5Bnumber%5D=1&page%5Bsize%5D=10", requestOptions)
   .then((response) => response.text())
   .then((result) => console.log(result))
   .catch((error) => console.error(error));
@@ -88,10 +88,10 @@ Placeholders:
 
 ### Query parameters
 
-| Parameter   | Type    | Required | Description                                      |
-|-------------|---------|----------|--------------------------------------------------|
-| `page`      | integer | :heavy_minus_sign:       | Page number for pagination (default: 1)          |
-| `page_size` | integer | :heavy_minus_sign:       | Number of items per page (default: 20, max: 100) |
+| Parameter      | Type    | Required | Description                                      |
+|----------------|---------|----------|--------------------------------------------------|
+| `page[number]` | integer | :heavy_minus_sign:       | Page number for pagination (default: 1)          |
+| `page[size]`   | integer | :heavy_minus_sign:       | Number of items per page (default: 20, max: 100) |
 
 ---
 
