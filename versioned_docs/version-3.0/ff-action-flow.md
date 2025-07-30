@@ -143,10 +143,10 @@ Great! We’ve retrieved the Adapty paywall. Now, let's get the products associa
 
 Before moving on, let’s verify that the Adapty paywall was received successfully. If so, we can update the paywall with the product data. If not, we’ll handle the error. Here's how to add the check:
 
-1. Click the **plus (+)** button and click **Add Conditional**.
+1. Click **+** and click **Add Conditional**.
 
   <Zoom>
-    <img src={require('./FF_img/new-add-conditional.webp').default}
+    <img src={require('./img/ff-add-conditional.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -159,7 +159,7 @@ Before moving on, let’s verify that the Adapty paywall was received successful
 2. In the **Action Output** section, select the action output variable created earlier (`getPaywallResult` in our example).
 
   <Zoom>
-    <img src={require('./FF_img/condition-getPaywallResult.webp').default}
+    <img src={require('./img/ff-getpaywallresult.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -169,7 +169,7 @@ Before moving on, let’s verify that the Adapty paywall was received successful
   />
   </Zoom>
 
-3. To verify that the Adapty paywall was received, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**.
+3. To verify that the Adapty paywall was received, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**. In the **Field (AdaptyGetPaywallResult)** list, choose **value**.
 
   <Zoom>
     <img src={require('./FF_img/has-field.webp').default}
@@ -182,24 +182,20 @@ Before moving on, let’s verify that the Adapty paywall was received successful
   />
   </Zoom>
 
-4. In the **Field (AdaptyGetPaywallResult)** list, choose **value**.
-6. Click the **Confirm** button to finalize the condition. 
+4. Click **Confirm** to finalize the condition. 
 
 ## Step 1.4. Log the paywall review
 
 To ensure Adapty analytics track the paywall view, we need to log this event. Without this step, the view won’t be counted in the analytics. Here’s how:
 
-1. Click the **plus (+)** button under the **TRUE** label and click **Add Action**.
-2. In the **Select Action** field, search for and choose **logShowPaywall **.
+1. Click **+** under the **TRUE** label and click **Add Action**.
+2. In the **Select Action** field, search for and choose **logShowPaywall**.
 3. Click the **Value** field in the **Set Action Arguments** area and choose the `getPaywallResult` variable we've created. This variable contains the paywall data.
 4. Fill in the fields as follows:
+  - **Available Options**: Data Structured Field
+  - **Select Field**: value
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Available Options| Data Structured Field |
-  | Select Field| value |
-
-5. Click the **Confirm** button.
+5. Click **Confirm**.
 
 ## Step 1.5. Show error if paywall not received
 
