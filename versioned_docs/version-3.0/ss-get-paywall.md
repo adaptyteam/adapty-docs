@@ -131,8 +131,7 @@ The `paywall` object in the response contains the following properties:
       "offer": {
         "product_offer_id": "e31a4296-f250-4faf-ac80-3cc93c2da8f5",
         "title": "Free Trial"
-      },
-      "ordering_index": 0
+      }
     }
   ],
   "remote_configs": [
