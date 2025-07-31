@@ -31,7 +31,7 @@ Reusing the same `onboardingView` without recreating it may result in an `Adapty
 :::
 
 :::note
-This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To present a full-screen onboarding, [embed it in the component hierarchy](#embed-in-widget-hierarchy).
+This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To have more customization options, [embed it in the component hierarchy](#embed-in-widget-hierarchy).
 :::
 
 ```javascript showLineNumbers title="Flutter"
