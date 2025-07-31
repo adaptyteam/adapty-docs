@@ -7,6 +7,9 @@ metadataTitle: "Feature Flags Action Flow | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+:::important
+When using the FlutterFlow plugin, you can't use paywalls created in the Adapty Paywall builder. You must implement your own paywall page in FlutterFlow and connect it to Adapty.
+:::
 
 After adding the Adapty library as a dependency to your FlutterFlow project, it's time to build the flow that **retrieves Adapty paywall and product data and displays it on the paywall you've designed in FlutterFlow**.
 
@@ -169,18 +172,9 @@ Before moving on, let’s verify that the Adapty paywall was received successful
   />
   </Zoom>
 
-3. To verify that the Adapty paywall was received, check for the presence of a field with a value. In the **Available Options** list, choose **Has Field**. In the **Field (AdaptyGetPaywallResult)** list, choose **value**.
-
-  <Zoom>
-    <img src={require('./FF_img/has-field.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
+3. To verify that the Adapty paywall was received, check for the presence of a field with a value. Fill in the fields as follows:
+ - **Available Options**: Has Field
+ - **Field (AdaptyGetPaywallResult)**: value
 
 4. Click **Confirm** to finalize the condition. 
 
@@ -190,33 +184,53 @@ To ensure Adapty analytics track the paywall view, we need to log this event. Wi
 
 1. Click **+** under the **TRUE** label and click **Add Action**.
 2. In the **Select Action** field, search for and choose **logShowPaywall**.
-3. Click the **Value** field in the **Set Action Arguments** area and choose the `getPaywallResult` variable we've created. This variable contains the paywall data.
+
+  <Zoom>
+    <img src={require('./img/ff-logshowpaywall.webp').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
+
+3. Click **Value** in the **Set Action Arguments** area and choose the `getPaywallResult` variable we've created. This variable contains the paywall data.
 4. Fill in the fields as follows:
   - **Available Options**: Data Structured Field
   - **Select Field**: value
 
 5. Click **Confirm**.
 
+  <Zoom>
+    <img src={require('./img/ff-lohsgowpaywallresult.webp').default}
+    style={{
+      border: '1px solid #727272', /* border width and color */
+      width: '700px', /* image width */
+      display: 'block', /* for alignment */
+      margin: '0 auto' /* center alignment */
+    }}
+  />
+  </Zoom>
+
 ## Step 1.5. Show error if paywall not received
 
 If the Adapty paywall is not received, you need to [handle the error](error-handling-on-flutter-react-native-unity#system-storekit-codes). In this example, we'll simply display an alert message.
 
 1. Add an **Informational Dialog** action to the **FALSE** label.
-  <Zoom>
-    <img src={require('./FF_img/informational-dialog.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
 2. In the **Title** field, add text you want to see as the dialog title. In this example, it's **Error**.
-3. Click at the **Value** button of the **Message** box.
+3. Click **Value** in the **Message** box.
+
+4. Fill in the fields as follows:
+  - **Set Variable**: `getPaywallProductResult` variable we've created
+  - **Available Options**: Data Structure Field
+  - **Select Field**: error
+  - **Available Options**: Data Structure Field
+  - **Select Field**: errorMessage
 
   <Zoom>
-    <img src={require('./FF_img/value-parameters.webp').default}
+    <img src={require('./img/ff-error.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -226,10 +240,11 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
   />
   </Zoom>
 
- 4. Fill in the fields as follows:
+5. Click **Confirm**.
+6. Add a **Terminate action** to the **FALSE** flow.
 
   <Zoom>
-    <img src={require('./FF_img/error.webp').default}
+    <img src={require('./img/ff-terminate.webp').default}
     style={{
       border: '1px solid #727272', /* border width and color */
       width: '700px', /* image width */
@@ -239,26 +254,6 @@ If the Adapty paywall is not received, you need to [handle the error](error-hand
   />
   </Zoom>
 
-  | Parameter | Value |
-  |--------------------------|----------|
-  | Set Variable| `getPaywallProductResult` variable we've created  |
-  | Available Options| Data Structure Field |
-  | Select Field | error |
-  | Available Options| Data Structure Field |
-  | Select Field | errorMessage |
-
-5. Click the **Confirm** button.
-6. Add a **Terminate action** to the  **FALSE** flow.
-7. Click the **Close** button in the top-right corner.
-  <Zoom>
-    <img src={require('./FF_img/close.webp').default}
-    style={{
-      border: '1px solid #727272', /* border width and color */
-      width: '700px', /* image width */
-      display: 'block', /* for alignment */
-      margin: '0 auto' /* center alignment */
-    }}
-  />
-  </Zoom>
+7. Click **Close** in the top-right corner.
 
   Congratulations! You’ve successfully received the product data. Now, let’s [map it to your paywall you've designed in FlutterFlow](ff-add-variables-to-paywalls).
