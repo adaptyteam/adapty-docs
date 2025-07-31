@@ -19,9 +19,10 @@ To display your fallback paywall to users:
 
 1. Download the file from the Adapty Dashboard - one file per app store and Adapty SDK version - as described below.
 2. Process the file in your mobile app code:
-   1. **For iOS and Android:** Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls) and [Android](android-use-fallback-paywalls).
-   2. **For React Native:** Place it alongside your app on the user's device, and pass it to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
-   3. **For Flutter and Unity:** Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls) and [Unity](unity-use-fallback-paywalls).
+   1. **For iOS and Android:** Place the file alongside your app on the user's device, and pass the file location to the `.setFallback` method. See detailed instructions for [iOS](ios-use-fallback-paywalls) and [Android](android-use-fallback-paywalls).
+   2. **For React Native:** Place the file alongside your app on the user's device, and pass the file location to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
+   3. **For Flutter:** Place the file in your app's assets and pass the asset path to the `.setFallback` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls).
+   4. **For Unity:** Place the file in your app's StreamingAssets folder and pass the file name to the `.SetFallbackPaywalls` method. See detailed instructions for [Unity](unity-use-fallback-paywalls).
 
 
 ## Download fallback paywalls as a file in the Adapty Dashboard

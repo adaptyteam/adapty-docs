@@ -303,7 +303,7 @@ Parameters:
 1. Upgrade to version 3.0.1 as usual.
 2. Replace the fallback paywall files:
    1. [Download the latest version](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) from the Adapty Dashboard.
-   2. Store them on the user's device and pass them to the `.setFallbackPaywalls` method as described [here](react-native-use-fallback-paywalls).
+   2. Store them on the user's device and pass them to the `.setFallback` method as described [here](react-native-use-fallback-paywalls).
 
 </TabItem>
 
