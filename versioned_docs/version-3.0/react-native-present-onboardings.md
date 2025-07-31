@@ -20,16 +20,20 @@ Before you start, ensure that:
 
 Adapty React Native SDK provides two ways to present onboardings:
 
-- **Full-screen presentation (classic view)**: Modal presentation gives users native platform dismissal gestures (swipe, back button).
+- **Standalone screen**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
 
-- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic.
+- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
 
-## Present as full-screen modal
+## Present as standalone screen
 
-To display an onboarding as a full-screen modal, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
+To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+:::note
+This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To present a full-screen onboarding, [embed it in the component hierarchy](#embed-in-component-hierarchy).
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -50,7 +54,11 @@ try {
 
 ## Embed in component hierarchy
 
-To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your React Native component hierarchy:
+To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your React Native component hierarchy. This approach gives you full control over when and how the onboarding can be dismissed.
+
+:::note
+This approach is ideal for required onboardings, mandatory tutorials, or any flow where you need to ensure users complete the onboarding before proceeding. You can control dismissal through your own UI elements and logic.
+:::
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
