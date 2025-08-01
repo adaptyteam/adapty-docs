@@ -45,7 +45,7 @@ Animations are available in the Adapty iOS, Android, Flutter, and React Native S
 :::
 
 <Zoom>
-  <img src={require('./img/purchase-button.webp').default}
+  <img src={require('./img/purchase-button.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
