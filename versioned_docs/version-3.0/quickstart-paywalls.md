@@ -70,6 +70,10 @@ From here, you can:
 - Set up your [product list](paywall-product-block.md).
 - Edit texts, and more. Learn details in the [Paywall builder article](adapty-paywall-builder.md#paywall-elements).
 
+:::tip
+If your app is published on the App Store, you can create a unique, high-converting paywall tailored to your app in just seconds. Use the AI generator in the **Builder & Generator** tab.
+:::
+
 <Zoom>
   <img src={require('./img/design-quickstart.gif').default}
   style={{
