@@ -174,10 +174,10 @@ After adding locales to a paywall, make sure to [implement locale codes correctl
 
 ### Preview the localization result
 
-You can check your texts while editing by simply switching over back to the **Builder** tab and selecting another locale:
+You can check your texts while editing by simply switching over back to the **Builder & Generator** tab and selecting another locale:
 
 <Zoom>
-  <img src={require('./img/choose_localization.webp').default}
+  <img src={require('./img/locales.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

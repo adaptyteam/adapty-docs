@@ -3,19 +3,20 @@ title: "iOS - Handle paywall events"
 description: "Handle subscription-related events in iOS using Adapty for better app monetization."
 metadataTitle: "Handling Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
+
+<PaywallAction />
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
-:::warning
 This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [iOS - Handle paywall events designed with legacy Paywall Builder](ios-handling-events-legacy).
-:::
 
 <SampleApp />
 
@@ -24,67 +25,6 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyPaywallControllerDelegate` methods.
 
 ### User-generated events
-
-#### Actions
-
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `paywallController(_:didPerform:)` method will be triggered. You'll need to define what each action should do. 
-
-The following built-in actions are supported:
-
-- `close`
-- `openURL(url)`
-
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `paywallController(_:didPerform:)` will be triggered with the `.custom(id:)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
-
-Here's an example, but feel free to handle the actions in your own way:
-
-```swift showLineNumbers title="Swift"
-func paywallController(_ controller: AdaptyPaywallController,
-                       didPerform action: AdaptyUI.Action) {
-
-    switch action {
-        case .close:
-            controller.dismiss(animated: true)
-        case let .openURL(url):
-      			// handle URL opens (incl. terms and privacy links)
-            UIApplication.shared.open(url, options: [:])
-        case let .custom(id):
-            if id == "login" {
-               // implement login flow 
-            }
-            break
-    }
-}
-```
-
-<Details>
-<summary>Event examples (Click to expand)</summary>
-
-```javascript
-// Close action
-{
-  "action": "close"
-}
-
-// Open URL action
-{
-  "action": "openURL",
-  "url": "https://example.com/terms"
-}
-
-// Custom action
-{
-  "action": "custom",
-  "id": "login"
-}
-```
-</Details>
-
-:::tip
-
-Make sure to implement responses for all [built-in and custom actions](paywall-buttons) you've set up on your paywall in the Adapty Dashboard.
-
-:::
 
 #### Product selection
 
@@ -451,16 +391,6 @@ var body: some View {
           isPresented: $paywallPresented,
           paywall: paywall,
           viewConfiguration: viewConfig,
-          didPerformAction: { action in
-              switch action {
-                  case .close:
-                      paywallPresented = false
-                  case let .openURL(url):
-                      // handle opening the URL (incl. for terms and privacy)
-                  default:
-                      // handle other actions
-              }
-          },
           didSelectProduct: { /* Handle the event */  },
           didStartPurchase: { /* Handle the event */ },
           didFinishPurchase: { product, info in /* Handle the event */ },

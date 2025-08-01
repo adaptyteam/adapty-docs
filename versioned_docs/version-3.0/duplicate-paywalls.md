@@ -13,11 +13,12 @@ This creates a copy of the paywall with all its details, like its name, products
 
 To duplicate a paywall in the Adapty dashboard:
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. The paywall list page in the Adapy dashboard provides an overview of all the paywalls present in your account.
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. The paywall list page in the Adapy dashboard provides an overview of all the paywalls present in your account.
+2. Click the **3-dot** button next to the paywall and select the **Duplicate** option.
 
 
 <Zoom>
-  <img src={require('./img/07f592d-duplicate_paywall.webp').default}
+  <img src={require('./img/duplicate.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -26,11 +27,5 @@ To duplicate a paywall in the Adapty dashboard:
   }}
 />
 </Zoom>
-
-
-
-
-
-2. Click the **3-dot** button next to the paywall and select the **Duplicate** option.
 3. Adjust the new paywall and click the **Save** button.
 4. Adapty will prompt you to replace the original paywalls with their duplicates in placements if the original paywall is currently used in any placement. If you choose **Create and replace original**, the new paywalls will immediately go **Live**. Alternatively, you can create them as new paywalls in the **Draft** state and add them to placements later.

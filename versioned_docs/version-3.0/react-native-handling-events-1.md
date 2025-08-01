@@ -8,7 +8,10 @@ keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButton
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
+
+<PaywallAction />
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -18,7 +21,8 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
 
-```typescript showLineNumbers title="React Native (TSX)"
+```javascript showLineNumbers title="React Native (TSX)"
+import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
@@ -40,7 +44,10 @@ const unsubscribe = view.registerEventHandlers({
   onProductSelected(productId) { /***/},
   onRenderingFailed(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
-  onUrlPress(url) { /* handle url */ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
 });
 ```
 

@@ -8,38 +8,44 @@ rank: 80
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The no-code mobile app onboarding builder is a powerful, customizable tool that helps you provide users with the best onboarding experience. You don't need to be a developer or designer to get great results.
+The no-code mobile app onboarding builder is a powerful and customizable tool that will help you provide your users with the best onboarding experience. You don't even need to be a developer or designer to get a great result.
 
 ## Onboarding screens
 
-An onboarding flow consists of several screens that you add and design to [navigate users](onboarding-navigation-branching.md) through the experience.
+The onboarding flow consists of several screens that you add and design.
 
-If some users need a slightly different flow (for example, in a fitness app, you might want to show different 'goal' images based on the user's gender), you don't need to create separate onboardings. 
-
-Instead, you can [personalize onboarding for different user groups](onboarding-user-engagement.md) using flows based on user choices.
+Users will tap the button to navigate between them.
 
 :::tip
-For smooth screen transitions, choose a [background color](onboarding-media.md#background-customization) that matches your overall onboarding design (e.g., use grey or black for onboardings with mostly dark screens).
-:::
+If some of your users need a slightly different flow (for example, in your fitness app, you might want to show different 'goal' pictures based on the user's gender), you don't need to create separate onboardings. 
 
+Instead, you can [make some screens hidden by default and displayed only for some scenarios](onboarding-user-engagement.md).
+:::
 
 ## Onboarding elements
 
-Onboarding elements are displayed on the left. Click **Add** at the top left to add a new element, then adjust its [layout](onboarding-layout.md).
+The onboarding elements are displayed on the left in the order they are displayed. Click **Add** at the top right to add a new element.
 
-You can add the following groups of elements:
+There are the following groups of elements you can add:
 
-- [**Containers**](onboarding-layout.md): Containers let you set up flexible layouts. For example, to add two-column text, you need to add **Columns** and then drag two text blocks into **Columns** on the left pane.
-- [**Typography**](onboarding-text.md): Add pre-formatted text blocks and configure their appearance as needed.
-- [**Media & Display**](onboarding-media.md): In addition to images and videos, you can add animated charts and [custom HTML code](onboarding-html.md) to create unique interactions or embed third-party widgets. 
+- **Containers**: Containers allow you to set up a flexible layout. For example, if you want to add a two-column text, you need to add **Columns** and then drag two text blocks into **Columns** on the left pane. Or, if you are adding a carousel, you'll need to add images to the **Media** elements inside.
+- **Typography**: Add pre-formatted text blocks and configure their look as needed.
+- **Media & Display**: Except for images and videos, you can add animated charts that demonstrate your app value and encourage users. 
   
-  Learn more about [supported media formats](onboarding-media.md#supported-formats-and-size).
+  The **supported video formats** are MP4 and WebM. The **maximum media file size** is 15 MB.
 
-- [**Quiz**](onboarding-quizzes.md): Create short questionnaires with text and image options to customize the onboarding experience and learn more about your users.
-- **Inputs**: Collect user data.
-- [**Buttons**](onboarding-buttons.md): Buttons let users navigate between screens, close the onboarding, or move to the paywall. You can also add glossy or animated buttons to attract user attention and convert installs to purchases.
-- **Loaders**: Animated loaders keep users engaged during processing.
-- **User engagement**: Add testimonials, user email lists, and countdowns.
+  If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
+- **Quiz**: Create short questionnaires with text and image options to customize the onboarding experience and get to know your users better.
+- **Inputs**: Collect your users' data.
+- **Buttons**: Buttons let your users navigate between screens, close the onboarding or move to the paywall. You can also add glossy or moving buttons to attract user's attention and convert their install to a purchase.
+- **Loaders**: Animated loaders keep users engaged during the process.
+- **User engagement**: Add testimonials, user email lists and countdowns.
+
+:::note
+As a part of the **Media & Display** group, you can also add custom HTML code if the provided customization options are not enough. 
+
+However, custom HTML elements are neither preloaded nor cached, so it is recommended to use **Raw HTML** only for small, lightweight elements.
+:::
 
   <Zoom>
   <img src={require('./img/design-onboarding4.png').default}
@@ -52,13 +58,12 @@ You can add the following groups of elements:
   />
   </Zoom>
 
-## Customization options
+### Element ID and action ID
 
-The builder offers the following customization options:
+If you want to use a button for custom actions, [assign it an **action ID** and then use it in your source code](http://adapty.io/docs/ios-handling-onboarding-events#custom-actions). Action IDs let you handle different buttons with the same action ID in the same way.
 
-- **Screens** & **Elements** tabs: Drag and drop screens and elements to manage their order, or right-click on them to copy, duplicate, paste, or delete.
   <Zoom>
-  <img src={require('./img/onboarding-elements.gif').default}
+  <img src={require('./img/ios-events-1.webp').default}
   style={{
   border: '1px solid #727272', /* border width and color */
   width: '700px', /* image width */
@@ -67,7 +72,24 @@ The builder offers the following customization options:
   }}
   />
   </Zoom>
-- **Styles** tab: Adjust [layout](onboarding-layout.md) and appearance for screens or elements.
+
+If you want to [process user input in a specific field](http://adapty.io/docs/ios-handling-onboarding-events) (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
+
+  <Zoom>
+  <img src={require('./img/design-onboarding5.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+## Customization options
+
+You have the following customization options in the builder:
+- **Styles** tab: Adjust the element's look.
   <Zoom>
   <img src={require('./img/design-onboarding1.png').default}
   style={{
@@ -78,7 +100,7 @@ The builder offers the following customization options:
   }}
   />
   </Zoom>
-- **Element** tab: Set element attributes, such as [visibility](onboarding-navigation-branching.md#element-visibility), [actions](onboarding-actions.md) for button presses, or other properties unrelated to the element's appearance.
+- **Element** tab: Set the element’s attributes, such as visibility, actions for pressing buttons or other properties unrelated to the element's look.
   <Zoom>
   <img src={require('./img/design-onboarding2.png').default}
   style={{
@@ -89,9 +111,28 @@ The builder offers the following customization options:
   }}
   />
   </Zoom>
-- **Screen** tab: Set up general screen configuration, such as headers or screen counters.
+- **Screen** tab: Set up the general screen configuration, such as a header or displaying a screen counter.
   <Zoom>
   <img src={require('./img/design-onboarding3.png').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+## Copy screens from web-to-app funnels
+
+If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and want to use screens from funnels in onboardings, you can quickly do it by copying screens in the funnel builder and pasting them in the onboarding builder:
+
+1. In the FunnelFox funnel builder, right-click a screen and select **Copy**, or select the screen and press `Ctrl+C`/`⌘+C`.
+2. Open the onboarding builder.
+3. Right-click the screen where you want to insert the copied screen and select **Paste**, or select it and press `Ctrl+V`/`⌘+V`. The copied screen will be inserted below the selected screen.
+
+  <Zoom>
+  <img src={require('./img/funnel-to-onboarding.gif').default}
   style={{
   border: '1px solid #727272', /* border width and color */
   width: '700px', /* image width */

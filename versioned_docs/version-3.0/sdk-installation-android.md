@@ -18,7 +18,7 @@ Adapty comprises two crucial SDKs for seamless integration into your mobile app:
 You can install Adapty SDK via Gradle.
 
 :::info
-Adapty is compatible with Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
 :::danger

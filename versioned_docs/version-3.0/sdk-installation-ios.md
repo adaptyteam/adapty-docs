@@ -17,19 +17,6 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
 
-<div style={{ textAlign: 'center' }}>
-  <iframe 
-    width="560" 
-    height="315" 
-    src="https://www.youtube.com/embed/n401moJDZjE?si=rDSRW_zwE0It22kc" 
-    title="YouTube video player" 
-    frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-    referrerpolicy="strict-origin-when-cross-origin" 
-    allowfullscreen>
-  </iframe>
-</div>
-
 :::info
 If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
 :::
@@ -70,8 +57,8 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 3.4.0'
-   pod 'AdaptyUI', '~> 3.4.0' # optional module needed only for Paywall Builder
+   pod 'Adapty', '~> 3.9.0'
+   pod 'AdaptyUI', '~> 3.9.0' # optional module needed only for Paywall Builder
    ```
 
 2. Run:
