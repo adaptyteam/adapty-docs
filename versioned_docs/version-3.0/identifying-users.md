@@ -2,7 +2,7 @@
 title: "Identify users"
 description: "Identify users in Adapty to improve personalized subscription experiences."
 metadataTitle: "Identifying Users in Adapty | Adapty Docs"
-keywords: ['identify']
+keywords: ['identify', 'identifying users']
 ---
 
 import Zoom from 'react-medium-image-zoom';
