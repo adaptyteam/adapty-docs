@@ -32,7 +32,7 @@ Good onboarding introduces users to your app by:
 - Providing essential usage tips
 
 Adapty's onboarding solution stands out with:
-- No-code onboarding builder that empowers non-technical teams
+- No-code [onboarding builder](design-onboarding.md) that empowers non-technical teams
 - The ability to [personalize experiences through interactive questions and variables](onboarding-user-engagement.md)
 - A/B testing support to determine which onboarding flows perform best
 
