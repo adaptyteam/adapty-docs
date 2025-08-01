@@ -12,8 +12,6 @@ When you decide whether to show a paywall or paid content to a user, you check t
 
 To automatically receive profile updates in your app:
 
-To automatically receive profile updates in your app:
-
 1. Conform to the `AdaptyDelegate` protocol in a type of your choice and implement the `didLoadLatestProfile` method - Adapty will automatically call this method whenever the user's subscription status changes. In the example below we use a `SubscriptionManager` type to assist with handling subscription workflows and the user's profile. This type can be injected as a dependency or set up as a singleton in a UIKit app, or added to the SwiftUI environment from the app main struct.
 2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.
 
