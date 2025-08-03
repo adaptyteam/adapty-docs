@@ -11,7 +11,7 @@ You're all set! Now make sure your integration works as intended and that you ca
 
 Running a test purchase is the best way to verify your integration works end-to-end. Start with an in-app purchase, then validate your results.
 
-## 2. Test in-app purchases
+## 1. Test in-app purchases
 
 Follow the guide based on your store or payment platform.
 
@@ -33,13 +33,17 @@ Google [recommends](https://support.google.com/googleplay/android-developer/answ
 
 ### Stripe
 
-Testing purchases on Stripe requires connecting Stripe to Adapty using the API key for Stripe Test mode. Transactions that you make from Stripe's Test mode will be considered Sandbox in Adapty. To learn more about all connection steps, go to the [Stripe integration article](stripe.md#6-test-your-integration).
+Testing purchases on Stripe requires connecting Stripe to Adapty using the API key for Stripe Test mode. Transactions that you make from Stripe's Test mode will be considered Sandbox in Adapty. 
+
+To learn more about all connection steps, go to the [Stripe integration article](stripe.md#6-test-your-integration).
 
 ### Paddle
 
-Testing purchases on Paddle requires connecting Paddle to Adapty using the API key for Paddle test environment. Transactions that you make from Paddle's test environment will be considered Test in Adapty. To learn more about all connection steps, go to the [Paddle integration article](paddle.md#4-test-your-integration).
+Testing purchases on Paddle requires connecting Paddle to Adapty using the API key for Paddle test environment. Transactions that you make from Paddle's test environment will be considered Test in Adapty. 
 
-## Validate test purchases
+To learn more about all connection steps, go to the [Paddle integration article](paddle.md#4-test-your-integration).
+
+## 2. Validate test purchases
 
 After making a test purchase, check for the corresponding transaction in the [**Event Feed**](https://app.adapty.io/event-feed) in the Adapty Dashboard. If the purchase doesn't appear in the **Event Feed**, Adapty is not tracking it.
 
