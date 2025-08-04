@@ -13,10 +13,10 @@ Adapty SDK 3.10.0 is a major release that brought some improvements that however
 
 ## Update purchase parameters callback
 
-The `onAwaitingSubscriptionUpdateParams` method has been renamed to `onAwaitingPurchaseParams` and now uses `AdaptyPurchaseParameters` instead of `AdaptySubscriptionUpdateParameters`. This allows you to specify personalized offer information and other purchase parameters.
+The `onAwaitingSubscriptionUpdateParams` method has been renamed to `onAwaitingPurchaseParams` and now uses `AdaptyPurchaseParameters` instead of `AdaptySubscriptionUpdateParameters`. This allows you to specify subscription replacement parameters (crossgrade) and indicate whether the price is personalized ([read more](https://developer.android.com/google/play/billing/integrate#personalized-price)), along with other purchase parameters.
 
 ```diff showLineNumbers
-- public override fun onAwaitingSubscriptionUpdateParams(
+- override fun onAwaitingSubscriptionUpdateParams(
 -     product: AdaptyPaywallProduct,
 -     context: Context,
 -     onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
@@ -24,7 +24,7 @@ The `onAwaitingSubscriptionUpdateParams` method has been renamed to `onAwaitingP
 -     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
 - }
 
-+ public override fun onAwaitingPurchaseParams(
++ override fun onAwaitingPurchaseParams(
 +     product: AdaptyPaywallProduct,
 +     context: Context,
 +     onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
@@ -42,7 +42,7 @@ The `onAwaitingSubscriptionUpdateParams` method has been renamed to `onAwaitingP
 If no additional parameters are needed, you can simply use:
 
 ```kotlin showLineNumbers
-+ public override fun onAwaitingPurchaseParams(
++ override fun onAwaitingPurchaseParams(
     product: AdaptyPaywallProduct,
     context: Context,
     onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
