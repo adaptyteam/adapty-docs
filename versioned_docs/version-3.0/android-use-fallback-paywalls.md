@@ -11,8 +11,8 @@ import TabItem from '@theme/TabItem';
 
 To use fallback paywalls:
 
-1. Place the fallback JSON file you downloaded in the Adapty Dashboard alongside your app in the user's device.
-2. Call the `.setFallbackPaywalls` method. Place this method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
+1. Place the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `assets` or `res/raw` directory of your Android project.
+2. Call the `.setFallback` method. Place this method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
 
 Here's an example of retrieving fallback paywall data from locally stored JSON file named `android_fallback.json`.
 
@@ -31,7 +31,7 @@ val fileUri: Uri = //get Uri for the file with fallback paywalls
 val location = FileLocation.fromFileUri(fileUri)
 
 //pass the file location
-Adapty.setFallbackPaywalls(location, callback)
+Adapty.setFallback(location, callback)
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -48,7 +48,7 @@ Uri fileUri = //get Uri for the file with fallback paywalls
 FileLocation location = FileLocation.fromFileUri(fileUri);
 
 //pass the file location
-Adapty.setFallbackPaywalls(location, callback);
+Adapty.setFallback(location, callback);
 ```
 </TabItem>
 </Tabs>

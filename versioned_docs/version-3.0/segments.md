@@ -15,6 +15,7 @@ Once you've created a segment, you can [use it as an **audience** in Placements 
 - Display different paywalls based on the user's country.
 - Target users based on Apple Search Ads attribution data.
 - Ensure users on older app versions continue seeing an existing paywall while newer versions get an updated one.
+- [In Analytics](controls-filters-grouping-compare-proceeds.md#filtering-and-grouping), filter by user segments to view specific user group performance. Group by segment to compare segment performance or contribution within **All users**.
 
 <Zoom>
   <img src={require('./img/3244407-Segments.webp').default}
@@ -82,7 +83,8 @@ Even if your app version is not yet in production, you can set up custom logic f
 To create even more targeted segments, you can define custom attributes. These attributes let you group users based on properties unique to your app or business.
 
 :::note
-You can set up custom attributes either in the mobile SDK or the Adapty Dashboard. To configure them in the SDK, follow the instructions [here](setting-user-attributes#custom-user-attributes).
+- You can set up custom attributes either in the mobile SDK or the Adapty Dashboard. To configure them in the SDK, follow the instructions [here](setting-user-attributes#custom-user-attributes).
+- Changing a custom attribute after it's used in a segment may unsync the user from that segment in [analytics](controls-filters-grouping-compare-proceeds.md#filtering-and-grouping). Data will reflect the previous value.
 :::
 
 ### How to configure a custom attribute
