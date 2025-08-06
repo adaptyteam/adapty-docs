@@ -17,10 +17,10 @@ Follow the guide based on your store or payment platform.
 
 ### App store
 
-Adapty recommends using a test account (Sandbox Apple ID) and conducting testing on a real device. To learn more about all testing steps, go to the detailed article on [App Store Sandbox testing](test-purchases-in-sandbox.md).
+We recommend using a test account (Sandbox Apple ID) and conducting testing on a real device. To learn more about all testing steps, go to the detailed article on [App Store Sandbox testing](test-purchases-in-sandbox.md).
 
-:::note
-Optionally, you can test using Sandbox and simulator or perform testing with [TestFlight](test-purchases-with-testflight.md). However, we don't recommend these options as their results are not as reliable as testing with Sandbox on a real device.
+:::warning
+Test on a real device for the most reliable results. You can optionally test using Sandbox and simulator or perform testing with [TestFlight](test-purchases-with-testflight.md), but we don’t recommend these methods as they are less reliable.
 :::
 
 ### Google Play Store

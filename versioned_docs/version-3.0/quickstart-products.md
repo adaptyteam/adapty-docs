@@ -11,9 +11,9 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 
 
-Before you can use core features in Adapty, you need to add each purchase you sell and link them to every store or payment platform you use.
+Before you can use Adapty’s core features, you need to add each product you sell and link it to every store or payment platform you support. This setup allows you to deliver products to users’ devices and track them in analytics later.
 
-In Adapty, anything your app sells is a **product**. If the same item exists in several stores, group them into one product in Adapty. You set it up once and use Adapty’s tools everywhere.
+In Adapty, anything your app sells is a **product**.  If the same item exists in the App Store, Google Play, or Stripe, you can group them into a single product in Adapty. Set it up once and manage it across all platforms from one place.
 
 Let’s add your first product.
 
@@ -41,7 +41,7 @@ Let's say you want to add a monthly subscription as a product.
 
 3. Add product details:
 - **Product name**: The name visible only to you across the Adapty dashboard.
-- **Access level ID**: The unique identifier that determines which features are unlocked after purchasing the product. Learn more about [access levels](access-level.md).
+- **Access level ID**: The unique identifier that determines which features are unlocked after purchasing the product. The `Premium` is available by default for selection. Learn more about [access levels](access-level.md).
 - **Period**: The subscription duration. This matches the period configured in the store.
   
   :::note
@@ -65,7 +65,9 @@ Let's say you want to add a monthly subscription as a product.
 />
 </Zoom>
 
-4. Add store details:
+<br />
+
+4. Add store details. Choose your store for more details:
 
 <Tabs>
 <TabItem value="App Store" label="App Store" default>
@@ -73,7 +75,7 @@ Let's say you want to add a monthly subscription as a product.
 - **App Store Product ID**: The unique identifier used to access your product on devices.
 
 <details>
-    <summary>Click here to learn where you find the App Store Product ID.</summary>
+    <summary>Click here to learn where to find the App Store Product ID.</summary>
 
 
 1. Go to **Monetize > Subscriptions** in your [Apple App Store Connect](https://appstoreconnect.apple.com/login) account.
@@ -82,6 +84,17 @@ Let's say you want to add a monthly subscription as a product.
 
 </details>
 
+<Zoom>
+  <img src={require('./img/stores-info.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+  
 
 </TabItem>
 
@@ -92,7 +105,7 @@ Let's say you want to add a monthly subscription as a product.
 - **Legacy fallback product**: A fallback product is used exclusively for apps using older versions of the Adapty SDK (versions 2.5 and below). Specify the value in the following format `<subscription_id>:<base_plan_id>`.
 
 <details>
-    <summary>Click here to learn where you find the Google Play Product and Base plan IDs.</summary>
+    <summary>Click here to learn where to find the Google Play Product and Base plan IDs.</summary>
 
 
 1. Go to **Monetize with Play > Products > Subscriptions** in your [Google Play Console](https://play.google.com/console/developers/android/app) account.
@@ -100,6 +113,17 @@ Let's say you want to add a monthly subscription as a product.
 3. You will see the Product ID in the **Subscription details** section and the Base plan ID in the **ID and duration** column of the **Base plans and offers** section.
 
 </details>
+
+<Zoom>
+  <img src={require('./img/product-play-store.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 </TabItem>
 
@@ -109,7 +133,7 @@ Let's say you want to add a monthly subscription as a product.
 - **Stripe Price ID**: The unique identifier from Stripe for the price associated with the product.
 
 <details>
-    <summary>Click here to learn where you find the Stripe Product and Price IDs.</summary>
+    <summary>Click here to learn where to find the Stripe Product and Price IDs.</summary>
 
 
 1. Go to your [Product Catalog](https://dashboard.stripe.com/products?active=true) in Stripe.
@@ -120,6 +144,17 @@ Let's say you want to add a monthly subscription as a product.
 
 </details>
 
+<Zoom>
+  <img src={require('./img/product-stripe.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 </TabItem>
 
 <TabItem value="Paddle" label="Paddle" default>
@@ -128,7 +163,7 @@ Let's say you want to add a monthly subscription as a product.
 - **Paddle Price ID**: The unique identifier from Paddle for the price associated with the product.
 
 <details>
-    <summary>Click here to learn where you find the Paddle Product and Price IDs.</summary>
+    <summary>Click here to learn where to find the Paddle Product and Price IDs.</summary>
 
 
 1. Go to your [Product Catalog](https://vendors.paddle.com/products-v2) in Paddle.
@@ -138,6 +173,17 @@ Let's say you want to add a monthly subscription as a product.
 - The Paddle Price ID (looks like `pri_...`) in the **ID** column of the **Prices** section.
 
 </details>
+
+<Zoom>
+  <img src={require('./img/product-paddle.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 </TabItem>
 
@@ -151,21 +197,8 @@ Keep in mind that Adapty only tracks transactions from the App Store, Google Pla
 
 </Tabs>
 
-<Zoom>
-  <img src={require('./img/stores-info.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
 
-5. (Optional) [Create offers](create-offer.md) for the product if needed.
-:::tip
-For the quickstart, skip offers for now and explore them later, since they’re an advanced topic.
-:::
+5. Later, you can [Create offers](create-offer.md) for the product if needed.
 
 Your product will appear in the product list.
 
@@ -182,7 +215,7 @@ Your product will appear in the product list.
 
 ## Next steps
 
-Once you've added your products to Adapty, you can move on to [setting up paywalls](quickstart-paywalls.md).
+Once you've added your products to Adapty, you can move on to [setting up paywalls](quickstart-paywalls.md) as it's the only way to start selling them.
 
 
 

@@ -14,21 +14,19 @@ import 'react-medium-image-zoom/dist/styles.css';
 To proceed with this quickstart, make sure you’ve completed the [store integration](integrate-payments.md) and created at least one product as described in the previous [quickstart on adding products](quickstart-products.md).
 :::
 
-The easiest way to enable in-app purchases with Adapty is to create a paywall in the builder. You only need to design it in the no-code builder, and Adapty will automatically handle all purchase-related logic.
+You need to add a paywall to enable in-app purchases with Adapty. The easiest way to do that is creating a paywall with the Adapty no-code builder since Adapty will automatically handle all purchase-related logic.
 
-To show a particular paywall to a specific audience, attach it to a placement.
+To show a particular paywall on a device, attach it to a placement.
 
 How it works:
 - **Paywall**: A paywall is a container for one or more products. It can contain a visual paywall created in the paywall builder, product information, or JSON configuration for use in your code. Learn more about [paywalls](paywalls.md).
-- **Placement**: A placement is a rule for showing a paywall, onboarding, or A/B test at a certain point to a certain user group. One placement can contain several paywalls, so you can decide which users see which paywall. Learn more about [placements](placements.md).
-
-
+- **Placement**: A placement is a specific point in your app where you show a paywall, onboarding flow, or A/B test. Placements let you target specific [audiences](audience.md) with your paywall. Learn more about [placements](placements.md).
 
 :::note
-You can also [design paywalls with remote config](customize-paywall-with-remote-config.md) to tailor your paywalls precisely with custom JSON payloads. Learn more about <InlineTooltip tooltip="implementing paywalls manually">Follow the guide for your platform: [iOS](ios-implement-paywalls-manually.md), [Android](android-implement-paywalls-manually.md), [React Native](react-native-implement-paywalls-manually.md), [Flutter](flutter-implement-paywalls-manually.md), [Unity](unity-implement-paywalls-manually.md).</InlineTooltip>.
+If you don't want to use the paywall builder, you still need a paywall to sell products. You can [design paywalls with remote config](customize-paywall-with-remote-config.md) to tailor your paywalls precisely with custom JSON payloads. Learn more about <InlineTooltip tooltip="implementing paywalls manually">Follow the guide for your platform: [iOS](ios-implement-paywalls-manually.md), [Android](android-implement-paywalls-manually.md), [React Native](react-native-implement-paywalls-manually.md), [Flutter](flutter-implement-paywalls-manually.md), [Unity](unity-implement-paywalls-manually.md).</InlineTooltip>.
 :::
 
-In this quickstart, let's create a paywall and add it to a placement in just a couple of minutes.
+In this quickstart, we’ll use the simpler method: creating a paywall with the paywall builder and attaching it to a placement.
 
 ## 1. Build paywall
 
@@ -55,9 +53,11 @@ Stay on the page. You still need to design how the paywall looks.
 
 ### Design paywall
 
-You have two options: the no-code Paywall builder or Remote config.
+:::tip
+If your app is published on the App Store, you can create a unique, high-converting paywall tailored to your app in just seconds. Use the AI generator in the **Builder & Generator** tab.
+:::
 
-In this quickstart, we'll use the easier Paywall builder:
+Let's design your first paywall. You can craft engaging paywalls with ease:
 
 1. Open **Builder & Generator** on the paywall page.
 2. Click **Build no-code paywall**.
@@ -69,10 +69,6 @@ From here, you can:
 - Add a [Hero image](paywall-head-picture.md) or [Hero video](paywall-video.md).
 - Set up your [product list](paywall-product-block.md).
 - Edit texts, and more. Learn details in the [Paywall builder article](adapty-paywall-builder.md#paywall-elements).
-
-:::tip
-If your app is published on the App Store, you can create a unique, high-converting paywall tailored to your app in just seconds. Use the AI generator in the **Builder & Generator** tab.
-:::
 
 <Zoom>
   <img src={require('./img/design-quickstart.gif').default}
@@ -171,4 +167,4 @@ If you want to show different paywalls to various user groups and analyze perfor
 
 ## Next steps
 
-After the paywall is linked to a placement, proceed to [integrate the Adapty SDK](quickstart-sdk.md) in your app.
+After linking your paywall to a placement in Adapty, the next step is to display it on a device. Let’s move on to [integrating the Adapty SDK](quickstart-sdk.md) into your app.
