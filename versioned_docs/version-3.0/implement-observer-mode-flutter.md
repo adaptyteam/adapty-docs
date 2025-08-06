@@ -13,7 +13,27 @@ If this meets your needs, you only need to:
 1. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [Flutter](sdk-installation-flutter#configure-adapty-sdk).
 2. [Report transactions](report-transactions-observer-mode-flutter) from your existing purchase infrastructure to Adapty.
 
-If you also need paywalls and A/B testing, additional setup is required, as described below.
+## Observer mode setup
+
+Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
+
+:::important
+When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
+:::
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withObserverMode(true) // Enable observer mode
+    ..withLogLevel(AdaptyLogLevel.verbose),
+);
+```
+
+Parameters:
+
+| Parameter                   | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`.  |
 
 ## Using Adapty paywalls in Observer Mode
 

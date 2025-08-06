@@ -17,8 +17,8 @@ Adapty SDK includes two key modules for seamless integration into your Flutter a
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-:::info
-If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-flutter-sdk-v3.md).
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 ## Requirements
@@ -54,8 +54,6 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Activate Adapty module of Adapty SDK
 
-### Basic setup
-
 ```dart showLineNumbers title="main.dart"
 import 'package:adapty_flutter/adapty_flutter.dart';
 
@@ -72,28 +70,6 @@ void main() async {
 ```
 
 <GetKey />
-
-### Observer mode setup
-
-Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
-
-:::important
-When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
-:::
-
-```dart showLineNumbers title="main.dart"
-await Adapty().activate(
-  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
-    ..withObserverMode(true) // Enable observer mode
-    ..withLogLevel(AdaptyLogLevel.verbose),
-);
-```
-
-Parameters:
-
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`.  |
 
 
 ## Activate AdaptyUI module of Adapty SDK
@@ -175,6 +151,8 @@ Parameters:
 
 ## Optional setup
 
+### Logging
+
 #### Set up the logging system
 
 Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
@@ -199,6 +177,8 @@ await Adapty().activate(
     ..withLogLevel(AdaptyLogLevel.verbose),
 );
 ```
+
+### Data policies
 
 #### Disable IP address collection and sharing
 
@@ -227,24 +207,13 @@ await Adapty().activate(
 );
 ```
 
-#### Set customer user ID
-
-When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
-
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](flutter-identifying-users) section.
-
-```dart showLineNumbers title="main.dart"
-await Adapty().activate(
-  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
-    ..withCustomerUserId('user123'),
-);
-```
-
 #### Set up media cache configuration for AdaptyUI
+
+The module is activated automatically with the Adapty SDK. If you do not use the Paywall Builder and want to deactivate the AdaptyUI module, pass `withActivateUI(false)` during activation.
 
 By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
 
-Use `withMediaCacheConfiguration` to override the default cache size and validity period. This is optional—if you don't call this method, default values will be used (100MB disk size, unlimited memory count).
+Use `withMediaCacheConfiguration` to override the default cache size and validity period. This is optional—if you don't call this method, default values will be used (100MB disk size, unlimited memory count). However, if you use the configuration, all parameters must be included.
 
 ```dart showLineNumbers title="main.dart"
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -268,28 +237,3 @@ await Adapty().activate(
 | memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Default is 100 MB.                       |
 | memoryStorageCountLimit     | optional | The item count limit of the memory storage. Default is max int value.              |
 | diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Default is 100 MB.              |
-
-:::tip
-You can clear the media cache at runtime using `AdaptyUI.clearMediaCache(strategy)`, where `strategy` can be `CLEAR_ALL` or `CLEAR_EXPIRED_ONLY`.
-:::
-
-## Hot restart support
-
-For development purposes, you can use the `setupAfterHotRestart` method to reinitialize the plugin after a hot restart:
-
-```dart showLineNumbers title="main.dart"
-// Check if SDK is already activated
-final isActivated = await Adapty().isActivated();
-
-if (!isActivated) {
-  // Normal activation
-  await Adapty().activate(configuration: config);
-} else {
-  // Setup after hot restart (debug builds only)
-  Adapty().setupAfterHotRestart();
-}
-```
-
-:::warning
-Use `setupAfterHotRestart` only in debug builds to avoid unexpected issues in release builds.
-:::

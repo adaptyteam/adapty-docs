@@ -19,8 +19,8 @@ Adapty SDK includes two key modules for seamless integration into your Unity app
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-:::info
-If you're using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-unity-sdk-v3).
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Unity), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 ## Requirements
@@ -62,8 +62,6 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Activate Adapty module of Adapty SDK
 
-### Basic setup
-
 ```csharp showLineNumbers title="C#"
 using UnityEngine;
 using AdaptySDK;
@@ -86,128 +84,6 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
 ```
 
 <GetKey />
-
-### Observer mode setup
-
-Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
-
-:::important
-When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
-:::
-
-```csharp showLineNumbers title="C#"
-using UnityEngine;
-using AdaptySDK;
-
-public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-    void Start() {
-        DontDestroyOnLoad(this.gameObject);
-        Adapty.SetEventListener(this);
-
-        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-            .SetObserverMode(true); // Enable observer mode
-
-        Adapty.Activate(builder.Build(), (error) => {
-            if (error != null) {
-                // handle the error
-                return;
-            }
-        });
-    }
-}
-```
-
-Parameters:
-
-| Parameter    | Description                                                                                         |
-|--------------|-----------------------------------------------------------------------------------------------------|
-| observerMode | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
-
-
-## Activate AdaptyUI module of Adapty SDK
-
-If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. You can activate it during the configuration:
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetActivateUI(true);
-```
-
-## Optional setup
-
-#### Set up the logging system
-
-Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
-
-| Level      | Description                                                  |
-| ---------- | ------------------------------------------------------------ |
-| `error`    | Only errors will be logged                                    |
-| `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
-| `info`     | Errors, warnings, and various information messages will be logged |
-| `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
-
-You can set the log level in your app during Adapty configuration:
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetLogLevel(AdaptyLogLevel.Verbose);
-```
-
-#### Disable IP address collection and sharing
-
-When activating the Adapty module, set `SetIPAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
-
-Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetIPAddressCollectionDisabled(true);
-```
-
-#### Disable advertising ID collection and sharing
-
-When activating the Adapty module, set `SetAppleIDFACollectionDisabled` and/or `SetGoogleAdvertisingIdCollectionDisabled` to `true` to disable the collection of advertising identifiers. The default value is `false`.
-
-Use this parameter to comply with App Store/Google Play policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetAppleIDFACollectionDisabled(true);
-    .SetGoogleAdvertisingIdCollectionDisabled(true);
-```
-
-#### Set customer user ID
-
-When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
-
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.Identify()` method. Read more in the [Identifying users](unity-identifying-users) section.
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetCustomerUserId("user123");
-```
-
-#### Set up media cache configuration for AdaptyUI
-
-By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
-
-Use `SetAdaptyUIMediaCache` to override the default cache settings:
-
-```csharp showLineNumbers title="C#"
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetAdaptyUIMediaCache(
-        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
-        null, // MemoryStorageCountLimit
-        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
-    );
-```
-
-Parameters:
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
-| memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
-| diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
 ## Set up event listening
 
@@ -303,3 +179,81 @@ This step is required. If you skip it, your mobile app can crash when the paywal
    ```
 
 Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](unity-quickstart-paywalls.md) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+
+## Activate AdaptyUI module of Adapty SDK
+
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. You can activate it during the configuration:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
+```
+
+## Optional setup
+
+### Logging
+
+#### Set up the logging system
+
+Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
+
+| Level      | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Only errors will be logged                                    |
+| `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
+| `info`     | Errors, warnings, and various information messages will be logged |
+| `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+
+You can set the log level in your app during Adapty configuration:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetLogLevel(AdaptyLogLevel.Verbose);
+```
+
+### Data policies
+
+#### Disable IP address collection and sharing
+
+When activating the Adapty module, set `SetIPAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### Disable advertising ID collection and sharing
+
+When activating the Adapty module, set `SetAppleIDFACollectionDisabled` and/or `SetGoogleAdvertisingIdCollectionDisabled` to `true` to disable the collection of advertising identifiers. The default value is `false`.
+
+Use this parameter to comply with App Store/Google Play policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true);
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### Set up media cache configuration for AdaptyUI
+
+By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
+
+Use `SetAdaptyUIMediaCache` to override the default cache settings:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+Parameters:
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
+| memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
+| diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |

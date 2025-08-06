@@ -9,7 +9,8 @@ Integrate Adapty SDK into your app to:
 - Enable in-app purchases
 - Display paywalls and onboardings to your users
 - Get detailed analytics for in-app purchases
-- Automatically track user profile changes
+- Automatically track subscription status changes
+- Integrate your app with popular services using just one line of code
 
 Currently, Adapty has the following SDKs available:
 
@@ -25,34 +26,33 @@ Currently, Adapty has the following SDKs available:
 
 ## How does it work
 
-For the basic implementation of the Adapty SDK, you need to take care of five things only:
+For the basic implementation of the Adapty SDK, you need to take care of four things only:
 
-- `activate`: Install and initialize the SDK.
-- `getPaywall`: To enable in-app purchases.
-- `identify`: To link the user to their Adapty profile, access their subscription history and sync profiles across devices.
-- **Handle button actions**: Implement responses to paywall button actions in your app code.
-- **Listen for subscription status updates**: Update the profile information to control whether paid content is available.
+1. Install and initialize the SDK.
+2. Enable in-app purchases.
+3. Identify users in the app.
+4. Listen to the profile updates to control whether paid content is available.
 
 The order and details may vary from app to app, but basically that's it.
 
 ## Get started
 
-You have three paths to get started depending on your preferences:
+To get started, follow platform-specific quickstart guides: Guides contain production-ready code snippets, so implementation doesn't take long.
+  - **[iOS](ios-sdk-overview.md)**
+  - **[Android](android-sdk-overview.md)**
+  - **[Flutter](flutter-sdk-overview.md)**
+  - **[React Native](react-native-sdk-overview.md)**
+  - **[Unity](unity-sdk-overview.md)**
 
-- **Follow platform-specific quickstart guides**: Guides contain production-ready code snippets, so implementation doesn't take long.
-  - [iOS](ios-sdk-overview.md)
-  - [Android](android-sdk-overview.md)
-  - [Flutter](flutter-sdk-overview.md)
-  - [React Native](react-native-sdk-overview.md)
-  - [Unity](unity-sdk-overview.md)
-- **Use LLMs**: Our docs are LLM-friendly. Read our [guide](adapty-cursor.md) on how to get the most out of using LLMs with the Adapty documentation.
-- **Explore sample apps**:
+:::note
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our sample apps:
   - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
   - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android)
   - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
   - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
   - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
   - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity)
+:::
 
 ## Next steps
 

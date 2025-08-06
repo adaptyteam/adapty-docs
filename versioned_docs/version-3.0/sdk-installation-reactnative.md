@@ -18,6 +18,15 @@ Adapty SDK includes two key modules for seamless integration into your React Nat
 
 If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
+:::
+
+For a complete implementation walkthrough, you can also see the video:
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
 ## Requirements
 
 The Adapty React Native SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.1+.
@@ -91,8 +100,6 @@ Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-p
 
 ## Activate Adapty module of Adapty SDK
 
-### Basic setup
-
 Copy the following code to `App.tsx` to activate Adapty:
 
 ```typescript showLineNumbers title="App.tsx"
@@ -107,33 +114,13 @@ To avoid activation errors in the development environment, use the [tips](#devel
 
 <GetKey />
 
-### Observer mode setup
-
-Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty only for sending subscription events and analytics.
-
-:::important
-When running in the Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
-:::
-
-```typescript showLineNumbers title="App.tsx"
-import { adapty } from 'react-native-adapty';
-
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  observerMode: true, // Enable observer mode
-});
-```
-
-Parameters:
-
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
-
 ## Activate AdaptyUI module of Adapty SDK
 
 If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. It is done automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
+
+### Logging
 
 #### Set up the logging system
 
@@ -157,6 +144,8 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   logLevel: 'verbose',
 });
 ```
+
+### Data policies
 
 #### Disable IP address collection and sharing
 
@@ -184,18 +173,6 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   android: {
     adIdCollectionDisabled: true,      
   },
-});
-```
-
-#### Set customer user ID
-
-When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
-
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](react-native-identifying-users) section.
-
-```typescript showLineNumbers title="App.tsx"
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  customerUserId: 'user123',
 });
 ```
 

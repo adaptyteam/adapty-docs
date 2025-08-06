@@ -18,10 +18,26 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. 
 
-
-:::info
-If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-ios-sdk-v3.md).
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
+
+For a complete implementation walkthrough, you can also see the videos:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default> 
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
 
 ## Requirements
 
@@ -79,8 +95,6 @@ This will create a `.xcworkspace` file for your app. Use this file for all futur
 </Tabs>
 
 ## Activate Adapty module of Adapty SDK
-
-### Basic setup
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swiftui" label="SwiftUI">
@@ -151,81 +165,6 @@ Task {
 </Tabs>
 
 <GetKey />
-
-### Observer mode setup
-
-Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
-
-:::important
-When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
-:::
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swiftui" label="SwiftUI">
-
-```swift showLineNumbers
-import SwiftUI
-import Adapty
-
-@main
-struct YourApp: App {
-  init() {
-    // Configure Adapty SDK
-    let configurationBuilder = AdaptyConfiguration
-      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(observerMode: true) 
-      
-    let config = configurationBuilder.build()
-    
-    // Activate Adapty SDK asynchronously
-    Task {
-      do {
-        try await Adapty.activate(with: configurationBuilder)
-      } catch {
-        // Handle error appropriately for your app
-        print("Adapty activation failed: ", error)
-      }
-    }
-    
-    var body: some Scene {
-      WindowGroup {
-        // Your content view
-      }
-    }
-  }
-}
-```
-
-</TabItem>
-<TabItem value="swift" label="UIKit" default>
-
-```swift showLineNumbers
-import Adapty
-
-Task {
-  do {
-    let configurationBuilder = AdaptyConfiguration
-      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(observerMode: true) 
-    
-    let config = configurationBuilder.build()
-    try await Adapty.activate(with: config)
-  } catch {
-    // Handle error appropriately for your app
-    print("Adapty activation failed: ", error)
-  }
-}
-
-```
-
-</TabItem>
-</Tabs>
-
-Parameters:
-
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
 ## Activate AdaptyUI module of Adapty SDK
 
@@ -300,6 +239,8 @@ Optionally, when activating AdaptyUI, you can [override default caching settings
 
 ## Optional setup
 
+### Logging 
+
 #### Set up the logging system
 
 Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
@@ -316,6 +257,18 @@ Adapty logs errors and other important information to help you understand what i
          .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") 
          .with(logLevel: .verbose) // recommended for development
 ```
+
+#### Redirect the logging system messages
+
+If you need to send Adapty's log messages to your system or save them to a file, use the `setLogHandler` method and implement your custom logging logic inside it. This handler receives log records containing message content and severity level.
+
+```swift showLineNumbers title="Swift"
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
+}
+```
+
+### Data policies
 
 #### Disable IDFA collection and sharing
 
@@ -344,7 +297,7 @@ let configurationBuilder =
         .with(ipAddressCollectionDisabled: true)
 ```
 
-#### Set up media cache configuration for AdaptyUI
+#### Media cache configuration for paywalls in AdaptyUI
 
 Please note that the AdaptyUI configuration is optional. You can activate the AdaptyUI module without its config. However, if you use the config, all parameters are required.
 
@@ -370,13 +323,3 @@ Parameters:
 | memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
 | memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
 | diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
-
-#### Redirect the logging system messages
-
-If you need to send Adapty's log messages to your system or save them to a file, use the `setLogHandler` method and implement your custom logging logic inside it. This handler receives log records containing message content and severity level.
-
-```swift showLineNumbers title="Swift"
-Adapty.setLogHandler { record in
-    writeToLocalFile("Adapty \(record.level): \(record.message)")
-}
-```

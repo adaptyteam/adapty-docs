@@ -16,6 +16,10 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+:::
+
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
@@ -165,58 +169,6 @@ public class MyApplication extends Application {
 
 <GetKey />
 
-### Observer mode setup
-
-
-Turn on the Observer mode if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.
-
-:::important
-When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
-:::
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-class MyApplication : Application() {
-override fun onCreate() {
-    super.onCreate()
-    Adapty.activate(
-      applicationContext,
-      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(true) //default false
-          .build()
-    )  
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public class MyApplication extends Application {
-@Override
-public void onCreate() {
-    super.onCreate();
-    Adapty.activate(
-      applicationContext,
-      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-          .withObserverMode(true) //default false
-          .build()
-    );
-}
-```
-
-</TabItem>
-</Tabs>
-
-Parameters:
-
-| Parameter                   | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
-
-
 ## Activate AdaptyUI module of Adapty SDK
 
 If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have [installed AdaptyUI module](sdk-installation-android#install-adapty-sdk), you also need to activate AdaptyUI:
@@ -242,6 +194,8 @@ AdaptyUI.activate();
 Before launching your app in the production, add `-keep class com.adapty.** { *; }` to your Proguard configuration.
 
 ## Optional setup
+
+### Logging
 
 #### Set up the logging system
 
@@ -291,6 +245,8 @@ Adapty.setLogHandler((level, message) -> {
 </TabItem>
 </Tabs>
 
+### Data policies
+
 #### Disable IP address collection and sharing
 
 When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
@@ -336,31 +292,6 @@ AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 ```java showLineNumbers
 new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .withAdIdCollectionDisabled(true)
-    .build();
-```
-</TabItem>
-</Tabs>
-
-#### Set customer user ID
-
-When activating the Adapty module, you can set a `customerUserId` to identify the user in your system. This identifier is sent in subscription and analytical events to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu.
-
-If you don't have a user ID at the time of Adapty initialization, you can set it later using the `.identify()` method. Read more in the [Identifying users](android-identifying-users) section.
-
-<Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withCustomerUserId("user123")
-    .build()
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withCustomerUserId("user123")
     .build();
 ```
 </TabItem>

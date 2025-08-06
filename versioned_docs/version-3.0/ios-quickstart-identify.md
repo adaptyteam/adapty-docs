@@ -6,6 +6,8 @@ rank: 70
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 How you manage users' purchases depends on your app's authentication model:
 - If your app doesn't use backend authentication and doesn't store user data, see the [section about anonymous users](#anonymous-users).
@@ -13,90 +15,50 @@ How you manage users' purchases depends on your app's authentication model:
 
 Here is what is different for anonymous and identified users:
 
-- **Purchase management:**
-  - Anonymous users rely on store-level purchase restoration
-  - Identified users maintain purchase history across devices through their customer user ID
-- **Profile management:**
-  - Anonymous users get new profiles on each reinstall
-  - Identified users maintain the same profile across sessions and devices
-- **Data persistence:**
-  - Anonymous users' data is tied to device/installation
-  - Identified users' data persists across devices and sessions
+|                         | Anonymous users                                      | Identified users                                                        |
+|-------------------------|------------------------------------------------------|-------------------------------------------------------------------------|
+| **Purchase management** | Store-level purchase restoration                     | Maintain purchase history across devices through their customer user ID |
+| **Profile management**  | New profiles on each reinstall                       | The same profile across sessions and devices                            |
+| **Data persistence**    | Anonymous users' data is tied to device/installation | Identified users' data persists across devices and sessions             |
+
 
 ## Anonymous users
 
 If you don't have backend authentication:
 
-1. When activating the Adapty SDK with the `activate` method, don't set `customerUserId` in the configuration:
-
-```swift
-let configurationBuilder = AdaptyConfiguration
-      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
-      // don't set customerUserId even to null
-```
-2. When the SDK is activated on the app's first launch, Adapty **creates a new profile for the user**.
-3. When the user purchases anything in the app, this purchase is **associated with their Adapty profile and their store account**.
-4. When the user **reinstalls** the app or installs it from a **new device**, Adapty **creates a new empty profile on activation**.
-5. If the user has previously made purchases in your app, you can provide the best user experience by **automatically [restoring](restore-purchase.md) their purchases on the first launch**. To do this, Adapty retrieves the store purchase history for the user.
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
-```swift showLineNumbers
-do {
-    let profile = try await Adapty.restorePurchases()
-    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-        // successful access restore
-    }
-} catch {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
-
-```swift showLineNumbers
-Adapty.restorePurchases { [weak self] result in
-    switch result {
-        case let .success(profile):
-            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
-                // successful access restore
-            }
-        case let .failure(error):
-            // handle the error
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-:::important
-Since restoring purchases happens for the new profile, the way it works will depend on how you set up [sharing access levels between user accounts](general#6-sharing-purchases-between-user-accounts) in **App settings**.
-
-For anonymous users, we recommend keeping it **Enabled**, as it is by default. When sharing access levels is enabled, the old profile access levels will be copied to the new profile. The old profile (e.g., if they still use their old device) will keep access.
-
-If you set it to **Transfer access to new user** the old profile loses access. It is not recommended, since many users, for example, install the same app on their iPhone and iPad.
-
-**Don't disable** sharing paid access for anonymous users. This would block restoring purchases.
-:::
+1. When the SDK is activated on the app's first launch, Adapty **creates a new profile for the user**.
+2. When the user purchases anything in the app, this purchase is **associated with their Adapty profile and their store account**.
+3. When the user **re-installs** the app or installs it from a **new device**, Adapty **creates a new empty profile on activation**.
+4. If the user has previously made purchases in your app, by default, their purchases are automatically synced from the App Store on the SDK activation.
 
 ## Identified users
 
 :::tip
-**Key concept**:
-**Customer user IDs** are identifiers **you create** for Adapty to link your users to their Adapty profiles.
-
-**Adapty automatically creates** a **profile ID** for each user:
+**Key concepts**:
+- **Profiles** are the entities required for the SDK to work. They can be anonymous (without customer user ID) or identified (with customer user ID).
+- **Customer user IDs** are identifiers **you create** for Adapty to link your users to their Adapty profiles.
+:::
 
 - If a profile doesn't have a customer user ID yet (meaning, **the user isn't signed in**), when you send a customer user ID, it gets associated with that profile.
-- If it is a **re-install, sign in, or install from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we switch to the existing profile associated with the customer user ID. 
-:::
+- If it is a **re-installation, signing in, or installation from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we switch to the existing profile associated with the customer user ID.
 
 You have two options to identify users in the app:
 
-- **During login/signup:** If users sign in after your app starts, call `identify()` with a customer user ID when they authenticate.
+- [**During login/signup:**](#during-loginsignup) If users sign in after your app starts, call `identify()` with a customer user ID when they authenticate.
 
-- **During the SDK activation:** If you already have a customer user ID stored when the app launches, send it during Adapty activation.
+- [**During the SDK activation:**](#during-the-sdk-activation) If you already have a customer user ID stored when the app launches, send it when calling `activate()`.
+
+<Zoom>
+  <img src={require('./img/identify-diagram.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 
 ### During login/signup
 
@@ -134,12 +96,14 @@ Adapty.identify("YOUR_USER_ID") { error in
 
 ### During the SDK activation
 
-If you already know a customer user ID when you activate the SDK, you can send it during the SDK activation instead of calling `identify` separately. If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new empty profile and switch to the existing one only after you call `identify`. To prevent creating unwanted empty profiles, **set the customer user ID as soon as you know it**.
+If you already know a customer user ID when you activate the SDK, you can send it in the `activate` method instead of calling `identify` separately. 
+
+If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new empty profile and switch to the existing one only after you call `identify`.
 
 You can pass either an existing customer user ID (the one you have used before) or a new one. If you pass a new one, a new profile created on the activation will be automatically linked to the customer user ID.
 
-:::important
-If you don't know a customer user ID during the SDK activation and only set it later using the `identify` method, you will have an extra anonymous profile created. This anonymous profile affects your installation counts in the analytics.
+:::tip
+To exclude created empty profiles from the dashboard [analytics](analytics-charts.md), go to **App settings** and set up [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -223,12 +187,39 @@ Here's how it works:
 2. When the user logs into their account, Adapty switches to working with their identified profile.
 3. For purchases to appear in the identified user profile, you need to [restore](restore-purchase.md) their purchases on login, so they are retrieved from the store and tied to the identified user profile.
 
-For this to work properly, go to **App settings** and set **Sharing paid access between user accounts** to **Transfer access to new user**, so only the new profile has access.
+For this to work properly, go to **App settings** and ensure that [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts) is **not** set to **Disabled**. This way, the access level of the anonymous profile is transferred to or shared with the identified profile.
 
-## Troubleshoot sandbox users issues
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
 
-When working with a sandbox user, if you try to make a purchase after deleting the Adapty profile, you might encounter an issue where the app launches with premium access already enabled.
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.restorePurchases()
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // successful access restore
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
-That is because Adapty may be restoring your purchases associated with the store account.
+```swift showLineNumbers
+Adapty.restorePurchases { [weak self] result in
+    switch result {
+        case let .success(profile):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                // successful access restore
+            }
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
 
-To resolve the issue, clear the purchase history for the sandbox account in App Store Connect.
+## Next steps
+
+Now, when you know how to identify users, you need to [check their access level](ios-check-subscription-status.md) to ensure you display a paywall or give access to paid features to right users.

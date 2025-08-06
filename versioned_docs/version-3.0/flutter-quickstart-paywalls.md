@@ -14,8 +14,8 @@ import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
 <PaywallsIntro />
 
-:::tip
-This is the minimum setup you need to get up and running with paywalls created using the builder. Read more detailed [guides on working with paywalls](react-native-paywalls.md).
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
 :::
 
 ## 1. Get the paywall
@@ -32,9 +32,6 @@ That's why, to get a paywall to display, you need to:
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](flutter-get-pb-paywalls).
 ::: 
 
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
-:::
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -62,15 +59,7 @@ try {
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-:::tip
-For more details on how to display a paywall, see our [guide](flutter-present-paywalls.md).
-:::
-
 To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
-:::
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -82,34 +71,12 @@ try {
 }
 ```
 
-
-## 3. Check subscription status before displaying
-
-Now that you've implemented the paywall, you will want to only show it to users who baven't already paid for premium access. Before showing a paywall, check if the user already has premium access.
-
-You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
-
-By default, Adapty provides a built-in access level called `premium`, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
-
 :::tip
-Proceed with the quickstart guide to also [implement listening for subscription status changes](flutter-check-subscription-status).
+For more details on how to display a paywall, see our [guide](flutter-present-paywalls.md).
 :::
 
-```dart showLineNumbers title="Flutter"
-try {
-  final profile = await Adapty().getProfile();
-  final isPremiumActive = profile.accessLevels['premium']?.isActive == true;
 
-  if (!isPremiumActive) {
-    await view.present();
-  }
-} catch (_) {
-  // handle error
-}
-
-```
-
-## 4. Handle button actions
+## 3. Handle button actions
 
 When users click buttons in the paywall, purchases and restoration are handled automatically. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
 
@@ -117,13 +84,6 @@ To control or monitor processes on the paywall screen, implement the `AdaptyUIPa
 
 For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy). So, you need to respond to actions with the `Close` and `OpenUrl` IDs.
 
-:::tip
-Read our guides on how to handle other button [actions](flutter-handle-paywall-actions.md) and [events](flutter-handling-events.md).
-:::
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](flutter-implement-paywalls-manually).
-:::
 
 ```dart showLineNumbers title="Flutter"
 class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
@@ -168,6 +128,16 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
 
 ```
 
+:::tip
+Read our guides on how to handle other button [actions](flutter-handle-paywall-actions.md) and [events](flutter-handling-events.md).
+:::
+
+## Next steps
+
+Now, your paywall is ready to be displayed in the app.
+
+As a next step, you need to [learn how to work with user profiles](flutter-quickstart-identify.md) to ensure they can access what they have paid for.
+
 ## Full example
 
 Here is how all those steps can be integrated in your app together.
@@ -197,9 +167,6 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
 
   Future<void> _showPaywallIfNeeded() async {
     try {
-      final profile = await Adapty().getProfile();
-
-      if (profile.accessLevels['premium']?.isActive == true) return;
 
       final paywall = await Adapty().getPaywall(
         placementId: 'YOUR_PLACEMENT_ID',

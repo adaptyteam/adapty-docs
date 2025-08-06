@@ -13,8 +13,8 @@ import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
 <PaywallsIntro />
 
-:::tip
-This is the minimum setup you need to get up and running with paywalls created using the builder. Read more detailed [guides on working with paywalls](android-paywalls.md).
+:::info
+If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
 :::
 
 ## 1. Get the paywall
@@ -29,10 +29,6 @@ That's why, to get a paywall to display, you need to:
 
 :::tip
 This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](android-get-pb-paywalls).
-:::
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -114,14 +110,6 @@ AdaptyUI.getViewConfiguration(paywall), result -> {
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-:::tip
-For more details on how to display a paywall, see our [guide](android-present-paywalls.md).
-:::
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
-:::
-
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
 <Tabs groupId="current-os" queryString>
@@ -185,103 +173,17 @@ paywallView.showPaywall(viewConfiguration, products, eventListener);
 
 After the view has been successfully created, you can add it to the view hierarchy and display it on the screen of the device.
 
-## 3. Check subscription status before displaying
-
-Now that you've implemented the paywall, you will want to only show it to users who baven't already paid for premium access. Before showing a paywall, check if the user already has premium access.
-
-You need to get their profile using the `getProfile` method and check the access levels in the `profile` object.
-
-By default, Adapty provides a built-in access level called `premium`, but you can [set up your own access levels](access-level.md) in the Adapty dashboard.
-
 :::tip
-Proceed with the quickstart guide to also [implement listening for subscription status changes](android-check-subscription-status).
+For more details on how to display a paywall, see our [guide](android-present-paywalls.md).
 :::
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-// highlight-start
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            
-            if (profile.accessLevels["premium"]?.isActive != true) {
-// highlight-end
-                // Show paywall to non-premium users
-                val paywallView = AdaptyUI.getPaywallView(
-                    activity,
-                    viewConfiguration,
-                    null, // products = null means auto-fetch
-                    eventListener
-                )
-                setContentView(paywallView)
-// highlight-start
-            } else {
-                // User has premium access
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-// highlight-end
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-// highlight-start
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        
-        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
-        
-        if (premium == null || !premium.isActive()) {
-// highlight-end
-            // Show paywall to non-premium users
-            AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-                activity,
-                viewConfiguration,
-                null, // products = null means auto-fetch
-                eventListener
-            );
-            setContentView(paywallView);
-// highlight-start
-        } else {
-            // User has premium access
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-// highlight-end
-```
-</TabItem>
-
-</Tabs>
-
-## 4. Handle button actions
+## 3.  Handle button actions
 
 When users click buttons in the paywall, purchases, restoration, closing the paywall, and opening links are handled automatically in the Android SDK.
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
 For example, you may want to close the paywall after your app users open a web link. Let's see how you can handle it in your implementation.
-
-:::tip
-Read our guides on how to handle other button [actions](android-handle-paywall-actions.md) and [events](android-handling-events.md).
-:::
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](android-implement-paywalls-manually).
-:::
 
 <Tabs groupId="current-os" queryString>
 
@@ -326,6 +228,16 @@ public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context 
 
 </Tabs>
 
+:::tip
+Read our guides on how to handle other button [actions](android-handle-paywall-actions.md) and [events](android-handling-events.md).
+:::
+
+## Next steps
+
+Now, your paywall is ready to be displayed in the app.
+
+As a next step, you need to [learn how to work with user profiles](android-quickstart-identify.md) to ensure they can access what they have paid for.
+
 ## Full example
 
 Here is how all those steps can be integrated in your app together.
@@ -340,51 +252,41 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Adapty.getProfile { profileResult ->
-            if (profileResult is AdaptyResult.Success) {
-                val profile = profileResult.value
-                if (profile.accessLevels["premium"]?.isActive == true) {
-                    // User has premium access
-                    return@getProfile
+        Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
+            if (paywallResult is AdaptyResult.Success) {
+                val paywall = paywallResult.value
+
+                if (!paywall.hasViewConfiguration) {
+                    // Use custom logic
+                    return@getPaywall
                 }
 
-                Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
-                    if (paywallResult is AdaptyResult.Success) {
-                        val paywall = paywallResult.value
+                AdaptyUI.getViewConfiguration(paywall) { configResult ->
+                    if (configResult is AdaptyResult.Success) {
+                        val viewConfiguration = configResult.value
 
-                        if (!paywall.hasViewConfiguration) {
-                            // Use custom logic
-                            return@getPaywall
-                        }
-
-                        AdaptyUI.getViewConfiguration(paywall) { configResult ->
-                            if (configResult is AdaptyResult.Success) {
-                                val viewConfiguration = configResult.value
-
-                                val paywallView = AdaptyUI.getPaywallView(
-                                    this,
-                                    viewConfiguration,
-                                    null, // products = null means auto-fetch
-                                    object : AdaptyUIEventListener {
-                                        override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-                                            when (action) {
-                                                is AdaptyUI.Action.OpenUrl -> {
-                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
-                                                    try {
-                                                        context.startActivity(Intent.createChooser(intent, ""))
-                                                    } catch (e: Throwable) {
-                                                        // Handle error if needed
-                                                    }
-                                                    (context as? Activity)?.onBackPressed()
-                                                }
+                        val paywallView = AdaptyUI.getPaywallView(
+                            this,
+                            viewConfiguration,
+                            null, // products = null means auto-fetch
+                            object : AdaptyUIEventListener {
+                                override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+                                    when (action) {
+                                        is AdaptyUI.Action.OpenUrl -> {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
+                                            try {
+                                                context.startActivity(Intent.createChooser(intent, ""))
+                                            } catch (e: Throwable) {
+                                                // Handle error if needed
                                             }
+                                            (context as? Activity)?.onBackPressed()
                                         }
                                     }
-                                )
-
-                                setContentView(paywallView)
+                                }
                             }
-                        }
+                        )
+
+                        setContentView(paywallView)
                     }
                 }
             }
@@ -403,56 +305,44 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Adapty.getProfile(profileResult -> {
-            if (profileResult instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) profileResult).getValue();
-                AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        Adapty.getPaywall("YOUR_PLACEMENT_ID", paywallResult -> {
+            if (paywallResult instanceof AdaptyResult.Success) {
+                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) paywallResult).getValue();
 
-                if (premium != null && premium.isActive()) {
-                    // User has premium access
+                if (!paywall.hasViewConfiguration()) {
+                    // Use custom logic
                     return;
                 }
 
-                Adapty.getPaywall("YOUR_PLACEMENT_ID", paywallResult -> {
-                    if (paywallResult instanceof AdaptyResult.Success) {
-                        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) paywallResult).getValue();
+                AdaptyUI.getViewConfiguration(paywall, configResult -> {
+                    if (configResult instanceof AdaptyResult.Success) {
+                        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+                            ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
 
-                        if (!paywall.hasViewConfiguration()) {
-                            // Use custom logic
-                            return;
-                        }
-
-                        AdaptyUI.getViewConfiguration(paywall, configResult -> {
-                            if (configResult instanceof AdaptyResult.Success) {
-                                AdaptyUI.LocalizedViewConfiguration viewConfiguration =
-                                    ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
-
-                                AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-                                    this,
-                                    viewConfiguration,
-                                    null, // products = null means auto-fetch
-                                    new AdaptyUIEventListener() {
-                                       @Override
-                                            public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
-                                                if (action instanceof AdaptyUI.Action.OpenUrl) {
-                                                    String url = ((AdaptyUI.Action.OpenUrl) action).getUrl();
-                                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                                    try {
-                                                        context.startActivity(Intent.createChooser(intent, ""));
-                                                    } catch (Throwable e) {
-                                                        // Handle error if needed
-                                                    }
-                                                    if (context instanceof Activity) {
-                                                        ((Activity) context).onBackPressed();
-                                                    }
-                                                }
+                        AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+                            this,
+                            viewConfiguration,
+                            null, // products = null means auto-fetch
+                            new AdaptyUIEventListener() {
+                               @Override
+                                    public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+                                        if (action instanceof AdaptyUI.Action.OpenUrl) {
+                                            String url = ((AdaptyUI.Action.OpenUrl) action).getUrl();
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                            try {
+                                                context.startActivity(Intent.createChooser(intent, ""));
+                                            } catch (Throwable e) {
+                                                // Handle error if needed
                                             }
+                                            if (context instanceof Activity) {
+                                                ((Activity) context).onBackPressed();
+                                            }
+                                        }
                                     }
-                                );
-
-                                setContentView(paywallView);
                             }
-                        });
+                        );
+
+                        setContentView(paywallView);
                     }
                 });
             }
