@@ -42,6 +42,10 @@ Adapty assists you in measuring the performance of your paywalls. While we gathe
 
 To log a paywall view event, simply call `.LogShowPaywall(paywall)`, and it will be reflected in your paywall metrics in funnels and A/B tests.
 
+:::important
+Calling `.LogShowPaywall(paywall)` is not needed if you are displaying paywalls created in the [paywall builder](adapty-paywall-builder.md).
+:::
+
 ```csharp showLineNumbers
 Adapty.LogShowPaywall(paywall, (error) => {
     // handle the error

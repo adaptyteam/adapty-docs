@@ -67,6 +67,10 @@ Response parameters:
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 
+:::important
+Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
+:::
+
 After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](unity-present-remote-config-paywalls).
 
 In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
