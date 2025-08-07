@@ -368,6 +368,7 @@ const config = {
     },
   ],
   plugins: [
+    require('./plugins/cookie-checker-plugin'),
     function copyMarkdownPlugin() {
       return {
         name: 'copy-markdown-plugin',
