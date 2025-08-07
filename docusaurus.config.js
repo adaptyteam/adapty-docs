@@ -26,10 +26,6 @@ const config = {
 
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "ignore",
-  markdown: {
-    mermaid: true,
-  },
-  themes: ['@docusaurus/theme-mermaid'],
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
@@ -103,10 +99,6 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Mermaid configuration
-      mermaid: {
-        theme: {light: 'neo', dark: 'neo'},
-      },
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
       metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
