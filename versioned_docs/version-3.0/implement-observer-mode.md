@@ -2,6 +2,7 @@
 title: "Implement Observer mode"
 description: "Implement observer mode in Adapty to track user subscription events."
 metadataTitle: "Implementing Observer Mode in Adapty | Adapty Docs"
+keywords: ['observer', 'report transactions']
 ---
 
 import Zoom from 'react-medium-image-zoom';
