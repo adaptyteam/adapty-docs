@@ -138,9 +138,9 @@ Adapty.makePurchase(activity, product, null, result -> {
 <TabItem value="flutter" label="Flutter" default>
 This snippet is valid for v.2.0 or later.
 
-```javascript showLineNumbers
+```dart showLineNumbers
 try {
-  final purchaseResult = await Adapty().makePurchase(product: product);
+  final purchaseResult = await adapty.makePurchase(product: product);
     switch (purchaseResult) {
       case AdaptyPurchaseResultSuccess(profile: final profile):
         if (profile.accessLevels['premium']?.isActive ?? false) {
@@ -318,11 +318,16 @@ Additional request parameter:
 </TabItem>
 <TabItem value="flutter" label="Flutter" default>
 
-```javascript showLineNumbers
+```dart showLineNumbers
 try {
+  final parameters = AdaptyPurchaseParametersBuilder()
+    ..setSubscriptionUpdateParams(subscriptionUpdateParams)
+    ..setObfuscatedAccountId('your-account-id')
+    ..setObfuscatedProfileId('your-profile-id');
+
   final result = await adapty.makePurchase(
     product: product,
-    subscriptionUpdateParams: subscriptionUpdateParams,
+    parameters: parameters.build(),
   );
   
   // successful cross-grade
@@ -336,7 +341,7 @@ Additional request parameter:
 
 | Parameter                    | Presence | Description                                                  |
 | :--------------------------- | :------- | :----------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+| **parameters** | required | an [`AdaptyPurchaseParameters`](sdk-models#adaptypurchaseparameters) object containing subscription update parameters and other purchase options. |
 
 </TabItem>
 <TabItem value="unity" label="Unity" default>
@@ -536,6 +541,28 @@ Adapty.makePurchase(
         // Handle result
     }
 );
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter" default>
+
+```dart showLineNumbers
+try {
+  final parameters = AdaptyPurchaseParametersBuilder()
+    ..setObfuscatedAccountId('YOUR_OBFUSCATED_ACCOUNT_ID')
+    ..setObfuscatedProfileId('YOUR_OBFUSCATED_PROFILE_ID');
+
+  final result = await adapty.makePurchase(
+    product: product,
+    parameters: parameters.build(),
+  );
+  
+  // Handle result
+} on AdaptyError catch (adaptyError) {
+  // Handle the error
+} catch (e) {
+  // Handle the error
+}
 ```
 
 </TabItem>
