@@ -87,6 +87,15 @@ An information about a [product discount.](https://swift.adapty.io/documentation
 | localizedNumberOfPeriods (_iOS only_) | string (Optional) | For iOS: A formatted number of periods of a discount for a user's locale |
 | subscriptionPeriod | [`AdaptyProductSubscriptionPeriod`](sdk-models#adaptyproductsubscriptionperiod) | An information about period for a product discount |
 
+### AdaptyProductIdentifier
+
+(_Flutter only_)  
+A structured representation of a product identifier in the Flutter SDK, providing more information than simple string identifiers.
+
+| Name             | Type   | Description                                                                                    |
+| :--------------- | :----- | :--------------------------------------------------------------------------------------------- |
+| vendorProductId  | string | The vendor product ID from the store (App Store Connect or Google Play Console).              |
+
 
 ### AdaptyPaywall
 
@@ -99,7 +108,8 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 | revision           | number                | Current revision (version) of a paywall. Every change within a paywall creates a new revision                                                                                                                                                                                                                                                                                                                                                         |
 | remoteConfigString | string (optional)     | A custom JSON string configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                                  |
 | remoteConfig       | dictionary (optional) | A custom dictionary configured in Adapty Dashboard for this paywall (same as `remoteConfigString`)                                                                                                                                                                                                                                                                                                                                                    |
-| vendorProductIds   | array of strings      | Array of related products ids                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| productIdentifiers | array of [`AdaptyProductIdentifier`](sdk-models#adaptyproductidentifier) | Array of related product identifiers (preferred over vendorProductIds).                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| vendorProductIds   | array of strings      | Array of related products ids (_deprecated - use productIdentifiers instead_)                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | webPaywallBaseUrl  | URL                   | The [web paywall](web-paywall.md) URL for users to make external payments.                                                                                                                                                                                                                                                                                                                                                                            |
 | abTestName         | string                | Parent A/B test name                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | name               | string                | Paywall name                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -198,3 +208,15 @@ Parameters to change one subscription to another.
 | :-------------------- | :----- | :----------------------------------------------------------- |
 | oldSubVendorProductId | string | The identifier of the current subscription in Play Market that needs to be replaced. |
 | ReplacementMode       | enum   | Enum that corresponds to [`BillingFlowParams.ProrationMode`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode) values. |
+
+### AdaptyPurchaseParameters
+
+(_Flutter only_)  
+Parameters used for making purchases in Flutter SDK, consolidating all purchase-related options into a single object.
+
+| Name                    | Type                                                                 | Description                                                                                                                         |
+| :---------------------- | :------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| subscriptionUpdateParams | [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) (optional) | Used to upgrade or downgrade a subscription (Android only).                                                                        |
+| isOfferPersonalized     | boolean (optional)                                                                                                                  | Specifies whether the offer is personalized to the buyer (Android only).                                                            |
+| obfuscatedAccountId     | string (optional)                                                                                                                   | The obfuscated account identifier (Android only), [read more](https://developer.android.com/google/play/billing/developer-payload#attribute). |
+| obfuscatedProfileId     | string (optional)                                                                                                                   | The obfuscated profile identifier (Android only), [read more](https://developer.android.com/google/play/billing/developer-payload#attribute). |

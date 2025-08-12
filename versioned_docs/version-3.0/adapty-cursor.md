@@ -7,7 +7,7 @@ metadataTitle: "Use Adapty with LLMs | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-You can use large language models (LLMs) to help you integrate Adapty into you app. We provide a set of tools and best practices if you use LLMs during development.
+You can use large language models (LLMs) to help you integrate Adapty into your app. We provide a set of tools and best practices if you use LLMs during development.
 
 ## Plain text docs
 

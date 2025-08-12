@@ -42,14 +42,14 @@ Adapty calculates the predictable and recurring revenue components of your subsc
 Where:  
 Ps - subscription price  
 Ns - number of active paid subscriptions for this subscription. Adapty considers any paid subscription that has not yet expired as an active subscription.  
-Dsm - subscription duration in months (0.25 for weekly subscriptions)
+Dsm - subscription duration in months (0.23 for weekly subscriptions)
 
 It is important to note that Adapty does not include non-recurring subscriptions, consumable, or one-time purchases in the calculation of Monthly Recurring Revenue (MRR). This is because these types of purchases do not represent predictable and recurring revenue.
 
 Basically, MRR shows revenue from all active subscriptions normalized to one month. For example, for a yearly subscription, instead of counting full revenue from the start, revenue is split into 12 equal parts which are evenly spread across 12 month period.
 
 E.g. if there are 2 active yearly subscriptions with price $240 and 10 monthly subscriptions with a price $30,  
-MRR = (2 \* $240 / 12) + (10 \* $30 / 1) + (20 \* $10 / 0.25) = $1140
+MRR = (2 \* $240 / 12) + (10 \* $30 / 1) + (20 \* $10 / 0.23) = $1209.5
 
 ### Available filters and grouping
 

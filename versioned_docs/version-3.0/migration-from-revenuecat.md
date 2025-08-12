@@ -2,6 +2,7 @@
 title: "Migration from RevenueCat"
 description: "Migrate from RevenueCat to Adapty with our step-by-step guide."
 metadataTitle: "Migrate from RevenueCat to Adapty | Adapty Docs"
+keywords: ['migration', 'revenuecat']
 ---
 
 import Zoom from 'react-medium-image-zoom';
