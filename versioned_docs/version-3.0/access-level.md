@@ -17,7 +17,7 @@ You can have multiple access levels per app. Here are some examples of when they
 - In a fitness app offering recorded video training under a regular subscription (using the default `premium` access level), customers may opt for a more expensive option providing access to live training with a coach. In this case, you can create a `live_coach_access` level.
 - In a language learning app, you can choose to create an access level for each available language.
 
-To begin working with access levels in Adapty, open the **[Paywalls and Products](https://app.adapty.io/access-levels)** section from the Adapty main menu, then select the **Access levels** tab.
+To begin working with access levels in Adapty, go to **[Products](https://app.adapty.io/access-levels)** from the Adapty main menu, then select the **Access levels** tab.
 
 The **Access levels** list displays all access levels, including the `premium` one that is added automatically and those added by you in Adapty.
 

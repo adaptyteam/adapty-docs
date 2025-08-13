@@ -28,6 +28,6 @@ To make a product visible and selectable within a [paywall](paywalls) for your a
 
 
 
-3. Click the **Save as draft** or **Save and publish** button depending on the status of the paywall.
+3. Click the **Create as draft** or **Save and publish** button depending on the status of the paywall.
 
 Please keep in mind that after creation, it is not recommended to edit, add, or delete products to the paywall as this may affect the paywall metrics.

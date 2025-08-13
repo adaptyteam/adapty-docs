@@ -14,11 +14,11 @@ No matter how you use Adapty, you need to create a product in the Adapty Dashboa
 
 After your products are set up in the stores, you are ready to add your products to the Adapty Dashboard. To add a new product to your app:
 
-1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab.
+1. Go to **[Products](https://app.adapty.io/products)** from the Adapty main menu.
 
 
 <Zoom>
-  <img src={require('./img/7c9573a-products_tab.webp').default}
+  <img src={require('./img/products-tab.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
