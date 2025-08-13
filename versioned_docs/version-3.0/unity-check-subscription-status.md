@@ -5,14 +5,33 @@ metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkunity
 ---
 
-When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
-
-- Call [`getProfile`](unity-listen-subscription-changes.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
-- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+To decide whether users can access paid content or see a paywall, you need to check their [access level](access-level.md) in the profile.
 
 This article shows you how to access the profile state to decide what users need to see - whether to show them a paywall or grant access to paid features.
 
-## Listen to subscription updates
+## Get subscription status
+
+When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
+
+- Call `GetProfile` if you need the latest profile data immediately (like on app launch) or want to force an update.
+- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+
+### Get profile
+
+The easiest way to get the subscription status is to use the `GetProfile` method to access the profile:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### Listen to subscription updates
 
 To automatically receive profile updates in your app:
 
@@ -54,53 +73,29 @@ Adapty automatically calls `OnLoadLatestProfile` when your app starts, providing
 When you need to make immediate decisions about showing paywalls or granting access to paid features, you can check the user's profile directly. This approach is useful for scenarios like app launch, when entering premium sections, or before displaying specific content.
 
 ```csharp
-using System;
-using UnityEngine;
-
-public class PaywallManager : MonoBehaviour
+private void CheckAccessLevel()
 {
-    [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
-    
-    void Start()
-    {
-        InitializePaywall();
-    }
-    
-    private void InitializePaywall()
-    {
-        // Load paywall configuration
-        LoadPaywall();
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
         
-        // Check if user has access to premium features
-        CheckAccessLevel();
-    }
-    
-    private void CheckAccessLevel()
-    {
-        Adapty.GetProfile((profile, error) => {
-            if (error != null) {
-                Debug.LogError("Error checking access level: " + error.Message);
-                ShowPaywall(); // Show paywall if access check fails
-                return;
-            }
-            
-            var accessLevel = profile.AccessLevels["premium"];
-            if (accessLevel == null || !accessLevel.IsActive) {
-                ShowPaywall(); // Show paywall if no access
-            }
-        });
-    }
-    
-    private void LoadPaywall()
-    {
-        // Load paywall configuration
-        // ... paywall loading logic
-    }
-    
-    private void ShowPaywall()
-    {
-        // Present paywall
-        // ... paywall presentation logic
-    }
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
 }
 ``` 
+
+## Next steps
+
+Now, when you know how to track the subscription status, learn how to [work with user profiles](unity-quickstart-identify.md) to ensure they can access what they have paid for.

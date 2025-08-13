@@ -24,7 +24,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 
 For a complete implementation walkthrough, you can also see the video:
 <div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 
 ## Requirements
@@ -146,6 +146,8 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 ```
 
 ### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
 
 #### Disable IP address collection and sharing
 

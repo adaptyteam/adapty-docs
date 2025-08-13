@@ -128,30 +128,36 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "/ios-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkios",
               },
               {
                 label: "Android",
-                href: "/android-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkandroid",
               },
               {
                 label: "Flutter",
-                href: "/flutter-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkflutter",
               },
               {
                 label: "React Native",
-                href: "/react-native-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkreactnative",
               },
               {
                 label: "Unity",
-                href: "/unity-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkunity",
               }
             ],
           },
           {
             label: "Server API",
             position: "left",
-            href: "/getting-started-with-server-side-api",
+            type: "docSidebar",
+            sidebarId: "APISidebar",
           },
           {
             label: "Support Forum",

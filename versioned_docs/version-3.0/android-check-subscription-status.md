@@ -4,22 +4,66 @@ description: "Learn how to check subscription status in your Android app with Ad
 metadataTitle: "Check Subscription Status | Adapty Docs"
 ---
 
-When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
 
-- Call [`getProfile`](android-identifying-users.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
-- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+To decide whether users can access paid content or see a paywall, you need to check their [access level](access-level.md) in the profile.
 
 This article shows you how to access the profile state to decide what users need to see - whether to show them a paywall or grant access to paid features.
 
-## Listen to subscription updates
+## Get subscription status
+
+When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
+
+- Call `getProfile` if you need the latest profile data immediately (like on app launch) or want to force an update.
+- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+
+### Get profile
+
+The easiest way to get the subscription status is to use the `getProfile` method to access the profile:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### Listen to subscription updates
 
 To automatically receive profile updates in your app:
 
 1. Use `Adapty.setOnProfileUpdatedListener()` to listen for profile changes - Adapty will automatically call this method whenever the user's subscription status changes.
 2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -38,7 +82,7 @@ class SubscriptionManager {
     
     // Use stored profile instead of calling getProfile()
     fun hasAccess(): Boolean {
-        return currentProfile?.accessLevels["premium"]?.isActive == true
+        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
     }
 }
 ```
@@ -65,7 +109,7 @@ public class SubscriptionManager {
             return false;
         }
         
-        AdaptyAccessLevel premiumAccess = currentProfile.getAccessLevels().get("premium");
+        AdaptyAccessLevel premiumAccess = currentProfile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
         return premiumAccess != null && premiumAccess.isActive();
     }
 }
@@ -86,54 +130,36 @@ When you need to make immediate decisions about showing paywalls or granting acc
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin
-class MainActivity : AppCompatActivity() {
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        initializePaywall()
-    }
-    
-    private fun initializePaywall() {
-        // Load paywall configuration
-        loadPaywall { paywallView ->
-            // Check if user has access to premium features
-            checkAccessLevel { result ->
-                when (result) {
-                    is AdaptyResult.Success -> {
-                        if (!result.value && paywallView != null) {
-                            setContentView(paywallView) // Show paywall if no access
-                        }
-                    }
-                    is AdaptyResult.Error -> {
-                        println("Error checking access level: ${result.error}")
-                        if (paywallView != null) {
-                            setContentView(paywallView) // Show paywall if access check fails
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private fun checkAccessLevel(callback: ResultCallback<Boolean>) {
-        Adapty.getProfile { result ->
+private fun initializePaywall() {
+    loadPaywall { paywallView ->
+        checkAccessLevel { result ->
             when (result) {
                 is AdaptyResult.Success -> {
-                    val hasAccess = result.value.accessLevels["premium"]?.isActive == true
-                    callback.onResult(AdaptyResult.Success(hasAccess))
+                    if (!result.value && paywallView != null) {
+                        setContentView(paywallView) // Show paywall if no access
+                    }
                 }
                 is AdaptyResult.Error -> {
-                    callback.onResult(AdaptyResult.Error(result.error))
+                    if (paywallView != null) {
+                        setContentView(paywallView) // Show paywall if access check fails
+                    }
                 }
             }
         }
     }
-    
-    private fun loadPaywall(callback: (AdaptyPaywallView?) -> Unit) {
-        // Load paywall configuration
-        // ... paywall loading logic
-        callback(null)
+}
+
+private fun checkAccessLevel(callback: ResultCallback<Boolean>) {
+    Adapty.getProfile { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val hasAccess = result.value.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+                callback.onResult(AdaptyResult.Success(hasAccess))
+            }
+            is AdaptyResult.Error -> {
+                callback.onResult(AdaptyResult.Error(result.error))
+            }
+        }
     }
 }
 ```
@@ -143,55 +169,40 @@ class MainActivity : AppCompatActivity() {
 <TabItem value="java" label="Java">
 
 ```java
-public class MainActivity extends AppCompatActivity {
-    
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        initializePaywall();
-    }
-    
-    private void initializePaywall() {
-        // Load paywall configuration
-        loadPaywall(paywallView -> {
-            // Check if user has access to premium features
-            checkAccessLevel(result -> {
-                if (result instanceof AdaptyResult.Success) {
-                    boolean hasAccess = ((AdaptyResult.Success<Boolean>) result).getValue();
-                    if (!hasAccess && paywallView != null) {
-                        setContentView(paywallView); // Show paywall if no access
-                    }
-                } else if (result instanceof AdaptyResult.Error) {
-                    System.out.println("Error checking access level: " + ((AdaptyResult.Error) result).getError());
-                    if (paywallView != null) {
-                        setContentView(paywallView); // Show paywall if access check fails
-                    }
-                }
-            });
-        });
-    }
-    
-    private void checkAccessLevel(ResultCallback<Boolean> callback) {
-        Adapty.getProfile(result -> {
+private void initializePaywall() {
+    loadPaywall(paywallView -> {
+        checkAccessLevel(result -> {
             if (result instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-                AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("premium");
-                boolean hasAccess = premiumAccess != null && premiumAccess.isActive();
-                callback.onResult(AdaptyResult.success(hasAccess));
+                boolean hasAccess = ((AdaptyResult.Success<Boolean>) result).getValue();
+                if (!hasAccess && paywallView != null) {
+                    setContentView(paywallView); // Show paywall if no access
+                }
             } else if (result instanceof AdaptyResult.Error) {
-                callback.onResult(AdaptyResult.error(((AdaptyResult.Error) result).getError()));
+                if (paywallView != null) {
+                    setContentView(paywallView); // Show paywall if access check fails
+                }
             }
         });
-    }
-    
-    private void loadPaywall(AdaptyCallback<AdaptyPaywallView> callback) {
-        // Load paywall configuration
-        // ... paywall loading logic
-        callback.onResult(AdaptyResult.success(null));
-    }
+    });
+}
+
+private void checkAccessLevel(ResultCallback<Boolean> callback) {
+    Adapty.getProfile(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+            boolean hasAccess = premiumAccess != null && premiumAccess.isActive();
+            callback.onResult(AdaptyResult.success(hasAccess));
+        } else if (result instanceof AdaptyResult.Error) {
+            callback.onResult(AdaptyResult.error(((AdaptyResult.Error) result).getError()));
+        }
+    });
 }
 ```
 
 </TabItem>
 </Tabs>
+
+## Next steps
+
+Now, when you know how to track the subscription status, learn how to [work with user profiles](android-quickstart-identify.md) to ensure they can access what they have paid for.

@@ -19,7 +19,7 @@ Adapty SDK handles the complexity of in-app purchases so you can focus on buildi
 - Create and test paywalls without app updates
 - Get detailed purchase analytics with zero setup - cohorts, LTV, churn, and funnel analysis included
 - Keep the user subscription status always up to date across app sessions and devices
-- Integrate your app with popular services using just one line of code
+- Integrate your app with marketing attribution and analytics services using just one line of code
 
 ## Get started
 
@@ -31,12 +31,8 @@ Basic integration of the Adapty SDK into your app comprises four main steps:
 
 1. [Install & configure SDK](sdk-installation-ios.md): Add the SDK as a dependency to your project and activate it in the code.
 2. [Present a paywall](ios-quickstart-paywalls.md): Present a paywall to enable in-app purchases.
-3. [Identify users](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
-4. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
-
-:::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
-:::
+3. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
+4. [Identify users](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently.
 
 For a complete implementation walkthrough, you can also see the videos:
 
@@ -44,13 +40,13 @@ For a complete implementation walkthrough, you can also see the videos:
 <TabItem value="swiftui" label="iOS (SwiftUI)" default> 
 
 <div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 </TabItem>
 <TabItem value="uikit" label="iOS (UIKit)" default> 
 
 <div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 </TabItem>
 </Tabs>
@@ -75,13 +71,6 @@ Regardless of how you want to work with in-app purchases, you need to understand
 3. To be able to get a paywall at a certain point in the user's journey, you must associate this paywall with a **placement**.
 4. When users purchase a product, their **profile** is assigned an **access level** which you must use to define access to paid features.
 
-<Zoom>
-  <img src={require('./img/sdk-overview.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Sample apps
+
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.

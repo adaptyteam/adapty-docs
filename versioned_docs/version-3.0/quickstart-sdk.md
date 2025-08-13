@@ -10,26 +10,14 @@ Integrate Adapty SDK into your app to:
 - Display paywalls and onboardings to your users
 - Get detailed analytics for in-app purchases
 - Automatically track subscription status changes
-- Integrate your app with popular services using just one line of code
-
-Currently, Adapty has the following SDKs available:
-
-[**Adapty iOS SDK**](ios-sdk-overview.md) | [**Adapty Android SDK**](android-sdk-overview.md) | [**Adapty Flutter SDK**](flutter-sdk-overview.md)
-
-[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases) &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases) &nbsp; &nbsp; &nbsp; &nbsp; [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
-
-
-[**Adapty React Native SDK**](react-native-sdk-overview.md) | [**Adapty Unity SDK**](unity-sdk-overview.md)
-
-&nbsp; &nbsp; &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
-
+- Integrate your app with marketing attribution and analytics services using just one line of code
 
 ## How does it work
 
 For the basic implementation of the Adapty SDK, you need to take care of four things only:
 
 1. Install and initialize the SDK.
-2. Enable in-app purchases.
+2. Delegate handling in-app purchases to Adapty.
 3. Identify users in the app.
 4. Listen to the profile updates to control whether paid content is available.
 

@@ -247,6 +247,8 @@ Adapty.setLogHandler((level, message) -> {
 
 ### Data policies
 
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
+
 #### Disable IP address collection and sharing
 
 When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.

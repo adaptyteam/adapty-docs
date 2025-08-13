@@ -13,6 +13,12 @@ How you manage users' purchases depends on your app's authentication model:
 - If your app doesn't use backend authentication and doesn't store user data, see the [section about anonymous users](#anonymous-users).
 - If your app has (or will have) backend authentication, see the [section about identified users](#identified-users).
 
+:::tip
+**Key concepts**:
+- **Profiles** are the entities required for the SDK to work. Adapty creates them automatically. They can be anonymous (without customer user ID) or identified (with customer user ID).
+- **Customer user IDs** are optional identifiers **you create** for Adapty to link your users to their Adapty profiles.
+:::
+
 Here is what is different for anonymous and identified users:
 
 |                         | Anonymous users                                      | Identified users                                                        |
@@ -24,18 +30,14 @@ Here is what is different for anonymous and identified users:
 
 ## Anonymous users
 
+If you don't have backend authentication, **you don't need to handle authentication in the app code**:
+
 1. When the SDK is activated on the app's first launch, Adapty **creates a new profile for the user**.
 2. When the user purchases anything in the app, this purchase is **associated with their Adapty profile and their store account**.
 3. When the user **re-installs** the app or installs it from a **new device**, Adapty **creates a new empty profile on activation**.
 4. If the user has previously made purchases in your app, by default, their purchases are automatically synced from the App Store on the SDK activation.
 
 ## Identified users
-
-:::tip
-**Key concepts**:
-- **Profiles** are the entities required for the SDK to work. They can be anonymous (without customer user ID) or identified (with customer user ID).
-- **Customer user IDs** are identifiers **you create** for Adapty to link your users to their Adapty profiles.
-:::
 
 - If a profile doesn't have a customer user ID yet (meaning, **the user isn't signed in**), when you send a customer user ID, it gets associated with that profile.
 - If it is a **re-installation, signing in, or installation from a new device**, and you have sent their customer user ID before, a new profile is not created. Instead, we switch to the existing profile associated with the customer user ID.
@@ -45,6 +47,10 @@ You have two options to identify users in the app:
 - [**During login/signup:**](#during-loginsignup) If users sign in after your app starts, call `identify()` with a customer user ID when they authenticate.
 
 - [**During the SDK activation:**](#during-the-sdk-activation) If you already have a customer user ID stored when the app launches, send it when calling `activate()`.
+
+:::important
+By default, when Adapty receives a purchase from a Customer User ID that is currently associated with another Customer User ID, the access level is shared, so both profiles have paid access. You can configure this setting to transfer paid access from one profile to another or disable sharing completely. See the [article](general#6-sharing-purchases-between-user-accounts) for more details.
+:::
 
 <Zoom>
   <img src={require('./img/identify-diagram.webp').default}
@@ -161,8 +167,8 @@ If your users can make purchases both before and after they log into your app, y
 
 Here's how it works:
 1. When a logged-out user makes a purchase, Adapty ties it to their anonymous profile ID.
-2. When the user logs into their account, Adapty switches to working with their identified profile.
-3. For purchases to appear in the identified user profile, you need to [restore](android-restore-purchase.md) their purchases on login, so they are retrieved from the store and tied to the identified user profile.
+2. When the user logs into their account, Adapty switches to working with their identified profile. If it is an existing customer user ID (the customer user ID is already linked to a profile), Adapty syncs its transactions automatically.
+3. If it is a new customer user ID (e.g., the purchase has been made before registration), for purchases to appear in the identified user profile, you need to [restore](android-restore-purchase.md) their purchases on login, so they are retrieved from the store and tied to the identified user profile.
 
 For this to work properly, go to **App settings** and ensure that [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts) is **not** set to **Disabled**. This way, the access level of the anonymous profile is transferred to or shared with the identified profile.
 
@@ -211,7 +217,3 @@ Adapty.restorePurchases(result -> {
 </TabItem>
 
 </Tabs>
-
-## Next steps
-
-Now, when you know how to identify users, you need to [check their access level](android-check-subscription-status.md) to ensure you display a paywall or give access to paid features to right users.
