@@ -72,6 +72,10 @@ Now, when you have the paywall configuration, it's enough to add a few lines to 
 
 To display the paywall, use the `view.present()` method on the `view` created by the `СreateView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
+
 ```csharp showLineNumbers title="Unity"
 view.Present((error) => {
   // handle the error

@@ -163,57 +163,10 @@ To log users back into the app, use the `identify` method.
 
 ### Allow purchases without login
 
-If your users can make purchases both before and after they log into your app, you need to do additional setup, as logging in will switch them to the different Adapty profile.
+If your users can make purchases both before and after they log into your app, you don't need to do additional setup:
 
 Here's how it works:
 1. When a logged-out user makes a purchase, Adapty ties it to their anonymous profile ID.
-2. When the user logs into their account, Adapty switches to working with their identified profile. If it is an existing customer user ID (the customer user ID is already linked to a profile), Adapty syncs its transactions automatically.
-3. If it is a new customer user ID (e.g., the purchase has been made before registration), for purchases to appear in the identified user profile, you need to [restore](android-restore-purchase.md) their purchases on login, so they are retrieved from the store and tied to the identified user profile.
-
-For this to work properly, go to **App settings** and ensure that [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts) is **not** set to **Disabled**. This way, the access level of the anonymous profile is transferred to or shared with the identified profile.
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.restorePurchases { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-                      
-            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
-            // successful access restore
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.restorePurchases(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        
-        if (profile != null) {
-            AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
-            
-            if (premium != null && premium.isActive()) {
-                // successful access restore
-            }
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-
-</Tabs>
+2. When the user logs into their account, Adapty switches to working with their identified profile.
+   - If it is an existing customer user ID (the customer user ID is already linked to a profile), Adapty syncs its transactions automatically.
+   - If it is a new customer user ID (e.g., the purchase has been made before registration), Adapty assigns the customer user ID to the current profile, so all the purchase history is maintained.

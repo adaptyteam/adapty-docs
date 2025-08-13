@@ -99,6 +99,10 @@ Now, when you have the paywall configuration, it's enough to add a few lines to 
 
 In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
 
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
+
 <Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin (option 1)" default>
 

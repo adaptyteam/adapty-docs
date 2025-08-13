@@ -92,6 +92,10 @@ func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
+:::important
+For the paywall to be displayed, you must switch on the **Show on device** toggle in the Paywall Builder.
+:::
+
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="swiftui" label="SwiftUI" default>

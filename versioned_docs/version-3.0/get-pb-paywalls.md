@@ -9,7 +9,9 @@ keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'cre
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
@@ -38,6 +40,8 @@ To ensure optimal performance, it's crucial to retrieve the paywall and its [vie
 
 To get a paywall, use the `getPaywall` method:
 
+<Tabs>
+<TabItem value="swift" label="Swift">
 ```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
@@ -46,8 +50,8 @@ do {
     // handle the error
 }
 ```
-
-Or using callback-based approach:
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -59,6 +63,8 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
+</TabItem>
+</Tabs>
 
 Parameters:
 
