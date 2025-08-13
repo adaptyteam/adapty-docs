@@ -6,8 +6,8 @@ metadataTitle: "Integrate with stores or web payments and set up products | Adap
 
 This is your first step toward growing in-app purchases. Once you complete this quickstart:
 
-- You'll get in-app paywalls to show your products to users.
-- Adapty will display your products in your app and handle purchases with all related logic.
+- Adapty will handle in-app purchases with all related logic.
+- You’ll have the flexibility to show the right paywall at the right time to specific users.
 - You'll access detailed analytics for in-app purchases.
 - You can start A/B testing and send subscription events to third-party analytics.
 
