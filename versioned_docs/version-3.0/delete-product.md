@@ -12,7 +12,7 @@ You can only delete products that are not used in paywalls.
 To delete the product:
 
 1. Go to **[Products](https://app.adapty.io/products)** from the Adapty main menu.
-2. Click the **3-dot** button next to the product and select the **Delete** option.
+2. Click the **3-dot** button next to the product and select **Delete**.
 
 
 <Zoom>
@@ -30,7 +30,7 @@ To delete the product:
 
 
 
-2. In the **Delete product** window, enter the product name you're about to delete.
+2. Enter the product name you're about to delete.
 
 
 <Zoom>
@@ -48,4 +48,4 @@ To delete the product:
 
 
 
-3. Click the **Delete forever** button to confirm the deletion.
+3. Click **Delete forever**.

@@ -32,7 +32,7 @@ After your products are set up in the stores, you are ready to add your products
 
 
 
-2. Click the **Create product** button located in the top-right corner of the product list page. This action will initiate the process of creating a product within your app. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
+2. Click **Create product** in the top-right corner. This action will initiate the process of creating a product within your app. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
 
 <Zoom>
   <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.webp').default}
@@ -49,7 +49,7 @@ After your products are set up in the stores, you are ready to add your products
 
 
 
-3. In the opened **Create product** window, enter the following data:
+3. Enter the following data:
 
    - **Product name**: enter the name of the product to be used in the Adapty dashboard. The name is primarily for your reference, so feel free to choose a name that is most convenient for you to use across the Adapty Dashboard.
 

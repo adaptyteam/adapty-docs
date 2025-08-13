@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 To make a product visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
 
-1. While [configuring a paywall](create-paywall), click the **Add product** button under the **Products** title.
+1. While [configuring a paywall](create-paywall), click **Add product** under the **Products** title.
 2. From the opened drop-down list, select the products that will be shown to your customers. The list contains only previously created products. The order of the products is preserved on the SDK side, so it's important to consider the desired order when configuring the paywall. Additionally, you can specify an offer for a product if desired.
 
 
@@ -28,6 +28,6 @@ To make a product visible and selectable within a [paywall](paywalls) for your a
 
 
 
-3. Click the **Create as draft** or **Save and publish** button depending on the status of the paywall.
+3. Click **Create as draft** or **Save and publish** depending on the status of the paywall.
 
 Please keep in mind that after creation, it is not recommended to edit, add, or delete products to the paywall as this may affect the paywall metrics.

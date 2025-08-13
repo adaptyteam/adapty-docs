@@ -23,7 +23,7 @@ The **Access levels** list displays all access levels, including the `premium` o
 
 
 <Zoom>
-  <img src={require('./img/22b4a1e-access_level_list.webp').default}
+  <img src={require('./img/access-level-list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
