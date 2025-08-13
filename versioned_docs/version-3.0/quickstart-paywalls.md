@@ -1,7 +1,7 @@
 ---
-title: "Add paywall to enable purchases"
+title: "Add paywall to sell products"
 description: "Create and design paywalls in Adapty, then add them to placements to show specific audiences targeted storefronts."
-metadataTitle: "Add paywall to enable purchases | Adapty Docs"
+metadataTitle: "Add paywall to sell products | Adapty Docs"
 ---
 
 import Contentid from '@site/src/components/InlineTooltip';
