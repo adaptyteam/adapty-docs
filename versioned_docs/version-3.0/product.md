@@ -21,11 +21,11 @@ Checklist to successfully display products in your mobile app
 3. [Show paywalls using the placements they belong to in your mobile app](display-pb-paywalls).
 :::
 
-After you create products in the Adapty Dashboard, they are visible in the  **Products** tab of the **[Paywalls and Products](https://app.adapty.io/products)** section.
+After you create products in the Adapty Dashboard, they are visible in the  **[Products](https://app.adapty.io/products)** section.
 
 
 <Zoom>
-  <img src={require('./img/a26de79-Products_list.webp').default}
+  <img src={require('./img/poducts-list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
