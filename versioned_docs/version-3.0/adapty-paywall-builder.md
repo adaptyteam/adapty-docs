@@ -17,6 +17,7 @@ This advanced no-code tool makes creating custom paywalls more intuitive and pow
 - **Expanded Template Selection**: Choose from a wide array of professionally designed templates to kickstart your paywall creation. These templates offer various styles and layouts to meet different needs and preferences.
 - **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements like carousels, cards, product lists, and footers. These enhancements give you the creative freedom to build any type of paywall you envision.
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
+- **Scalability**: If you manage multiple apps, [migrate](migrate-paywalls.md) your visual paywall configuration in one click instead of building from scratch.
 
 :::warning
 This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
@@ -48,7 +49,7 @@ To use the Adapty Paywall Builder:
 
 4. Add products to the paywall if you haven't yet. Otherwise, click **Build no-code paywall**.
 
-5. Select a template and click **Choose**. 
+5. Select a template and click **Choose** or [migrate a paywall](migrate-paywalls.md) from another app.
 
 6. Click **Choose** to confirm your choice.
 
@@ -69,7 +70,7 @@ For the paywall to be displayed, you must switch on the **Show on device** toggl
 />
 </Zoom>
 
-## How to migrate your paywalls
+## Migrate your legacy paywalls
 
 Currently, two versions of the Paywall Builder work in parallel in Adapty:
 
