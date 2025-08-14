@@ -1,119 +1,106 @@
 ---
-title: "Localize paywalls"
+title: "Use localizations and locale codes in React Native SDK"
 description: "Learn how to localize paywalls in your React Native app with Adapty SDK."
 metadataTitle: "Localize Paywalls | React Native SDK | Adapty Docs"
 slug: /react-native-localizations-and-locale-codes
 displayed_sidebar: sdkreactnative
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import TabItem from '@theme/TabItem';
 
-## Set locale
+## Why this is important
 
-To set the locale for paywall localization:
+There are a few scenarios when locale codes come into play — for example, when you're trying to fetch the correct paywall for the current localization of your app.
 
-```javascript
-import { Adapty } from 'react-native-adapty';
+As locale codes are complicated and can vary from platform to platform, we rely on an internal standard for all the platforms we support. However, because these codes are complicated, it is really important for you to understand what exactly are you sending to our server to get the correct localization, and what happens next — so you will always receive what you expect.
 
-// Set locale for paywalls
-await Adapty.setLocale('en_US');
-```
+## Locale code standard at Adapty
 
-## Get paywalls with locale
+For locale codes, Adapty uses a slightly modified [BCP 47 standard](https://en.wikipedia.org/wiki/IETF_language_tag): every code consists of lowercase subtags, separated by hyphens. Some examples: `en` (English), `pt-br` (Portuguese (Brazil)), `zh` (Simplified Chinese), `zh-hant` (Traditional Chinese).
 
-You can specify locale when getting paywalls:
+## Locale code matching
 
-```javascript
-const paywalls = await Adapty.getPaywalls({
-  locale: 'en_US'
-});
-```
+When Adapty receives a call from the client-side SDK with the locale code and starts looking for a corresponding localization of a paywall, the following happens:
 
-## Supported locale codes
+1. The incoming locale string is converted to lowercase and all the underscores (`_`) are replaced with hyphens (`-`)
+2. We then look for the localization with the fully matching locale code
+3. If no match was found, we take the substring before the first hyphen (`pt` for `pt-br`) and look for the matching localization
+4. If no match was found again, we return the default `en` localization
 
-Adapty supports the following locale codes:
+This way an iOS device that sent `'pt_BR'`, an Android device that sent `pt-BR`, and another device that sent `pt-br` will get the same result.
 
-### English
-- `en_US` - English (United States)
-- `en_GB` - English (United Kingdom)
-- `en_CA` - English (Canada)
-- `en_AU` - English (Australia)
+## Implementing localizations: recommended way
 
-### Spanish
-- `es_ES` - Spanish (Spain)
-- `es_MX` - Spanish (Mexico)
-- `es_AR` - Spanish (Argentina)
+If you're wondering about localizations, chances are you're already dealing with the localized string files in your project. If that's the case, we recommend placing some key-value with the intended Adapty locale code in each of your files for the corresponding localizations. And then extract the value for this key when calling our SDK, like so:
 
-### French
-- `fr_FR` - French (France)
-- `fr_CA` - French (Canada)
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
 
-### German
-- `de_DE` - German (Germany)
-- `de_AT` - German (Austria)
-- `de_CH` - German (Switzerland)
-
-### Italian
-- `it_IT` - Italian (Italy)
-
-### Portuguese
-- `pt_BR` - Portuguese (Brazil)
-- `pt_PT` - Portuguese (Portugal)
-
-### Russian
-- `ru_RU` - Russian (Russia)
-
-### Japanese
-- `ja_JP` - Japanese (Japan)
-
-### Korean
-- `ko_KR` - Korean (South Korea)
-
-### Chinese
-- `zh_CN` - Chinese (Simplified)
-- `zh_TW` - Chinese (Traditional)
-- `zh_HK` - Chinese (Hong Kong)
-
-## Auto-detect locale
-
-You can auto-detect the device locale:
-
-```javascript
-import { getLocales } from 'react-native-localize';
-
-const deviceLocales = getLocales();
-const primaryLocale = deviceLocales[0];
-
-// Set locale based on device
-await Adapty.setLocale(primaryLocale.languageTag);
-```
-
-## Fallback locale
-
-If a locale is not available, Adapty will fall back to the default locale:
-
-```javascript
-// Try to set Spanish, fall back to English if not available
-try {
-  await Adapty.setLocale('es_ES');
-} catch (error) {
-  console.log('Spanish not available, using default');
-  await Adapty.setLocale('en_US');
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
 }
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+import { useTranslation } from 'react-i18next';
+import { adapty } from 'react-native-adapty';
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
 ```
 
-## Check available locales
+That way you can ensure you're in full control of what localization will be retrieved for every user of your app.
 
-You can check which locales are available for a paywall:
+## Implementing localizations: the other way
 
-```javascript
-const paywalls = await Adapty.getPaywalls();
+You can get similar (but not identical) results without explicitly defining locale codes for every localization. That would mean extracting a locale code from some other objects that your platform provides, like this:
 
-paywalls.forEach(paywall => {
-  if (paywall.visualPaywall) {
-    console.log('Available locales for', paywall.developerId, ':', 
-      paywall.visualPaywall.localizations.map(l => l.locale));
+```javascript showLineNumbers
+import { NativeModules, Platform } from 'react-native';
+import { adapty } from 'react-native-adapty';
+
+const getLocaleCode = () => {
+  if (Platform.OS === 'ios') {
+    return NativeModules.SettingsManager.settings.AppleLocale || 
+           NativeModules.SettingsManager.settings.AppleLanguages[0];
+  } else {
+    return NativeModules.I18nManager.localeIdentifier;
   }
-});
-``` 
+};
+
+const fetchPaywall = async () => {
+  const locale = getLocaleCode();
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+Note that we don't recommend this approach due to few reasons:
+
+1. On iOS preferred languages and current locale are not identical. If you want the localization to be picked correctly you'll have to either rely on Apple's logic, which works out of the box if you're using the recommended approach with localized string files, or re-create it.
+2. It's hard to predict what exactly will Adapty's server get. For example, on iOS, it is possible to obtain a locale like `ar_OM@numbers='latn'` on a device and send it to our server. And for this call you will get not the `ar-om` localization you were looking for, but rather `ar`, which is likely unexpected.
+
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases. 
