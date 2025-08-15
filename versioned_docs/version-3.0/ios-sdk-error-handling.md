@@ -64,34 +64,32 @@ do {
 
 ## Network errors
 
-| Error          | Code | Description                                                                                                                                                      |
-| :------------- | :--- |:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| notActivated   | 2002 | The Adapty SDK is not activated. You need to properly [configure Adapty SDK](sdk-installation-ios#configure-adapty-sdk) using the `Adapty.activate` method.      |
-| badRequest     | 2003 | Bad request. <br/> Ensure you've completed all the steps required to [integrate with the App Store](app-store-connection-configuration).                         |
-| serverError    | 2004 | Server error. <br/> Try again after some time. If the issue is not resolved, contact the Adapty support team.                                                    |
-| networkFailed  | 2005 | The error indicates issues with the network connection on the user's device. <br/> Try disabling VPN or switching to WiFi from a cellular network or vice versa. |
-| decodingFailed | 2006 | This error indicates that response decoding failed.                                                                                                              |
-| encodingFailed | 2009 | This error indicates that request encoding failed.                                                                                                               |
-| missingURL     | 2010 | The requested URL is nil.                                                                                                                                        |
+| Error          | Code | Description                                                                                                                                                                                                  |
+| :------------- | :--- |:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| notActivated   | 2002 | The Adapty SDK is not activated. You need to properly [configure Adapty SDK](sdk-installation-ios#configure-adapty-sdk) using the `Adapty.activate` method.                                                  |
+| badRequest     | 2003 | Bad request. <br/> Ensure you've completed all the steps required to [integrate with the App Store](app-store-connection-configuration).                                                                     |
+| serverError    | 2004 | Server error. <br/> Try again after some time. If the issue is not resolved, contact the Adapty support team.                                                                                                |
+| networkFailed  | 2005 | The error indicates issues with the network connection on the user's device. <br/> Try disabling VPN or switching to WiFi from a cellular network or vice versa.                                             |
+| decodingFailed | 2006 | This error indicates that response decoding failed. <br/> Review your code and ensure that you the parameters you send are valid. For example, this error can indicate that you're using an invalid API key. |
+| encodingFailed | 2009 | This error indicates that request encoding failed.                                                                                                                                                           |
+| missingURL     | 2010 | The requested URL is nil.                                                                                                                                                                                    |
 
 ## General errors
 
-| Error                | Code | Description                                                                                                                                    |
-| :------------------- | :--- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| analyticsDisabled    | 3000 | We can't handle analytics events, since you've [opted it out](analytics-integration#disabling-external-analytics-for-a-specific-customer). |
-| wrongParam           | 3001 | This error indicates that some of your parameters are not correct do match the constraints.                                                    |
-| activateOnceError    | 3005 | It is not possible to call `.activate` method more than once.                                                                                  |
-| profileWasChanged    | 3006 | The user profile was changed during the operation.                                                                                             |
-| persistingDataError  | 3100 | It was an error while saving data.                                                                                                             |
-| operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                  |
-
-## Warnings
-
-Warnings don’t need to be fixed unless they lead to errors. 
-
-<!--- | Warning                   | Solution                                                     |
-| ------------------------- | ------------------------------------------------------------ |
-| InvalidProductIdentifiers | <p>This warning means that some products on the paywall are available in the store but aren’t ready for purchase. This usually happens if you haven’t completed the configuration of your products in the App Store.</p><p>If this doesn’t cause any errors, you can ignore the warning. However, if you want to remove it, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error and `InvalidProductIdentifiers` warning](InvalidProductIdentifiers) section.</p> |--->
-| operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                  |
+| Error                | Code | Description                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| :------------------- | :--- |:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| analyticsDisabled    | 3000 | We can't handle analytics events, since you've [opted it out](analytics-integration#disabling-external-analytics-for-a-specific-customer).                                                                                                                                                                                                                                                                                         |
+| wrongParam           | 3001 | This error indicates that some of your parameters are not correct do match the constraints. <br/> If you're using the Adapty paywall builder and can't display a paywall because of this error, toggle on **Show on devide** in the paywall builder.<br/> Another possible reason for this issue is that the local [fallback](fallback-paywalls) file version doesn't match the SDK version. Download a new file in the dashboard. |
+| activateOnceError    | 3005 | It is not possible to call `.activate` method more than once.                                                                                                                                                                                                                                                                                                                                                                      |
+| profileWasChanged    | 3006 | The user profile was changed during the operation. <br/> This error can occur when you call `identify`, and then call another method before `identify` succeds. To avoid it, wait untill `identify` suceeds before calling other methods.                                                                                                                                                                                          |
+| unsupportedData      | 3007 | This error indicates that the data format is not supported by the SDK.                                                                                                                                                                                                                                                                                                                                                             |
+| persistingDataError  | 3100 | It was an error while saving data.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| fetchTimeoutError    | 3101 | This error indicates that the fetch operation timed out.                                                                                                                                                                                                                                                                                                                                                                           |
+| operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Other issues
+
+If you haven't found a solution yet, the next steps can be:
+
+- **Upgrading the SDK to the latest version**: We always recommend upgrading to the latest SDK versions since they are more stable and include fixes for known issues.
+- **Contact the support team via [support@adapty.io](mailto:support@adapty.io) or via the chat**: If you are not ready to upgrade the SDK or it didn't help, contact our support team. Note that your issue will be resolved faster if you [enable verbose logging](sdk-installation-ios#logging) and share logs with the team. You can also attach relevant code snippets.
