@@ -59,3 +59,11 @@ Learn more in the detailed guide on [validating test purchases](validate-test-pu
   }}
 />
 </Zoom>
+
+## Next steps
+
+Congratulations on onboarding Adapty successfully! Now you're ready to grow your in-app purchases. You can proceed the following way:
+
+- **[A/B testing](ab-tests.md)**: Experiment with different prices, subscription durations, trial periods, and visual elements to identify the most effective combinations.
+- **[Analytics](how-adapty-analytics-works.md)**: Dive into detailed monetization metrics to understand user behavior and optimize revenue performance.
+- **Integrations**: Adapty sends [subscription events](events.md) to third party analytics and attribution tool, such as [Amplitude](amplitude), [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Mixpanel](mixpanel), [Facebook Ads](facebook-ads), [AppMetrica](appmetrica), and a custom [Webhook](webhook).

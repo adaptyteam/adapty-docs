@@ -4,7 +4,11 @@ description: "Integrate Adapty with App Store, Google Play, custom stores, Strip
 metadataTitle: "Integrate with stores or web payments and set up products | Adapty Docs"
 ---
 
-This is your first step toward growing in-app purchases. Once you complete this quickstart:
+Welcome to Adapty! You’re about to take the first step toward growing your in-app purchases with the best solution for boosting your app’s revenue.
+
+Implementation is straightforward, and this quickstart will guide you through the process.
+
+Once you complete this guide:
 
 - Adapty will handle in-app purchases with all related logic.
 - You’ll have the flexibility to show the right paywall at the right time to specific users.

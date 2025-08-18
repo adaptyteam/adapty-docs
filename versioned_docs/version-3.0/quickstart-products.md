@@ -41,8 +41,8 @@ Let's say you want to add a monthly subscription as a product.
 
 3. Add product details:
 - **Product name**: The name visible only to you across the Adapty dashboard.
-- **Access level ID**: The unique identifier that determines which features are unlocked after purchasing the product. The `Premium` is available by default for selection. Learn more about [access levels](access-level.md).
-- **Period**: The subscription duration. This matches the period configured in the store.
+- **Access level ID**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
+- **Period**: The subscription duration. This must match the period configured in the store.
   
   :::note
   
@@ -67,7 +67,7 @@ Let's say you want to add a monthly subscription as a product.
 
 <br />
 
-4. Add store details. Choose your store for more details:
+4. Add store details. Choose your store:
 
 <Tabs>
 <TabItem value="App Store" label="App Store" default>
@@ -115,7 +115,7 @@ Let's say you want to add a monthly subscription as a product.
 </details>
 
 <Zoom>
-  <img src={require('./img/product-play-store.png').default}
+  <img src={require('./img/play-store-id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -175,9 +175,9 @@ Let's say you want to add a monthly subscription as a product.
 </details>
 
 <Zoom>
-  <img src={require('./img/product-paddle.png').default}
+  <img src={require('./img/paddle-product-price.webp').default}
   style={{
-    border: '1px solid #727272', /* border width and color */
+    border: 'none', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
@@ -198,7 +198,7 @@ Keep in mind that Adapty only tracks transactions from the App Store, Google Pla
 </Tabs>
 
 
-5. Later, you can [Create offers](create-offer.md) for the product if needed.
+5. Later, you can [create offers](create-offer.md) for the product if needed: promotional offers for the App Store and all other types of offers for other stores.
 
 Your product will appear in the product list.
 
