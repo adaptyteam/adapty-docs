@@ -137,6 +137,7 @@ You can set the log level in your app before or during Adapty configuration:
 
 ```typescript showLineNumbers title="App.tsx"
 // Set log level before activation
+// 'verbose' is recommended for development and the first production release
 adapty.setLogLevel('verbose');
 
 // Or set it during configuration

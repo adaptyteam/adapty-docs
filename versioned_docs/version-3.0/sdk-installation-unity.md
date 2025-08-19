@@ -207,6 +207,7 @@ Adapty logs errors and other important information to help you understand what i
 You can set the log level in your app during Adapty configuration:
 
 ```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
 var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
     .SetLogLevel(AdaptyLogLevel.Verbose);
 ```

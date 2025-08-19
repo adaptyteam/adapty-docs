@@ -168,7 +168,8 @@ Adapty logs errors and other important information to help you understand what i
 You can set the log level in your app before configuring Adapty:
 
 ```dart showLineNumbers title="main.dart"
-// Set log level before activation
+// Set log level before activation. 
+// 'verbose' is recommended for development and the first production release
 await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 
 // Or set it during configuration

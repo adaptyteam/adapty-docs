@@ -110,7 +110,7 @@ struct YourApp: App {
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
   
-   Adapty.logLevel = .verbose // recommended for development
+   Adapty.logLevel = .verbose // recommended for development and the first production release
     
     let config = configurationBuilder.build()
     
@@ -150,7 +150,7 @@ Task {
   do {
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(logLevel: .verbose) // recommended for development
+      .with(logLevel: .verbose) // recommended for development and the first production release
     
     let config = configurationBuilder.build()
     try await Adapty.activate(with: config)

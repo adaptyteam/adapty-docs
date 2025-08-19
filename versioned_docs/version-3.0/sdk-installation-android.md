@@ -214,12 +214,14 @@ You can set the log level in your app before configuring Adapty.
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.logLevel = AdaptyLogLevel.VERBOSE
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
 ```
 </TabItem>
 </Tabs>
