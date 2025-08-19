@@ -1,5 +1,5 @@
 ---
-title: "Migrate paywall"
+title: "Migrate paywalls between apps"
 description: "Learn how to migrate paywalls from other apps in Adapty."
 metadataTitle: "Handling Migrate Paywalls in Adapty | Adapty Docs"
 ---
@@ -16,7 +16,7 @@ Migration lets you copy all visual configurations:
 
 Migration applies only to builder configuration and it doesn't copy products or remote config. 
 
-:::danger
+:::note
 If you migrate a paywall builder configuration with custom fonts, test them on a device as they may display incorrectly.
 :::
 

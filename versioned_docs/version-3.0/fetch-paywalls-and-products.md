@@ -2,7 +2,7 @@
 title: "Fetch paywalls and products for remote config paywalls"
 description: "Fetch paywalls and products in Adapty to enhance user monetization."
 metadataTitle: "Fetching Paywalls & Products | Adapty Docs"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config']
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'cache']
 ---
 
 import Zoom from 'react-medium-image-zoom';

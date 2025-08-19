@@ -16,6 +16,10 @@ First, you need to connect a payment provider that will handle purchases. The av
 - Paypal
 - Solidgate
 
+:::important
+To ensure accurate web paywall analytics tracking in Adapty, you need to [add your products](product.md) along with their corresponding Stripe/Paddle/other payment provider product IDs in Adapty.
+:::
+
 To set up a payment provider:
 1. On the web paywall list page, click **Settings** and switch to the **Integrations** tab.
 2. Select a payment provider and follow the integration instructions on the screen.

@@ -3,6 +3,7 @@ title: "Update paywall with server-side API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
+keywords: ['update paywall', 'remote config']
 ---
 
 import Tabs from '@theme/Tabs'; 
