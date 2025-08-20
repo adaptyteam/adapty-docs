@@ -19,8 +19,8 @@ To proceed with in-app purchases testing, make sure:
 
 The only reliable way to test in-app purchases is using the [sandbox environment](#sandbox-testing) with apps you download from TestFlight. This way:
 
-- **You can have a clean purchase history**: Lets you purchase like a new user and control eligibility.
-- **You use a real device**: Enables interaction with the Apple server to perform purchases properly.
+- **You can have a clean purchase history**: Let you purchase like a new user and control eligibility.
+- **You use a real device**: Enable interaction with the Apple server to perform purchases properly.
 
 ## Sandbox testing
 
@@ -32,7 +32,7 @@ For more details, you can refer to [Apple documentation on Testing In-App Purcha
 ### Step 1. Create Sandbox test account in App Store Connect
 
 :::warning
-It's important to create a new Sandbox test account to ensure your purchase history is clean.
+Create a new Sandbox test account to ensure your purchase history is clean.
 :::
 
 You can create a new Sandbox test account in a few clicks:
@@ -59,7 +59,7 @@ You can create a new Sandbox test account in a few clicks:
 
 :::tip
 - If you use Gmail or iCloud, you can reuse your existing email address with [plus sign subaddressing](https://www.wikihow.com/Use-Plus-Addressing-in-Gmail).
-- You can use a random email address, which even doesn't exist, but ensure to decline the two-factor authentication (2FA) when you sign in on a test device later.
+- You can use a random email address that doesn't even exist, but make sure to decline two-factor authentication (2FA) when you sign in on a test device later.
 :::
 
      
@@ -80,7 +80,7 @@ You can create a new Sandbox test account in a few clicks:
 
 ### Step 2. Enable the Developer mode
 
-If you haven't run any app from XCode on your test device before, you need to [enable the Developer mode on your device](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device). Otherwise, you can skip this step.
+If you haven't run any app from XCode on your test device before, you need to [enable Developer mode on your device](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device). Otherwise, you can skip this step.
 
 1. Connect your test device to the Mac with XCode using a cable or using the same Wi-Fi. Tap **Trust** on your phone.
 2. In XCode, select your device as a run destination.
@@ -96,8 +96,8 @@ If you haven't run any app from XCode on your test device before, you need to [e
 />
 </Zoom>
 
-3. Run the app from XCode. When a pop-up about the Developer mode appears, click **Cancel**.
-4. Go to **Settings > Privacy & Security > Developer Mode** on your test device and toggle the **Developer Mode** on.
+3. Run the app from XCode. When a pop-up about Developer mode appears, click **Cancel**.
+4. Go to **Settings > Privacy & Security > Developer Mode** on your test device and turn on **Developer Mode**.
 
 ### Step 3. Download the app from TestFlight
 
@@ -114,7 +114,7 @@ For details on TestFlight, go to the [Apple documentation](https://developer.app
 
 1. Go to **Settings > Your Apple Account > Media & Purchases** on your test device.
 2. Select **Sign Out** from the pop-up menu.
-3. Go to **Settings > Developer**. If the **Developer** option is not available, make sure you've [enabled it in the second step](#step-2-enable-the-developer-mode).
+3. Go to **Settings > Developer**. If the **Developer** option is not available, make sure you've [enabled it in step 2](#step-2-enable-the-developer-mode).
 4. Scroll down to the **Sandbox Apple Account** section and tap **Sign In**.
 5. Sign in with your Sandbox Apple Account credentials.
 
@@ -127,7 +127,7 @@ If you've just created a new Sandbox test account and switched to it, you can sk
 3. Go to **Account Settings** and tap **Clear Purchase History**.
 
 :::danger
-This step is a must each time you repeat testing using the same Sandbox test account. In this case, you will have to additionally [sign out from your Sandbox test account](#step-4-switch-to-sandbox-test-account), then sign in again to clear the purchase history cache on the test device.
+This step is required each time you repeat testing using the same Sandbox test account. In this case, you will also need to [sign out from your Sandbox test account](#step-4-switch-to-sandbox-test-account), then sign in again to clear the purchase history cache on the test device.
 :::
 
 ### Step 6. Make test purchase
@@ -137,6 +137,8 @@ Open the app and make your test purchase through a paywall.
 Once done, go to the article on [validating test purchases](validate-test-purchases.md) to check your results.
 
 ## Testing issues
+
+Below are common issues you may encounter when testing an app.
 
 ### TestFlight issues
 
@@ -150,14 +152,14 @@ To fix it, follow these steps:
 2. Follow the steps for [Sandbox testing](#sandbox-testing).
 
 :::note
-It's important not just to reinstall the app, but also to switch to the Sandbox test account, clear purchase history and initially launch it using the Sandbox test account. 
+It's important to not only reinstall the app, but also switch to the Sandbox test account, clear purchase history, and launch it using the Sandbox test account. 
 :::
 
-### Shared access level
+### Shared access levels issues
 
-If you repeat testing using the same Sandbox test account, you may face unexpected behavior when [access levels are shared or transferred](profiles-crm.md#sharing-access-levels-between-profiles).
+If you repeat testing using the same Sandbox test account, you may face unexpected behavior with [shared access levels](profiles-crm.md#sharing-access-levels-between-profiles) for the test user.
 
-To check if the user has an access level inherited, go to [Profiles & Segements](https://app.adapty.io/profiles/users) from the Adapty Dashboard and open the user's profile.
+To check if the user has an inherited access level, go to [Profiles & Segments](https://app.adapty.io/profiles/users) from the Adapty Dashboard and open the user's profile.
 
 <Zoom>
   <img src={require('./img/profile-access-level-origin.webp').default}
@@ -170,7 +172,14 @@ To check if the user has an access level inherited, go to [Profiles & Segements]
 />
 </Zoom>
 
-If the user has an access level inherited, follow these steps for correct testing results:
+If the user has an inherited access level, follow these steps for accurate testing results:
+
+1. Delete the parent profile.
+2. Remove the app from the test device.
+3. [Download the app from TestFlight](#step-3-download-the-app-from-testflight).
+4. [Switch to Sandbox test account](#step-4-switch-to-sandbox-test-account).
+5. [Clear purchase history](#step-5-clear-purchase-history).
+6. [Open the app and make your test purchase](#step-6-make-test-purchase).
 
 ## Test subscriptions
 
@@ -190,10 +199,10 @@ Keep in mind that test transactions take up to 10 minutes to appear in the [Even
 
 ## Test offers
 
-Testing offers require all user receipts to be deleted for the eligibility to work correctly.
+Testing offers requires all user receipts to be deleted for eligibility to work correctly.
 
 The most reliable way to test offers is using a completely new [Sandbox test account](#step-1-create-sandbox-test-account-in-app-store-connect). Repeated testing using the same Sandbox test account may cause unexpected behavior. 
 
 :::danger
-If you repeat testing using the same Sandbox test account, ensure to [clear purchase history](#step-5-clear-purchase-history) to avoid eligibility related issues.
+If you repeat testing using the same Sandbox test account, make sure to [clear purchase history](#step-5-clear-purchase-history) to avoid eligibility-related issues.
 :::
