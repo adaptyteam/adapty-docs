@@ -127,3 +127,57 @@ Adapty.logout { error in
 </Tabs>
 
 You can then login the user using `.identify()` method.
+
+## Set appAccountToken
+
+The [`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a UUID that helps Apple's StoreKit 2 identify users across app installations and devices.
+
+Starting from the Adapty iOS SDK 3.10.2, you can pass the `appAccountToken` when configuring the SDK or when identifying a user:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
