@@ -21,23 +21,30 @@ Turn on the Observer mode if you handle purchases and subscription status yourse
 When running in the Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.
 :::
 
-```typescript showLineNumbers title="App.tsx"
-import { Adapty } from '@adapty/capacitor';
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
 
-Adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  observerMode: true, // Enable observer mode
-});
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      observerMode: true // Enable observer mode
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty:', error);
+}
 ```
 
 Parameters:
 
 | Parameter                   | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ |
-| observerMode                | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
+| **observerMode**            | A boolean value that controls [Observer mode](observer-vs-full-mode). The default value is `false`. |
 
 ## Using Adapty paywalls in Observer Mode
 
 If you also want to use Adapty's paywalls and A/B testing features, you can — but it requires some extra setup in Observer mode. Here's what you'll need to do in addition to the steps above:
 
 1. Display paywalls as usual for [remote config paywalls](present-remote-config-paywalls-capacitor.md).
-3. [Associate paywalls](report-transactions-observer-mode-capacitor) with purchase transactions. 
+2. [Associate paywalls](report-transactions-observer-mode-capacitor) with purchase transactions. 

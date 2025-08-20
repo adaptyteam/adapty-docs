@@ -11,90 +11,89 @@ import Details from '@site/src/components/Details';
 
 Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
 
-- **Full-screen presentation**: Requires setting up event handlers that handle events for all onboarding views
-- **Embedded widget**: Handles events through inline callback parameters directly in the widget
+- **Standalone screen**: Requires setting up event handlers that handle events for all onboarding views
+- **Embedded component**: Handles events through inline callback parameters directly in the component
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Capacitor SDK](sdk-installation-reactnative.md) 3.8.0 or later.
-2. You have [created an onboarding](create-onboarding.md).
-3. You have added the onboarding to a [placement](placements.md).
+1. You have [created an onboarding](create-onboarding.md).
+2. You have added the onboarding to a [placement](placements.md).
 
-## Full-screen presentation events
+## Standalone screen events
 
 ### Set up event handlers
 
-To handle events for full-screen onboardings, use the `view.registerEventHandlers` method:
+To handle events for standalone screen onboardings, use the `view.registerEventHandlers` method:
 
-```javascript showLineNumbers title="Capacitor"
-import { createOnboardingView } from 'capacitor-adapty/dist/ui';
-
-const view = await createOnboardingView(onboarding);
-
-const unsubscribe = view.registerEventHandlers({
-  onAnalytics(event, meta) {
-    // Track analytics events
-  },
-  onClose(actionId, meta) {
-    // Handle close action
-    view.dismiss();
-    return true;
-  },
-  onCustom(actionId, meta) {
-    // Handle custom actions
-  },
-  onPaywall(actionId, meta) {
-    // Handle paywall actions
-  },
-  onStateUpdated(action, meta) {
-    // Handle user input updates
-  },
-  onFinishedLoading(meta) {
-    // Onboarding finished loading
-  },
-  onError(error) {
-    // Handle loading errors
-  },
-});
+```typescript showLineNumbers
+import { adapty, createOnboardingView } from '@adapty/capacitor';
 
 try {
+  const view = await createOnboardingView(onboarding);
+  
+  view.registerEventHandlers({
+    onAnalytics(event, meta) {
+      console.log('Analytics event:', event);
+    },
+    onClose(actionId, meta) {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom(actionId, meta) {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    },
+    onPaywall(actionId, meta) {
+      console.log('Paywall action:', actionId);
+    },
+    onStateUpdated(action, meta) {
+      console.log('State updated:', action);
+    },
+    onFinishedLoading(meta) {
+      console.log('Onboarding finished loading');
+    },
+    onError(error) {
+      console.error('Onboarding error:', error);
+    },
+  });
+  
   await view.present();
 } catch (error) {
-  // handle the error
+  console.error('Failed to present onboarding:', error);
 }
 ```
 
-## Embedded widget events
+## Embedded component events
 
-When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
+When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the component:
 
-```javascript showLineNumbers title="Capacitor"
-import { AdaptyOnboardingView } from 'capacitor-adapty/dist/ui';
+```typescript showLineNumbers
+import { AdaptyOnboardingView } from '@adapty/capacitor';
 
 <AdaptyOnboardingView
   onboarding={onboarding}
   style={{ flex: 1 }}
   eventHandlers={{
     onAnalytics(event, meta) {
-      // Track analytics events
+      console.log('Analytics event:', event);
     },
     onClose(actionId, meta) {
-      // Handle close action
+      console.log('Onboarding closed:', actionId);
     },
     onCustom(actionId, meta) {
-      // Handle custom actions
+      console.log('Custom action:', actionId);
     },
     onPaywall(actionId, meta) {
-      // Handle paywall actions
+      console.log('Paywall action:', actionId);
     },
     onStateUpdated(action, meta) {
-      // Handle user input updates
+      console.log('State updated:', action);
     },
     onFinishedLoading(meta) {
-      // Onboarding finished loading
+      console.log('Onboarding finished loading');
     },
     onError(error) {
-      // Handle loading errors
+      console.error('Onboarding error:', error);
     },
   }}
 />
@@ -121,27 +120,28 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 
 Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onCustom(actionId, meta) {
     switch (actionId) {
       case 'login':
-        login();
+        console.log('Login action triggered');
         break;
       case 'allow_notifications':
-        allowNotifications();
+        console.log('Allow notifications action triggered');
         break;
     }
+    return false; // Don't close the onboarding
   },
 });
 
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
     onCustom(actionId, meta) {
-      handleCustomAction(actionId);
+      console.log('Custom action:', actionId);
     },
   }}
 />
@@ -167,15 +167,15 @@ const unsubscribe = view.registerEventHandlers({
 
 When an onboarding finishes loading, this event will be triggered:
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onFinishedLoading(meta) {
     console.log('Onboarding loaded:', meta.onboardingId);
   },
 });
 
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -220,20 +220,21 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
 :::
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onClose(actionId, meta) {
-    await view.dismiss();
-    return true;
+    console.log('Onboarding closed:', actionId);
+    return true; // Allow the onboarding to close
   },
 });
 
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
     onClose(actionId, meta) {
+      console.log('Onboarding closed:', actionId);
       // Handle navigation back or dismiss the view
     },
   }}
@@ -264,24 +265,22 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onPaywall(actionId, meta) {
-    openPaywall(actionId);
+    console.log('Paywall action triggered:', actionId);
+    // Implement your paywall opening logic here
   },
 });
 
-const openPaywall = async (actionId) => {
-  // Implement your paywall opening logic here
-};
-
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
     onPaywall(actionId, meta) {
-      openPaywall(actionId);
+      console.log('Paywall action triggered:', actionId);
+      // Implement your paywall opening logic here
     },
   }}
 />
@@ -307,20 +306,22 @@ const openPaywall = async (actionId) => {
 
 When your users respond to a quiz question or input their data into an input field, the state update event will be triggered:
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onStateUpdated(action, meta) {
-    saveUserResponse(action.elementId, action.params);
+    console.log('State updated:', action.elementId, action.params);
+    // Save user response
   },
 });
 
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
     onStateUpdated(action, meta) {
-      saveUserResponse(action.elementId, action.params);
+      console.log('State updated:', action.elementId, action.params);
+      // Save user response
     },
   }}
 />
@@ -430,20 +431,20 @@ The `action` object contains:
 
 You receive an analytics event when various navigation-related events occur during the onboarding flow:
 
-```javascript showLineNumbers title="Capacitor"
-// Full-screen presentation
-const unsubscribe = view.registerEventHandlers({
+```typescript showLineNumbers
+// Standalone screen presentation
+view.registerEventHandlers({
   onAnalytics(event, meta) {
-    trackEvent(event.type, meta.onboardingId);
+    console.log('Analytics event:', event.type, meta.onboardingId);
   },
 });
 
-// Embedded widget
+// Embedded component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
     onAnalytics(event, meta) {
-      trackEvent(event.type, meta.onboardingId);
+      console.log('Analytics event:', event.type, meta.onboardingId);
     },
   }}
 />

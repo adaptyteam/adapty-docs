@@ -15,25 +15,24 @@ You can set optional attributes such as email, phone number, etc, to the user of
 To set user attributes, call `.updateProfile()` method:
 
 ```typescript showLineNumbers
-// Only for TypeScript validation
-import type { AdaptyProfileParameters } from 'capacitor-adapty';
+import { adapty } from '@adapty/capacitor';
 
-const params: AdaptyProfileParameters = {
-    email: 'email@email.com',
-    phoneNumber: '+18888888888',
-    firstName: 'John',
-    lastName: 'Appleseed',
-    gender: 'other',
-    birthday: new Date().toISOString(),
+const params = {
+  email: 'email@email.com',
+  phoneNumber: '+18888888888',
+  firstName: 'John',
+  lastName: 'Appleseed',
+  gender: 'other',
+  birthday: new Date().toISOString(),
 };
 
 try {
-    await adapty.updateProfile(params);
+  await adapty.updateProfile(params);
+  console.log('Profile updated successfully');
 } catch (error) {
-    // handle `AdaptyError`
+  console.error('Failed to update profile:', error);
 }
 ```
-
 
 Please note that the attributes that you've previously set with the `updateProfile` method won't be reset.
 
@@ -41,20 +40,24 @@ Please note that the attributes that you've previously set with the `updateProfi
 
 ### The allowed keys list
 
-The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<Value>` are listed below:
+The allowed keys of `AdaptyProfileParameters` and their values are listed below:
 
 | Key | Value |
 |---|-----|
-| <p>email</p><p>phoneNumber</p><p>firstName</p><p>lastName</p> | String up to 30 characters |
-| gender | Enum, allowed values are: `female`, `male`, `other` |
-| birthday | Date |
-
+| **email** | String up to 30 characters |
+| **phoneNumber** | String up to 30 characters |
+| **firstName** | String up to 30 characters |
+| **lastName** | String up to 30 characters |
+| **gender** | Enum, allowed values are: `'female'`, `'male'`, `'other'` |
+| **birthday** | Date string in ISO format |
 
 ### Custom user attributes
 
 You can set your own custom attributes. These are usually related to your app usage. For example, for fitness applications, they might be the number of exercises per week, for language learning app user's knowledge level, and so on. You can use them in segments to create targeted paywalls and offers, and you can also use them in analytics to figure out which product metrics affect the revenue most.
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
   await adapty.updateProfile({
     codableCustomAttributes: {
@@ -62,24 +65,28 @@ try {
       key_2: 2,
     },
   });
+  console.log('Custom attributes updated successfully');
 } catch (error) {
-    // handle `AdaptyError`
+  console.error('Failed to update custom attributes:', error);
 }
 ```
 
-To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
+To remove existing keys, pass `null` as their values:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-  // to remove a key, pass null as its value
+  // to remove keys, pass null as their values
   await adapty.updateProfile({
     codableCustomAttributes: {
       key_1: null,
       key_2: null,
     },
   });
+  console.log('Custom attributes removed successfully');
 } catch (error) {
-    // handle `AdaptyError`
+  console.error('Failed to remove custom attributes:', error);
 }
 ```
 

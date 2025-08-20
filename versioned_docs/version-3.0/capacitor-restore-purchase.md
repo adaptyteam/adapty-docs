@@ -20,15 +20,20 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder), purchases are 
 To restore a purchase if you do not use the [Paywall Builder](adapty-paywall-builder) to customize the paywall, call `.restorePurchases()` method:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    const profile = await adapty.restorePurchases();
-    const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+  const profile = await adapty.restorePurchases();
+  const isSubscribed = profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
   
-    if (isSubscribed) {
-        // restore access
-    }
+  if (isSubscribed) {
+    // Restore access to paid features
+    console.log('Access restored successfully!');
+  } else {
+    console.log('No active subscriptions found');
+  }
 } catch (error) {
-    // handle the error
+  console.error('Failed to restore purchases:', error);
 }
 ```
 
@@ -37,6 +42,6 @@ Response parameters:
 
 | Parameter | Description |
 |---------|-----------|
-| **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+| **profile** | An [`AdaptyProfile`](capacitor-sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases. Check the **access level status** to determine whether the user has access to the app. |
 
 <SampleApp />

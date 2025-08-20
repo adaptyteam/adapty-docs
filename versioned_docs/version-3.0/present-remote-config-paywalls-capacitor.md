@@ -16,11 +16,19 @@ If you've customized a paywall using remote config, you'll need to implement ren
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
-  const headerText = paywall.remoteConfig?.["header_text"];
+  const paywall = await adapty.getPaywall({ 
+    placementId: 'YOUR_PLACEMENT_ID',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  const headerText = paywall.remoteConfig?.['header_text'];
 } catch (error) {
-  // handle the error
+  console.error('Failed to fetch paywall:', error);
 }
 ```
 
@@ -45,7 +53,13 @@ Calling `.logShowPaywall(paywall)` is not needed if you are displaying paywalls 
 :::
 
 ```typescript showLineNumbers
-await adapty.logShowPaywall(paywall);
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.logShowPaywall(paywall);
+} catch (error) {
+  console.error('Failed to log paywall view:', error);
+}
 ```
 
 Request parameters:

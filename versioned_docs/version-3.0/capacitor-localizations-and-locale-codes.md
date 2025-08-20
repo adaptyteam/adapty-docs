@@ -79,15 +79,14 @@ That way you can ensure you're in full control of what localization will be retr
 You can get similar (but not identical) results without explicitly defining locale codes for every localization. That would mean extracting a locale code from some other objects that your platform provides, like this:
 
 ```javascript showLineNumbers
-import { NativeModules, Platform } from 'react-native';
+import { Capacitor } from '@capacitor/core';
 import { adapty } from 'capacitor-adapty';
 
 const getLocaleCode = () => {
-  if (Platform.OS === 'ios') {
-    return NativeModules.SettingsManager.settings.AppleLocale || 
-           NativeModules.SettingsManager.settings.AppleLanguages[0];
+  if (Capacitor.getPlatform() === 'ios') {
+    return navigator.language || 'en';
   } else {
-    return NativeModules.I18nManager.localeIdentifier;
+    return navigator.language || 'en';
   }
 };
 

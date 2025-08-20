@@ -19,7 +19,7 @@ With Adapty, keeping track of subscription status is made easy. You don't have t
 
 ## Access level and the AdaptyProfile object
 
-Access levels are properties of the [AdaptyProfile](sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](capacitor-identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
+Access levels are properties of the [AdaptyProfile](capacitor-sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](capacitor-identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
 To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](capacitor-listen-subscription-changes.md) section below.
 
@@ -30,10 +30,13 @@ To be notified of profile updates, listen for profile changes as described in th
 To get the access level from the server, use the `.getProfile()` method:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    const profile = await adapty.getProfile();
+  const profile = await adapty.getProfile();
+  console.log('Profile retrieved successfully');
 } catch (error) {
-  // handle the error
+  console.error('Failed to get profile:', error);
 }
 ```
 
@@ -41,26 +44,29 @@ Response parameters:
 
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
-| Profile   | <p>An [AdaptyProfile](sdk-models#adaptyprofile) object. Generally, you have to check only the access level status of the profile to determine whether the user has premium access to the app.</p><p></p><p>The `.getProfile` method provides the most up-to-date result as it always tries to query the API. If for some reason (e.g. no internet connection), the Adapty SDK fails to retrieve information from the server, the data from the cache will be returned. It is also important to note that the Adapty SDK updates `AdaptyProfile` cache regularly, to keep this information as up-to-date as possible.</p> |
-
+| **profile**   | An [AdaptyProfile](capacitor-sdk-models#adaptyprofile) object. Generally, you have to check only the access level status of the profile to determine whether the user has premium access to the app. The `.getProfile` method provides the most up-to-date result as it always tries to query the API. If for some reason (e.g. no internet connection), the Adapty SDK fails to retrieve information from the server, the data from the cache will be returned. It is also important to note that the Adapty SDK updates `AdaptyProfile` cache regularly, to keep this information as up-to-date as possible. |
 
 The `.getProfile()` method provides you with the user profile from which you can get the access level status. You can have multiple access levels per app. For example, if you have a newspaper app and sell subscriptions to different topics independently, you can create access levels "sports" and "science". But most of the time, you will only need one access level, in that case, you can just use the default "premium" access level.
 
 Here is an example for checking for the default "premium" access level:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    const profile = await adapty.getProfile();
-    
-  const isActive = profile.accessLevels["premium"]?.isActive;
-    if (isActive) {
-        // grant access to premium features
-    }
+  const profile = await adapty.getProfile();
+  
+  const isActive = profile.accessLevels['premium']?.isActive;
+  if (isActive) {
+    // Grant access to premium features
+    console.log('User has premium access');
+  } else {
+    console.log('User does not have premium access');
+  }
 } catch (error) {
-    // handle the error
+  console.error('Failed to check subscription status:', error);
 }
 ```
-
 
 ### Listening for subscription status updates
 
@@ -69,12 +75,20 @@ Whenever the user's subscription changes, Adapty fires an event.
 To receive messages from Adapty, you need to make some additional configuration:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 // Create an "onLatestProfileLoad" event listener
-adapty.addEventListener('onLatestProfileLoad', profile => {
-    // handle any changes to subscription state
+adapty.addListener('onLatestProfileLoad', (data) => {
+  const profile = data.profile;
+  const isActive = profile.accessLevels['premium']?.isActive;
+  
+  if (isActive) {
+    console.log('Subscription status updated: User has premium access');
+  } else {
+    console.log('Subscription status updated: User does not have premium access');
+  }
 });
 ```
-
 
 Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
 

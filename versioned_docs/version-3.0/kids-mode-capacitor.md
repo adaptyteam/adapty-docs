@@ -24,8 +24,90 @@ In the Adapty Dashboard, you need to disable the IP address collection. To do th
 
 ### Updates in your mobile app code
 
-Support for Kids Mode in Capacitor is coming soon!
+In order to comply with policies, disable the collection of the user's IDFA, GAID, and IP address:
 
-For now, you can follow the native platform guides:
-- [Kids Mode in iOS SDK](kids-mode) for iOS configuration
-- [Kids Mode in Android SDK](kids-mode-android) for Android configuration 
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // Disable IP address collection
+      ipAddressCollectionDisabled: true,
+      
+      // Disable IDFA collection on iOS
+      ios: {
+        idfaCollectionDisabled: true
+      },
+      
+      // Disable Google Advertising ID collection on Android
+      android: {
+        adIdCollectionDisabled: true
+      }
+    }
+  });
+  console.log('Adapty activated with Kids Mode enabled');
+} catch (error) {
+  console.error('Failed to activate Adapty with Kids Mode:', error);
+}
+```
+
+### Platform-specific configurations
+
+#### iOS: Enable Kids Mode using CocoaPods
+
+If you're using CocoaPods for iOS, you can also enable Kids Mode at the native level:
+
+1. Update your Podfile:
+
+   - If you **don't** have a `post_install` section, add the entire code block below.
+   - If you **do** have a `post_install` section, merge the highlighted lines into it.
+
+   ```ruby showLineNumbers title="Podfile"
+   post_install do |installer|
+     installer.pods_project.targets.each do |target|
+       // highlight-start
+       if target.name == 'Adapty'
+         target.build_configurations.each do |config|
+           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
+           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
+         end
+       end
+       // highlight-end
+     end
+   end
+   ```
+
+2. Run the following command to apply the changes:
+
+   ```sh showLineNumbers title="Shell"
+   pod install 
+   ```
+
+#### Android: Enable Kids Mode using Gradle
+
+For Android, you can also enable Kids Mode at the native level by adding the following to your app's `build.gradle`:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    defaultConfig {
+        // ... existing config ...
+        
+        // Enable Kids Mode
+        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
+    }
+}
+```
+
+## Next steps
+
+Once you've enabled Kids Mode, make sure to:
+
+1. Test your app thoroughly to ensure all functionality works correctly
+2. Review your app's privacy policy to reflect the disabled data collection
+3. Submit your app for review with clear documentation about Kids Mode compliance
+
+For more information about platform-specific requirements:
+- [Kids Mode in iOS SDK](kids-mode) for additional iOS configuration details
+- [Kids Mode in Android SDK](kids-mode-android) for additional Android configuration details 

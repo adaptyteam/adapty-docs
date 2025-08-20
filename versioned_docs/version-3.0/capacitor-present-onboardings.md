@@ -7,78 +7,83 @@ metadataTitle: "Presenting onboardings on Capacitor | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Capacitor SDK](sdk-installation-reactnative.md) 3.8.0 or later.
-2. You have [created an onboarding](create-onboarding.md).
-3. You have added the onboarding to a [placement](placements.md).
+1. You have [created an onboarding](create-onboarding.md).
+2. You have added the onboarding to a [placement](placements.md).
 
 Adapty Capacitor SDK provides two ways to present onboardings:
 
-- **Full-screen presentation (classic view)**: Modal presentation gives users native platform dismissal gestures (swipe, back button).
+- **Standalone screen:** Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
 
-- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic.
+- **Embedded component:** Gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
 
-## Present as full-screen modal
+## Present as standalone screen
 
-To display an onboarding as a full-screen modal, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
+To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```typescript showLineNumbers title="Capacitor (TSX)"
-import { createOnboardingView } from 'capacitor-adapty/dist/ui';
-
-const view = await createOnboardingView(onboarding);
-
-view.registerEventHandlers(); // handle close press, etc
+```typescript showLineNumbers
+import { adapty, createOnboardingView } from '@adapty/capacitor';
 
 try {
-    await view.present();
+  const view = await createOnboardingView(onboarding);
+  
+  view.registerEventHandlers({
+    onClose: (actionId, meta) => {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom: (actionId, meta) => {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    }
+  });
+  
+  await view.present();
+  console.log('Onboarding presented successfully');
 } catch (error) {
-    // handle the error
+  console.error('Failed to present onboarding:', error);
 }
 ```
-
-
 
 ## Embed in component hierarchy
 
 To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your Capacitor component hierarchy:
 
-```typescript showLineNumbers title="Capacitor (TSX)"
-import { AdaptyOnboardingView } from 'capacitor-adapty/dist/ui';
+```typescript showLineNumbers
+import { AdaptyOnboardingView } from '@adapty/capacitor';
 
 <AdaptyOnboardingView
   onboarding={onboarding}
   style={{ /* your styles */ }}
   eventHandlers={{
     onAnalytics(event, meta) { 
-      // Handle analytics events
+      console.log('Analytics event:', event);
     },
     onClose(actionId, meta) { 
-      // Handle close actions
+      console.log('Onboarding closed:', actionId);
     },
     onCustom(actionId, meta) { 
-      // Handle custom actions
+      console.log('Custom action:', actionId);
     },
     onPaywall(actionId, meta) { 
-      // Handle paywall actions
+      console.log('Paywall action:', actionId);
     },
     onStateUpdated(action, meta) { 
-      // Handle state updates
+      console.log('State updated:', action);
     },
     onFinishedLoading(meta) { 
-      // Handle when onboarding finishes loading
+      console.log('Onboarding finished loading');
     },
     onError(error) { 
-      // Handle errors
+      console.error('Onboarding error:', error);
     },
   }}
 />

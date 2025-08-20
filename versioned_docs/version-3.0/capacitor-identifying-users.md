@@ -16,32 +16,42 @@ Adapty creates an internal profile ID for every user. However, if you have your 
 
 If you have a user ID during configuration, just pass it as `customerUserId` parameter to `.activate()` method:
 
-
 ```typescript showLineNumbers
-adapty.activate("PUBLIC_SDK_KEY", {
-    customerUserId: "YOUR_USER_ID"
-});
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      customerUserId: 'YOUR_USER_ID'
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty:', error);
+}
 ```
 
-<SampleApp />
 
 ### Setting customer user ID after configuration
 
 If you don't have a user ID in the SDK configuration, you can set it later at any time with the `.identify()` method. The most common cases for using this method are after registration or authorization, when the user switches from being an anonymous user to an authenticated user.
 
-
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    await adapty.identify("YOUR_USER_ID");
-    // successfully identified
+  await adapty.identify({ customerUserId: 'YOUR_USER_ID' });
+  console.log('User identified successfully');
 } catch (error) {
-    // handle the error
+  console.error('Failed to identify user:', error);
 }
 ```
 
 Request parameters:
 
-- **Customer User ID** (required): a string user identifier.
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **customerUserId** | required | A string user identifier. |
 
 :::warning
 Resubmitting of significant user data
@@ -55,13 +65,14 @@ It's also important to note that you should re-request all paywalls and products
 
 You can logout the user anytime by calling `.logout()` method:
 
-
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    await adapty.logout();
-    // successful logout
+  await adapty.logout();
+  console.log('User logged out successfully');
 } catch (error) {
-    // handle the error
+  console.error('Failed to logout user:', error);
 }
 ```
 

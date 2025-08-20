@@ -38,7 +38,7 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | Name                                     | Type                                                                                                                    | Description                                                                                                                                                                       |
 |:-----------------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | vendorProductId                          | string                                                                                                                  | Unique identifier of a product from App Store Connect or Google Play Console                                                                                                      |
-| adaptyProductId                          | string                                                                                                                  | Unique identifier of the product in Adapty                                                                                                                                        |
+| adaptyId                                 | string                                                                                                                  | Unique identifier of the product in Adapty                                                                                                                                        |
 | paywallVariationId                       | string                                                                                                                  | Same as variationId property of the parent AdaptyPaywall                                                                                                                          |
 | paywallABTestName                        | string                                                                                                                  | Same as abTestName property of the parent AdaptyPaywall                                                                                                                          |
 | paywallName                              | string                                                                                                                  | Same as name property of the parent AdaptyPaywall                                                                                                                                 |
@@ -68,12 +68,21 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 |:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | subscriptionPeriod            | [AdaptySubscriptionPeriod](#adaptysubscriptionperiod)                                                                   | The period details for products that are subscriptions. Will be null for iOS version below 11.2 and macOS version below 10.14.4.                                                                                                                              |
 | localizedSubscriptionPeriod   | string (optional)                                                                                                       | The period's language is determined by the preferred language set on the device                                                                                                         |
-| offer                         | [AdaptySubscriptionOfferId](#adaptysubscriptionofferid) (optional)                                                          | A subscription offer if available for the auto-renewable subscription                                                                                                                   |
+| offer                         | [AdaptySubscriptionOffer](#adaptysubscriptionoffer) (optional)                                                          | A subscription offer if available for the auto-renewable subscription                                                                                                                   |
 | ios                           | object (optional)                                                                                                       | iOS-specific properties                                                                                                                                                          |
 | ios.subscriptionGroupIdentifier | string (optional)                                                                                                     | An identifier of the subscription group to which the subscription belongs. Will be null for iOS version below 12.0 and macOS version below 10.14. iOS Only.                                                                                    |
 | android                       | object (optional)                                                                                                       | Android-specific properties                                                                                                                                                      |
 | android.basePlanId            | string                                                                                                                  | The identifier of the base plan. Android Only.                                                                                                                                    |
 | android.renewalType           | string (optional)                                                                                                       | The renewal type. Possible values: 'prepaid', 'autorenewable'. Android Only.                                                                                                       |
+
+### AdaptySubscriptionOffer
+
+| Name | Type | Description |
+|----|----|-----------|
+| identifier | [AdaptySubscriptionOfferId](#adaptysubscriptionofferid) | Subscription offer identifier |
+| phases | [AdaptyDiscountPhase](#adaptydiscountphase)[] | Array of discount phases |
+| android | object (optional) | Android-specific properties |
+| android.offerTags | string[] (optional) | Offer tags. Android Only. |
 
 ### AdaptySubscriptionPeriod
 
@@ -153,11 +162,14 @@ An information about a [user's](https://swift.adapty.io/documentation/adapty/ada
 | profileId        | string                                                                                    | An identifier of the user in Adapty                                                                                                              |
 | customerUserId   | string (optional)                                                                         | An identifier of the user in your system                                                                                                         |
 | customAttributes | object                                                                                    | Previously set user custom attributes with the updateProfile method                                                                           |
-| accessLevels     | object\<string, [AdaptyProfile.AccessLevel](#adaptyprofileaccesslevel)>                   | The keys are access level identifiers configured by you in Adapty Dashboard. The values are AccessLevel objects. Can be null if the customer has no access levels  |
-| subscriptions    | object\<string, [AdaptyProfile.Subscription](#adaptyprofilesubscription)>                 | The keys are product ids from App Store Connect. The values are Subscription objects. Can be null if the customer has no subscriptions        |
-| nonSubscriptions | object\<string, array of [AdaptyProfile.NonSubscription](#adaptyprofilenonsubscription)>  | The keys are product ids from App Store Connect. The values are arrays of NonSubscription objects. Can be null if the customer has no purchases |
+| accessLevels     | object\<string, [AdaptyAccessLevel](#adaptyaccesslevel)>                   | The keys are access level identifiers configured by you in Adapty Dashboard. The values are AccessLevel objects. Can be null if the customer has no access levels  |
+| subscriptions    | object\<string, [AdaptySubscription](#adaptysubscription)>                 | The keys are product ids from App Store Connect. The values are Subscription objects. Can be null if the customer has no subscriptions        |
+| nonSubscriptions | object\<string, array of [AdaptyNonSubscription](#adaptynonsubscription)>  | The keys are product ids from App Store Connect. The values are arrays of NonSubscription objects. Can be null if the customer has no purchases |
+| segmentHash      | string                                                                                    | Segment hash for this profile                                                                                                                   |
+| isTestUser       | boolean                                                                                   | Whether this is a test user                                                                                                                     |
+| timestamp        | number                                                                                    | Timestamp when profile was updated                                                                                                              |
 
-### AdaptyProfile.AccessLevel
+### AdaptyAccessLevel
 
 Information about the [user's access level.](https://swift.adapty.io/documentation/adapty/adaptyprofile/accesslevel)
 
@@ -182,8 +194,10 @@ Information about the [user's access level.](https://swift.adapty.io/documentati
 | startsAt | Date (optional) | The time when this access level has started (could be in the future) |
 | cancellationReason | string (optional) | The reason why the subscription was cancelled. Possible values are: voluntarily_cancelled, billing_error, refund, price_increase, product_was_not_available, unknown |
 | isRefund | boolean | Whether the purchase was refunded |
+| android | object (optional) | Android-specific properties |
+| android.offerId | string (optional) | Offer ID. Android Only. |
 
-### AdaptyProfile.Subscription
+### AdaptySubscription
 
 Information about the [user's subscription.](https://swift.adapty.io/documentation/adapty/adaptyprofile/subscription)
 
@@ -211,7 +225,7 @@ Information about the [user's subscription.](https://swift.adapty.io/documentati
 | offerId | string (optional) | Offer identifier |
 | cancellationReason | string (optional) | The reason why the subscription was cancelled. Possible values are: voluntarily_cancelled, billing_error, refund, price_increase, product_was_not_available, unknown |
 
-### AdaptyProfile.NonSubscription
+### AdaptyNonSubscription
 
 Information about the user's non-subscription purchases.
 
@@ -226,6 +240,31 @@ Information about the user's non-subscription purchases.
 | isRefund | boolean | Whether the purchase was refunded |
 | isConsumable | boolean | Whether the product should only be processed once. If true, the purchase will be returned by Adapty API one time only |
 
+### AdaptyPurchaseResult
+
+Result of a purchase operation.
+
+| Name | Type | Description |
+|----|----|-----------|
+| type | string | The type of purchase result. Possible values: `success`, `pending`, `user_cancelled` |
+| profile | [AdaptyProfile](#adaptyprofile) (optional) | The updated user profile. Only present when type is `success` |
+
+### AdaptyProfileParameters
+
+Parameters for updating user profile.
+
+| Name | Type | Description |
+|----|----|-----------|
+| analyticsDisabled | boolean (optional) | Whether to disable analytics for this user |
+| codableCustomAttributes | object (optional) | Custom attributes to set for the user |
+| appTrackingTransparencyStatus | number (optional) | App Tracking Transparency status. See [AppTrackingTransparencyStatus](#apptrackingtransparencystatus) enum |
+| firstName | string (optional) | User's first name |
+| lastName | string (optional) | User's last name |
+| gender | string (optional) | User's gender. See [Gender](#gender) enum |
+| birthday | string (optional) | User's birthday |
+| email | string (optional) | User's email address |
+| phoneNumber | string (optional) | User's phone number |
+
 ### ProductReference
 
 | Name | Type | Description |
@@ -239,19 +278,19 @@ Information about the user's non-subscription purchases.
 | android.basePlanId | string (optional) | Base plan ID. Android Only. |
 | android.offerId | string (optional) | Offer ID. Android Only. |
 
-### Enums
+## Enums
 
-#### VendorStore
+### VendorStore
 - `app_store` - Apple App Store
 - `play_store` - Google Play Store  
 - `adapty` - Adapty
 
-#### OfferType
+### OfferType
 - `free_trial` - Free trial offer
 - `pay_as_you_go` - Pay as you go offer
 - `pay_up_front` - Pay up front offer
 
-#### CancellationReason
+### CancellationReason
 - `voluntarily_cancelled` - User voluntarily cancelled
 - `billing_error` - Billing error occurred
 - `refund` - Purchase was refunded
@@ -259,8 +298,25 @@ Information about the user's non-subscription purchases.
 - `product_was_not_available` - Product was not available
 - `unknown` - Unknown reason
 
-#### ProductPeriod
+### ProductPeriod
 - `day` - Day period
 - `week` - Week period
 - `month` - Month period
-- `year` - Year period 
+- `year` - Year period
+
+### Gender
+- `f` - Female
+- `m` - Male
+- `o` - Other
+
+### AppTrackingTransparencyStatus
+- `0` - Not determined
+- `1` - Restricted
+- `2` - Denied
+- `3` - Authorized
+- `4` - Unknown
+
+### RefundPreference
+- `no_preference` - No preference
+- `grant` - Grant refund
+- `decline` - Decline refund 

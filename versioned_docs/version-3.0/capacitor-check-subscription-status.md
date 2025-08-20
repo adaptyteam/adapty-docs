@@ -22,7 +22,7 @@ The easiest way to get the subscription status is to use the `getProfile` method
 
 ```typescript showLineNumbers
 try {
-    const profile = await adapty.getProfile();
+  const profile = await adapty.getProfile();
 } catch (error) {
   // handle the error
 }
@@ -32,25 +32,25 @@ try {
 
 To automatically receive profile updates in your app:
 
-1. Use `adapty.addEventListener('onLatestProfileLoad')` to listen for profile changes - Adapty will automatically call this method whenever the user's subscription status changes.
+1. Use `adapty.addListener('onLatestProfileLoad')` to listen for profile changes - Adapty will automatically call this method whenever the user's subscription status changes.
 2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.
 
-```javascript
+```typescript showLineNumbers
 class SubscriptionManager {
-    private currentProfile: any = null;
-    
-    constructor() {
-        // Listen for profile updates
-        adapty.addEventListener('onLatestProfileLoad', (profile) => {
-            this.currentProfile = profile;
-            // Update UI, unlock content, etc.
-        });
-    }
-    
-    // Use stored profile instead of calling getProfile()
-    hasAccess(): boolean {
-        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
-    }
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
 }
 ```
 
@@ -62,15 +62,19 @@ Adapty automatically calls the `onLatestProfileLoad` event listener when your ap
 
 When you need to make immediate decisions about showing paywalls or granting access to paid features, you can check the user's profile directly. This approach is useful for scenarios like app launch, when entering premium sections, or before displaying specific content.
 
-```javascript
+```typescript showLineNumbers
 const checkAccessLevel = async () => {
   try {
     const profile = await adapty.getProfile();
-    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive === true;
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
   } catch (error) {
     console.warn('Error checking access level:', error);
     return false; // Show paywall if access check fails
   }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
 };
 
 const initializePaywall = async () => {
@@ -85,7 +89,7 @@ const initializePaywall = async () => {
     console.warn('Error initializing paywall:', error);
   }
 };
-``` 
+```
 
 ## Next steps
 

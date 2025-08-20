@@ -9,7 +9,7 @@ displayed_sidebar: sdkcapacitor
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor-main.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor-main/releases)
 
 Welcome! We're here to make in-app purchases a breeze 🚀
 
@@ -28,12 +28,12 @@ Before diving into the code, you'll need to integrate Adapty with App Store Conn
 ## Get started
 
 :::tip
-Our docs are optimized for use with LLMs. Check out [this article](adapty-cursor-react-native.md) to learn how to get the best results when integrating the Adapty SDK using AI with our docs.
+Our docs are optimized for use with LLMs. Check out [this article](adapty-cursor-capacitor.md) to learn how to get the best results when integrating the Adapty SDK using AI with our docs.
 :::
 
 Here's what we'll cover in the integration guide:
 
-1. [Install & configure SDK](sdk-installation-reactnative.md): Add the SDK as a dependency to your project and activate it in the code.
+1. [Install & configure SDK](sdk-installation-capacitor.md): Add the SDK as a dependency to your project and activate it in the code.
 2. [Enable purchases through paywalls](capacitor-quickstart-paywalls.md): Set up the purchase flow so users can buy products.
 3. [Check the subscription status](capacitor-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](capacitor-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
@@ -46,7 +46,7 @@ Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenu
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample apps**: Check out our [complete examples](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples) that demonstrate the full setup
+- **Sample apps**: Check out our [complete examples](https://github.com/adaptyteam/AdaptySDK-Capacitor-main/tree/main/example-app) that demonstrate the full setup
 - **Video tutorial**: Follow along with our step-by-step implementation video below
 
 <div style={{ textAlign: 'center' }}>

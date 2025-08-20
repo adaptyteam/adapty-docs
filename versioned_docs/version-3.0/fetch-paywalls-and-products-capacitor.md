@@ -2,7 +2,7 @@
 title: "Fetch paywalls and products for remote config paywalls in Capacitor SDK"
 description: "Fetch paywalls and products in Adapty Capacitor SDK to enhance user monetization."
 metadataTitle: "Fetching Paywalls & Products | Capacitor SDK | Adapty Docs"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Capacitor']
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallForDefaultAudience', 'remote config', 'Capacitor']
 displayed_sidebar: sdkcapacitor
 ---
 
@@ -36,14 +36,20 @@ In Adapty, a [product](product) serves as a combination of products from both th
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
 ```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
+import { adapty } from '@adapty/capacitor';
 
-    const paywall = await adapty.getPaywall(id, locale);
-    // the requested paywall
+try {
+  const paywall = await adapty.getPaywall({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  // the requested paywall
 } catch (error) {
-    // handle the error
+  console.error('Failed to fetch paywall:', error);
 }
 ```
 
@@ -51,9 +57,8 @@ try {
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](capacitor-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls in two layers: regularly updated cache described above and [fallback paywalls](capacitor-use-fallback-paywalls) . We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
-
+| **params.fetchPolicy** | <p>optional</p><p>default: `'reload_revalidating_cache_data'`</p> | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `'return_cache_data_else_load'` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **params.loadTimeoutMs** | <p>optional</p><p>default: 5000 ms</p> | <p>This value limits the timeout (in milliseconds) for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeoutMs`, since the operation may consist of different requests under the hood.</p> |
 
 Don't hardcode product IDs! Since paywalls are configured remotely, the available products, the number of products, and special offers (such as free trials) can change over time. Make sure your code handles these scenarios.  
 For example, if you initially retrieve 2 products, your app should display those 2 products. However, if you later retrieve 3 products, your app should display all 3 without requiring any code changes. The only thing you have to hardcode is placement ID.
@@ -69,12 +74,13 @@ Response parameters:
 Once you have the paywall, you can query the product array that corresponds to it:
 
 ```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
 try {
-    // ...paywall
-    const products = await adapty.getPaywallProducts(paywall);
+  const products = await adapty.getPaywallProducts(paywall);
   // the requested products list
 } catch (error) {
-    // handle the error
+  console.error('Failed to fetch products:', error);
 }
 ```
 
@@ -111,14 +117,19 @@ If you're willing to accept these drawbacks to benefit from faster paywall fetch
 :::
 
 ```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
+import { adapty } from '@adapty/capacitor';
 
-    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
   // the requested paywall
 } catch (error) {
-    // handle the error
+  console.error('Failed to fetch default audience paywall:', error);
 }
 ```
 
@@ -130,4 +141,4 @@ The `getPaywallForDefaultAudience` method is available starting from Capacitor S
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](capacitor-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **params.fetchPolicy** | <p>optional</p><p>default: `'reload_revalidating_cache_data'`</p> | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `'return_cache_data_else_load'` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |

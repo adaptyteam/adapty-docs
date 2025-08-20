@@ -17,38 +17,58 @@ This guide covers event handling for purchases, restorations, product selection,
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
-:::warning
-This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later.
-:::
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
 
-```javascript showLineNumbers title="Capacitor (TSX)"
-import { Browser } from '@capacitor/browser';
-import {createPaywallView} from '@adapty/capacitor/ui';
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-    return true;
+    console.log('User closed paywall');
+    return true; // Allow the paywall to close
   },
   onAndroidSystemBack() {
-    return true;
+    console.log('User pressed back button');
+    return true; // Allow the paywall to close
   },
   onPurchaseCompleted(purchaseResult, product) {
-    return purchaseResult.type !== 'user_cancelled';
+    console.log('Purchase completed:', purchaseResult);
+    return purchaseResult.type !== 'user_cancelled'; // Close if not cancelled
   },
-  onPurchaseStarted(product) { /***/},
-  onPurchaseFailed(error) { /***/ },
-  onRestoreCompleted(profile) { /***/ },
-  onRestoreFailed(error, product) { /***/ },
-  onProductSelected(productId) { /***/},
-  onRenderingFailed(error) { /***/ },
-  onLoadingProductsFailed(error) { /***/ },
+  onPurchaseStarted(product) {
+    console.log('Purchase started:', product);
+    return false; // Don't close the paywall
+  },
+  onPurchaseFailed(error, product) {
+    console.error('Purchase failed:', error);
+    return false; // Don't close the paywall
+  },
+  onRestoreCompleted(profile) {
+    console.log('Restore completed:', profile);
+    return true; // Close the paywall after successful restore
+  },
+  onRestoreFailed(error) {
+    console.error('Restore failed:', error);
+    return false; // Don't close the paywall
+  },
+  onProductSelected(productId) {
+    console.log('Product selected:', productId);
+    return false; // Don't close the paywall
+  },
+  onRenderingFailed(error) {
+    console.error('Rendering failed:', error);
+    return false; // Don't close the paywall
+  },
+  onLoadingProductsFailed(error) {
+    console.error('Loading products failed:', error);
+    return false; // Don't close the paywall
+  },
   onUrlPress(url) {
-      Browser.open({ url });
-      return false; // Keep paywall open
+    window.open(url, '_blank');
+    return false; // Don't close the paywall
   },
 });
 ```
@@ -56,7 +76,7 @@ const unsubscribe = view.registerEventHandlers({
 <Details>
 <summary>Event examples (Click to expand)</summary>
 
-```javascript
+```typescript
 // onCloseButtonPress
 {
   "event": "close_button_press"

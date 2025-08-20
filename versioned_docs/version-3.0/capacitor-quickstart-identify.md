@@ -76,10 +76,10 @@ When creating a customer user ID, save it with your user data so you can send th
 
 ```typescript showLineNumbers
 try {
-    await adapty.identify("YOUR_USER_ID");
-    // successfully identified
+  await adapty.identify("YOUR_USER_ID");
+  // successfully identified
 } catch (error) {
-    // handle the error
+  // handle the error
 }
 ```
 
@@ -96,11 +96,13 @@ To exclude created empty profiles from the dashboard [analytics](analytics-chart
 :::
 
 ```typescript showLineNumbers
-adapty.activate("PUBLIC_SDK_KEY", {
+await adapty.activate({
+  apiKey: "YOUR_PUBLIC_SDK_KEY",
+  params: {
     customerUserId: "YOUR_USER_ID"
+  }
 });
 ```
-
 
 ### Log users out
 
@@ -108,10 +110,10 @@ If you have a button for logging users out, use the `logout` method. This create
 
 ```typescript showLineNumbers
 try {
-    await adapty.logout();
-    // successful logout
+  await adapty.logout();
+  // successful logout
 } catch (error) {
-    // handle the error
+  // handle the error
 }
 ```
 

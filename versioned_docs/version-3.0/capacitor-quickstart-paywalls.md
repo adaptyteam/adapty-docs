@@ -22,7 +22,7 @@ Adapty offers you three ways to enable purchases in your app. Select one of them
 |----------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Adapty Paywall Builder** | ✅ Easy     | You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
 | `makePurchase`             | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](capacitor-making-purchases).                                                                                       |
-| Observer mode              | 🔴 Hard    | You implement the purchase flow yourself completely. See the [guide](implement-observer-mode-react-native).                                                                                                                                |
+| Observer mode              | 🔴 Hard    | You implement the purchase flow yourself completely. See the [guide](implement-observer-mode-capacitor).                                                                                                                                |
 
 :::important
 **The steps below show how to implement a paywall created in the Adapty paywall builder.**
@@ -51,25 +51,25 @@ To get the view configuration, you must switch on the **Show on device** toggle 
 :::
 
 ```typescript showLineNumbers title="Capacitor"
-import {createPaywallView} from '@adapty/capacitor-ui';
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 try {
-    const placementId = 'YOUR_PLACEMENT_ID';
-
-    const paywall = await adapty.getPaywall(placementId);
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+  });
   // the requested paywall
 } catch (error) {
-    // handle the error
+  // handle the error
 }
 
 if (paywall.hasViewConfiguration) {
-    try {
-        const view = await createPaywallView(paywall);
-    } catch (error) {
-        // handle the error
-    }
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
 } else {
-    //use your custom logic
+  // use your custom logic
 }
 ```
 
@@ -105,9 +105,9 @@ Read our guides on how to handle button [actions](capacitor-handle-paywall-actio
 
 ```typescript showLineNumbers title="Capacitor"
 const unsubscribe = view.registerEventHandlers({
-    onUrlPress(url) {
-      Linking.openURL(url);
-      return false;
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false;
   },
 });
 ```
@@ -122,15 +122,16 @@ Now, you need to [check the users' access level](capacitor-check-subscription-st
 
 Here is how all those steps can be integrated in your app together.
 
-```javascript showLineNumbers title="Capacitor"
-import React, { useEffect } from 'react';
-import { Button, View } from 'react-native';
-import { adapty, createPaywallView } from '@adapty/capacitor-ui';
+```typescript showLineNumbers title="Capacitor"
+import React from 'react';
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 export default function PaywallScreen() {
   const showPaywall = async () => {
     try {
-      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+      const paywall = await adapty.getPaywall({
+        placementId: 'YOUR_PLACEMENT_ID',
+      });
 
       if (!paywall.hasViewConfiguration) {
         // use your custom logic
@@ -140,9 +141,9 @@ export default function PaywallScreen() {
       const view = await createPaywallView(paywall);
 
       view.registerEventHandlers({
-          onUrlPress(url) {
-              Linking.openURL(url);
-              return false;
+        onUrlPress(url) {
+          window.open(url, '_blank');
+          return false;
         },
       });
 
@@ -155,10 +156,9 @@ export default function PaywallScreen() {
 
   // you can add a button to manually trigger the paywall for testing purposes
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button title="Show Paywall" onPress={showPaywall} />
-    </View>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <button onClick={showPaywall}>Show Paywall</button>
+    </div>
   );
 }
-
 ```

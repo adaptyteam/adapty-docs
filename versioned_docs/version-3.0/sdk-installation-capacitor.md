@@ -16,20 +16,13 @@ Adapty SDK includes two key modules for seamless integration into your Capacitor
 - **Core Adapty**: This module is required for Adapty to function properly in your app.
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
-If you need a full tutorial on how to implement IAP in your Capacitor app, check [this](https://adapty.io/blog/capacitor-in-app-purchases-tutorial/) out.
-
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/example-app), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
-
-For a complete implementation walkthrough, you can also see the video:
-<div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
 
 ## Requirements
 
-The Adapty Capacitor SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.1+.
+The Adapty Capacitor SDK supports iOS 14.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
@@ -40,6 +33,18 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
 
 <Tabs>
+<TabItem value="capacitor" label="Pure Capacitor">
+
+1. Install Adapty SDK:
+   ```sh showLineNumbers title="Shell"
+   yarn add @adapty/capacitor
+   ```
+2. For iOS, install pods:
+   ```sh showLineNumbers title="Shell"
+   cd ios && pod install
+   ```
+
+</TabItem>
 <TabItem value="expo" label="Expo" default>
 
 1. Install EAS CLI (if not already):
@@ -65,47 +70,29 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
    ```
 
 </TabItem>
-<TabItem value="capacitor" label="Pure Capacitor">
-
-1. Install Adapty SDK:
-   ```sh showLineNumbers title="Shell"
-   yarn add @adapty/capacitor
-   ```
-2. For iOS, install pods:
-   ```sh showLineNumbers title="Shell"
-   cd ios && pod install
-   ```
-
-<details>
-   <summary>For Android, if your Capacitor version is earlier than 0.73.0 (click to expand)</summary>
-
-Update the `/android/build.gradle` file. Make sure there is the `kotlin-gradle-plugin:1.8.0` dependency or a newer one:
-
-   ```groovy showLineNumbers title="/android/build.gradle"
-   ...
-   buildscript {
-     ...
-     dependencies {
-       ...
-       classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
-     }
-   }
-   ...
-   ```
-
-</details>
-
-</TabItem>
 </Tabs>
 
 ## Activate Adapty module of Adapty SDK
 
-Copy the following code to `App.tsx` to activate Adapty:
+Copy the following code to your main app file (e.g., `App.tsx` or `main.tsx`) to activate Adapty:
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from '@adapty/capacitor';
 
-adapty.activate('YOUR_PUBLIC_SDK_KEY');
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // verbose logging is recommended for the development purposes and for the first production release
+        logLevel: 'verbose', 
+      // in the development environment, use this variable to avoid multiple activation errors
+      __ignoreActivationOnFastRefresh: import.meta.env.DEV,
+    }
+  });
+  console.log('Adapty activated successfully!');
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
 ```
 
 :::tip
@@ -137,12 +124,14 @@ You can set the log level in your app before or during Adapty configuration:
 
 ```typescript showLineNumbers title="App.tsx"
 // Set log level before activation
-// 'verbose' is recommended for development and the first production release
 adapty.setLogLevel('verbose');
 
 // Or set it during configuration
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  logLevel: 'verbose',
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    logLevel: 'verbose',
+  }
 });
 ```
 
@@ -157,8 +146,11 @@ When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` t
 Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
 
 ```typescript showLineNumbers title="App.tsx"
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  ipAddressCollectionDisabled: true,
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ipAddressCollectionDisabled: true,
+  }
 });
 ```
 
@@ -169,13 +161,16 @@ When activating the Adapty module, set `ios.idfaCollectionDisabled` (iOS) or `an
 Use this parameter to comply with App Store/Play Store policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
 
 ```typescript showLineNumbers title="App.tsx"
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  ios: {
-    idfaCollectionDisabled: true,      
-  },
-  android: {
-    adIdCollectionDisabled: true,      
-  },
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ios: {
+      idfaCollectionDisabled: true,      
+    },
+    android: {
+      adIdCollectionDisabled: true,      
+    },
+  }
 });
 ```
 
@@ -185,13 +180,16 @@ By default, AdaptyUI caches media (such as images and videos) to improve perform
 
 Use `mediaCache` to override the default cache settings:
 
-```typescript
-adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-  mediaCache: {
-    memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Optional: memory cache size in bytes
-    memoryStorageCountLimit: 2147483647,            // Optional: max number of items in memory
-    diskStorageSizeLimit: 200 * 1024 * 1024,       // Optional: disk cache size in bytes
-  },
+```typescript showLineNumbers title="App.tsx"
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    mediaCache: {
+      memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Optional: memory cache size in bytes
+      memoryStorageCountLimit: 2147483647,            // Optional: max number of items in memory
+      diskStorageSizeLimit: 200 * 1024 * 1024,       // Optional: disk cache size in bytes
+    },
+  }
 });
 ```
 
@@ -216,10 +214,13 @@ It's important to note that **this feature is intended for development use only*
 
 Here's the recommended approach for usage:
 
-```typescript showLineNumbers title="Typescript"
+```typescript showLineNumbers title="App.tsx"
 try {
-  adapty.activate('PUBLIC_SDK_KEY', {
-    __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+    }
   });
 } catch (error) {
   console.error('Failed to activate Adapty SDK:', error);
@@ -231,11 +232,15 @@ try {
 
 When developing with the Adapty SDK in Capacitor, you may encounter the error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
 
-This occurs because Capacitor's fast refresh feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to `__DEV__` (Capacitor's development mode flag).
-```typescript showLineNumbers title="Typescript"
+This occurs because Capacitor's fast refresh feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to `import.meta.env.DEV` (Capacitor's development mode flag).
+
+```typescript showLineNumbers title="App.tsx"
 try {
-  adapty.activate('PUBLIC_SDK_KEY', {
-    __ignoreActivationOnFastRefresh: __DEV__, 
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      __ignoreActivationOnFastRefresh: import.meta.env.DEV, 
+    }
   });
 } catch (error) {
   console.error('Failed to activate Adapty SDK:', error);
@@ -251,7 +256,7 @@ If you get a minimum iOS version error, update your Podfile:
 
 ```diff
 -platform :ios, min_ios_version_supported
-+platform :ios, '13.0'  # For core features only
++platform :ios, '14.0'  # For core features only
 # OR
-+platform :ios, '15.1'  # If using paywalls created in the paywall builder
++platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```

@@ -26,9 +26,10 @@ Follow the instructions below to use the fallback paywalls in your mobile app co
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-<Tabs groupId="current-os" queryString> <TabItem value="current" label="Current (v3.8+)" default> 
+
 ```typescript showLineNumbers
-//after v3.8
+import { adapty } from '@adapty/capacitor';
+
 const fileLocation = {
   ios: {
     fileName: 'ios_fallback.json'
@@ -37,29 +38,10 @@ const fileLocation = {
     //if the file is located in 'android/app/src/main/assets/'
     relativeAssetPath: 'android_fallback.json'
   }
-}
+};
+
 await adapty.setFallback(fileLocation);
 ```
-</TabItem> 
-<TabItem value="old" label="Legacy (before v3.8)" default> 
-```typescript showLineNumbers
-//Legacy (before v3.8)
-const paywallsLocation = {
-  ios: {
-    fileName: 'ios_fallback.json'
-  },
-  android: {
-    //if the file is located in 'android/app/src/main/assets/'
-    relativeAssetPath: 'android_fallback.json'
-  }
-}
-await adapty.setFallbackPaywalls(paywallsLocation);
-```
-</TabItem> 
-</Tabs>
-
-
-
 
 Parameters:
 

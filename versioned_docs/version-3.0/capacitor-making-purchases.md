@@ -20,12 +20,6 @@ If you don't use the Paywall Builder, you must use a separate method called `.ma
 
 If your paywall has an active promotional offer for the product a user is trying to buy, Adapty will automatically apply it at the time of purchase.
 
-:::warning
-Keep in mind that the introductory offer will be applied automatically only if you use the paywalls set up using the Paywall Builder.
-
-In other cases, you'll need to [verify the user's eligibility for an introductory offer on iOS](fetch-paywalls-and-products-react-native#check-intro-offer-eligibility-on-ios).  Skipping this step may result in your app being rejected during release. Moreover, it could lead to charging the full price to users who are eligible for an introductory offer.
-:::
-
 Make sure you've [done the initial configuration](quickstart) without skipping a single step. Without it, we can't validate purchases.
 
 ## Make purchase
@@ -35,25 +29,25 @@ In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are p
 :::
 
 ```typescript showLineNumbers
-try {
-    const purchaseResult = await adapty.makePurchase(product);
-    switch (purchaseResult.type) {
-      case 'success':
-        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+import { adapty } from '@adapty/capacitor';
 
-        if (isSubscribed) {
-          // Grant access to the paid features
-        }
-        break;
-      case 'user_cancelled':
-        // Handle the case where the user canceled the purchase
-        break;
-      case 'pending':
-        // Handle deferred purchases (e.g., the user will pay offline with cash)
-        break;
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('User is now subscribed!');
     }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
 } catch (error) {
-    // Handle the error
+  console.error('Purchase failed:', error);
 }
 ```
 
@@ -62,13 +56,13 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                                                         |
 | :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
+| **product** | required | An [`AdaptyPaywallProduct`](capacitor-sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
 
 Response parameters:
 
 | Parameter | Description                                                                                                                                                                                                                                                                                                                                                            |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
+| **result** | An [`AdaptyPurchaseResult`](capacitor-sdk-models#adaptypurchaseresult) object with a `type` field indicating the purchase outcome (`'success'`, `'user_cancelled'`, or `'pending'`) and a `profile` field containing the updated [`AdaptyProfile`](capacitor-sdk-models#adaptyprofile) on successful purchases. |
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
@@ -83,53 +77,63 @@ When a user opts for a new subscription instead of renewing the current one, the
 
 To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
-
 ```typescript showLineNumbers
-try {
-    const purchaseResult = await adapty.makePurchase(product, params);
-    switch (purchaseResult.type) {
-      case 'success':
-        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+import { adapty } from '@adapty/capacitor';
 
-        if (isSubscribed) {
-          // Grant access to the paid features
-        }
-        break;
-      case 'user_cancelled':
-        // Handle the case where the user canceled the purchase
-        break;
-      case 'pending':
-        // Handle deferred purchases (e.g., the user will pay offline with cash)
-        break;
+try {
+  const result = await adapty.makePurchase({ 
+    product,
+    params: {
+      android: {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'old_product_id',
+          prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true,
+        obfuscatedAccountId: 'account_123',
+        obfuscatedProfileId: 'profile_456'
+      }
     }
+  });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('Subscription updated successfully!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
 } catch (error) {
-    // Handle the error
+  console.error('Purchase failed:', error);
 }
 ```
+
 Additional request parameter:
 
 | Parameter  | Presence | Description                                                  |
 | :--------- | :------- | :----------------------------------------------------------- |
-| **params** | required | an object of the [`MakePurchaseParamsInput`](https://react-native.adapty.io/interfaces/makepurchaseparamsinput) type. |
+| **params** | optional | An object of the [`MakePurchaseParamsInput`](capacitor-sdk-models#makepurchaseparamsinput) type containing platform-specific purchase parameters. |
 
-:::info
-**Version 3.8.2+**: The `MakePurchaseParamsInput` structure has been updated. `oldSubVendorProductId` and `prorationMode` are now nested under `subscriptionUpdateParams`, and `isOfferPersonalized` is moved to the upper level.
+The `MakePurchaseParamsInput` structure includes:
 
-Example:
-```javascript
-makePurchase(product, {
-    android: {
-        subscriptionUpdateParams: {
-            oldSubVendorProductId: 'old_product_id',
-            prorationMode: 'charge_prorated_price'
-        },
-        isOfferPersonalized: true, 
-        obfuscatedAccountId: 'account_123',
-        obfuscatedProfileId: 'profile_456'
-    }
-});
+```typescript
+{
+  android: {
+    subscriptionUpdateParams: {
+      oldSubVendorProductId: 'old_product_id',
+      prorationMode: 'charge_prorated_price'
+    },
+    isOfferPersonalized: true, 
+    obfuscatedAccountId: 'account_123',
+    obfuscatedProfileId: 'profile_456'
+  }
+}
 ```
-:::
 
 
 You can read more about subscriptions and replacement modes in the Google Developer documentation:
@@ -143,9 +147,14 @@ You can read more about subscriptions and replacement modes in the Google Develo
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
 
-
 ```typescript showLineNumbers
-adapty.presentCodeRedemptionSheet();
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.presentCodeRedemptionSheet();
+} catch (error) {
+  console.error('Failed to present code redemption sheet:', error);
+}
 ```
 
 :::danger

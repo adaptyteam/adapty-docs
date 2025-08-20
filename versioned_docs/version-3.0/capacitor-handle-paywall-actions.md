@@ -8,7 +8,6 @@ keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-
 If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
 
 1. Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
@@ -17,7 +16,7 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 This guide shows how to handle custom and pre-existing actions in your code.
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+**Only purchases, restorations, and closing the paywall are handled automatically.** All the other button actions, such as opening links, require implementing proper responses in the app code.
 :::
 
 ## Close paywalls
@@ -31,15 +30,15 @@ To add a button that will close your paywall:
 In the Capacitor SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
 :::
 
-```javascript
-import {createPaywallView} from 'capacitor-adapty/dist/ui';
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-      view.dismiss(); // default behavior
-      return true;
+    console.log('User closed paywall');
+    return true; // Allow the paywall to close
   }
 });
 ```
@@ -59,16 +58,16 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 In the Capacitor SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
-```javascript
-import {createPaywallView} from 'capacitor-adapty/dist/ui';
-import {Linking} from 'react-native';
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
-    onUrlPress(url) {
-        Linking.openURL(url);
-    },
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false; // Don't close the paywall
+  },
 });
 ```
 
@@ -79,17 +78,18 @@ To add a button that logs users into your app:
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
-```javascript
-import {createPaywallView} from 'capacitor-adapty/dist/ui';
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'login') {
-            navigation.navigate('Login');
-        }
+  onCustomAction(actionId) {
+    if (actionId === 'login') {
+      // Navigate to login screen
+      console.log('User requested login');
     }
+  }
 });
 ```
 
@@ -102,12 +102,13 @@ To add a button that handles any other actions:
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
-```javascript
+```typescript showLineNumbers
 const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'openNewPaywall') {
-            // Display another paywall
-        }
-    },
+  onCustomAction(actionId) {
+    if (actionId === 'openNewPaywall') {
+      // Display another paywall
+      console.log('User requested new paywall');
+    }
+  },
 });
 ```
