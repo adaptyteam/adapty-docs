@@ -66,9 +66,6 @@ Want to see how it all comes together? We've got you covered:
 </TabItem>
 </Tabs>
 
-
-To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
-
 ## Main concepts
 
 Before diving into the code, let's get familiar with the key concepts that make Adapty work. 

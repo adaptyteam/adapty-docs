@@ -48,8 +48,6 @@ Want to see how it all comes together? We've got you covered:
 
 - **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example) that demonstrates the full setup
 
-To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
-
 ## Main concepts
 
 Before diving into the code, let's get familiar with the key concepts that make Adapty work. 

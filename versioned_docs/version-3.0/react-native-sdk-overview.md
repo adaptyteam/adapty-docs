@@ -53,8 +53,6 @@ Want to see how it all comes together? We've got you covered:
 <iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 
-To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
-
 ## Main concepts
 
 Before diving into the code, let's get familiar with the key concepts that make Adapty work. 
