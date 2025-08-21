@@ -93,7 +93,11 @@ To apply a ready-made template:
 
 ## Generate paywalls with AI
 
-For apps published on the App Store, you can create a unique, high-converting paywall tailored to your app in just seconds using our built-in AI generator.
+:::info
+The Paywall AI generator is only available for apps published on the Apple App Store.
+:::
+
+You can create a unique, high-converting paywall tailored to your app in just seconds using our built-in AI generator.
 
 To do so:
 
