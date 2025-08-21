@@ -1,5 +1,5 @@
 ---
-title: "Test in-app purchases in App Store Sandbox"
+title: "Test in-app purchases in App Store"
 description: "Test purchases in the sandbox environment to ensure smooth transactions."
 metadataTitle: "Testing Purchases in Sandbox Mode | Adapty Docs"
 keywords: ['test']
@@ -17,14 +17,17 @@ To proceed with in-app purchases testing, make sure:
 
 ## Testing environment
 
-The only reliable way to test in-app purchases is using the [sandbox environment](#sandbox-testing) with apps you download from TestFlight. This way:
+We recommend the only reliable option to test in-app purchases using the [sandbox environment](#sandbox-testing). This way:
 
 - **You can have a clean purchase history**: Let you purchase like a new user and control eligibility.
 - **You use a real device**: Enable interaction with the Apple server to perform purchases properly.
 
 ## Sandbox testing
 
-To have proper testing results with the sandbox environment, follow the steps below.
+For proper results, select your use case: 
+
+- **Build in Xcode and run on a test device**: Convenient for developers and QA engineers. Skip [Step 3](#step-3-download-the-app-from-testflight) below for this case.
+- **Sandbox test account with TestFlight**: Suitable for anyone else. Skip [Step 6](#step-6-build-in-xcode-and-run) below fro this case.
 
 For more details, you can refer to [Apple documentation on Testing In-App Purchases with sandbox](https://developer.apple.com/documentation/storekit/testing-in-app-purchases-with-sandbox).
 
@@ -32,14 +35,12 @@ For more details, you can refer to [Apple documentation on Testing In-App Purcha
 ### Step 1. Create Sandbox test account in App Store Connect
 
 :::warning
-Create a new Sandbox test account to ensure your purchase history is clean.
+Create a new Sandbox test account to ensure your purchase history is clean. If you reuse an existing account, any previously purchased products will remain available, and you won’t be able to test buying them again. 
 :::
 
 You can create a new Sandbox test account in a few clicks:
 
 1. Go to [**Users and Access** > **Sandbox** > **Test Accounts**](https://appstoreconnect.apple.com/access/users/sandbox) in App Store Connect and click **+**.
-
-   
 
 <Zoom>
   <img src={require('./img/add-sandbox-user.webp').default}
@@ -53,8 +54,7 @@ You can create a new Sandbox test account in a few clicks:
 </Zoom>
 
 
-
-2. Enter the test user details. Make sure to define the **Country or Region** which you plan to test.
+2. Enter the test user details. Make sure to define the **Country or Region** which you plan to test as it impacts the product availability for the region and purchase currency.
 
 
 :::tip
@@ -80,26 +80,21 @@ You can create a new Sandbox test account in a few clicks:
 
 ### Step 2. Enable the Developer mode
 
-If you haven't run any app from XCode on your test device before, you need to [enable Developer mode on your device](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device). Otherwise, you can skip this step.
+:::note
+Skip this step if the Developer mode is already enabled on your test device.
+:::
 
-1. Connect your test device to the Mac with XCode using a cable or using the same Wi-Fi. Tap **Trust** on your phone.
-2. In XCode, select your device as a run destination.
+You’ll need a Mac with Xcode installed and your test device cable:
 
-<Zoom>
-  <img src={require('./img/build-destination.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-3. Run the app from XCode. When a pop-up about Developer mode appears, click **Cancel**.
-4. Go to **Settings > Privacy & Security > Developer Mode** on your test device and turn on **Developer Mode**.
+1. Open Xcode on your Mac.
+2. Connect your test device to the Mac using the cable.
+3. Go to **Settings > Privacy & Security > Developer Mode** on your test device and turn on **Developer Mode**.
 
 ### Step 3. Download the app from TestFlight
+
+:::info
+This step applies only if you're testing with TestFlight. If you’re building the app in Xcode, skip this step.
+:::
 
 On your test device, make sure you are signed in with your production Apple Account, then download the app you test from TestFlight.
 
@@ -130,7 +125,21 @@ If you've just created a new Sandbox test account and switched to it, you can sk
 This step is required each time you repeat testing using the same Sandbox test account. In this case, you will also need to [sign out from your Sandbox test account](#step-4-switch-to-sandbox-test-account), then sign in again to clear the purchase history cache on the test device.
 :::
 
-### Step 6. Make test purchase
+### Step 6. Build in Xcode and run
+
+:::info
+This step applies only if you're testing with an Xcode build. If you're using TestFlight, skip this step.
+:::
+
+1. Connect your test device to your Mac1. 
+2. Open Xcode.
+3. Click **Run** in the toolbar or choose **Product > Run** to build and run the app on the connected device.
+
+If the build is successful, Xcode will launch the app on your device and open a debugging session in the debug area..
+
+Your app is now ready for testing on the device.
+
+### Step 7. Make test purchase
 
 Open the app and make your test purchase through a paywall.
 
@@ -183,7 +192,7 @@ If the user has an inherited access level, follow these steps for accurate testi
 
 ## Test subscriptions
 
-When testing the app from TestFlight using the Sandbox test account, you can set up the subscription renewal rate for each tester in sandbox. Learn more about editing subscription renewal rates in the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings).
+When testing the app using the Sandbox test account, you can set up the subscription renewal rate for each tester in sandbox. Learn more about editing subscription renewal rates in the [official Apple documentation](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings).
 
 By default, subscriptions renew up to 12 times before they stop, according to the following schedule:
 
