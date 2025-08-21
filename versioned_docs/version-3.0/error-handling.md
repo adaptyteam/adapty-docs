@@ -13,5 +13,6 @@ Adapty returns errors for you to handle. We've categorized them by framework for
 - [Handle errors in iOS](ios-sdk-error-handling)
 - [Handle errors in Android](android-sdk-error-handling)
 - [Handle errors in Flutter, React Native, Unity](error-handling-on-flutter-react-native-unity)
+- [Handle error in Kotlin Multiplatform](error-handling-on-kotlin-multiplatform.md)
 
 <SampleApp />
