@@ -7,6 +7,10 @@ metadataTitle: "Managing Onboarding Localizations | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+:::important
+Localizations in onboardings are supported starting from the SDK version 3.xx.
+:::
+
 Localization can be a time-consuming process that requires careful attention to detail. When you use Onboarding Builder, Adapty handles most of the heavy lifting for you. This page explains how the localization process works.
 
 Once you've finished configuring your onboarding in the default language and are satisfied with the result, you're ready to add support for additional languages.
