@@ -10,4 +10,5 @@ This page contains all guides for working with users and access levels in your F
 - **[Identify users](flutter-identifying-users)** - Learn how to identify users in your app
 - **[Update user data](flutter-setting-user-attributes)** - Set user attributes and profile data
 - **[Listen for subscription status changes](flutter-listen-subscription-changes)** - Monitor subscription changes in real-time
-- **[Deal with App Tracking Transparency (ATT)](flutter-deal-with-att)** - Handle ATT requirements 
+- **[Deal with App Tracking Transparency (ATT)](flutter-deal-with-att)** - Handle ATT requirements
+- **[Kids Mode](kids-mode-flutter)** - Implement Kids Mode for your app 

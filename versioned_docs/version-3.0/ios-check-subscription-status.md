@@ -19,6 +19,10 @@ When you decide whether to show a paywall or paid content to a user, you check t
 - Call `getProfile` if you need the latest profile data immediately (like on app launch) or want to force an update.
 - Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
 
+:::important
+By default, the `premium` access level already exists in Adapty. If you don't need to set up more than one access level, you can just use `premium`. 
+:::
+
 ### Get profile
 
 The easiest way to get the subscription status is to use the `getProfile` method to access the profile:
@@ -128,4 +132,6 @@ if !hasAccess {
 
 ## Next steps
 
-Now, when you know how to track the subscription status, learn how to [work with user profiles](ios-quickstart-identify.md) to ensure they can access what they have paid for.
+Now, when you know how to track the subscription status, [learn how to work with user profiles](ios-quickstart-identify.md) to ensure it aligns with your existing authentication system and paid access sharing permissions. 
+
+If you don't have your own authentication system, that's not a problem at all, and Adapty will manage users for you, but you can still read the [guide](ios-quickstart-identify.md) to learn how Adapty works with anonymous users.

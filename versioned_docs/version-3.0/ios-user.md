@@ -11,3 +11,4 @@ This page contains all guides for working with users and access levels in your i
 - **[Update user data](setting-user-attributes)** - Set user attributes and profile data
 - **[Listen for subscription status changes](subscription-status)** - Monitor subscription changes in real-time
 - **[Deal with App Tracking Transparency (ATT)](ios-deal-with-att)** - Handle ATT requirements
+- **[Kids Mode](kids-mode)** - Implement Kids Mode for your app
