@@ -32,51 +32,19 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
 
-<Tabs>
-<TabItem value="capacitor" label="Pure Capacitor">
+Install Adapty SDK:
 
-1. Install Adapty SDK:
-   ```sh showLineNumbers title="Shell"
-   yarn add @adapty/capacitor
-   ```
-2. For iOS, install pods:
-   ```sh showLineNumbers title="Shell"
-   cd ios && pod install
-   ```
+```sh 
+npm install @adapty/capacitor
+npx cap sync   
+```
 
-</TabItem>
-<TabItem value="expo" label="Expo" default>
-
-1. Install EAS CLI (if not already):
-   ```sh showLineNumbers title="Shell"
-   npm install -g eas-cli
-   ```
-2. Install the dev client:
-   ```sh showLineNumbers title="Shell"
-   expo install expo-dev-client
-   ```
-3. Install Adapty SDK:
-   ```sh showLineNumbers title="Shell"
-   expo install @adapty/capacitor
-   ```
-4. Build your app for development:
-   ```sh showLineNumbers title="Shell"
-   eas build --profile development --platform ios
-   eas build --profile development --platform android
-   ```
-5. Start the dev server:
-   ```sh showLineNumbers title="Shell"
-   expo start --dev-client
-   ```
-
-</TabItem>
-</Tabs>
 
 ## Activate Adapty module of Adapty SDK
 
-Copy the following code to your main app file (e.g., `App.tsx` or `main.tsx`) to activate Adapty:
+Copy the following code to any app file to activate Adapty:
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 import { adapty } from '@adapty/capacitor';
 
 try {
@@ -85,8 +53,8 @@ try {
     params: {
       // verbose logging is recommended for the development purposes and for the first production release
         logLevel: 'verbose', 
-      // in the development environment, use this variable to avoid multiple activation errors
-      __ignoreActivationOnFastRefresh: import.meta.env.DEV,
+      // in the development environment, use this variable to avoid multiple activation errors. Set it to your development environment variable
+      __ignoreActivationOnFastRefresh: true,
     }
   });
   console.log('Adapty activated successfully!');
@@ -103,7 +71,7 @@ To avoid activation errors in the development environment, use the [tips](#devel
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. It is done automatically when you activate the core module; you don't need to do anything else.
+If you plan to use [Paywall Builder](adapty-paywall-builder.md), you need the AdaptyUI module. It is done automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
 
@@ -122,7 +90,7 @@ Adapty logs errors and other important information to help you understand what i
 
 You can set the log level in your app before or during Adapty configuration:
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 // Set log level before activation
 adapty.setLogLevel('verbose');
 
@@ -145,7 +113,7 @@ When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` t
 
 Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 await adapty.activate({
   apiKey: 'YOUR_PUBLIC_SDK_KEY',
   params: {
@@ -160,7 +128,7 @@ When activating the Adapty module, set `ios.idfaCollectionDisabled` (iOS) or `an
 
 Use this parameter to comply with App Store/Play Store policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 await adapty.activate({
   apiKey: 'YOUR_PUBLIC_SDK_KEY',
   params: {
@@ -180,7 +148,7 @@ By default, AdaptyUI caches media (such as images and videos) to improve perform
 
 Use `mediaCache` to override the default cache settings:
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 await adapty.activate({
   apiKey: 'YOUR_PUBLIC_SDK_KEY',
   params: {
@@ -202,44 +170,19 @@ Parameters:
 
 ## Development environment tips
 
-#### Delay SDK activation for development purposes
-
-Adapty pre-fetches all necessary user data upon SDK activation, enabling faster access to fresh data.
-
-However, this may pose a problem in the iOS simulator, which frequently prompts for authentication during development. Although Adapty cannot control the StoreKit authentication flow, it can defer the requests made by the SDK to obtain fresh user data.
-
-By enabling the `__debugDeferActivation` property, the activate call is held until you make the next Adapty SDK call. This prevents unnecessary prompts for authentication data if not needed.
-
-It's important to note that **this feature is intended for development use only**, as it does not cover all potential user scenarios. In production, activation should not be delayed, as real devices typically remember authentication data and do not repeatedly prompt for credentials.
-
-Here's the recommended approach for usage:
-
-```typescript showLineNumbers title="App.tsx"
-try {
-  await adapty.activate({
-    apiKey: 'YOUR_PUBLIC_SDK_KEY',
-    params: {
-      __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
-    }
-  });
-} catch (error) {
-  console.error('Failed to activate Adapty SDK:', error);
-  // Handle the error appropriately for your app
-}
-```
-
-#### Troubleshoot SDK activation errors on Capacitor's Fast Refresh
+#### Troubleshoot SDK activation errors on Capacitor's live-reload
 
 When developing with the Adapty SDK in Capacitor, you may encounter the error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
 
-This occurs because Capacitor's fast refresh feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to `import.meta.env.DEV` (Capacitor's development mode flag).
+This occurs because Capacitor's live-reload feature triggers multiple activation calls during development. To prevent this, use the `__ignoreActivationOnFastRefresh` option set to the Capacitor's development mode flag – it will differ depending on the bundle you are using.
 
-```typescript showLineNumbers title="App.tsx"
+```typescript showLineNumbers
 try {
   await adapty.activate({
     apiKey: 'YOUR_PUBLIC_SDK_KEY',
     params: {
-      __ignoreActivationOnFastRefresh: import.meta.env.DEV, 
+        // Set your development environment variable
+      __ignoreActivationOnFastRefresh: true, 
     }
   });
 } catch (error) {
