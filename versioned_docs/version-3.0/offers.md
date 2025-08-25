@@ -1,5 +1,5 @@
 ---
-title: "Offers"
+title: "Trials & Promo offers"
 description: "Set up and manage subscription offers in Adapty to drive conversions."
 metadataTitle: "Managing Subscription Offers | Adapty Docs"
 ---
