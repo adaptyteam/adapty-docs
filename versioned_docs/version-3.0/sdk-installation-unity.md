@@ -1,25 +1,31 @@
 ---
 title: "Unity - Adapty SDK installation & configuration"
-description: "Install Adapty SDK in Unity for subscription management."
-metadataTitle: "Installing Adapty SDK for Unity | Adapty Docs"
+description: "Step-by-step guide on installing Adapty SDK on Unity for subscription-based apps."
+metadataTitle: "Installing Adapty SDK on Unity | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk unity', 'google play billing library', 'gpbl', 'billing library']
 rank: 30
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs'; 
+import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import GetKey from '@site/src/components/reusable/GetKey.md';
 
-<Tabs groupId="current-os" queryString> 
+Adapty SDK includes two key modules for seamless integration into your Unity app:
 
-<TabItem value="current" label="Adapty SDK v3.x+ (current)" default> 
+- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-Adapty SDK includes two key modules for seamless integration into your mobile app:
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Unity), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+:::
 
-- **Core Adapty**: This essential SDK module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+## Requirements
+
+Adapty SDK supports iOS 13.0+, but requires iOS 15.0+ to work with paywalls created in the paywall builder.
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
@@ -27,11 +33,9 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Install Adapty SDK
 
-To install the Adapty SDK:
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
 
-1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
-
-   
+1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project.
 
 <Zoom>
   <img src={require('./img/456bd98-adapty-unity-plugin.webp').default}
@@ -44,30 +48,9 @@ To install the Adapty SDK:
 />
 </Zoom>
 
+2. Download and import the [External Dependency Manager plugin](https://github.com/googlesamples/unity-jar-resolver).
 
-
-
-2. Download the `adapty-ui-unity-plugin-*.unitypackage` from GitHub and import it into your project.
-
-   
-
-<Zoom>
-  <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '400px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-3. Download and import the [External Dependency Manager plugin](https://github.com/googlesamples/unity-jar-resolver).
-
-4. The SDK uses the "External Dependency Manager" plugin to handle iOS Cocoapods dependencies and Android gradle dependencies. After the installation, you may need to invoke the dependency manager:
+3. The SDK uses the "External Dependency Manager" plugin to handle iOS Cocoapods dependencies and Android gradle dependencies. After the installation, you may need to invoke the dependency manager:
 
    `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
 
@@ -75,108 +58,79 @@ To install the Adapty SDK:
 
    `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
 
-5. When building your Unity project for iOS, you would get `Unity-iPhone.xcworkspace` file, which you have to open instead of `Unity-iPhone.xcodeproj`, otherwise, Cocoapods dependencies won't be used.
+4. When building your Unity project for iOS, you would get `Unity-iPhone.xcworkspace` file, which you have to open instead of `Unity-iPhone.xcodeproj`, otherwise, Cocoapods dependencies won't be used.
 
-## Configure Adapty SDK
+## Activate Adapty module of Adapty SDK
 
-To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Plugin and then using it as described in the guidance below. Additionally, ensure to set up your logging system to receive errors and other important information from Adapty.
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
 
-1. Activate you Adapty SDK. You only need to activate it once, typically early in your app's lifecycle.
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    void Start() {
+        DontDestroyOnLoad(this.gameObject);
+        Adapty.SetEventListener(this);
 
-    ```csharp showLineNumbers title="C#"
-    using UnityEngine;
-    using AdaptySDK;
-    
-    public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-        void Start() {
-            DontDestroyOnLoad(this.gameObject);
-            Adapty.SetEventListener(this);
-    
-            var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
-              .SetCustomerUserId(null)
-              .SetObserverMode(false)
-              .SetServerCluster(AdaptyServerCluster.Default)
-              .SetIPAddressCollectionDisabled(false)
-              .SetIDFACollectionDisabled(false)
-              .SetActivateUI(true)
-              .SetAdaptyUIMediaCache(
-                100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
-                null, // MemoryStorageCountLimit
-                100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
-              );
-    
-            Adapty.Activate(builder.Build(), (error) => {
-                if (error != null) {
-                    // handle the error
-                    return;
-                }
-            });
-        }
+        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+
+        Adapty.Activate(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+        });
     }
-    ```
+}
+```
 
+<GetKey />
 
+## Set up event listening
 
+Create a script to listen to Adapty events. Name it `AdaptyListener` in your scene. We suggest using the `DontDestroyOnLoad` method for this object to ensure it persists throughout the application's lifespan.
 
+<Zoom>
+  <img src={require('./img/2ccd564-create_adapty_listener.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
+Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add:
 
+```csharp showLineNumbers title="C#"
+using AdaptySDK;
+```
 
+Subscribe to Adapty events:
 
-    | Parameter                           | Presence | Description                                                  |
-    | ----------------------------------- | -------- | ------------------------------------------------------------ |
-    | apiKey                 | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
-    | logLevel                | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-    | observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-    | customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-    | idfaCollectionDisabled      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-    | ipAddressCollectionDisabled | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
 
-2. Create a script to listen to Adapty events. Name it `AdaptyListener` in your scene. We suggest using the `DontDestroyOnLoad` method for this object to ensure it persists throughout the application's lifespan.
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+     public void OnLoadLatestProfile(Adapty.Profile profile) {
+       // handle updated profile data
+     }
+}
+```
 
-    <Zoom>
-      <img src={require('./img/2ccd564-create_adapty_listener.webp').default}
-      style={{
-        border: 'none', /* border width and color */
-        width: '700px', /* image width */
-        display: 'block', /* for alignment */
-        margin: '0 auto' /* center alignment */
-      }}
-    />
-    </Zoom>
+We recommend adjusting the Script Execution Order to place the AdaptyListener before Default Time. This ensures that Adapty initializes as early as possible.
 
-		Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
-
-    ```csharp showLineNumbers title="C#"
-         using AdaptySDK;
-    ```
-
-3. Subscribe to Adapty events:
-
-    ```csharp showLineNumbers title="C#"
-    using UnityEngine;
-    using AdaptySDK;
-    
-    public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-         public void OnLoadLatestProfile(Adapty.Profile profile) {
-           // handle updated profile data
-         }
-    }
-    ```
-    
-4. We recommend adjusting the Script Execution Order to place the AdaptyListener before Default Time. This ensures that Adapty initializes as early as possible.
-
-   <Zoom>
-     <img src={require('./img/activate_unity.webp').default}
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+<Zoom>
+  <img src={require('./img/activate_unity.webp').default}
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Add Kotlin Plugin to your project
 
@@ -188,13 +142,13 @@ This step is required. If you skip it, your mobile app can crash when the paywal
 
 1. In **Player Settings**, ensure that the **Custom Launcher Gradle Template** and **Custom Base Gradle Template** options are selected.
    <Zoom>
-     <img src={require('./img/kotlin-plugin1.webp').default}
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
+   <img src={require('./img/kotlin-plugin1.webp').default}
+   style={{
+   border: 'none', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
    />
    </Zoom>
 
@@ -224,181 +178,85 @@ This step is required. If you skip it, your mobile app can crash when the paywal
    }
    ```
 
-</TabItem> 
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](unity-quickstart-paywalls.md) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
-<TabItem value="old" label="Adapty SDK up to v2.x (legacy)" default> 
+## Activate AdaptyUI module of Adapty SDK
 
-Adapty comprises two crucial SDKs for seamless integration into your mobile app:
-
-- Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
-
-Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
-
-| AdaptySDK-Unity version | AdaptyUI-Unity version |
-| :---------------------- | :--------------------- |
-| 2.7.1                   | 2.0.1                  |
-| 2.9.0                   | not compatible         |
-
-:::danger
-Go through release checklist before releasing your app
-
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
-
-## Install Adapty SDKs
-
-To install the Adapty SDKs:
-
-1. Download the `adapty-unity-plugin-*.unitypackage` from GitHub and import it into your project. 
-
-   
-
-<Zoom>
-  <img src={require('./img/456bd98-adapty-unity-plugin.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '400px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-2. Download the `adapty-ui-unity-plugin-*.unitypackage` from GitHub and import it into your project.
-
-   
-
-<Zoom>
-  <img src={require('./img/2ab0b4a-adapty-ui-unity-plugin.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '400px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-3. Download and import the [External Dependency Manager plugin](https://github.com/googlesamples/unity-jar-resolver).
-
-4. The SDK uses the "External Dependency Manager" plugin to handle iOS Cocoapods dependencies and Android gradle dependencies. After the installation, you may need to invoke the dependency manager:
-
-   `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
-
-   and
-
-   `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
-
-5. When building your Unity project for iOS, you would get `Unity-iPhone.xcworkspace` file, which you have to open instead of `Unity-iPhone.xcodeproj`, otherwise, Cocoapods dependencies won't be used.
-
-## Configure Adapty SDK
-
-To configure the Adapty SDK for Unity, start by initializing the Adapty Unity Plugin and then using it as described in the guidance below. Additionally, ensure to set up your logging system to receive errors and other important information from Adapty.
-
-### Activate Adapty SDK
-
-You only need to activate the Adapty SDK once, typically early in your app's lifecycle.
-
-```csharp showLineNumbers
-using AdaptySDK;
-
-var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
-  .SetCustomerUserId(null)
-  .SetObserverMode(false)
-  .SetServerCluster(AdaptyServerCluster.Default)
-  .SetIPAddressCollectionDisabled(false)
-  .SetIDFACollectionDisabled(false);
-  .SetActivateUI(true)
-  .SetAdaptyUIMediaCache(
-    100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
-    null, // MemoryStorageCountLimit
-    100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
-  );
-  
-Adapty.Activate(builder.Build(), (error) => {
-  if (error != null) {
-    // handle the error
-    return;
-  }
-});
-```
-
-| Parameter                       | Presence | Description                                                  |
-| ------------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                          | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [App settings-> General tab -> API keys subsection](https://app.adapty.io/settings/general) |
-| logLevel                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| idfaCollectionDisabled      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-| ipAddressCollectionDisabled | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
-
-### Use Adapty Unity Plugin
-
-1. Create a script to listen to Adapty events. Name it `AdaptyListener` in your scene. We suggest using the `DontDestroyOnLoad` method for this object to ensure it persists throughout the application's lifespan.
-
-
-<Zoom>
-  <img src={require('./img/2ccd564-create_adapty_listener.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-   Adapty uses `AdaptySDK` namespace. At the top of your script files that use the Adapty SDK, you may add
-
-   ```csharp showLineNumbers title="C#"
-using AdaptySDK;
-   ```
-
-2. Subscribe to Adapty events:
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. You can activate it during the configuration:
 
 ```csharp showLineNumbers title="C#"
-   using UnityEngine;
-   using AdaptySDK;
-
-   public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-   	void Start() {
-	   	DontDestroyOnLoad(this.gameObject);
-		  Adapty.SetEventListener(this);
-	   }
-
-     public void OnLoadLatestProfile(Adapty.Profile profile) {
-       // handle updated profile data
-     }
-   }
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
 ```
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+## Optional setup
 
-</TabItem> 
+### Logging
 
-</Tabs>
+#### Set up the logging system
 
-<SampleApp />
+Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
 
-## Set up the logging system
+| Level      | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Only errors will be logged                                    |
+| `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
+| `info`     | Errors, warnings, and various information messages will be logged |
+| `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
 
-Adapty logs errors and other important information to help you understand what is going on. There are three levels available:
+You can set the log level in your app during Adapty configuration:
 
-| error   | Only errors will be logged.                                  |
-| :------ | :----------------------------------------------------------- |
-| warn    | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged. |
-| info    | Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged. |
-| verbose | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged. |
+```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetLogLevel(AdaptyLogLevel.Verbose);
+```
 
-You can call `SetLogLevel()` method in your app before configuring Adapty. 
+### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
+
+#### Disable IP address collection and sharing
+
+When activating the Adapty module, set `SetIPAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### Disable advertising ID collection and sharing
+
+When activating the Adapty module, set `SetAppleIDFACollectionDisabled` and/or `SetGoogleAdvertisingIdCollectionDisabled` to `true` to disable the collection of advertising identifiers. The default value is `false`.
+
+Use this parameter to comply with App Store/Google Play policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true);
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### Set up media cache configuration for AdaptyUI
+
+By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
+
+Use `SetAdaptyUIMediaCache` to override the default cache settings:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+Parameters:
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
+| memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
+| diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |

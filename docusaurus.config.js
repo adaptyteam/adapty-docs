@@ -122,32 +122,42 @@ const config = {
             position: "left",
             label: "Documentation",
           },
-          /*{
-            label: "SDK Reference",
+          {
+            label: "Mobile SDK ⏷",
             position: "left",
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                type: "docSidebar",
+                sidebarId: "sdkios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                type: "docSidebar",
+                sidebarId: "sdkandroid",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                type: "docSidebar",
+                sidebarId: "sdkflutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                type: "docSidebar",
+                sidebarId: "sdkreactnative",
               },
+              {
+                label: "Unity",
+                type: "docSidebar",
+                sidebarId: "sdkunity",
+              }
             ],
-          },*/
+          },
           {
             label: "Server API",
             position: "left",
-            href: "/getting-started-with-server-side-api",
+            type: "docSidebar",
+            sidebarId: "APISidebar",
           },
           {
             label: "Support Forum",
@@ -240,19 +250,19 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                href: "/sdk-installation-ios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                href: "/sdk-installation-android",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                href: "/sdk-installation-flutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                href: "/sdk-installation-reactnative",
               },
               {
                 label: "SDK Models",

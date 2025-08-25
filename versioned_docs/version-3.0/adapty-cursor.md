@@ -21,6 +21,24 @@ This helps AI tools and agents consume our content and allows you to copy and pa
 
 We also host an [llms.txt file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
 
+## Tips for prompting with Claude, ChatGPT,  or Gemini
+
+If you’re using Claude Code, run the `init` command after launching the Code CLI so Claude can analyze your codebase. This helps it get oriented and provide better advice once you start asking questions.
+
+If you plan to integrate the Adapty SDK into your iOS project (using either UIKit or SwiftUI), install the Adapty libraries using something like Swift Package Manager before you start working with the LLM. It will allow you to get into the code integration quicker if this step is already done.
+
+Here are some helpful additions to your prompts that should make working with the LLM that much easier:
+
+- If migrating from a native IAP implementation or something like RevenueCat:
+```
+Help me migrate from [existing implementation technique] to Adapty for handling in-app purchase subscriptions, including presenting Paywall Builder paywalls. Build a migration plan, but don’t implement it until you’ve shown me for review.
+```
+- If using something like SwiftUI:
+```
+This app uses SwiftUI for its interface, so use a native SwiftUI implementation for displaying and handling paywalls wherever applicable.
+```
+
+
 ## Use with Cursor
 
 **Cursor**, the AI code editor, makes it easier to integrate and maintain apps with Adapty's infrastructure. This guide shows you how to configure Cursor for better results when working with Adapty's SDK.

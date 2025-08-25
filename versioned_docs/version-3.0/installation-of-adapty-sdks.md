@@ -9,17 +9,19 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-Adapty comprises two crucial SDK modules for seamless integration into your mobile app:
+You have three paths to get started depending on your preferences:
 
-- Main **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional module becomes necessary if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
-
-The Adapty SDK installation and configuration depend on your framework, so refer to the following doc topics for detailed guidance:
-
-- [iOS](sdk-installation-ios)
-- [Android](sdk-installation-android)
-- [Flutter](sdk-installation-flutter)
-- [React Native](sdk-installation-reactnative) 
-- [Unity](sdk-installation-unity)
-
-<SampleApp />
+- **Follow platform-specific quickstart guides**: Guides contain production-ready code snippets, so implementation doesn't take long.
+    - [iOS](ios-sdk-overview.md)
+    - [Android](android-sdk-overview.md)
+    - [Flutter](flutter-sdk-overview.md)
+    - [React Native](react-native-sdk-overview.md)
+    - [Unity](unity-sdk-overview.md)
+- **Use LLMs**: Our docs are LLM-friendly. Read our [guide](adapty-cursor.md) on how to get the most out of using LLMs with the Adapty documentation.
+- **Explore sample apps**:
+    - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
+    - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android)
+    - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
+    - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
+    - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
+    - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity)

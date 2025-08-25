@@ -1,5 +1,5 @@
 ---
-title: "iOS - Present new Paywall Builder paywalls"
+title: "Present new Paywall Builder paywalls in iOS SDK"
 description: "Discover how to present paywalls on iOS to boost conversions and revenue."
 metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
 keywords: ['paywallController']
@@ -13,7 +13,7 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 or later. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+This guide is for **[new Paywall Builder paywalls](adapty-paywall-builder.md)** . The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
 
 - For presenting **Legacy Paywall Builder paywalls**, check out [iOS - Present legacy Paywall Builder paywalls](ios-present-paywalls-legacy).
 - For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
@@ -21,7 +21,65 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.0 o
 
 :::
 
-## Present paywalls in Swift
+## Present paywalls in SwiftUI
+
+In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+Parameters:
+
+| Parameter                         | Required | Description                                                                                                                                                                                                                                                                                                                    |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | required | A binding that manages whether the paywall screen is displayed.                                                                                                                                                                                                                                                                |
+| **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
+| **didFailPurchase**               | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                                                                                                    |
+| **didFinishRestore**              | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                                                                                               |
+| **didFailRestore**                | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                                                                                |
+| **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
+| **fullScreen**                    | optional | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`.                                                                                                                                                                                                                                       |
+| **didAppear**                     | optional | Invoked when the paywall view was presented.                                                                                                                                                                                                                                                                                   |
+| **didDisappear**                  | optional | Invoked when the paywall view was dismissed.                                                                                                                                                                                                                                                                                   |
+| **didPerformAction**              | optional | Invoked when a user clicks a button. Different buttons have different action IDs. Two action IDs are pre-defined: `close` and `openURL`, while others are custom and can be set in the builder.                                                                                                                                |
+| **didSelectProduct**              | optional | If the product was selected for purchase (by a user or by the system), this callback will be invoked.                                                                                                                                                                                                                          |
+| **didStartPurchase**              | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                                                                             |
+| **didFinishPurchase**             | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                                                                                                   |
+| **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                                                                                                                  |
+| **didStartRestore**               | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                                                                              |
+| **didFailLoadingProducts**        | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                                                                              |
+| **didPartiallyLoadProducts**      | optional | Invoked when products are partially loaded.                                                                                                                                                                                                                                                                                    |
+| **showAlertItem**                 | optional | A binding that manages the display of alert items above the paywall.                                                                                                                                                                                                                                                           |
+| **showAlertBuilder**              | optional | A function for rendering the alert view.                                                                                                                                                                                                                                                                                       |
+| **placeholderBuilder**            | optional | A function for rendering the placeholder view while the paywall is loading.                                                                                                                                                                                                                                                    |
+
+Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters.
+
+
+## Present paywalls in UIKit
 
 In order to display the visual paywall on the device screen, do the following:
 
@@ -58,55 +116,3 @@ In order to display the visual paywall on the device screen, do the following:
 
 <SampleApp />
 
-## Present paywalls in SwiftUI
-
-In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
-
-```swift showLineNumbers title="SwiftUI"
-@State var paywallPresented = false
-
-var body: some View {
-  Text("Hello, AdaptyUI!")
-      .paywall(
-          isPresented: $paywallPresented,
-          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
-          didPerformAction: { action in
-              switch action {
-                  case .close:
-                      paywallPresented = false
-                  default:
-                      // Handle other actions
-                      break
-              }
-          },
-          didFinishPurchase: { product, profile in paywallPresented = false },
-          didFailPurchase: { product, error in /* handle the error */ },
-          didFinishRestore: { profile in /* check access level and dismiss */  },
-          didFailRestore: { error in /* handle the error */ },
-          didFailRendering: { error in paywallPresented = false }
-      )
-}
-```
-
-Parameters:
-
-| Parameter          | Presentce | Description                                                  |
-| :------------------------- | --------- | :----------------------------------------------------------- |
-| **isPresented**            | required  | A binding that manages whether the paywall screen is displayed. |
-| **fullScreen**             | optional  | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`. |
-| **paywallConfiguration**             | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.|
-| **didPerformAction**       | optional  | Invoked when a product is selected for purchase by the user or the system. |
-| **didSelectProduct**       | optional  | If the product was selected for purchase (by a user or by the system), this callback will be invoked. |
-| **didStartPurchase**       | optional  | Invoked when the user begins the purchase process. |
-| **didFinishPurchase**      | optional  | Invoked when `Adapty.makePurchase()` completes successfully. |
-| **didFailPurchase**        | required  | Invoked when `Adapty.makePurchase()` fails. |
-| **didFinishRestore**       | required  | Invoked when `Adapty.restorePurchases()` completes successfully. |
-| **didFailRestore**         | required  | Invoked when `Adapty.restorePurchases()` fails. |
-| **didStartRestore**        | optional  | Invoked when the user starts the restore process. |
-| **didFailRendering**       | required  | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io). |
-| **didFailLoadingProducts** | optional  | Invoked when errors occur during product loading. Return `true` to retry loading. |
-| **showAlertItem**          | optional  | A binding that manages the display of alert items above the paywall. |
-| **showAlertBuilder**       | optional  | A function for rendering the alert view. |
-
-
-Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters. 

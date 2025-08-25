@@ -6,12 +6,13 @@ metadataTitle: "How Adapty Analytics Works | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapty Analytics offers a powerful suite of tools that provide valuable insights into your user base, allowing you to make data-driven decisions and optimize your app's performance. With Adapty, you can go beyond basic metrics and dive deep into advanced analytics such as funnels, cohorts, retention, lifetime value (LTV) charts, and more. Let's explore the general approach to data gathering, calculation, and the various analytics features available.
 
 To learn more about specific metrics and advanced analytics features, please refer to the relevant sections in the documentation menu.
 
-To get started with Adapty analytics, simply [install](installation-of-adapty-sdks) the Adapty SDK for your iOS or Android apps. From there, you can analyze close to real-time metrics with [advanced controls](controls-filters-grouping-compare-proceeds), such as filters and grouping, including country, paywall, product, and more. By utilizing this powerful tool, you can gain a deeper understanding of your user base and make data-driven decisions to optimize your app's performance.
+To get started with Adapty analytics, simply <InlineTooltip tooltip="install">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-react-native), and [Unity](sdk-installation-unity)</InlineTooltip> the Adapty SDK for your iOS or Android apps. From there, you can analyze close to real-time metrics with [advanced controls](controls-filters-grouping-compare-proceeds), such as filters and grouping, including country, paywall, product, and more. By utilizing this powerful tool, you can gain a deeper understanding of your user base and make data-driven decisions to optimize your app's performance.
 
 ### Close to real-time data for advanced analysis
 

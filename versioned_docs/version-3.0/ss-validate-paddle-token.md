@@ -11,6 +11,7 @@ import NoProductsFound from '@site/src/components/reusable/NoProductsFound.md';
 import PaddleApiKeyNotFound  from '@site/src/components/reusable/PaddleApiKeyNotFound.md';
 import InvalidPaddleCredentionsOrPurchaseNotFound from '@site/src/components/reusable/InvalidPaddleCredentionsOrPurchaseNotFound.md';
 import ProfileResponseUnauthorized from '@site/src/components/reusable/ProfileResponseUnauthorized.md';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Validates a purchase using the provided Paddle token using the credentials of Paddle in your [App Settings](https://app.adapty.io/settings/general) inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Paddle to the profile in Adapty with the specified `customer_user_id`. If there was no profile with this `customer_user_id` before — it will be created.
 
@@ -103,10 +104,10 @@ Placeholders:
 
 :::
 
-| Parameter        | Type   | Required | Nullable | Description                                                  |
-| :--------------- | :----- | -------- | -------- | :----------------------------------------------------------- |
-| customer_user_id | String | Yes      | No       | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> specific profile page. |
-| paddle_token     | String | Yes      | No       | Token of a Paddle object that represents a unique purchase. Could be either a transaction id (txn_...) or a subscription id (sub_...), |
+| Parameters         | Type   | Required          | Nullable           | Description                                                  |
+| :----------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
+| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must <InlineTooltip tooltip="identify the users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> in your mobile app code via Adapty SDK. |
+| paddle_token       | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Paddle object that represents a unique purchase. Could be either a transaction id (txn_...) or a subscription id (sub_...), |
 
 ## Successful response: 200: OK
 
