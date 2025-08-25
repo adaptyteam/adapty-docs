@@ -1,5 +1,5 @@
 ---
-title: "SDK Models"
+title: "React Native SDK Models"
 description: "Data models and types for React Native Adapty SDK."
 metadataTitle: "SDK Models | React Native SDK | Adapty Docs"
 slug: /react-native-sdk-models

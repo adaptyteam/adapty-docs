@@ -1,5 +1,5 @@
 ---
-title: "Implement paywalls manually"
+title: "Implement paywalls manually in Android SDK"
 description: "Learn how to implement paywalls manually in your Android app with Adapty SDK."
 metadataTitle: "Implement Paywalls Manually | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid

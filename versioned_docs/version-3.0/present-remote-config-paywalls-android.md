@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in Android SDK"
 description: "Discover how to present remote config paywalls in Adapty Android SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Android SDK | Adapty Docs"
-keywords: ['remote config', 'Android']
+keywords: ['remote config']
 displayed_sidebar: sdkandroid
 ---
 

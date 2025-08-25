@@ -1,5 +1,5 @@
 ---
-title: "Reference"
+title: "Reference for Android SDK"
 description: "Reference documentation for Adapty Android SDK."
 metadataTitle: "Reference | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid

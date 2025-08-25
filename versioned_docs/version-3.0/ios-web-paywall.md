@@ -1,8 +1,8 @@
 ---
-title: "Web paywall"
+title: "Implement web paywalls in iOS SDK"
 description: "Set up a web paywall to get paid without the App Store fees and audits."
 metadataTitle: "Accept payments in web for iOS apps in the US"
-keywords: ['web', 'web paywalls']
+keywords: ['web paywalls']
 sidebar_label: "Implement web paywalls"
 ---
 import Zoom from 'react-medium-image-zoom';

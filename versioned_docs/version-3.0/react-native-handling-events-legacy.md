@@ -1,5 +1,5 @@
 ---
-title: "React Native - Handle paywall events"
+title: "Handle paywall events in legacy React Native SDK"
 description: "Handle subscription-related events in React Native (Legacy) with Adapty's event tracking system."
 metadataTitle: "Handling Events in React Native (Legacy) | Adapty Docs"
 toc_max_heading_level: 4

@@ -1,5 +1,5 @@
 ---
-title: "Legacy"
+title: "Legacy guides for Unity SDK"
 description: "Legacy documentation for Adapty Unity SDK."
 metadataTitle: "Legacy | Unity SDK | Adapty Docs"
 displayed_sidebar: sdkunity

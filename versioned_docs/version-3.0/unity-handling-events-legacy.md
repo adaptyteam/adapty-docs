@@ -1,5 +1,5 @@
 ---
-title: "Unity - Handle paywall events"
+title: "Handle paywall events in legacy Unity SDK"
 description: ""
 metadataTitle: ""
 toc_max_heading_level: 4

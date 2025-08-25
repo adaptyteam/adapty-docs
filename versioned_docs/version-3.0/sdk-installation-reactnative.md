@@ -1,5 +1,5 @@
 ---
-title: "React Native - Adapty SDK installation & configuration"
+title: "Install & configure React Native SDK"
 description: "Step-by-step guide on installing Adapty SDK on React Native for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on React Native | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']

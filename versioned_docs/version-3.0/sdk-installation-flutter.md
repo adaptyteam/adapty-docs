@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Adapty SDK installation & configuration"
+title: "Install & configure Flutter SDK"
 description: "Step-by-step guide on installing Adapty SDK on Flutter for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on Flutter | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk flutter', 'flutter sdk', 'cross platform']

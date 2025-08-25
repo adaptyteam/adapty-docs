@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in Unity SDK"
 description: "Discover how to present remote config paywalls in Adapty Unity SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Unity SDK | Adapty Docs"
-keywords: ['remote config', 'Unity']
+keywords: ['remote config']
 displayed_sidebar: sdkunity
 ---
 

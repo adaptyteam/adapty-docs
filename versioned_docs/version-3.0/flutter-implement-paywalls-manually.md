@@ -1,5 +1,5 @@
 ---
-title: "Implement paywalls manually"
+title: "Implement paywalls manually in Flutter SDK"
 description: "Learn how to implement paywalls manually in your Flutter app with Adapty SDK."
 metadataTitle: "Implement Paywalls Manually | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter

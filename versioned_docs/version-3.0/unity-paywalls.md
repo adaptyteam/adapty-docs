@@ -1,5 +1,5 @@
 ---
-title: "Paywalls"
+title: "Paywalls in Unity SDK"
 description: "Learn how to work with paywalls in your Unity app with Adapty SDK."
 metadataTitle: "Paywalls | Unity SDK | Adapty Docs"
 displayed_sidebar: sdkunity

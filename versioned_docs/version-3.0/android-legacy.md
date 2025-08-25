@@ -1,5 +1,5 @@
 ---
-title: "Legacy"
+title: "Legacy Android SDK guides"
 description: "Legacy documentation for Adapty Android SDK."
 metadataTitle: "Legacy | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid

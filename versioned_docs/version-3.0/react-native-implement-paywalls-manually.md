@@ -1,5 +1,5 @@
 ---
-title: "Implement paywalls manually"
+title: "Implement paywalls manually in React Native SDK"
 description: "Learn how to implement paywalls manually in your React Native app with Adapty SDK."
 metadataTitle: "Implement Paywalls Manually | React Native SDK | Adapty Docs"
 displayed_sidebar: sdkreactnative

@@ -1,5 +1,5 @@
 ---
-title: "React Native - Present legacy Paywall Builder paywalls"
+title: "Present legacy Paywall Builder paywalls in React Native SDK"
 description: "Present paywalls in React Native (Legacy) apps using Adapty."
 metadataTitle: "Presenting Paywalls in React Native (Legacy) | Adapty Docs"
 ---

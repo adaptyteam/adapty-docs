@@ -1,5 +1,5 @@
 ---
-title: "SDK Models"
+title: "iOS SDK Models"
 description: "Understand Adapty’s SDK models to optimize in-app purchase handling."
 metadataTitle: "Understanding SDK Models | Adapty Docs"
 ---

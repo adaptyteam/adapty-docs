@@ -1,5 +1,5 @@
 ---
-title: "Render paywall designed by remote config"
+title: "Render paywall designed by remote config in iOS SDK"
 description: "Discover how to present remote config paywalls in Adapty to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Adapty Docs"
 keywords: ['remote config']

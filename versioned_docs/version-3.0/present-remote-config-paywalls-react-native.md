@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in React Native SDK"
 description: "Discover how to present remote config paywalls in Adapty React Native SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | React Native SDK | Adapty Docs"
-keywords: ['remote config', 'React Native']
+keywords: ['remote config']
 displayed_sidebar: sdkreactnative
 ---
 

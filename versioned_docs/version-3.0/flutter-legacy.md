@@ -1,5 +1,5 @@
 ---
-title: "Legacy"
+title: "Legacy Flutter SDK guides"
 description: "Legacy documentation for Adapty Flutter SDK."
 metadataTitle: "Legacy | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter

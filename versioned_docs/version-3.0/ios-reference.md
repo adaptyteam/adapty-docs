@@ -1,5 +1,5 @@
 ---
-title: "Reference"
+title: "Reference for iOS SDK"
 description: "Reference documentation for Adapty iOS SDK."
 metadataTitle: "Reference | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios

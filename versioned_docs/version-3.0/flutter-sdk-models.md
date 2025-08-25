@@ -1,5 +1,5 @@
 ---
-title: "SDK Models"
+title: "Flutter SDK Models"
 description: "Understand Adapty's SDK models to optimize in-app purchase handling."
 metadataTitle: "Understanding SDK Models | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter

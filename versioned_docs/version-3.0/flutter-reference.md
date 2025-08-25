@@ -1,5 +1,5 @@
 ---
-title: "Reference"
+title: "Reference for Flutter SDK"
 description: "Reference documentation for Adapty Flutter SDK."
 metadataTitle: "Reference | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter

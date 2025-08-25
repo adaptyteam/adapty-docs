@@ -1,5 +1,5 @@
 ---
-title: "Implement paywalls manually"
+title: "Implement paywalls manually in iOS SDK"
 description: "Learn how to implement paywalls manually in your iOS app with Adapty SDK."
 metadataTitle: "Implement Paywalls Manually | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios

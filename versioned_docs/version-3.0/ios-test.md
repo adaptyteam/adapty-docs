@@ -1,5 +1,5 @@
 ---
-title: "Test & release"
+title: "Test & release in iOS SDK"
 description: "Learn how to check subscription status in your iOS app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkios

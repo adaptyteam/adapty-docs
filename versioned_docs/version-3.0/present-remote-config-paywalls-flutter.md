@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in Flutter SDK"
 description: "Discover how to present remote config paywalls in Adapty Flutter SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Flutter SDK | Adapty Docs"
-keywords: ['remote config', 'Flutter']
+keywords: ['remote config']
 displayed_sidebar: sdkflutter
 ---
 
