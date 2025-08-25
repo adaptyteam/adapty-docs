@@ -3,7 +3,7 @@ title: "Install & configure iOS SDK"
 description: "Step-by-step guide on installing Adapty SDK on iOS for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on iOS | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk ios', 'adaptyui']
-rank: 80
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';

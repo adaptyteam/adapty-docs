@@ -2,7 +2,8 @@
 title: "Identify users in iOS SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-rank: 70
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 100
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

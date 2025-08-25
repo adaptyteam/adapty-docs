@@ -3,7 +3,7 @@ title: "Make purchases in mobile app in React Native SDK"
 description: "Guide on handling in-app purchases and subscriptions using Adapty."
 metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
 keywords: ['makePurchase']
-rank: 100
+rank: 90
 displayed_sidebar: sdkreactnative
 ---
 

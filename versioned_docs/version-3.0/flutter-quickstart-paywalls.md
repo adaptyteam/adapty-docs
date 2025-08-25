@@ -2,7 +2,7 @@
 title: "Enable purchases by using paywalls in Flutter SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk flutter']
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
 rank: 70
 displayed_sidebar: sdkflutter
 ---

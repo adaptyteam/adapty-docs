@@ -2,7 +2,8 @@
 title: "Identify users in React Native SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management in React Native."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-rank: 70
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 80
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

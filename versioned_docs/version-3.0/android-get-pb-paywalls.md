@@ -4,6 +4,7 @@ description: "Learn how to retrieve PB paywalls in Adapty for better subscriptio
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 displayed_sidebar: sdkandroid
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 95
 ---
 
 import Tabs from '@theme/Tabs';

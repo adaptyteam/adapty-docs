@@ -2,6 +2,8 @@
 title: "Check subscription status in Android SDK"
 description: "Learn how to check subscription status in your Android app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
+keywords: ['getProfile', 'subscription status']
+rank: 95
 ---
 
 

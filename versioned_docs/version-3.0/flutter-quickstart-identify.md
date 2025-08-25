@@ -2,7 +2,8 @@
 title: "Identify users in Flutter SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management in Flutter."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-rank: 70
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 80
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

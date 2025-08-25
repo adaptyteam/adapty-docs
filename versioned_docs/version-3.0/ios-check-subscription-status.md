@@ -3,6 +3,8 @@ title: "Check subscription status in iOS SDK"
 description: "Learn how to check subscription status in your iOS app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkios
+keywords: ['getProfile', 'subscription status']
+rank: 100
 ---
 
 import Tabs from '@theme/Tabs';

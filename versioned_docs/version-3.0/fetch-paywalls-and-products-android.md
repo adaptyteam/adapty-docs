@@ -4,6 +4,7 @@ description: "Fetch paywalls and products in Adapty Android SDK to enhance user 
 metadataTitle: "Fetching Paywalls & Products | Android SDK | Adapty Docs"
 keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Android']
 displayed_sidebar: sdkandroid
+rank: 95
 ---
 
 import Tabs from '@theme/Tabs';

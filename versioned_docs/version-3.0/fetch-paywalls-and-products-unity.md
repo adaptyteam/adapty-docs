@@ -4,6 +4,7 @@ description: "Fetch paywalls and products in Adapty Unity SDK to enhance user mo
 metadataTitle: "Fetching Paywalls & Products | Unity SDK | Adapty Docs"
 keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Unity']
 displayed_sidebar: sdkunity
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -4,6 +4,8 @@ description: "Learn how to present paywalls in your React Native app with Adapty
 metadataTitle: "Present a Paywall | React Native SDK | Adapty Docs"
 slug: /react-native-quickstart-paywalls
 displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';

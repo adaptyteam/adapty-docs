@@ -2,6 +2,7 @@
 title: "Identify users in Unity SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management in Unity."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+keywords: ['identify', 'identifying users', 'customeruserid']
 rank: 70
 ---
 import Tabs from '@theme/Tabs';

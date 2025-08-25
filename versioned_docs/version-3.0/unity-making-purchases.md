@@ -3,7 +3,7 @@ title: "Make purchases in mobile app in Unity SDK"
 description: "Guide on handling in-app purchases and subscriptions using Adapty."
 metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
 keywords: ['makePurchase', 'pending']
-rank: 100
+rank: 60
 ---
 
 import Zoom from 'react-medium-image-zoom';

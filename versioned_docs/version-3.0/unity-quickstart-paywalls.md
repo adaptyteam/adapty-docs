@@ -4,6 +4,8 @@ description: "Learn how to present paywalls in your Unity app with Adapty SDK."
 metadataTitle: "Present a Paywall | Unity SDK | Adapty Docs"
 slug: /unity-quickstart-paywalls
 displayed_sidebar: sdkunity
+keywords: ['paywall', 'paywall builder', 'getPaywall']
+rank: 60
 ---
 
 import Zoom from 'react-medium-image-zoom';

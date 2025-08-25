@@ -2,8 +2,8 @@
 title: "Enable purchases by using paywalls in iOS SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls ios', 'sdk ios']
-rank: 70
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
 ---
 
 import Tabs from '@theme/Tabs';

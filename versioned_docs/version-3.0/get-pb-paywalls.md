@@ -3,6 +3,7 @@ title: "Fetch Paywall Builder paywalls and their configuration in iOS SDK"
 description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your iOS app."
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';

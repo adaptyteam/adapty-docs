@@ -2,7 +2,7 @@
 title: "Enable purchases by using paywalls in Android SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls android', 'sdk android']
+keywords: ['paywalls android', 'sdk android' 'paywall', 'paywall builder', 'getPaywall']
 rank: 70
 ---
 
