@@ -40,10 +40,6 @@ Here's what we'll cover in the integration guide:
 3. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
 
-:::note
-Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenuecat.md) to make this experience as simple as possible.
-:::
-
 ### See it in action
 
 Want to see how it all comes together? We've got you covered:
