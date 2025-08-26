@@ -31,9 +31,9 @@ This guide helps you resolve common issues when using paywalls designed in the A
 
 **Issue**: The paywall view count is showing double the expected number.
 
-**Reason**: You may be calling `LogShowPaywall` in your code, which duplicates the view count. For paywalls designed with the Paywall Builder, analytics is tracked automatically, so you don't need to use this method.
+**Reason**: You may be calling `LogShowPaywall` in your code, which duplicates the view count if you're using the Paywall builder. For paywalls designed with the Paywall Builder, analytics are tracked automatically, so you don't need to use this method.
 
-**Solution**: Ensure you are not calling `LogShowPaywall` in your code.
+**Solution**: Ensure you are not calling `LogShowPaywall` in your code if you're using the Paywall builder.
 
 ## Other issues
 
