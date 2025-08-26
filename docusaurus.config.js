@@ -51,11 +51,6 @@ const config = {
               path: "/",
               banner: "none",
             },
-            /*"2.0": {
-              banner: "none",
-              path: "2.0",
-
-            },*/
           },
           includeCurrentVersion: false,
         },
@@ -72,31 +67,6 @@ const config = {
       }),
     ],
   ],
-  /*plugins: [
-    [
-      '@docusaurus/plugin-client-redirects',
-      {
-        redirects: [
-          {
-            to: '/generate-in-app-purchase-key',
-            from: '/in-app-purchase-api-storekit-2',
-          },
-          {
-            to: '/enable-app-store-server-notifications',
-            from: '/app-store-server-notifications',
-          },
-          {
-            to: '/offers',
-            from: '/app-store-promotional-offers',
-          },
-          {
-            to: '/app-store-connection-configuration#step-4-enter-app-store-shared-secret',
-            from: '/app-store-shared-secret',
-          },
-        ],
-      },
-    ],
-  ],*/
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -377,7 +347,9 @@ const config = {
       async: true,
     },
   ],
+  
   plugins: [
+    // Existing build plugins
     function copyMarkdownPlugin() {
       return {
         name: 'copy-markdown-plugin',
