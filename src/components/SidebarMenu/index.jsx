@@ -44,10 +44,24 @@ export default function SidebarMenu() {
   
   // Fallback to URL-based detection
   if (currentPlatform === platforms[0]) {
-    currentPlatform = platforms.find(p => {
-      const platformPath = p.name.toLowerCase().replace(' ', '-');
-      return pathname.includes(platformPath);
-    }) || platforms[0];
+    // More specific URL-based detection
+    if (pathname.includes('react-native-sdk')) {
+      currentPlatform = platforms.find(p => p.sidebarId === 'sdkreactnative');
+    } else if (pathname.includes('ios-sdk')) {
+      currentPlatform = platforms.find(p => p.sidebarId === 'sdkios');
+    } else if (pathname.includes('android-sdk')) {
+      currentPlatform = platforms.find(p => p.sidebarId === 'sdkandroid');
+    } else if (pathname.includes('flutter-sdk')) {
+      currentPlatform = platforms.find(p => p.sidebarId === 'sdkflutter');
+    } else if (pathname.includes('unity-sdk')) {
+      currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
+    } else {
+      // Fallback to the old logic
+      currentPlatform = platforms.find(p => {
+        const platformPath = p.name.toLowerCase().replace(' ', '-');
+        return pathname.includes(platformPath);
+      }) || platforms[0];
+    }
   }
   
   console.log('Current platform detected:', currentPlatform.name, 'from sidebar:', activeDocContext?.sidebar);

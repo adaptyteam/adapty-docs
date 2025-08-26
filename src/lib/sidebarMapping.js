@@ -17,8 +17,20 @@ function extractDocumentsFromSidebar(sidebarItems, sidebarId) {
         label: item.label || item.id,
         sidebarId: sidebarId
       });
-    } else if (item.type === 'category' && item.items) {
-      documents.push(...extractDocumentsFromSidebar(item.items, sidebarId));
+    } else if (item.type === 'category') {
+      // Handle category links (documents that are linked to categories)
+      if (item.link && item.link.type === 'doc') {
+        documents.push({
+          id: item.link.id,
+          label: item.label || item.link.id,
+          sidebarId: sidebarId
+        });
+      }
+      
+      // Also extract documents from category items
+      if (item.items) {
+        documents.push(...extractDocumentsFromSidebar(item.items, sidebarId));
+      }
     }
   }
   
