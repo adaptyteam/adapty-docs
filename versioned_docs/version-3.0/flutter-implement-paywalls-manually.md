@@ -12,4 +12,5 @@ This page contains guides for implementing paywalls manually in your Flutter app
 - **[Accept purchases](flutter-making-purchases)** - Handle purchase transactions
 - **[Restore purchases](flutter-restore-purchase)** - Restore previous purchases
 - **[Implement Observer mode](implement-observer-mode-flutter)** - Set up Observer mode for analytics and paywall integration
-- **[Report transactions in Observer Mode](report-transactions-observer-mode-flutter)** - Report purchase transactions in Observer Mode 
+- **[Report transactions in Observer Mode](report-transactions-observer-mode-flutter)** - Report purchase transactions in Observer Mode
+- **[Troubleshooting](flutter-troubleshoot-purchases)** - Resolve common purchase issues 
