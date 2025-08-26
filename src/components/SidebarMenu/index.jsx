@@ -34,29 +34,44 @@ export default function SidebarMenu() {
   // Try to detect current platform from active sidebar
   let currentPlatform = platforms[0]; // Default to iOS
   
+  console.log('SidebarMenu - activeDocContext:', activeDocContext);
+  console.log('SidebarMenu - activeDocContext.sidebar:', activeDocContext?.sidebar);
+  
   if (activeDocContext && activeDocContext.sidebar) {
     const sidebarId = activeDocContext.sidebar;
+    console.log('SidebarMenu - detected sidebarId:', sidebarId);
     const detectedPlatform = platforms.find(p => p.sidebarId === sidebarId);
+    console.log('SidebarMenu - detected platform:', detectedPlatform);
     if (detectedPlatform) {
       currentPlatform = detectedPlatform;
+      console.log('SidebarMenu - using detected platform:', currentPlatform.name);
     }
   }
   
   // Fallback to URL-based detection
   if (currentPlatform === platforms[0]) {
+    console.log('SidebarMenu - falling back to URL-based detection');
+    console.log('SidebarMenu - pathname:', pathname);
+    
     // More specific URL-based detection
-    if (pathname.includes('react-native-sdk')) {
+    if (pathname.includes('react-native-sdk') || pathname.includes('reactnative')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkreactnative');
-    } else if (pathname.includes('ios-sdk')) {
+      console.log('SidebarMenu - detected React Native from URL');
+    } else if (pathname.includes('ios-sdk') || pathname.includes('ios')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkios');
-    } else if (pathname.includes('android-sdk')) {
+      console.log('SidebarMenu - detected iOS from URL');
+    } else if (pathname.includes('android-sdk') || pathname.includes('android')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkandroid');
-    } else if (pathname.includes('flutter-sdk')) {
+      console.log('SidebarMenu - detected Android from URL');
+    } else if (pathname.includes('flutter-sdk') || pathname.includes('flutter')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkflutter');
-    } else if (pathname.includes('unity-sdk')) {
+      console.log('SidebarMenu - detected Flutter from URL');
+    } else if (pathname.includes('unity-sdk') || pathname.includes('unity')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
+      console.log('SidebarMenu - detected Unity from URL');
     } else {
       // Fallback to the old logic
+      console.log('SidebarMenu - using old URL detection logic');
       currentPlatform = platforms.find(p => {
         const platformPath = p.name.toLowerCase().replace(' ', '-');
         return pathname.includes(platformPath);
