@@ -1,5 +1,5 @@
 ---
-title: "iOS – Present onboardings"
+title: "Present onboardings in iOS SDK"
 description: "Discover how to present onboardings on iOS to boost conversions and revenue."
 metadataTitle: "Presenting onboardings on iOS | Adapty Docs"
 keywords: ['getOnboardingConfiguration']
@@ -15,7 +15,7 @@ If you've customized an onboarding using the builder, you don't need to worry ab
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty iOS SDK](sdk-installation-ios.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

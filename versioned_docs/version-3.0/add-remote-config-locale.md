@@ -6,6 +6,8 @@ metadataTitle: "Adding Remote Config Locales | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapting your paywalls for different languages is essential in a world with diverse cultures. Localization allows you to create tailored experiences for users in specific regions. For each paywall, you can add versions in various languages, ensuring that your product resonates with local audiences.
 
@@ -179,4 +181,4 @@ Sometimes, you might want to tweak translations, add different images for specif
 />
 </Zoom>
 
-After adding locales to a paywall, make sure to [implement locale codes correctly in your app's code](localizations-and-locale-codes).
+After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md)</InlineTooltip>

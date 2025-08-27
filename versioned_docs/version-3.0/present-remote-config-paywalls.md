@@ -1,5 +1,5 @@
 ---
-title: "Render paywall designed by remote config"
+title: "Render paywall designed by remote config in iOS SDK"
 description: "Discover how to present remote config paywalls in Adapty to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Adapty Docs"
 keywords: ['remote config']
@@ -42,57 +42,6 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
 ```
 
 </TabItem>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        
-        AdaptyPaywall.RemoteConfig remoteConfig = paywall.getRemoteConfig();
-        
-        if (remoteConfig != null) {
-            if (remoteConfig.getDataMap().get("header_text") instanceof String) {
-                String headerText = (String) remoteConfig.getDataMap().get("header_text");
-            }
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
-  final String? headerText = paywall.remoteConfig?['header_text'];
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
 </Tabs>
 
 At this point, once you've received all the necessary values, it's time to render and assemble them into a visually appealing page. Ensure that the design accommodates various mobile phone screens and orientations, providing a seamless and user-friendly experience across different devices.
@@ -115,45 +64,9 @@ To log a paywall view event, simply call `.logShowPaywall(paywall)`, and it will
 Calling `.logShowPaywall(paywall)` is not needed if you are displaying paywalls created in the [paywall builder](adapty-paywall-builder.md).
 :::
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.logShowPaywall(paywall)
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.logShowPaywall(paywall);
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final result = await Adapty().logShowPaywall(paywall: paywall);
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.LogShowPaywall(paywall, (error) => {
-    // handle the error
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-await adapty.logShowPaywall(paywall);
-```
-</TabItem>
-</Tabs>
 
 Request parameters:
 

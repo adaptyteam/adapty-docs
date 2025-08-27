@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to Adapty React Native SDK 3.3.x"
-description: ""
-metadataTitle: ""
+title: "Migrate Adapty React Native SDK to v. 3.3"
+description: "Migrate to Adapty React Native SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty React Native SDK v3.3 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -526,7 +526,7 @@ Update your mobile app code as shown below. For the complete code example, check
 
 ## Update Observer mode implementation
 
-Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode).
+Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode-react-native.md).
 
 :::warning
 

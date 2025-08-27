@@ -63,7 +63,7 @@ You can check the full list of supported events [here](events.md).
 
 ## SDK configuration
 
-To listen for installation details updates, extend `AdaptyDelegate` with these two methods:
+To listen for installation details updates, use these two methods:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>

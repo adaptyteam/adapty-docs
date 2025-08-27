@@ -7,6 +7,9 @@ metadataTitle: "Using Local Fallback Paywalls | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
+
 
 Typically, [paywalls](paywalls.md) are fetched from the server when a customer accesses them. 
 
@@ -22,7 +25,7 @@ Adapty generates fallbacks as a JSON file in the necessary format, reflecting th
 3. [Create placements and add paywalls to the placements](create-placement). Placement is the location where the paywall will be shown.
 </details>
 
-The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. [Use its contents in the `.setFallback` method in your mobile app code](use-fallback-paywalls).
+The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. Use its contents in the <InlineTooltip tooltip="setFallback">[iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), [React Native](react-native-use-fallback-paywalls), [Flutter](flutter-use-fallback-paywalls), and [Unity](unity-use-fallback-paywalls)</InlineTooltip> method in your mobile app code.
 
    
 <Zoom>

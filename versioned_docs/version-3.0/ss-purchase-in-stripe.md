@@ -7,6 +7,7 @@ displayed_sidebar: APISidebar
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Validates a purchase using the provided Stripe token using the credentials of Stripe in your App Settings inside Adapty Dashboard. If the purchase is valid, the transaction history is imported from Stripe to the profile in Adapty with the specified `customer_user_id`. If there was no profile with this `customer_user_id` before — it will be created.
 
@@ -120,10 +121,10 @@ This request requires different authorization parameters:
 
 :::
 
-| Parameter         | Type   | Required | Nullable | Description                                                  |
-| :---------------- | :----- | -------- | -------- | :----------------------------------------------------------- |
-| customer_user_id  | String | Yes      | No       | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. |
-| stripe_token      | String | Yes      | No       | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
+| Parameters         | Type   | Required          | Nullable           | Description                                                  |
+| :----------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
+| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [**Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must <InlineTooltip tooltip="identify the users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> in your mobile app code via Adapty SDK. |
+| stripe\_token      | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Stripe object that represents a unique purchase. Could either be a token of Stripe's Subscription (`sub_XXX`) or Payment Intent (`pi_XXX`). |
 
 ## Successful response: 200: OK
 
