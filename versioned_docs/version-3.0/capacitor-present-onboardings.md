@@ -26,7 +26,7 @@ Adapty Capacitor SDK provides two ways to present onboardings:
 To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
-Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+Reusing the same `view` without recreating it may result in an error.
 :::
 
 ```typescript showLineNumbers
@@ -51,42 +51,6 @@ try {
 } catch (error) {
   console.error('Failed to present onboarding:', error);
 }
-```
-
-## Embed in component hierarchy
-
-To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your Capacitor component hierarchy:
-
-```typescript showLineNumbers
-import { AdaptyOnboardingView } from '@adapty/capacitor';
-
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ /* your styles */ }}
-  eventHandlers={{
-    onAnalytics(event, meta) { 
-      console.log('Analytics event:', event);
-    },
-    onClose(actionId, meta) { 
-      console.log('Onboarding closed:', actionId);
-    },
-    onCustom(actionId, meta) { 
-      console.log('Custom action:', actionId);
-    },
-    onPaywall(actionId, meta) { 
-      console.log('Paywall action:', actionId);
-    },
-    onStateUpdated(action, meta) { 
-      console.log('State updated:', action);
-    },
-    onFinishedLoading(meta) { 
-      console.log('Onboarding finished loading');
-    },
-    onError(error) { 
-      console.error('Onboarding error:', error);
-    },
-  }}
-/>
 ```
 
 ## Next steps

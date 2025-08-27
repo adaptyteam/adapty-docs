@@ -2,7 +2,7 @@
 title: "Capacitor - Adapty SDK installation & configuration"
 description: "Step-by-step guide on installing Adapty SDK on Capacitor for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on Capacitor | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk capacitor', 'expo', 'capacitor', 'google play billing library', 'gpbl', 'billing library']
+keywords: ['install sdk', 'sdk install', 'install sdk capacitor', 'capacitor', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
 import Tabs from '@theme/Tabs';
@@ -92,7 +92,7 @@ You can set the log level in your app before or during Adapty configuration:
 
 ```typescript showLineNumbers
 // Set log level before activation
-adapty.setLogLevel('verbose');
+adapty.setLogLevel({ logLevel: 'verbose' });
 
 // Or set it during configuration
 await adapty.activate({

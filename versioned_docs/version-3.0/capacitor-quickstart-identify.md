@@ -76,7 +76,7 @@ When creating a customer user ID, save it with your user data so you can send th
 
 ```typescript showLineNumbers
 try {
-  await adapty.identify("YOUR_USER_ID");
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
   // successfully identified
 } catch (error) {
   // handle the error
