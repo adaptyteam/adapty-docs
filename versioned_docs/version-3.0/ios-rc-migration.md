@@ -186,8 +186,6 @@ The following integrations are not yet supported in Adapty:
 - AirShip
 - CleverTap
 - Kochava
-
-**Note:** RevenueCat supports UTM tags (source, campaign, ad_group, etc.) for marketing attribution, while Adapty doesn't.
 :::
 
 <MigrationExample
@@ -621,18 +619,11 @@ try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_V
 
 Some RevenueCat features are not yet available in Adapty:
 
-#### Missing features
-- **Customer center** 
-- **Show "Manage subscriptions"**
+- **Customer center** – Implement your own customer support interface if you need it
+- **Show "Manage subscriptions"** – Use App Store's built-in subscription management
 - **Refund requests** 
 - **Web purchase redemption links**
-- **UTM tags** - RevenueCat supports UTM parameters (source, campaign, ad_group, etc.)
 - **APNS push tokens** - RevenueCat supports setting push tokens
 - **mParticle, AirShip, CleverTap, Kochava** - These integrations are not supported
-- **Virtual currencies** - RevenueCat has built-in virtual currency tracking for consumables
-
-#### Alternatives
-- Use App Store's built-in subscription management
-- Implement your own customer support interface
-- Build custom virtual currency tracking if needed
+- **Virtual currencies** - RevenueCat has built-in virtual currency tracking for consumables. Build custom virtual currency tracking if needed
 

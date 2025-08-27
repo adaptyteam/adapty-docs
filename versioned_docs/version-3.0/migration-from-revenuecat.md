@@ -56,9 +56,13 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 ### Install Adapty SDK and replace RevenueCat SDK
 
-Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)) in your app.
+To install the Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Unity](sdk-installation-unity)), you need to replace a couple of SDK methods on the app side. Let's look at the most common functions and how to replace them with Adapty SDK.
 
-You need to replace a couple of SDK methods on the app side. Let's look at the most common functions and how to replace them with Adapty SDK.
+:::tip
+For the exact snippets to replace and differences explained, see the [iOS migration guide](ios-rc-migration.md).
+
+Guides for other platforms are coming soon!
+:::
 
 #### SDK activation
 
