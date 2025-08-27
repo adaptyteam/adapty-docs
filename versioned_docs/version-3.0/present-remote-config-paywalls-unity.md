@@ -34,7 +34,7 @@ Make sure to [record the paywall view event](present-remote-config-paywalls-unit
 
 After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.MakePurchase()` with the product from your paywall. For details on the`.MakePurchase()` method, read [Making purchases](unity-making-purchases).
 
-We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-unity). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+We recommend [creating a backup paywall called a fallback paywall](unity-use-fallback-paywalls). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
 
 ## Track paywall view events
 
@@ -54,6 +54,6 @@ Adapty.LogShowPaywall(paywall, (error) => {
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                |
-| :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](sdk-models-unity#adaptypaywall) object. | 
+| Parameter   | Presence | Description                                                       |
+| :---------- | :------- |:------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](unity-sdk-models#adaptypaywall) object.      | 

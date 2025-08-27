@@ -24,7 +24,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 
 After the initial integration is complete, you [can begin using Adapty's features](product). 
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](ios-quickstart-paywalls.md) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](ios-making-purchases) within your app.
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](ios-quickstart-paywalls.md) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
 :::danger
 Go through release checklist before releasing your app
