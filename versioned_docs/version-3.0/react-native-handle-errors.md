@@ -12,6 +12,9 @@ import CrossPlatformErrors from '@site/src/components/reusable/CrossPlatformErro
 
 Every error is returned by the SDK is `AdaptyErrorCode`. Here is an example:
 
+:::important
+If these solutions don't resolve your issue, see [Other issues](#other-issues) for steps to take before contacting support to help us assist you more efficiently.
+:::
 
 ```typescript showLineNumbers
 try {
@@ -30,7 +33,7 @@ try {
 
 ##  System StoreKit codes
 
-| Error | Code | Description |
+| Error | Code | Solution |
 |-----|----|-----------|
 | [unknown](https://developer.apple.com/documentation/storekit/skerror/code/unknown)                                                         | 0    | Error code indicating that an unknown or unexpected error occurred. <br/> Retry or see the [Other issues](#other-issues) section.                                                                                                                                                                                                                                                                                                                   |
 | [clientInvalid](https://developer.apple.com/documentation/storekit/skerror/code/clientinvalid)                                             | 1    | This error code indicates that the client is not allowed to perform the attempted action.                                                                                                                                                                                                                                                                                                                                                           |
@@ -51,7 +54,7 @@ try {
 
 ## Custom Android codes
 
-| Error | Code | Description |
+| Error | Code | Solution |
 |-----|----|-----------|
 | adaptyNotInitialized | 20 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native]( sdk-installation-reactnative#configure-adapty-sdks). |
 | productNotFound | 22 | This error indicates that the product requested for purchase is not available in the store. |
@@ -71,7 +74,7 @@ try {
 
 ## Custom StoreKit codes
 
-| Error | Code | Description |
+| Error | Code | Solution |
 |-----|----|-----------|
 | noProductIDsFound | 1000 | <p>This error indicates that none of the products you requested on the paywall are available for purchase in the App Store, even though they're listed there. This error may sometimes come with an `InvalidProductIdentifiers` warning. If the warning appears without an error, safely ignore it.</p><p>If you're encountering this error, follow the steps in the [Fix for Code-1000 `noProductIDsFound` error](InvalidProductIdentifiers-react-native) section.</p> |
 | productRequestFailed | 1002 | <p>Unable to fetch available products at the moment. Possible reason:</p><p></p><p>- No cache was yet created and no internet connection at the same time.</p> |
@@ -85,7 +88,7 @@ try {
 
 ## Custom network codes
 
-| Error                | Code | Description                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Error                | Code | Solution                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | :------------------- | :--- |:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | notActivated   | 2002 | The Adapty SDK is not activated. You need to properly [configure Adapty SDK](sdk-installation-reactnative#configure-adapty-sdk) using the `Adapty.activate` method.                                                                                                                                                                                                                                                                |
 | badRequest     | 2003 | Bad request. <br/> Ensure you've completed all the steps required to [integrate with the App Store](app-store-connection-configuration).                                                                                                                                                                                                                                                                                           |
@@ -95,7 +98,7 @@ try {
 | encodingFailed | 2009 | This error indicates that request encoding failed.                                                                                                                                                                                                                                                                                                                                                                                 |
 | missingURL     | 2010 | The requested URL is nil.                                                                                                                                                                                                                                                                                                                                                                                                          |
 | analyticsDisabled    | 3000 | We can't handle analytics events, since you've [opted it out](analytics-integration#disabling-external-analytics-for-a-specific-customer).                                                                                                                                                                                                                                                                                         |
-| wrongParam           | 3001 | This error indicates that some of your parameters are not correct do match the constraints. <br/> If you're using the Adapty paywall builder and can't display a paywall because of this error, toggle on **Show on devide** in the paywall builder.<br/> Another possible reason for this issue is that the local [fallback](fallback-paywalls) file version doesn't match the SDK version. Download a new file in the dashboard. |
+| wrongParam           | 3001 | This error indicates that some of your parameters are not correct. <br/> If you're using the Adapty paywall builder and can't display a paywall because of this error, toggle on **Show on device** in the paywall builder.<br/> Another possible reason for this issue is that the local [fallback](fallback-paywalls) file version doesn't match the SDK version. Download a new file in the dashboard. |
 | activateOnceError    | 3005 | It is not possible to call `.activate` method more than once.                                                                                                                                                                                                                                                                                                                                                                      |
 | profileWasChanged    | 3006 | The user profile was changed during the operation. <br/> This error can occur when you call `identify`, and then call another method before `identify` succeds. To avoid it, wait untill `identify` suceeds before calling other methods.                                                                                                                                                                                          |
 | unsupportedData      | 3007 | This error indicates that the data format is not supported by the SDK.                                                                                                                                                                                                                                                                                                                                                             |
