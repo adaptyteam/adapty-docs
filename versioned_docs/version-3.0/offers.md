@@ -33,6 +33,9 @@ These offers help attract and keep users engaged, making the app experience more
 
 For Adapty to successfully process offers from the App Store, Play Store, and Stripe, you need to do all the following:
 
-1. [Create offers in the App Store Connect](app-store-offers), [create offers in the Google Play Console](google-play-offers), or add a free trial in Stripe.
+1. Create offers in the store:
+   - [App Store](app-store-offers)
+   - [Google Play Console](google-play-offers)
+   - Stripe
 2. For App Store: [Upload a special In-App Purchase Key from App Store Connect to Adapty](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers).
 3. [Create offers in Adapty and add them to a paywall](create-offer)

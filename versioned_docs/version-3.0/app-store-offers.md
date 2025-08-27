@@ -7,9 +7,16 @@ metadataTitle: "Managing App Store Offers | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Offers in the App Store are special deals or discounts provided by these platforms for in-app purchases. Developers use offers to provide users with exciting promotions, like discounted prices, free trials, or bundled offers. These promotions help attract and keep users engaged, making the app experience more rewarding. By using these special incentives, developers can boost user interest and loyalty, contributing to the overall success of their apps.
+Offers in the App Store are special deals or discounts provided by these platforms for in-app purchases. Developers use offers to provide users with exciting promotions, like discounted prices, free trials, or bundled offers. These promotions help attract and keep users engaged, making the app experience more rewarding. 
 
-With iOS 13 Apple released [Promotional offers](https://developer.apple.com/documentation/storekit/in-app_purchase/subscriptions_and_offers/implementing_promotional_offers_in_your_app) as a way to promote your users to subscribe. Adapty supports Subscription offers.
+There are three offer types in the App Store, and Adapty supports them all:
+
+- **Introductory offers (Free trials)**:
+  - Free subscription periods
+  - Only new users are eligible (those who haven't activated trial or subscribed before)
+  - Adapty automatically applies trials for eligible users after you set them up in App Store Connect
+- **Promotional offers**:
+  - Free subscription periods, subscription discounts, 
 
 :::note
 To use promotional offers, you have to [upload subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) to Adapty dashboard, so Adapty can sign the offers.
