@@ -131,7 +131,7 @@ public override fun onRestoreSuccess(
 ) {}
 ```
 
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](android-listen-subscription-changes.md) topic to learn how to check it.
 
 #### Failed restore
 

@@ -7,6 +7,8 @@ metadataTitle: "General Settings and Configuration | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 You can navigate to the General tab of the App Settings page to manage your app's behavior, appearance, and revenue sharing. Here, you can customize your app's name and icon, manage your Adapty SDK and API keys, set your Small Business Program status, and choose the timezone for your app's analytics and charts.
 
@@ -86,7 +88,7 @@ Choose what is defined as a new install event in analytics:
 | Base                   | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
 | New device_ids         | <p>(Recommended) Any new instance (installation) of the app counts as a new install event. This includes both the first installs and reinstalls. If a user has multiple devices, each installation on a different device is counted (if a user has your app on 5 devices, you'll see 5 installs).</p> |
-| New customer_user_ids  | <p>This option only makes sense if you're [identifying users in Adapty](identifying-users). In that case for logged in users we only count the first installation of the app. If a user installs the app on more devices, they won’t be counted as new installs. Anonymous users (those that have not logged in) are not counted in analytics. </p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p> Note that if you are not [identifying users](identifying-users), you won't get any installs in analytics with this option enabled. </p> |
+| New customer_user_ids  | <p>This option only makes sense if you're <InlineTooltip tooltip="identifying users in Adapty">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>. In that case for logged in users we only count the first installation of the app. If a user installs the app on more devices, they won't be counted as new installs. Anonymous users (those that have not logged in) are not counted in analytics. </p><p> Reinstallations or logging in on any user's device aren't counted as new installs.</p><p> Note that if you are not <InlineTooltip tooltip="identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>, you won't get any installs in analytics with this option enabled. </p> |
 | New profiles in Adapty | (Legacy) Every app installation, reinstallation and anonymous profiles created during logouts are counted as new installs. |
 
 Keep in mind that this option only affects the [**Analytics**](https://app.adapty.io/analytics) page and does not impact the [**Overview**](https://app.adapty.io/overview) page, where you can configure the view separately.
@@ -118,7 +120,7 @@ Please ensure that you select the designated option that aligns with your desire
 
 ## Sharing purchases between user accounts
 
-When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown:
+When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> tries to restore transactions or extend a subscription that is already associated with a different identified <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown:
 
 <Sharingaccesslevel />
 

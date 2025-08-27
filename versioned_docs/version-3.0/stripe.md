@@ -7,6 +7,7 @@ metadataTitle: "Stripe Integration Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
 
@@ -272,7 +273,7 @@ If you are using Checkout Sessions, [make sure you're creating a Stripe Customer
 
 ### 5\. Provide access to users on the mobile
 
-To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see [Identifying users](identifying-users) for more).
+To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
 
 ### 6\. Test your integration
 

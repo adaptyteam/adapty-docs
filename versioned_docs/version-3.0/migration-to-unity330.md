@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to Adapty Unity SDK 3.3.x"
-description: ""
-metadataTitle: ""
+title: "Migrate Adapty Unity SDK to v. 3.3"
+description: "Migrate to Adapty Unity SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty Unity SDK v3.3 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -79,7 +79,7 @@ From now on, the `PresentCodeRedemptionSheet` method accepts a callback as an ar
 
 ## Change how the paywall view is created
 
-For the complete code example, check out the [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) section.
+For the complete code example, check out [Fetch the view configuration of paywall designed using Paywall Builder](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
 
 ```diff showLineNumbers
 + var parameters = new AdaptyUICreateViewParameters()
@@ -163,7 +163,7 @@ void MakePurchase(AdaptyPaywallProduct product) {
 }
 ```
 
-Check out the final code example in the [Make purchases in mobile app](making-purchases) page.
+Check out the final code example in the [Make purchases in mobile app](unity-making-purchases) page.
 
 ## Update handling of Paywall Builder events
 
@@ -601,7 +601,7 @@ using AdaptySDK;
 
 ## Update Observer mode implementation
 
-Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode).
+Update how you link paywalls to transactions. Previously, you used the `setVariationId` method to assign the `variationId`. Now, you can include the `variationId` directly when recording the transaction using the new `reportTransaction` method. Check out the final code example in the [Associate paywalls with purchase transactions in Observer mode](report-transactions-observer-mode-unity.md).
 
 ```diff showLineNumbers
  // every time when calling transaction.finish()

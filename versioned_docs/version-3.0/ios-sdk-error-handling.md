@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle errors"
+title: "Handle errors in iOS SDK"
 description: "Handle iOS SDK errors efficiently with Adapty’s troubleshooting guide."
 metadataTitle: "iOS SDK Error Handling Guide | Adapty Docs"
 ---

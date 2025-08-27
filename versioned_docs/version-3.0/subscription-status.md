@@ -1,25 +1,17 @@
 ---
-title: "Check subscription status"
+title: "Check subscription status in iOS SDK"
 description: "Track and manage user subscription status in Adapty for improved customer retention."
 metadataTitle: "Understanding Subscription Status | Adapty Docs"
-keywords: ['getProfile', 'cache']
+keywords: ['getProfile']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
-<details>
-   <summary>Before you start checking subscription status (Click to Expand)</summary>
-
-   - For iOS, set up [App Store Server Notifications](enable-app-store-server-notifications)
-   - For Android, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
-</details>
+Before you start checking subscription status, set up [App Store Server Notifications](enable-app-store-server-notifications).
 
 ## Access level and the AdaptyProfile object
 
@@ -61,89 +53,6 @@ Adapty.getProfile { result in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // check the access
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // check the access
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final profile = await Adapty().getProfile();
-  // check the access
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.GetProfile((profile, error) => {
-  if (error != null) {
-    // handle the error
-    return;
-  }
-  
-  // "premium" is an identifier of default access level
-  var accessLevel = profile.AccessLevels["premium"];
-  if (accessLevel != null && accessLevel.IsActive) {
-    // grant access to premium features
-  }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-    const profile = await adapty.getProfile();
-} catch (error) {
-  // handle the error
-}
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyProfile
-
-Adapty.getProfile()
-    .onSuccess { profile ->
-        if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
-            // grant access to premium features
-        }
-    }.onError { error ->
-        // handle the error
-    }
-```
-</TabItem>
 </Tabs>
 
 Response parameters:
@@ -181,86 +90,27 @@ Adapty.getProfile { result in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            
-            if (profile.accessLevels["premium"]?.isActive == true) {
-                // grant access to premium features
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        
-        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
-        
-        if (premium != null && premium.isActive()) {
-            // grant access to premium features
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final profile = await Adapty().getProfile();
-  if (profile?.accessLevels['premium']?.isActive ?? false) {
-        // grant access to premium features
-    }
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.GetProfile((profile, error) => {
-  if (error != null) {
-    // handle the error
-    return;
-  }
-
-  // "premium" is an identifier of default access level
-  var accessLevel = profile.AccessLevels["premium"];
-  if (accessLevel != null && accessLevel.IsActive) {
-    // grant access to premium features
-  }
-});
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyProfile
-
-Adapty.getProfile()
-    .onSuccess { profile ->
-        val isPremium = profile.accessLevels["premium"]?.isActive == true
-        if (isPremium) {
-            // grant access to premium features
-        }
-    }.onError { error ->
-        // handle the error
-    }
-```
-</TabItem>
 </Tabs>
+
+### Listening for subscription status updates
+
+Whenever the user's subscription changes, Adapty fires an event. 
+
+To receive messages from Adapty, you need to make some additional configuration:
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
+
+### Subscription status cache
+
+The cache implemented in the Adapty SDK stores the subscription status of the profile. This means that even if the server is unavailable, the cached data can be accessed to provide information about the profile's subscription status.
+
+However, it's important to note that direct data requests from the cache are not possible. The SDK periodically queries the server every minute to check for any updates or changes related to the profile. If there are any modifications, such as new transactions or other updates, they will be sent to the cached data in order to keep it synchronized with the server.

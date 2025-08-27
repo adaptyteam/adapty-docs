@@ -1,0 +1,31 @@
+---
+title: "Kids Mode in React Native SDK"
+description: "Easily enable Kids Mode to comply with Apple and Google policies. No IDFA, GAID, or ad data collected in React Native SDK."
+metadataTitle: "Kids Mode in React Native SDK | Adapty Docs"
+---
+
+If your React Native application is intended for kids, you must follow the policies of [Apple](https://developer.apple.com/app-store/kids-apps/) and [Google](https://support.google.com/googleplay/android-developer/answer/9893335). If you're using the Adapty SDK, a few simple steps will help you configure it to meet these policies and pass app store reviews.
+
+## What's required?
+
+You need to configure the Adapty SDK to disable the collection of:
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [IP address](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+In addition, we recommend using customer user ID carefully. User ID in format `<FirstName.LastName>` will be definitely treated as gathering personal data as well as using email. For Kids Mode, a best practice is to use randomized or anonymized identifiers (e.g., hashed IDs or device-generated UUIDs) to ensure compliance.
+
+## Enabling Kids Mode
+
+### Updates in the Adapty Dashboard
+
+In the Adapty Dashboard, you need to disable the IP address collection. To do this, go to [App settings](https://app.adapty.io/settings/general) and click **Disable IP address collection** under **Collect users' IP address**.
+
+### Updates in your mobile app code
+
+Support for Kids Mode in React Native is coming soon!
+
+For now, you can follow the native platform guides:
+- [Kids Mode in iOS SDK](kids-mode) for iOS configuration
+- [Kids Mode in Android SDK](kids-mode-android) for Android configuration 
