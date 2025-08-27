@@ -11,6 +11,5 @@ This page contains all guides for working with paywalls in your Capacitor app. C
 - **[Display paywalls](capacitor-present-paywalls)** - Present paywalls to users
 - **[Handle paywall events](capacitor-handling-events-1)** - Manage paywall interactions
 - **[Work with paywalls offline](capacitor-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](capacitor-localizations-and-locale-codes)** - Support multiple languages
 - **[Implement web paywalls](capacitor-web-paywall)** - Use web-based paywalls
 - **[Implement paywalls manually](capacitor-implement-paywalls-manually)** - Build custom paywall UI 
