@@ -1,5 +1,5 @@
 ---
-title: "Identify users"
+title: "Identify users in iOS SDK"
 description: "Identify users in Adapty to improve personalized subscription experiences."
 metadataTitle: "Identifying Users in Adapty | Adapty Docs"
 keywords: ['identify', 'identifying users']
@@ -55,65 +55,6 @@ Adapty.activate(with: configurationBuilder.build()) { error in
 
 </TabItem>
 
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId = "YOUR_USER_ID")
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-try {
-    await Adapty().activate(
-        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
-          ..withCustomerUserId('YOUR_USER_ID')
-    );
-} catch (e) {
-    // handle the error
-}
-```
-</TabItem>
-
-<TabItem value="flutter" label="Flutter" default>
-```dart showLineNumbers
-try {
-    await Adapty().activate(
-        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
-          ..withCustomerUserId('YOUR_USER_ID')
-    );
-} catch (e) {
-    // handle the error
-}
-```
-</TabItem>
-
-<TabItem value="unity" label="Unity" default> 
-
-```csharp showLineNumbers
-using UnityEngine;
-using AdaptySDK;
-
-var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
-    .SetCustomerUserId("YOUR_USER_ID");
-
-Adapty.Activate(builder.Build(), (error) => {
-    if (error != null) {
-        // handle the error
-        return;
-    }
-}); 
-```
-
-</TabItem>
-
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-adapty.activate("PUBLIC_SDK_KEY", {
-    customerUserId: "YOUR_USER_ID"
-});
-```
-</TabItem>
 </Tabs>
 
 <SampleApp />
@@ -140,53 +81,6 @@ Adapty.identify("YOUR_USER_ID") { error in
     if let error {
         // handle the error
     }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.identify("YOUR_USER_ID") { error ->
-    if (error == null) {
-        // successful identify
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.identify("YOUR_USER_ID", error -> {
-    if (error == null) {
-        // successful identify
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  await Adapty().identify(customerUserId);
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.Identify("YOUR_USER_ID", (error) => {
-  if(error == null) {
-    // successful identify
-  }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-    await adapty.identify("YOUR_USER_ID");
-    // successfully identified
-} catch (error) {
-    // handle the error
 }
 ```
 </TabItem>
@@ -229,55 +123,59 @@ Adapty.logout { error in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
+</Tabs>
 
-```kotlin showLineNumbers
-Adapty.logout { error ->
-    if (error == null) {
-        // successful logout
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+You can then login the user using `.identify()` method.
 
-```java showLineNumbers
-Adapty.logout(error -> {
-    if (error == null) {
-        // successful logout
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
+## Set appAccountToken
 
-```javascript showLineNumbers
-try {
-  await Adapty().logout();
-} on AdaptyError catch (adaptyError) {
+The [`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a UUID that helps Apple's StoreKit 2 identify users across app installations and devices.
+
+Starting from the Adapty iOS SDK 3.10.2, you can pass the `appAccountToken` when configuring the SDK or when identifying a user:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
   // handle the error
-} catch (e) {
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
 }
 ```
 </TabItem>
-<TabItem value="unity" label="Unity" default>
 
-```csharp showLineNumbers
-Adapty.Logout((error) => {
-  if(error == null) {
-    // successful logout
-  }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
+<TabItem value="swift-callback" label="Swift-Callback" default>
 
-```typescript showLineNumbers
-try {
-    await adapty.logout();
-    // successful logout
-} catch (error) {
-    // handle the error
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
+    if let error {
+        // handle the error
+    }
 }
 ```
 </TabItem>

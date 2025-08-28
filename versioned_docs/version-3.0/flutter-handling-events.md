@@ -9,7 +9,9 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
 
-<PaywallAction />
+:::important
+This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](flutter-handle-paywall-actions.md) for details.
+:::
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder-legacy) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -158,7 +160,7 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
 ```
 </Details>
 
-We recommend dismissing the screen in that case. Refer to the [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) for details on dismissing a paywall screen.
+We recommend dismissing the screen in that case. Refer to [Respond to button actions](flutter-handle-paywall-actions.md) for details on dismissing a paywall screen.
 
 #### Failed purchase
 
@@ -229,7 +231,7 @@ void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile
 ```
 </Details>
 
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it and to [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) topic to learn how to dismiss a paywall screen.
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](flutter-listen-subscription-changes.md) topic to learn how to check it and to [Respond to button actions](flutter-handle-paywall-actions.md) topic to learn how to dismiss a paywall screen.
 
 #### Failed restore
 

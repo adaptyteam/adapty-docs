@@ -104,10 +104,10 @@ Placeholders:
 
 ## Parameters
 
-| Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
-| --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
-| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
-| revoke_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | Specifies when the access level will expire. To revoke access immediately, either omit this field or set it to `null`. The default value is `null`. |
+| Parameter       | Type          | Required | Nullable | Description                                                  |
+| :-------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| access_level_id | String        | Yes      | No       | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
+| revoke_at       | ISO 8601 date | No       | Yes      | Specifies when the access level will expire. To revoke access immediately, either omit this field or set it to `null`. The default value is `null`. |
 
 ---
 

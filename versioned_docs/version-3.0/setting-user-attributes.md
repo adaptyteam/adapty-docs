@@ -1,12 +1,10 @@
 ---
-title: "Set user attributes"
+title: "Set user attributes in iOS SDK"
 description: "Learn how to set user attributes in Adapty to enable better audience segmentation."
 metadataTitle: "Setting User Attributes | Adapty Docs"
 keywords: ["updateProfile", "update profile", "user attributes"]
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
@@ -54,103 +52,7 @@ Adapty.updateProfile(params: builder.build()) { error in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin showLineNumbers
-val builder = AdaptyProfileParameters.Builder()
-    .withEmail("email@email.com")
-    .withPhoneNumber("+18888888888")
-    .withFirstName("John")
-    .withLastName("Appleseed")
-    .withGender(AdaptyProfile.Gender.OTHER)
-    .withBirthday(AdaptyProfile.Date(1970, 1, 3))
-  
-Adapty.updateProfile(builder.build()) { error ->
-    if (error != null) {
-        // handle the error
-    }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
-    .withEmail("email@email.com")
-    .withPhoneNumber("+18888888888")
-    .withFirstName("John")
-    .withLastName("Appleseed")
-    .withGender(AdaptyProfile.Gender.OTHER)
-    .withBirthday(new AdaptyProfile.Date(1970, 1, 3));
-
-Adapty.updateProfile(builder.build(), error -> {
-    if (error != null) {
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-final builder = AdaptyProfileParametersBuilder()
-  ..setEmail("email@email.com")
-  ..setPhoneNumber("+18888888888")
-  ..setFirstName('John')
-  ..setLastName('Appleseed')
-  ..setGender(AdaptyProfileGender.other)
-  ..setBirthday(DateTime(1970, 1, 3));
-
-try {
-  await Adapty().updateProfile(builder.build());
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-var builder = new Adapty.ProfileParameters.Builder()
-        .SetFirstName("John")
-        .SetLastName("Appleseed")
-        .SetBirthday(new DateTime(1970, 1, 3))
-        .SetGender(ProfileGender.Female)
-        .SetEmail("example@adapty.io");
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    if(error != nil) {
-        // handle the error                        
-    }
-});
-```
-
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-// Only for TypeScript validation
-import type { AdaptyProfileParameters } from 'react-native-adapty';
-
-const params: AdaptyProfileParameters = {
-    email: 'email@email.com',
-    phoneNumber: '+18888888888',
-    firstName: 'John',
-    lastName: 'Appleseed',
-    gender: 'other',
-    birthday: new Date().toISOString(),
-};
-
-try {
-    await adapty.updateProfile(params);
-} catch (error) {
-    // handle `AdaptyError`
-}
-```
-
-</TabItem>
 </Tabs>
 
 Please note that the attributes that you've previously set with the `updateProfile` method won't be reset.
@@ -168,96 +70,11 @@ The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<V
 | birthday | Date |
 
 
-### App Tracking Transparency Status (starting iOS 14)
-
-If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="swift" label="Swift" default>
-
-```swift showLineNumbers
-if #available(iOS 14, macOS 11.0, *) {
-    let builder = AdaptyProfileParameters.Builder()
-        .with(appTrackingTransparencyStatus: .authorized)
-
-    do {
-      try await Adapty.updateProfile(params: builder.build())
-    } catch {
-      // handle the error
-    }
-}
-```
-</TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
-
-```swift showLineNumbers
-if #available(iOS 14, macOS 11.0, *) {
-    let builder = AdaptyProfileParameters.Builder()
-        .with(appTrackingTransparencyStatus: .authorized)
-
-    Adapty.updateProfile(params: builder.build()) { [weak self] error in
-        if error != nil {
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-final builder = AdaptyProfileParametersBuilder()
-  ..setAppTrackingTransparencyStatus(AdaptyIOSAppTrackingTransparencyStatus.authorized);
-
-try {
-  await Adapty().updateProfile(builder.build());
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-var builder = new Adapty.ProfileParameters.Builder();
-        .SetAppTrackingTransparencyStatus(IOSAppTrackingTransparencyStatus.Authorized);
-
-Adapty.UpdateProfile(builder.Build(), (error) => {
-    if(error != nil) {
-        // handle the error                        
-    }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-import {AppTrackingTransparencyStatus} from 'react-native-adapty';
-
-try {
-  await adapty.updateProfile({
-    // you can also pass a string value (validated via tsc) if you prefer
-    appTrackingTransparencyStatus: AppTrackingTransparencyStatus.Authorized,
-  });
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
-</TabItem>
-</Tabs>
-
-:::warning
-We strongly recommend that you send this value as early as possible when it changes, only in that case the data will be sent in a timely manner to the integrations you have configured.
-:::
-
 ### Custom user attributes
 
 You can set your own custom attributes. These are usually related to your app usage. For example, for fitness applications, they might be the number of exercises per week, for language learning app user's knowledge level, and so on. You can use them in segments to create targeted paywalls and offers, and you can also use them in analytics to figure out which product metrics affect the revenue most.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
+
 ```swift showLineNumbers
 do {
      builder = try builder.with(customAttribute: "value1", forKey: "key1")
@@ -265,61 +82,9 @@ do {
      // handle key/value validation error
 }
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-builder.withCustomAttribute("key1", "value1")
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-builder.withCustomAttribute("key1", "value1");
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final builder = AdaptyProfileParametersBuilder()
-      ..setCustomStringAttribute('value1', 'key1')
-      ..setCustomDoubleAttribute(1.0, 'key2');
-  
-  await Adapty().updateProfile(builder.build());
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-try {
-    builder = builder.SetCustomStringAttribute("string_key", "string_value");
-    builder = builder.SetCustomDoubleAttribute("double_key", 123.0f);
-} catch (Exception e) {
-    // handle the exception
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-  await adapty.updateProfile({
-    codableCustomAttributes: {
-      key_1: 'value_1',
-      key_2: 2,
-    },
-  });
-} catch (error) {
-    // handle `AdaptyError`
-}
-```
-</TabItem>
-</Tabs>
 
 To remove existing key, use `.withRemoved(customAttributeForKey:)` method:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
 ```swift showLineNumbers
 do {
      builder = try builder.withRemoved(customAttributeForKey: "key2")
@@ -327,56 +92,6 @@ do {
      // handle error
 }
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-builder.withRemovedCustomAttribute("key2")
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-builder.withRemovedCustomAttribute("key2");
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final builder = AdaptyProfileParametersBuilder()
-    ..removeCustomAttribute('key1')
-    ..removeCustomAttribute('key2');
-  
-  await Adapty().updateProfile(builder.build());
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-try {
-    builder = builder.RemoveCustomAttribute("key_to_remove");
-} catch (Exception e) {
-    // handle the exception
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-  // to remove a key, pass null as its value
-  await adapty.updateProfile({
-    codableCustomAttributes: {
-      key_1: null,
-      key_2: null,
-    },
-  });
-} catch (error) {
-    // handle `AdaptyError`
-}
-```
-</TabItem>
-</Tabs>
 
 Sometimes you need to figure out what custom attributes have already been installed before. To do this, use the `customAttributes` field of the `AdaptyProfile` object.
 

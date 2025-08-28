@@ -1,5 +1,5 @@
 ---
-title: "What is Adapty?"
+title: "What is Adapty"
 description: "Learn what Adapty is and how it helps manage subscriptions."
 metadataTitle: "What is Adapty? | Adapty Docs"
 slug: /

@@ -1,49 +1,72 @@
 ---
-title: "iOS - Adapty SDK installation & configuration"
+title: "Install & configure iOS SDK"
 description: "Step-by-step guide on installing Adapty SDK on iOS for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on iOS | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk ios', 'adaptyui']
-rank: 80
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import GetKey from '@site/src/components/reusable/GetKey.md';
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the Adapty Paywall Builder, a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built with a visual constructor right in our dashboard, run natively on the device, and require minimal effort to create high-performing designs.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. 
 
-:::info
-If you’re using an older version of Adapty SDK and want to upgrade to version 3.x, we recommend following our [Migration guide to Adapty SDK v.3.x or later](migration-to-adapty-sdk-v3).
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
-You can install Adapty SDK via CocoaPods or Swift Package Manager.
+For a complete implementation walkthrough, you can also see the videos:
 
-:::danger
-Review the release checklist before launching your app
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default> 
 
-Before releasing your application, make sure to thoroughly review the  [Release Checklist](release-checklist). This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default> 
 
-<Tabs groupId="current-os" queryString> 
-<TabItem value="3.0" label="Adapty SDK v3.x+ (current)" default> 
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
 
-## Install Adapty SDK via Swift Package Manager
+## Requirements
 
+While the SDK technically supports iOS 13.0+ for the core module, iOS 15.0+ is effectively required for practical use since:
+- All StoreKit 2 features require iOS 15.0+
+- AdaptyUI module is iOS 15.0+ only
+
+## Install Adapty SDK
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
+
+<Tabs>
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
 In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
 
-1. Enter the repository URL: [https://github.com/adaptyteam/AdaptySDK-iOS.git](https://github.com/adaptyteam/AdaptySDK-iOS.git).
-2. Select the version and click Add Package.
-3. Choose the modules you need:
-   1. **Adapty** is the mandatory module.
-   2. **AdaptyUI** is optional and needed if you plan to use the Adapty Paywall Builder.
-4. Xcode will add the package dependency to your project. To import it, in the **Choose Package Products** window, click the **Add package** button once again. The package will then appear in the **Packages** list.
+1. Enter the repository URL: 
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. Select the version (latest stable version is recommended) and click **Add Package**.
+3. In the **Choose Package Products** window, select the modules you need:
+   - **Adapty** (mandatory - always select this)
+   - **AdaptyUI** (optional - only if you plan to use Paywall Builder)
+4. Click **Add Package** to complete the installation.
+5. **Verify installation:** In your project navigator, you should see "Adapty" (and "AdaptyUI" if selected) under **Package Dependencies**.
 
-## Install SDKs via CocoaPods
+</TabItem>
+   
+<TabItem value="cocoapods" label="CocoaPods (legacy)" default>
 
 :::info
 
@@ -53,12 +76,12 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
 
 1. Add Adapty to your `Podfile`. Choose the modules you need:
 
-   1. **Adapty** is the mandatory module.
-   2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
+    1. **Adapty** is the mandatory module.
+    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
 
    ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 3.9.0'
-   pod 'AdaptyUI', '~> 3.9.0' # optional module needed only for Paywall Builder
+   pod 'Adapty'
+   pod 'AdaptyUI'  # optional module needed only for Paywall Builder
    ```
 
 2. Run:
@@ -68,114 +91,233 @@ CocoaPods is now in maintenance mode, with development officially stopped. We re
    ```
 
 This will create a `.xcworkspace` file for your app. Use this file for all future development.
+</TabItem>
+</Tabs>
 
-## Configure Adapty SDK
-
-You only need to configure the Adapty SDK once, typically early in your app's lifecycle. 
-
-### Activate Adapty module of Adapty SDK
+## Activate Adapty module of Adapty SDK
 
 <Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
+<TabItem value="swiftui" label="SwiftUI">
 
 ```swift showLineNumbers
-// In your AppDelegate class:
+import SwiftUI
 import Adapty
 
-let configurationBuilder =
-    AdaptyConfiguration
-        .builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(observerMode: false)
-        .with(customerUserId: "YOUR_USER_ID")
-        .with(idfaCollectionDisabled: false)
-        .with(ipAddressCollectionDisabled: false)
-        .with(loglevel: .verbose) // optional 
-
-Adapty.activate(with: configurationBuilder.build()) { error in
-  // handle the error
+@main
+struct YourApp: App {
+  init() {
+    // Configure Adapty SDK
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+  
+   Adapty.logLevel = .verbose // recommended for development and the first production release
+    
+    let config = configurationBuilder.build()
+    
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: configurationBuilder)
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+    
+    var body: some Scene {
+      WindowGroup {
+        // Your content view
+      }
+    }
+  }
 }
 ```
 
 </TabItem>
-<TabItem value="swiftui" label="SwiftUI" default>
+<TabItem value="swift" label="UIKit" default>
 
 ```swift showLineNumbers
+// In your AppDelegate class:
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
 import Adapty
 
-@main
-struct SampleApp: App {
-    init() {
-      let configurationBuilder =
-        AdaptyConfiguration
-          .builder(withAPIKey: "PUBLIC_SDK_KEY")
-          .with(observerMode: false) // optional
-          .with(customerUserId: "YOUR_USER_ID") // optional
-          .with(idfaCollectionDisabled: false) // optional
-          .with(ipAddressCollectionDisabled: false) // optional
-          .with(LogLevel: verbose) // optional 
-      
-        Task {
-            try await Adapty.activate(with: configurationBuilder.build())
-        }
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
+Task {
+  do {
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(logLevel: .verbose) // recommended for development and the first production release
+    
+    let config = configurationBuilder.build()
+    try await Adapty.activate(with: config)
+  } catch {
+    // Handle error appropriately for your app
+    print("Adapty activation failed: ", error)
+  }
 }
 ```
 
 </TabItem>
 </Tabs>
 
-Parameters:
+<GetKey />
 
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| idfaCollectionDisabled      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-| ipAddressCollectionDisabled | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
-| logLevel                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
+## Activate AdaptyUI module of Adapty SDK
 
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods), you also need to activate AdaptyUI.
 
-:::note
+:::important
+In your code, you must activate the core Adapty module before activating AdaptyUI.
+:::
 
-- Note, that StoreKit 2 is available since iOS 15.0. Adapty will implement the legacy logic for older versions.
-- Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.
-- **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
-  :::
-
-Remember that for paywalls and products to display in your app, and for analytics to function, you need to [display the paywalls](display-pb-paywalls) and, if you're not using the Paywall Builder, [handle the purchase process](making-purchases) within your app.
-
-<SampleApp />
-
-### Activate AdaptyUI module of Adapty SDK
-
-You need to configure the AdaptyUI module only if you plan to use [Paywall Builder](display-pb-paywalls) and have [installed AdaptyUI module](sdk-installation-ios#install-sdks-via-cocoapods):
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
 
 ```swift showLineNumbers title="Swift"
-import AdaptyUI // Only if you are going to use AdaptyUI
+import SwiftUI
+import Adapty
+import AdaptyUI
 
-// After calling Adapty.activate()
-let adaptyUIConfiguration = AdaptyUI.Configuration(
-    mediaCacheConfiguration: .init(
-        memoryStorageTotalCostLimit: 100 * 1024 * 1024,
-        memoryStorageCountLimit: .max,
-        diskStorageSizeLimit: 100 * 1024 * 1024
-    )
-)
+@main
+struct YourApp: App {
+  init() {
+    // ...ConfigurationBuilder steps
+    
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: configurationBuilder)
+        try await AdaptyUI.activate()
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+    
+    // main body...
+  }
+}
+```
+</TabItem>
+<TabItem value="uikit" label="UIKit" default>
 
-try await AdaptyUI.activate(
-    configuration: adaptyUIConfiguration
-)
+```swift showLineNumbers title="UIKit"
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+import Adapty
+import AdaptyUI
+
+Task {
+   do {
+      let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+         .with(logLevel: .verbose) // recommended for development
+
+   let config = configurationBuilder.build()
+   try await Adapty.activate(with: config)
+   try await AdaptyUI.activate()
+      } catch {
+      // Handle error appropriately for your app
+      print("Adapty activation failed: ", error)
+   }
+}
+```
+</TabItem>
+</Tabs>
+
+:::tip
+Optionally, when activating AdaptyUI, you can [override default caching settings for paywalls](#set-up-media-cache-configuration-for-adaptyui).
+:::
+
+## Optional setup
+
+### Logging 
+
+#### Set up the logging system
+
+Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
+
+| Level      | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Only errors will be logged                                    |
+| `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
+| `info`     | Errors, warnings, and various information messages will be logged |
+| `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+
+```swift showLineNumbers
+ let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") 
+         .with(logLevel: .verbose) // recommended for development
 ```
 
-Please note that AdaptyUI configuration is optional, you can activate AdaptyUI module without its config. However, if you use the config, all parameters are required in it.
+#### Redirect the logging system messages
 
+If you need to send Adapty's log messages to your system or save them to a file, use the `setLogHandler` method and implement your custom logging logic inside it. This handler receives log records containing message content and severity level.
+
+```swift showLineNumbers title="Swift"
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
+}
+```
+
+### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
+
+#### Disable IDFA collection and sharing
+
+When activating the Adapty module, set `idfaCollectionDisabled` to `true` to disable IDFA collection and sharing.
+
+Use this parameter to comply with App Store Review Guidelines or avoid triggering the App Tracking Transparency prompt when IDFA isn't needed for your app. The default value is `false`. For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(idfaCollectionDisabled: true)
+```
+
+#### Disable IP collection and sharing
+
+When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(ipAddressCollectionDisabled: true)
+```
+
+#### Media cache configuration for paywalls in AdaptyUI
+
+Please note that the AdaptyUI configuration is optional. You can activate the AdaptyUI module without its config. However, if you use the config, all parameters are required.
+
+```swift showLineNumbers title="Swift"
+import AdaptyUI 
+
+// Configure AdaptyUI
+        let adaptyUIConfiguration = AdaptyUI.Configuration(
+            mediaCacheConfiguration: .init(
+                memoryStorageTotalCostLimit: 100 * 1024 * 1024,
+                memoryStorageCountLimit: .max,
+                diskStorageSizeLimit: 100 * 1024 * 1024
+            )
+        )
+
+        // Activate AdaptyUI
+        AdaptyUI.activate(configuration: adaptyUIConfiguration)
+```
 Parameters:
 
 | Parameter                   | Presence | Description                                                  |
@@ -183,149 +325,3 @@ Parameters:
 | memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
 | memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
 | diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
-
- </TabItem> 
- <TabItem value="2.x" label="Adapty SDK up to v2.x (legacy)" default> 
-
- Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
-
-| Adapty SDK version                   | AdaptyUI SDK version |
-| :----------------------------------- | :------------------- |
-| 2.7.x, 2.8.x                         | 2.0.x                |
-| 2.9.x - 2.10.0                       | 2.1.2                |
-| 2.10.1                               | 2.1.3                |
-| 2.10.3 and all later 2.10.x versions | 2.1.5                |
-| 2.11.1                               | 2.11.1               |
-| 2.11.2                               | 2.11.2               |
-| 2.11.3                               | 2.11.3               |
-
-You can install AdaptySDK and AdaptyUI SDK via CocoaPods, or Swift Package Manager.
-
-:::danger
-Go through release checklist before releasing your app
-
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
-:::
-
-## Install SDKs via Swift Package Manager
-
-1. In Xcode go to **File** ->  **Add Package Dependency...**. Please note the way to add package dependencies can differ in XCode versions. Refer to XCode documentation if necessary.
-2. Enter the repository URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`
-3. Choose the version, and click the **Add package** button. Xcode will add the package dependency to your project, and you can import it.
-4. In the **Choose Package Products** window, click the **Add package** button once again. The package will appear in the **Packages** list. 
-5. Repeat steps 2-3 for AdaptyUI SDK URL: `https://github.com/adaptyteam/AdaptyUI-iOS.git`.
-
-## Install SDKs via CocoaPods
-
-:::info
-
-CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-ios#install-adapty-sdk-via-swift-package-manager).
-
-:::
-
-1. Add Adapty to your `Podfile`:
-
-   ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> 2.11.3'
-   pod 'AdaptyUI', '~> 2.11.3'
-   ```
-
-2. Run:
-
-   ```sh showLineNumbers title="Shell"
-   pod install
-   ```
-
-This creates a `.xcworkspace` file for your app. Use this file for all future development of your application.
-
-## Configure Adapty SDK
-
-You only need to configure the Adapty SDK once, typically early in your application lifecycle:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
-```swift showLineNumbers
-// In your AppDelegate class:
-
-let configurationBuilder =
-    AdaptyConfiguration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(observerMode: false) // optional
-        .with(customerUserId: "YOUR_USER_ID") // optional
-        .with(idfaCollectionDisabled: false) // optional
-        .with(ipAddressCollectionDisabled: false) // optional
-
-Adapty.activate(with: configurationBuilder.build()) { error in
-  // handle the error
-}
-```
-
-</TabItem>
-<TabItem value="swiftui" label="SwiftUI" default>
-
-```swift showLineNumbers
-import Adapty
-
-@main
-struct SampleApp: App {
-    init() 
-      let configurationBuilder =
-        AdaptyConfiguration
-          .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-          .with(observerMode: false) // optional
-          .with(customerUserId: "YOUR_USER_ID") // optional
-          .with(idfaCollectionDisabled: false) // optional
-          .with(ipAddressCollectionDisabled: false) // optional
-          .with(LogLevel: verbose) // optional  
-
-        Adapty.activate(with: configurationBuilder.build()) { error in
-          // handle the error
-        }
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-
-
-Parameters:
-
-| Parameter                   | Presence | Description                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                      | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| observerMode                | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId              | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| idfaCollectionDisabled      | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>the user IP address sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-| ipAddressCollectionDisabled | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
-| logLevel                    | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-
-
-:::note
-
-- Note, that StoreKit 2 is available since iOS 15.0. Adapty will implement the legacy logic for older versions.
-- Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.
-- **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.
-  :::
-
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app. 
-</TabItem> 
-</Tabs>
-
-## Redirect the logging system messages
-
-If you need to send Adapty's log messages to your system or save them to a file, you can add the desired behavior:
-
-```swift showLineNumbers title="Swift"
-Adapty.setLogHandler { record in
-    writeToLocalFile("Adapty \(record.level): \(record.message)")
-}
-```

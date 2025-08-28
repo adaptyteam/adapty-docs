@@ -1,5 +1,5 @@
 ---
-title: "iOS - Use fallbacks"
+title: "Use fallbacks in iOS SDK"
 description: "Learn how to use fallback paywalls and onboardings on iOS to ensure seamless user experiences."
 metadataTitle: "Using Fallback Paywalls on iOS | Adapty Docs"
 ---

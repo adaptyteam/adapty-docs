@@ -30,7 +30,7 @@ It takes at least 24 hours for changes to take effect but there's a [hack](https
 
 After the initial integration is complete, you [can begin using Adapty's features](product). 
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](display-pb-paywalls) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](android-quickstart-paywalls) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](android-making-purchases) within your app.
 
 :::danger
 Go through release checklist before releasing your app
