@@ -29,9 +29,8 @@ Once you've finished configuring your onboarding in the default language and are
    />
    </Zoom>
 2. Choose **Language**.
-3. **Optional**: If your original onboarding was created in a language that shouldn't serve as the default, check **Use as catch-all language locale**, so the onboarding in this language is shown as default. This is useful when you've initially created the onboarding in your native language, but need a more universally understood language as the fallback.
-4. **Optional**: Enable **Translate with AI** to automatically translate all content from the original onboarding into the selected language.
-5. Click **Create**.
+3. **Optional**: Enable **Translate with AI** to automatically translate all content from the original onboarding into the selected language.
+4. Click **Create**.
 
 Now, you can translate the content manually, use AI, or export the localization file for external translators. Adapty will create a copy of your onboarding where you can modify both the text content and visual elements to suit your target audience.
 
