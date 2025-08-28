@@ -7,19 +7,13 @@ metadataTitle: "Google Play Offers Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With Billing Library v5, Google introduced a new way of working with offers. It gives you much more flexibility, but it's important to configure them properly. After reading this short guide from Adapty, you'll have a full understanding of Google Play Offers.
+In Google Play, offers of any type (free trials or discounted payments) are added as **offers**. To create an offer, you must first, create a subscription and add an auto-recurring base plan.
 
 :::note
-Checklist to successfully use Google Play offers
+With Billing Library v5, Google introduced a new way of working with offers. It gives you much more flexibility, but it's important to configure them properly. After reading this short guide from Adapty, you'll have a full understanding of Google Play Offers.
 
-1. [Create and activate](google-play-offers#configuring-offers-in-google-play) offers in Google Play Console.
-2. [Add](google-play-offers#adding-offers-to-adapty-products) offers to Adapty Products.
-3. [Choose](google-play-offers#choosing-the-offer-in-adapty-paywalls) the offer to use in Adapty Paywall.
-4. Use Adapty SDK 2.6 or newer.
-5. [Check eligibility criteria](google-play-offers#configuring-offers-in-google-play) for the offer in Google Play Console if everything is configured, but the offer is not applied.
+Offers in Google Play are supported in the Adapty SDK 2.6 or newer.
 :::
-
-## Overview
 
 
 <Zoom>
@@ -33,14 +27,7 @@ Checklist to successfully use Google Play offers
 />
 </Zoom>
 
-
-
-Before Google Play Billing Library v5 a subscription could only have one offer. If you wanted to test different offers, for example, a 3-day free trial vs a 1-week free trial, you would have to create 2 different subscriptions, which is not optimal.
-
-Now you can create multiple offers for every base plan (previously known as subscription), and this means that you have to decide which offer should be used at a given moment. Please check the docs on [base plans](android-products) if you're not familiar with them.
-
-## Configuring offers in Google Play
-
+You can create multiple offers for every base plan, and this means that you have to decide which offer should be used at a given moment. Please check the docs on [base plans](android-products) if you're not familiar with them.
 
 <Zoom>
   <img src={require('./img/c0b1dfa-001930-November-03-XYnbieeu.webp').default}
@@ -52,8 +39,6 @@ Now you can create multiple offers for every base plan (previously known as subs
   }}
 />
 </Zoom>
-
-
 
 
 
@@ -181,56 +166,3 @@ After activating the offer, you should copy its ID to use in Adapty.
 
 
 The `1-month` plan has three offers: `free-trial-1-week` (1), `free-trial-3-days` (2), `pay-up-front-3months-30p` (3). The `1-year` plan has one offer: `free-trial-1-week` (1). As you can see, offer IDs can be the same for different base plans.
-
-## Adding offers to Adapty products
-
-Let's create a 1-month product in Adapty with all the offers. You can do it from a single screen.
-
-
-<Zoom>
-  <img src={require('./img/e5a37f4-001940-November-03-S8fDVXyR.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-1. Choose the name, access level, and period.
-2. Copy the Product ID and Base plan ID from Google Play Console and paste them into the corresponding fields in Adapty.
-3. Copy an offer ID from Google Play Console and paste it into the Google Play Offer ID field in Adapty. Provide a user-friendly name for the offer. If you have multiple offers, add all of them by clicking **Add offer**.
-4. Save the changes.
-
-## Choosing the offer in Adapty paywalls
-
-Finally, you have to choose, which offer should be displayed on the given paywall.
-
-When creating a paywall or editing a draft of the paywall, choose the offer from the dropdown next to the product. This offer will be then used during the purchase from the paywall if the customer is eligible for the offer in the first place.
-
-If you configure a paywall like this, a monthly subscription will not have a free trial. A yearly subscription will have a 1-week trial if the customer is eligible.
-
-
-<Zoom>
-  <img src={require('./img/3f2c59f-001942-November-03-9iARsVaa.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-:::note
-If you can't edit the products on the paywall, it means that the paywall is not in the draft state. You can duplicate it or create a new paywall, and then [select the new paywall in the placement](add-audience-paywall-ab-test) .
-:::
