@@ -6,7 +6,7 @@ export default function SupportLink() {
     <div className="support">
       <button
         className="support__button support__button--contact"
-        onClick={() => (window.location.href = "mailto:support@adapty.io")}
+        onClick={() => (window.location.href = "https://ask.adapty.io/questions")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
