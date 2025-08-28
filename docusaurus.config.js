@@ -376,6 +376,19 @@ const config = {
         },
       };
     },
+    function generateLlmsFullPlugin() {
+      return {
+        name: 'generate-llms-full-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-full.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-full.js:', e);
+          }
+        },
+      };
+    },
     function copyStaticToBuildPlugin() {
       return {
         name: 'copy-static-to-build-plugin',

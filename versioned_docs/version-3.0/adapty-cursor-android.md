@@ -20,7 +20,11 @@ This helps AI tools and agents consume our content and allows you to copy and pa
 * Content that isn't rendered in the default view (for example, it's hidden in a tab) of a given page is rendered in the plain text version.
 * LLMs can parse and understand markdown hierarchy.
 
-We also host an [llms.txt file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
+We also host the [`llms.txt` file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
+
+:::tip
+Additionally, we host [`llms-full.txt`](https://adapty.io/docs/llms-full.txt). The `llms-full.txt` file combines the entire Adapty documentation site into a single file as context for AI tools and is indexed by LLM traffic.
+:::
 
 ## Use with Cursor
 
