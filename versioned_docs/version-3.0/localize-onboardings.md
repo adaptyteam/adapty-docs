@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::important
-Localizations in onboardings are supported starting from the SDK version 3.xx.
+Localizations in onboardings are supported starting from SDK version 3.11. If your SDK version is below 3.11, the default locale will be used.
 :::
 
 Localization can be a time-consuming process that requires careful attention to detail. When you use Onboarding Builder, Adapty handles most of the heavy lifting for you. This page explains how the localization process works.
@@ -29,7 +29,7 @@ Once you've finished configuring your onboarding in the default language and are
    />
    </Zoom>
 2. Choose **Language**.
-3. **Optional**: If your original onboarding was created in a language that shouldn't serve as the default, check **Use as catch-all language locale**. This is useful when you've initially created the onboarding in your native language, but need a more universally understood language as the fallback.
+3. **Optional**: If your original onboarding was created in a language that shouldn't serve as the default, check **Use as catch-all language locale**, so the onboarding in this language is shown as default. This is useful when you've initially created the onboarding in your native language, but need a more universally understood language as the fallback.
 4. **Optional**: Enable **Translate with AI** to automatically translate all content from the original onboarding into the selected language.
 5. Click **Create**.
 
