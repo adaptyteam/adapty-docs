@@ -32,6 +32,14 @@ async function copyStaticMarkdownAndLlms() {
       copied.push('llms.txt');
       console.log('Copied llms.txt to build directory');
     }
+    
+    // Always copy llms-full.txt if it exists
+    const llmsFullPath = path.join(staticDir, 'llms-full.txt');
+    if (await fs.pathExists(llmsFullPath)) {
+      await fs.copy(llmsFullPath, path.join(buildDir, 'llms-full.txt'), { overwrite: true });
+      copied.push('llms-full.txt');
+      console.log('Copied llms-full.txt to build directory');
+    }
     if (copied.length === 0) {
       console.log('No markdown files or llms.txt found to copy.');
     } else {
@@ -43,5 +51,4 @@ async function copyStaticMarkdownAndLlms() {
   }
 }
 
-copyStaticMarkdownAndLlms(); 
 copyStaticMarkdownAndLlms(); 

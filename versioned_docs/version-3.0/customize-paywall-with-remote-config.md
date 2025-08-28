@@ -2,6 +2,7 @@
 title: "Design paywall with remote config"
 description: "Customize your paywall with remote config in Adapty for better targeting."
 metadataTitle: "Customizing Paywall with Remote Config | Adapty Docs"
+keywords: ['remote config', 'remote']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -9,6 +10,8 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 The Paywall Remote Config is a powerful tool that provides flexible configuration options. It allows the use of custom JSON payloads to tailor your paywalls precisely. With it, you can define various parameters such as titles, images, fonts, colors, and more.
 
@@ -21,11 +24,12 @@ The Paywall Remote Config is a powerful tool that provides flexible configuratio
 
 To start customizing a paywall using the remote config:
 
-1. Open the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and click the **Paywall** tab to open it. 
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu. 
 
-   
+2. Click the paywall to open it.
+
 <Zoom>
-  <img src={require('./img/b7eb293-paywalls_edit.webp').default}
+  <img src={require('./img/remote-config.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,14 +39,10 @@ To start customizing a paywall using the remote config:
 />
 </Zoom>
 
+3. Switch to the **Remote config** tab.
 
-
-
-2. Click the **3-dot** button next to the paywall and select the **Edit** option.
-
-   
 <Zoom>
-  <img src={require('./img/d44fdb9-switch_to_remote_config.webp').default}
+  <img src={require('./img/remote-config-3.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -51,11 +51,6 @@ To start customizing a paywall using the remote config:
   }}
 />
 </Zoom>
-
-
-
-
-3. In the opened **Paywalls/ Your paywall** page, switch to the **Remote config** tab.
 
 Remote config has 2 views: 
 
@@ -65,7 +60,7 @@ Remote config has 2 views:
 Both the **Table** and **JSON** views include the same configuration elements. The only distinction is a matter of preference, with the sole difference being that the table view offers a context menu, which can be helpful for correcting localization errors.  
 You can switch between views by clicking on the **Table** or **JSON** tab whenever necessary.
 
-Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. Here are some examples of how you can use a remote config.
+Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. You can also programmatically update remote config values using the [server-side API](ss-update-paywall) to dynamically modify paywall configurations without manual dashboard updates. Here are some examples of how you can use a remote config.
 
 <Tabs groupId="current-os" queryString>
   <TabItem value="Titles" label="Titles" default>
@@ -217,4 +212,4 @@ Additional row options are mostly useful for [paywall localisations](add-remote-
 
 
 
-Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can [display your remote config paywalls](display-remote-config-paywalls) in your mobile app.
+Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can <InlineTooltip tooltip="display your remote config paywalls">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> in your mobile app.

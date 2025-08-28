@@ -6,6 +6,8 @@ metadataTitle: "Adding Remote Config Locales | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapting your paywalls for different languages is essential in a world with diverse cultures. Localization allows you to create tailored experiences for users in specific regions. For each paywall, you can add versions in various languages, ensuring that your product resonates with local audiences.
 
@@ -13,13 +15,9 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 ## Setting up localization for remote configured paywalls
 
-1. Go to the [**Products and Paywalls**](https://app.adapty.io/paywalls) section in Adapty, select the **Paywall** tab, and click the **3-dot** button next to the paywall to choose **Edit**.
-
-
-
-2. In the paywall editor, navigate to the **Remote config** tab.
-
-   
+1. Go to the [**Paywalls**](https://app.adapty.io/paywalls) section in Adapty.
+2. Click the paywall to open it.
+3. Go to the **Remote config** tab.
 
 <Zoom>
   <img src={require('./img/switch_to_remote_config.webp').default}
@@ -35,7 +33,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 
 
-3. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
+4. Click **Locales** and select the languages you want to support. Save your changes to add these locales to the paywall.
 
    
 
@@ -183,4 +181,4 @@ Sometimes, you might want to tweak translations, add different images for specif
 />
 </Zoom>
 
-After adding locales to a paywall, make sure to [implement locale codes correctly in your app's code](localizations-and-locale-codes).
+After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md)</InlineTooltip>

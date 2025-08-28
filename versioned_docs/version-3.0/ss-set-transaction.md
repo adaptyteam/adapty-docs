@@ -33,10 +33,10 @@ Creates a new transaction for an end user of your app in Adapty and provides acc
 
 This method is recommended over the [Grant access level](ss-grant-access-level) one.
 
-:::warning
+:::important
+If the product is not [created in Adapty](create-product), the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. 
 
-Before setting a transaction, make sure the product is [created in Adapty](create-product). Without this step, the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. However, the user won’t get access in the mobile app since no access level will be assigned.
-
+However, the user will get only the default `premium` access level. So, if you want to control access more flexibly and assign different access levels, you must [create products](create-product) in Adapty.
 :::
 
 ## Method and endpoint

@@ -1,8 +1,9 @@
 ---
-title: "Fetch paywalls and products for remote config paywalls"
-description: "Fetch paywalls and products in Adapty to enhance user monetization."
+title: "Fetch paywalls and products for remote config paywalls in iOS SDK"
+description: "Fetch paywalls and products in Adapty iOS SDK to enhance user monetization."
 metadataTitle: "Fetching Paywalls & Products | Adapty Docs"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config']
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'cache']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -10,9 +11,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
-Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
+Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult the <InlineTooltip tooltip="guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
 
 <SampleApp />
 
@@ -25,7 +28,7 @@ Before showcasing remote config and custom paywalls, you need to fetch the infor
 
 3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
 
-4. [Install Adapty SDK](installation-of-adapty-sdks) in your mobile app.
+4. [Install Adapty SDK](sdk-installation-ios) in your mobile app.
 </details>
 
 ## Fetch paywall information
@@ -34,9 +37,9 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
 
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
 ```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
@@ -45,8 +48,9 @@ do {
     // handle the error
 }
 ```
+
 </TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
+<TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -58,90 +62,7 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
     }
 }
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            // the requested paywall
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // the requested paywall
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
-  // the requested paywall
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
-  
-  // paywall - the resulting object
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const paywall = await adapty.getPaywall(id, locale);
-    // the requested paywall
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID", locale = "en")
-    .onSuccess { paywall ->
-        // the requested paywall
-    }
-    .onError { error ->
-        // handle the error
-    }
-```
 </TabItem>
 </Tabs>
 
@@ -166,9 +87,8 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
 ```swift showLineNumbers
 do {
     let products = try await Adapty.getPaywallProducts(paywall: paywall)
@@ -177,8 +97,9 @@ do {
     // handle the error
 }
 ```
+
 </TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
+<TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
 Adapty.getPaywallProducts(paywall: paywall) { result in    
@@ -191,93 +112,23 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.getPaywallProducts(paywall) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val products = result.value
-            // the requested products
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywallProducts(paywall, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
-        // the requested products
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-
-```javascript showLineNumbers
-try {
-  final products = await Adapty().getPaywallProducts(paywall: paywall);
-  // the requested products array
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-
-```csharp showLineNumbers
-Adapty.GetPaywallProducts(paywall, (products, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
-  
-  // products - the requested products array
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    // ...paywall
-    const products = await adapty.getPaywallProducts(paywall);
-  // the requested products list
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-Adapty.getPaywallProducts(paywall).onSuccess { products ->
-    // the requested products
-}.onError { error ->
-    // handle the error
-}
-```
-</TabItem>
 </Tabs>
+
 
 Response parameters:
 
 | Parameter | Description                                                                                                                                                                                 |
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Products  | List of  [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
+
+When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](https://adapty.io/docs/sdk-models#adaptypaywallproduct) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
+
+| Property                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title**               | To display the title of the product, use `product.localizedTitle`. Note that the localization is based on the users' selected store country rather than the locale of the device itself.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Price**               | To display a localized version of the price, use `product.localizedPrice`. This localization is based on the locale info of the device. You can also access the price as a number using `product.price`. The value will be provided in the local currency. To get the associated currency symbol, use `product.currencySymbol`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Subscription Period** | To display the period (e.g. week, month, year, etc.), use `product.localizedSubscriptionPeriod`. This localization is based on the locale of the device. To fetch the subscription period programmatically, use `product.subscriptionPeriod`. From there you can access the `unit` enum to get the length (i.e. day, week, month, year, or unknown). The `numberOfUnits` value will get you the number of period units. For example, for a quarterly subscription, you'd see `.month` in the unit property, and `3` in the numberOfUnits property.                                                                                                                                                                                                                                                                                                       |
+| **Introductory Offer**  | To display a badge or other indicator that a subscription contains an introductory offer, check out the `product.subscriptionOffer` property. Within this object are the following helpful properties:<br/>• `offerType`: an enum with values `introductory`, `promotional`, and `winBack`. Free trials and initial discounted subscriptions will be the `introductory` type.<br/>• `price`: The discounted price as a number. For free trials, look for `0` here.<br/>• `localizedPrice`: A formatted price of the discount for the user's locale.<br/>• `localizedNumberOfPeriods`: a string localized using the device's locale describing the length of the offer. For example, a three day trial offer shows `3 days` in this field.<br/>• `subscriptionPeriod`: Alternatively, you can get the individual details of the offer period with this property. It works in the same manner for offers as the previous section describes.<br/>• `localizedSubscriptionPeriod`: A formatted subscription period of the discount for the user's locale. |
 
 ## Check intro offer eligibility on iOS
 
@@ -287,9 +138,8 @@ By default, the `getPaywallProducts` method checks eligibility for introductory,
 After showing the initial products, be sure to call the regular `getPaywallProducts` method to update the products with accurate offer eligibility information.
 :::
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
 ```swift showLineNumbers
 do {
     let products = try await Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall)
@@ -299,7 +149,7 @@ do {
 }
 ```
 </TabItem>
-<TabItem value="swift-callback" label="Swift" default>
+<TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
 Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
@@ -316,7 +166,7 @@ Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
 
 ## Speed up paywall fetching with default audience paywall
 
-Typically, paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
+Typically, paywalls are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
 
 To address this, you can use the `getPaywallForDefaultAudience` method, which fetches the paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the paywall by the `getPaywall` method, as detailed in the [Fetch Paywall Information](fetch-paywalls-and-products#fetch-paywall-information) section above.
 
@@ -325,15 +175,14 @@ Why we recommend using `getPaywall`
 
 The `getPaywallForDefaultAudience` method comes with a few significant drawbacks:
 
-- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You’ll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
 - **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
 
 If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise, stick to the `getPaywall` described [above](fetch-paywalls-and-products#fetch-paywall-information).
 :::
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
 ```swift showLineNumbers
 do {
     let paywall = try await Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID")
@@ -342,8 +191,9 @@ do {
     // handle the error
 }
 ```
+
 </TabItem>
-<TabItem value="swift-callback" label="Swift-Callback" default>
+<TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
 Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
@@ -356,90 +206,10 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            // the requested paywall
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // the requested paywall
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-try {
-    const id = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
-  // the requested paywall
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
-
-Adapty.getPaywallForDefaultAudience(
-    placementId = "YOUR_PLACEMENT_ID",
-    locale = "en",
-    fetchPolicy = AdaptyPaywallFetchPolicy.Default
-).onSuccess { paywall ->
-    // the requested paywall
-}.onError { error ->
-    // handle the error
-}
-```
-</TabItem>
-<!--- <TabItem value="flutter" label="Flutter" default>
-
-```typescript showLineNumbers
-// TODO: add Dart example
-```
-</TabItem> --->
 </Tabs>
 
 :::note
-The `getPaywallForDefaultAudience` method is available starting from these versions:
-
-- iOS: 2.11.2
-- Android: 2.11.3
-- React Native: 2.11.2
-- Flutter 3.2.0
-
-The method is not yet supported in Flutter and Unity, but support will be added soon.
+The `getPaywallForDefaultAudience` method is available starting from iOS SDK version 2.11.2.
 :::
 
 | Parameter | Presence | Description |

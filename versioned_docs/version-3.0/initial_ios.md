@@ -16,6 +16,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 - [ ] Once you create an account in Adapty and provide your mobile app name and category, we set up the app for you within our Adapty platform.
 - [ ] [Generate In-App Purchase Key](generate-in-app-purchase-key) in the App Store Connect
 - [ ] [Configure App Store integration](app-store-connection-configuration) itself in the Adapty dashboard and App Store Connect
+- [ ] If your app has trials or other promotional offers, [configure App Store promotional offers](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers) in the Adapty dashboard.
 - [ ] [Enable App Store server notifications](enable-app-store-server-notifications)  in the App Store Connect
 - [ ] Install AdaptySDKs for the frameworks you're using: 
   - [ ] [Install Adapty SDK for native iOS](sdk-installation-ios)
@@ -27,7 +28,7 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 
 After the initial integration is complete, you [can begin using Adapty's features](product). 
 
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](display-pb-paywalls) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
+Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to make changes to your app's code. Specifically, you need to [display the paywalls](ios-quickstart-paywalls.md) at least and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
 
 :::danger
 Go through release checklist before releasing your app

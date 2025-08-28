@@ -10,16 +10,47 @@ metadataTitle: "Customizing Paywall Buttons | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-A paywall button is a UI element that lets users do things like login, restore a purchase, or close the paywall. It can also trigger custom actions and start custom flows, like taking users to a different page, giving you a lot of flexibility. For example, a button could close the current paywall and open a new one, allowing you to link paywalls together.
-
 :::warning
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code:
+- [iOS](handle-paywall-actions.md)
+- [Android](android-handle-paywall-actions.md)
+- [React Native](react-native-handle-paywall-actions.md)
+- [Flutter](flutter-handle-paywall-actions.md)
+- [Unity](unity-handle-paywall-actions.md)
+:::
 
-This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher, and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Paywall texts and buttons in legacy Paywall Builder](paywall-texts-and-buttons).
+A paywall button is a UI element that lets users:
+- Buy products
+- Sign in
+- Restore purchases
+- Close the paywall
+- Trigger custom actions (e.g., open another paywall)
+
+:::info
+
+This section describes the new Paywall Builder, which works with:
+- iOS, Android, and React Native SDKs version 3.0 or higher
+- Flutter and Unity SDKs version 3.3.0 or higher
 
 :::
 
+### Purchase buttons
+Purchase buttons:
+- Connect to selected products in your paywall
+- Start the purchase when tapped
+
+When you add a purchase button to your paywall, it automatically processes purchases your users make. So, you don't need to handle purchases in the app code.
+
+:::note
+You can attract more attention to purchase buttons by animating them. The Paywall builder currently supports **Arrow** and **Pulse** animation types. Note, that, to add the **Arrow** animation, first, you need to configure the **Arrow icon** in the **Content** section.
+
+Each animation lets you choose an easing option (Linear, Ease In, Ease Out, Ease In Out) to control how it speeds up or slows down.
+
+Animations are available in the Adapty iOS, Android, Flutter, and React Native SDKs starting from version 3.10.0. Follow the [migration guide](migration-to-android-310.md) for Android.
+:::
+
 <Zoom>
-  <img src={require('./img/paywall_button.webp').default}
+  <img src={require('./img/purchase-button.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,12 +60,70 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 />
 </Zoom>
 
-You can add as many buttons as you want. Just be sure to [handle the actions](/docs/handling-pb-paywall-events) in your app’s code. Each button has a **Button action ID** you’ll use for this. For default buttons (like close, restore, or login), the IDs are already set, so you just need to copy and paste them into your code. For custom actions, you can define your own.
+### Links
+To comply with some store requirements, you can add links to:
+- Terms of service
+- Privacy policy
+- Purchase restoration
 
-If you'd like your custom button to open another paywall, it can be done by triggering `getPaywall` yourself. That means fetching the paywall by `placement_id`, grabbing its configuration, and then showing it. You can also chain actions, like closing the current paywall and then opening another one in the same sequence.
+To add links:
+1. Add a **Link** element in the paywall builder.
+2. Add the `openUrl` handler to your code:
+    - [iOS](handle-paywall-actions.md)
+    - [Android](android-handle-paywall-actions.md)
+    - [React Native](react-native-handle-paywall-actions.md)
+    - [Flutter](flutter-handle-paywall-actions.md)
+    - [Unity](unity-handle-paywall-actions.md)
 
-**What's next:**
 
-- [Handle paywall actions in iOS](ios-handling-events#actions) 
-- [Handle paywall actions in Android](android-handling-events#actions) 
+<Zoom>
+  <img src={require('./img/pb-links.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
+### Custom buttons
+You need custom buttons to:
+- Close the paywall (`close`)
+- Open a URL (`openUrl`)
+- Restore purchases (`restore`)
+- Sign in (`login`)
+- Trigger custom actions (e.g., open another paywall)
+
+To make most buttons work, you need to **handle their action IDs in your code**:
+- [iOS](handle-paywall-actions.md)
+- [Android](android-handle-paywall-actions.md)
+- [React Native](react-native-handle-paywall-actions.md)
+- [Flutter](flutter-handle-paywall-actions.md)
+- [Unity](unity-handle-paywall-actions.md)
+
+For example, a close button needs the `close` action handler.
+
+:::important
+`close` is handled automatically in the iOS, Android, and React Native SDKs. `openUrl` is handled automatically in the iOS and Android SDKs. However, if needed, you can override the default behavior.
+
+`restore` is always handled automatically.
+:::
+
+When handling custom actions in your code, you can implement scenarios like:
+
+- Opening another paywall
+- Running multiple actions in sequence (like close and open)
+
+Note that you would need to build these scenarios using the action handling system - they're not built-in features.
+
+<Zoom>
+  <img src={require('./img/pb-custom-button.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

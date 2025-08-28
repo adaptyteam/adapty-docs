@@ -2,6 +2,7 @@
 title: "Design onboardings"
 description: "Create meaningful onboardings."
 metadataTitle: "Using Adapty Onboarding Builder | Adapty Docs"
+rank: 80
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -59,7 +60,7 @@ However, custom HTML elements are neither preloaded nor cached, so it is recomme
 
 ### Element ID and action ID
 
-If you want to use a button for custom actions, [assign it an **action ID** and then use it in your source code](http://adapty.io/docs/ios-handling-onboarding-events#custom-actions). Action IDs let you handle different buttons with the same action ID in the same way.
+If you want to use a button for custom actions, assign it an **action ID** and then use it in your source code. Action IDs let you handle different buttons with the same action ID in the same way.
 
   <Zoom>
   <img src={require('./img/ios-events-1.webp').default}
@@ -72,7 +73,7 @@ If you want to use a button for custom actions, [assign it an **action ID** and 
   />
   </Zoom>
 
-If you want to [process user input in a specific field](http://adapty.io/docs/ios-handling-onboarding-events) (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
+If you want to process user input in a specific field (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
 
   <Zoom>
   <img src={require('./img/design-onboarding5.png').default}
@@ -125,3 +126,22 @@ You have the following customization options in the builder:
 :::tip
 If you use a background image, you can also set a background color similar to the image's primary color, so that transitions between screens are as smooth as possible.
 :::
+
+## Copy screens from web-to-app funnels
+
+If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and want to use screens from funnels in onboardings, you can quickly do it by copying screens in the funnel builder and pasting them in the onboarding builder:
+
+1. In the FunnelFox funnel builder, right-click a screen and select **Copy**, or select the screen and press `Ctrl+C`/`⌘+C`.
+2. Open the onboarding builder.
+3. Right-click the screen where you want to insert the copied screen and select **Paste**, or select it and press `Ctrl+V`/`⌘+V`. The copied screen will be inserted below the selected screen.
+
+  <Zoom>
+  <img src={require('./img/funnel-to-onboarding.gif').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>

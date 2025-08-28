@@ -8,13 +8,16 @@ keywords: ['attribution', 'updateAttribution']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
 Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), and [Facebook Ads](facebook-ads). Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
 
-Send subscription events with correct user properties and ID's to attributions services you use.
+You can also integrate with [Adapty's User Acquisition](user-acquisition.md) to connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
 
 ### Important
+Send subscription events with correct user properties and ID's to attributions services you use.
 
 :::warning
 
@@ -335,7 +338,7 @@ Adapty can automatically collect Apple Search Ad attribution data. All you need 
 
 ### Facebook Ads
 
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes) method. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
+Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty by following the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>

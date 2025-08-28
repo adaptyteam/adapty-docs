@@ -7,6 +7,7 @@ metadataTitle: "Stripe Integration Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
 
@@ -272,7 +273,7 @@ If you are using Checkout Sessions, [make sure you're creating a Stripe Customer
 
 ### 5\. Provide access to users on the mobile
 
-To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see [Identifying users](identifying-users) for more).
+To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
 
 ### 6\. Test your integration
 
@@ -330,3 +331,36 @@ Adapty tracks only full refunds. Proration or partial refunds are currently not 
 If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
 
 To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
+
+## Get more from your Stripe data
+Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+:::tip
+For enhanced analytics, you can include a `variation_id` in your Stripe metadata to attribute purchases to specific paywall instances. This is particularly useful when implementing in-house web paywalls where you want to track which specific paywall showing led to the conversion:
+
+```json showLineNumbers title="Stripe Metadata with variation_id"
+{
+  'customer_user_id': "YOUR_USER_ID",
+  'variation_id': "YOUR_VARIATION_ID"
+}
+```
+:::
+
+Integrations you can use to forward and analyze your Stripe events:
+- [Amplitude](https://adapty.io/docs/amplitude/)
+- [Webhook](https://adapty.io/docs/webhook)
+- [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
+- [Mixpanel](https://adapty.io/docs/mixpanel)
+- [Posthog](https://adapty.io/docs/posthog)
+
+### Supported Stripe events
+Adapty supports the following Stripe events:
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded

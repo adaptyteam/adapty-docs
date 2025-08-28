@@ -144,24 +144,24 @@ Placeholders:
 
 #### Parameters
 
-| Parameter                        | Type   | Required in request | Nullable in request | Description                                                  |
-| -------------------------------- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |
-| adjust_device_id                 | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The network user's ID in the [Adjust integration](adjust).   |
-| airbridge_device_id              | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Airbridge integration.](airbridge) |
-| amplitude_device_id              | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Amplitude integration](amplitude). |
-| amplitude_user_id                | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Amplitude integration](amplitude).    |
-| appmetrica_device_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [AppMetrica integration](appmetrica). |
-| appmetrica_profile_id            | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [AppMetrica integration](appmetrica).  |
-| appsflyer_id                     | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The network user's ID in the [AppsFlyer integration](appsflyer). |
-| branch_id                        | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The Branch Key of the user's app in the Branch integration.  |
-| facebook_anonymous_id            | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Facebook Ads integration](facebook-ads). |
-| firebase_app_instance_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in  [Firebase integration](firebase-and-google-analytics). |
-| mixpanel_user_id                 | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [Mixpanel integration](mixpanel).      |
-| one_signal_player_id             | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal). Legacy identifier. |
-| one_signal_subscription_id       | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [OneSignal integration](onesignal). Recommended identifier. |
-| posthog_distinct_user_id         | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user in [PostHog integration](posthog).        |
-| pushwoosh_hwid                   | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Pushwoosh integration.](pushwoosh) |
-| tenjin_analytics_installation_id | String | :heavy_minus_sign:  | :heavy_minus_sign:  | The ID of the user's device in  [Tenjin integration.](tenjin) |
+| Parameter                        | Type   | Required | Nullable | Description                                                  |
+| -------------------------------- | ------ | -------- | -------- | ------------------------------------------------------------ |
+| adjust_device_id                 | String | No       | No       | The network user's ID in the [Adjust integration](adjust).   |
+| airbridge_device_id              | String | No       | No       | The ID of the user's device in  [Airbridge integration.](airbridge) |
+| amplitude_device_id              | String | No       | No       | The ID of the user's device in  [Amplitude integration](amplitude). |
+| amplitude_user_id                | String | No       | No       | The ID of the user in [Amplitude integration](amplitude).    |
+| appmetrica_device_id             | String | No       | No       | The ID of the user's device in  [AppMetrica integration](appmetrica). |
+| appmetrica_profile_id            | String | No       | No       | The ID of the user in [AppMetrica integration](appmetrica).  |
+| appsflyer_id                     | String | No       | No       | The network user's ID in the [AppsFlyer integration](appsflyer). |
+| branch_id                        | String | No       | No       | The Branch Key of the user's app in the Branch integration.  |
+| facebook_anonymous_id            | String | No       | No       | The ID of the user in [Facebook Ads integration](facebook-ads). |
+| firebase_app_instance_id         | String | No       | No       | The ID of the user in  [Firebase integration](firebase-and-google-analytics). |
+| mixpanel_user_id                 | String | No       | No       | The ID of the user in [Mixpanel integration](mixpanel).      |
+| one_signal_player_id             | String | No       | No       | The ID of the user in [OneSignal integration](onesignal). Legacy identifier. |
+| one_signal_subscription_id       | String | No       | No       | The ID of the user in [OneSignal integration](onesignal). Recommended identifier. |
+| posthog_distinct_user_id         | String | No       | No       | The ID of the user in [PostHog integration](posthog).        |
+| pushwoosh_hwid                   | String | No       | No       | The ID of the user's device in  [Pushwoosh integration.](pushwoosh) |
+| tenjin_analytics_installation_id | String | No       | No       | The ID of the user's device in  [Tenjin integration.](tenjin) |
 
 
 ## Successful response: 200: OK

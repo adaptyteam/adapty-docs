@@ -18,6 +18,10 @@ With a funnel chart, you may also find more insights about user behavior setting
 
 Funnels work with the data that we gather through SDK and store notifications and don't require any additional configuration from your side.
 
+:::note
+Funnels reflect install data according to your install definition in [App Settings](general.md#4-installs-definition-for-analytics).
+:::
+
 
 <Zoom>
   <img src={require('./img/funnels-tab.png').default}

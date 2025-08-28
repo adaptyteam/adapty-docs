@@ -62,7 +62,7 @@ The **In-app purchase Issuer ID**, referred to as **Issuer ID** in App Store Con
 
 
 
-4. Copy the **Key ID** and paste it to the **In-app purchase Key ID** and **Subscription key ID** fields in the Adapty Dashboard.
+4. Copy the **Key ID** and paste it to the **In-app purchase Key ID** field in the Adapty Dashboard.
 
 ## Step 3. Upload In-App Purchase Key file
 
@@ -82,9 +82,7 @@ Upload the **In-App Purchase Key** file you've downloaded in the [Generate In-Ap
 
 
 
-
-
-into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in the Adapty Dashboard.
+into the **Private key (.p8 file)** field in the Adapty Dashboard.
 
 
 <Zoom>
@@ -100,9 +98,27 @@ into the **Private key (.p8 file)** and **Subscription (.p8 file)** fields in th
 
 
 
+## Step 4. For trials and special offers – set up promotional offers
 
+:::important
+This step is required if your app has trials or other promotional offers.
+:::
 
-## Step 4. Enter App Store shared secret
+1. Copy the same key ID you used in [Step 2](#step-2-provide-issuer-id-and-key-id) to the **Subscription key ID** field in the **App Store promotional offers** section. 
+2. Upload the same **In-App Purchase Key** file you used in [Step 3](#step-3-upload-in-app-purchase-key-file) to the **Subscription key (.p8 file)** area in the **App Store promotional offers** section.
+
+<Zoom>
+  <img src={require('./img/promo-key.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Step 5. Enter App Store shared secret
 
 The **App Store shared secret**, also known as the App Store Connect Shared Secret, is a 32-character hexadecimal string used for in-app purchases and subscription receipt validation.  
 

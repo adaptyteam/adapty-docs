@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Handle paywall events"
+title: "Handle paywall events in legacy Flutter SDK"
 description: "Handle subscription events in Flutter (Legacy) with Adapty’s SDK."
 metadataTitle: "Handling Events in Flutter (Legacy) | Adapty Docs"
 ---
@@ -57,7 +57,7 @@ The following action types are supported:
 
 Note that at the very least you need to implement the reactions to both `close` and `openURL`.
 
-For example, if a user taps the close button, the action `close` will occur and you are supposed to dismiss the paywall. Refer to the [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) topic for details on dismissing a paywall screen.  
+For example, if a user taps the close button, the action `close` will occur and you are supposed to dismiss the paywall.
 Note that `AdaptyUIAction` has optional value property: look at this in the case of `openUrl` and `custom`.
 
 > 💡 Login Action
@@ -102,8 +102,6 @@ void paywallViewDidFinishPurchase(AdaptyUIView view,
 }
 ```
 
-We recommend dismissing the screen in that case. Refer to the [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) for details on dismissing a paywall screen.
-
 #### Failed purchase
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
@@ -123,8 +121,6 @@ If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 void paywallViewDidFinishRestore(AdaptyUIView view, AdaptyProfile profile) {
 }
 ```
-
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it and to [Hide Paywall Builder paywalls](hide-paywall-builder-paywalls) topic to learn how to dismiss a paywall screen.
 
 #### Failed restore
 

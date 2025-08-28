@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 The **In-App Purchase Key** is a specialized API key created within App Store Connect to validate the purchases by confirming their authenticity.
 
 :::note
-To generate API keys for the App Store Server API, you you must hold either an Admin role or an Account Holder role in App Store Connect. You can also read about how to generate API Keys in the [Apple Developer Documentation](https://developer.apple.com/documentation/appstoreserverapi/creating_api_keys_to_use_with_the_app_store_server_api).
+To generate API keys for the App Store Server API, you must hold either an Admin role or an Account Holder role in App Store Connect. You can also read about how to generate API Keys in the [Apple Developer Documentation](https://developer.apple.com/documentation/appstoreserverapi/creating_api_keys_to_use_with_the_app_store_server_api).
 :::
 
 1. Open **App Store Connect**. Proceed to [**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs) section.

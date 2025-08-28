@@ -6,6 +6,8 @@ metadataTitle: "Add Paywall Locale in Adapty Builder | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Localizing is a tedious process that requires time and precision. When using Paywall Builder, Adapty does almost all of the work for you, as most of the things you'll need work out of the box. This page describes how it works.
 
@@ -170,14 +172,14 @@ Sometimes, you might want to tweak translations, add different images for specif
 />
 </Zoom>
 
-After adding locales to a paywall, make sure to [implement locale codes correctly in your app's code](localizations-and-locale-codes).
+After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md), [Flutter](flutter-localizations-and-locale-codes.md), [React Native](react-native-localizations-and-locale-codes.md), and [Unity](unity-localizations-and-locale-codes.md)</InlineTooltip>.
 
 ### Preview the localization result
 
-You can check your texts while editing by simply switching over back to the **Builder** tab and selecting another locale:
+You can check your texts while editing by simply switching over back to the **Builder & Generator** tab and selecting another locale:
 
 <Zoom>
-  <img src={require('./img/choose_localization.webp').default}
+  <img src={require('./img/locales.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -200,9 +202,9 @@ Pay attention to the locale code (`en`, `fr` and `it` ). You'll need to pass it 
 />
 </Zoom>
 
-You can learn more about it [here](get-pb-paywalls).
+You can learn more about it in <InlineTooltip tooltip="the guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
 :::
 
 
 
-Once you add locales to a paywall, learn to [correctly work with locale codes in your app's code](localizations-and-locale-codes).
+Once you add locales to a paywall, see <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md)</InlineTooltip> for more information.

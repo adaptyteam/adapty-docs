@@ -1,5 +1,5 @@
 ---
-title: "React Native - Handle onboarding events"
+title: "Handle onboarding events in React Native SDK"
 description: "Handle onboarding-related events in React Native using Adapty."
 metadataTitle: "Handling Onboarding Events in React Native | Adapty Docs"
 toc_max_heading_level: 4
@@ -16,7 +16,7 @@ Onboardings configured with the builder generate events your app can respond to.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty React Native SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty React Native SDK](sdk-installation-reactnative.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
