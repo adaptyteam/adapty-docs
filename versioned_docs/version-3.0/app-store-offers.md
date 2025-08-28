@@ -13,7 +13,7 @@ If you haven't configured the products in the App Store yet, check our [document
 
 Offers in the App Store are special deals or discounts provided by these platforms for in-app purchases. Developers use offers to provide users with exciting promotions, like discounted prices, free trials, or bundled offers. These promotions help attract and keep users engaged, making the app experience more rewarding. 
 
-There are three offer types in the App Store, and Adapty supports them all:
+There are four offer types in the App Store, and Adapty supports them all:
 
 - **Introductory offers (Free trials)**:
   - Free subscription periods
@@ -27,9 +27,10 @@ There are three offer types in the App Store, and Adapty supports them all:
   - Free subscription periods or percentage discounts
   - Only churned users are eligible
   - Adapty automatically applies win-back offers for eligible users, but you will need to add them to your products and paywalls in Adapty.
+- **Offer codes**: Not recommended, since this offer type doesn't always work reliably. For more information and a workaround, see the [guide](https://adapty.io/docs/making-purchases#redeem-offer-code-in-ios).
 
 :::important
-To use these offers, you have to [upload subscription key](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers) to Adapty dashboard, so Adapty can sign the offers.
+To use these offers, you have to [upload your subscription key](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers) to Adapty dashboard, so Adapty can sign the offers.
 :::
 
 <Zoom>

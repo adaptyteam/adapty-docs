@@ -35,11 +35,9 @@ Checklist to successfully use Google Play offers
 
 
 
-
-
 Before Google Play Billing Library v5 a subscription could only have one offer. If you wanted to test different offers, for example, a 3-day free trial vs a 1-week free trial, you would have to create 2 different subscriptions, which is not optimal.
 
-Now you can create multiple offers for every base plan (previously known as subscription) and this means that you have to decide which offer should be used at a given moment. Please check the docs on [base plans](android-products) if you're not familiar with them.
+Now you can create multiple offers for every base plan (previously known as subscription), and this means that you have to decide which offer should be used at a given moment. Please check the docs on [base plans](android-products) if you're not familiar with them.
 
 ## Configuring offers in Google Play
 
