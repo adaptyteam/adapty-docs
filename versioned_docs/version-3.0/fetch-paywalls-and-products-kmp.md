@@ -1,784 +1,178 @@
 ---
-title: "Fetch Paywalls and Products in Kotlin Multiplatform SDK"
-description: "Learn how to fetch paywalls and products in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Fetch Paywalls and Products | Kotlin Multiplatform SDK | Adapty Docs"
+title: "Fetch paywalls and products for remote config paywalls in Kotlin Multiplatform SDK"
+description: "Fetch paywalls and products in Adapty Kotlin Multiplatform SDK to enhance user monetization."
+metadataTitle: "Fetching Paywalls & Products | Kotlin Multiplatform SDK | Adapty Docs"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Kotlin Multiplatform']
 displayed_sidebar: sdkkmp
+rank: 95
 ---
 
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-This page covers how to fetch paywalls and products in the Adapty Kotlin Multiplatform SDK.
+Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult [Fetch Paywall Builder paywalls and their configuration](kmp-get-pb-paywalls).
 
-## Fetch paywalls
+<SampleApp />
 
-Fetch paywalls from Adapty:
+<details>
+   <summary>Before you start fetching paywalls and products in your mobile app (click to expand)</summary>
+
+   1. [Create your products](create-product) in the Adapty Dashboard.
+
+2. [Create a paywall and incorporate the products into your paywall](create-paywall) in the Adapty Dashboard.
+
+3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
+
+4. [Install Adapty SDK](sdk-installation-kmp) in your mobile app.
+</details>
+
+## Fetch paywall information
+
+In Adapty, a [product](product) serves as a combination of products from both the App Store and Google Play. These cross-platform products are integrated into paywalls, enabling you to showcase them within specific mobile app placements.
+
+To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
 <Tabs groupId="current-os" queryString>
-
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-fun fetchPaywalls() {
-    Adapty.getPaywalls { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val paywalls = result.value
-                Log.d("Paywalls", "Fetched ${paywalls.size} paywalls")
-                
-                // Process paywalls
-                processPaywalls(paywalls)
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Paywalls", "Failed to fetch paywalls: ${result.error.message}")
-                handlePaywallError(result.error)
-            }
-        }
-    }
-}
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
-private fun processPaywalls(paywalls: List<AdaptyPaywall>) {
-    paywalls.forEach { paywall ->
-        Log.d("Paywall", "Paywall: ${paywall.name}")
-        Log.d("Paywall", "Developer ID: ${paywall.developerId}")
-        Log.d("Paywall", "Revision: ${paywall.revision}")
-        Log.d("Paywall", "Products count: ${paywall.products.size}")
-        
-        // Process products in this paywall
-        processProducts(paywall.products)
-    }
-}
-
-private fun processProducts(products: List<AdaptyPaywallProduct>) {
-    products.forEach { product ->
-        Log.d("Product", "Product: ${product.vendorProductId}")
-        Log.d("Product", "Price: ${product.price}")
-        Log.d("Product", "Currency: ${product.currencyCode}")
-        Log.d("Product", "Subscription period: ${product.subscriptionPeriod}")
-    }
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID", 
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
 }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-public void fetchPaywalls() {
-    Adapty.getPaywalls(result -> {
-        if (result instanceof AdaptyResult.Success) {
-            List<AdaptyPaywall> paywalls = ((AdaptyResult.Success<List<AdaptyPaywall>>) result).getValue();
-            Log.d("Paywalls", "Fetched " + paywalls.size() + " paywalls");
-            
-            // Process paywalls
-            processPaywalls(paywalls);
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Paywalls", "Failed to fetch paywalls: " + ((AdaptyResult.Error) result).getError().getMessage());
-            handlePaywallError(((AdaptyResult.Error) result).getError());
-        }
-    });
-}
-
-private void processPaywalls(List<AdaptyPaywall> paywalls) {
-    for (AdaptyPaywall paywall : paywalls) {
-        Log.d("Paywall", "Paywall: " + paywall.getName());
-        Log.d("Paywall", "Developer ID: " + paywall.getDeveloperId());
-        Log.d("Paywall", "Revision: " + paywall.getRevision());
-        Log.d("Paywall", "Products count: " + paywall.getProducts().size());
-        
-        // Process products in this paywall
-        processProducts(paywall.getProducts());
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
     }
-}
-
-private void processProducts(List<AdaptyPaywallProduct> products) {
-    for (AdaptyPaywallProduct product : products) {
-        Log.d("Product", "Product: " + product.getVendorProductId());
-        Log.d("Product", "Price: " + product.getPrice());
-        Log.d("Product", "Currency: " + product.getCurrencyCode());
-        Log.d("Product", "Subscription period: " + product.getSubscriptionPeriod());
-    }
-}
+});
 ```
 </TabItem>
 </Tabs>
 
-## Fetch specific paywall
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](kmp-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls in two layers: regularly updated cache described above and [fallback paywalls](kmp-use-fallback-paywalls) . We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
-Fetch a specific paywall by ID:
 
-<Tabs groupId="current-os" queryString>
+Don't hardcode product IDs! Since paywalls are configured remotely, the available products, the number of products, and special offers (such as free trials) can change over time. Make sure your code handles these scenarios.  
+For example, if you initially retrieve 2 products, your app should display those 2 products. However, if you later retrieve 3 products, your app should display all 3 without requiring any code changes. The only thing you have to hardcode is placement ID.
 
-<TabItem value="kotlin" label="Kotlin" default>
+Response parameters:
 
-```kotlin showLineNumbers
-fun fetchSpecificPaywall(paywallId: String) {
-    Adapty.getPaywall(paywallId) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val paywall = result.value
-                Log.d("Paywall", "Fetched specific paywall: ${paywall.name}")
-                
-                // Process the specific paywall
-                processSpecificPaywall(paywall)
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Paywall", "Failed to fetch paywall $paywallId: ${result.error.message}")
-                handlePaywallError(result.error)
-            }
-        }
-    }
-}
-
-private fun processSpecificPaywall(paywall: AdaptyPaywall) {
-    Log.d("Paywall", "Paywall details:")
-    Log.d("Paywall", "  Name: ${paywall.name}")
-    Log.d("Paywall", "  Developer ID: ${paywall.developerId}")
-    Log.d("Paywall", "  Revision: ${paywall.revision}")
-    Log.d("Paywall", "  Products: ${paywall.products.size}")
-    
-    // Show paywall to user
-    showPaywallToUser(paywall)
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void fetchSpecificPaywall(String paywallId) {
-    Adapty.getPaywall(paywallId, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-            Log.d("Paywall", "Fetched specific paywall: " + paywall.getName());
-            
-            // Process the specific paywall
-            processSpecificPaywall(paywall);
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Paywall", "Failed to fetch paywall " + paywallId + ": " + ((AdaptyResult.Error) result).getError().getMessage());
-            handlePaywallError(((AdaptyResult.Error) result).getError());
-        }
-    });
-}
-
-private void processSpecificPaywall(AdaptyPaywall paywall) {
-    Log.d("Paywall", "Paywall details:");
-    Log.d("Paywall", "  Name: " + paywall.getName());
-    Log.d("Paywall", "  Developer ID: " + paywall.getDeveloperId());
-    Log.d("Paywall", "  Revision: " + paywall.getRevision());
-    Log.d("Paywall", "  Products: " + paywall.getProducts().size());
-    
-    // Show paywall to user
-    showPaywallToUser(paywall);
-}
-```
-</TabItem>
-</Tabs>
+| Parameter | Description                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | An [`AdaptyPaywall`](kmp-sdk-models#adaptypaywall)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch products
 
-Fetch products from the app store:
+Once you have the paywall, you can query the product array that corresponds to it:
 
 <Tabs groupId="current-os" queryString>
-
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-fun fetchProducts(productIds: List<String>) {
-    Adapty.getProducts(productIds) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val products = result.value
-                Log.d("Products", "Fetched ${products.size} products")
-                
-                // Process products
-                processStoreProducts(products)
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Products", "Failed to fetch products: ${result.error.message}")
-                handleProductError(result.error)
-            }
-        }
-    }
-}
-
-private fun processStoreProducts(products: List<AdaptyProduct>) {
-    products.forEach { product ->
-        Log.d("Product", "Product details:")
-        Log.d("Product", "  Vendor Product ID: ${product.vendorProductId}")
-        Log.d("Product", "  Price: ${product.price}")
-        Log.d("Product", "  Currency: ${product.currencyCode}")
-        Log.d("Product", "  Localized Title: ${product.localizedTitle}")
-        Log.d("Product", "  Localized Description: ${product.localizedDescription}")
-        Log.d("Product", "  Subscription Period: ${product.subscriptionPeriod}")
-        Log.d("Product", "  Introductory Offer: ${product.introductoryOfferEligibility}")
-    }
+Adapty.getPaywallProducts(paywall).onSuccess { products ->
+    // the requested products
+}.onError { error ->
+    // handle the error
 }
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-public void fetchProducts(List<String> productIds) {
-    Adapty.getProducts(productIds, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            List<AdaptyProduct> products = ((AdaptyResult.Success<List<AdaptyProduct>>) result).getValue();
-            Log.d("Products", "Fetched " + products.size() + " products");
-            
-            // Process products
-            processStoreProducts(products);
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Products", "Failed to fetch products: " + ((AdaptyResult.Error) result).getError().getMessage());
-            handleProductError(((AdaptyResult.Error) result).getError());
-        }
-    });
-}
-
-private void processStoreProducts(List<AdaptyProduct> products) {
-    for (AdaptyProduct product : products) {
-        Log.d("Product", "Product details:");
-        Log.d("Product", "  Vendor Product ID: " + product.getVendorProductId());
-        Log.d("Product", "  Price: " + product.getPrice());
-        Log.d("Product", "  Currency: " + product.getCurrencyCode());
-        Log.d("Product", "  Localized Title: " + product.getLocalizedTitle());
-        Log.d("Product", "  Localized Description: " + product.getLocalizedDescription());
-        Log.d("Product", "  Subscription Period: " + product.getSubscriptionPeriod());
-        Log.d("Product", "  Introductory Offer: " + product.getIntroductoryOfferEligibility());
+Adapty.getPaywallProducts(paywall, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
+        // the requested products
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
     }
-}
+});
 ```
 </TabItem>
 </Tabs>
 
-## Fetch paywalls with products
+Response parameters:
 
-Fetch paywalls and their associated products:
+| Parameter | Description                                                                                                                                                                                 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | List of  [`AdaptyPaywallProduct`](kmp-sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
 
-<Tabs groupId="current-os" queryString>
+When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](kmp-sdk-models#adaptypaywallproduct) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
 
-<TabItem value="kotlin" label="Kotlin" default>
+| Property                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title**               | To display the title of the product, use `product.localizedTitle`. Note that the localization is based on the users' selected store country rather than the locale of the device itself.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Price**               | To display a localized version of the price, use `product.price.localizedString`. This localization is based on the locale info of the device. You can also access the price as a number using `product.price.amount`. The value will be provided in the local currency. To get the associated currency symbol, use `product.price.currencySymbol`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Subscription Period** | To display the period (e.g. week, month, year, etc.), use `product.subscriptionDetails?.localizedSubscriptionPeriod`. This localization is based on the locale of the device. To fetch the subscription period programmatically, use `product.subscriptionDetails?.subscriptionPeriod`. From there you can access the `unit` enum to get the length (i.e. DAY, WEEK, MONTH, YEAR, or UNKNOWN). The `numberOfUnits` value will get you the number of period units. For example, for a quarterly subscription, you'd see `MONTH` in the unit property, and `3` in the numberOfUnits property.                                                                                                                                                                                                                                                                                                       |
+| **Introductory Offer**  | To display a badge or other indicator that a subscription contains an introductory offer, check out the `product.subscriptionDetails?.introductoryOfferPhases` property. This is a list that can contain up to two discount phases: the free trial phase and the introductory price phase. Within each phase object are the following helpful properties:<br/>• `paymentMode`: an enum with values `FREE_TRIAL`, `PAY_AS_YOU_GO`, `PAY_UPFRONT`, and `UNKNOWN`. Free trials will be the `FREE_TRIAL` type.<br/>• `price`: The discounted price as a number. For free trials, look for `0` here.<br/>• `localizedNumberOfPeriods`: a string localized using the device's locale describing the length of the offer. For example, a three day trial offer shows `3 days` in this field.<br/>• `subscriptionPeriod`: Alternatively, you can get the individual details of the offer period with this property. It works in the same manner for offers as the previous section describes.<br/>• `localizedSubscriptionPeriod`: A formatted subscription period of the discount for the user's locale. |
+
+## Speed up paywall fetching with default audience paywall
+
+Typically, paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
+
+To address this, you can use the `getPaywallForDefaultAudience` method, which fetches the paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the paywall by the `getPaywall` method, as detailed in the [Fetch Paywall Information](fetch-paywalls-and-products-kmp#fetch-paywall-information) section above.
+
+:::warning
+Why we recommend using `getPaywall`
+
+The `getPaywallForDefaultAudience` method comes with a few significant drawbacks:
+
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
+
+If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise, stick to the `getPaywall` described [above](fetch-paywalls-and-products-kmp#fetch-paywall-information).
+:::
 
 ```kotlin showLineNumbers
-fun fetchPaywallsWithProducts() {
-    Adapty.getPaywalls { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val paywalls = result.value
-                Log.d("Paywalls", "Fetched ${paywalls.size} paywalls with products")
-                
-                // Extract all product IDs from paywalls
-                val allProductIds = paywalls.flatMap { paywall ->
-                    paywall.products.map { it.vendorProductId }
-                }.distinct()
-                
-                Log.d("Products", "Found ${allProductIds.size} unique product IDs")
-                
-                // Fetch detailed product information
-                fetchProducts(allProductIds) { productsResult ->
-                    when (productsResult) {
-                        is AdaptyResult.Success -> {
-                            val products = productsResult.value
-                            Log.d("Products", "Fetched ${products.size} detailed products")
-                            
-                            // Create a map for quick lookup
-                            val productMap = products.associateBy { it.vendorProductId }
-                            
-                            // Process paywalls with detailed product info
-                            processPaywallsWithDetailedProducts(productMap)
-                        }
-                        is AdaptyResult.Error -> {
-                            Log.e("Products", "Failed to fetch products: ${productsResult.error.message}")
-                            handleProductError(productsResult.error)
-                        }
-                    }
-                }
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Paywalls", "Failed to fetch paywalls: ${result.error.message}")
-                handlePaywallError(result.error)
-            }
-        }
-    }
-}
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+import com.adapty.kmp.models.onError
+import com.adapty.kmp.models.onSuccess
 
-private fun fetchProducts(productIds: List<String>) {
-    Adapty.getProducts(productIds) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val products = result.value
-                Log.d("Products", "Fetched ${products.size} detailed products")
-                
-                // Create a map for quick lookup
-                val productMap = products.associateBy { it.vendorProductId }
-                
-                // Process paywalls with detailed product info
-                processPaywallsWithDetailedProducts(productMap)
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Products", "Failed to fetch products: ${result.error.message}")
-                handleProductError(result.error)
-            }
-        }
-    }
-}
-
-private fun processPaywallsWithDetailedProducts(productMap: Map<String, AdaptyProduct>) {
-    // Now you have both paywalls and detailed product information
-    // You can combine them for a complete view
-    Log.d("Combined", "Processing paywalls with detailed product information")
-    
-    // Example: Create a complete paywall view
-    createCompletePaywallView(productMap)
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public void fetchPaywallsWithProducts() {
-    Adapty.getPaywalls(result -> {
-        if (result instanceof AdaptyResult.Success) {
-            List<AdaptyPaywall> paywalls = ((AdaptyResult.Success<List<AdaptyPaywall>>) result).getValue();
-            Log.d("Paywalls", "Fetched " + paywalls.size() + " paywalls with products");
-            
-            // Extract all product IDs from paywalls
-            Set<String> allProductIds = new HashSet<>();
-            for (AdaptyPaywall paywall : paywalls) {
-                for (AdaptyPaywallProduct product : paywall.getProducts()) {
-                    allProductIds.add(product.getVendorProductId());
-                }
-            }
-            
-            Log.d("Products", "Found " + allProductIds.size() + " unique product IDs");
-            
-            // Fetch detailed product information
-            fetchProducts(new ArrayList<>(allProductIds));
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Paywalls", "Failed to fetch paywalls: " + ((AdaptyResult.Error) result).getError().getMessage());
-            handlePaywallError(((AdaptyResult.Error) result).getError());
-        }
-    });
-}
-
-private void fetchProducts(List<String> productIds) {
-    Adapty.getProducts(productIds, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            List<AdaptyProduct> products = ((AdaptyResult.Success<List<AdaptyProduct>>) result).getValue();
-            Log.d("Products", "Fetched " + products.size() + " detailed products");
-            
-            // Create a map for quick lookup
-            Map<String, AdaptyProduct> productMap = new HashMap<>();
-            for (AdaptyProduct product : products) {
-                productMap.put(product.getVendorProductId(), product);
-            }
-            
-            // Process paywalls with detailed product info
-            processPaywallsWithDetailedProducts(productMap);
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Products", "Failed to fetch products: " + ((AdaptyResult.Error) result).getError().getMessage());
-            handleProductError(((AdaptyResult.Error) result).getError());
-        }
-    });
-}
-
-private void processPaywallsWithDetailedProducts(Map<String, AdaptyProduct> productMap) {
-    // Now you have both paywalls and detailed product information
-    // You can combine them for a complete view
-    Log.d("Combined", "Processing paywalls with detailed product information");
-    
-    // Example: Create a complete paywall view
-    createCompletePaywallView(productMap);
-}
-```
-</TabItem>
-</Tabs>
-
-## Handle errors
-
-Handle errors when fetching paywalls and products:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-private fun handlePaywallError(error: AdaptyError) {
-    when (error) {
-        is AdaptyError.NetworkError -> {
-            Log.e("Paywall", "Network error: ${error.message}")
-            showNetworkError("Failed to fetch paywalls. Please check your internet connection.")
-        }
-        is AdaptyError.ServerError -> {
-            Log.e("Paywall", "Server error: ${error.message}")
-            showServerError("Server error occurred. Please try again later.")
-        }
-        is AdaptyError.InvalidResponse -> {
-            Log.e("Paywall", "Invalid response: ${error.message}")
-            showInvalidResponseError("Invalid response from server.")
-        }
-        else -> {
-            Log.e("Paywall", "Unknown error: ${error.message}")
-            showGenericError("An unexpected error occurred.")
-        }
-    }
-}
-
-private fun handleProductError(error: AdaptyError) {
-    when (error) {
-        is AdaptyError.NetworkError -> {
-            Log.e("Product", "Network error: ${error.message}")
-            showNetworkError("Failed to fetch products. Please check your internet connection.")
-        }
-        is AdaptyError.InvalidProductId -> {
-            Log.e("Product", "Invalid product ID: ${error.message}")
-            showInvalidProductError("One or more product IDs are invalid.")
-        }
-        is AdaptyError.StoreNotAvailable -> {
-            Log.e("Product", "Store not available: ${error.message}")
-            showStoreNotAvailableError("App store is not available on this device.")
-        }
-        else -> {
-            Log.e("Product", "Unknown error: ${error.message}")
-            showGenericError("An unexpected error occurred while fetching products.")
-        }
-    }
-}
-
-private fun showNetworkError(message: String) {
-    // Show network error to user
-    showErrorDialog("Network Error", message)
-}
-
-private fun showServerError(message: String) {
-    // Show server error to user
-    showErrorDialog("Server Error", message)
-}
-
-private fun showInvalidResponseError(message: String) {
-    // Show invalid response error to user
-    showErrorDialog("Invalid Response", message)
-}
-
-private fun showInvalidProductError(message: String) {
-    // Show invalid product error to user
-    showErrorDialog("Invalid Product", message)
-}
-
-private fun showStoreNotAvailableError(message: String) {
-    // Show store not available error to user
-    showErrorDialog("Store Not Available", message)
-}
-
-private fun showGenericError(message: String) {
-    // Show generic error to user
-    showErrorDialog("Error", message)
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-private void handlePaywallError(AdaptyError error) {
-    if (error instanceof AdaptyError.NetworkError) {
-        Log.e("Paywall", "Network error: " + error.getMessage());
-        showNetworkError("Failed to fetch paywalls. Please check your internet connection.");
-    } else if (error instanceof AdaptyError.ServerError) {
-        Log.e("Paywall", "Server error: " + error.getMessage());
-        showServerError("Server error occurred. Please try again later.");
-    } else if (error instanceof AdaptyError.InvalidResponse) {
-        Log.e("Paywall", "Invalid response: " + error.getMessage());
-        showInvalidResponseError("Invalid response from server.");
-    } else {
-        Log.e("Paywall", "Unknown error: " + error.getMessage());
-        showGenericError("An unexpected error occurred.");
-    }
-}
-
-private void handleProductError(AdaptyError error) {
-    if (error instanceof AdaptyError.NetworkError) {
-        Log.e("Product", "Network error: " + error.getMessage());
-        showNetworkError("Failed to fetch products. Please check your internet connection.");
-    } else if (error instanceof AdaptyError.InvalidProductId) {
-        Log.e("Product", "Invalid product ID: " + error.getMessage());
-        showInvalidProductError("One or more product IDs are invalid.");
-    } else if (error instanceof AdaptyError.StoreNotAvailable) {
-        Log.e("Product", "Store not available: " + error.getMessage());
-        showStoreNotAvailableError("App store is not available on this device.");
-    } else {
-        Log.e("Product", "Unknown error: " + error.getMessage());
-        showGenericError("An unexpected error occurred while fetching products.");
-    }
-}
-
-private void showNetworkError(String message) {
-    // Show network error to user
-    showErrorDialog("Network Error", message);
-}
-
-private void showServerError(String message) {
-    // Show server error to user
-    showErrorDialog("Server Error", message);
-}
-
-private void showInvalidResponseError(String message) {
-    // Show invalid response error to user
-    showErrorDialog("Invalid Response", message);
-}
-
-private void showInvalidProductError(String message) {
-    // Show invalid product error to user
-    showErrorDialog("Invalid Product", message);
-}
-
-private void showStoreNotAvailableError(String message) {
-    // Show store not available error to user
-    showErrorDialog("Store Not Available", message);
-}
-
-private void showGenericError(String message) {
-    // Show generic error to user
-    showErrorDialog("Error", message);
-}
-```
-</TabItem>
-</Tabs>
-
-## Complete example
-
-Here's a complete example of fetching paywalls and products:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-class PaywallManager {
-    private var paywalls: List<AdaptyPaywall> = emptyList()
-    private var products: Map<String, AdaptyProduct> = emptyMap()
-    
-    fun initializePaywalls() {
-        // Fetch paywalls first
-        fetchPaywalls { paywallsResult ->
-            when (paywallsResult) {
-                is AdaptyResult.Success -> {
-                    paywalls = paywallsResult.value
-                    Log.d("PaywallManager", "Fetched ${paywalls.size} paywalls")
-                    
-                    // Extract product IDs and fetch products
-                    val productIds = extractProductIds(paywalls)
-                    fetchProducts(productIds) { productsResult ->
-                        when (productsResult) {
-                            is AdaptyResult.Success -> {
-                                products = productsResult.value.associateBy { it.vendorProductId }
-                                Log.d("PaywallManager", "Fetched ${products.size} products")
-                                
-                                // Notify that data is ready
-                                onDataReady()
-                            }
-                            is AdaptyResult.Error -> {
-                                Log.e("PaywallManager", "Failed to fetch products: ${productsResult.error.message}")
-                                handleProductError(productsResult.error)
-                            }
-                        }
-                    }
-                }
-                is AdaptyResult.Error -> {
-                    Log.e("PaywallManager", "Failed to fetch paywalls: ${paywallsResult.error.message}")
-                    handlePaywallError(paywallsResult.error)
-                }
-            }
-        }
-    }
-    
-    private fun extractProductIds(paywalls: List<AdaptyPaywall>): List<String> {
-        return paywalls.flatMap { paywall ->
-            paywall.products.map { it.vendorProductId }
-        }.distinct()
-    }
-    
-    fun getPaywall(id: String): AdaptyPaywall? {
-        return paywalls.find { it.developerId == id }
-    }
-    
-    fun getProduct(vendorProductId: String): AdaptyProduct? {
-        return products[vendorProductId]
-    }
-    
-    fun getAllPaywalls(): List<AdaptyPaywall> {
-        return paywalls
-    }
-    
-    fun getAllProducts(): List<AdaptyProduct> {
-        return products.values.toList()
-    }
-    
-    fun getPaywallWithProducts(paywallId: String): PaywallWithProducts? {
-        val paywall = getPaywall(paywallId) ?: return null
-        
-        val paywallProducts = paywall.products.mapNotNull { paywallProduct ->
-            products[paywallProduct.vendorProductId]?.let { detailedProduct ->
-                PaywallProductInfo(paywallProduct, detailedProduct)
-            }
-        }
-        
-        return PaywallWithProducts(paywall, paywallProducts)
-    }
-    
-    private fun onDataReady() {
-        // Notify UI that data is ready
-        Log.d("PaywallManager", "Paywall and product data is ready")
-        
-        // Update UI
-        updateUI()
-    }
-    
-    private fun updateUI() {
-        // Update your UI with the fetched data
-        // This could be updating a RecyclerView, ListView, etc.
-        Log.d("PaywallManager", "Updating UI with ${paywalls.size} paywalls and ${products.size} products")
-    }
-}
-
-data class PaywallWithProducts(
-    val paywall: AdaptyPaywall,
-    val products: List<PaywallProductInfo>
-)
-
-data class PaywallProductInfo(
-    val paywallProduct: AdaptyPaywallProduct,
-    val detailedProduct: AdaptyProduct
-)
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public class PaywallManager {
-    private List<AdaptyPaywall> paywalls = new ArrayList<>();
-    private Map<String, AdaptyProduct> products = new HashMap<>();
-    
-    public void initializePaywalls() {
-        // Fetch paywalls first
-        fetchPaywalls(paywallsResult -> {
-            if (paywallsResult instanceof AdaptyResult.Success) {
-                paywalls = ((AdaptyResult.Success<List<AdaptyPaywall>>) paywallsResult).getValue();
-                Log.d("PaywallManager", "Fetched " + paywalls.size() + " paywalls");
-                
-                // Extract product IDs and fetch products
-                List<String> productIds = extractProductIds(paywalls);
-                fetchProducts(productIds, productsResult -> {
-                    if (productsResult instanceof AdaptyResult.Success) {
-                        List<AdaptyProduct> productsList = ((AdaptyResult.Success<List<AdaptyProduct>>) productsResult).getValue();
-                        for (AdaptyProduct product : productsList) {
-                            products.put(product.getVendorProductId(), product);
-                        }
-                        Log.d("PaywallManager", "Fetched " + products.size() + " products");
-                        
-                        // Notify that data is ready
-                        onDataReady();
-                    } else if (productsResult instanceof AdaptyResult.Error) {
-                        Log.e("PaywallManager", "Failed to fetch products: " + ((AdaptyResult.Error) productsResult).getError().getMessage());
-                        handleProductError(((AdaptyResult.Error) productsResult).getError());
-                    }
-                });
-            } else if (paywallsResult instanceof AdaptyResult.Error) {
-                Log.e("PaywallManager", "Failed to fetch paywalls: " + ((AdaptyResult.Error) paywallsResult).getError().getMessage());
-                handlePaywallError(((AdaptyResult.Error) paywallsResult).getError());
-            }
-        });
-    }
-    
-    private List<String> extractProductIds(List<AdaptyPaywall> paywalls) {
-        Set<String> productIds = new HashSet<>();
-        for (AdaptyPaywall paywall : paywalls) {
-            for (AdaptyPaywallProduct product : paywall.getProducts()) {
-                productIds.add(product.getVendorProductId());
-            }
-        }
-        return new ArrayList<>(productIds);
-    }
-    
-    public AdaptyPaywall getPaywall(String id) {
-        for (AdaptyPaywall paywall : paywalls) {
-            if (paywall.getDeveloperId().equals(id)) {
-                return paywall;
-            }
-        }
-        return null;
-    }
-    
-    public AdaptyProduct getProduct(String vendorProductId) {
-        return products.get(vendorProductId);
-    }
-    
-    public List<AdaptyPaywall> getAllPaywalls() {
-        return new ArrayList<>(paywalls);
-    }
-    
-    public List<AdaptyProduct> getAllProducts() {
-        return new ArrayList<>(products.values());
-    }
-    
-    public PaywallWithProducts getPaywallWithProducts(String paywallId) {
-        AdaptyPaywall paywall = getPaywall(paywallId);
-        if (paywall == null) return null;
-        
-        List<PaywallProductInfo> paywallProducts = new ArrayList<>();
-        for (AdaptyPaywallProduct paywallProduct : paywall.getProducts()) {
-            AdaptyProduct detailedProduct = products.get(paywallProduct.getVendorProductId());
-            if (detailedProduct != null) {
-                paywallProducts.add(new PaywallProductInfo(paywallProduct, detailedProduct));
-            }
-        }
-        
-        return new PaywallWithProducts(paywall, paywallProducts);
-    }
-    
-    private void onDataReady() {
-        // Notify UI that data is ready
-        Log.d("PaywallManager", "Paywall and product data is ready");
-        
-        // Update UI
-        updateUI();
-    }
-    
-    private void updateUI() {
-        // Update your UI with the fetched data
-        // This could be updating a RecyclerView, ListView, etc.
-        Log.d("PaywallManager", "Updating UI with " + paywalls.size() + " paywalls and " + products.size() + " products");
-    }
-}
-
-public class PaywallWithProducts {
-    private AdaptyPaywall paywall;
-    private List<PaywallProductInfo> products;
-    
-    public PaywallWithProducts(AdaptyPaywall paywall, List<PaywallProductInfo> products) {
-        this.paywall = paywall;
-        this.products = products;
-    }
-    
-    // Getters
-    public AdaptyPaywall getPaywall() { return paywall; }
-    public List<PaywallProductInfo> getProducts() { return products; }
-}
-
-public class PaywallProductInfo {
-    private AdaptyPaywallProduct paywallProduct;
-    private AdaptyProduct detailedProduct;
-    
-    public PaywallProductInfo(AdaptyPaywallProduct paywallProduct, AdaptyProduct detailedProduct) {
-        this.paywallProduct = paywallProduct;
-        this.detailedProduct = detailedProduct;
-    }
-    
-    // Getters
-    public AdaptyPaywallProduct getPaywallProduct() { return paywallProduct; }
-    public AdaptyProduct getDetailedProduct() { return detailedProduct; }
-}
-```
-</TabItem>
-</Tabs>
-
-## Next steps
-
-- [Handle errors](kmp-handle-errors.md) - Learn about error handling
-- [Make purchases](kmp-making-purchases.md) - Learn how to make purchases
-- [Present paywalls](kmp-present-paywalls.md) - Learn how to present paywalls to users
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](kmp-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |

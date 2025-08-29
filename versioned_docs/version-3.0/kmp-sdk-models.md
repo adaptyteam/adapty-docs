@@ -1,162 +1,239 @@
 ---
-title: "SDK models in Kotlin Multiplatform SDK"
-description: "Data models and structures used by the Adapty Kotlin Multiplatform SDK."
-metadataTitle: "SDK Models | Kotlin Multiplatform SDK | Adapty Docs"
-displayed_sidebar: sdkkmp
+title: "Kotlin Multiplatform SDK Models"
+description: "Understand Adapty's SDK models to optimize in-app purchase handling."
+metadataTitle: "Understanding SDK Models | Kotlin Multiplatform SDK | Adapty Docs"
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+## Models
 
-This page describes the main data models and structures used by the Adapty Kotlin Multiplatform SDK.
+### AdaptyOnboardingScreenParameters
 
-## AdaptyProfile
+Parameters for logging onboarding screen events.
 
-Represents a user's profile with their subscription status and access levels.
+| Name                    | Type    | Description                                            |
+|-------------------------|---------|--------------------------------------------------------|
+| onboardingName          | string (optional) | Name of the onboarding flow                            |
+| onboardingScreenName    | string (optional) | Name of the onboarding screen                          |
+| onboardingScreenOrder   | number  | Order of the onboarding screen (minimum: 1)            |
 
-### Properties
+### AdaptyPaywallProduct
 
-- `accessLevels: Map<String, AdaptyAccessLevel>` - User's access levels
-- `customerUserId: String?` - Custom user identifier
-- `profileId: String` - Unique profile identifier
+An information about a [product.](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct)
 
-## AdaptyAccessLevel
+| Name                                     | Type                                                                                                                    | Description                                                                                                                                                                       |
+|:-----------------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| vendorProductId                          | string                                                                                                                  | Unique identifier of a product from App Store Connect or Google Play Console                                                                                                      |
+| adaptyProductId                          | string                                                                                                                  | Unique identifier of the product in Adapty                                                                                                                                        |
+| paywallVariationId                       | string                                                                                                                  | Same as variationId property of the parent AdaptyPaywall                                                                                                                          |
+| paywallABTestName                        | string                                                                                                                  | Same as abTestName property of the parent AdaptyPaywall                                                                                                                          |
+| paywallName                              | string                                                                                                                  | Same as name property of the parent AdaptyPaywall                                                                                                                                 |
+| paywallProductIndex                      | number                                                                                                                  | The index of the product in the paywall                                                                                                                                           |
+| audienceName                             | string (optional)                                                                                                       | Name of the audience this product belongs to                                                                                                                                      |
+| localizedDescription                     | string                                                                                                                  | A description of the product                                                                                                                                                     |
+| localizedTitle                           | string                                                                                                                  | The name of the product                                                                                                                                                          |
+| isFamilyShareable                        | boolean                                                                                                                 | Boolean value that indicates whether the product is available for family sharing in App Store Connect. iOS Only.                                                                  |
+| regionCode                               | string (optional)                                                                                                       | The region code of the locale used to format the price of the product. ISO 3166 ALPHA-2 (US, DE). iOS Only.                                                                      |
+| price                                    | [AdaptyPrice](#adaptyprice)                                                                                             | The cost of the product in the local currency                                                                                                                                    |
+| subscription                             | [AdaptyPaywallProductSubscription](#adaptyproductsubscription) (optional)                                               | Detailed information about subscription (intro, offers, etc.)                                                                                                                     |
+| payloadData                              | string (optional)                                                                                                       | Additional data associated with the product                                                                                                                                       |
 
-Represents an access level that defines what features a user can access.
+### AdaptyPrice
 
-### Properties
+| Name              | Type             | Description                                                                                                                      |
+| :---------------- | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| amount            | number           | Price as number                                                                                                                    |
+| currencyCode      | string (optional) | The currency code of the locale used to format the price of the product. The ISO 4217 (USD, EUR)                                                          |
+| currencySymbol    | string (optional) | The currency symbol of the locale used to format the price of the product. ($, €)                                                        |
+| localizedString   | string (optional) | A price's language is determined by the preferred language set on the device. On Android, the formatted price from Google Play as is                                                                               |
 
-- `id: String` - Access level identifier
-- `isActive: Boolean` - Whether the access level is currently active
-- `expiresAt: String?` - Expiration date (ISO 8601 format)
-- `vendorProductId: String?` - Associated product identifier
+### AdaptyPaywallProductSubscription
 
-## AdaptyPaywall
+| Name                          | Type                                                                                                                    | Description                                                                                                                                                                       |
+|:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| groupIdentifier               | string (optional)                                                                                                       | An identifier of the subscription group to which the subscription belongs. iOS Only.                                                                                              |
+| period                        | [AdaptySubscriptionPeriod](#adaptysubscriptionperiod)                                                                   | The period details for products that are subscriptions                                                                                                                              |
+| localizedPeriod               | string (optional)                                                                                                       | The period's language is determined by the preferred language set on the device                                                                                                         |
+| offer                         | [AdaptySubscriptionOffer](#adaptysubscriptionoffer) (optional)                                                          | A subscription offer if available for the auto-renewable subscription                                                                                                                   |
+| renewalType                   | [AdaptyRenewalType](#adaptyrenewaltype)                                                                                 | The renewal type. Android Only.                                                                                                                                    |
+| basePlanId                    | string (optional)                                                                                                       | The identifier of the base plan. Android Only.                                                                                                                                    |
 
-Represents a paywall configuration with products and visual settings.
+### AdaptySubscriptionPeriod
 
-### Properties
+| Name          | Type             | Description                                                                                                                      |
+| :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| numberOfUnits | number           | A number of period units                                                                                                         |
+| unit          | [AdaptyPeriodUnit](#adaptyperiodunit) | A unit of time that a subscription period is specified in. The possible values are: `day`, `week`, `month`, `year` |
 
-- `id: String` - Paywall identifier
-- `products: List<AdaptyProduct>` - Available products
-- `hasViewConfiguration: Boolean` - Whether paywall has visual configuration
-- `placementId: String` - Associated placement identifier
+### AdaptySubscriptionOffer
 
-## AdaptyProduct
+| Name                          | Type                                                                                                                    | Description                                                                                                                                                                       |
+|:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| identifier                    | string                                                                                                                  | Unique identifier of a discount offer for a product                                                                                                                              |
+| phases                        | array of [AdaptySubscriptionPhase](#adaptysubscriptionphase)                                                            | A list of discount phases available for this offer                                                                                                                               |
 
-Represents a product available for purchase.
+### AdaptySubscriptionPhase
 
-### Properties
+| Name                          | Type                                                                                                                    | Description                                                                                                                                                                       |
+|:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| localizedNumberOfPeriods     | string (optional)                                                                                                       | A formatted number of periods of a discount for a user's locale                                                                                                                   |
+| localizedSubscriptionPeriod   | string (optional)                                                                                                       | A formatted subscription period of a discount for a user's locale                                                                                                                 |
+| numberOfPeriods               | number                                                                                                                  | A number of periods this product discount is available                                                                                                                           |
+| price                         | [AdaptyPrice](#adaptyprice)                                                                                             | Discount price of a product in a local currency                                                                                                                                   |
+| subscriptionPeriod            | [AdaptySubscriptionPeriod](#adaptysubscriptionperiod)                                                                   | An information about period for a product discount                                                                                                                                |
+| paymentMode                   | [AdaptySubscriptionOfferPaymentMode](#adaptysubscriptionofferpaymentmode)                                                                                                               | A payment mode for this product discount. Possible values: `free_trial`, `pay_as_you_go`, `pay_up_front`                                                                         |
 
-- `vendorProductId: String` - Product identifier
-- `localizedTitle: String` - Localized product title
-- `localizedDescription: String` - Localized product description
-- `localizedPrice: String` - Localized price string
-- `price: Double` - Product price
-- `currencyCode: String` - Currency code
-- `subscriptionPeriod: String?` - Subscription period (for subscriptions)
+### AdaptyPaywall
 
-## AdaptyError
+An information about a [paywall.](https://swift.adapty.io/documentation/adapty/adaptypaywall)
 
-Represents an error that occurred during SDK operations.
+| Name               | Type                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|--------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| placementId        | string                | ID of a placement configured in Adapty Dashboard                                                                                                                                                                                                                                                                                                                                                                                                       |
+| instanceIdentity   | string                | Unique identifier of the paywall configuration                                                                                                                                                                                                                                                                                                                                                                                                         |
+| name               | string                | A paywall name                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| audienceName       | string                | A name of an audience to which the paywall belongs                                                                                                                                                                                                                                                                                                                                                                                                     |
+| abTestName         | string                | Parent A/B test name                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                                                                                                                                                                                                                                                             |
+| revision           | number                | Current revision (version) of a paywall. Every change within a paywall creates a new revision                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| hasViewConfiguration | boolean               | If true, it is possible to fetch the view object and use it with AdaptyUI library                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| remoteConfig       | [AdaptyPaywallRemoteConfig](#adaptyremoteconfig) (optional) | A remote config configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                                  |
+| payloadData        | string (optional)     | Additional data associated with the paywall                                                                                                                                                                                                                                                                                                                                                                                                            |
 
-### Properties
+### AdaptyPlacement
 
-- `code: Int` - Error code
-- `message: String` - Error message
-- `details: String?` - Additional error details
+| Name          | Type             | Description                                                                                                                      |
+| :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| abTestName    | string           | Parent A/B test name                                                                                                              |
+| audienceName  | string           | A name of an audience to which the paywall belongs                                                                             |
+| id            | string           | ID of a placement configured in Adapty Dashboard                                                                     |
+| revision      | number           | Current revision (version) of a paywall. Every change within a paywall creates a new revision                               |
+| isTrackingPurchases | boolean (optional) | Whether the placement is tracking purchases                                                                                      |
+| audienceVersionId | string | Version ID of the audience                                                                                                      |
 
-## Example usage
+### AdaptyPaywallRemoteConfig
 
-<Tabs groupId="current-os" queryString>
+| Name          | Type             | Description                                                                                                                      |
+| :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| lang          | string           | Identifier of a paywall locale                                                                                                |
+| data          | object           | A custom dictionary configured in Adapty Dashboard for this paywall                                                             |
+| dataString    | string           | A custom JSON string configured in Adapty Dashboard for this paywall                                                |
 
-<TabItem value="kotlin" label="Kotlin" default>
+### AdaptyProfile
 
-```kotlin showLineNumbers
-// Get user profile
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            
-            // Check access level
-            val premiumAccess = profile.accessLevels["premium"]
-            if (premiumAccess?.isActive == true) {
-                // User has premium access
-                unlockPremiumFeatures()
-            }
-            
-            // Get user ID
-            val userId = profile.customerUserId
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            Log.e("Adapty", "Error: ${error.message}")
-        }
-    }
-}
+An information about a [user's](https://swift.adapty.io/documentation/adapty/adaptyprofile) subscription status and purchase history.
 
-// Get paywall
-Adapty.getPaywall("main") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            
-            // Access products
-            paywall.products.forEach { product ->
-                Log.d("Adapty", "Product: ${product.localizedTitle} - ${product.localizedPrice}")
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            Log.e("Adapty", "Error: ${error.message}")
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+| Name             | Type                                                                                      | Description                                                                                                                                    |
+| :--------------- | :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| profileId        | string                                                                                    | An identifier of the user in Adapty                                                                                                              |
+| customerUserId   | string (optional)                                                                         | An identifier of the user in your system                                                                                                         |
+| customAttributes | object                                                                                    | Previously set user custom attributes with the updateProfile method. Can contain string and number values.                                                                       |
+| accessLevels     | object\<string, [AdaptyProfile.AccessLevel](#adaptyprofileaccesslevel)>                   | The keys are access level identifiers configured by you in Adapty Dashboard. The values are AccessLevel objects. Can be null if the customer has no access levels  |
+| subscriptions    | object\<string, [AdaptyProfile.Subscription](#adaptyprofilesubscription)>                 | The keys are product ids from App Store Connect. The values are Subscription objects. Can be null if the customer has no subscriptions        |
+| nonSubscriptions | object\<string, array of [AdaptyProfile.NonSubscription](#adaptyprofilenonsubscription)>  | The keys are product ids from App Store Connect. The values are arrays of NonSubscription objects. Can be null if the customer has no purchases |
 
-```java showLineNumbers
-// Get user profile
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        
-        // Check access level
-        AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("premium");
-        if (premiumAccess != null && premiumAccess.isActive()) {
-            // User has premium access
-            unlockPremiumFeatures();
-        }
-        
-        // Get user ID
-        String userId = profile.getCustomerUserId();
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        Log.e("Adapty", "Error: " + error.getMessage());
-    }
-});
+### AdaptyProfile.AccessLevel
 
-// Get paywall
-Adapty.getPaywall("main", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        
-        // Access products
-        for (AdaptyProduct product : paywall.getProducts()) {
-            Log.d("Adapty", "Product: " + product.getLocalizedTitle() + " - " + product.getLocalizedPrice());
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        Log.e("Adapty", "Error: " + error.getMessage());
-    }
-});
-```
-</TabItem>
-</Tabs>
+Information about the [user's access level.](https://swift.adapty.io/documentation/adapty/adaptyprofile/accesslevel)
 
-## Next steps
+| Name | Type | Description |
+|----|----|-----------|
+| id | string | Unique identifier of the access level configured by you in Adapty Dashboard |
+| isActive | boolean | Whether the access level is active. Generally, you have to check just this property to determine if the user has access to premium features |
+| vendorProductId | string | The identifier of the product in the App Store Connect that unlocked this access level |
+| store | string | The store of the purchase that unlocked this access level. The possible values are: app_store, play_store, adapty |
+| activatedAt | string | The time when the access level was activated (ISO 8601 format) |
+| renewedAt | string (optional) | The time when the access level was renewed (ISO 8601 format) |
+| expiresAt | string (optional) | The time when the access level will expire (ISO 8601 format, could be in the past and could be null for lifetime access) |
+| isLifetime | boolean | Whether the access level is active for a lifetime (no expiration date). If set to true you shouldn't check expires_at, or you could just check isActive |
+| activeIntroductoryOfferType | string (optional) | The type of active introductory offer. Possible values are: free_trial, pay_as_you_go, pay_up_front. If the value is not null, it means that the offer was applied during the current subscription period |
+| activePromotionalOfferType | string (optional) | The type of active promotional offer. Possible values are: free_trial, pay_as_you_go, pay_up_front. If the value is not null, it means that the offer was applied during the current subscription period |
+| activePromotionalOfferId | string (optional) | An identifier of active promotional offer |
+| offerId | string (optional) | Offer identifier |
+| willRenew | boolean | Whether the auto-renewable subscription is set to renew |
+| isInGracePeriod | boolean | Whether the auto-renewable subscription is in the grace period |
+| unsubscribedAt | string (optional) | The time when the auto-renewable subscription was cancelled. Subscription can still be active, it just means that auto-renewal turned off. Will be set to null if the user reactivates the subscription (ISO 8601 format) |
+| billingIssueDetectedAt | string (optional) | The time when billing issue was detected. Subscription can still be active. Will be set to null if the charge will be made (ISO 8601 format) |
+| startsAt | string (optional) | The time when this access level has started (ISO 8601 format, could be in the future) |
+| cancellationReason | string (optional) | The reason why the subscription was cancelled. Possible values are: voluntarily_cancelled, billing_error, refund, price_increase, product_was_not_available, unknown |
+| isRefund | boolean | Whether the purchase was refunded |
 
-- [Handle errors](kmp-handle-errors.md) - Learn about error handling
-- [Complete API reference](https://kotlin.adapty.io) - Full SDK documentation
+### AdaptyProfile.Subscription
+
+Information about the [user's subscription.](https://swift.adapty.io/documentation/adapty/adaptyprofile/subscription)
+
+| Name | Type | Description |
+|----|----|-----------|
+| store | string | The store of the purchase. The possible values are: app_store, play_store, adapty |
+| vendorProductId | string | The identifier of the product in the App Store Connect |
+| vendorTransactionId | string | Transaction id from the App Store |
+| vendorOriginalTransactionId | string | Original transaction id from the App Store. For auto-renewable subscription, this will be the id of the first transaction in the subscription |
+| isActive | boolean | Whether the subscription is active |
+| isLifetime | boolean | Whether the subscription is active for a lifetime (no expiration date). If set to true you shouldn't check expires_at, or you could just check isActive |
+| activatedAt | string | The time when the subscription was activated (ISO 8601 format) |
+| renewedAt | string (optional) | The time when the subscription was renewed (ISO 8601 format) |
+| expiresAt | string (optional) | The time when the subscription will expire (ISO 8601 format, could be in the past and could be null for lifetime access) |
+| startsAt | string (optional) | The time when the subscription has started (ISO 8601 format, could be in the future) |
+| unsubscribedAt | string (optional) | The time when the auto-renewable subscription was cancelled. Subscription can still be active, it just means that auto-renewal turned off. Will be set to null if a user reactivates the subscription (ISO 8601 format) |
+| billingIssueDetectedAt | string (optional) | The time when billing issue was detected (Apple was not able to charge the card). Subscription can still be active. Will be set to null if the charge will be made (ISO 8601 format) |
+| isInGracePeriod | boolean | Whether the auto-renewable subscription is in the grace period |
+| isSandbox | boolean | Whether the product was purchased in the sandbox environment |
+| isRefund | boolean | Whether the purchase was refunded |
+| willRenew | boolean | Whether the auto-renewable subscription is set to renew |
+| activeIntroductoryOfferType | string (optional) | The type of active introductory offer. Possible values are: free_trial, pay_as_you_go, pay_up_front. If the value is not null, it means that the offer was applied during the current subscription period |
+| activePromotionalOfferType | string (optional) | The type of active promotional offer. Possible values are: free_trial, pay_as_you_go, pay_up_front. If the value is not null, it means that the offer was applied during the current subscription period |
+| activePromotionalOfferId | string (optional) | An identifier of active promotional offer |
+| offerId | string (optional) | Offer identifier |
+| cancellationReason | string (optional) | The reason why the subscription was cancelled. Possible values are: voluntarily_cancelled, billing_error, refund, price_increase, product_was_not_available, unknown |
+
+### AdaptyProfile.NonSubscription
+
+Information about the user's non-subscription purchases.
+
+| Name | Type | Description |
+|----|----|-----------|
+| purchaseId | string | The identifier of the purchase in Adapty. You can use it to ensure that you've already processed this purchase (for example tracking one time products) |
+| store | string | The store of the purchase. The possible values are: app_store, play_store, adapty |
+| vendorProductId | string | The identifier of the product in the App Store Connect |
+| vendorTransactionId | string (optional) | Transaction id from the App Store |
+| purchasedAt | string | The time when the product was purchased (ISO 8601 format) |
+| isSandbox | boolean | Whether the product was purchased in the sandbox environment |
+| isRefund | boolean | Whether the purchase was refunded |
+| isConsumable | boolean | Whether the product should only be processed once. If true, the purchase will be returned by Adapty API one time only |
+
+### AdaptyAndroidSubscriptionUpdateParameters
+
+Parameters to change one subscription to another.
+
+| Name                  | Type   | Description                                                  |
+| :-------------------- | :----- | :----------------------------------------------------------- |
+| oldSubVendorProductId | string | The product id for current subscription to change |
+| replacementMode       | [AdaptyAndroidSubscriptionUpdateReplacementMode](#adaptyandroidsubscriptionupdatereplacementmode) | The proration mode for subscription update |
+
+### Enums
+
+#### AdaptyPeriodUnit
+- `day` - Day period
+- `week` - Week period
+- `month` - Month period
+- `year` - Year period
+
+#### AdaptySubscriptionOfferPaymentMode
+- `free_trial` - Free trial
+- `pay_as_you_go` - Pay as you go
+- `pay_up_front` - Pay up front
+
+#### AdaptyRenewalType
+- `prepaid` - Prepaid subscription
+- `autorenewable` - Auto-renewable subscription
+
+#### AdaptyProfile.Gender
+- `f` - Female
+- `m` - Male
+- `o` - Other
+
+#### AdaptyAndroidSubscriptionUpdateReplacementMode
+- `immediate_with_time_proration` - Immediate with time proration
+- `immediate_and_charge_prorated_price` - Immediate and charge prorated price
+- `immediate_without_proration` - Immediate without proration
+- `deferred` - Deferred
+- `immediate_and_charge_full_price` - Immediate and charge full price 

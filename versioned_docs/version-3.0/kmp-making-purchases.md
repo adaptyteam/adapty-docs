@@ -1,312 +1,137 @@
 ---
-title: "Making purchases in Kotlin Multiplatform SDK"
-description: "Learn how to make purchases in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Making Purchases | Kotlin Multiplatform SDK | Adapty Docs"
+title: "Make purchases in mobile app in Kotlin Multiplatform SDK"
+description: "Guide on handling in-app purchases and subscriptions using Adapty."
+metadataTitle: "Handling In-App Purchases in Adapty | Adapty Docs"
+keywords: ['makePurchase', 'pending']
+rank: 95
 displayed_sidebar: sdkkmp
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-This page covers how to make purchases using the Adapty Kotlin Multiplatform SDK.
+Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
 
-## Make a purchase
+If you don't use the Paywall Builder, you must use a separate method called `.makePurchase()` to complete a purchase and unlock the desired content. This method serves as the gateway for users to engage with the paywalls and proceed with their desired transactions.
 
-To make a purchase, call the `makePurchase` method on a product:
+If your paywall has an active promotional offer for the product a user is trying to buy, Adapty will automatically apply it at the time of purchase.
 
-<Tabs groupId="current-os" queryString>
+:::warning
+Keep in mind that the introductory offer will be applied automatically only if you use the paywalls set up using the Paywall Builder.
 
-<TabItem value="kotlin" label="Kotlin" default>
+In other cases, you'll need to [verify the user's eligibility for an introductory offer on iOS](fetch-paywalls-and-products-kmp#check-intro-offer-eligibility-on-ios).  Skipping this step may result in your app being rejected during release. Moreover, it could lead to charging the full price to users who are eligible for an introductory offer.
+:::
 
-```kotlin showLineNumbers
-product.makePurchase { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val purchase = result.value
-            // Purchase successful
-            showSuccessMessage()
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-            showErrorMessage(error.message)
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+Make sure you've [done the initial configuration](quickstart) without skipping a single step. Without it, we can't validate purchases.
 
-```java showLineNumbers
-product.makePurchase(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-        // Purchase successful
-        showSuccessMessage();
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-        showErrorMessage(error.getMessage());
-    }
-});
-```
-</TabItem>
-</Tabs>
+## Make purchase
 
-## Purchase flow
+:::note
+In paywalls built with [Paywall Builder](adapty-paywall-builder) purchases are processed automatically with no additional code. If that's your case — you can skip this step.
+:::
 
-Here's a complete example of the purchase flow:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-class PurchaseManager {
-    fun purchaseProduct(product: AdaptyProduct) {
-        // Show loading indicator
-        showLoadingIndicator()
-        
-        product.makePurchase { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val purchase = result.value
-                    // Purchase successful
-                    hideLoadingIndicator()
-                    showSuccessMessage("Purchase successful!")
-                    
-                    // Update UI to reflect new subscription status
-                    updateSubscriptionStatus()
-                }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    // Handle error
-                    hideLoadingIndicator()
-                    
-                    when (error.code) {
-                        1003 -> {
-                            // Can't make payments
-                            showPaymentNotAvailableMessage()
-                        }
-                        1004 -> {
-                            // Product not available
-                            showProductNotAvailableMessage()
-                        }
-                        else -> {
-                            // Other errors
-                            showErrorMessage("Purchase failed: ${error.message}")
-                        }
-                    }
-                }
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPurchaseResult
+
+Adapty.makePurchase(product = product).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // Grant access to the paid features
             }
         }
-    }
-    
-    private fun updateSubscriptionStatus() {
-        // Get updated profile to reflect new subscription
-        Adapty.getProfile { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val profile = result.value
-                    // Update UI based on new profile
-                    updateUI(profile)
-                }
-                is AdaptyResult.Error -> {
-                    // Handle error
-                }
-            }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // Handle the case where the user canceled the purchase
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
         }
     }
+}.onError { error ->
+    // Handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public class PurchaseManager {
-    public void purchaseProduct(AdaptyProduct product) {
-        // Show loading indicator
-        showLoadingIndicator();
-        
-        product.makePurchase(result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-                // Purchase successful
-                hideLoadingIndicator();
-                showSuccessMessage("Purchase successful!");
-                
-                // Update UI to reflect new subscription status
-                updateSubscriptionStatus();
-            } else if (result instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) result).getError();
-                // Handle error
-                hideLoadingIndicator();
-                
-                switch (error.getCode()) {
-                    case 1003:
-                        // Can't make payments
-                        showPaymentNotAvailableMessage();
-                        break;
-                    case 1004:
-                        // Product not available
-                        showProductNotAvailableMessage();
-                        break;
-                    default:
-                        // Other errors
-                        showErrorMessage("Purchase failed: " + error.getMessage());
-                        break;
-                }
-            }
-        });
-    }
-    
-    private void updateSubscriptionStatus() {
-        // Get updated profile to reflect new subscription
-        Adapty.getProfile(result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-                // Update UI based on new profile
-                updateUI(profile);
-            } else if (result instanceof AdaptyResult.Error) {
-                // Handle error
-            }
-        });
-    }
-}
-```
-</TabItem>
-</Tabs>
+Request parameters:
 
-## Purchase with custom parameters
+| Parameter   | Presence | Description                                                                                         |
+| :---------- | :------- |:----------------------------------------------------------------------------------------------------|
+| **Product** | required | An [`AdaptyPaywallProduct`](kmp-sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
 
-You can pass additional parameters when making a purchase:
+Response parameters:
 
-<Tabs groupId="current-os" queryString>
+| Parameter | Description                                                                                                                                                                                                                                                                                                                                                                |
+|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](kmp-sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
-<TabItem value="kotlin" label="Kotlin" default>
+:::warning
+**Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
+:::
+
+## Change subscription when making a purchase
+
+When a user opts for a new subscription instead of renewing the current one, the way it works depends on the app store. For Google Play, the subscription isn't automatically updated. You'll need to manage the switch in your mobile app code as described below.
+
+To replace the subscription with another one in Android, call `.makePurchase()` method with the additional parameter:
 
 ```kotlin showLineNumbers
-val purchaseParams = mapOf(
-    "custom_param" to "value",
-    "source" to "paywall_main"
-)
-
-product.makePurchase(purchaseParams) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val purchase = result.value
-            // Purchase successful
+Adapty.makePurchase(
+    product = product,
+    subscriptionUpdateParams = subscriptionUpdateParams
+).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            // successful cross-grade
         }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // user canceled the purchase flow
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
         }
     }
+}.onError { error ->
+    // Handle the error
 }
+
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
+Additional request parameter:
 
-```java showLineNumbers
-Map<String, String> purchaseParams = new HashMap<>();
-purchaseParams.put("custom_param", "value");
-purchaseParams.put("source", "paywall_main");
+| Parameter                    | Presence | Description                                                                                          |
+| :--------------------------- | :------- |:-----------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](kmp-sdk-models#adaptysubscriptionupdateparameters) object. |
 
-product.makePurchase(purchaseParams, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-        // Purchase successful
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-    }
-});
-```
-</TabItem>
-</Tabs>
+You can read more about subscriptions and replacement modes in the Google Developer documentation:
 
-## Handle purchase events
+- [About replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommendations from Google for replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
+- Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
-You can listen for purchase events to update your UI in real-time:
 
-<Tabs groupId="current-os" queryString>
+## Redeem Offer Code in iOS
 
-<TabItem value="kotlin" label="Kotlin" default>
+Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the appropriate SDK method:
+
 
 ```kotlin showLineNumbers
-Adapty.setOnProfileUpdatedListener { profile ->
-    // Profile updated - check if user has new access
-    val hasPremium = profile.accessLevels["premium"]?.isActive == true
-    if (hasPremium) {
-        // User just got premium access
-        unlockPremiumFeatures()
-        showWelcomeMessage()
+Adapty.presentCodeRedemptionSheet { error ->
+    error?.let {
+        // handle the error
     }
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-Adapty.setOnProfileUpdatedListener(profile -> {
-    // Profile updated - check if user has new access
-    boolean hasPremium = profile.getAccessLevels().get("premium") != null && 
-                        profile.getAccessLevels().get("premium").isActive();
-    if (hasPremium) {
-        // User just got premium access
-        unlockPremiumFeatures();
-        showWelcomeMessage();
-    }
-});
-```
-</TabItem>
-</Tabs>
+:::danger
+Based on our observations, the Offer Code Redemption sheet in some apps may not work reliably. We recommend redirecting the user directly to the App Store.
 
-## Restore purchases
-
-To restore previous purchases:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.restorePurchases { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // Purchases restored
-            showRestoreSuccessMessage()
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-            showRestoreErrorMessage(error.message)
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.restorePurchases(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // Purchases restored
-        showRestoreSuccessMessage();
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-        showRestoreErrorMessage(error.getMessage());
-    }
-});
-```
-</TabItem>
-</Tabs>
-
-## Next steps
-
-- [Restore purchases](kmp-restore-purchase.md) - Learn more about purchase restoration
-- [Handle purchase errors](kmp-troubleshoot-purchases.md) - Troubleshoot purchase issues
-- [Check subscription status](kmp-check-subscription-status.md) - Verify purchase status
+In order to do this, you need to open the url of the following format:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

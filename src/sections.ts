@@ -38,6 +38,11 @@ const SECTIONS: Section[] = [
     docId: 'default',
     section: 'mobile-sdk',
   },
+  {
+    name: 'Kotlin Multiplatform',
+    'docId': 'default',
+    section: 'mobile-sdk'
+  }
 ];
 
 export type SectionsGroup = {

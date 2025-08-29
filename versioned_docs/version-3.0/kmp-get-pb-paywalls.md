@@ -1,627 +1,154 @@
 ---
-title: "Get Paywall Builder paywalls in Kotlin Multiplatform SDK"
-description: "Learn how to get Paywall Builder paywalls in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Get Paywall Builder Paywalls | Kotlin Multiplatform SDK | Adapty Docs"
+title: "Fetch Paywall Builder paywalls and their configuration in Kotlin Multiplatform SDK"
+description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your Kotlin Multiplatform app."
+metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 displayed_sidebar: sdkkmp
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 70
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-This page covers how to get Paywall Builder paywalls in the Adapty Kotlin Multiplatform SDK.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
-## Paywall Builder overview
+Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-kmp) topic.
 
-Paywall Builder paywalls are created visually in the Adapty dashboard and include both product configuration and visual design. They provide a complete paywall experience with minimal code.
+<SampleApp />
 
-## Get Paywall Builder paywall
+<details>
+   <summary>Before you start displaying paywalls in your mobile app (click to expand)</summary>
 
-To retrieve a Paywall Builder paywall, use the `getPaywall` method with a placement ID:
+1. [Create your products](create-product) in the Adapty Dashboard.
+2. [Create a paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
+3. [Create placements and incorporate your paywall into it](create-placement) in the Adapty Dashboard.
+4. Install [Adapty SDK](sdk-installation-kotlin-multiplatform) in your mobile app.
+</details>
 
-<Tabs groupId="current-os" queryString>
+## Fetch paywall designed with Paywall Builder
 
-<TabItem value="kotlin" label="Kotlin" default>
+If you've [designed a paywall using the Paywall Builder](adapty-paywall-builder), you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
-```kotlin showLineNumbers
-fun getPaywallBuilderPaywall(placementId: String) {
-    Adapty.getPaywall(placementId) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val paywall = result.value
-                
-                // Check if paywall has view configuration (Paywall Builder paywall)
-                if (paywall.hasViewConfiguration) {
-                    // This is a Paywall Builder paywall
-                    displayPaywallBuilderPaywall(paywall)
-                } else {
-                    // This is a manual paywall
-                    displayManualPaywall(paywall)
-                }
-            }
-            is AdaptyResult.Error -> {
-                val error = result.error
-                // Handle error
-                showErrorMessage("Failed to load paywall: ${error.message}")
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+To ensure optimal performance, it's crucial to retrieve the paywall and its [view configuration](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) as early as possible, allowing sufficient time for images to download before presenting them to the user.
 
-```java showLineNumbers
-public void getPaywallBuilderPaywall(String placementId) {
-    Adapty.getPaywall(placementId, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-            
-            // Check if paywall has view configuration (Paywall Builder paywall)
-            if (paywall.hasViewConfiguration()) {
-                // This is a Paywall Builder paywall
-                displayPaywallBuilderPaywall(paywall);
-            } else {
-                // This is a manual paywall
-                displayManualPaywall(paywall);
-            }
-        } else if (result instanceof AdaptyResult.Error) {
-            AdaptyError error = ((AdaptyResult.Error) result).getError();
-            // Handle error
-            showErrorMessage("Failed to load paywall: " + error.getMessage());
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
-
-## Display Paywall Builder paywall
-
-To display a Paywall Builder paywall, you need to get the view configuration and create the paywall view:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+To get a paywall, use the `getPaywall` method:
 
 ```kotlin showLineNumbers
-fun displayPaywallBuilderPaywall(paywall: AdaptyPaywall) {
-    // Get view configuration for the paywall
-    AdaptyUI.getViewConfiguration(paywall) { configResult ->
-        when (configResult) {
-            is AdaptyResult.Success -> {
-                val viewConfiguration = configResult.value
-                
-                // Create paywall view
-                val paywallView = AdaptyUI.getPaywallView(
-                    this, // Activity context
-                    viewConfiguration,
-                    null, // products = null means auto-fetch
-                    eventListener
-                )
-                
-                // Add to view hierarchy
-                setContentView(paywallView)
-            }
-            is AdaptyResult.Error -> {
-                val error = configResult.error
-                showErrorMessage("Failed to get view configuration: ${error.message}")
-            }
-        }
-    }
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public void displayPaywallBuilderPaywall(AdaptyPaywall paywall) {
-    // Get view configuration for the paywall
-    AdaptyUI.getViewConfiguration(paywall, configResult -> {
-        if (configResult instanceof AdaptyResult.Success) {
-            AdaptyUI.LocalizedViewConfiguration viewConfiguration = 
-                ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
-            
-            // Create paywall view
-            AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-                this, // Activity context
-                viewConfiguration,
-                null, // products = null means auto-fetch
-                eventListener
-            );
-            
-            // Add to view hierarchy
-            setContentView(paywallView);
-        } else if (configResult instanceof AdaptyResult.Error) {
-            AdaptyError error = ((AdaptyResult.Error) configResult).getError();
-            showErrorMessage("Failed to get view configuration: " + error.getMessage());
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
+Parameters:
 
-## Complete Paywall Builder example
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p><p>For Kotlin Multiplatform: You can create `TimeInterval` with extension functions (like `5.seconds`, where `.seconds` is from `import com.adapty.utils.seconds`), or `TimeInterval.seconds(5)`. To set no limitation, use `TimeInterval.INFINITE`.</p> |
 
-Here's a complete example of getting and displaying a Paywall Builder paywall:
 
-<Tabs groupId="current-os" queryString>
+Don't hardcode product IDs! Since paywalls are configured remotely, the available products, the number of products, and special offers (such as free trials) can change over time. Make sure your code handles these scenarios.  
+For example, if you initially retrieve 2 products, your app should display those 2 products. However, if you later retrieve 3 products, your app should display all 3 without requiring any code changes. The only thing you should hardcode is the placement ID.
 
-<TabItem value="kotlin" label="Kotlin" default>
+Response parameters:
+
+| Parameter | Description                                                                                                                                                     |
+| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | An [`AdaptyPaywall`](kmp-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+
+## Fetch the view configuration of paywall designed using Paywall Builder
+
+:::important
+Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
+:::
+
+After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls-kmp).
+
+Use the `createPaywallView` method to load the view configuration.
 
 ```kotlin showLineNumbers
-class PaywallBuilderActivity : AppCompatActivity() {
-    private lateinit var loadingIndicator: ProgressBar
-    private lateinit var errorView: TextView
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_paywall_builder)
-        
-        // Initialize views
-        loadingIndicator = findViewById(R.id.loading_indicator)
-        errorView = findViewById(R.id.error_view)
-        
-        // Get placement ID from intent or use default
-        val placementId = intent.getStringExtra("placement_id") ?: "main"
-        
-        // Load Paywall Builder paywall
-        loadPaywallBuilderPaywall(placementId)
-    }
-    
-    private fun loadPaywallBuilderPaywall(placementId: String) {
-        showLoading()
-        
-        Adapty.getPaywall(placementId) { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val paywall = result.value
-                    
-                    if (paywall.hasViewConfiguration) {
-                        // This is a Paywall Builder paywall
-                        displayPaywallBuilderPaywall(paywall)
-                    } else {
-                        // Fallback to manual paywall
-                        showError("Paywall Builder paywall not found. Using manual paywall.")
-                        displayManualPaywall(paywall)
-                    }
-                }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    hideLoading()
-                    showError("Failed to load paywall: ${error.message}")
-                }
-            }
-        }
-    }
-    
-    private fun displayPaywallBuilderPaywall(paywall: AdaptyPaywall) {
-        AdaptyUI.getViewConfiguration(paywall) { configResult ->
-            when (configResult) {
-                is AdaptyResult.Success -> {
-                    val viewConfiguration = configResult.value
-                    
-                    // Create event listener
-                    val eventListener = createEventListener()
-                    
-                    // Create paywall view
-                    val paywallView = AdaptyUI.getPaywallView(
-                        this,
-                        viewConfiguration,
-                        null, // products = null means auto-fetch
-                        eventListener
-                    )
-                    
-                    // Display paywall
-                    hideLoading()
-                    setContentView(paywallView)
-                }
-                is AdaptyResult.Error -> {
-                    val error = configResult.error
-                    hideLoading()
-                    showError("Failed to get view configuration: ${error.message}")
-                }
-            }
-        }
-    }
-    
-    private fun createEventListener(): AdaptyUIEventListener {
-        return object : AdaptyUIEventListener {
-            override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-                when (action) {
-                    is AdaptyUI.Action.Close -> {
-                        // Handle close action
-                        finish()
-                    }
-                    is AdaptyUI.Action.OpenURL -> {
-                        // Handle URL opening
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(action.url))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Log.e("Paywall", "Failed to open URL: ${e.message}")
-                        }
-                    }
-                    is AdaptyUI.Action.MakePurchase -> {
-                        // Handle purchase action
-                        handlePurchase(action.product)
-                    }
-                    is AdaptyUI.Action.RestorePurchases -> {
-                        // Handle restore action
-                        handleRestore()
-                    }
-                }
-            }
-        }
-    }
-    
-    private fun handlePurchase(product: AdaptyProduct) {
-        product.makePurchase { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val purchase = result.value
-                    showSuccessMessage("Purchase successful!")
-                    finish()
-                }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    showErrorMessage("Purchase failed: ${error.message}")
-                }
-            }
-        }
-    }
-    
-    private fun handleRestore() {
-        Adapty.restorePurchases { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val profile = result.value
-                    val hasActiveSubscriptions = profile.accessLevels.values.any { it.isActive }
-                    
-                    if (hasActiveSubscriptions) {
-                        showSuccessMessage("Purchases restored successfully!")
-                        finish()
-                    } else {
-                        showMessage("No previous purchases found.")
-                    }
-                }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    showErrorMessage("Failed to restore purchases: ${error.message}")
-                }
-            }
-        }
-    }
-    
-    private fun showLoading() {
-        loadingIndicator.visibility = View.VISIBLE
-        errorView.visibility = View.GONE
-    }
-    
-    private fun hideLoading() {
-        loadingIndicator.visibility = View.GONE
-    }
-    
-    private fun showError(message: String) {
-        errorView.text = message
-        errorView.visibility = View.VISIBLE
-        loadingIndicator.visibility = View.GONE
-    }
-    
-    private fun showMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-    
-    private fun showSuccessMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-    
-    private fun showErrorMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-    }
+if (paywall.hasViewConfiguration) {
+    val paywallView = AdaptyUI.createPaywallView(
+        paywall = paywall,
+        loadTimeout = 5.seconds,
+        preloadProducts = true,
+        androidPersonalizedOffers = mapOf(
+            "product_id" to true
+        )
+    )
+    // use paywallView
+} else {
+    // use your custom logic
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
+| Parameter       | Presence       | Description                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**     | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout** | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
 
-```java showLineNumbers
-public class PaywallBuilderActivity extends AppCompatActivity {
-    private ProgressBar loadingIndicator;
-    private TextView errorView;
-    
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_paywall_builder);
-        
-        // Initialize views
-        loadingIndicator = findViewById(R.id.loading_indicator);
-        errorView = findViewById(R.id.error_view);
-        
-        // Get placement ID from intent or use default
-        String placementId = getIntent().getStringExtra("placement_id");
-        if (placementId == null) {
-            placementId = "main";
-        }
-        
-        // Load Paywall Builder paywall
-        loadPaywallBuilderPaywall(placementId);
-    }
-    
-    private void loadPaywallBuilderPaywall(String placementId) {
-        showLoading();
-        
-        Adapty.getPaywall(placementId, result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-                
-                if (paywall.hasViewConfiguration()) {
-                    // This is a Paywall Builder paywall
-                    displayPaywallBuilderPaywall(paywall);
-                } else {
-                    // Fallback to manual paywall
-                    showError("Paywall Builder paywall not found. Using manual paywall.");
-                    displayManualPaywall(paywall);
-                }
-            } else if (result instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) result).getError();
-                hideLoading();
-                showError("Failed to load paywall: " + error.getMessage());
-            }
-        });
-    }
-    
-    private void displayPaywallBuilderPaywall(AdaptyPaywall paywall) {
-        AdaptyUI.getViewConfiguration(paywall, configResult -> {
-            if (configResult instanceof AdaptyResult.Success) {
-                AdaptyUI.LocalizedViewConfiguration viewConfiguration = 
-                    ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
-                
-                // Create event listener
-                AdaptyUIEventListener eventListener = createEventListener();
-                
-                // Create paywall view
-                AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-                    this,
-                    viewConfiguration,
-                    null, // products = null means auto-fetch
-                    eventListener
-                );
-                
-                // Display paywall
-                hideLoading();
-                setContentView(paywallView);
-            } else if (configResult instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) configResult).getError();
-                hideLoading();
-                showError("Failed to get view configuration: " + error.getMessage());
-            }
-        });
-    }
-    
-    private AdaptyUIEventListener createEventListener() {
-        return new AdaptyUIEventListener() {
-            @Override
-            public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
-                if (action instanceof AdaptyUI.Action.Close) {
-                    // Handle close action
-                    finish();
-                } else if (action instanceof AdaptyUI.Action.OpenURL) {
-                    // Handle URL opening
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(((AdaptyUI.Action.OpenURL) action).getUrl()));
-                        context.startActivity(intent);
-                    } catch (Exception e) {
-                        Log.e("Paywall", "Failed to open URL: " + e.getMessage());
-                    }
-                } else if (action instanceof AdaptyUI.Action.MakePurchase) {
-                    // Handle purchase action
-                    handlePurchase(((AdaptyUI.Action.MakePurchase) action).getProduct());
-                } else if (action instanceof AdaptyUI.Action.RestorePurchases) {
-                    // Handle restore action
-                    handleRestore();
-                }
-            }
-        };
-    }
-    
-    private void handlePurchase(AdaptyProduct product) {
-        product.makePurchase(result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-                showSuccessMessage("Purchase successful!");
-                finish();
-            } else if (result instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) result).getError();
-                showErrorMessage("Purchase failed: " + error.getMessage());
-            }
-        });
-    }
-    
-    private void handleRestore() {
-        Adapty.restorePurchases(result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-                boolean hasActiveSubscriptions = profile.getAccessLevels().values().stream()
-                    .anyMatch(AdaptyAccessLevel::isActive);
-                
-                if (hasActiveSubscriptions) {
-                    showSuccessMessage("Purchases restored successfully!");
-                    finish();
-                } else {
-                    showMessage("No previous purchases found.");
-                }
-            } else if (result instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) result).getError();
-                showErrorMessage("Failed to restore purchases: " + error.getMessage());
-            }
-        });
-    }
-    
-    private void showLoading() {
-        loadingIndicator.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-    }
-    
-    private void hideLoading() {
-        loadingIndicator.setVisibility(View.GONE);
-    }
-    
-    private void showError(String message) {
-        errorView.setText(message);
-        errorView.setVisibility(View.VISIBLE);
-        loadingIndicator.setVisibility(View.GONE);
-    }
-    
-    private void showMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-    
-    private void showSuccessMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-    
-    private void showErrorMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-    }
-}
-```
-</TabItem>
-</Tabs>
+:::note
+If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder).
+:::
 
-## Check paywall type
+Once you have successfully loaded the paywall and its view configuration, you can present it in your mobile app.
 
-You can check if a paywall is a Paywall Builder paywall by examining its properties:
+## Get a paywall for a default audience to fetch it faster
 
-<Tabs groupId="current-os" queryString>
+Typically, paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall may take longer than you'd like. In such situations, you might want to display a default paywall to ensure a smooth user experience rather than showing no paywall at all.
 
-<TabItem value="kotlin" label="Kotlin" default>
+To address this, you can use the `getPaywallForDefaultAudience`  method, which fetches the paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the paywall by the `getPaywall` method, as detailed in the [Fetch Paywall Information](#fetch-paywall-designed-with-paywall-builder) section above.
+
+:::warning
+Why we recommend using `getPaywall`
+
+The `getPaywallForDefaultAudience` method comes with a few significant drawbacks:
+
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
+
+If you're willing to accept these drawbacks to benefit from faster paywall fetching, use the `getPaywallForDefaultAudience` method as follows. Otherwise stick to `getPaywall` described [above](#fetch-paywall-designed-with-paywall-builder).
+:::
 
 ```kotlin showLineNumbers
-fun checkPaywallType(paywall: AdaptyPaywall) {
-    Log.d("Paywall", "Paywall ID: ${paywall.id}")
-    Log.d("Paywall", "Placement ID: ${paywall.placementId}")
-    Log.d("Paywall", "Has view configuration: ${paywall.hasViewConfiguration}")
-    Log.d("Paywall", "Products count: ${paywall.products.size}")
-    
-    if (paywall.hasViewConfiguration) {
-        Log.d("Paywall", "This is a Paywall Builder paywall")
-        // Use Paywall Builder display method
-        displayPaywallBuilderPaywall(paywall)
-    } else {
-        Log.d("Paywall", "This is a manual paywall")
-        // Use manual display method
-        displayManualPaywall(paywall)
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+// Using suspend function with Result
+val result: AdaptyResult<AdaptyPaywall> = Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+)
+when (result) {
+    is AdaptyResult.Success -> {
+        val paywall = result.value
+        // the requested paywall
+    }
+    is AdaptyResult.Error -> {
+        val error = result.error
+        // handle the error
     }
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public void checkPaywallType(AdaptyPaywall paywall) {
-    Log.d("Paywall", "Paywall ID: " + paywall.getId());
-    Log.d("Paywall", "Placement ID: " + paywall.getPlacementId());
-    Log.d("Paywall", "Has view configuration: " + paywall.hasViewConfiguration());
-    Log.d("Paywall", "Products count: " + paywall.getProducts().size());
-    
-    if (paywall.hasViewConfiguration()) {
-        Log.d("Paywall", "This is a Paywall Builder paywall");
-        // Use Paywall Builder display method
-        displayPaywallBuilderPaywall(paywall);
-    } else {
-        Log.d("Paywall", "This is a manual paywall");
-        // Use manual display method
-        displayManualPaywall(paywall);
-    }
-}
-```
-</TabItem>
-</Tabs>
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
-## Error handling
-
-Handle errors when loading Paywall Builder paywalls:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-fun loadPaywallWithErrorHandling(placementId: String) {
-    showLoading()
-    
-    Adapty.getPaywall(placementId) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val paywall = result.value
-                
-                if (paywall.hasViewConfiguration) {
-                    displayPaywallBuilderPaywall(paywall)
-                } else {
-                    hideLoading()
-                    showError("Paywall Builder paywall not available for this placement")
-                }
-            }
-            is AdaptyResult.Error -> {
-                val error = result.error
-                hideLoading()
-                
-                when (error.code) {
-                    1001 -> {
-                        // Network error
-                        showError("Network error. Please check your connection and try again.")
-                    }
-                    else -> {
-                        // Other errors
-                        showError("Failed to load paywall: ${error.message}")
-                    }
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void loadPaywallWithErrorHandling(String placementId) {
-    showLoading();
-    
-    Adapty.getPaywall(placementId, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-            
-            if (paywall.hasViewConfiguration()) {
-                displayPaywallBuilderPaywall(paywall);
-            } else {
-                hideLoading();
-                showError("Paywall Builder paywall not available for this placement");
-            }
-        } else if (result instanceof AdaptyResult.Error) {
-            AdaptyError error = ((AdaptyResult.Error) result).getError();
-            hideLoading();
-            
-            switch (error.getCode()) {
-                case 1001:
-                    // Network error
-                    showError("Network error. Please check your connection and try again.");
-                    break;
-                default:
-                    // Other errors
-                    showError("Failed to load paywall: " + error.getMessage());
-                    break;
-            }
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
-
-## Next steps
-
-- [Paywalls overview](kmp-paywalls.md) - Learn about different paywall approaches
-- [Handle paywall actions](kmp-handle-paywall-actions.md) - Learn about handling paywall actions
-- [Troubleshoot Paywall Builder](kmp-troubleshoot-paywall-builder.md) - Debug Paywall Builder issues

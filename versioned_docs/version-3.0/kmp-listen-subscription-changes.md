@@ -1,432 +1,84 @@
 ---
-title: "Listen to subscription changes in Kotlin Multiplatform SDK"
-description: "Learn how to listen to subscription changes in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Listen to Subscription Changes | Kotlin Multiplatform SDK | Adapty Docs"
-displayed_sidebar: sdkkmp
+title: "Check subscription status in Kotlin Multiplatform SDK"
+description: "Track and manage user subscription status in Adapty for improved customer retention in your Kotlin Multiplatform app."
+metadataTitle: "Understanding Subscription Status | Adapty Docs"
+keywords: ['getProfile']
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-This page covers how to listen to subscription changes using the Adapty Kotlin Multiplatform SDK.
+With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
-## Listen to profile updates
+Before you start checking subscription status, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn).
 
-To automatically receive updates when a user's subscription status changes, use the `setOnProfileUpdatedListener` method:
+## Access level and the AdaptyProfile object
 
-<Tabs groupId="current-os" queryString>
+Access levels are properties of the [AdaptyProfile](kmp-sdk-models#adaptyprofile) object. We recommend retrieving the profile when your app starts, such as when you [identify a user](android-identifying-users#setting-customer-user-id-on-configuration) , and then updating it whenever changes occur. This way, you can use the profile object without repeatedly requesting it.
 
-<TabItem value="kotlin" label="Kotlin" default>
+To be notified of profile updates, listen for profile changes as described in the [Listening for profile updates, including access levels](android-listen-subscription-changes.md) section below.
 
-```kotlin showLineNumbers
-Adapty.setOnProfileUpdatedListener { profile ->
-    // Profile updated - check subscription status
-    val hasPremium = profile.accessLevels["premium"]?.isActive == true
-    if (hasPremium) {
-        // User has premium access
-        unlockPremiumFeatures()
-    } else {
-        // User doesn't have premium access
-        lockPremiumFeatures()
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+<SampleApp />
 
-```java showLineNumbers
-Adapty.setOnProfileUpdatedListener(profile -> {
-    // Profile updated - check subscription status
-    boolean hasPremium = profile.getAccessLevels().get("premium") != null && 
-                        profile.getAccessLevels().get("premium").isActive();
-    if (hasPremium) {
-        // User has premium access
-        unlockPremiumFeatures();
-    } else {
-        // User doesn't have premium access
-        lockPremiumFeatures();
-    }
-});
-```
-</TabItem>
-</Tabs>
+## Retrieving the access level from the server
 
-## Complete subscription monitoring
-
-Here's a complete example of monitoring subscription changes:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+To get the access level from the server, use the `.getProfile()` method:
 
 ```kotlin showLineNumbers
-class SubscriptionMonitor {
-    private var currentProfile: AdaptyProfile? = null
-    
-    init {
-        // Set up profile update listener
-        Adapty.setOnProfileUpdatedListener { profile ->
-            currentProfile = profile
-            handleProfileUpdate(profile)
-        }
-    }
-    
-    private fun handleProfileUpdate(profile: AdaptyProfile) {
-        // Check all access levels
-        profile.accessLevels.forEach { (levelId, accessLevel) ->
-            when (levelId) {
-                "premium" -> {
-                    if (accessLevel.isActive) {
-                        unlockPremiumFeatures()
-                        showPremiumWelcomeMessage()
-                    } else {
-                        lockPremiumFeatures()
-                        showPremiumExpiredMessage()
-                    }
-                }
-                "pro" -> {
-                    if (accessLevel.isActive) {
-                        unlockProFeatures()
-                    } else {
-                        lockProFeatures()
-                    }
-                }
-                // Add other access levels as needed
-            }
-        }
-        
-        // Update UI
-        updateUI(profile)
-    }
-    
-    private fun updateUI(profile: AdaptyProfile) {
-        // Update UI elements based on subscription status
-        val hasAnySubscription = profile.accessLevels.values.any { it.isActive }
-        
-        if (hasAnySubscription) {
-            hidePaywallButton()
-            showSubscriptionStatus(profile)
-        } else {
-            showPaywallButton()
-            hideSubscriptionStatus()
-        }
-    }
-    
-    fun getCurrentProfile(): AdaptyProfile? = currentProfile
-    
-    fun hasAccess(levelId: String): Boolean {
-        return currentProfile?.accessLevels[levelId]?.isActive == true
-    }
+import com.adapty.kmp.Adapty
+
+Adapty.getProfile().onSuccess { profile ->
+    // check the access
+}.onError { error ->
+    // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public class SubscriptionMonitor {
-    private AdaptyProfile currentProfile;
-    
-    public SubscriptionMonitor() {
-        // Set up profile update listener
-        Adapty.setOnProfileUpdatedListener(profile -> {
-            currentProfile = profile;
-            handleProfileUpdate(profile);
-        });
-    }
-    
-    private void handleProfileUpdate(AdaptyProfile profile) {
-        // Check all access levels
-        for (Map.Entry<String, AdaptyAccessLevel> entry : profile.getAccessLevels().entrySet()) {
-            String levelId = entry.getKey();
-            AdaptyAccessLevel accessLevel = entry.getValue();
-            
-            switch (levelId) {
-                case "premium":
-                    if (accessLevel.isActive()) {
-                        unlockPremiumFeatures();
-                        showPremiumWelcomeMessage();
-                    } else {
-                        lockPremiumFeatures();
-                        showPremiumExpiredMessage();
-                    }
-                    break;
-                case "pro":
-                    if (accessLevel.isActive()) {
-                        unlockProFeatures();
-                    } else {
-                        lockProFeatures();
-                    }
-                    break;
-                // Add other access levels as needed
-            }
-        }
-        
-        // Update UI
-        updateUI(profile);
-    }
-    
-    private void updateUI(AdaptyProfile profile) {
-        // Update UI elements based on subscription status
-        boolean hasAnySubscription = profile.getAccessLevels().values().stream()
-            .anyMatch(AdaptyAccessLevel::isActive);
-        
-        if (hasAnySubscription) {
-            hidePaywallButton();
-            showSubscriptionStatus(profile);
-        } else {
-            showPaywallButton();
-            hideSubscriptionStatus();
-        }
-    }
-    
-    public AdaptyProfile getCurrentProfile() {
-        return currentProfile;
-    }
-    
-    public boolean hasAccess(String levelId) {
-        return currentProfile != null && 
-               currentProfile.getAccessLevels().get(levelId) != null &&
-               currentProfile.getAccessLevels().get(levelId).isActive();
-    }
-}
-```
-</TabItem>
-</Tabs>
+Response parameters:
 
-## Handle specific subscription events
+| Parameter | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>An [AdaptyProfile](kmp-sdk-models#adaptyprofile) object. Generally, you have to check only the access level status of the profile to determine whether the user has premium access to the app.</p><p></p><p>The `.getProfile` method provides the most up-to-date result as it always tries to query the API. If for some reason (e.g. no internet connection), the Adapty SDK fails to retrieve information from the server, the data from the cache will be returned. It is also important to note that the Adapty SDK updates `AdaptyProfile` cache regularly, to keep this information as up-to-date as possible.</p> |
 
-### New subscription
 
-<Tabs groupId="current-os" queryString>
+The `.getProfile()` method provides you with the user profile from which you can get the access level status. You can have multiple access levels per app. For example, if you have a newspaper app and sell subscriptions to different topics independently, you can create access levels "sports" and "science". But most of the time, you will only need one access level, in that case, you can just use the default "premium" access level.
 
-<TabItem value="kotlin" label="Kotlin" default>
+Here is an example for checking for the default "premium" access level:
 
 ```kotlin showLineNumbers
-private fun handleNewSubscription(profile: AdaptyProfile, levelId: String) {
-    when (levelId) {
-        "premium" -> {
-            // User just got premium
-            unlockPremiumFeatures()
-            showWelcomeMessage("Welcome to Premium!")
-            trackEvent("premium_subscription_started")
-        }
-        "pro" -> {
-            // User just got pro
-            unlockProFeatures()
-            showWelcomeMessage("Welcome to Pro!")
-            trackEvent("pro_subscription_started")
-        }
+import com.adapty.kmp.Adapty
+
+Adapty.getProfile().onSuccess { profile ->
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        // grant access to premium features
     }
+}.onError { error ->
+    // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-private void handleNewSubscription(AdaptyProfile profile, String levelId) {
-    switch (levelId) {
-        case "premium":
-            // User just got premium
-            unlockPremiumFeatures();
-            showWelcomeMessage("Welcome to Premium!");
-            trackEvent("premium_subscription_started");
-            break;
-        case "pro":
-            // User just got pro
-            unlockProFeatures();
-            showWelcomeMessage("Welcome to Pro!");
-            trackEvent("pro_subscription_started");
-            break;
-    }
-}
-```
-</TabItem>
-</Tabs>
 
-### Subscription expired
+### Listening for subscription status updates
 
-<Tabs groupId="current-os" queryString>
+Whenever the user's subscription changes, Adapty fires an event.
 
-<TabItem value="kotlin" label="Kotlin" default>
+To receive messages from Adapty, you need to make some additional configuration:
+
 
 ```kotlin showLineNumbers
-private fun handleSubscriptionExpired(profile: AdaptyProfile, levelId: String) {
-    when (levelId) {
-        "premium" -> {
-            // Premium subscription expired
-            lockPremiumFeatures()
-            showExpiredMessage("Your Premium subscription has expired")
-            trackEvent("premium_subscription_expired")
-        }
-        "pro" -> {
-            // Pro subscription expired
-            lockProFeatures()
-            showExpiredMessage("Your Pro subscription has expired")
-            trackEvent("pro_subscription_expired")
-        }
-    }
-}
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.OnProfileUpdatedListener
+
+Adapty.setOnProfileUpdatedListener(OnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+})
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-private void handleSubscriptionExpired(AdaptyProfile profile, String levelId) {
-    switch (levelId) {
-        case "premium":
-            // Premium subscription expired
-            lockPremiumFeatures();
-            showExpiredMessage("Your Premium subscription has expired");
-            trackEvent("premium_subscription_expired");
-            break;
-        case "pro":
-            // Pro subscription expired
-            lockProFeatures();
-            showExpiredMessage("Your Pro subscription has expired");
-            trackEvent("pro_subscription_expired");
-            break;
-    }
-}
-```
-</TabItem>
-</Tabs>
+Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
 
-## Track subscription changes
+### Subscription status cache
 
-You can track when subscriptions change by comparing the old and new profiles:
+The cache implemented in the Adapty SDK stores the subscription status of the profile. This means that even if the server is unavailable, the cached data can be accessed to provide information about the profile's subscription status.
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-class SubscriptionTracker {
-    private var previousProfile: AdaptyProfile? = null
-    
-    fun trackSubscriptionChanges(newProfile: AdaptyProfile) {
-        val oldProfile = previousProfile
-        previousProfile = newProfile
-        
-        if (oldProfile != null) {
-            // Compare access levels
-            newProfile.accessLevels.forEach { (levelId, newAccessLevel) ->
-                val oldAccessLevel = oldProfile.accessLevels[levelId]
-                
-                if (oldAccessLevel == null && newAccessLevel.isActive) {
-                    // New subscription started
-                    handleNewSubscription(newProfile, levelId)
-                } else if (oldAccessLevel?.isActive == true && !newAccessLevel.isActive) {
-                    // Subscription expired
-                    handleSubscriptionExpired(newProfile, levelId)
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public class SubscriptionTracker {
-    private AdaptyProfile previousProfile;
-    
-    public void trackSubscriptionChanges(AdaptyProfile newProfile) {
-        AdaptyProfile oldProfile = previousProfile;
-        previousProfile = newProfile;
-        
-        if (oldProfile != null) {
-            // Compare access levels
-            for (Map.Entry<String, AdaptyAccessLevel> entry : newProfile.getAccessLevels().entrySet()) {
-                String levelId = entry.getKey();
-                AdaptyAccessLevel newAccessLevel = entry.getValue();
-                AdaptyAccessLevel oldAccessLevel = oldProfile.getAccessLevels().get(levelId);
-                
-                if (oldAccessLevel == null && newAccessLevel.isActive()) {
-                    // New subscription started
-                    handleNewSubscription(newProfile, levelId);
-                } else if (oldAccessLevel != null && oldAccessLevel.isActive() && !newAccessLevel.isActive()) {
-                    // Subscription expired
-                    handleSubscriptionExpired(newProfile, levelId);
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-## Initialize with current profile
-
-When your app starts, get the current profile and set up the listener:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-class MainActivity : AppCompatActivity() {
-    private lateinit var subscriptionMonitor: SubscriptionMonitor
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        
-        // Initialize subscription monitoring
-        subscriptionMonitor = SubscriptionMonitor()
-        
-        // Get current profile
-        Adapty.getProfile { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val profile = result.value
-                    // Handle initial profile
-                    subscriptionMonitor.handleProfileUpdate(profile)
-                }
-                is AdaptyResult.Error -> {
-                    // Handle error
-                    Log.e("Adapty", "Failed to get profile: ${result.error.message}")
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public class MainActivity extends AppCompatActivity {
-    private SubscriptionMonitor subscriptionMonitor;
-    
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        
-        // Initialize subscription monitoring
-        subscriptionMonitor = new SubscriptionMonitor();
-        
-        // Get current profile
-        Adapty.getProfile(result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-                // Handle initial profile
-                subscriptionMonitor.handleProfileUpdate(profile);
-            } else if (result instanceof AdaptyResult.Error) {
-                // Handle error
-                Log.e("Adapty", "Failed to get profile: " + ((AdaptyResult.Error) result).getError().getMessage());
-            }
-        });
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-## Next steps
-
-- [Check subscription status](kmp-check-subscription-status.md) - Learn about checking subscription status
-- [Making purchases](kmp-making-purchases.md) - Learn about making purchases
-- [Handle errors](kmp-handle-errors.md) - Learn about error handling
+However, it's important to note that direct data requests from the cache are not possible. The SDK periodically queries the server every minute to check for any updates or changes related to the profile. If there are any modifications, such as new transactions or other updates, they will be sent to the cached data in order to keep it synchronized with the server.

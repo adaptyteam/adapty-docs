@@ -25,8 +25,7 @@ For best performance, fetch the onboarding configuration early to give images en
 
 To get an onboarding, use the `getOnboarding` method:
 
-<Tabs>
-<TabItem value="ios" label="iOS" default>
+
 ```swift showLineNumbers
 do {
     let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
@@ -67,8 +66,6 @@ Consider using `getOnboarding` instead of `getOnboardingForDefaultAudience`, as 
 If faster fetching outweighs these drawbacks for your use case, use `getOnboardingForDefaultAudience` as shown below. Otherwise, use `getOnboarding` as described [above](#fetch-onboarding).
 :::
 
-<Tabs>
-<TabItem value="ios" label="iOS" default>
 ```swift showLineNumbers
 Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
     switch result {
@@ -79,55 +76,7 @@ Adapty.getOnboardingForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { resul
     }
 }
 ```
-</TabItem>
 
-<TabItem value="android" label="Android">
-```kotlin
-Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val onboarding = result.value
-            // Handle successful onboarding retrieval
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error case
-        }
-    }
-}
-```
-</TabItem>
-
-<TabItem value="flutter" label="Flutter" default>
-
-```typescript showLineNumbers
-try {
-    final onboarding = await Adapty().getOnboardingForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
-} on AdaptyError catch (adaptyError) {
-    // handle error
-} catch (e) {
-    // handle unknown error
-}
-```
-</TabItem>
-
-<TabItem value="rn" label="React Native" default>
-
-```typescript showLineNumbers
-try {
-    const placementId = 'YOUR_PLACEMENT_ID';
-    const locale = 'en';
-
-    const onboarding = await adapty.getOnboardingForDefaultAudience(placementId, locale);
-    // the requested onboarding
-} catch (error) {
-    // handle the error
-}
-```
-
-</TabItem>
-
-</Tabs>
 Parameters:
 
 | Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

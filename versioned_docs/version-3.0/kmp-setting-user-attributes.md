@@ -1,410 +1,87 @@
 ---
 title: "Set user attributes in Kotlin Multiplatform SDK"
-description: "Learn how to set user attributes in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Set User Attributes | Kotlin Multiplatform SDK | Adapty Docs"
-displayed_sidebar: sdkkmp
+description: "Learn how to set user attributes in Adapty to enable better audience segmentation."
+metadataTitle: "Setting User Attributes | Adapty Docs"
+keywords: ["updateProfile", "update profile", "user attributes"]
 ---
 
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-This page covers how to set user attributes using the Adapty Kotlin Multiplatform SDK.
+You can set optional attributes such as email, phone number, etc, to the user of your app. You can then use attributes to create user [segments](segments) or just view them in CRM.
 
-## Set user attributes
+### Setting user attributes
 
-To set user attributes, call the `updateProfile` method with a map of attributes:
+To set user attributes, call `.updateProfile()` method:
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-val attributes = mapOf(
-    "email" to "user@example.com",
-    "name" to "John Doe",
-    "age" to 25,
-    "subscription_tier" to "premium"
-)
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyProfile
+import com.adapty.kmp.models.AdaptyProfileParameters
 
-Adapty.updateProfile(attributes) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // Attributes updated successfully
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-        }
+val builder = AdaptyProfileParameters.Builder()
+    .withEmail("email@email.com")
+    .withPhoneNumber("+18888888888")
+    .withFirstName("John")
+    .withLastName("Appleseed")
+    .withGender(AdaptyProfile.Gender.FEMALE)
+    .withBirthday(AdaptyProfile.Date(1970, 1, 3))
+  
+Adapty.updateProfile(builder.build()) { error ->
+    error?.let {
+        // handle the error
     }
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-Map<String, Object> attributes = new HashMap<>();
-attributes.put("email", "user@example.com");
-attributes.put("name", "John Doe");
-attributes.put("age", 25);
-attributes.put("subscription_tier", "premium");
 
-Adapty.updateProfile(attributes, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // Attributes updated successfully
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-    }
-});
-```
-</TabItem>
-</Tabs>
+Please note that the attributes that you've previously set with the `updateProfile` method won't be reset.
 
-## Common user attributes
+<SampleApp />
 
-Here are some common user attributes you might want to set:
+### The allowed keys list
 
-### Basic user info
+The allowed keys `<Key>` of `AdaptyProfileParameters.Builder` and the values `<Value>` are listed below:
 
-<Tabs groupId="current-os" queryString>
+| Key | Value |
+|---|-----|
+| <p>email</p><p>phoneNumber</p><p>firstName</p><p>lastName</p> | String up to 30 characters |
+| gender | Enum, allowed values are: `AdaptyProfile.Gender.FEMALE`, `AdaptyProfile.Gender.MALE`, `AdaptyProfile.Gender.OTHER` |
+| birthday | Date |
 
-<TabItem value="kotlin" label="Kotlin" default>
+
+### Custom user attributes
+
+You can set your own custom attributes. These are usually related to your app usage. For example, for fitness applications, they might be the number of exercises per week, for language learning app user's knowledge level, and so on. You can use them in segments to create targeted paywalls and offers, and you can also use them in analytics to figure out which product metrics affect the revenue most.
 
 ```kotlin showLineNumbers
-val basicAttributes = mapOf(
-    "email" to user.email,
-    "name" to user.name,
-    "phone" to user.phone,
-    "country" to user.country
-)
+import com.adapty.kmp.models.AdaptyProfileParameters
 
-Adapty.updateProfile(basicAttributes) { result ->
-    // Handle result
-}
+val builder = AdaptyProfileParameters.Builder()
+builder.withCustomAttribute("key1", "value1")
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-Map<String, Object> basicAttributes = new HashMap<>();
-basicAttributes.put("email", user.getEmail());
-basicAttributes.put("name", user.getName());
-basicAttributes.put("phone", user.getPhone());
-basicAttributes.put("country", user.getCountry());
-
-Adapty.updateProfile(basicAttributes, result -> {
-    // Handle result
-});
-```
-</TabItem>
-</Tabs>
-
-### App-specific attributes
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+To remove existing key, use `.withRemovedCustomAttribute()` method:
 
 ```kotlin showLineNumbers
-val appAttributes = mapOf(
-    "user_type" to "premium",
-    "app_version" to BuildConfig.VERSION_NAME,
-    "device_model" to Build.MODEL,
-    "os_version" to Build.VERSION.RELEASE,
-    "last_login" to System.currentTimeMillis()
-)
+import com.adapty.kmp.models.AdaptyProfileParameters
 
-Adapty.updateProfile(appAttributes) { result ->
-    // Handle result
-}
+val builder = AdaptyProfileParameters.Builder()
+builder.withRemovedCustomAttribute("key2")
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-Map<String, Object> appAttributes = new HashMap<>();
-appAttributes.put("user_type", "premium");
-appAttributes.put("app_version", BuildConfig.VERSION_NAME);
-appAttributes.put("device_model", Build.MODEL);
-appAttributes.put("os_version", Build.VERSION.RELEASE);
-appAttributes.put("last_login", System.currentTimeMillis());
+Sometimes you need to figure out what custom attributes have already been installed before. To do this, use the `customAttributes` field of the `AdaptyProfile` object.
 
-Adapty.updateProfile(appAttributes, result -> {
-    // Handle result
-});
-```
-</TabItem>
-</Tabs>
+:::warning
+Keep in mind that the value of `customAttributes` may be out of date since the user attributes can be sent from different devices at any time so the attributes on the server might have been changed after the last sync.
+:::
 
-## Update attributes on user actions
+### Limits
 
-Set attributes when users perform specific actions:
-
-### On login
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-fun onUserLogin(user: User) {
-    val attributes = mapOf(
-        "email" to user.email,
-        "name" to user.name,
-        "login_count" to user.loginCount,
-        "last_login" to System.currentTimeMillis()
-    )
-    
-    Adapty.updateProfile(attributes) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                // User logged in successfully
-                navigateToMainScreen()
-            }
-            is AdaptyResult.Error -> {
-                // Handle error but still allow login
-                navigateToMainScreen()
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void onUserLogin(User user) {
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("email", user.getEmail());
-    attributes.put("name", user.getName());
-    attributes.put("login_count", user.getLoginCount());
-    attributes.put("last_login", System.currentTimeMillis());
-    
-    Adapty.updateProfile(attributes, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            // User logged in successfully
-            navigateToMainScreen();
-        } else if (result instanceof AdaptyResult.Error) {
-            // Handle error but still allow login
-            navigateToMainScreen();
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
-
-### On subscription change
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-fun onSubscriptionChanged(profile: AdaptyProfile) {
-    val subscriptionAttributes = mutableMapOf<String, Any>()
-    
-    // Check subscription status
-    profile.accessLevels.forEach { (levelId, accessLevel) ->
-        if (accessLevel.isActive) {
-            subscriptionAttributes["current_subscription"] = levelId
-            subscriptionAttributes["subscription_start"] = System.currentTimeMillis()
-        }
-    }
-    
-    if (subscriptionAttributes.isNotEmpty()) {
-        Adapty.updateProfile(subscriptionAttributes) { result ->
-            // Handle result
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void onSubscriptionChanged(AdaptyProfile profile) {
-    Map<String, Object> subscriptionAttributes = new HashMap<>();
-    
-    // Check subscription status
-    for (Map.Entry<String, AdaptyAccessLevel> entry : profile.getAccessLevels().entrySet()) {
-        String levelId = entry.getKey();
-        AdaptyAccessLevel accessLevel = entry.getValue();
-        
-        if (accessLevel.isActive()) {
-            subscriptionAttributes.put("current_subscription", levelId);
-            subscriptionAttributes.put("subscription_start", System.currentTimeMillis());
-        }
-    }
-    
-    if (!subscriptionAttributes.isEmpty()) {
-        Adapty.updateProfile(subscriptionAttributes, result -> {
-            // Handle result
-        });
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-## Batch attribute updates
-
-You can update multiple attributes at once:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-fun updateUserProfile(user: User) {
-    val attributes = mapOf(
-        // Basic info
-        "email" to user.email,
-        "name" to user.name,
-        "age" to user.age,
-        
-        // App usage
-        "app_launches" to user.appLaunches,
-        "total_time_spent" to user.totalTimeSpent,
-        "favorite_feature" to user.favoriteFeature,
-        
-        // Device info
-        "device_model" to Build.MODEL,
-        "os_version" to Build.VERSION.RELEASE,
-        "app_version" to BuildConfig.VERSION_NAME,
-        
-        // Timestamps
-        "last_updated" to System.currentTimeMillis()
-    )
-    
-    Adapty.updateProfile(attributes) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                Log.d("Adapty", "Profile updated successfully")
-            }
-            is AdaptyResult.Error -> {
-                Log.e("Adapty", "Profile update failed: ${result.error.message}")
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void updateUserProfile(User user) {
-    Map<String, Object> attributes = new HashMap<>();
-    
-    // Basic info
-    attributes.put("email", user.getEmail());
-    attributes.put("name", user.getName());
-    attributes.put("age", user.getAge());
-    
-    // App usage
-    attributes.put("app_launches", user.getAppLaunches());
-    attributes.put("total_time_spent", user.getTotalTimeSpent());
-    attributes.put("favorite_feature", user.getFavoriteFeature());
-    
-    // Device info
-    attributes.put("device_model", Build.MODEL);
-    attributes.put("os_version", Build.VERSION.RELEASE);
-    attributes.put("app_version", BuildConfig.VERSION_NAME);
-    
-    // Timestamps
-    attributes.put("last_updated", System.currentTimeMillis());
-    
-    Adapty.updateProfile(attributes, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            Log.d("Adapty", "Profile updated successfully");
-        } else if (result instanceof AdaptyResult.Error) {
-            Log.e("Adapty", "Profile update failed: " + ((AdaptyResult.Error) result).getError().getMessage());
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
-
-## Error handling
-
-Handle errors when updating user attributes:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-fun updateProfileWithErrorHandling(attributes: Map<String, Any>) {
-    Adapty.updateProfile(attributes) { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                // Attributes updated successfully
-                showSuccessMessage("Profile updated")
-            }
-            is AdaptyResult.Error -> {
-                val error = result.error
-                when (error.code) {
-                    1001 -> {
-                        // Network error - retry later
-                        Log.w("Adapty", "Network error, will retry later")
-                        scheduleRetry(attributes)
-                    }
-                    1002 -> {
-                        // Invalid SDK key
-                        Log.e("Adapty", "Invalid SDK key")
-                        showErrorMessage("Configuration error")
-                    }
-                    else -> {
-                        // Other errors
-                        Log.e("Adapty", "Profile update failed: ${error.message}")
-                        showErrorMessage("Update failed: ${error.message}")
-                    }
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-public void updateProfileWithErrorHandling(Map<String, Object> attributes) {
-    Adapty.updateProfile(attributes, result -> {
-        if (result instanceof AdaptyResult.Success) {
-            // Attributes updated successfully
-            showSuccessMessage("Profile updated");
-        } else if (result instanceof AdaptyResult.Error) {
-            AdaptyError error = ((AdaptyResult.Error) result).getError();
-            switch (error.getCode()) {
-                case 1001:
-                    // Network error - retry later
-                    Log.w("Adapty", "Network error, will retry later");
-                    scheduleRetry(attributes);
-                    break;
-                case 1002:
-                    // Invalid SDK key
-                    Log.e("Adapty", "Invalid SDK key");
-                    showErrorMessage("Configuration error");
-                    break;
-                default:
-                    // Other errors
-                    Log.e("Adapty", "Profile update failed: " + error.getMessage());
-                    showErrorMessage("Update failed: " + error.getMessage());
-                    break;
-            }
-        }
-    });
-}
-```
-</TabItem>
-</Tabs>
-
-## Next steps
-
-- [Identify users](kmp-quickstart-identify.md) - Learn about user identification
-- [Check subscription status](kmp-check-subscription-status.md) - Verify user access
-- [Handle errors](kmp-handle-errors.md) - Learn about error handling
+- Up to 30 custom attributes per user
+- Key names are up to 30 characters long. The key name can include alphanumeric characters and any of the following: `_`  `-` `.`
+- Value can be a string or float with no more than 50 characters.

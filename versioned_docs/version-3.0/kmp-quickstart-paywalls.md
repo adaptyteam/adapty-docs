@@ -7,8 +7,6 @@ rank: 70
 displayed_sidebar: sdkkmp
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
 To enable in-app purchases, you need to understand three key concepts:
@@ -45,15 +43,11 @@ To get a paywall created in the Adapty paywall builder, you need to:
 
 1. Get the `paywall` object by the [placement](placements.md) ID using the `getPaywall` method and check whether it is a paywall created in the builder.
 
-2. Get the paywall view configuration using the `getViewConfiguration` method. The view configuration contains the UI elements and styling needed to display the paywall.
+2. Get the paywall view configuration using the `createPaywallView` method. The view configuration contains the UI elements and styling needed to display the paywall.
 
 :::important
 To get the view configuration, you must switch on the **Show on device** toggle in the Paywall Builder. Otherwise, you will get an empty view configuration, and the paywall won't be displayed.
 :::
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
@@ -64,113 +58,30 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
             return@getPaywall
         }
         
-        AdaptyUI.getViewConfiguration(paywall) { configResult ->
-            if (configResult is AdaptyResult.Success) {
-                val viewConfiguration = configResult.value
-            }
-        }
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
     }
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-
-Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        
-        if (!paywall.hasViewConfiguration()) {
-            return;
-        }
-        
-        AdaptyUI.getViewConfiguration(paywall, configResult -> {
-            if (configResult instanceof AdaptyResult.Success) {
-                AdaptyUI.LocalizedViewConfiguration viewConfiguration =
-                    ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
-                // use loaded configuration
-            }
-        });
-    }
-});
-```
-</TabItem>
-
-</Tabs>
 
 ## 2. Display the paywall
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.getPaywallView()` or create the `AdaptyPaywallView` directly:
-
-<Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.createPaywallView()`:
 
 ```kotlin showLineNumbers
-   val paywallView = AdaptyUI.getPaywallView(
-       activity,
-       viewConfiguration,
-       null, // products = null means auto-fetch
-       eventListener,
-   )
-```
-</TabItem>
-<TabItem value="kotlin2" label="Kotlin (option 2)" default>
-
-```kotlin showLineNumbers
-   val paywallView =
-        AdaptyPaywallView(activity) // or retrieve it from xml
-   ...
-   with(paywallView) {
-       showPaywall(
-           viewConfiguration,
-           null, // products = null means auto-fetch
-		   eventListener,
-       )
-   }
+val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+paywallView?.present()
 ```
 
-</TabItem>
-<TabItem value="java" label="Java (option 1)" default>
-
-```java showLineNumbers
-AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-        activity,
-        viewConfiguration,
-        null, // products = null means auto-fetch
-        eventListener,
-);
-```
-</TabItem>
-<TabItem value="java2" label="Java (option 2)" default>
-
-```java showLineNumbers
-AdaptyPaywallView paywallView =
-  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
-...
-paywallView.showPaywall(viewConfiguration, products, eventListener);
-```
-
-</TabItem>
-<TabItem value="XML" label="XML" default>
-
-```xml showLineNumbers
-<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" />
-```
-</TabItem>
-</Tabs>
-
-After the view has been successfully created, you can add it to the view hierarchy and display it on the screen of the device.
+After the view has been successfully created, you can present it on the screen of the device.
 
 :::tip
 For more details on how to display a paywall, see our [guide](kmp-present-paywalls.md).
 :::
 
-## 3.  Handle button actions
+## 3. Handle button actions
 
 When users click buttons in the paywall, the Kotlin Multiplatform SDK automatically handles purchases, restoration, closing the paywall, and opening links.
 
@@ -182,33 +93,15 @@ For example, here is the default behavior for the close button. You don't need t
 Read our guides on how to handle button [actions](kmp-handle-paywall-actions.md) and [events](kmp-handling-events.md).
 :::
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers title="Kotlin"
-override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-    when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed() // default behavior
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-@Override
-public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
-    if (action instanceof AdaptyUI.Action.Close) {
-        if (context instanceof Activity) {
-            ((Activity) context).onBackPressed();
+```kotlin showLineNumbers
+AdaptyUI.setObserver(object : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> view.dismiss()
         }
     }
-}
+})
 ```
-</TabItem>
-
-</Tabs>
 
 ## Next steps
 
@@ -220,102 +113,28 @@ Now, you need to [check the users' access level](kmp-check-subscription-status.m
 
 Here is how all those steps can be integrated in your app together.
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers title="Kotlin"
-class MainActivity : AppCompatActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
-            if (paywallResult is AdaptyResult.Success) {
-                val paywall = paywallResult.value
-
-                if (!paywall.hasViewConfiguration) {
-                    // Use custom logic
-                    return@getPaywall
-                }
-
-                AdaptyUI.getViewConfiguration(paywall) { configResult ->
-                    if (configResult is AdaptyResult.Success) {
-                        val viewConfiguration = configResult.value
-
-                        val paywallView = AdaptyUI.getPaywallView(
-                            this,
-                            viewConfiguration,
-                            null, // products = null means auto-fetch
-                            object : AdaptyUIEventListener {
-                                override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-                                    when (action) {
-                                        is AdaptyUI.Action.Close -> {
-                                            (context as? Activity)?.onBackPressed()
-                                        }
-                                    }
-                                }
-                            }
-                        )
-
-                        setContentView(paywallView)
-                    }
-                }
-            }
+```kotlin showLineNumbers
+// Set up the observer for handling paywall actions
+AdaptyUI.setObserver(object : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> view.dismiss()
         }
     }
-}
+})
 
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+// Get and display the paywall
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
+    if (paywallResult is AdaptyResult.Success) {
+        val paywall = paywallResult.value
 
-```java showLineNumbers
-public class MainActivity extends AppCompatActivity {
+        if (!paywall.hasViewConfiguration) {
+            // Use custom logic
+            return@getPaywall
+        }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        Adapty.getPaywall("YOUR_PLACEMENT_ID", paywallResult -> {
-            if (paywallResult instanceof AdaptyResult.Success) {
-                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) paywallResult).getValue();
-
-                if (!paywall.hasViewConfiguration()) {
-                    // Use custom logic
-                    return;
-                }
-
-                AdaptyUI.getViewConfiguration(paywall, configResult -> {
-                    if (configResult instanceof AdaptyResult.Success) {
-                        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
-                            ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
-
-                        AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
-                            this,
-                            viewConfiguration,
-                            null, // products = null means auto-fetch
-                            new AdaptyUIEventListener() {
-                               @Override
-                                    public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
-                                        if (action instanceof AdaptyUI.Action.Close) {
-                                            if (context instanceof Activity) {
-                                                ((Activity) context).onBackPressed();
-                                            }
-                                        }
-                                    }
-                            }
-                        );
-
-                        setContentView(paywallView);
-                    }
-                });
-            }
-        });
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
     }
 }
-
 ```
-</TabItem>
-
-</Tabs>
