@@ -123,10 +123,6 @@ You have the following customization options in the builder:
   />
   </Zoom>
 
-:::tip
-If you use a background image, you can also set a background color similar to the image's primary color, so that transitions between screens are as smooth as possible.
-:::
-
 ## Copy screens from web-to-app funnels
 
 If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and want to use screens from funnels in onboardings, you can quickly do it by copying screens in the funnel builder and pasting them in the onboarding builder:
