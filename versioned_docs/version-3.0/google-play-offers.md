@@ -132,3 +132,10 @@ Please note that paywalls created with the Adapty Paywall Builder will display o
 :::note
 Offer IDs can be the same for different base plans.
 :::
+
+
+## Next steps
+
+After you've added offers, proceed with the setup:
+- If you have **apps in App Store as well**, go to the [App Store guide](app-store-offers.md).
+- If you have **apps only in Google Play**, follow [this guide](create-offer) to add offers to Adapty.

@@ -189,3 +189,12 @@ In Adapty, win-back offers are applied automatically if users are eligible. You 
 5. Set the win-back offer details. Read more in the [Apple documentation](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-win-back-offers/).
 6. Review your choice and click **Confirm**.
 7. Proceed with [adding the offer to Adapty](create-offer).
+
+## Next steps
+
+After you've added offers, proceed with the setup:
+- If you have **apps in Google Play as well**, go to the [Google Play guide](google-play-offers.md).
+- If you have **promotional and/or win-back offers in the App Store**, follow [this guide](create-offer) to add them to Adapty.
+- If you have **only trials in the App Store** and don't have any promotional or win-back offers, you are all set, but these sections may be useful to you:
+  - [Working with offers in the Adapty Paywall Builder](create-offer#paywall-builder)
+  - [How Adapty works with offers](create-offer#how-adapty-works-with-offers)
