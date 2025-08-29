@@ -120,6 +120,11 @@ const config = {
                 label: "Unity",
                 type: "docSidebar",
                 sidebarId: "sdkunity",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
               }
             ],
           },

@@ -23,10 +23,10 @@ Send subscription events with correct user properties and ID's to attributions s
 
 - **Avoid event duplication**: Be sure to disable subscription event forwarding from both devices and your server to prevent duplicates. If you're using direct integration with Facebook, remember to turn off event forwarding from AppsFlyer, Adjust, or Branch.
 
-- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won’t be able to send subscription events.
+- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won't be able to send subscription events.
 - **Set a single attribution source**: Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
   For iOS devices, this means non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if it's enabled. You can disable Apple Search Ads attribution collection by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads). 
-- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won’t be overwritten in analytics once stored.
+- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won't be overwritten in analytics once stored.
 
 :::
 
@@ -48,8 +48,6 @@ Don't see your attribution provider?
 Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll consider adding it.
 :::
 
-<!--
-
 ### Setting attribution data
 
 To set attribution data for the profile, use `.updateAttribution()` method:
@@ -66,7 +64,11 @@ Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<n
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->
+Adapty.updateAttribution(
+    mapOf("source" to "appsflyer", "campaign" to "summer_sale_2024"),
+    "appsflyer",
+    "networkUserId"
+) { error ->
     if (error == null) {
         // succesfull attribution update
     }
@@ -165,7 +167,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
         // It's important to include the network user ID
         Adapty.updateAttribution(
             conversionData,
-            AdaptyAttributionSource.APPSFLYER,
+            "appsflyer",
             AppsFlyerLib.getInstance().getAppsFlyerUID(context)
         ) { error ->
             if (error != null) {
@@ -247,7 +249,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
 ```kotlin showLineNumbers
 adjustConfig.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
+        Adapty.updateAttribution(attribution, "adjust") { error ->
             if (error != null) {
                 //handle error
             }
@@ -298,7 +300,7 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
 object branchListener : Branch.BranchReferralInitListener {
     override fun onInitFinished(referringParams: JSONObject?, error: BranchError?) {
         referringParams?.let { data ->
-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
+            Adapty.updateAttribution(data, "branch") { error ->
                 if (error != null) {
                     //handle error
                 }
@@ -332,7 +334,7 @@ You should also configure [Branch integration](branch) in Adapty Dashboard.
 
 ### Apple Search Ads
 
-Adapty can automatically collect Apple Search Ad attribution data. All you need is to add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plist` file and set it to `YES` (boolean value).
+Adapty can automatically collect Apple Search Ad attribution data. All you need is to add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app's `Info.plist` file and set it to `YES` (boolean value).
 
 ### Facebook Ads
 
@@ -376,9 +378,6 @@ Adapty.updateProfile(builder.build(), error -> {
 ```
 </TabItem>
 </Tabs>
-
--->
-
 
 ### Custom
 

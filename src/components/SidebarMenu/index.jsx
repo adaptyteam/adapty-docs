@@ -29,6 +29,7 @@ export default function SidebarMenu() {
     { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
+      { name: 'Kotlin Multiplatform', path: '/docs/kotlin-multiplatform-sdk-overview', sidebarId: 'sdkkmp' },
   ];
   
   // Try to detect current platform from active sidebar
@@ -69,6 +70,8 @@ export default function SidebarMenu() {
     } else if (pathname.includes('unity-sdk') || pathname.includes('unity')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
       console.log('SidebarMenu - detected Unity from URL');
+    } else if (pathname.includes('kmp') || pathname.includes('kotlin-multiplatform')) {
+        currentPlatform = platforms.find(p => p.sidebarId === 'sdkkmp');
     } else {
       // Fallback to the old logic
       console.log('SidebarMenu - using old URL detection logic');
