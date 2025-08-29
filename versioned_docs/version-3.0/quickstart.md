@@ -2,12 +2,17 @@
 title: "Quickstart guide"
 description: "Integrate Adapty with App Store, Google Play, custom stores, Stripe, and Paddle."
 metadataTitle: "Integrate with stores or web payments and set up products | Adapty Docs"
+rank: 70
 ---
 
-This is your first step toward growing in-app purchases. Once you complete this quickstart:
+Welcome to Adapty! You’re about to take the first step toward growing your in-app purchases with the best solution for boosting your app’s revenue.
 
-- You'll get in-app paywalls to show your products to users.
-- Adapty will display your products in your app and handle purchases with all related logic.
+Implementation is straightforward, and this quickstart will guide you through the process.
+
+Once you complete this guide:
+
+- Adapty will handle in-app purchases with all related logic.
+- You’ll have the flexibility to show the right paywall at the right time to specific users.
 - You'll access detailed analytics for in-app purchases.
 - You can start A/B testing and send subscription events to third-party analytics.
 

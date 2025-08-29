@@ -1,5 +1,5 @@
 ---
-title: "Android - Present legacy Paywall Builder paywalls"
+title: "Present legacy Paywall Builder paywalls in Android SDK"
 description: "Present paywalls in Android (Legacy) and manage subscriptions effectively."
 metadataTitle: "Presenting Paywalls on Android (Legacy) | Adapty Docs"
 ---

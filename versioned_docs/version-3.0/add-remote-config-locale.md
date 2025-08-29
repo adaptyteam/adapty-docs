@@ -181,4 +181,4 @@ Sometimes, you might want to tweak translations, add different images for specif
 />
 </Zoom>
 
-After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md), [Flutter](flutter-localizations-and-locale-codes.md), [React Native](react-native-localizations-and-locale-codes.md), and [Unity](unity-localizations-and-locale-codes.md)</InlineTooltip>.
+After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md)</InlineTooltip>

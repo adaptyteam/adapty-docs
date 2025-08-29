@@ -4,6 +4,7 @@ description: "Learn how to retrieve PB paywalls in Adapty for better subscriptio
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 displayed_sidebar: sdkunity
 keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 80
 ---
 
 import Details from '@site/src/components/Details';
@@ -15,7 +16,7 @@ After [you designed the visual part for your paywall](adapty-paywall-builder) wi
 The new Paywall Builder works with Unity SDK version 3.3.0 or higher. For presenting paywalls in Adapty SDK v2 designed with the legacy Paywall Builder, see [Display paywalls designed with legacy Paywall Builder](unity-legacy.md).
 :::
 
-Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](unity-fetch-paywalls-and-products) topic.
+Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-unity) topic.
 
 <SampleApp />
 
@@ -71,7 +72,7 @@ Response parameters:
 Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
 :::
 
-After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](unity-present-remote-config-paywalls).
+After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not,  [handle it as a remote config paywall](present-remote-config-paywalls-unity).
 
 In Unity SDK, directly call the `CreateView` method without manually fetching the view configuration first.
 

@@ -216,13 +216,7 @@ The Probability to be the best metric quantifies the likelihood that a specific 
 
 ### ARPU (Average revenue per user)
 
-:::info
-ARPU is currently available only for Onboardings A/B tests.
-:::
-
-Measures the average revenue generated from each user over a specific period. It is calculated by dividing total revenue by the number of unique users.
-
-
+For onboarding A/B tests only. Measures the average revenue generated from each user over a specific period. It is calculated by dividing total revenue by the number of unique users.
 
 ### ARPPU (Average revenue per paying user)
 
@@ -255,3 +249,11 @@ The unique conversion rate to purchases for the A/B test is calculated by dividi
 ### Unique CR trials
 
 The unique conversion rate to trials for the A/B test is calculated by dividing the number of trials started specifically associated with the variations in the test by the number of unique views. For example, if there are 30 trials started and 100 unique views, the unique conversion rate to trials would be 30%.
+
+### Completions & unique completions
+
+For onboarding A/B tests only. Completions count the number of times users complete your onboarding through the variations in the A/B test, meaning that they go from the first to the last screen. If someone completes it twice, that's two **completions** but one **unique completion**.
+
+### Unique completions rate
+
+For onboarding A/B tests only. The unique completion number divided by the unique view number. This metric helps you understand how people engage with onboarding through the variations in the A/B test and make changes if you notice that people ignore it.

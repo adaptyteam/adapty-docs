@@ -1,5 +1,5 @@
 ---
-title: "Use localizations and locale codes in iOS SDK"
+title: "Use localizations and locale codes in Android SDK"
 description: "Manage app localizations and locale codes to reach a global audience (Android)."
 metadataTitle: "Managing Localizations & Locale Codes | Adapty Docs"
 displayed_sidebar: sdkandroid

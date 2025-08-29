@@ -1,34 +1,55 @@
 ---
-title: "Show paywalls and enable purchases in React Native SDK"
+title: "Enable purchases by using paywalls in React Native SDK"
 description: "Learn how to present paywalls in your React Native app with Adapty SDK."
 metadataTitle: "Present a Paywall | React Native SDK | Adapty Docs"
 slug: /react-native-quickstart-paywalls
 displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
+To enable in-app purchases, you need to understand three key concepts:
 
-<PaywallsIntro />
+- [**Products**](product.md) – anything users can buy (subscriptions, consumables, lifetime access)
+- [**Paywalls**](paywalls.md) are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
+- [**Placements**](placements.md) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
 
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
+Adapty offers you three ways to enable purchases in your app. Select one of them depending on your app requirements:
+
+| Implementation         | Complexity | When to use                                                                                                                                                                                                                                |
+|------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Easy     | You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
+| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](react-native-making-purchases).                                                 |
+| Observer mode              | 🔴 Hard    | You already have your own purchase handling infrastructure and want to keep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode).                                                 |
+
+:::important
+**The steps below show how to implement a paywall created in the Adapty paywall builder.**
+
+If you don't want to use the paywall builder, see the [guide for handling purchases in manually created paywalls](react-native-making-purchases.md).
 :::
+
+To display a paywall created in the Adapty paywall builder, in your app code, you only need to:
+
+1. **Get the paywall**: Get the paywall from Adapty.
+2. **Display the paywall and Adapty will handle purchases for you**: Show the paywall container you've got in your app.
+3. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
 
 ## 1. Get the paywall
 
-Your paywalls are associated with [placements](placements.md) configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests.md).
+Your paywalls are associated with placements configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests.md).
 
-That's why, to get a paywall to display, you need to:
+To get a paywall created in the Adapty paywall builder, you need to:
 
-1. Get the `paywall` object by the placement ID using the `getPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
+1. Get the `paywall` object by the [placement](placements.md) ID using the `getPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
 
-2. If it is a paywall created in the builder, create its view using the `createPaywallView` method. The view contains the UI elements and styling needed to display the paywall.
+2. Create the paywall view using the `createPaywallView` method. The view contains the UI elements and styling needed to display the paywall.
 
-:::tip
-This quickstart provides the minimum configuration required to display a paywall. For advanced configuration details, see our [guide on getting paywalls](react-native-get-pb-paywalls).
+:::important
+To get the view configuration, you must switch on the **Show on device** toggle in the Paywall Builder. Otherwise, you will get an empty view configuration, and the paywall won't be displayed.
 :::
 
 ```typescript showLineNumbers title="React Native"
@@ -74,18 +95,14 @@ For more details on how to display a paywall, see our [guide](react-native-prese
 
 ## 3. Handle button actions
 
-When users click buttons in the paywall, purchases, restoration, and closing the paywall are handled automatically in the React Native SDK.
+When users click buttons in the paywall, the React Native SDK automatically handles purchases, restoration, and closing the paywall.
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
-For example, you may want to keep the paywall open after your app users open a web link. Let's see how you can handle it in your implementation.
+For example, you will definitely need to support opening links when users tap them.
 
 :::tip
-Read our guides on how to handle other button [actions](react-native-handle-paywall-actions.md) and [events](react-native-handling-events-1.md).
-:::
-
-:::info
-If you are not using the paywall builder for your paywalls, consider our [guide for implementing paywalls manually](react-native-implement-paywalls-manually).
+Read our guides on how to handle button [actions](react-native-handle-paywall-actions.md) and [events](react-native-handling-events-1.md).
 :::
 
 ```typescript showLineNumbers title="React Native"
@@ -99,9 +116,9 @@ const unsubscribe = view.registerEventHandlers({
 
 ## Next steps
 
-Now, your paywall is ready to be displayed in the app.
+Your paywall is ready to be displayed in the app.
 
-As a next step, you need to [learn how to work with user profiles](react-native-quickstart-identify.md) to ensure they can access what they have paid for.
+Now, you need to [check the users' access level](react-native-check-subscription-status.md) to ensure you display a paywall or give access to paid features to right users.
 
 ## Full example
 

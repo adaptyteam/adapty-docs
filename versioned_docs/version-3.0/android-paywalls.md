@@ -1,5 +1,5 @@
 ---
-title: "Paywalls"
+title: "Paywalls in Android SDK"
 description: "Learn how to work with paywalls in your Android app with Adapty SDK."
 metadataTitle: "Paywalls | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid

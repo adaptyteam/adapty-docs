@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in React Native SDK"
 description: "Discover how to present remote config paywalls in Adapty React Native SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | React Native SDK | Adapty Docs"
-keywords: ['remote config', 'React Native']
+keywords: ['remote config']
 displayed_sidebar: sdkreactnative
 ---
 
@@ -32,7 +32,7 @@ Make sure to [record the paywall view event](present-remote-config-paywalls-reac
 
 After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](react-native-making-purchases).
 
-We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-react-native). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+We recommend [creating a backup paywall called a fallback paywall](react-native-use-fallback-paywalls). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
 
 ## Track paywall view events
 
@@ -50,6 +50,6 @@ await adapty.logShowPaywall(paywall);
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                |
-| :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](sdk-models-react-native#adaptypaywall) object. | 
+| Parameter   | Presence | Description                                                               |
+| :---------- | :------- |:--------------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](react-native-sdk-models#adaptypaywall) object.       | 

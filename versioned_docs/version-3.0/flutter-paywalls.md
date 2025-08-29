@@ -1,5 +1,5 @@
 ---
-title: "Paywalls"
+title: "Paywalls in Flutter SDK"
 description: "Learn how to work with paywalls in your Flutter app with Adapty SDK."
 metadataTitle: "Paywalls | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter

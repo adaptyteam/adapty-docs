@@ -22,7 +22,7 @@ This guide is for **legacy Paywall Builder paywalls** only which require SDK v2.
    1. [Create your products](create-product) in the Adapty Dashboard.
 2. [Create a paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
 3. [Create placements and incorporate your paywall into it](create-placement) in the Adapty Dashboard.
-4. [Install Adapty SDK and AdaptyUI DSK](sdk-installation-react-native) in your React Native app.
+4. [Install Adapty SDK and AdaptyUI DSK](sdk-installation-reactnative) in your React Native app.
 </details>
 
 ## Fetch paywall designed with Paywall Builder

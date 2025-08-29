@@ -1,5 +1,5 @@
 ---
-title: "iOS - Present legacy Paywall Builder paywalls"
+title: "Present legacy Paywall Builder paywalls in iOS SDK"
 description: "Discover how to present paywalls in iOS using Adapty’s legacy methods."
 metadataTitle: "Presenting Paywalls on iOS (Legacy) | Adapty Docs"
 ---

@@ -51,11 +51,6 @@ const config = {
               path: "/",
               banner: "none",
             },
-            /*"2.0": {
-              banner: "none",
-              path: "2.0",
-
-            },*/
           },
           includeCurrentVersion: false,
         },
@@ -72,31 +67,6 @@ const config = {
       }),
     ],
   ],
-  /*plugins: [
-    [
-      '@docusaurus/plugin-client-redirects',
-      {
-        redirects: [
-          {
-            to: '/generate-in-app-purchase-key',
-            from: '/in-app-purchase-api-storekit-2',
-          },
-          {
-            to: '/enable-app-store-server-notifications',
-            from: '/app-store-server-notifications',
-          },
-          {
-            to: '/offers',
-            from: '/app-store-promotional-offers',
-          },
-          {
-            to: '/app-store-connection-configuration#step-4-enter-app-store-shared-secret',
-            from: '/app-store-shared-secret',
-          },
-        ],
-      },
-    ],
-  ],*/
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -128,30 +98,41 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "/ios-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkios",
               },
               {
                 label: "Android",
-                href: "/android-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkandroid",
               },
               {
                 label: "Flutter",
-                href: "/flutter-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkflutter",
               },
               {
                 label: "React Native",
-                href: "/react-native-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkreactnative",
               },
               {
                 label: "Unity",
-                href: "/unity-sdk-overview",
+                type: "docSidebar",
+                sidebarId: "sdkunity",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
               }
             ],
           },
           {
             label: "Server API",
             position: "left",
-            href: "/getting-started-with-server-side-api",
+            type: "docSidebar",
+            sidebarId: "APISidebar",
           },
           {
             label: "Support Forum",
@@ -371,7 +352,9 @@ const config = {
       async: true,
     },
   ],
+  
   plugins: [
+    // Existing build plugins
     function copyMarkdownPlugin() {
       return {
         name: 'copy-markdown-plugin',
@@ -394,6 +377,19 @@ const config = {
             execSync('node scripts/generate-llms-txt.js', { stdio: 'inherit' });
           } catch (e) {
             console.error('Error running generate-llms-txt.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsFullPlugin() {
+      return {
+        name: 'generate-llms-full-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-full.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-full.js:', e);
           }
         },
       };

@@ -1,122 +1,140 @@
 ---
-title: "Localize paywalls"
+title: "Use localizations and locale codes in Unity SDK"
 description: "Learn how to localize paywalls in your Unity app with Adapty SDK."
 metadataTitle: "Localize Paywalls | Unity SDK | Adapty Docs"
-slug: /unity-localizations-and-locale-codes
-displayed_sidebar: sdkunity
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import TabItem from '@theme/TabItem';
 
-## Set locale
+## Why this is important
 
-To set the locale for paywall localization:
+There are a few scenarios when locale codes come into play — for example, when you're trying to fetch the correct paywall for the current localization of your app.
 
-```csharp
-using Adapty;
+As locale codes are complicated and can vary from platform to platform, we rely on an internal standard for all the platforms we support. However, because these codes are complicated, it is really important for you to understand what exactly are you sending to our server to get the correct localization, and what happens next — so you will always receive what you expect.
 
-// Set locale for paywalls
-await Adapty.SetLocale("en_US");
-```
+## Locale code standard at Adapty
 
-## Get paywalls with locale
+For locale codes, Adapty uses a slightly modified [BCP 47 standard](https://en.wikipedia.org/wiki/IETF_language_tag): every code consists of lowercase subtags, separated by hyphens. Some examples: `en` (English), `pt-br` (Portuguese (Brazil)), `zh` (Simplified Chinese), `zh-hant` (Traditional Chinese).
 
-You can specify locale when getting paywalls:
+## Locale code matching
 
-```csharp
-var paywalls = await Adapty.GetPaywalls(new AdaptyPaywallOptions
+When Adapty receives a call from the client-side SDK with the locale code and starts looking for a corresponding localization of a paywall, the following happens:
+
+1. The incoming locale string is converted to lowercase and all the underscores (`_`) are replaced with hyphens (`-`)
+2. We then look for the localization with the fully matching locale code
+3. If no match was found, we take the substring before the first hyphen (`pt` for `pt-br`) and look for the matching localization
+4. If no match was found again, we return the default `en` localization
+
+This way an iOS device that sent `'pt_BR'`, an Android device that sent `pt-BR`, and another device that sent `pt-br` will get the same result.
+
+## Implementing localizations: recommended way
+
+If you're wondering about localizations, chances are you're already dealing with the localized string files in your project. If that's the case, we recommend placing some key-value with the intended Adapty locale code in each of your files for the corresponding localizations. And then extract the value for this key when calling our SDK, like so:
+
+```csharp showLineNumbers
+// 1. Modify your localization files (e.g., using Unity's Localization package)
+
+/*
+en.json
+*/
 {
-    Locale = "en_US"
-});
-```
-
-## Supported locale codes
-
-Adapty supports the following locale codes:
-
-### English
-- `en_US` - English (United States)
-- `en_GB` - English (United Kingdom)
-- `en_CA` - English (Canada)
-- `en_AU` - English (Australia)
-
-### Spanish
-- `es_ES` - Spanish (Spain)
-- `es_MX` - Spanish (Mexico)
-- `es_AR` - Spanish (Argentina)
-
-### French
-- `fr_FR` - French (France)
-- `fr_CA` - French (Canada)
-
-### German
-- `de_DE` - German (Germany)
-- `de_AT` - German (Austria)
-- `de_CH` - German (Switzerland)
-
-### Italian
-- `it_IT` - Italian (Italy)
-
-### Portuguese
-- `pt_BR` - Portuguese (Brazil)
-- `pt_PT` - Portuguese (Portugal)
-
-### Russian
-- `ru_RU` - Russian (Russia)
-
-### Japanese
-- `ja_JP` - Japanese (Japan)
-
-### Korean
-- `ko_KR` - Korean (South Korea)
-
-### Chinese
-- `zh_CN` - Chinese (Simplified)
-- `zh_TW` - Chinese (Traditional)
-- `zh_HK` - Chinese (Hong Kong)
-
-## Auto-detect locale
-
-You can auto-detect the device locale:
-
-```csharp
-// Get system locale
-var systemLocale = Application.systemLanguage.ToString();
-
-// Set locale based on device
-await Adapty.SetLocale(systemLocale);
-```
-
-## Fallback locale
-
-If a locale is not available, Adapty will fall back to the default locale:
-
-```csharp
-try
-{
-    await Adapty.SetLocale("es_ES");
+  "adapty_paywalls_locale": "en"
 }
-catch (Exception error)
+
+/*
+es.json
+*/
 {
-    Debug.Log("Spanish not available, using default");
-    await Adapty.SetLocale("en_US");
+  "adapty_paywalls_locale": "es"
 }
-```
 
-## Check available locales
-
-You can check which locales are available for a paywall:
-
-```csharp
-var paywalls = await Adapty.GetPaywalls();
-
-foreach (var paywall in paywalls)
+/*
+pt-BR.json
+*/
 {
-    if (paywall.VisualPaywall != null)
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public async void FetchPaywall()
     {
-        var availableLocales = paywall.VisualPaywall.Localizations.Select(l => l.Locale);
-        Debug.Log($"Available locales for {paywall.DeveloperId}: {string.Join(", ", availableLocales)}");
+        // Get the current locale from Unity's Localization system
+        var locale = LocalizationSettings.SelectedLocale;
+        var localeCode = GetAdaptyLocaleCode(locale);
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetAdaptyLocaleCode(Locale locale)
+    {
+        // Convert Unity locale to Adapty format
+        var localeIdentifier = locale.Identifier.Code;
+        return localeIdentifier.ToLower().Replace('_', '-');
     }
 }
-``` 
+```
+
+That way you can ensure you're in full control of what localization will be retrieved for every user of your app.
+
+## Implementing localizations: the other way
+
+You can get similar (but not identical) results without explicitly defining locale codes for every localization. That would mean extracting a locale code from some other objects that your platform provides, like this:
+
+```csharp showLineNumbers
+using UnityEngine;
+using System.Globalization;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public void FetchPaywall()
+    {
+        var localeCode = GetSystemLocaleCode();
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetSystemLocaleCode()
+    {
+        // Get the system's current culture
+        var culture = CultureInfo.CurrentCulture;
+        var languageCode = culture.TwoLetterISOLanguageName;
+        var regionCode = culture.Name.Contains('-') ? culture.Name.Split('-')[1] : null;
+        
+        if (!string.IsNullOrEmpty(regionCode))
+        {
+            return $"{languageCode}-{regionCode.ToLower()}";
+        }
+        
+        return languageCode;
+    }
+}
+```
+
+Note that we don't recommend this approach due to few reasons:
+
+1. On iOS preferred languages and current locale are not identical. If you want the localization to be picked correctly you'll have to either rely on Apple's logic, which works out of the box if you're using the recommended approach with localized string files, or re-create it.
+2. It's hard to predict what exactly will Adapty's server get. For example, on iOS, it is possible to obtain a locale like `ar_OM@numbers='latn'` on a device and send it to our server. And for this call you will get not the `ar-om` localization you were looking for, but rather `ar`, which is likely unexpected.
+
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases. 

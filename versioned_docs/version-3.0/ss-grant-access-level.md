@@ -109,11 +109,11 @@ Placeholders:
 
 ## Parameters
 
-| Parameter       | Type          | Required in request | Nullable in request | Description                                                  |
-| --------------- | ------------- | ------------------- | ------------------- | ------------------------------------------------------------ |
-| access_level_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
-| starts_at       | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will be active. Maybe in the future. The default value is `null`. |
-| expires_at      | ISO 8601 date | :heavy_minus_sign:  | :heavy_plus_sign:   | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access.  The default value is `null`. |
+| Parameter       | Type          | Required | Nullable | Description                                                  |
+| :-------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| access_level_id | String        | Yes      | No       | [Paid access level](access-level) ID configured by you in the [**Access Levels**](https://app.adapty.io/access-levels) page of the Adapty Dashboard. |
+| starts_at       | ISO 8601 date | No       | Yes      | The datetime when the access level will be active. Maybe in the future. The default value is `null`. |
+| expires_at      | ISO 8601 date | No       | Yes      | The datetime when the access level will expire. It may be in the past and may be `null` for lifetime access.  The default value is `null`. |
 
 ---
 

@@ -7,10 +7,9 @@ metadataTitle: "Analyzing Placement Metrics | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls, onboardings, or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
+With Adapty, you have the flexibility to create and manage multiple placements in your app, each associated with distinct paywalls or A/B tests. This versatility enables you to target specific user segments, experiment with different offers or pricing models, and optimize your app's monetization strategy.
 
-
-To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls and onboardings. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
+To gather valuable insights into the performance of your placements and user engagement with your offers, Adapty tracks various user interactions and transactions related to the displayed paywalls. The robust analytics system captures metrics including views, unique views, purchases, trials, refunds, conversion rates, and revenue.
 
 The collected metrics are continuously updated in real-time and can be conveniently accessed and analyzed through Adapty's user-friendly dashboard. You have the freedom to customize the time range for analysis, apply filters based on different parameters, and compare metrics across various placements, user segments, or products.
 
@@ -20,7 +19,7 @@ For a more detailed analysis of each placements, you can navigate to the placeme
 
 
 <Zoom>
-  <img src={require('./img/placement-metrics.png').default}
+  <img src={require('./img/3e711fc-CleanShot_2023-07-26_at_14.55.042x.webp').default}
   style={{
     border: 'none', /* border width and color */
     width: '700px', /* image width */
@@ -40,7 +39,7 @@ The system displays the metrics based on the selected time period and organizes 
 
 #### View options for metrics data
 
-The placement metrics page offers two view options for metrics data: paywall-based or onboarding-based, and audience-based.
+The placement metrics page offers two view options for metrics data: paywall-based and audience-based.
 
 
 <Zoom>
@@ -58,9 +57,9 @@ The placement metrics page offers two view options for metrics data: paywall-bas
 
 
 
-In the paywall-based or onboarding-based view, metrics are grouped by placements associated with the paywall or onboarding. This allows users to analyze metrics by different placements.
+In the paywall-based view, metrics are grouped by placements associated with the paywall. This allows users to analyze metrics by different placements.
 
-In the audience-based view, metrics are grouped by the target audience of the paywall or onboarding. Users can assess metrics specific to different audiences.
+In the audience-based view, metrics are grouped by the target audience of the paywall. Users can assess metrics specific to different audience segments.
 
 #### Profile install date filtration
 
@@ -86,7 +85,7 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 
 <Zoom>
-  <img src={require('./img/time-ranges.png').default}
+  <img src={require('./img/15d2c3e-CleanShot_2023-07-26_at_16.49.272x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -104,10 +103,10 @@ You can choose from a range of time periods to analyze metrics data, allowing yo
 
 Adapty offers powerful tools for filtering and customizing metrics analysis to suit your needs. With Adapty's metrics page, you have access to various time ranges, grouping options, and filtering possibilities.
 
-- ✅ Filter by: Attribution, audience, paywall, paywall group, onboarding, placement, country, store, offer type, offer ID, offer discount type, A/B test, .
-- ✅ Group by: Audience, store, and product.
+- ✅ Filter by: Audience, paywall, paywall group, placement, country, store.
+- ✅ Group by: Segment, store, and product
 
-You can find more information about the available controls, filters, grouping options, and how to use [paywall](https://docs.adapty.io/docs/paywall-metrics) and [onboarding](https://docs.adapty.io/docs/onboarding-metrics) metrics.
+You can find more information about the available controls, filters, grouping options, and how to use them for paywall analytics in [this documentation.](controls-filters-grouping-compare-proceeds)
 
 #### Single metrics chart
 
@@ -139,7 +138,7 @@ Next to the single metrics chart, the total metrics summary section is shown, wh
 
 
 <Zoom>
-  <img src={require('./img/total-metrics-summary.png').default}
+  <img src={require('./img/0f647cf-CleanShot_2023-07-26_at_14.55.492x.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -159,7 +158,7 @@ Unlock the power of placement metrics with our comprehensive definitions. From r
 
 
 <Zoom>
-  <img src={require('./img/metrics-definitions.gif').default}
+  <img src={require('./img/771a0f0-Export-1690375049771.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -189,13 +188,17 @@ This metric represents the total amount of money generated in USD from purchases
 
 ARPAS, or Average revenue per active subscriber, allows you to measure the average revenue generated per active subscriber within specific placements. It is calculated by dividing the total revenue by the number of subscribers who have activated a trial or subscription. For example, if the total revenue is $5,000 and there are 1,000 subscribers, the ARPAS would be $5. This metric helps assess the average monetization potential per subscriber.
 
+#### ARPU
+
+For onboarding placements only. ARPU is the average revenue per user who viewed the onboarding. It's calculated as total revenue divided by the number of unique viewers.
+
 #### Unique CR to purchases
 
 The Unique conversion rate to purchases is calculated by dividing the number of purchases within specific placements by the number of unique views. It focuses on the ratio of purchases to the unique number of views, providing insights into the effectiveness of converting unique visitors within specific placements into paying customers.
 
 #### CR to purchases
 
-The Conversion rate to purchases is calculated by dividing the number of purchases within specific placements by the total number of views of paywalls or onboardings. It indicates the percentage of views within specific placements that result in purchases, providing insights into the effectiveness of your paywall in converting users into paying customers.
+The Conversion rate to purchases is calculated by dividing the number of purchases within specific placements by the total number of views of paywalls. It indicates the percentage of views within specific placements that result in purchases, providing insights into the effectiveness of your paywall in converting users into paying customers.
 
 #### Unique CR to trials
 
@@ -203,7 +206,7 @@ The unique conversion rate to trials is calculated by dividing the number of tri
 
 #### Purchases
 
-Purchases represent the cumulative total of various transactions made within specific placements. The following transactions are included in this metric (renewals are not included):
+Purchases represent the cumulative total of various transactions made on the paywall within specific placements. The following transactions are included in this metric (renewals are not included):
 
 - New purchases are made directly within specific placements.
 - Trial conversions of trials that were initially activated within specific placements.
@@ -214,7 +217,7 @@ By considering these different types of transactions, the purchases metric provi
 
 #### Trials
 
-The trials metric represents the total number of trials that have been activated within specific placements. It reflects the number of users who have initiated trial periods through your within those placements. This metric helps track the effectiveness of your trial offering and can provide insights into user engagement and conversion from trials to paid subscriptions.
+The trials metric represents the total number of trials that have been activated within specific placements. It reflects the number of users who have initiated trial periods through your paywall within those placements. This metric helps track the effectiveness of your trial offering and can provide insights into user engagement and conversion from trials to paid subscriptions.
 
 #### Trials canceled
 
@@ -230,8 +233,16 @@ The refund rate is calculated by dividing the number of refunds within specific 
 
 #### Views
 
-The views metric represents the total number of times the paywall or onboarding within specific placements has been viewed by users. Each time a user visits the paywall or onboarding within those placements, it is counted as a separate view. Tracking views helps you understand the level of engagement and user interaction, providing insights into user behavior and the effectiveness of your paywall or onboarding placement and design within specific areas of your app.
+The views metric represents the total number of times the paywall within specific placements has been viewed by users. Each time a user visits the paywall within those placements, it is counted as a separate view. Tracking views helps you understand the level of engagement and user interaction with your paywall, providing insights into user behavior and the effectiveness of your paywall placement and design within specific areas of your app.
 
 #### Unique views
 
-The unique views metric represents the number of unique instances in which the paywall or onboarding within specific placements has been viewed by users. Unlike total views, which count each visit as a separate view, unique views count each user's visit within those placements only once, regardless of how many times they access it. Tracking unique views helps provide a more accurate measure of user engagement and the reach of your paywall or onboarding within specific placements, as it focuses on individual users rather than the total number of visits.
+The unique views metric represents the number of unique instances in which the paywall within specific placements has been viewed by users. Unlike total views, which count each visit as a separate view, unique views count each user's visit to the paywall within those placements only once, regardless of how many times they access it. Tracking unique views helps provide a more accurate measure of user engagement and the reach of your paywall within specific placements, as it focuses on individual users rather than the total number of visits.
+
+#### Completions & unique completions
+
+For onboarding placements only. Completions count the number of times users complete your onboarding placement, meaning that they go from the first to the last screen. If someone completes it twice, that's two **completions** but one **unique completion**.
+
+#### Unique completions rate
+
+For onboarding placements only. The unique completion number divided by the unique view number. This metric helps you understand how people engage with onboarding placement and make changes if you notice that people ignore it.

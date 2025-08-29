@@ -207,4 +207,4 @@ You can learn more about it in <InlineTooltip tooltip="the guides on how to fetc
 
 
 
-Once you add locales to a paywall, see <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md), [Flutter](flutter-localizations-and-locale-codes.md), [React Native](react-native-localizations-and-locale-codes.md), and [Unity](unity-localizations-and-locale-codes.md)</InlineTooltip> for more information.
+Once you add locales to a paywall, see <InlineTooltip tooltip="the guides on how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md)</InlineTooltip> for more information.

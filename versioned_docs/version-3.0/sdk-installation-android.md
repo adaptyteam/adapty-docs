@@ -1,5 +1,5 @@
 ---
-title: "Android - Adapty SDK installation & configuration"
+title: "Install & configure Android SDK"
 description: "Step-by-step guide on installing Adapty SDK on Android for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on Android | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl', 'billing library']
@@ -29,7 +29,7 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 Choose your dependency setup method:
 - Standard Gradle: Add dependencies to your **module-level** `build.gradle`
 - If your project uses `.gradle.kts` files, add dependencies to your module-level `build.gradle.kts`
-- If you use version catalogs, add dependencies to your `libs.versions.toml` file
+- If you use version catalogs, add dependencies to your `libs.versions.toml` file and then, reference it in `build.gradle.kts`
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
 
@@ -214,12 +214,14 @@ You can set the log level in your app before configuring Adapty.
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.logLevel = AdaptyLogLevel.VERBOSE
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
 ```
 </TabItem>
 </Tabs>
@@ -246,6 +248,8 @@ Adapty.setLogHandler((level, message) -> {
 </Tabs>
 
 ### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
 
 #### Disable IP address collection and sharing
 

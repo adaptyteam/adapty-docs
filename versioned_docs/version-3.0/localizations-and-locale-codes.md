@@ -34,8 +34,6 @@ This way an iOS device that sent `'pt_BR'`, an Android device that sent `pt-BR`,
 
 If you're wondering about localizations, chances are you're already dealing with the localized string files in your project. If that's the case, we recommend placing some key-value with the intended Adapty locale code in each of your files for the corresponding localizations. And then extract the value for this key when calling our SDK, like so:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS" default>
 ```swift showLineNumbers
 // 1. Modify your Localizable.strings files
 
@@ -51,50 +49,6 @@ adapty_paywalls_locale = "pt-br";
 let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
-</TabItem>
-<TabItem value="kotlin" label="Android" default>
-```kotlin showLineNumbers
-// 1. Modify your strings.xml files
-
-/*
-strings.xml - Spanish
-*/
-<string name="adapty_paywalls_locale">es</string>
-
-/*
-strings.xml - Portuguese (Brazil)
-*/
-<string name="adapty_paywalls_locale">pt-br</string>
-
-// 2. Extract and use the locale code
-
-val localeCode = context.getString(R.string.adapty_paywalls_locale)
-// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
-```
-</TabItem>
-<TabItem value="kotlin-multiplatform" label="Kotlin Multiplatform">
-```kotlin showLineNumbers
-// 1. Modify your strings.xml files
-
-/*
-strings.xml - Spanish
-*/
-<string name="adapty_paywalls_locale">es</string>
-
-/*
-strings.xml - Portuguese (Brazil)
-*/
-<string name="adapty_paywalls_locale">pt-br</string>
-
-// 2. Extract and use the locale code
-
-val localeCode = context.getString(R.string.adapty_paywalls_locale)
-// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
-```
-</TabItem>
-</Tabs>
-
-
 
 That way you can ensure you're in full control of what localization will be retrieved for every user of your app.
 
@@ -102,25 +56,10 @@ That way you can ensure you're in full control of what localization will be retr
 
 You can get similar (but not identical) results without explicitly defining locale codes for every localization. That would mean extracting a locale code from some other objects that your platform provides, like this:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS" default>
 ```swift showLineNumbers
 let locale = Locale.current.identifier
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
-</TabItem>
-<TabItem value="kotlin" label="Android" default>
-```kotlin showLineNumbers
-val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-    context.resources.configuration.locales[0]
-else
-    context.resources.configuration.locale
-
-val localeCode = locale.toLanguageTag()
-// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
-```
-</TabItem>
-</Tabs>
 
 Note that we don't recommend this approach due to few reasons:
 

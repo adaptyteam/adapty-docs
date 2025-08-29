@@ -1,5 +1,5 @@
 ---
-title: "Legacy"
+title: "Legacy iOS SDK guides"
 description: "Legacy documentation for Adapty iOS SDK."
 metadataTitle: "Legacy | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios

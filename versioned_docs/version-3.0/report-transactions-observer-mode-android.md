@@ -139,7 +139,7 @@ Parameters:
 
 **Reporting transactions**
 
-Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](restore-purchase-android) page.
+Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](android-restore-purchase) page.
 
 :::warning
 **Don't skip transaction reporting!**

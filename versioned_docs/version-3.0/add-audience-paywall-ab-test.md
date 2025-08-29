@@ -9,11 +9,10 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import AddAudience from '@site/src/components/reusable/AddAudience.md';
 
-**Audiences** in Adapty are groups of users based on [segments](segments), helping you customize paywalls, onboardings, or A/B tests for specific user groups. You can define these segments using filters to ensure the right users see the right paywall or onboarding in your app.
+**Audiences** in Adapty are groups of users defined by [segments](segments). They let you show paywalls, onboardings, and A/B tests to the users who should see them. Build segments with filters to ensure each group gets the right content.
 
+When you add an audience to a [placement](placements), you target paywalls, onboardings, or A/B tests at a specific user group. Linking an audience to a placement makes sure the right users see the right content at the right moment in their app journey.
 
-When it comes to [placement](placements) in Adapty, adding an audience to it means you're aiming specific content — like paywalls, onboardings, or A/B tests — at certain user groups. Linking an audience with a placement ensures that the content you want is seen by the right users at the right points in their app journey.
-
-Open the placement to which you want to add a paywall, onboarding, or an A/B test or create a new one from the [Placements](https://app.adapty.io/placements) section in the Adapty main menu.
+Open the placement where you want to add a paywall, onboarding, or A/B test, or create a new one in the [Placements](https://app.adapty.io/placements) menu.
 
 <AddAudience />

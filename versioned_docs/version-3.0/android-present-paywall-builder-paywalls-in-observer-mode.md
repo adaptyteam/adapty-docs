@@ -1,5 +1,5 @@
 ---
-title: "Android - Present Paywall Builder paywalls in Observer mode"
+title: "Present Paywall Builder paywalls in Observer mode in Android SDK"
 description: "Learn how to present paywalls in observer mode using Adapty’s Paywall Builder."
 metadataTitle: "Presenting Paywalls in Observer Mode | Adapty Docs"
 ---

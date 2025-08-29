@@ -88,10 +88,10 @@ Placeholders:
 
 ### Query parameters
 
-| Parameter      | Type    | Required | Description                                      |
-|----------------|---------|----------|--------------------------------------------------|
-| `page[number]` | integer | :heavy_minus_sign:       | Page number for pagination (default: 1)          |
-| `page[size]`   | integer | :heavy_minus_sign:       | Number of items per page (default: 20, max: 100) |
+| Parameter     | Type    | Required | Description                                                  |
+| :------------ | :------ | -------- | :----------------------------------------------------------- |
+| `page[number]` | integer | No       | Page number for pagination (default: 1)          |
+| `page[size]`   | integer | No       | Number of items per page (default: 20, max: 100) |
 
 ---
 
@@ -103,25 +103,25 @@ A `paywall` object contains the following properties:
 
 | Name                      | Type             | Required           | Description                                                                        |
 |---------------------------|------------------|--------------------|------------------------------------------------------------------------------------|
-| title                     | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard.                      |
-| paywall_id                | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                                              |
-| use_paywall_builder       | Boolean          | :heavy_plus_sign:  | Whether the paywall uses the paywall builder.                                      |
-| use_paywall_builder_legacy| Boolean          | :heavy_plus_sign:  | Whether the paywall uses the legacy paywall builder.                               |
-| updated_at                | String           | :heavy_plus_sign:  | Timestamp when the paywall was last updated.                                       |
-| created_at                | String           | :heavy_plus_sign:  | Timestamp when the paywall was created.                                            |
-| state                     | String           | :heavy_plus_sign:  | The current state of the paywall (e.g., "live").                                   |
-| is_deleted                | Boolean          | :heavy_plus_sign:  | Whether the paywall is marked as deleted.                                          |
-| web_purchase_url          | String           | :heavy_minus_sign: | URL for web purchases, if applicable.                                              |
-| products                  | Array of objects | :heavy_plus_sign:  | Array of product objects containing product information for the paywall.           |
+| title                     | String           | Yes      | The name of the paywall, as defined in your Adapty Dashboard.                      |
+| paywall_id                | String(uuid)     | Yes      | The unique identifier of the paywall.                                              |
+| use_paywall_builder       | Boolean          | Yes      | Whether the paywall uses the paywall builder.                                      |
+| use_paywall_builder_legacy| Boolean          | Yes      | Whether the paywall uses the legacy paywall builder.                               |
+| updated_at                | String           | Yes      | Timestamp when the paywall was last updated.                                       |
+| created_at                | String           | Yes      | Timestamp when the paywall was created.                                            |
+| state                     | String           | Yes      | The current state of the paywall (e.g., "live").                                   |
+| is_deleted                | Boolean          | Yes      | Whether the paywall is marked as deleted.                                          |
+| web_purchase_url          | String           | No       | URL for web purchases, if applicable.                                              |
+| products                  | Array of objects | Yes      | Array of product objects containing product information for the paywall.           |
 
 
 The response includes a `meta` object with the `pagination` object inside. The `pagination` object contains the following properties:
 
 | Name  | Type    | Required          | Description               |
 |-------|---------|-------------------|---------------------------|
-| count | Integer | :heavy_plus_sign: | Total number of paywalls. |
-| page  | Integer | :heavy_plus_sign: | Current page number.      |
-| pages | Integer | :heavy_plus_sign: | Total number of pages.    |
+| count | Integer | Yes | Total number of paywalls. |
+| page  | Integer | Yes | Current page number.      |
+| pages | Integer | Yes | Total number of pages.    |
 
 
 ### Example

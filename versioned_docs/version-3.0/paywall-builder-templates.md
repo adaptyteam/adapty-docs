@@ -12,7 +12,7 @@ Ready-made paywall templates are professionally designed and tailored to streaml
 Simply add your logo, infuse your brand personality, and you're all set to captivate your audience and drive sales!
 
 <Zoom>
-  <img src={require('./img/paywall-templates.gif').default}
+  <img src={require('./img/501b43c-PB-templates_listing.gif').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,7 +28,7 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 
 :::
 
-## Use paywall templates
+## Using Paywall Templates
 
 Templates serve as a fantastic starting point, offering beautifully structured layouts and visual appeal. You can either use them as they are or make slight modifications to align them with your brand's aesthetics. 
 
@@ -53,7 +53,7 @@ For those who prefer a hands-on approach, templates with a minimal design offer 
 
 ## Choose paywall template
 
-When creating a new paywall, Adapty offers a selection of templates and a [built-in AI generator](https://docs.adapty.io/docs/paywall-builder-templates#generate-paywalls-with-ai). You can easily switch between templates at any moment after that. 
+When creating a new paywall, Adapty offers a selection of templates. You can easily switch between templates at any moment after that. 
 
 However, it's important to note that replacing a template will discard any changes made to your paywall design. To avoid losing your work, we recommend duplicating the paywall before changing templates so you can return to the saved paywall if needed.
 
@@ -86,10 +86,13 @@ However, it's important to note that replacing a template will discard any chang
 
 4. Click **Choose** to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.
 
-
 ## Generate paywalls with AI
 
-For apps published on the App Store, you can create a unique, high-converting paywall tailored to your app in just seconds using our built-in AI generator.
+:::info
+The Paywall AI generator is only available for apps published on the Apple App Store.
+:::
+
+You can create a unique, high-converting paywall tailored to your app in just seconds using our built-in AI generator.
 
 To do so:
 
@@ -117,5 +120,3 @@ Each user can generate up to 5 sets of templates per day.
   }}
 />
 </Zoom>
-
-4. Click **Choose** to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.

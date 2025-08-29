@@ -3,54 +3,85 @@ title: "Check subscription status in iOS SDK"
 description: "Learn how to check subscription status in your iOS app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkios
+keywords: ['getProfile', 'subscription status']
+rank: 100
 ---
 
-When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-- Call [`getProfile`](subscription-status.md) if you need the latest profile data immediately (like on app launch) or want to force an update.
-- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+To decide whether users can access paid content or see a paywall, you need to check their [access level](access-level.md) in the profile.
 
 This article shows you how to access the profile state to decide what users need to see - whether to show them a paywall or grant access to paid features.
 
-## Listen to subscription updates
+## Get subscription status
 
-To automatically receive profile updates in your app:
+When you decide whether to show a paywall or paid content to a user, you check their [access level](access-level.md) in their profile. You have two options:
+
+- Call `getProfile` if you need the latest profile data immediately (like on app launch) or want to force an update.
+- Set up **automatic profile updates** to keep a local copy that's automatically refreshed whenever the subscription status changes.
+
+:::important
+By default, the `premium` access level already exists in Adapty. If you don't need to set up more than one access level, you can just use `premium`. 
+:::
+
+### Get profile
+
+The easiest way to get the subscription status is to use the `getProfile` method to access the profile:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Listen to subscription updates
+
+If you want to automatically receive profile updates in your app:
 
 1. Conform to the `AdaptyDelegate` protocol in a type of your choice and implement the `didLoadLatestProfile` method - Adapty will automatically call this method whenever the user's subscription status changes. In the example below we use a `SubscriptionManager` type to assist with handling subscription workflows and the user's profile. This type can be injected as a dependency or set up as a singleton in a UIKit app, or added to the SwiftUI environment from the app main struct.
 2. Store the updated profile data when this method is called, so you can use it throughout your app without making additional network requests.
 
 ```swift
-// Declare a state variable for SwiftUI to inject into environment, or init manager and inject into view hierarchy in UIKit app
-@State private var subscriptionManager = SubscriptionManager()
-
-// Adapty init code to be placed in the App or Scene Delegate of a UIKit application, or the app main struct
-Task {
-	do {
-    	let config = AdaptyConfiguration.builder(
-    		withAPIKey: "Adapty SDK key goes here"
-    	)
-    	.build()
-    	try await Adapty.activate(with: config)
-    	Adapty.delegate = subscriptionManager // Step 1
-    } catch {
-        print("Adapty activation failed: ", error)
-    }
-} 
-
 class SubscriptionManager: AdaptyDelegate {
     private var currentProfile: AdaptyProfile?
     
-    // Store the profile when it updates
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
-        self.currentProfile = profile // Step 2
+        self.currentProfile = profile
         // Update UI, unlock content, etc.
     }
     
-    // Use stored profile instead of calling getProfile()
     func hasAccess() -> Bool {
-        return currentProfile?.accessLevels["premium"]?.isActive ?? false
+        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
     }
 }
+
+// Set delegate after Adapty activation
+Adapty.delegate = subscriptionManager
 ```
 
 :::note
@@ -61,59 +92,24 @@ Adapty automatically calls `didLoadLatestProfile` when your app starts, providin
 
 When you need to make immediate decisions about showing paywalls or granting access to paid features, you can check the user's profile directly. This approach is useful for scenarios like app launch, when entering premium sections, or before displaying specific content.
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 <Tabs>
 <TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift
-import SwiftUI
-import Adapty
-import AdaptyUI
+private func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        return false
+    }
+}
 
-struct ContentView: View {
-    @State private var paywallPresented = false
-    @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
-    
-    var body: some View {
-        VStack {
-            Text("Your App Content")
-        }
-        .task {
-            await initializePaywall()
-        }
-        .paywall(
-            isPresented: $paywallPresented,
-            configuration: paywallConfiguration,
-            // ... other paywall parameters
-        )
-    }
-    
-    private func initializePaywall() async {
-        await loadPaywall()
-        
-        // Check if user has access to premium features
-        let hasAccess = await checkAccessLevel()
-        if !hasAccess && paywallConfiguration != nil {
-            paywallPresented = true // Show paywall if no access
-        }
-    }
-    
-    private func checkAccessLevel() async -> Bool {
-        do {
-            let profile = try await Adapty.getProfile()
-            return profile.accessLevels["premium"]?.isActive ?? false
-        } catch {
-            print("Error checking access level: \(error)")
-            return false // Show paywall if access check fails
-        }
-    }
-    
-    private func loadPaywall() async {
-        // Load paywall configuration
-        // ... paywall loading logic
-    }
+// In your initialization logic:
+let hasAccess = await checkAccessLevel()
+if !hasAccess {
+    paywallPresented = true // Show paywall if no access
 }
 ```
 
@@ -121,55 +117,23 @@ struct ContentView: View {
 <TabItem value="uikit" label="UIKit">
 
 ```swift
-import UIKit
-import Adapty
-import AdaptyUI
+private func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+}
 
-class ViewController: UIViewController {
-    private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        Task {
-            await initializePaywall()
-        }
-    }
-    
-    private func initializePaywall() async {
-        do {
-            paywallConfiguration = try await loadPaywall()
-            
-            // Check if user has access to premium features
-            let hasAccess = try await checkAccessLevel()
-            
-            if !hasAccess, let paywallConfiguration {
-                await MainActor.run {
-                    presentPaywall(with: paywallConfiguration) // Show paywall if no access
-                }
-            }
-        } catch {
-            print("Error initializing paywall: \(error)")
-        }
-    }
-    
-    private func checkAccessLevel() async throws -> Bool {
-        let profile = try await Adapty.getProfile()
-        return profile.accessLevels["premium"]?.isActive ?? false
-    }
-    
-    private func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
-        // Load paywall configuration
-        // ... paywall loading logic
-        return nil
-    }
-    
-    private func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
-        // Present paywall controller
-        // ... paywall presentation logic
-    }
+// In your initialization logic:
+let hasAccess = try await checkAccessLevel()
+if !hasAccess {
+    presentPaywall(with: paywallConfiguration)
 }
 ```
 
 </TabItem>
 </Tabs>
+
+## Next steps
+
+Now, when you know how to track the subscription status, [learn how to work with user profiles](ios-quickstart-identify.md) to ensure it aligns with your existing authentication system and paid access sharing permissions. 
+
+If you don't have your own authentication system, that's not a problem at all, and Adapty will manage users for you, but you can still read the [guide](ios-quickstart-identify.md) to learn how Adapty works with anonymous users.

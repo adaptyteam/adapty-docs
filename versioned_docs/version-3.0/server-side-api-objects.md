@@ -21,7 +21,7 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 ## Access level
 
-Info about customer’s [access level](access-level). 
+Info about customer's [access level](access-level). 
 
 Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases). Alternatively, you can [grant specific access](ss-grant-access-level) for a specified time to a user via server-side API.
 
@@ -51,20 +51,20 @@ You can do the following action via Adapty server-side API:
 - [Create a profile with spesific installation meta](ss-create-profile)
 - [Update user's installation meta](ss-update-profile)
 
-| Parameter          | Type   | Required in request | Nullable in request | Description                                                  |
-| :----------------- | :----- | ------------------- | ------------------- | :----------------------------------------------------------- |
-| device_id          | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The device identifier is generated on the client side.       |
-| device             | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The end-user-visible device model name.                      |
-| locale             | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The locale used by the end user.                             |
-| os                 | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The operating system used by the end user.                   |
-| platform           | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The device platform used by the end user.                    |
-| timezone           | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The timezone of the end user.                                |
-| user_agent         | String | :heavy_minus_sign:  | :heavy_plus_sign:   | Details about the end user environment: device, operating system, and browser information of the end user interacting with your application. |
-| idfa               | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The Identifier for Advertisers, assigned by Apple to a user's device. |
-| idfv               | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
-| advertising_id     | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
-| android_id         | String | :heavy_minus_sign:  | :heavy_plus_sign:   | On Android 8.0 (API level 26) and higher versions of the platform, a 64-bit number (expressed as a hexadecimal string), unique to each combination of app-signing key, user, and device. For more details, see [Android developer documentation](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
-| android_app_set_id | String | :heavy_minus_sign:  | :heavy_plus_sign:   | An [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - unique, per-device, per developer-account user-resettable ID for non-monetizing advertising use cases. |
+| Parameter          | Type   | Required | Nullable | Description                                                  |
+| :----------------- | :----- | -------- | -------- | :----------------------------------------------------------- |
+| device_id          | String | Yes      | No       | The device identifier is generated on the client side.       |
+| device             | String | No       | Yes      | The end-user-visible device model name.                      |
+| locale             | String | No       | Yes      | The locale used by the end user.                             |
+| os                 | String | No       | Yes      | The operating system used by the end user.                   |
+| platform           | String | No       | Yes      | The device platform used by the end user.                    |
+| timezone           | String | No       | Yes      | The timezone of the end user.                                |
+| user_agent         | String | No       | Yes      | Details about the end user environment: device, operating system, and browser information of the end user interacting with your application. |
+| idfa               | String | No       | Yes      | The Identifier for Advertisers, assigned by Apple to a user's device. |
+| idfv               | String | No       | Yes      | The Identifier for Vendors (IDFV) is a code assigned to all apps by one developer and is shared across all apps by that developer on your device. |
+| advertising_id     | String | No       | Yes      | The Advertising ID is a unique identifier offered by the Android Operating System that advertisers might use to uniquely identify you. |
+| android_id         | String | No       | Yes      | On Android 8.0 (API level 26) and higher versions of the platform, a 64-bit number (expressed as a hexadecimal string), unique to each combination of app-signing key, user, and device. For more details, see [Android developer documentation](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
+| android_app_set_id | String | No       | Yes      | An [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - unique, per-device, per developer-account user-resettable ID for non-monetizing advertising use cases. |
 
 ---
 
@@ -76,18 +76,18 @@ You can do the following action via Adapty server-side API:
 
 - [Check user's current non-subscriptions](ss-get-profile) by retrieving their profile details
 
-| Parameter                     | Type          | Required in request | Nullable in request | Description                                                  |
-| :---------------------------- | :------------ | :------------------ | :------------------ | :----------------------------------------------------------- |
-| purchase_id                   | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Identifier of the purchase in Adapty. You can use it to ensure that you’ve already processed this purchase, for example tracking one-time products. |
-| store                         | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Store where the product was purchased. Possible values are: **app_store**, **play_store**, **stripe**, name of your [custom store](custom-store). |
-| store_product_id              | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | Identifier of the product in the app store (App Store/Google Play/Stripe, etc.) that unlocked this access level. |
-| store_base_plan_id            | String        | :heavy_plus_sign:   | :heavy_plus_sign:   | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
-| store_transaction_id          | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | The ID of the transaction in the app store (App Store/Google Play/Stripe, etc.). |
-| store_original_transaction_id | String        | :heavy_plus_sign:   | :heavy_minus_sign:  | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
-| purchased_at                  | ISO 8601 date | :heavy_plus_sign:   | :heavy_minus_sign:  | The datetime when the access level was purchased the latest time. |
-| environment                   | String        | :heavy_minus_sign:  | :heavy_minus_sign:  | Environment of the transaction that provided the access level. Possible values: `Sandbox`, `Production.` |
-| is_refund                     | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates if the product has been refunded.                  |
-| is_consumable                 | Boolean       | :heavy_plus_sign:   | :heavy_minus_sign:  | Indicates whether the product is consumable.                 |
+| Parameter                     | Type          | Required | Nullable | Description                                                  |
+| :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| purchase_id                   | String        | Yes      | No       | Identifier of the purchase in Adapty. You can use it to ensure that you've already processed this purchase, for example tracking one-time products. |
+| store                         | String        | Yes      | No       | Store where the product was purchased. Possible values are: **app_store**, **play_store**, **stripe**, name of your [custom store](custom-store). |
+| store_product_id              | String        | Yes      | No       | Identifier of the product in the app store (App Store/Google Play/Stripe, etc.) that unlocked this access level. |
+| store_base_plan_id            | String        | Yes      | Yes      | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
+| store_transaction_id          | String        | Yes      | No       | The ID of the transaction in the app store (App Store/Google Play/Stripe, etc.). |
+| store_original_transaction_id | String        | Yes      | No       | <p>In case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction i the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations.</p><p>If no prolongation, `store_original_transaction_id` will coincide with `store_transaction_id`.</p> |
+| purchased_at                  | ISO 8601 date | Yes      | No       | The datetime when the access level was purchased the latest time. |
+| environment                   | String        | No       | No       | Environment of the transaction that provided the access level. Possible values: `Sandbox`, `Production.` |
+| is_refund                     | Boolean       | Yes      | No       | Indicates if the product has been refunded.                  |
+| is_consumable                 | Boolean       | Yes      | No       | Indicates whether the product is consumable.                 |
 
 ---
 
@@ -105,11 +105,11 @@ You can do the following actions with offers via Adapty server-side API:
 
 - [Apply offer](ss-set-transaction) when setting a transaction to your user
 
-| Parameter | Type   | Required in request | Nullable in request | Description                                                  |
-| -- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |
-| category | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The category of the applied offer. Options are: **introductory**, **promotional**, **offer_code**, **win_back**. |
-| type | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The type of active offer. Options are: **free_trial**, **pay_as_you_go**, **pay_up_front**, and **unknown**. If this isn’t null, it means the offer was applied in the current subscription period. |
-| id | String | :heavy_minus_sign:  | :heavy_plus_sign:   | The ID of the applied offer.                                 |
+| Parameter | Type   | Required | Nullable | Description                                                  |
+| -- | ------ | -------- | -------- | ------------------------------------------------------------ |
+| category | String | Yes      | No       | The category of the applied offer. Options are: **introductory**, **promotional**, **offer_code**, **win_back**. |
+| type | String | Yes      | No       | The type of active offer. Options are: **free_trial**, **pay_as_you_go**, **pay_up_front**, and **unknown**. If this isn't null, it means the offer was applied in the current subscription period. |
+| id | String | No       | Yes      | The ID of the applied offer.                                 |
 
 ## Price
 
@@ -119,11 +119,11 @@ You can do the following actions with product price via Adapty server-side API:
 
 - [Set transaction to your user](ss-set-transaction) and specify its price
 
-| Parameter | Type   | Required in request | Nullable in request | Description                               |
-| --------- | ------ | ------------------- | ------------------- | ----------------------------------------- |
-| country   | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The country where the price applies.      |
-| currency  | String | :heavy_plus_sign:   | :heavy_minus_sign:  | The currency used for the price.          |
-| value     | Float  | :heavy_plus_sign:   | :heavy_minus_sign:  | The product's cost in the local currency. |
+| Parameter | Type   | Required | Nullable | Description                               |
+| --------- | ------ | -------- | -------- | ----------------------------------------- |
+| country   | String | Yes      | No       | The country where the price applies.      |
+| currency  | String | Yes      | No       | The currency used for the price.          |
+| value     | Float  | Yes      | No       | The product's cost in the local currency. |
 
 ---
 
@@ -144,16 +144,16 @@ You can do the following actions with user profiles via Adapty server-side API:
 
 This object contains details about a product in Adapty.
 
-| Name                           | Type    | Required           | Description                                                  |
-| ------------------------------ | ------- | ------------------ | ------------------------------------------------------------ |
-| title                          | String  | :heavy_minus_sign: | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
-| is_consumable                  | Boolean | :heavy_plus_sign:  | Indicates whether the product is consumable.                 |
-| adapty_product_id              | UUID    | :heavy_minus_sign: | Internal product ID as used in Adapty.                       |
-| vendor_product_id              | String  | :heavy_plus_sign:  | The product ID in app stores.                                |
-| introductory_offer_eligibility | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for an iOS introductory offer. |
-| promotional_offer_eligibility  | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for a promotional offer.   |
-| base_plan_id                   | String  | :heavy_minus_sign: | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
-| offer                          | JSON    | :heavy_minus_sign: | An [Offer](web-api-objects#offer-object) object as a JSON.   |
+| Name                           | Type    | Required | Description                                                  |
+| ------------------------------ | ------- | -------- | ------------------------------------------------------------ |
+| title                          | String  | No       | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
+| is_consumable                  | Boolean | Yes      | Indicates whether the product is consumable.                 |
+| adapty_product_id              | UUID    | No       | Internal product ID as used in Adapty.                       |
+| vendor_product_id              | String  | Yes      | The product ID in app stores.                                |
+| introductory_offer_eligibility | Boolean | No       | Specifies if the user is eligible for an iOS introductory offer. |
+| promotional_offer_eligibility  | Boolean | No       | Specifies if the user is eligible for a promotional offer.   |
+| base_plan_id                   | String  | No       | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
+| offer                          | JSON    | No       | An [Offer](web-api-objects#offer-object) object as a JSON.   |
 
 ```json showLineNumbers
 {
@@ -185,10 +185,10 @@ This object contains information about a [remote config](customize-paywall-with-
 
 ```
 
-| Name | Type   | Required          | Description                                                  |
-| ---- | ------ | ----------------- | ------------------------------------------------------------ |
-| lang | String | :heavy_plus_sign: | <p>Locale code for the paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
-| data | String | :heavy_plus_sign: | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
+| Name | Type   | Required | Description                                                  |
+| ---- | ------ | -------- | ------------------------------------------------------------ |
+| lang | String | Yes      | <p>Locale code for the paywall localization. It uses language and region subtags separated by a hyphen (**-**).</p><p>Examples: `en` for English, `pt-br` for Brazilian Portuguese.</p><p>Refer to  [Localizations and locale codes](localizations-and-locale-codes) for more details.</p> |
+| data | String | Yes      | Serialized JSON string representing the remote config of your paywall. You can find it in the **Remote Config** tab of a specific paywall in the Adapty Dashboard. |
 
 ## Subscription
 

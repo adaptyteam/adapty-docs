@@ -1,5 +1,5 @@
 ---
-title: "Reference"
+title: "Reference for React Native SDK"
 description: "Reference documentation for Adapty React Native SDK."
 metadataTitle: "Reference | React Native SDK | Adapty Docs"
 displayed_sidebar: sdkreactnative

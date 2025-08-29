@@ -27,7 +27,7 @@ To be notified of profile updates, listen for profile changes as described in th
 
 ## Retrieving the access level from the server
 
-To get the access level from the server, use the `.getProfile()` method:
+To get the access level from the server, use the `.GetProfile()` method:
 
 
 ```csharp showLineNumbers

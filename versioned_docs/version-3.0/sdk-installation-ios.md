@@ -1,9 +1,9 @@
 ---
-title: "iOS - Adapty SDK installation & configuration"
+title: "Install & configure iOS SDK"
 description: "Step-by-step guide on installing Adapty SDK on iOS for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on iOS | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk ios']
-rank: 80
+keywords: ['install sdk', 'sdk install', 'install sdk ios', 'adaptyui']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -28,13 +28,13 @@ For a complete implementation walkthrough, you can also see the videos:
 <TabItem value="swiftui" label="iOS (SwiftUI)" default> 
 
 <div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 </TabItem>
 <TabItem value="uikit" label="iOS (UIKit)" default> 
 
 <div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 </TabItem>
 </Tabs>
@@ -110,7 +110,7 @@ struct YourApp: App {
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
   
-   Adapty.logLevel = .verbose // recommended for development
+   Adapty.logLevel = .verbose // recommended for development and the first production release
     
     let config = configurationBuilder.build()
     
@@ -150,7 +150,7 @@ Task {
   do {
     let configurationBuilder = AdaptyConfiguration
       .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
-      .with(logLevel: .verbose) // recommended for development
+      .with(logLevel: .verbose) // recommended for development and the first production release
     
     let config = configurationBuilder.build()
     try await Adapty.activate(with: config)
@@ -269,6 +269,8 @@ Adapty.setLogHandler { record in
 ```
 
 ### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
 
 #### Disable IDFA collection and sharing
 

@@ -4,6 +4,7 @@ description: "Fetch paywalls and products in Adapty Flutter SDK to enhance user 
 metadataTitle: "Fetching Paywalls & Products | Flutter SDK | Adapty Docs"
 keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Flutter']
 displayed_sidebar: sdkflutter
+rank: 85
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -117,11 +118,3 @@ The `getPaywallForDefaultAudience` method is not yet supported in Flutter SDK, b
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](flutter-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
-
-## Next steps
-
-After fetching paywalls and products, you can:
-
-1. [Present paywalls manually](/flutter-present-paywalls)
-2. [Handle purchase events](flutter-making-purchases)
-3. [Restore purchases](/flutter-restore-purchase) 

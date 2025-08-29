@@ -1,7 +1,8 @@
 ---
 title: "Report transactions in Observer Mode in iOS SDK"
 description: "Report purchase transactions in Adapty Observer Mode for user insights and revenue tracking in iOS SDK."
-metadataTitle: "Reporting Transactions in Observer Mode in iOS SDK | Adapty Docs"
+metadataTitle: "Reporting Transactions in Observer Mode | Adapty Docs"
+keywords: ['reportTransaction', 'report transactions']
 ---
 
 import Zoom from 'react-medium-image-zoom';

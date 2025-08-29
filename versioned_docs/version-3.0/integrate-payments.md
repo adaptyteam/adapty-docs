@@ -11,7 +11,7 @@ To get started with Adapty, first integrate with the stores where your users buy
 
 Choose your store below for detailed integration steps:
 
-- <a href="https://adapty.io/docs/initial-ios" target="_blank" rel="noopener noreferrer">App Store</a>
+- <a href="https://adapty.io/docs/initial_ios" target="_blank" rel="noopener noreferrer">App Store</a>
 - <a href="https://adapty.io/docs/initial-android" target="_blank" rel="noopener noreferrer">Google Play</a>
 - Web payments:
   - <a href="https://adapty.io/docs/stripe" target="_blank" rel="noopener noreferrer">Stripe</a>

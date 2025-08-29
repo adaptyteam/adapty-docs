@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Adapty SDK installation & configuration"
+title: "Install & configure Flutter SDK"
 description: "Step-by-step guide on installing Adapty SDK on Flutter for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on Flutter | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk flutter', 'flutter sdk', 'cross platform']
@@ -168,7 +168,8 @@ Adapty logs errors and other important information to help you understand what i
 You can set the log level in your app before configuring Adapty:
 
 ```dart showLineNumbers title="main.dart"
-// Set log level before activation
+// Set log level before activation. 
+// 'verbose' is recommended for development and the first production release
 await Adapty().setLogLevel(AdaptyLogLevel.verbose);
 
 // Or set it during configuration
@@ -179,6 +180,8 @@ await Adapty().activate(
 ```
 
 ### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
 
 #### Disable IP address collection and sharing
 

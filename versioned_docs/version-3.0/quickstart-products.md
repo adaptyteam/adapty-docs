@@ -41,8 +41,8 @@ Let's say you want to add a monthly subscription as a product.
 
 3. Add product details:
 - **Product name**: The name visible only to you across the Adapty dashboard.
-- **Access level ID**: The unique identifier that determines which features are unlocked after purchasing the product. The `Premium` is available by default for selection. Learn more about [access levels](access-level.md).
-- **Period**: The subscription duration. This matches the period configured in the store.
+- **Access level ID**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
+- **Period**: The subscription duration. This must match the period configured in the store.
   
   :::note
   
@@ -67,7 +67,7 @@ Let's say you want to add a monthly subscription as a product.
 
 <br />
 
-4. Add store details. Choose your store for more details:
+4. Add store details. Choose your store:
 
 <Tabs>
 <TabItem value="App Store" label="App Store" default>
@@ -78,22 +78,23 @@ Let's say you want to add a monthly subscription as a product.
     <summary>Click here to learn where to find the App Store Product ID.</summary>
 
 
-1. Go to **Monetize > Subscriptions** in your [Apple App Store Connect](https://appstoreconnect.apple.com/login) account.
+1. Go to **Monetization > Subscriptions** in your [Apple App Store Connect](https://appstoreconnect.apple.com/login) account.
 2. Open the **Subscription group** for the purchase.
 3. You will see the **Product ID** column for purchases included in the subscription group.
+   <Zoom>
+   <img src={require('./img/stores-info.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 
 </details>
 
-<Zoom>
-  <img src={require('./img/stores-info.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+
   
 
 </TabItem>
@@ -112,10 +113,8 @@ Let's say you want to add a monthly subscription as a product.
 2. Open the **Subscription** for the purchase.
 3. You will see the Product ID in the **Subscription details** section and the Base plan ID in the **ID and duration** column of the **Base plans and offers** section.
 
-</details>
-
 <Zoom>
-  <img src={require('./img/product-play-store.png').default}
+  <img src={require('./img/play-store-id.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -124,6 +123,10 @@ Let's say you want to add a monthly subscription as a product.
   }}
 />
 </Zoom>
+
+</details>
+
+
 
 </TabItem>
 
@@ -142,8 +145,6 @@ Let's say you want to add a monthly subscription as a product.
 - The Stripe Product ID (looks like `prod_...`) in the top right corner.
 - The Stripe Price ID (looks like `price_...`) in the **API ID** column of the **Pricing** section.
 
-</details>
-
 <Zoom>
   <img src={require('./img/product-stripe.png').default}
   style={{
@@ -154,6 +155,10 @@ Let's say you want to add a monthly subscription as a product.
   }}
 />
 </Zoom>
+
+</details>
+
+
 
 </TabItem>
 
@@ -172,18 +177,20 @@ Let's say you want to add a monthly subscription as a product.
 - The Paddle Product ID (looks like `pro_...`) in the **Additional details** section.
 - The Paddle Price ID (looks like `pri_...`) in the **ID** column of the **Prices** section.
 
-</details>
-
 <Zoom>
-  <img src={require('./img/product-paddle.png').default}
+  <img src={require('./img/paddle-product-price.webp').default}
   style={{
-    border: '1px solid #727272', /* border width and color */
+    border: 'none', /* border width and color */
     width: '700px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
 />
 </Zoom>
+
+</details>
+
+
 
 </TabItem>
 
@@ -198,7 +205,7 @@ Keep in mind that Adapty only tracks transactions from the App Store, Google Pla
 </Tabs>
 
 
-5. Later, you can [Create offers](create-offer.md) for the product if needed.
+5. Later, you can [create offers](create-offer.md) for the product if needed: promotional offers for the App Store and all other types of offers for other stores.
 
 Your product will appear in the product list.
 
