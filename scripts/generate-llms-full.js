@@ -7,8 +7,8 @@ const REUSABLE_COMPONENTS_DIR = path.join(__dirname, '..', 'src', 'components', 
 
 // Function to remove imports from markdown content
 function removeImports(content) {
-  // Remove import statements (lines starting with 'import' and ending with ';')
-  return content.replace(/^import\s+.*?;?\s*$/gm, '').trim();
+  // Remove import statements (lines starting with optional whitespace + 'import' and ending with ';')
+  return content.replace(/^\s*import\s+.*?;?\s*$/gm, '').trim();
 }
 
 // Function to remove Zoom components with their content
@@ -87,17 +87,17 @@ async function processMarkdownFile(filePath) {
   try {
     let content = await fs.readFile(filePath, 'utf8');
     
-    // Remove imports
-    content = removeImports(content);
-    
-    // Remove Zoom components
-    content = removeZoomComponents(content);
-    
-    // Clean frontmatter
+    // Clean frontmatter first
     content = cleanFrontmatter(content);
     
     // Replace reusable components
     content = await replaceReusableComponents(content);
+    
+    // Remove imports (after replacing components)
+    content = removeImports(content);
+    
+    // Remove Zoom components (after replacing components)
+    content = removeZoomComponents(content);
     
     return content;
   } catch (error) {
