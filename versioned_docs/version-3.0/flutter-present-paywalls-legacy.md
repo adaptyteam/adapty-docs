@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Present new Paywall Builder paywalls"
+title: "Present legacy Paywall Builder paywalls in Flutter SDK"
 description: "Present paywalls in Flutter (Legacy) with Adapty."
 metadataTitle: "Presenting Paywalls in Flutter (Legacy) | Adapty Docs"
 ---

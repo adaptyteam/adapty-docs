@@ -1,5 +1,5 @@
 ---
-title: "Android - Present onboardings"
+title: "Present onboardings in Android SDK"
 description: "Learn how to present onboardings on Android for effective user engagement."
 metadataTitle: "Presenting Onboardings on Android | Adapty Docs"
 keywords: ['getOnboardingConfiguration']
@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Android SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty Android SDK](sdk-installation-android.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

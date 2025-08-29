@@ -49,7 +49,11 @@ To launch your onboarding:
 
 1. [Design an onboarding in the no-code editor.](design-onboarding.md)
 2. [Create a placement for the onboarding.](create-onboarding#create-a-placement-for-your-onboarding)
-3. [Integrate the onboarding with your project using the Adapty SDK.](onboarding-sdk.md)
+3. Integrate the onboarding with your project using the Adapty SDK:
+   - [iOS](ios-onboardings.md)
+   - [Android](android-onboardings.md)
+   - [Flutter](flutter-onboardings.md)
+   - [React Native](react-native-onboardings.md)
 4. Test the onboarding and release it for your users.
 
 To grow further, you can also try more advanced ways to work with onboardings:

@@ -1,6 +1,6 @@
 ---
 title: "Adapty on China servers"
-description: "Understand Adapty’s China cluster and its data storage policies."
+description: "Understand Adapty's China cluster and its data storage policies."
 metadataTitle: "China Cluster & Data Storage | Adapty Docs"
 no_index: true
 ---
@@ -11,6 +11,7 @@ no_index: true
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 To ensure that your application is not blocked in China and works efficiently, Adapty provides a China cluster option. This ensures fast and reliable service for your users in mainland China while helping you comply with local regulations.
 
@@ -28,7 +29,7 @@ In China, applications require explicit user permission to access the internet. 
 
 ## Step 1. Configure Adapty SDK for China region
 
-Install Adapty SDK as described in the [installation guide](installation-of-adapty-sdks.md).
+<InlineTooltip tooltip="Install Adapty SDK as described in the installation guide">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative), and [Unity](sdk-installation-unity)</InlineTooltip>.
 
 For the China region, when configuring the SDK during the installation, follow the instructions depending on your framework:
 

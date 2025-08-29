@@ -3,6 +3,7 @@ title: "Update paywall with server-side API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
+keywords: ['update paywall', 'remote config']
 ---
 
 import Tabs from '@theme/Tabs'; 
@@ -118,15 +119,15 @@ Placeholders:
 
 ### Path parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `paywall_id` | string | :heavy_plus_sign: | The unique identifier of the paywall to update |
+| Parameter        | Type   | Required | Description                                                  |
+| :--------------- | :----- | -------- | :----------------------------------------------------------- |
+| `paywall_id` | string | Yes      | The unique identifier of the paywall to update |
 
 ### Request body
 
 | Parameter | Type | Required | Description                                                                    |
 |-----------|------|----------|--------------------------------------------------------------------------------|
-| `remote_configs` | array | :heavy_plus_sign: | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects to update |
+| `remote_configs` | array | Yes      | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects to update |
 
 ---
 
@@ -137,18 +138,18 @@ Returns the updated paywall information. The `paywall` object contains the follo
 
 | Name                      | Type             | Required           | Description                                                                                 |
 |---------------------------|------------------|--------------------|---------------------------------------------------------------------------------------------|
-| title                     | String           | :heavy_plus_sign:  | The name of the paywall, as defined in your Adapty Dashboard.                               |
-| paywall_id                | String           | :heavy_plus_sign:  | The unique identifier of the paywall.                                                       |
-| use_paywall_builder       | Boolean          | :heavy_plus_sign:  | Whether the paywall uses the paywall builder.                                               |
-| use_paywall_builder_legacy| Boolean          | :heavy_plus_sign:  | Whether the paywall uses the legacy paywall builder.                                        |
-| updated_at                | String           | :heavy_plus_sign:  | Timestamp when the paywall was last updated.                                                |
-| created_at                | String           | :heavy_plus_sign:  | Timestamp when the paywall was created.                                                     |
-| state                     | String           | :heavy_plus_sign:  | The current state of the paywall: `draft`, `live`, `inactive`, or `archived`.               |
-| is_deleted                | Boolean          | :heavy_plus_sign:  | Whether the paywall is marked as deleted.                                                   |
-| web_purchase_url          | String           | :heavy_minus_sign: | URL for [web purchases](web-paywall), if applicable.                                        |
-| products                  | Array of objects | :heavy_plus_sign:  | Array of [Product](web-api-objects#products-object) objects containing product information. |
-| remote_configs            | Array of objects | :heavy_minus_sign: | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects with locale and data.  |
-| main_screenshot           | Object           | :heavy_minus_sign: | Main screenshot object with `image_id` and `url`.                                           |
+| title                     | String           | Yes      | The name of the paywall, as defined in your Adapty Dashboard.                               |
+| paywall_id                | String           | Yes      | The unique identifier of the paywall.                                                       |
+| use_paywall_builder       | Boolean          | Yes      | Whether the paywall uses the paywall builder.                                               |
+| use_paywall_builder_legacy| Boolean          | Yes      | Whether the paywall uses the legacy paywall builder.                                        |
+| updated_at                | String           | Yes      | Timestamp when the paywall was last updated.                                                |
+| created_at                | String           | Yes      | Timestamp when the paywall was created.                                                     |
+| state                     | String           | Yes      | The current state of the paywall: `draft`, `live`, `inactive`, or `archived`.               |
+| is_deleted                | Boolean          | Yes      | Whether the paywall is marked as deleted.                                                   |
+| web_purchase_url          | String           | No       | URL for [web purchases](web-paywall), if applicable.                                        |
+| products                  | Array of objects | Yes      | Array of [Product](web-api-objects#products-object) objects containing product information. |
+| remote_configs            | Array of objects | No       | Array of [RemoteConfig](web-api-objects#remoteconfig-object) objects with locale and data.  |
+| main_screenshot           | Object           | No       | Main screenshot object with `image_id` and `url`.                                           |
 
 ### Example
 

@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to React Native Adapty SDK 3.8.0"
-description: "Migrate to React Native Adapty SDK 3.8.0"
-metadataTitle: ""
+title: "Migrate Adapty React Native SDK to v. 3.8"
+description: "Migrate to Adapty React Native SDK v3.8 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty React Native SDK v3.8 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -19,7 +19,7 @@ Adapty SDK 3.8.0 is a major release that brought some improvements which however
    placementId: string;
    locale?: string;
    fetchPolicy?: AdaptyPlacementFetchPolicy;
-   loadTimeout?: number;
+   loadTimeoutMs?: number;
  }
 ```
 

@@ -6,7 +6,9 @@ metadataTitle: ""
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem'; 
+import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
 You can set up any image or video on a paywall, but sometimes you might want to display a custom image or video that’s personalized for the user — for example, a video with their chosen avatar. That’s where custom media comes in.
 
@@ -35,7 +37,7 @@ To set up custom media:
 
 3. Upload a fallback image or video in the file upload section.
 
-4. Follow the SDK documentation [section on assets customization](https://adapty.io/docs/get-pb-paywalls#customize-assets) and call the media by its ID in your code.
+4. For more information, see <InlineTooltip tooltip="the guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip> and call the media by its ID in your code.
 
 If the Adapty SDK version is below 3.7.0, or if the custom media ID isn't defined in your code, the fallback image or video will be displayed instead.
 

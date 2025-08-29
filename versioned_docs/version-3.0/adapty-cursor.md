@@ -7,11 +7,11 @@ metadataTitle: "Use Adapty with LLMs | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-You can use large language models (LLMs) to help you integrate Adapty into you app. We provide a set of tools and best practices if you use LLMs during development.
+You can use large language models (LLMs) to help you integrate Adapty into your app. We provide a set of tools and best practices if you use LLMs during development.
 
 ## Plain text docs
 
-You can access all of our documentation as plain text markdown files by adding `.md` to the end of any URL or clicking **View as Markdown** under article titles. To copy the whole Markdown content immediately, click **Copy for LLM**. For example, you can find the plain text version of this page itself at [https://adapty.io/docs/adapty-cursor.md](https://adapty.io/docs/adapty-cursor.md).
+You can access all of our documentation as plain text Markdown files by adding `.md` to the end of any URL or clicking **View as Markdown** under article titles. To copy the whole Markdown content immediately, click **Copy for LLM**. For example, you can find the plain text version of this page itself at [https://adapty.io/docs/adapty-cursor.md](https://adapty.io/docs/adapty-cursor.md).
 
 This helps AI tools and agents consume our content and allows you to copy and paste the entire contents of a doc into an LLM. This format is preferable to scraping or copying from our HTML and JavaScript-rendered pages because:
 
@@ -19,7 +19,29 @@ This helps AI tools and agents consume our content and allows you to copy and pa
 * Content that isn't rendered in the default view (for example, it's hidden in a tab) of a given page is rendered in the plain text version.
 * LLMs can parse and understand markdown hierarchy.
 
-We also host an [llms.txt file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
+We also host the [`llms.txt` file](https://adapty.io/docs/llms.txt) which instructs AI tools and agents how to retrieve the plain text versions of our pages. The `/llms.txt` file is an [emerging standard](https://llmstxt.org/) for making websites and content more accessible to LLMs. Note that for some AI agents (e.g., ChatGPT) you will need to download llms.txt and upload it to the chat as a file.
+
+:::tip
+Additionally, we host [`llms-full.txt`](https://adapty.io/docs/llms-full.txt). The `llms-full.txt` file combines the entire Adapty documentation site into a single file as context for AI tools and is indexed by LLM traffic.
+:::
+
+## Tips for prompting with Claude, ChatGPT, or Gemini
+
+If you’re using Claude Code, run the `init` command after launching the Code CLI so Claude can analyze your codebase. This helps it get oriented and provide better advice once you start asking questions.
+
+If you plan to integrate the Adapty SDK into your iOS project (using either UIKit or SwiftUI), install the Adapty libraries using something like Swift Package Manager before you start working with the LLM. It will allow you to get into the code integration quicker if this step is already done.
+
+Here are some helpful additions to your prompts that should make working with the LLM that much easier:
+
+- If migrating from a native IAP implementation or something like RevenueCat:
+```
+Help me migrate from [existing implementation technique] to Adapty for handling in-app purchase subscriptions, including presenting Paywall Builder paywalls. Build a migration plan, but don’t implement it until you’ve shown me for review.
+```
+- If using something like SwiftUI:
+```
+This app uses SwiftUI for its interface, so use a native SwiftUI implementation for displaying and handling paywalls wherever applicable.
+```
+
 
 ## Use with Cursor
 

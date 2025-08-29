@@ -8,18 +8,27 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import AddAudience from '@site/src/components/reusable/AddAudience.md';
 
-A [Placement](placements) designates a specific location within your mobile app where a paywall or A/B test can be displayed. For example, a subscription choice might appear in a startup flow, while a consumable product (such as golden coins) could be presented when a user runs out of coins in a game. You have the flexibility to showcase the same paywall or A/B test across multiple placements or different paywalls or A/B tests in one placement for different user segments, called audiences in Adapty. 
+A [Placement](placements) is a specific location in your mobile app where you can show a paywall, onboarding, or A/B test. For example, a subscription choice might appear in a startup flow, while a consumable product (like golden coins) could show when a user runs out of coins in a game.
 
-Read the [Choose meaningful placements](choose-meaningful-placements) section for more recommendations on how to choose the right placement for a paywall.
+You can show the same or different paywalls, onboardings, or A/B tests in various placements or to different user segments — called "audiences" in Adapty.
+
+You can use the same paywall or A/B test across multiple placements. You can also show different paywalls or A/B tests in one placement to different user segments (called audiences in Adapty).
+
+Read the [Choose meaningful placements](choose-meaningful-placements) section for tips on picking the right placement.
+
+:::info
+Although the placement creation process is similar for paywalls and onboardings, you can't create one placement for both as they process different metrics.
+:::
 
 To create a new placement:
 
-1. Open the **[Placements](https://app.adapty.io/placements)** section in the Adapty main menu.
+1. Go to **[Placements](https://app.adapty.io/placements)** from the Adapty main menu.
 
-   
+2. Click **Create placement**.
+
 
 <Zoom>
-  <img src={require('./img/0561bf8-placements_create_new.webp').default}
+  <img src={require('./img/create-placement-2.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,28 +39,23 @@ To create a new placement:
 </Zoom>
 
 
+3. Enter a **Placement name**. This is an internal identifier in the Adapty Dashboard. You can edit it later if needed.
 
-2. In the **Placements** window, click **Create placement**.
+4. Enter a **Placement ID**. You'll use this ID in the Adapty SDK to call the placement's [paywalls](paywalls) and [A/B tests](ab-tests). You cannot edit it later as it's unique for each placement.
 
+5. Click **Run Paywall** or **Run A/B test** depending on the placement's purpose. Learn more in the section below.
 
-<Zoom>
-  <img src={require('./img/new_placement.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Adding paywalls, onboardings, and A/B tests
+Adapty lets you show paywalls, onboardings, and A/B tests to specific [audiences](audience) — user segments created to better target your content. If you don't need targeting, use the default *All users* audience.
 
-
-
-3. In the **Placements / New placement** window, enter **Placement Name** that is used for your reference to clearly describe the exact place in your mobile app. This name serves as a means of identification and helps you organize and manage your placements effectively. You have the flexibility to edit the placement name even after it has been created.
-
-4. Enter the **Placement ID** which is a unique identifier of the placement that will be used in your mobile app code to call the [paywalls](paywalls) and [A/B tests](ab-tests) created in Adapty for this placement.  Placement ID cannot be modified once it has been created. It guarantees the uniqueness and integrity of each placement. 
+If you use audiences, start by adding a paywall, onboarding, or A/B test to the *All users* audience. Then add more audiences to your placement. Learn more on the [Audiences](audience) page.
 
 ## Adding paywalls and A/B tests
-Adapty supports showing paywalls and A/B tests for specific [audiences](audience) - segments of users created to better target your paywalls. If you do not need that, you can add your paywall or A/B test to the default audience *All users,* and stop on it. If you use audiences, first add a paywall or A/B test to the *All users* audience, and then add more audiences to your placement. More details on how audiences work, you can find in the [Audiences](audience) page.
+Adapty supports showing paywalls and A/B tests to specific [audiences](audience). Audiences are groups of users based on [segments](segments.md).
+
+- If you don't need audiences, add your paywall or A/B test to the default *All users* audience and you're done.
+- If you use audiences, first add a paywall or A/B test to *All users*. Then add more audiences to the placement.
+
+Find more details in the [Audiences](audience) page.
 
    <AddAudience />

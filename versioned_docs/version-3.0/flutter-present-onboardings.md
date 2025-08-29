@@ -1,17 +1,18 @@
 ---
-title: "Flutter – Present onboardings"
-description: "Discover how to present onboardings on Flutter to boost conversions and revenue."
-metadataTitle: "Presenting onboardings on Flutter | Adapty Docs"
+title: "Present onboardings in Flutter SDK"
+description: "Learn how to present onboardings effectively to drive more conversions."
+metadataTitle: "Presenting onboardings | Adapty Docs"
+displayed_sidebar: sdkflutter
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
+If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Flutter app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Flutter SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty Flutter SDK](sdk-installation-flutter.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -108,7 +109,3 @@ By default, between the splash screen and onboarding, you will see the loading s
 - To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
 
 This helps create seamless transitions and custom loading experiences.
-
-## Next steps
-
-Once you've presented your onboarding, you'll want to [handle user interactions and events](flutter-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.

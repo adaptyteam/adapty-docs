@@ -15,6 +15,12 @@ async function copyMarkdownFiles() {
     return content.replace(/^import\s+.*?;?\s*$/gm, '').trim();
   }
 
+  // Function to remove Zoom components with their content
+  function removeZoomComponents(content) {
+    // Remove <Zoom> components and their entire content (including nested content)
+    return content.replace(/<Zoom[^>]*>[\s\S]*?<\/Zoom>/g, '').trim();
+  }
+
   // Function to clean frontmatter
   function cleanFrontmatter(content) {
     const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
@@ -87,6 +93,9 @@ async function copyMarkdownFiles() {
       
       // Remove imports
       content = removeImports(content);
+      
+      // Remove Zoom components
+      content = removeZoomComponents(content);
       
       // Clean frontmatter
       content = cleanFrontmatter(content);

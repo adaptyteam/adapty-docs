@@ -7,6 +7,8 @@ keywords: ['paywall', 'paywall builder']
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 We're excited to introduce our **New Paywall Builder**, compatible with Adapty SDK v3.0 and later! 
 
@@ -17,6 +19,7 @@ This advanced no-code tool makes creating custom paywalls more intuitive and pow
 - **Expanded Template Selection**: Choose from a wide array of professionally designed templates to kickstart your paywall creation. These templates offer various styles and layouts to meet different needs and preferences.
 - **Enhanced Flexibility**: Enjoy greater flexibility with the ability to use design layers and new elements like carousels, cards, product lists, and footers. These enhancements give you the creative freedom to build any type of paywall you envision.
 - **Revamped Existing Elements**: Existing elements have been significantly improved, offering more options and capabilities to bring your paywall ideas to life.
+- **Scalability**: If you manage multiple apps, [migrate](migrate-paywalls.md) your visual paywall configuration in one click instead of building from scratch.
 
 :::warning
 This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Design paywalls with legacy Paywall Builder](adapty-paywall-builder-legacy).
@@ -35,7 +38,7 @@ In the new Adapty Paywall Builder, a paywall is composed of the following:
 ## How to start designing a paywall with new Paywall Builder
 
 :::warning
-The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. Please make sure you've [upgraded to Adapty SDK v3.0 or later](migration-to-adapty-sdk-v3) for your new paywalls to function properly!
+The new Paywall Builder is available for iOS and Android only and requires Adapty SDK v3.0 or later. Please make sure you've <InlineTooltip tooltip="upgraded to Adapty SDK v3.0 or later">[iOS](migration-to-ios-sdk-v3.md), [Android](migration-to-android-sdk-v3.md), [Flutter](migration-to-flutter-sdk-v3.md), [React Native](migration-to-react-native-sdk-v3.md), and [Unity](migration-to-unity-sdk-v3.md) migration guides</InlineTooltip> for your new paywalls to function properly!
 :::
 
 To use the Adapty Paywall Builder:
@@ -48,7 +51,7 @@ To use the Adapty Paywall Builder:
 
 4. Add products to the paywall if you haven't yet. Otherwise, click **Build no-code paywall**.
 
-5. Select a template and click **Choose**. 
+5. Select a template and click **Choose** or [migrate a paywall](migrate-paywalls.md) from another app.
 
 6. Click **Choose** to confirm your choice.
 
@@ -69,7 +72,7 @@ For the paywall to be displayed, you must switch on the **Show on device** toggl
 />
 </Zoom>
 
-## How to migrate your paywalls
+## Migrate your legacy paywalls
 
 Currently, two versions of the Paywall Builder work in parallel in Adapty:
 
@@ -83,7 +86,7 @@ Paywalls designed with this version require Adapty SDK v3.0 or later.
 
 The migration of a paywall from the legacy Paywall Builder to the new one means that a new version of your paywall will be created in the **Builder & Generator** tab. 
 
-This version can be edited with the new Paywall Builder and will be displayed in apps with installed Adapty SDK v3.0 or later. See [Migration guide to Adapty SDK v.3.x](migration-to-adapty-sdk-v3) and [Migration guide to Adapty SDK v.3.3.x](migration-to-330) for detailed reference on upgrading to Adapty SDK.
+This version can be edited with the new Paywall Builder and will be displayed in apps with installed Adapty SDK v3.0 or later. See <InlineTooltip tooltip="Migration guide to Adapty SDK v.3.x">[iOS](migration-to-ios-sdk-v3.md), [Android](migration-to-android-sdk-v3.md), [Flutter](migration-to-flutter-sdk-v3.md), [React Native](migration-to-react-native-sdk-v3.md), and [Unity](migration-to-unity-sdk-v3.md) migration guides</InlineTooltip> for detailed reference on upgrading the Adapty SDK.
 
 The existing version of your paywall will stay in the Legacy Builder tab. You can continue adjusting it with the legacy Paywall Builder and it will be displayed in apps with installed Adapty SDK version 2.x or earlier.
 
@@ -167,7 +170,12 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 3. [Custom fonts](using-custom-fonts-in-paywall-builder)
 4. [Localization](add-paywall-locale-in-adapty-paywall-builder)
 
-Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see [Display Paywall Builder paywalls](display-pb-paywalls).
+Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see the platform-specific articles:
+- [iOS](ios-quickstart-paywalls.md)
+- [Android](android-quickstart-paywalls.md)
+- [Flutter](flutter-quickstart-paywalls.md)
+- [React Native](react-native-quickstart-paywalls.md)
+- [Unity](unity-quickstart-paywalls.md)
 
 ## Customization Options
 

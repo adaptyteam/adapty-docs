@@ -188,6 +188,10 @@ This metric represents the total amount of money generated in USD from purchases
 
 ARPAS, or Average revenue per active subscriber, allows you to measure the average revenue generated per active subscriber within specific placements. It is calculated by dividing the total revenue by the number of subscribers who have activated a trial or subscription. For example, if the total revenue is $5,000 and there are 1,000 subscribers, the ARPAS would be $5. This metric helps assess the average monetization potential per subscriber.
 
+#### ARPU
+
+For onboarding placements only. ARPU is the average revenue per user who viewed the onboarding. It's calculated as total revenue divided by the number of unique viewers.
+
 #### Unique CR to purchases
 
 The Unique conversion rate to purchases is calculated by dividing the number of purchases within specific placements by the number of unique views. It focuses on the ratio of purchases to the unique number of views, providing insights into the effectiveness of converting unique visitors within specific placements into paying customers.
@@ -234,3 +238,11 @@ The views metric represents the total number of times the paywall within specifi
 #### Unique views
 
 The unique views metric represents the number of unique instances in which the paywall within specific placements has been viewed by users. Unlike total views, which count each visit as a separate view, unique views count each user's visit to the paywall within those placements only once, regardless of how many times they access it. Tracking unique views helps provide a more accurate measure of user engagement and the reach of your paywall within specific placements, as it focuses on individual users rather than the total number of visits.
+
+#### Completions & unique completions
+
+For onboarding placements only. Completions count the number of times users complete your onboarding placement, meaning that they go from the first to the last screen. If someone completes it twice, that's two **completions** but one **unique completion**.
+
+#### Unique completions rate
+
+For onboarding placements only. The unique completion number divided by the unique view number. This metric helps you understand how people engage with onboarding placement and make changes if you notice that people ignore it.
