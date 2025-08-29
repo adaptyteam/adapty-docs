@@ -21,19 +21,6 @@ To create a new placement:
 
 1. Go to **[Placements](https://app.adapty.io/placements)** in the Adapty main menu.
 
-   
-
-<Zoom>
-  <img src={require('./img/create-placement-1.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
 :::info
 Although the placement creation process is similar for paywalls and onboardings, you can't create one placement for both.
 :::
