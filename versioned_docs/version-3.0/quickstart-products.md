@@ -39,6 +39,19 @@ Let's say you want to add a monthly subscription as a product.
 />
 </Zoom>
 
+
+:::important
+**The next steps depend on whether you already have products in App Store and/or Google Play:**
+:::
+
+<Tabs>
+
+<TabItem value="no-products" label="No products in stores yet" default>
+aaaaa
+</TabItem>
+
+<TabItem value="products-in-stores" label="Products in stores already">
+
 3. Add product details:
 - **Product name**: The name visible only to you across the Adapty dashboard.
 - **Access level ID**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
@@ -219,6 +232,9 @@ Your product will appear in the product list.
   }}
 />
 </Zoom>
+
+</TabItem>
+</Tabs>
 
 ## Next steps
 

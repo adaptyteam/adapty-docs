@@ -253,3 +253,4 @@ Congratulations! You've added your products to Adapty. What's next?
 - If you haven't configured introductory/promotional offers yet, you can [do it](offers.md) now.
 - If you don't want to do it or have already done it, proceed with [setting up paywalls](quickstart-paywalls.md) to enable in-app purchases.
 - If you want to do any adjustments to the store products (e.g., set regional pricing or configure the grace period), do it in App Store Connect or Google Play Console.
+- Read how you can [edit products](edit-product.md) later.
