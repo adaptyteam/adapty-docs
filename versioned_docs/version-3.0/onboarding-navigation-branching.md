@@ -14,7 +14,7 @@ Navigation and branching lets you guide users through every step of your onboard
 You can configure static and dynamic navigation, as well as onboarding closure, using [buttons](onboarding-buttons.md) and [quizzes](onboarding-quizzes.md). 
 
 :::info
-For quizzes, only single-answer quizzes are suitable for navigation. Multiple-answer quizzes can be used to set [conditional element visibility](onboarding-element-visibilty.md).
+For quizzes, only single-answer quizzes are suitable for navigation. Multiple-answer quizzes can be used to set [conditional element visibility](onboarding-element-visibility.md).
 :::
 
 ### Static navigation
