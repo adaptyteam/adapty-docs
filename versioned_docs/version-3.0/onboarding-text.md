@@ -88,8 +88,26 @@ To speed things up:
 />
 </Zoom>
 
-## Localization
+## Fonts
+
+In the onboarding builder, you can select from a big variety of different fonts.
+
+:::info
+Uploading custom fonts is not available yet.
+:::
+
+You can set fonts globally for the whole onboarding or for each its element separately:
+
+- To set up the main font that will be used in the onboarding:
+  1. Select any screen on the left.
+  2. Switch to the **Styles** tab and select a **Font**.
+  3. All the elements on all the screens will inherit the font you've selected.
+- To set up a font for one element:
+  1. Select an element.
+  2. Switch to the **Styles** tab and select a **Font**.
+  3. The selected font will be used for this element even if you change the main font.
+
 
 :::note
-Localization for onboardings is coming soon.
+You can't use SF Pro, because it's not suitable for cross-platform applications, but we recommend you to use Inter instead, since they look quite similar.
 :::

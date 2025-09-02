@@ -123,6 +123,16 @@ You have the following customization options in the builder:
   />
   </Zoom>
 
+## Copy screens and elements
+
+If you've created an onboarding and want to reuse parts of it, or if you want to make slight changes and run A/B tests, you can copy one or more screens from one onboarding to another.
+
+To copy screens, open the onboarding builder and either:
+- Right-click a single screen and select **Copy** or select multiple screens with `Shift`, right-click, and choose **Copy**
+- Select the desired screen(s) and press `Ctrl+C` (Windows) or `⌘+C` (Mac)
+
+You can also copy individual elements or text blocks, either within the same onboarding or between different onboardings.
+
 ## Copy screens from web-to-app funnels
 
 If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and want to use screens from funnels in onboardings, you can quickly do it by copying screens in the funnel builder and pasting them in the onboarding builder:

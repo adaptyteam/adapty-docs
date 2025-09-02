@@ -27,13 +27,25 @@ To add a button:
    - **Show/Hide element**: Shows or hides a target element.
    - **Open paywall**: Opens the paywall screen for purchases. Learn how to handle opening paywall on [iOS](ios-handling-onboarding-events.md#opening-a-paywall), [Android](android-handle-onboarding-events.md#opening-a-paywall), [Flutter](flutter-handling-onboarding-events.md#opening-a-paywall), and [React Native](react-native-handling-onboarding-events.md#opening-a-paywall).
    - **Scroll to**: Scrolls the page to a specific element.
-   - **Custom**: Runs your custom event logic. Learn how to handle custom action on [iOS](ios-handling-onboarding-events.md#custom-actions), [Android](android-handle-onboarding-events.md#custom-actions), [Flutter](flutter-handling-onboarding-events.md#handle-custom-actions), and [React Native](react-native-handling-onboarding-events.md#handle-custom-actions).
+   - **Custom**: Runs your custom event logic. For example, ut can be used for opening a login window or requesting the app permissions. Learn how to handle custom action on [iOS](ios-handling-onboarding-events.md#custom-actions), [Android](android-handle-onboarding-events.md#custom-actions), [Flutter](flutter-handling-onboarding-events.md#handle-custom-actions), and [React Native](react-native-handling-onboarding-events.md#handle-custom-actions).
    - **Close onboarding**: Closes the onboarding flow. Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [Flutter](flutter-handling-onboarding-events.md#closing-onboarding), and [React Native](react-native-handling-onboarding-events.md#closing-onboarding).
 
 To edit button text, click the button preview and make your changes in WYSIWYG mode.
 
 :::tip
 [Nest a popup](onboarding-layout.md#containers) with a Pulse Glossy Button to upsell premium features mid‑flow.
+
+<Zoom>
+  <img src={require('./img/popup.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 :::
 
 

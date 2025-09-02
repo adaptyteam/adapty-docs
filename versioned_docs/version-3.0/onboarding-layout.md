@@ -47,7 +47,7 @@ To add a container:
 - **Rows**: Line up items in a single horizontal band with even spacing.
 - **Carousel**: Let users swipe through a series of cards.
 - **Popup**: Show content in a centered overlay above the page.
-3. Create the elements you want to hold, then drag&drop them into the container from the left menu.
+3. Create the elements you want to add, then drag&drop them into the container from the left menu.
 
 <Zoom>
   <img src={require('./img/containers.gif').default}
@@ -66,7 +66,10 @@ To adjust each element individually:
 2. Go to **Styles** on the right menu.
 3. In the **Container** section set:
 - **Offset**: Shifts the element horizontally or vertically.
-- **Position**: Sets the element's anchor point (**Attached**, **In content**, **Attached on scroll**).
+- **Position**: Sets the element's anchor point:
+  - **In content**: Normal document flow
+  - **Attached**: Fixed position - stays visible in viewport (e.g., sticky button at bottom)
+  - **Attached on scroll**: Becomes fixed after scrolling into view (sticky behavior)
 - **Padding**: Defines the inner space between the element's content and its border.
 - **Background**: Applies a solid color behind the element. Ensure your element background matches the [screen background](#screen-background-customization) (e.g., use grey or black for onboardings with mostly dark screens).
 - **Roundness**: Determines the radius of the element's corners.

@@ -15,7 +15,7 @@ Variables let you insert dynamic dataâ€”like quiz responses or user text inputsâ
 
 You use variables by placing the element ID of the data source between double braces, like this: `{{element_id}}`.
 
-You can use variables to capture data from these onboarding elements:
+As variables, you can use the data collected on previous screens:
 - **Inputs**: The variable contains data entered by the user.
 - [**Quizzes**](onboarding-quizzes.md): The variable contains the label data of selected options. If multiple answers are allowed, the variable will contain all selected options, separated by a comma and space.
 

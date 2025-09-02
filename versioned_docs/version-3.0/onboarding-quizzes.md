@@ -106,6 +106,10 @@ Let's say you have a recipe app and want to know if your users are vegan or vege
 
 2. On both conditional screens, configure the navigation button. Since we need to skip the second conditional screen, point the navigation button directly to the screen you want to show next.
 
+:::tip
+If you want to customize the onboarding itself based on the quiz answers, see the guide for [navigation](onboarding-navigation-branching#dynamic-navigation) or for [using variables](onboarding-variables.md).
+:::
+
    <Zoom>
    <img src={require('./img/onboarding-user-engagement5.png').default}
    style={{
@@ -142,3 +146,15 @@ After customizing a quiz element, you can click **Apply styles to all options** 
    }}
    />
    </Zoom>
+
+
+## Save quiz answers
+
+You can also process the quiz answers in your app and store them or use them in your application.
+
+To do this, you must handle the quiz response event in the app code. See the guide for your platform:
+
+- [iOS](ios-handling-onboarding-events#updating-field-state)
+- [Android](android-handle-onboarding-events#updating-field-state)
+- [React Native](react-native-handling-onboarding-events#updating-field-state)
+- [Flutter](flutter-handling-onboarding-events#updating-field-state)
