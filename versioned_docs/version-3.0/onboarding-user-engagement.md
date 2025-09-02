@@ -1,37 +1,41 @@
 ---
 title: "Customize onboardings for different user groups"
-description: "Customize onboardings using questionnaires."
+description: "Customize onboardings for different user groups and branch flows based on their choices."
 metadataTitle: "Customize Adapty Onboardings | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Onboardings in Adapty offer you two main options to customize onboardings for different user groups:
+Adapty onboardings offer many options to customize experiences for different user groups:
+- [Quizzes](onboarding-quizzes.md): Collect user preferences and real-time answers.
+- [Dynamic navigation](onboarding-navigation-branching.md#dynamic-navigation): Route users based on their previous quiz answers or behavior.
+- [Conditional visibility](onboarding-navigation-branching.md#element-visibility): Show or hide elements on the same screen without navigating away.
+- [Variables](onboarding-variables.md): Personalize your communication with users based on the data they input.
+- [Actions](onboarding-actions.md): Assign interactive behaviors to onboarding elements to control how users move through and interact with your flow.
 
-- [Adding quizzes](#add-quizzes): Redirect your users to different screens based on how they answer your questions.
-- [Using variables](#use-variables): Personalize your communication with users based on the data they input.
+These features let you adjust the same flow for different users or create branched onboarding flows.
 
-## Add quizzes 
+## Onboarding flow branching
 
-If you want to make onboarding more engaging, add quizzes to your onboarding and tailor the onboarding experience based on what users answer. In this guide, we will show you a simple setup example.
+Branched onboarding flows split users into separate paths within a single onboarding, delivering tailored content based on their responses or behavior.
 
-Let's say in your recipe app, you want to know whether your users are vegan/vegetarian and then learn more about their preferences, considering the answer.
+For example, here's how you could branch flows in a recipe app:
+1. Add a new screen with a [quiz](onboarding-quizzes.md). Each option represents a user group.
 
-### Step 1. Add screens   
+<Zoom>
+  <img src={require('./img/quiz-options.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '250px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-1. Add a new screen. Then, add a **Quiz** element to it. You can select any quiz type – with or without emojis or images.
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement1.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-2. Add the screens you will display to different user groups. In our example, they will collect additional info, so they will also contain quizzes.
+2. Set up different next screens for each group. These screens can include another quiz to gather more data.
+
    <Zoom>
    <img src={require('./img/onboarding-user-engagement2.png').default}
    style={{
@@ -42,88 +46,28 @@ Let's say in your recipe app, you want to know whether your users are vegan/vege
    }}
    />
    </Zoom>
-3. Add a final screen. It will indicate that the onboarding has ended, so users can go straight to the app.
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement3.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '400px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
+3. Set up [dynamic navigation](onboarding-navigation-branching.md#dynamic-navigation) so quiz answers direct each group to the appropriate screen.
 
-### Step 2. Configure navigation
+<Zoom>
+  <img src={require('./img/branching-quiz.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-1. To set up conditional navigation, select the **Options** element on the first quiz screen. In the **Behavior** section, add **Action on Option**. Since we want to redirect users to different screens based on their answers, select **Navigate** as an action and select **Dynamic** for **Data** and your **Options** element in **State**. Associate each option with a screen.
+4. Use [conditional elements](onboarding-navigation-branching.md#element-visibility) on the final screen to show different visuals for each user group.
 
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement4.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-
-2. On both conditionally displayed screens, configure the navigation button. Since we need to skip the second conditional screen we've added, point the navigation button specifically to the screen you want to show next.
-
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement5.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-
-   
-## Use variables
-
-Variables are values set based on user input or environmental data. They are key in creating a more personalized and improved onboarding experience.
-
-This is how you can use variables:
-
-1. Create a text input field, date picker, or options element and set its ID.
-
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement6.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-
-2. Use the element ID in onboarding texts in the `{{element-id}}` format. For example, you can personalize your text using the user's name.
-
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement7.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '400px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-
-3. When your users input their data during the onboarding process, it will be dynamically added to where you use variables.
-
-   <Zoom>
-   <img src={require('./img/onboarding-user-engagement8.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '400px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
+<Zoom>
+  <img src={require('./img/conditional-visual.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
