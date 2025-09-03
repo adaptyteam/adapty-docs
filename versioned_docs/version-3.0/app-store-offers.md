@@ -39,5 +39,3 @@ In the subsequent modal, you'll encounter various configuration screens:
 1. **Promotional offer reference name and promotional offer identifier**: This will configure the name and ID of the offer.
 2. **Type of promotional offer**: You'll be able to choose the type of promotional offer from Pay as you go, Pay up front, and Free options. Then choose the desired Duration from the dropdown for the selected option.
 3. **Prices for the offer for each country**
-
-You can check our [documentation](app-store-products) to learn how to configure the products in the App Store.

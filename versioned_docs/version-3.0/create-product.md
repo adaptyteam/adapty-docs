@@ -63,12 +63,7 @@ To add a new product to your app:
 4. Enter the following data:
     - **Product name**: enter the name of the product to be used in the Adapty dashboard. The name is primarily for your reference, so feel free to choose a name that is most convenient for you to use across the Adapty Dashboard.
     - **Access Level**: Select the [access level](access-level) to which the product belongs. The access level is used to determine the features unlocked after purchasing the product. Note that this list contains only previously created access levels. The `premium` access level is created in Adapty by default, but you can also [add more access levels](access-level).
-    - **Subscription duration**: select the duration of the subscription from the list. 
-
-      :::note
-      By default, all the products have an **Uncategorized** period. Make sure to set the correct one, otherwise, there might be problems with granting access to your customers.  
-      If the product is not a subscription, use the following options:
-      :::
+    - **Subscription duration**: select the duration of the subscription from the list.
         - **Weekly/Monthly/2 Months/3 Months/6 Months/Annual**: The subscription duration.
         - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
         - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
@@ -201,11 +196,6 @@ To add a new product to your app:
     - **Access Level ID**: Select the [access level](access-level) to which the product belongs. The access level is used to determine the features unlocked after purchasing the product. Note that this list contains only previously created access levels. The `premium` access level is created in Adapty by default, but you can also [add more access levels](access-level).
 
    - **Subscription duration**: select the duration of the subscription from the list.
-
-     :::note
-     By default, all the products have an **Uncategorized** period. Make sure to set the correct one, otherwise, there might be problems with granting access to your customers.  
-     If the product is not a subscription, use the following options:
-     :::
       - **Weekly/Monthly/2 Months/3 Months/6 Months/Annual**: The subscription duration.
       - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
       - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.

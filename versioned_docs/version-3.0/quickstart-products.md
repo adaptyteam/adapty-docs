@@ -47,74 +47,91 @@ Let's say you want to add a monthly subscription as a product.
 <Tabs>
 
 <TabItem value="no-products" label="No products in stores yet" default>
-aaaaa
-</TabItem>
 
-<TabItem value="products-in-stores" label="Products in stores already">
+3. Select **Create a new product and push to stores**.
 
-3. Add product details:
-- **Product name**: The name visible only to you across the Adapty dashboard.
-- **Access level ID**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
-- **Period**: The subscription duration. This must match the period configured in the store.
-  
-  :::note
-  
-    By default, all products have an **Uncategorized** period. Make sure to set the correct one, otherwise there might be problems with granting access to your customers.  
-    If the product is not a subscription, use the following options:
-  
-  :::
-  - **Lifetime**: Use a lifetime period for products that unlock the premium features of the app forever.
-  - **Non-Subscriptions**: For products that are not subscriptions and therefore have no duration, use non-subscriptions. These can unlock additional features.
-  - **Consumables**: Consumable items can be purchased multiple times. They can be used up during the life of the application. Examples are in-game currency and extras. Note that consumable products don't affect access levels.
+4. Add product details:
+    - **Product name**: The name visible only to you across the Adapty dashboard.
+    - **Access Level**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
+    - **Subscription duration**: Select the duration of the subscription from the list.
+        - **Weekly/Monthly/2 Months/3 Months/6 Months/Annual**: The subscription duration.
+        - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
+        - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
+        - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
+    - **Price (USD)**: The product price in USD. This price will be used as a base to automatically calculate and set prices across all countries. You will be able to customize the price for different countries and regions in the store later. See the guides for [App Store](https://developer.apple.com/help/app-store-connect/manage-subscriptions/manage-pricing-for-auto-renewable-subscriptions/) and [Google Play](https://support.google.com/googleplay/android-developer/answer/140504?sjid=7303890784165167068-EU).
 
 <Zoom>
-  <img src={require('./img/product-details.png').default}
+  <img src={require('./img/create-product-push.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
+    width: '400px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
 />
 </Zoom>
 
-<br />
-
-4. Add store details. Choose your store:
+5. Click **Save & Continue** and switch to the **App Store** or **Google Play** tab to fill in the product details for the store.
 
 <Tabs>
 <TabItem value="App Store" label="App Store" default>
 
-- **App Store Product ID**: The unique identifier used to access your product on devices.
-
-<details>
-    <summary>Click here to learn where to find the App Store Product ID.</summary>
-
-
-1. Go to **Monetization > Subscriptions** in your [Apple App Store Connect](https://appstoreconnect.apple.com/login) account.
-2. Open the **Subscription group** for the purchase.
-3. You will see the **Product ID** column for purchases included in the subscription group.
-   <Zoom>
-   <img src={require('./img/stores-info.png').default}
-   style={{
-   border: '1px solid #727272', /* border width and color */
-   width: '700px', /* image width */
-   display: 'block', /* for alignment */
-   margin: '0 auto' /* center alignment */
-   }}
-   />
-   </Zoom>
-
-</details>
-
-
-  
+   - **Product ID**: Create a permanent unique ID for the product.
+   - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
+   - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store.
 
 </TabItem>
 
 <TabItem value="Google Play" label="Google Play" default>
 
-- **Google Play Product ID**: The identifier for the product from the Play Store.
+   - **Base Product ID**: Create a permanent unique ID for the product.
+   - **Subscription**: Select an existing subscription group you've created in Google Play Console or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
+
+</TabItem>
+</Tabs>
+
+6. Configure the introductory offer – free trial – by selecting its **Free duration** from the dropdown. For this initial setup, you can add an introductory free trial. Once the main product is approved by the stores, you can [add more offers](offers.md) (e.g., promotional, win-back) by linking their existing IDs from your store console.
+
+</TabItem>
+
+<TabItem value="products-in-stores" label="Products in stores already">
+
+3. Select **Connect an existing store product**.
+4. Add product details:
+- **Product name**: The name visible only to you across the Adapty dashboard.
+- **Access level ID**: The unique identifier that determines which features are unlocked after purchase. If all paid users in your app get access to the same features, you can use the default access level: `premium`. For more complex setups, create additional [access levels](access-level.md).
+- **Subscription duration**: select the duration of the subscription from the list.
+  - **Weekly/Monthly/2 Months/3 Months/6 Months/Annual**: The subscription duration.
+  - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
+  - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
+  - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
+- **Price (USD)**: The product price in USD.
+    
+  <Zoom>
+  <img src={require('./img/product-info.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>
+
+<br />
+
+5. Add store details. Choose your store:
+
+<Tabs>
+<TabItem value="App Store" label="App Store" default>
+
+- **App Store Product ID**: The unique identifier used to access your product on devices. If you can't find it, ensure the ID is correct and belongs to the right app.
+
+</TabItem>
+
+<TabItem value="Google Play" label="Google Play" default>
+
+- **Google Play Product ID**: The identifier for the product from the Play Store. Select it from the list of existing product IDs. If you can't find it, ensure the ID is correct and belongs to the right app.
 - **Base plan ID**: The ID that defines the base plan for the product in the Play Store.
 - **Legacy fallback product**: A fallback product is used exclusively for apps using older versions of the Adapty SDK (versions 2.5 and below). Specify the value in the following format `<subscription_id>:<base_plan_id>`.
 
@@ -217,8 +234,7 @@ Keep in mind that Adapty only tracks transactions from the App Store, Google Pla
 
 </Tabs>
 
-
-5. Later, you can [create offers](create-offer.md) for the product if needed: promotional offers for the App Store and all other types of offers for other stores.
+6. You can [create offers](create-offer) for the product if needed. To add offers, click **Yes, add offers**. Otherwise, click **No, thanks**.
 
 Your product will appear in the product list.
 
