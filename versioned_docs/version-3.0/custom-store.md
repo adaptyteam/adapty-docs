@@ -53,3 +53,18 @@ To mark a product as sold via a custom app store, select the app store when crea
 4. Click the **Create store** button.
 
 If your backend is set up correctly, Adapty will receive product transactions from this custom store, reflect them in analytics, the [**Event Feed**](event-feed), and [integrations](https://app.adapty.io/integrations), and grant access accordingly.
+
+## Get more from your custom store data
+
+:::important
+For your custom store events to work with integrations, your users must be logged into the app using their App Store/Google Play account at least once.
+:::
+
+Once you set up your custom store integration, Adapty is ready to provide insights right away. To make the most of your data, you can set up additional Adapty integrations to forward custom store events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+Integrations you can use to forward and analyze your custom store events:
+- [Amplitude](https://adapty.io/docs/amplitude/)
+- [Webhook](https://adapty.io/docs/webhook)
+- [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
+- [Mixpanel](https://adapty.io/docs/mixpanel)
+- [Posthog](https://adapty.io/docs/posthog)
