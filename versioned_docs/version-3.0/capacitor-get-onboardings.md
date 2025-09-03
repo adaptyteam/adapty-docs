@@ -45,7 +45,7 @@ try {
 Then, call the `createOnboardingView` method to create a view instance.
 
 :::warning
-The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+The result of the `createOnboardingView` method can only be used once. If you need to use it again, call the `createOnboardingView` method anew.
 :::
 
 ```typescript showLineNumbers

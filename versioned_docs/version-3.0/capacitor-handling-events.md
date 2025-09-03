@@ -239,6 +239,7 @@ Some event handlers have a default behavior that you can override if needed:
 - `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
 - `onRestoreCompleted`: closes paywall after successful restore.
 - `onPurchaseCompleted`: closes paywall unless user cancelled.
+- `onUrlPress`: opens URLs in system browser and keeps paywall open. 
 
 ### Event handlers
 

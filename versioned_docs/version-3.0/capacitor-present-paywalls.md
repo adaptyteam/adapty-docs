@@ -18,7 +18,7 @@ To display a paywall, use the `view.present()` method on the `view` created by t
 
 :::warning
 
-Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+Reusing the same `view` without recreating it may result in an error.
 :::
 
 ```typescript showLineNumbers

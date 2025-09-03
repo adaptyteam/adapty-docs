@@ -70,7 +70,7 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 In Capacitor SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
 
 :::warning
-The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+The result of the `createPaywallView` method can only be used once. If you need to use it again, call the `createPaywallView` method anew.
 :::
 
 ```typescript showLineNumbers

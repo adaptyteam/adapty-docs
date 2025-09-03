@@ -9,10 +9,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
-Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
-
-- **Standalone screen**: Requires setting up event handlers that handle events for all onboarding views
-- **Embedded component**: Handles events through inline callback parameters directly in the component
+Onboardings configured with the builder generate events your app can respond to. Use the `registerEventHandlers` method to handle these events for standalone screen presentation.
 
 Before you start, ensure that:
 
@@ -63,41 +60,7 @@ try {
 }
 ```
 
-## Embedded component events
 
-When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the component:
-
-```typescript showLineNumbers
-import { AdaptyOnboardingView } from '@adapty/capacitor';
-
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ flex: 1 }}
-  eventHandlers={{
-    onAnalytics(event, meta) {
-      console.log('Analytics event:', event);
-    },
-    onClose(actionId, meta) {
-      console.log('Onboarding closed:', actionId);
-    },
-    onCustom(actionId, meta) {
-      console.log('Custom action:', actionId);
-    },
-    onPaywall(actionId, meta) {
-      console.log('Paywall action:', actionId);
-    },
-    onStateUpdated(action, meta) {
-      console.log('State updated:', action);
-    },
-    onFinishedLoading(meta) {
-      console.log('Onboarding finished loading');
-    },
-    onError(error) {
-      console.error('Onboarding error:', error);
-    },
-  }}
-/>
-```
 
 ## Event types
 
@@ -121,7 +84,6 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.registerEventHandlers({
   onCustom(actionId, meta) {
     switch (actionId) {
@@ -135,16 +97,6 @@ view.registerEventHandlers({
     return false; // Don't close the onboarding
   },
 });
-
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onCustom(actionId, meta) {
-      console.log('Custom action:', actionId);
-    },
-  }}
-/>
 ```
 
 <Details>
@@ -175,15 +127,7 @@ view.registerEventHandlers({
   },
 });
 
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onFinishedLoading(meta) {
-      console.log('Onboarding loaded:', meta.onboardingId);
-    },
-  }}
-/>
+
 ```
 
 <Details>
@@ -229,16 +173,7 @@ view.registerEventHandlers({
   },
 });
 
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onClose(actionId, meta) {
-      console.log('Onboarding closed:', actionId);
-      // Handle navigation back or dismiss the view
-    },
-  }}
-/>
+
 ```
 
 <Details>
@@ -274,16 +209,7 @@ view.registerEventHandlers({
   },
 });
 
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onPaywall(actionId, meta) {
-      console.log('Paywall action triggered:', actionId);
-      // Implement your paywall opening logic here
-    },
-  }}
-/>
+
 ```
 
 <Details>
@@ -315,16 +241,7 @@ view.registerEventHandlers({
   },
 });
 
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onStateUpdated(action, meta) {
-      console.log('State updated:', action.elementId, action.params);
-      // Save user response
-    },
-  }}
-/>
+
 ```
 
 :::note
@@ -439,15 +356,7 @@ view.registerEventHandlers({
   },
 });
 
-// Embedded component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onAnalytics(event, meta) {
-      console.log('Analytics event:', event.type, meta.onboardingId);
-    },
-  }}
-/>
+
 ```
 
 The `event` object can be one of the following types:
