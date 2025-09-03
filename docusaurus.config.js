@@ -120,6 +120,11 @@ const config = {
                 label: "Unity",
                 type: "docSidebar",
                 sidebarId: "sdkunity",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
