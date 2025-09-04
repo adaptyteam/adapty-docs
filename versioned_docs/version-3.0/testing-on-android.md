@@ -9,25 +9,31 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Testing in-app purchases (IAPs) in your Android app can be a crucial step before releasing your app to the public. Sandbox testing is a safe and efficient way to test IAPs without charging real money to your users. In this guide, we'll walk you through the process of sandbox testing IAPs on the Google Play Store for Android.
 
-## Test your app on a real device
+## Testing environment
 
 To ensure optimal performance of your Android app, it's recommended that you test it on a real device instead of an emulator. While we have successfully tested on emulators, Google recommends using a real device.
 
 If you do decide to use an emulator, make sure that it has Google Play installed. This will help ensure that your app is functioning properly.
 
-## Create a test user for app testing
+## 1. Create a test account for app testing
 
-To facilitate testing during later stages of development, you'll need to create a test user. This user will be the first account you log in with on your Android testing device.
+To facilitate testing during later stages of development, you'll need to set up a test user for in-app purchase testing. This user will be the first account you log in with on your Android testing device.
 
-Note that the primary account on an Android device can only be changed by performing a factory reset. Therefore, it's important to create a separate test user account to avoid having to perform a factory reset on your device.
+Note that the primary account on an Android device can only be changed by performing a factory reset, which wipes all your data. Therefore, it's important to set up your test user account properly to avoid needing a factory reset.
 
-## Configure licence testing for your app
+:::important
+The way you set up a test account will depend on the device you're using:
+- If you have a dedicated testing device, create a **separate test account (a new Gmail account)**.
+- If you don't have a dedicated testing device, you can use your own **personal account** and temporarily enable **License testing** for it.
+- If you don't have an Android device at all, you can **create a separate test account and use it with an emulator**. However, this approach is not recommended since it doesn't let you catch all the possible real device issues.
+:::
 
-Once you've created a test user account, you'll need to configure licensing testing for your app. To do this, follow these steps:
+## 2. Enable License testing
 
-1. In the Console sidebar, navigate to **Setup**.
+Once you've set up a test user account, you'll need to configure licensing testing for your app. To do this, follow these steps:
+1. In the Google Play Console sidebar, navigate to **Setup**.
 2. Select **License testing**.
-3. Add the account that you're using on your real device (i.e., the account you're currently logged in with) to the list.
+3. Add your test account (i.e., the account you're currently logged in with) to the list.
 
 This will allow you to configure licensing testing for your app and ensure that it's functioning properly.
 
@@ -47,9 +53,7 @@ In our example, we already have a list of testers:
 
 
 
-
-
-## Create a closed track and add the test user to it
+## 3. Create a closed track and add the test user to it
 
 1. Publish a signed version of your app to a closed track. If you haven't created a closed track yet, you can create one in the **Closed testing** section of the **Testing** menu.
 
@@ -66,10 +70,7 @@ In our example, we already have a list of testers:
 </Zoom>
 
 
-
-
-
-   Just as previously, you can use one of the existing lists or create a new one:
+Just as previously, you can use one of the existing lists or create a new one:
 
 
 <Zoom>
@@ -141,7 +142,7 @@ Add a PIN to the test device if needed
 There are cases where a test user may be allowed to purchase consumables, but not subscriptions, if the test device does not have a PIN. This may manifest in a cryptic "Something went wrong" message. Make sure that the test device has a PIN, and that the device is logged into Google Play Store.
 :::
 
-## Upload a signed APK to the closed track
+## 4. Upload a signed APK to the closed track
 
 Generate a signed APK or use Android App Bundle to upload a signed APK to the closed track you just created. You don't even need to roll out the release. Just upload the APK. You can find more information about this in this support article.
 
@@ -149,7 +150,7 @@ Generate a signed APK or use Android App Bundle to upload a signed APK to the cl
 > 
 > If your app is new, you may need to make it available in your country or region. To do so, go to Testing > Closed testing, click on your test track, and go to Countries/regions to add the desired countries and regions.
 
-## Test in-app purchases
+## 5. Test in-app purchases
 
 After you've uploaded the APK, wait a few minutes for the release to process. Then, open your testing device and sign in with the email account you added to the Testers list. You can then test in-app purchases as you would on a production app.
 
