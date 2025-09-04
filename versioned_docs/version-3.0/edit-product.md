@@ -7,7 +7,7 @@ metadataTitle: "Editing Products in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-In Adapty, you can edit your product's name, access level, and connected store IDs. Price and subscription duration are not editable after you create the product.
+In Adapty, you can edit your product's name, access level, and connected store IDs. Price and subscription duration are not editable after you create the product, so you need to create a new product in order to change them.
 
 :::warning
 While you can edit any product, it's crucial to ensure that making changes to products already used in live paywalls doesn't lead to discrepancies in your analytics.
@@ -24,6 +24,9 @@ To edit the product:
 3. In the opened **Edit** window, make the changes you need. For more details on the options in this window, please read the [Create product](create-product) section.
 4. Click **Save**.
 
+:::important
+If you edit or delete a product in App Store Connect or Google Play Console, the changes won't be automatically reflected in the Adapty dashboard, so, for data consistency, you should make the changes in both places at the same time or create a new product.
+:::
 
 <Zoom>
   <img src={require('./img/edit-product.png').default}

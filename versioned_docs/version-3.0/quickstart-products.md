@@ -80,6 +80,10 @@ Let's say you want to add a monthly subscription as a product.
    - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
    - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store.
 
+:::warning
+If it is your first product for this app, you must manually submit it for review in App Store Connect. This won't be required later. Once the review is finished, the product status in Adapty will update automatically.
+:::
+
 </TabItem>
 
 <TabItem value="Google Play" label="Google Play" default>

@@ -99,6 +99,11 @@ To add a new product to your app:
 </Zoom>
 
 7. Click **Push data to App Store**.
+
+:::warning
+If it is your first product for this app, you must manually submit it for review in App Store Connect. This won't be required later. Once the review is finished, the product status in Adapty will update automatically.
+:::
+
 8. Configure the product information for Google Play if you plan to publish there:
    - **Base Product ID**: Create a permanent unique ID for the product.
    - **Subscription**: Select an existing subscription group you've created in Google Play Console or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
