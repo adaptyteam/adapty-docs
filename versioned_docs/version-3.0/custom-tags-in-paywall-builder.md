@@ -13,9 +13,7 @@ import TabItem from '@theme/TabItem';
 Custom tags let you avoid creating separate paywalls for different scenarios. Imagine a single paywall that adapts dynamically based on user data. For example, instead of a generic "Hello!", you could greet users personally with "Hello, John!" or "Hello, Ann!"
 
 :::warning
-
 This section describes the new Paywall Builder, compatible with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom tags in legacy Paywall Builder](custom-tags-in-legacy-paywall-builder).
-
 :::
 
 Here are some ways you can use custom tags:
