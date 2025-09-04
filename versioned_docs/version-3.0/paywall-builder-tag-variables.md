@@ -11,7 +11,7 @@ Adapty’s Paywall Builder lets you customize all the text for your products and
 
 ### How it works
 
-When you add tag variables from our list to your product texts, our SDK pulls in the pre-fetched localized data from the app stores to replace the tags. This ensures that the text on your paywall is always perfectly tailored for the correct locale.
+When you add tag variables from our list to texts in your paywall, our SDK pulls in the pre-fetched localized data from the app stores to replace the tags. This ensures that the text on your paywall is always perfectly tailored for the correct locale.
 
 **Example**: Let’s say you have a "Premium Subscription" available in both the US and Spain. In the US, it might display as "Premium Subscription for $4.99/month," while in Spain, it would show "Suscripción Premium por €4.99/mes."
 
@@ -25,13 +25,12 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 
 ### How to use tag variables
 
-:::note
-You can only use tag variables when describing products and offers in the Product component of the Paywall Builder.
-:::
-
-1. In the Paywal Builder’s left pane, select the product you want to customize.
+1. In the Paywall Builder’s left pane, select the product you want to customize or any other text field.
 2. Use variables from the [table below](paywall-builder-tag-variables#full-list-of-variables) in any text fields to describe the product and its offers.
 
+:::important
+All supported variables are product- or offer-specific. If you are editing text that is not part of any product inside the paywall, variable names will contain the product number from the **General** tab. E.g, `<PROD_1_PRICE/>`.
+:::
 
 <Zoom>
   <img src={require('./img/0351661-tag_variables.webp').default}
@@ -45,10 +44,7 @@ You can only use tag variables when describing products and offers in the Produc
 </Zoom>
 
 
-
-
-
-4. Check the preview on the right side of the screen to ensure everything renders as expected.
+3. Check the preview on the right side of the screen to ensure everything renders as expected.
 
 :::note
 The preview doesn’t use real values to replace your variables; those are only retrieved by our SDK on a device. However, it does display template data in the same format as the actual result. You can disable this behavior by clicking the eye icon in the bottom-right corner of the preview and turning off the **Tags preview values** toggle. The preview will then show the actual values of the variables:
@@ -82,6 +78,10 @@ The preview doesn’t use real values to replace your variables; those are only 
 | `<OFFER_PRICE/>`          | Localized price of an offer (intro or promo). **Applicable only to auto-renewable subscriptions, returns empty string if user is not eligible for any offers**                                                                            | $0.99                |
 | `<OFFER_BILLING_PERIOD/>` | Localized billing period of an offer (intro or promo). Same as `<OFFER_FULL_DURATION/>`for trial and pay-upfront offers. **Applicable only to auto-renewable subscriptions, returns empty string if user is not eligible for any offers** | 1 week               |
 | `<OFFER_FULL_DURATION/>`  | Localized full duration of an offer (intro or promo). **Applicable only to auto-renewable subscriptions, returns empty string if user is not eligible for any offers**                                                                    | 1 month              |
+
+:::important
+All supported variables are product- or offer-specific. If you are editing text that is not part of any product inside the paywall, variable names will contain the product number from the **General** tab. E.g, `<PROD_1_PRICE/>`.
+:::
 
 ### Offer tags for different offer types
 
