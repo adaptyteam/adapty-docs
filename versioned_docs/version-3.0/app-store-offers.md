@@ -30,7 +30,7 @@ To use promotional offers, you have to [upload subscription key](app-store-conne
 
 
 
-Please also consider, that introductory offers on iOS are applied automatically if the user is eligible.
+Please also consider that introductory offers on iOS are applied automatically if the user is eligible.
 
 To include a promotional offer or free trial for your product, navigate to the promotional offers tab after setting up the pricing. You will find a **+ icon** next to promotional offers, and click on it to begin the setup.
 

@@ -1,242 +1,242 @@
 ---
-title: "Flutter - Adapty SDK Installation and configuration"
-description: "Installing Adapty SDK in Flutter | Adapty Docs"
-metadataTitle: "Install Adapty SDK in Flutter to handle subscriptions with ease."
-keywords: ['install sdk', 'sdk install', 'install sdk flutter', 'google play billing library', 'gpbl', 'billing library']
-rank: 60
+title: "Install & configure Flutter SDK"
+description: "Step-by-step guide on installing Adapty SDK on Flutter for subscription-based apps."
+metadataTitle: "Installing Adapty SDK on Flutter | Adapty Docs"
+keywords: ['install sdk', 'sdk install', 'install sdk flutter', 'flutter sdk', 'cross platform']
+rank: 75
 ---
 
-import Tabs from '@theme/Tabs'; 
-import TabItem from '@theme/TabItem'; 
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import GetKey from '@site/src/components/reusable/GetKey.md';
 
+Adapty SDK includes two key modules for seamless integration into your Flutter app:
 
+- **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
+- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
-<Tabs groupId="current-os" queryString> <TabItem value="3" label="Current" default> 
+:::tip
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+:::
 
-Adapty SDK includes two key modules for seamless integration into your mobile app:
+## Requirements
 
-- **Core Adapty**: This essential module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This module is required if you’re using the Adapty Paywall Builder—a no-code, user-friendly tool for creating cross-platform paywalls. With a visual constructor right in the dashboard, you can build paywalls that run natively on devices and are designed to deliver high performance with minimal effort. 
-  The module is installed and activated automatically with the Adapty SDK, but you can deactivate it if you don’t need it.
+Adapty SDK supports iOS 13.0+, but requires iOS 15.0+ to work properly with paywalls created in the paywall builder.
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
 
-:::danger
-Go through the release checklist before releasing your app
+## Install Adapty SDK
 
-Before releasing your application, make sure to carefully review the [Release Checklist](release-checklist) thoroughly. This checklist ensures that you've completed all necessary steps and provides criteria for evaluating the success of your integration.
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Flutter.svg?style=flat&logo=flutter)](https://github.com/adaptyteam/AdaptySDK-Flutter/releases)
+
+1. Add Adapty to your `pubspec.yaml` file:
+
+   ```yaml showLineNumbers title="pubspec.yaml"
+   dependencies: 
+     adapty_flutter: ^<the latest SDK version>
+   ```
+
+2. Run the following command to install dependencies:
+
+   ```bash showLineNumbers title="Terminal"
+   flutter pub get
+   ```
+
+3. Import Adapty SDKs in your application:
+
+   ```dart showLineNumbers title="main.dart"
+   import 'package:adapty_flutter/adapty_flutter.dart';
+   ```
+
+## Activate Adapty module of Adapty SDK
+
+```dart showLineNumbers title="main.dart"
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Configure and activate Adapty SDK
+  await Adapty().activate(
+    configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+  );
+  
+  runApp(MyApp());
+}
+```
+
+<GetKey />
+
+
+## Activate AdaptyUI module of Adapty SDK
+
+If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have [installed AdaptyUI module](sdk-installation-flutter#install-adapty-sdk), you also need to activate AdaptyUI:
+
+:::important
+In your code, you must activate the core Adapty module before activating AdaptyUI.
 :::
 
-## Install Adapty SDK
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withActivateUI(true), // This automatically activates AdaptyUI
+);
+```
 
-1. Add Adapty and AdaptyUI to your `pubspec.yaml` file:
+## Platform-specific configuration
 
-   ```yaml showLineNumbers title="pubspec.yaml"
-   dependencies:
-   adapty_flutter: ^3.4.0
-   ```
+<Tabs>
+<TabItem value="ios" label="iOS" default>
 
-2. Run:
+Create `Adapty-Info.plist` and add it to your iOS project. Add the following configuration:
 
-   ```bash showLineNumbers title="Bash"
-   flutter pub get
-   ```
-
-<SampleApp />
-
-## Configure Adapty SDK
-
-You only need to configure the Adapty SDK once, typically early in your app's lifecycle.
-
-### Activate Adapty module of Adapty SDK
-
-1. Import Adapty SDKs in your application in the following way:
-
-   ```dart showLineNumbers title="Dart"
-   import 'package:adapty_flutter/adapty_flutter.dart';
-   ```
-
-2. Activate Adapty SDK with the following code:
-
-   ```dart showLineNumbers title="Dart"
-   try {
-       await Adapty().activate(
-           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
-             ..withLogLevel(AdaptyLogLevel.debug)
-             ..withObserverMode(false)
-             ..withCustomerUserId(null)
-             ..withIpAddressCollectionDisabled(false)
-             ..withAppleIdfaCollectionDisabled(false)
-             ..withGoogleAdvertisingIdCollectionDisabled(false)
-       );
-   } catch (e) {
-       // handle the error
-   }
-   ```
-
-Parameters:
-
-| Parameter                             | Presence | Description                                                  |
-| ------------------------------------- | -------- | ------------------------------------------------------------ |
-| apiKey                                | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| logLevel                              | optional | Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:<ul><li> error: Only errors will be logged.</li><li> warn: Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.</li><li> info: Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged.</li><li> verbose: Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged.</li></ul> |
-| observerMode                          | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| customerUserId                        | optional | An identifier of the user in your system. We send it in subscription and analytical events, to attribute events to the right profile. You can also find customers by `customerUserId` in the [**Profiles and Segments**](https://app.adapty.io/profiles/users) menu. |
-| ipAddressCollectionDisabled           | optional | <p>Set to `true` to disable user IP address collection and sharing.</p><p>The default value is `false`.</p> |
-| appleIdfaCollectionDisabled           | optional | <p>Set to `true` to disable IDFA collection and sharing.</p><p>The default value is `false`.</p><p>For more details on IDFA collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-| googleAdvertisingIdCollectionDisabled | optional | <p>Set to `true` to disable Android/Google advertising ID (GAID/AAID) collection and sharing.</p><p>The default value is `false`.</p><p>For more details on GAID/AAID collection, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section.</p> |
-
-### Activation and configuration of AdaptyUI module of Adapty SDK
-
-The module is activated automatically with the Adapty SDK.
-
-You can configure AdaptyUI by passing `AdaptyUIMediaCacheConfiguration` to the `withMediaCacheConfiguration` method while building the `AdaptyConfiguration` object. Note that AdaptyUI configuration is optional, and you can proceed without it. However, if you use the configuration, all parameters must be included.
-
-Parameters:
-
-| Parameter                   | Presence | Description                                                  |
-| :-------------------------- | :------- | :----------------------------------------------------------- |
-| memoryStorageTotalCostLimit | required | The total cost limit of the storage in bytes.                |
-| memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
-| diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
-
-If you do not use the Paywall Builder and want to deactivate the AdaptyUI module, pass `withActivateUI(false)` during activation.
-
- </TabItem> <TabItem value="2" label="Up to v2.x (legacy)" default> 
-
-Adapty comprises two crucial SDKs for seamless integration into your mobile app:
-
-- Core **AdaptySDK**: This is a fundamental, mandatory SDK necessary for the proper functioning of Adapty within your app.
-- **AdaptyUI SDK**: This optional SDK becomes necessary if you use the Adapty Paywall Builder: a user-friendly, no-code tool for easily creating cross-platform paywalls. These paywalls are built in a visual constructor right in our dashboard, run entirely natively on the device, and require minimal effort from you to create something that performs well.
-
-Please consult the compatibility table below to choose the correct pair of Adapty SDK and AdaptyUI SDK.
-
-| Adapty SDK version | AdaptyUI SDK version |
-| :----------------- | :------------------- |
-| 2.9.3              | 2.1.0                |
-| 2.10.0             | 2.1.1                |
-| 2.10.1             | 2.1.2                |
-| 2.10.3             | 2.1.3                |
-
-## Install Adapty SDK
-
-1. Add the Adapty and AdaptyUI modules to your `pubspec.yaml` file:
-
-   ```yaml showLineNumbers title="pubspec.yaml"
-   dependencies:
-   adapty_flutter: ^2.10.3
-   adapty_ui_flutter: ^2.1.3
-   ```
-
-2. Run:
-
-   ```bash showLineNumbers title="Bash"
-   flutter pub get
-   ```
-
-3. Import Adapty modules in your application in the following way:
-
-   ```dart showLineNumbers title="Dart"
-   import 'package:adapty_flutter/adapty_flutter.dart';
-   import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
-   ```
-
-## Configure Adapty SDK
-
-The configuration of the Adapty SDK for Flutter slightly differs depending on the mobile operating system (iOS or Android) you are going to release it for. 
-
-### Configure Adapty SDK for iOS
-
-Create `Adapty-Info.plist` and add it to your project. Add the flag `AdaptyPublicSdkKey` in this file with the value of your Public SDK key.
-
-```xml showLineNumbers title="Adapty-Info.plist"
+```xml showLineNumbers title="ios/Runner/Adapty-Info.plist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
 <dict>
     <key>AdaptyPublicSdkKey</key>
-    <string>PUBLIC_SDK_KEY</string>
+    <string>YOUR_PUBLIC_SDK_KEY</string>
     <key>AdaptyObserverMode</key>
     <false/>
+    <key>AdaptyAppleIdfaCollectionDisabled</key>
+    <false/>
 </dict>
+</plist>
 ```
 
 Parameters:
 
-| Parameter              | Presence | Description                                                  |
-| ---------------------- | -------- | ------------------------------------------------------------ |
-| AdaptyPublicSdkKey     | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| AdaptyObserverMode     | optional | <p>A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. At any purchase or restore in your application, you'll need to call `.restorePurchases()` method to record the action in Adapty. The default value is `false`.</p><p></p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| idfaCollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your iOS app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)  section.</p> |
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **AdaptyPublicSdkKey** | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
+| **AdaptyObserverMode** | optional | A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
+| **AdaptyAppleIdfaCollectionDisabled** | optional | A boolean parameter that allows you to disable Apple IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section. |
 
-### Configure Adapty SDK for Android
+</TabItem>
 
-1. Add the `AdaptyPublicSdkKey` flag into the app’s `AndroidManifest.xml` \(Android) file with the value of your Public SDK key. 
+<TabItem value="android" label="Android">
+Add the following configuration to your `AndroidManifest.xml`:
 
-   ```xml showLineNumbers title="AndroidManifest.xml"
-   <application ...>
-       ...
-       <meta-data
-              android:name="AdaptyPublicSdkKey"
-              android:value="PUBLIC_SDK_KEY" />
-     	<meta-data
-              android:name="AdaptyObserverMode"
-              android:value="false" />
-   </application>
-   ```
-
-   Required parameters:
-
-| Parameter                    | Presence | Description                                                  |
-| ---------------------------- | -------- | ------------------------------------------------------------ |
-| PUBLIC_SDK_KEY               | required | <p>Contents of the **Public SDK key** field in the [**App Settings** -> **General** tab](https://app.adapty.io/settings/general) in the Adapty Dashboard. **SDK keys** are unique for every app, so if you have multiple apps make sure you choose the right one.</p><p>Make sure you use the **Public SDK key** for Adapty initialization, since the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only.</p> |
-| AdaptyObserverMode           | optional | <p>A boolean value that is controlling [Observer mode](observer-vs-full-mode) . Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics.</p><p>The default value is `false`.</p><p>🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it.</p> |
-| AdaptyIDFACollectionDisabled | optional | <p>A boolean parameter, that allows you to disable IDFA collection for your app. The default value is `false`.</p><p>For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers)   section.</p> |
-
-  
-
-2. In your application, add:
-
-   ```javascript showLineNumbers title="Flutter"
-   import 'package:adapty_flutter/adapty_flutter.dart';
-   ```
-
-3. Activate Adapty SDK with the following code:
-
-   ```javascript showLineNumbers title="Flutter"
-   try {
-   	Adapty().activate();
-   } on AdaptyError catch (adaptyError) {}
-   } catch (e) {}
-   ```
-
-Please keep in mind that for paywalls and products to be displayed in your mobile application, and for analytics to work, you need to [display the paywalls](display-pb-paywalls) and, if you're using paywalls not created with the Paywall Builder, [handle the purchase process](making-purchases) within your app.
-
-### Set up the logging system
-
-Adapty logs errors and other crucial information to provide insight into your app's functionality. There are the following available levels:
-
-| Level   | Description                                                  |
-| :------ | :----------------------------------------------------------- |
-| error   | Only errors will be logged.                                  |
-| warn    | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged. |
-| info    | Errors, warnings, and serious information messages, such as those that log the lifecycle of various modules will be logged. |
-| verbose | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged. |
-
-You can set `logLevel` in your app before configuring Adapty.
-
-```javascript showLineNumbers title="Flutter"
-try {
-	await Adapty().setLogLevel(AdaptyLogLevel.verbose);
-} on AdaptyError catch (adaptyError) {
-} catch (e) {}
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<application ...>
+    <!-- ... other configurations ... -->
+    
+    <meta-data
+        android:name="AdaptyPublicSdkKey"
+        android:value="YOUR_PUBLIC_SDK_KEY" />
+    <meta-data
+        android:name="AdaptyObserverMode"
+        android:value="false" />
+    <meta-data
+        android:name="AdaptyGoogleAdvertisingIdCollectionDisabled"
+        android:value="false" />
+</application>
 ```
 
- </TabItem> </Tabs>
+Parameters:
 
-:::danger
-Read checklist before releasing the app
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **AdaptyPublicSdkKey** | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
+| **AdaptyObserverMode** | optional | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
+| **AdaptyGoogleAdvertisingIdCollectionDisabled** | optional | A boolean parameter that allows you to disable Google Advertising ID collection for your app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section. |
 
-Before releasing your application, go through the  [Release Checklist](release-checklist) to ensure that you have completed all the steps, and also check the success of the integration using the criteria for assessing its success.
-:::
+</TabItem>
+</Tabs>
 
+## Optional setup
+
+### Logging
+
+#### Set up the logging system
+
+Adapty logs errors and other important information to help you understand what is going on. There are the following levels available:
+
+| Level                    | Description                                                                                                               |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `AdaptyLogLevel.none`    | Nothing will be logged. Default value                                                                                     |
+| `AdaptyLogLevel.error`   | Only errors will be logged                                                                                                |
+| `AdaptyLogLevel.warn`    | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged.     |
+| `AdaptyLogLevel.info`    | Errors, warnings, and various information messages will be logged.                                                        |
+| `AdaptyLogLevel.verbose` | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged. |
+
+You can set the log level in your app before configuring Adapty:
+
+```dart showLineNumbers title="main.dart"
+// Set log level before activation. 
+// 'verbose' is recommended for development and the first production release
+await Adapty().setLogLevel(AdaptyLogLevel.verbose);
+
+// Or set it during configuration
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withLogLevel(AdaptyLogLevel.verbose),
+);
+```
+
+### Data policies
+
+Adapty doesn't store personal data of your users unless you explicitly send it, but you can implement additional data security policies to comply with the store or country guidelines.
+
+#### Disable IP address collection and sharing
+
+When activating the Adapty module, set `ipAddressCollectionDisabled` to `true` to disable user IP address collection and sharing. The default value is `false`.
+
+Use this parameter to enhance user privacy, comply with regional data protection regulations (like GDPR or CCPA), or reduce unnecessary data collection when IP-based features aren't required for your app.
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withIpAddressCollectionDisabled(true),
+);
+```
+
+#### Disable advertising ID collection and sharing
+
+When activating the Adapty module, set `appleIdfaCollectionDisabled` (iOS) or `googleAdvertisingIdCollectionDisabled` (Android) to `true` to disable the collection of advertising identifiers. The default value is `false`.
+
+Use this parameter to comply with App Store/Play Store policies, avoid triggering the App Tracking Transparency prompt, or if your app does not require advertising attribution or analytics based on advertising IDs.
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withAppleIdfaCollectionDisabled(true)      // iOS
+    ..withGoogleAdvertisingIdCollectionDisabled(true), // Android
+);
+```
+
+#### Set up media cache configuration for AdaptyUI
+
+The module is activated automatically with the Adapty SDK. If you do not use the Paywall Builder and want to deactivate the AdaptyUI module, pass `withActivateUI(false)` during activation.
+
+By default, AdaptyUI caches media (such as images and videos) to improve performance and reduce network usage. You can customize the cache settings by providing a custom configuration.
+
+Use `withMediaCacheConfiguration` to override the default cache size and validity period. This is optional—if you don't call this method, default values will be used (100MB disk size, unlimited memory count). However, if you use the configuration, all parameters must be included.
+
+```dart showLineNumbers title="main.dart"
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+final mediaCacheConfig = AdaptyUIMediaCacheConfiguration(
+  memoryStorageTotalCostLimit: 200 * 1024 * 1024, // 200 MB
+  memoryStorageCountLimit: 2147483647, // max int value
+  diskStorageSizeLimit: 200 * 1024 * 1024, // 200 MB
+);
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withMediaCacheConfiguration(mediaCacheConfig),
+);
+```
+
+**Parameters:**
+
+| Parameter                | Presence | Description                                                                 |
+|-------------------------|----------|-----------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Default is 100 MB.                       |
+| memoryStorageCountLimit     | optional | The item count limit of the memory storage. Default is max int value.              |
+| diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Default is 100 MB.              |

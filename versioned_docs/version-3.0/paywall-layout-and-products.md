@@ -144,10 +144,10 @@ Add up to 2 top buttons to your paywall to provide users with options like closi
 
 
 
-| Button setting | Description |
-|--------------|-----------|
-| Action | <p>Choose the action that the paywall should perform when a user clicks this button. If you choose standard actions, the paywall will generate a standard event you will be able to [handle](handling-pb-paywall-events) in a standard way in your mobile app code.</p><p>If you choose a custom action, you will need to process the action by its `CustomActionID` in your mobile app code.</p> |
-| Style | Choose if you want the button to look like an icon or have a text. If you choose an icon, choose the icon type in the |
+| Button setting | Description                                                                                                                                                                                                                                                                                                                                                                                     |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Action | <p>Choose the action that the paywall should perform when a user clicks this button. If you choose standard actions, the paywall will generate a standard event you will be able to handle in a standard way in your mobile app code.</p><p>If you choose a custom action, you will need to process the action by its `CustomActionID` in your mobile app code.</p> |
+| Style | Choose if you want the button to look like an icon or have a text. If you choose an icon, choose the icon type in the                                                                                                                                                                                                                                                                           |
 
 
 3. To delay the appearance of the button, adjust the **Show after delay** slider.

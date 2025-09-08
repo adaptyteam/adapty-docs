@@ -1,5 +1,5 @@
 ---
-title: "Android - Handle onboarding events"
+title: "Handle onboarding events in Android SDK"
 description: "Handle onboarding-related events in Android using Adapty."
 metadataTitle: "Handling Onboarding Events in Android | Adapty Docs"
 toc_max_heading_level: 4
@@ -11,7 +11,7 @@ import Details from '@site/src/components/Details';
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Android SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty Android SDK](sdk-installation-android.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

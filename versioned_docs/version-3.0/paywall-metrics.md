@@ -2,6 +2,7 @@
 title: "Paywall metrics"
 description: "Track and analyze paywall performance metrics to improve subscription revenue."
 metadataTitle: "Analyzing Paywall Metrics | Adapty Docs"
+keywords: ['Revenue', 'Proceeds', 'ARPPU', 'ARPAS', 'Unique conversion rate (CR) to purchases', 'CR to purchases', 'Unique CR to trials', 'Purchases', 'Trials', 'Trials canceled', 'Refunds', 'Refund rate', 'Views', 'Unique views']
 ---
 
 import Zoom from 'react-medium-image-zoom';

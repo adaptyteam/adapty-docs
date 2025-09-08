@@ -7,15 +7,18 @@ metadataTitle: "Paywall Product Block Guide | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The product list is a key element of your paywall, showcasing your offerings and products in an organized, attractive manner. This list is crucial in guiding users towards making a purchase. Let’s explore how to configure and enhance the product list to maximize its effectiveness.
+The product list is a key element of your paywall that showcases your offerings in an organized, attractive manner. This list is crucial for guiding users toward making a purchase.
 
-The **Content** tab contains the products that will be displayed in the paywall. Those are absolutely the same products, you've added to the paywall when created it. You can adjust the list of products, and this will affect the list of products in the **General** tab of the paywall.
 
-After you reviewed the list of products:
+The **Content** tab contains the products that will be displayed in the paywall. These are the same products you added to the paywall when you created it.
+
+You can adjust the list of products. This will affect the product list in the **General** tab of the paywall.
+
+After you review the list of products:
 
 1. Choose which product should be preselected by default in the **Selected product** field. 
 2. Define how a product should look if it is selected or not in the **Style** tab of the **Products** section.
-3. Configure the overall view of the block in the **Layout** tab.
+3. Configure the overall view of the block in the **Layout** tab or [add products groups](#add-products-group) to combine layouts.
 
 :::warning
 
@@ -29,7 +32,7 @@ Enhancing the visual appeal of specific products can significantly rebalance use
 
 ### Product badge
 
-A product badge is a small label that can be added to a product. This badge can provide additional promotional info  and direct users choice. The badge size automatically adjusts to fit the text, and its position is optimized for your paywall layout.
+A product badge is a small label that can be added to a product. This badge can provide additional promotional information and direct user choice. The badge size automatically adjusts to fit the text, and its position is optimized for your paywall layout.
 
 <Zoom>
   <img src={require('./img/eedb135-PB_product_badge.webp').default}
@@ -62,6 +65,8 @@ To add a product badge:
 ### Selected product
 
 For the **Products as list + purchase button** purchase flow, you can **preselect** a product to gently nudge users towards it. This can be especially effective in directing user choice.
+
+If you add several [product groups](#add-products-group), the same **Selected product** option will be applied to all groups.
 
 <Zoom>
   <img src={require('./img/3f37969-PB_preselected_product.webp').default}
@@ -105,7 +110,7 @@ To preselect a product:
 
 ### Highlighted product
 
-For the **Products as purchase buttons** purchase flow, you can **highlight** a preferred product to make it the primary choice, drawing immediate user attention..
+For the **Products as purchase buttons** purchase flow, you can **highlight** a preferred product to make it the primary choice, drawing immediate user attention.
 
 <Zoom>
   <img src={require('./img/afc2882-PB_highlighted_product.webp').default}
@@ -120,7 +125,7 @@ For the **Products as purchase buttons** purchase flow, you can **highlight** a 
 
 To highlight a product:
 
-1. In the left pane, choose the product you want  to highlight.
+1. In the left pane, choose the product you want to highlight.
 
 <Zoom>
   <img src={require('./img/a630507-PB_highlight_product.webp').default}
@@ -133,11 +138,17 @@ To highlight a product:
 />
 </Zoom>
 
-2. In the **Style** subsection, adjust the design to make the product stand out more..
+2. In the **Style** subsection, adjust the design to make the product stand out more.
 
 ### Product offers
 
-Each product can feature different text for offers in the **Text** subsection. The **Default** tab contains the text displayed without an offer. This is the perfect place to use [tag variables](paywall-builder-tag-variables) or [custom tags](custom-tags-in-paywall-builder) for dynamic, localized content. Start typing with a triangle bracket, and Adapty will suggest available tag variables to insert localized data from the stores
+Each product can feature different text for offers in the **Text** subsection. The **Default** tab contains the text displayed without an offer.
+
+This is a good place to use:
+- [tag variables](paywall-builder-tag-variables) for dynamic, localized content
+- [custom tags](custom-tags-in-paywall-builder) for your own dynamic content
+
+Start typing with a triangle bracket, and Adapty will suggest available tag variables to insert localized data from the stores.
 
 <Zoom>
   <img src={require('./img/0de6871-PB_text.webp').default}
@@ -150,9 +161,9 @@ Each product can feature different text for offers in the **Text** subsection. T
 />
 </Zoom>
 
-## Switching between 2 product sets by trial toggle
+## Switch between 2 product sets by trial toggle
 
-For a versatile user experience, you can allow users to switch between two sets of products using a toggle. This is especially useful for differentiating between standard products and trials.
+To create a versatile user experience, you can allow users to switch between two sets of products using a toggle. This is especially useful for differentiating between standard products and trials.
 
 To add a toggle:
 
@@ -183,9 +194,9 @@ To add a toggle:
 />
 </Zoom>
 
-## Switching between product sets by tab
+## Switch between product sets by tab
 
-Paywall tabs let you group your plans into a few categories, highlighting all the possible options for your users. They’re especially helpful if:
+Paywall tabs let you group your products into categories, highlighting all possible options for your users. They're especially helpful if:
 
 - Your app offers multiple weekly, monthly, or yearly plans
 - You have different tiers like Plus, Gold, or Premium
@@ -274,9 +285,13 @@ To add tabs:
    />
    </Zoom>
 
-## Showing extra plans under a button
+## Show extra products under a button
 
-To keep things simple on your paywall, you can hide some products under a button (like "View more plans" or any label you prefer). This helps users focus on your top options first, while still allowing them to explore other plans if they want. It's a great way to make the paywall cleaner and improve conversions.
+To keep your paywall simple, you can hide some products or product groups under a button (like "View more plans" or any label you prefer).
+
+This helps users focus on your top options first while still allowing them to explore other plans if they want.
+
+It's a great way to make the paywall cleaner and improve conversions.
 
 Here’s how:
 
@@ -293,7 +308,7 @@ Here’s how:
 />
 </Zoom>
 
-2. Distribute your products between these groups. **Shown** is for products you want displayed right away. **More plans** is for products hidden behind the button, shown only when users click it.
+2. Distribute your products between these groups. **Shown** is for products you want displayed immediately. **More plans** is for products hidden behind the button, shown only when users click it.
 
    <Zoom>
      <img src={require('./img/divided-plans.webp').default}
@@ -319,10 +334,16 @@ Here’s how:
    />
    </Zoom>
 
-By mastering these customization options, you can create a compelling, visually appealing product list that guides users towards making a purchase effortlessly.
-## Showing extra plans in a bottom sheet
+These options help you build a clear, visually appealing product list that guides users toward purchase.
+## Show extra plans in a bottom sheet
 
-To simplify your paywall, you can hide some products and display them only when users click a button (like "View More Plans" or any label you choose). This action opens a sliding bottom sheet with the hidden products. This setup helps users focus on your main options first, while still giving them the flexibility to explore additional plans if they’re interested. It’s a effective way to declutter the paywall and potentially boost conversions.
+To simplify your paywall, you can hide some products and display them only when users click a button (like "View More Plans" or any label you choose).
+
+This action opens a sliding bottom sheet with the hidden products.
+
+This setup helps users focus on your main options first while still giving them the flexibility to explore additional plans if they're interested.
+
+It's an effective way to declutter the paywall and potentially boost conversions.
 
 Here’s how:
 
@@ -339,7 +360,7 @@ Here’s how:
 />
 </Zoom>
 
-2. Distribute your products between these groups. **Shown** is for products you want displayed right away. **More plans** is for products first hidden, shown only when users click the button.
+2. Distribute your products between these groups. **Shown** is for products you want displayed immediately. **More plans** is for products that are initially hidden and shown only when users click the button.
 
    <Zoom>
      <img src={require('./img/bottom-sheet-divided-plans.webp').default}
@@ -365,7 +386,7 @@ Here’s how:
    />
    </Zoom>
 
-4. The bottom sheet will automatically use the same product list display format as your main paywall, whether products are separate purchase buttons or each product acts as a button. You can customize the bottom sheet’s layout, text, style, and default product selection.
+4. The bottom sheet will automatically use the same product list display format as your main paywall, whether products are separate purchase buttons or each product acts as a button. You can customize the bottom sheet layout, text, style, and default product selection.
 
 <Zoom>
   <img src={require('./img/bottom-sheet-layout.webp').default}
@@ -378,4 +399,29 @@ Here’s how:
 />
 </Zoom>
 
-By mastering these customization options, you can create a visually appealing and user-friendly product list that makes purchasing simple and intuitive.
+These options help you create a simple, user-friendly product list.
+
+## Add products group
+
+If you want to apply both vertical and horizontal layouts to different products or add text between products, you can add another products group.
+
+:::note
+Adding a products group disables the [Products grouping](#switch-between-2-product-sets-by-trial-toggle) option. Choose between adding another products group or grouping products inside the same block.
+:::
+
+To add a products group:
+
+1. Click **Add element** or **+** on the **Footer**.
+2. Select **Products**.
+3. Add products. Since you can't have the same product in different groups, you need to first delete it from another group.
+
+<Zoom>
+  <img src={require('./img/product-group.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

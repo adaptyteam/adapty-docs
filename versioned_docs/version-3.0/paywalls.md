@@ -7,6 +7,8 @@ keywords: ['paywall']
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 A paywall serves as an in-app storefront where customers can browse and make purchases. What sets it apart is its dynamic nature, allowing you to modify it without requiring app updates. You can even introduce new paywalls to users based on various factors using [Placements](placements).
 
@@ -22,11 +24,11 @@ How you display these paywalls in your mobile app depends on the tool you choose
 
 1. **Paywalls designed with the Paywall Builder** include both what to display and how to display it. They can also process most user actions such as making purchases, opening links, or clicking buttons without requiring development. 
 
-   Refer to [Design paywalls with Paywall Builder](adapty-paywall-builder) for design details and [Display paywalls created by Paywall Builder](display-pb-paywalls) for implementation guidance.
+   Refer to [Design paywalls with Paywall Builder](adapty-paywall-builder) for design details and <InlineTooltip tooltip="quickstart guides">[iOS](ios-quickstart-paywalls.md), [Android](android-quickstart-paywalls.md), [Flutter](flutter-quickstart-paywalls.md), [React Native](react-native-quickstart-paywalls.md), and [Unity](unity-quickstart-paywalls.md)</InlineTooltip> for implementation guidance.
 
 2. **Paywalls customized using remote config** can be tailored to your specific requirements, giving you complete freedom to design and process them as needed. 
 
-   Refer to [Design paywall with remote config](customize-paywall-with-remote-config) for design details and [Display paywalls created by remote config](display-remote-config-paywalls) for implementation guidance.
+   Refer to [Design paywall with remote config](customize-paywall-with-remote-config) for design details and <InlineTooltip tooltip="developer docs">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> for implementation guidance.
 
 ## Paywall states
 

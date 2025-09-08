@@ -259,6 +259,10 @@ Unlike other stores, refunds in Paddle only affect the specific transaction bein
 
 Your integration is now complete. Users can purchase subscriptions on your website and automatically access premium features in your mobile app, while you track all subscription analytics from your unified Adapty dashboard.
 
+:::tip
+You can also include `variation_id` in the `custom_data` field to attribute purchases to specific paywall instances. Adapty will process this data from webhooks and include it in analytics.
+:::
+
 ## Current limitations
 
 - **Cancellations**: Paddle has two subscription cancellation options:

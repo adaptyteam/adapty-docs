@@ -85,3 +85,38 @@ However, it's important to note that replacing a template will discard any chang
 </Zoom>
 
 4. Click **Choose** to confirm the template change. Please note that replacing a template will discard any changes made to your paywall design.
+
+## Generate paywalls with AI
+
+:::info
+The Paywall AI generator is only available for apps published on the Apple App Store.
+:::
+
+You can create a unique, high-converting paywall tailored to your app in just seconds using our built-in AI generator.
+
+To do so:
+
+1. In the **Layout settings** of the paywall, click **Change template**.
+2. CLick **Generate template** on the top of the template selection page.
+3. Paste your App Store link and click **Generate paywall**. Generation may take some time.
+4. Choose one of the 5 generated templates, or click **Generate new variation** if none of them fit your needs.
+5. Click **Pick & Open in Builder**.
+
+The selected template will be applied to your paywall.
+
+:::note
+
+Each user can generate up to 5 sets of templates per day.
+
+:::
+
+<Zoom>
+  <img src={require('./img/generate-template.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

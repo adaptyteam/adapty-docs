@@ -48,4 +48,4 @@ By leveraging the Adapty Paywall Builder, you'll be able to create persuasive pa
 5. [Paywall custom tags](custom-tags-in-paywall-builder) 
 6. [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder)
 
-After you configure your paywalls and [add them to placements](add-audience-paywall-ab-test), you can show them in your mobile app. Refer to the [Display Paywall Builder paywalls](display-pb-paywalls) topic for details on how to do it.
+After you configure your paywalls and [add them to placements](add-audience-paywall-ab-test), you can show them in your mobile app. 

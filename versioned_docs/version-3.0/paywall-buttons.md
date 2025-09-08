@@ -11,7 +11,12 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require [implementing proper responses in the app code](handle-paywall-actions.md).
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code:
+- [iOS](handle-paywall-actions.md)
+- [Android](android-handle-paywall-actions.md)
+- [React Native](react-native-handle-paywall-actions.md)
+- [Flutter](flutter-handle-paywall-actions.md)
+- [Unity](unity-handle-paywall-actions.md)
 :::
 
 A paywall button is a UI element that lets users:
@@ -41,7 +46,7 @@ You can attract more attention to purchase buttons by animating them. The Paywal
 
 Each animation lets you choose an easing option (Linear, Ease In, Ease Out, Ease In Out) to control how it speeds up or slows down.
 
-Animations are available in the Adapty iOS and Android SDKs starting from version 3.10.0. Follow the [migration guide](migration-to-android-310.md) for Android.
+Animations are available in the Adapty iOS, Android, Flutter, and React Native SDKs starting from version 3.10.0. Follow the [migration guide](migration-to-android-310.md) for Android.
 :::
 
 <Zoom>
@@ -63,7 +68,12 @@ To comply with some store requirements, you can add links to:
 
 To add links:
 1. Add a **Link** element in the paywall builder.
-2. Add the [`openUrl`](handling-pb-paywall-events.md) handler to your code.
+2. Add the `openUrl` handler to your code:
+    - [iOS](handle-paywall-actions.md)
+    - [Android](android-handle-paywall-actions.md)
+    - [React Native](react-native-handle-paywall-actions.md)
+    - [Flutter](flutter-handle-paywall-actions.md)
+    - [Unity](unity-handle-paywall-actions.md)
 
 
 <Zoom>
@@ -85,7 +95,14 @@ You need custom buttons to:
 - Sign in (`login`)
 - Trigger custom actions (e.g., open another paywall)
 
-To make most buttons work, you need to [**handle their action IDs in your code**](handle-paywall-actions.md). For example, a close button needs the `close` action handler.
+To make most buttons work, you need to **handle their action IDs in your code**:
+- [iOS](handle-paywall-actions.md)
+- [Android](android-handle-paywall-actions.md)
+- [React Native](react-native-handle-paywall-actions.md)
+- [Flutter](flutter-handle-paywall-actions.md)
+- [Unity](unity-handle-paywall-actions.md)
+
+For example, a close button needs the `close` action handler.
 
 :::important
 `close` is handled automatically in the iOS, Android, and React Native SDKs. `openUrl` is handled automatically in the iOS and Android SDKs. However, if needed, you can override the default behavior.

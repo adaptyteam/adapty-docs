@@ -114,26 +114,28 @@ Use the `setIntegrationIdentifier()` method to set these values. Here's how to i
 **Setting appmetrica_device_id**
 
 ```swift showLineNumbers
-val startupParamsCallback = object: StartupParamsCallback {
-    override fun onReceive(result: StartupParamsCallback.Result?) {
-        val deviceIdHash = result?.deviceIdHash ?: return
+AppMetrica.requestStartupIdentifiers(on: nil) { ids, error in
+  if let error {
+    // handle AppMetrica error    
+    return
+  }
 
-        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
-            if (error != null) {
-                // handle the error
-            }
-        }
-    }
+  guard let deviceIDHash = ids?[.deviceIDHashKey] as? String else {
+    // handle AppMetrica error
+    return
+  }
 
-    override fun onRequestError(
-        reason: StartupParamsCallback.Reason,
-        result: StartupParamsCallback.Result?
-    ) {
-        //handle the error
+  Task {
+    do {
+      try await Adapty.setIntegrationIdentifier(
+        key: "appmetrica_device_id",
+        value: deviceIDHash
+      )
+    } catch {
+      // handle the error
     }
+  }
 }
-
-AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
 
 **Setting appmetrica_profile_id**
