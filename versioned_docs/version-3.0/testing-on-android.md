@@ -15,7 +15,7 @@ To ensure optimal performance of your Android app, it's recommended that you tes
 
 If you do decide to use an emulator, make sure that it has Google Play installed. This will help ensure that your app is functioning properly.
 
-## 1. Create a test account for app testing
+## 1. Set up test account for app testing
 
 To facilitate testing during later stages of development, you'll need to set up a test user for in-app purchase testing. This user will be the first account you log in with on your Android testing device.
 
@@ -31,17 +31,54 @@ The way you set up a test account will depend on the device you're using:
 ## 2. Enable License testing
 
 Once you've set up a test user account, you'll need to configure licensing testing for your app. To do this, follow these steps:
-1. In the Google Play Console sidebar, navigate to **Setup**.
-2. Select **License testing**.
-3. Add your test account (i.e., the account you're currently logged in with) to the list.
+1. In the Google Play Console sidebar, navigate to **Settings** and select **License testing** in the **Monetization** section.
 
-This will allow you to configure licensing testing for your app and ensure that it's functioning properly.
+<Zoom>
+  <img src={require('./img/android-license-testing.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-In our example, we already have a list of testers:
+2. Select an existing license testers list or create a new one.
+
+<Zoom>
+  <img src={require('./img/android-testers.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Add the account you will be using for testing to the list and save changes. If your team members need to test the app as well, you can add their emails to the list, so access ig given to the whole group.
+
+<Zoom>
+  <img src={require('./img/android-list.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 3. Create closed track and add test account to it
+
+To start testing, you need to publish a signed version of your app to a closed track:
+
+1. Open your app and select **Test and release > Testing > Closed testing** in the menu. There, click **Create track**.
 
 
 <Zoom>
-  <img src={require('./img/7a11c96-image.webp').default}
+  <img src={require('./img/android-closed-testing.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -52,14 +89,13 @@ In our example, we already have a list of testers:
 </Zoom>
 
 
-
-## 3. Create a closed track and add the test user to it
-
-1. Publish a signed version of your app to a closed track. If you haven't created a closed track yet, you can create one in the **Closed testing** section of the **Testing** menu.
+2. Enter the closed testing track name and click **Create track**.
+3. Add a testers list to the track.
+4. From the **How testers join your test** section, copy the link and send it to the device logged into the test account. Open the link on your testing device to make the user a tester.
 
 
 <Zoom>
-  <img src={require('./img/5511dff-image.webp').default}
+  <img src={require('./img/android-link.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -68,87 +104,22 @@ In our example, we already have a list of testers:
   }}
 />
 </Zoom>
-
-
-Just as previously, you can use one of the existing lists or create a new one:
-
-
-<Zoom>
-  <img src={require('./img/1badc43-image.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-2. Press **Enter**, and click the **Save changes** button. 
-
-3. Open the **Opt-in URL** in your testing device to make the user a tester. You can send the URL to your device via email, for example.
-
-
-<Zoom>
-  <img src={require('./img/6cce394-image.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-
-<Zoom>
-  <img src={require('./img/c1eb89d-image.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
 
 
 :::warning
-Important
-
-Opening the opt-in URL marks your Play account for testing. If you don't complete this step, products will not load.
-:::
-
-:::warning
-Check Your Application ID
-
-Often developers will use a different application ID for their test builds. This will cause you problems since Google Play Services uses the application ID to find your in-app purchases.
-:::
-
-:::warning
-Add a PIN to the test device if needed
-
-There are cases where a test user may be allowed to purchase consumables, but not subscriptions, if the test device does not have a PIN. This may manifest in a cryptic "Something went wrong" message. Make sure that the test device has a PIN, and that the device is logged into Google Play Store.
+Consider the following to ensure successful testing:
+- Opening the opt-in URL marks your Play account for testing. If you don't complete this step, products will not load.
+- Often developers will use a different application ID for their test builds. This will cause you problems since Google Play Services uses the application ID to find your in-app purchases.
+- There are cases where a test user may be allowed to purchase consumables, but not subscriptions, if the test device does not have a PIN. This may manifest in a cryptic "Something went wrong" message. Make sure that the test device has a PIN, and that the device is logged into Google Play Store.
 :::
 
 ## 4. Upload a signed APK to the closed track
 
-Generate a signed APK or use Android App Bundle to upload a signed APK to the closed track you just created. You don't even need to roll out the release. Just upload the APK. You can find more information about this in this support article.
+Generate a signed APK or use Android App Bundle to upload a signed APK to the closed track you just created. You don't even need to roll out the release. Just upload the APK. You can find more information about this in [this](https://support.google.com/googleplay/android-developer/answer/9859348?visit_id=638929100639477968-3849460621&rd=1) support article.
 
-> 🌎 Make your release available in at least one country
-> 
-> If your app is new, you may need to make it available in your country or region. To do so, go to Testing > Closed testing, click on your test track, and go to Countries/regions to add the desired countries and regions.
+:::important
+If your app is new, you may need to make it available in your country or region. To do so, go to **Testing > Closed testing**, click on your test track, and go to **Countries/regions** to add the desired countries and regions.
+:::
 
 ## 5. Test in-app purchases
 
@@ -166,22 +137,10 @@ After you've uploaded the APK, wait a few minutes for the release to process. Th
 />
 </Zoom>
 
+## Read more
 
-
-
-
-If you run into any issues, refer to the documentation or contact Google Play Developer support. 
-
-
-<Zoom>
-  <img src={require('./img/605874f-image.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Read the following resources to learn more about testing in-app purchases in Android apps:
+- [Renewal periods in sandbox](https://developer.android.com/google/play/billing/test#subs)
+- [Testing one-time purchases](https://developer.android.com/google/play/billing/test#one-time)
 
 
