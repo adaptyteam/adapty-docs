@@ -263,6 +263,19 @@ Your integration is now complete. Users can purchase subscriptions on your websi
 You can also include `variation_id` in the `custom_data` field to attribute purchases to specific paywall instances. Adapty will process this data from webhooks and include it in analytics.
 :::
 
+## Get more from your Paddle data
+
+:::important
+For your Paddle events to work with integrations, your users must be logged into the app using their App Store/Google Play account at least once. 
+:::
+
+Once you integrate with Paddle, Adapty is ready to provide insights right away. To make the most of your Paddle data, you can set up additional Adapty integrations to forward Paddle events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+Integrations you can use to forward and analyze your Paddle events:
+- [AppsFlyer](appsflyer.md)
+- [Webhook](https://adapty.io/docs/webhook)
+- [Posthog](https://adapty.io/docs/posthog)
+
 ## Current limitations
 
 - **Cancellations**: Paddle has two subscription cancellation options:
