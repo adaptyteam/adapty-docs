@@ -6,35 +6,32 @@ displayed_sidebar: sdkios
 
 Adapty's caching architecture is designed to ensure your paywalls load reliably and quickly, even in challenging network conditions. Understanding how this system works is crucial for making informed decisions about when and how to fetch paywall data in production applications.
 
-### How Adapty's Multi-Layer Caching Works
+## How Adapty's multi-layer caching works
 Adapty implements a sophisticated caching system with multiple layers working together to ensure paywall reliability:
 
-1. Regularly Updated Cache - Local device cache that stores the most recent paywall data
-2. CDN Layer - Content Delivery Network for faster global fetching
-3. Fallback Server - Stand-alone server used when CDN is unreachable
-4. Fallback Paywalls - Static paywall configurations stored locally as a last resort
+1. **Regularly updated cache**: Local device cache that stores the most recent paywall data
+2. **CDN Layer**: Content Delivery Network for faster global fetching
+3. **Fallback server**: Stand-alone server used when CDN is unreachable
+4. **Fallback paywalls**: Static paywall configurations stored locally as a last resort
 
-This approach ensures you always get the latest version of your paywalls while maintaining reliability even when internet connectivity is scarce. These layers work automatically behind-the-scenes when you fetch a paywall:
+This approach ensures you always get the latest version of your paywalls while maintaining reliability even when internet connectivity is scarce.
 
-```swift
-let paywall = try await Adapty.getPaywall(placementId: "from_onboarding")
-```
-
-#### How the Layers Work Together
+### How the layers work together
 When you request a paywall, Adapty's SDK follows this priority order:
 
-1. Primary attempt: Fetch fresh data from CDN
-2. CDN failure: Fall back to the standalone Adapty server
-3. Network failure: Return data from regularly updated cache
-4. Cache unavailable: Use fallback paywall as last resort
-5. All layers fail: Throw appropriate error
+1. **Primary attempt**: Fetch fresh data from CDN
+2. **CDN failure**: Fall back to the standalone Adapty server
+3. **Network failure**: Return data from regularly updated cache
+4. **Cache unavailable**: Use fallback paywall as last resort
+5. **All layers fail**: Throw appropriate error
 
-The system is designed to be invisible to your app's logic while maximizing both performance and reliability. Note that the fallback paywall does require configuration in your app project to function, but its usage at runtime is governed by the above order and will happen automatically. See [this doc](https://adapty.io/docs/fallback-paywalls) for more information on configuring fallback paywalls in your project.
+The system is designed to be invisible to your app's logic while maximizing both performance and reliability. Note that the fallback paywall does require configuration in your app project to function, but its usage at runtime is governed by the above order and will happen automatically. See [this doc](ios-use-fallback-paywalls.md) for more information on configuring local fallback paywalls in your project.
 
-### Fetch Policies
+## Fetch policies
 Adapty provides three distinct fetching strategies that let you balance data freshness against loading speed based on your app's needs and your users' network conditions.
 
-#### `.reloadRevalidatingCacheData`
+#### .reloadRevalidatingCacheData
+
 The recommended strategy (and default choice) for most production applications:
 
 ```swift
@@ -53,7 +50,7 @@ Use this policy when:
 - Network connectivity is generally stable for your user base
 - Data accuracy is more important than loading speed
 
-#### `.returnCacheDataElseLoad`
+#### .returnCacheDataElseLoad
 The strategy prioritizing speed; useful for users with unstable internet:
 
 ```swift
@@ -72,7 +69,7 @@ Use this policy when:
 - Your paywall content is relatively stable
 - You can tolerate slightly outdated information
 
-#### `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`
+#### .returnCacheDataIfNotExpiredElseLoad(maxAge:)
 The strategy prioritizing speed, but with a max age cutoff:
 
 ```swift
@@ -89,7 +86,7 @@ Use this policy when:
 - You want to balance loading speed with fresh paywall data
 - You can tolerate slightly outdated information
 
-### Cache Persistence and Lifecycle
+## Cache persistence and lifecycle
 Understanding the Adapty SDK’s cache behavior is critical to using it effectively. The cache:
 
 - Survives app restarts and remains available across sessions
@@ -137,9 +134,11 @@ An implementation like the above allows the app to determine the network quality
 
 The `refreshPaywallCache` function attempts to provide you with an up-to-date version of the paywall data cached locally, perhaps for the critical placements where you want to preload the freshest data.
 
-### Integration with Complex App Architectures
+## Integration with сomplex app architectures
 
-Understanding Adapty's caching enables more sophisticated integration patterns. One such option is to create a repository for paywalls that follows the specific rules you need for your use-cases.  Shown below is a possible strategy that attempts to pre-load the critical placements before they are needed. If it fails, the system will fall back to using the paywall service’s standard behavior (live reload unless network conditions are poor). If the `criticalPlacements` set is initialized as empty, no preloading will occur, and all paywalls will be fetched using the standard behavior of the paywall service.
+Understanding Adapty's caching enables more sophisticated integration patterns. One such option is to create a repository for paywalls that follows the specific rules you need for your use-cases. 
+
+Shown below is a possible strategy that attempts to pre-load the critical placements before they are needed. If it fails, the system will fall back to using the paywall service’s standard behavior (live reload unless network conditions are poor). If the `criticalPlacements` set is initialized as empty, no preloading will occur, and all paywalls will be fetched using the standard behavior of the paywall service.
 
 ```swift
 import Adapty
@@ -161,15 +160,12 @@ class PaywallRepository {
 }
 ```
 
-With this knowledge you can make informed architectural decisions that align with your app's performance requirements and user experience goals. The automatic fallback mechanisms mean you can focus on choosing the right fetch policy for your use-case rather than implementing complex error handling for every network scenario.
-
-## App Lifecycle Integration Patterns
+## App lifecycle integration patterns
 Integrating paywall data loading into your app's lifecycle requires careful consideration of timing, user experience, and performance. The key is fetching data when it's most likely to be needed while avoiding unnecessary requests that could impact app launch performance or user experience.
 
-### App Launch: When to Fetch Paywall Data During Startup
 The timing of your initial paywall data fetching can significantly impact perceived app performance and user experience. The strategy should vary based on how central paywalls are to your app's core functionality.
 
-#### Early Launch Strategy
+#### Early launch strategy
 For apps where paywalls are critical to the user journey (freemium apps, content subscription apps), fetch paywall data early in the launch process. The previously mentioned paywall repository will automatically fetch the critical paywalls passed in during `init`.
 
 ```swift
@@ -192,7 +188,7 @@ struct MyApp: App {
 }
 ```
 
-#### Lazy Loading Strategy
+#### Lazy loading strategy
 For apps where paywalls are secondary features, or you don’t frequently update or A/B test your paywalls, defer paywall loading until actually needed:
 
 ```swift
