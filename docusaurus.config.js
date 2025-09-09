@@ -72,7 +72,10 @@ const config = {
     ({
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
-      metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
+      metadata: [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'keywords', content: 'adapty, subscription management, mobile subscriptions, app monetization, in-app purchases, subscription analytics, paywall, revenue optimization' }
+      ],
       navbar: {
         title: "",
         logo: {
@@ -349,6 +352,8 @@ const config = {
   ],
   
   plugins: [
+    // Custom meta plugin for keywords and rank
+    require.resolve('./plugins/custom-meta-plugin.js'),
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {
