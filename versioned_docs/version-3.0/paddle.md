@@ -272,10 +272,8 @@ For your Paddle events to work with integrations, your users must be logged into
 Once you integrate with Paddle, Adapty is ready to provide insights right away. To make the most of your Paddle data, you can set up additional Adapty integrations to forward Paddle events—bringing all your subscription analytics into a single Adapty Dashboard.
 
 Integrations you can use to forward and analyze your Paddle events:
-- [Amplitude](https://adapty.io/docs/amplitude/)
+- [AppsFlyer](appsflyer.md)
 - [Webhook](https://adapty.io/docs/webhook)
-- [Firebase](https://adapty.io/docs/firebase-and-google-analytics)
-- [Mixpanel](https://adapty.io/docs/mixpanel)
 - [Posthog](https://adapty.io/docs/posthog)
 
 ## Current limitations
