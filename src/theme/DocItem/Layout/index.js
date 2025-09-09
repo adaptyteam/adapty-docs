@@ -4,52 +4,33 @@ import ArticleButtons from '@site/src/components/ArticleButtons';
 import { createRoot } from 'react-dom/client';
 
 export default function DocItemLayout(props) {
-  console.log('DocItemLayout props:', props);
-  console.log('DocItemLayout props keys:', Object.keys(props));
 
   useEffect(() => {
     // Get the full current URL inside useEffect to ensure we're on the client side
     const currentUrl = window.location.href.replace(/\/$/, '');
-    
-    console.log('DocItemLayout useEffect with:', { 
-      currentUrl, 
-      content: props.content?.metadata,
-      permalink: props.content?.metadata?.permalink,
-      hasContent: !!props.content,
-      hasMetadata: !!props.content?.metadata,
-      windowLocation: window.location.href
-    });
 
-    console.log('useEffect triggered with currentUrl:', currentUrl);
     if (!currentUrl) {
-      console.log('No currentUrl, skipping button injection');
       return;
     }
 
     const injectButtons = () => {
-      console.log('Attempting to inject buttons...');
       
       // Find the markdown container
       const markdownContainer = document.querySelector('.theme-doc-markdown');
-      console.log('Markdown container found:', !!markdownContainer);
       
       if (!markdownContainer) {
-        console.log('No markdown container found');
         return;
       }
 
       // Check if buttons already exist
       if (markdownContainer.querySelector('.article-buttons-container')) {
-        console.log('Buttons already exist, skipping');
         return;
       }
 
       // Find the first paragraph or heading after the title
       const title = markdownContainer.querySelector('h1');
-      console.log('Title found:', !!title);
       
       if (!title) {
-        console.log('No title found');
         return;
       }
 
@@ -76,13 +57,11 @@ export default function DocItemLayout(props) {
       const root = createRoot(buttonContainer);
       root.render(<ArticleButtons articleUrl={currentUrl} />);
 
-      console.log('Buttons injected successfully');
     };
 
     // Try immediately and after a delay
     injectButtons();
     const timeoutId = setTimeout(() => {
-      console.log('Retrying button injection after timeout...');
       injectButtons();
     }, 100);
 
