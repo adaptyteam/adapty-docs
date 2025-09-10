@@ -4,11 +4,13 @@ metadataTitle: "Guides | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios
 ---
 
-Adapty offers three distinct approaches to load and display paywall data: custom, remote config, and Paywall Builder. Each have specific loading requirements and you will want to factor those in when integrating them into your app’s architecture.
+Adapty offers three distinct approaches to load and display paywall data: custom, remote config, and Paywall Builder. Each has specific loading requirements, and you will want to factor those in when integrating them into your app’s architecture.
 
 ## Paywall Builder
 
-[Paywall Builder](adapty-paywall-builder.md) paywalls are fully designed and configured remotely, with the SDK handling all rendering and caching automatically. Paywall Builder paywalls are typically the quickest to integrate into your codebase, and provide the most flexibility for iterating on paywall designs and A/B testing, but they do have the largest download requirements of assets.
+[Paywall Builder](adapty-paywall-builder.md) paywalls are fully designed and configured remotely, with the SDK handling all rendering and caching automatically. 
+
+Paywall Builder paywalls are typically the quickest to integrate into your codebase, and provide the most flexibility for iterating on paywall designs and A/B testing, but they do have the largest download requirements of assets.
 
 #### Fetch `PaywallConfiguration`
 
@@ -62,7 +64,7 @@ var body: some View {
 }
 ```
 
-The `.paywall()` view modifier requires all of the above arguments to properly function. The two `didFinish...` closures cover the success states, and the remaining closures handle the various possible failure states. Be sure to both process the returned values as well as dismiss the paywall modal view.
+The `.paywall()` view modifier requires all the above arguments to properly function. The two `didFinish...` closures cover the success states, and the remaining closures handle the various possible failure states. Be sure to both process the returned values as well as dismiss the paywall modal view.
 
 ## Remote config paywall
 

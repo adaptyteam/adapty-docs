@@ -86,6 +86,8 @@ Use this policy when:
 - You want to balance loading speed with fresh paywall data
 - You can tolerate slightly outdated information
 
+## Cache persistence and lifecycle
+
 Understanding the Adapty SDK’s cache behavior is critical to using it effectively. The cache:
 
 - Survives app restarts and remains available across sessions
