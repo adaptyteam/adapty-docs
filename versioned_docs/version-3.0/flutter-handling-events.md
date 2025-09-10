@@ -5,6 +5,8 @@ metadataTitle: "Handling Events in Flutter | Adapty Docs"
 keywords: ['paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
@@ -23,9 +25,58 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIPaywallsEventsObserver` methods and set the observer before presenting any screen:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 AdaptyUI().setPaywallsEventsObserver(this);
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidAppear: (view) {
+    // Handle paywall appearance
+  },
+  onDidDisappear: (view) {
+    // Handle paywall disappearance
+  },
+  onDidSelectProduct: (view, productId) {
+    // Handle product selection
+  },
+  onDidStartPurchase: (view, product) {
+    // Handle purchase start
+  },
+  onDidFinishPurchase: (view, product, result) {
+    // Handle successful purchase
+  },
+  onDidFailPurchase: (view, product, error) {
+    // Handle purchase failure
+  },
+  onDidStartRestore: (view) {
+    // Handle restore start
+  },
+  onDidFinishRestore: (view, profile) {
+    // Handle successful restore
+  },
+  onDidFailRestore: (view, error) {
+    // Handle restore failure
+  },
+  onDidFailRendering: (view, error) {
+    // Handle rendering errors
+  },
+  onDidFailLoadingProducts: (view, error) {
+    // Handle product loading errors
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <SampleApp />
 
@@ -35,10 +86,29 @@ AdaptyUI().setPaywallsEventsObserver(this);
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidSelectProduct: (view, productId) {
+    // Handle product selection
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -54,10 +124,29 @@ void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
 
 If a user initiates the purchase process, this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidStartPurchase: (view, product) {
+    // Handle purchase start
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -80,7 +169,10 @@ void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct 
 
 If `Adapty.makePurchase()` succeeds, this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyPurchaseResult purchaseResult) {
@@ -99,6 +191,34 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
     }
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFinishPurchase: (view, product, result) {
+    switch (result) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event examples (Click to expand)</summary>
@@ -166,12 +286,31 @@ We recommend dismissing the screen in that case. Refer to [Respond to button act
 
 If `Adapty.makePurchase()` fails, this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFailPurchase: (view, product, error) {
+    // Handle purchase failure
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -201,10 +340,29 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 
 If `Adapty.restorePurchases()` succeeds, this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFinishRestore: (view, profile) {
+    // Handle successful restore
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -237,10 +395,29 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFailRestore: (view, error) {
+    // Handle restore failure
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -264,10 +441,29 @@ void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 
 If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by invoking this method:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFailLoadingProducts: (view, error) {
+    // Handle product loading errors
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -289,10 +485,29 @@ void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError err
 
 If an error occurs during the interface rendering, it will be reported by calling this method:
 
-```javascript showLineNumbers title="Flutter"
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidFailRendering: (view, error) {
+    // Handle rendering errors
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>

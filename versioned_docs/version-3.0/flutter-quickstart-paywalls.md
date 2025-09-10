@@ -7,6 +7,8 @@ rank: 70
 displayed_sidebar: sdkflutter
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
@@ -77,7 +79,35 @@ try {
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="Platform view" default>
+
+To embed a paywall within your existing widget tree, use the `AdaptyUIPaywallPlatformView` widget directly in your Flutter widget hierarchy:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        Navigator.of(context).pop();
+        break;
+      case OpenUrlAction(url: final url):
+        _launchUrl(url);
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+<TabItem value="standalone" label="Standalone screen">
+
+To display the paywall as a standalone screen, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -89,6 +119,9 @@ try {
 }
 ```
 
+</TabItem>
+</Tabs>
+
 :::tip
 For more details on how to display a paywall, see our [guide](flutter-present-paywalls.md).
 :::
@@ -97,13 +130,49 @@ For more details on how to display a paywall, see our [guide](flutter-present-pa
 
 When users click buttons in the paywall, the Flutter SDK automatically handles purchases and restoration. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
 
-To control or monitor processes on the paywall screen, implement the `AdaptyUIPaywallsEventsObserver` methods and set the observer before presenting any screen. If a user has performed some action, te `paywallViewDidPerformAction` will be invoked, and your app needs to respond depending on the action ID.
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="Platform view" default>
 
-For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy). So, you need to respond to actions with the `Close` and `OpenUrl` IDs.
+For platform view, you handle actions directly through callback parameters in the `AdaptyUIPaywallPlatformView` widget. For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy).
 
-:::tip
-Read our guides on how to handle button [actions](flutter-handle-paywall-actions.md) and [events](flutter-handling-events.md).
-:::
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        Navigator.of(context).pop();
+        break;
+      case OpenUrlAction(url: final url):
+        _launchUrl(url);
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+
+// Helper method to launch URLs
+Future<void> _launchUrl(String url) async {
+  try {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      print('Could not launch $url');
+    }
+  } catch (e) {
+    print('Error launching URL: $e');
+  }
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Standalone screen">
+
+For standalone screen, implement the `AdaptyUIPaywallsEventsObserver` methods and set the observer before presenting any screen. If a user has performed some action, the `paywallViewDidPerformAction` will be invoked, and your app needs to respond depending on the action ID.
 
 ```dart showLineNumbers title="Flutter"
 class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
@@ -123,8 +192,9 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
         view.dismiss();
         break;
       case OpenUrlAction(url: final url):
-        // Open the URL using url_launcher package
         _launchUrl(url);
+        break;
+      default:
         break;
     }
   }
@@ -136,17 +206,21 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        // Handle case where URL cannot be launched
         print('Could not launch $url');
       }
     } catch (e) {
-      // Handle any errors
       print('Error launching URL: $e');
     }
   }
 }
-
 ```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Read our guides on how to handle button [actions](flutter-handle-paywall-actions.md) and [events](flutter-handling-events.md).
+:::
 
 ## Next steps
 
@@ -157,6 +231,98 @@ Now, you need to [check the users' access level](flutter-check-subscription-stat
 ## Full example
 
 Here is how all those steps can be integrated in your app together.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="Platform view" default>
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+void main() async {
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+class PaywallScreen extends StatefulWidget {
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> {
+  AdaptyPaywall? _paywall;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPaywall();
+  }
+
+  Future<void> _loadPaywall() async {
+    try {
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (paywall.hasViewConfiguration) {
+        setState(() {
+          _paywall = paywall;
+        });
+      }
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      print('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      body: Center(
+        child: _paywall != null
+            ? AdaptyUIPaywallPlatformView(
+                paywall: _paywall!,
+                onDidPerformAction: (view, action) {
+                  switch (action) {
+                    case const CloseAction():
+                    case const AndroidSystemBackAction():
+                      Navigator.of(context).pop();
+                      break;
+                    case OpenUrlAction(url: final url):
+                      _launchUrl(url);
+                      break;
+                    default:
+                      break;
+                  }
+                },
+                // ... other event handlers
+              )
+            : ElevatedButton(
+                onPressed: _loadPaywall,
+                child: Text('Load Paywall'),
+              ),
+      ),
+    );
+  }
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Standalone screen">
 
 ```dart
 import 'package:flutter/material.dart';
@@ -183,7 +349,6 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
 
   Future<void> _showPaywallIfNeeded() async {
     try {
-
       final paywall = await Adapty().getPaywall(
         placementId: 'YOUR_PLACEMENT_ID',
       );
@@ -191,7 +356,6 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
       if (!paywall.hasViewConfiguration) return;
 
       final view = await AdaptyUI().createPaywallView(paywall: paywall);
-
       await view.present();
     } catch (_) {
       // Handle any errors (network, SDK issues, etc.)
@@ -207,8 +371,9 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
         view.dismiss();
         break;
       case OpenUrlAction(url: final url):
-        // Open the URL using url_launcher package
         _launchUrl(url);
+        break;
+      default:
         break;
     }
   }
@@ -220,11 +385,9 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        // Handle case where URL cannot be launched
         print('Could not launch $url');
       }
     } catch (e) {
-      // Handle any errors
       print('Error launching URL: $e');
     }
   }
@@ -234,7 +397,6 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
     return Scaffold(
       appBar: AppBar(title: Text('Adapty Paywall Example')),
       body: Center(
-        // Add a button to re-trigger the paywall for testing purposes
         child: ElevatedButton(
           onPressed: _showPaywallIfNeeded,
           child: Text('Show Paywall'),
@@ -243,5 +405,7 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
     );
   }
 }
-
 ```
+
+</TabItem>
+</Tabs>

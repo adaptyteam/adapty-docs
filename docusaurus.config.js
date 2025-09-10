@@ -355,6 +355,8 @@ const config = {
 
   plugins: [
     require('./plugins/cookie-checker-plugin'),
+    require.resolve('./plugins/custom-meta-plugin.js'),
+    // Existing build plugins
     function copyMarkdownPlugin() {
       return {
         name: 'copy-markdown-plugin',
