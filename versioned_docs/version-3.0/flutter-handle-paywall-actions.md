@@ -27,6 +27,9 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
@@ -40,6 +43,29 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 }
 ```
 
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        Navigator.of(context).pop(); // or your custom dismissal logic
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
+
 ## Open URLs from paywalls
 
 :::tip
@@ -51,12 +77,15 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
+
 ```dart
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
 import 'package:url_launcher/url_launcher_string.dart'; 
 
-void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case OpenUrlAction(url: final url):
         final Uri uri = Uri.parse(url);
@@ -68,12 +97,42 @@ void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
 }
 ```
 
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart
+// You have to install url_launcher plugin in order to handle urls:
+// https://pub.dev/packages/url_launcher
+import 'package:url_launcher/url_launcher_string.dart'; 
+
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case OpenUrlAction(url: final url):
+        final Uri uri = Uri.parse(url);
+        launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
+
 ## Log into the app
 
 To add a button that logs users into your app:
 
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
@@ -88,6 +147,29 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 }
 ```
 
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Handle login action
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
+
 ## Handle custom actions
 
 To add a button that handles any other actions:
@@ -96,6 +178,9 @@ To add a button that handles any other actions:
 2. In your app code, implement a handler for the action ID you've created.
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="standalone" label="Standalone screen" default>
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
@@ -108,3 +193,25 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
    }
 }
 ```
+
+</TabItem>
+<TabItem value="platform" label="Platform view">
+
+```dart
+AdaptyUIPaywallPlatformView(
+  paywall: paywall,
+  onDidPerformAction: (view, action) {
+    switch (action) {
+      case CustomAction(action: 'openNewPaywall'):
+        // Display another paywall
+        break;
+      default:
+        break;
+    }
+  },
+  // ... other event handlers
+)
+```
+
+</TabItem>
+</Tabs>
