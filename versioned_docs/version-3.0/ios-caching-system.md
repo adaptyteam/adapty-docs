@@ -86,7 +86,6 @@ Use this policy when:
 - You want to balance loading speed with fresh paywall data
 - You can tolerate slightly outdated information
 
-## Cache persistence and lifecycle
 Understanding the Adapty SDK’s cache behavior is critical to using it effectively. The cache:
 
 - Survives app restarts and remains available across sessions
@@ -136,7 +135,7 @@ The `refreshPaywallCache` function attempts to provide you with an up-to-date ve
 
 ## Integration with сomplex app architectures
 
-Understanding Adapty's caching enables more sophisticated integration patterns. One such option is to create a repository for paywalls that follows the specific rules you need for your use-cases. 
+Understanding Adapty's caching enables more sophisticated integration patterns. One such option is to create a repository for paywalls that follows the specific rules you need for your use-cases.
 
 Shown below is a possible strategy that attempts to pre-load the critical placements before they are needed. If it fails, the system will fall back to using the paywall service’s standard behavior (live reload unless network conditions are poor). If the `criticalPlacements` set is initialized as empty, no preloading will occur, and all paywalls will be fetched using the standard behavior of the paywall service.
 
@@ -155,57 +154,6 @@ class PaywallRepository {
           cachedPaywalls[placement] = try? await paywallService.refreshPaywallCache(for: placement)
         }
       }
-    }
-  }
-}
-```
-
-## App lifecycle integration patterns
-Integrating paywall data loading into your app's lifecycle requires careful consideration of timing, user experience, and performance. The key is fetching data when it's most likely to be needed while avoiding unnecessary requests that could impact app launch performance or user experience.
-
-The timing of your initial paywall data fetching can significantly impact perceived app performance and user experience. The strategy should vary based on how central paywalls are to your app's core functionality.
-
-#### Early launch strategy
-For apps where paywalls are critical to the user journey (freemium apps, content subscription apps), fetch paywall data early in the launch process. The previously mentioned paywall repository will automatically fetch the critical paywalls passed in during `init`.
-
-```swift
-@main
-struct MyApp: App {
-    @State private var paywallRepo: PaywallRepository
-    
-    init() {
-	    let paywallService = AdaptyPaywallService()
-	    let paywallRepository = PaywallRepository(paywallService: paywallService, criticalPlacements: [Placement.onboarding, Placement.settings])
-	    self.paywallRepo = paywallRepository
-    }
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(paywallRepo)
-        }
-    }
-}
-```
-
-#### Lazy loading strategy
-For apps where paywalls are secondary features, or you don’t frequently update or A/B test your paywalls, defer paywall loading until actually needed:
-
-```swift
-extension PaywallRepository {
-	private func paywall(for placement: Placement) async throws -> AdaptyPaywall {
-    if let cached = cachedPaywalls[placement] {
-      Task {
-        // Opportunistically refresh paywall cache for next fetch
-        if let fresh = try? await paywallService.refreshPaywallCache(for: placement) {
-          cachedPaywalls[placement] = fresh
-        }
-      }
-      return cached
-    } else {
-      let paywall = try await paywallService.getPaywall(for: placement)
-      cachedPaywalls[placement] = paywall
-      return paywall
     }
   }
 }
