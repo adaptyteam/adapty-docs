@@ -29,9 +29,9 @@ This guide is for **new Paywall Builder paywalls** only, which require SDK v3.0 
 
 Adapty React Native SDK provides two ways to present paywalls:
 
-- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic. Ideal for required paywalls where you want to ensure users complete the purchase flow before proceeding.
+- **Embedded component**: Embedded component gives you complete control over the UI and logic. 
 
-- **Standalone screen**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional paywalls where users should be able to skip or dismiss the content.
+- **Standalone screen**: Modal presentation.
 
 ## Embed in component hierarchy
 
