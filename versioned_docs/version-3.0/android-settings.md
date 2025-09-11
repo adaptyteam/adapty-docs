@@ -1,5 +1,5 @@
 ---
-title: "Google Play Store credentials"
+title: "Google Play Store settings"
 description: "Configure Android settings in Adapty for seamless subscription management."
 metadataTitle: "Configuring Android Settings | Adapty Docs"
 ---
@@ -11,7 +11,7 @@ For Adapty Android SDK to work, you need to configure several parameters.
 
 
 <Zoom>
-  <img src={require('./img/f6d76ec-app-settings_android.webp').default}
+  <img src={require('./img/settings-android.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -27,8 +27,9 @@ For Adapty Android SDK to work, you need to configure several parameters.
 
 
 
-| Field                           | Description                                                                                                                                                                                   |
-| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Package name**                | The Package name is the unique identifier of your app in the Google Play Store. This is required for the basic functionality of Adapty, such as subscription processing.                      |
-| **Service account key file**    | [Keys](create-service-account) to enable secure authentication and validation of purchases.                                                                                               |
-| **Google Play RTDN topic name** | URL that is used to enable [server2server notifications](enable-real-time-developer-notifications-rtdn) from the Play Store to monitor and respond to users' subscription status changes. |
+| Field                           | Description                                                                                                                                                                                    |
+|:--------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Package name**                | The Package name is the unique identifier of your app in the Google Play Store. This is required for the basic functionality of Adapty, such as subscription processing.                       |
+| **Service account key file**    | [Keys](create-service-account) to enable secure authentication and validation of purchases.                                                                                                    |
+| **Google Play RTDN topic name** | URL that is used to enable [server2server notifications](enable-real-time-developer-notifications-rtdn) from the Play Store to monitor and respond to users' subscription status changes.      |
+| **Auto-consume purchases**      | Optional. Enabled by default. This setting controls consuming purchases after successful validation automatically. This helps to prevent duplicate purchases and ensures proper purchase flow. |
