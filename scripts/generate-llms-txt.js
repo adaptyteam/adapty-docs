@@ -4,7 +4,16 @@ const matter = require('gray-matter');
 
 const DOCS_DIR = path.join(__dirname, '..', 'versioned_docs', 'version-3.0');
 const SIDEBAR_PATH = path.join(__dirname, '..', 'versioned_sidebars', 'version-3.0-sidebars.json');
-const OUTPUT_PATH = path.join(__dirname, '..', 'static', 'llms.txt');
+const STATIC_DIR = path.join(__dirname, '..', 'static');
+
+// Platform configurations
+const PLATFORMS = {
+  ios: { sidebarKey: 'sdkios', name: 'iOS SDK' },
+  android: { sidebarKey: 'sdkandroid', name: 'Android SDK' },
+  'react-native': { sidebarKey: 'sdkreactnative', name: 'React Native SDK' },
+  flutter: { sidebarKey: 'sdkflutter', name: 'Flutter SDK' },
+  unity: { sidebarKey: 'sdkunity', name: 'Unity SDK' }
+};
 
 // Helper to get doc info from file
 async function getDocInfo(docId, sidebarLabel) {
@@ -34,8 +43,33 @@ async function walkSidebar(items, out = []) {
   return out;
 }
 
+// Generate content for a specific platform
+async function generatePlatformContent(platformKey, platformConfig, sidebar) {
+  const sidebarItems = sidebar[platformConfig.sidebarKey];
+  if (!sidebarItems) {
+    console.warn(`No sidebar found for platform: ${platformKey}`);
+    return null;
+  }
+
+  const docs = await walkSidebar(sidebarItems);
+  
+  let content = `# ${platformConfig.name} Documentation Index\n`;
+  content += '\n---\n';
+  for (const doc of docs) {
+    content += `- [${doc.title}](https://adapty.io/docs/${doc.docId}.md)`;
+    if (doc.description) content += `  \n  _${doc.description}_`;
+    content += '\n';
+  }
+  content += '\n---\n';
+  content += `\n_Last updated: ${new Date().toISOString()}_\n`;
+  
+  return content;
+}
+
 async function main() {
   const sidebar = require(SIDEBAR_PATH);
+  
+  // Generate main llms.txt (tutorial sidebar)
   const sidebarItems = sidebar.tutorialSidebar;
   const docs = await walkSidebar(sidebarItems);
 
@@ -49,8 +83,22 @@ async function main() {
   content += '\n---\n';
   content += `\n_Last updated: ${new Date().toISOString()}_\n`;
 
-  await fs.writeFile(OUTPUT_PATH, content);
+  await fs.writeFile(path.join(STATIC_DIR, 'llms.txt'), content);
   console.log('Successfully generated llms.txt');
+
+  // Generate platform-specific files
+  for (const [platformKey, platformConfig] of Object.entries(PLATFORMS)) {
+    const platformContent = await generatePlatformContent(platformKey, platformConfig, sidebar);
+    if (platformContent) {
+      // Generate regular platform file
+      await fs.writeFile(path.join(STATIC_DIR, `${platformKey}-llms.txt`), platformContent);
+      console.log(`Successfully generated ${platformKey}-llms.txt`);
+      
+      // Generate full platform file (same content for now, but can be extended)
+      await fs.writeFile(path.join(STATIC_DIR, `${platformKey}-llms-full.txt`), platformContent);
+      console.log(`Successfully generated ${platformKey}-llms-full.txt`);
+    }
+  }
 }
 
 main().catch(e => { console.error(e); process.exit(1); }); 
