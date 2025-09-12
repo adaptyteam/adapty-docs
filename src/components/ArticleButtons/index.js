@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Clipboard from 'clipboard';
 import styles from './styles.module.css';
 
 function ClipboardIcon() {
@@ -15,6 +16,10 @@ function MarkdownIcon() {
 
 export default function ArticleButtons({ articleUrl }) {
   const [copied, setCopied] = useState(false);
+  const [markdownContent, setMarkdownContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const buttonRef = useRef(null);
+  const clipboardRef = useRef(null);
   
   console.log('ArticleButtons rendered with articleUrl:', articleUrl);
 
@@ -38,18 +43,69 @@ export default function ArticleButtons({ articleUrl }) {
     return `${normalizedUrl}.md`;
   };
 
-  const handleCopyMarkdown = async () => {
-    try {
+  // Load markdown content when component mounts or URL changes
+  useEffect(() => {
+    const loadMarkdownContent = async () => {
       const markdownUrl = getMarkdownUrl();
-      console.log('Fetching markdown from:', markdownUrl);
-      const response = await fetch(markdownUrl);
-      const text = await response.text();
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy markdown:', error);
+      console.log('Loading markdown from:', markdownUrl);
+      
+      try {
+        setIsLoading(true);
+        const response = await fetch(markdownUrl);
+        const text = await response.text();
+        setMarkdownContent(text);
+        console.log('Markdown content loaded successfully');
+      } catch (error) {
+        console.error('Failed to load markdown:', error);
+        setMarkdownContent('');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMarkdownContent();
+  }, [articleUrl]);
+
+  // Initialize Clipboard.js when content is loaded
+  useEffect(() => {
+    if (markdownContent && buttonRef.current) {
+      // Clean up existing clipboard instance
+      if (clipboardRef.current) {
+        clipboardRef.current.destroy();
+      }
+
+      // Create new clipboard instance
+      clipboardRef.current = new Clipboard(buttonRef.current, {
+        text: () => markdownContent
+      });
+
+      // Success event
+      clipboardRef.current.on('success', (e) => {
+        console.log('Clipboard.js: Copy successful');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        e.clearSelection();
+      });
+
+      // Error event
+      clipboardRef.current.on('error', (e) => {
+        console.error('Clipboard.js: Copy failed', e);
+        // You could show an error message here if needed
+      });
+
+      // Cleanup on unmount
+      return () => {
+        if (clipboardRef.current) {
+          clipboardRef.current.destroy();
+        }
+      };
     }
+  }, [markdownContent]);
+
+  const handleCopyMarkdown = () => {
+    // The actual copy is handled by Clipboard.js
+    // This function is just for any additional logic if needed
+    console.log('Copy button clicked, Clipboard.js will handle the copy');
   };
 
   const handleViewMarkdown = () => {
@@ -61,11 +117,13 @@ export default function ArticleButtons({ articleUrl }) {
   return (
     <div className={styles.buttonRow}>
       <button 
+        ref={buttonRef}
         className={styles.button}
         onClick={handleCopyMarkdown}
+        disabled={isLoading || !markdownContent}
       >
         <ClipboardIcon />
-        {copied ? 'Copied!' : 'Copy for LLM'}
+        {isLoading ? 'Loading...' : copied ? 'Copied!' : 'Copy for LLM'}
       </button>
       <span className={styles.divider} />
       <button 
