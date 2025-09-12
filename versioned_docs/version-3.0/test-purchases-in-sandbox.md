@@ -2,7 +2,7 @@
 title: "Test in-app purchases in App Store Sandbox"
 description: "Test purchases in the sandbox environment to ensure smooth transactions."
 metadataTitle: "Testing Purchases in Sandbox Mode | Adapty Docs"
-keywords: ['test']
+keywords: ['test', 'sandbox']
 rank: 100
 ---
 
