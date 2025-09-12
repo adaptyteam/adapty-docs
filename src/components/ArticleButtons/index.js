@@ -17,7 +17,6 @@ function MarkdownIcon() {
 export default function ArticleButtons({ articleUrl }) {
   const [copied, setCopied] = useState(false);
   const [markdownContent, setMarkdownContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const buttonRef = useRef(null);
   const clipboardRef = useRef(null);
   
@@ -50,7 +49,6 @@ export default function ArticleButtons({ articleUrl }) {
       console.log('Loading markdown from:', markdownUrl);
       
       try {
-        setIsLoading(true);
         const response = await fetch(markdownUrl);
         const text = await response.text();
         setMarkdownContent(text);
@@ -58,8 +56,6 @@ export default function ArticleButtons({ articleUrl }) {
       } catch (error) {
         console.error('Failed to load markdown:', error);
         setMarkdownContent('');
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -103,8 +99,29 @@ export default function ArticleButtons({ articleUrl }) {
   }, [markdownContent]);
 
   const handleCopyMarkdown = () => {
-    // The actual copy is handled by Clipboard.js
-    // This function is just for any additional logic if needed
+    // If content isn't loaded yet, fetch it on demand
+    if (!markdownContent) {
+      const loadAndCopy = async () => {
+        try {
+          const markdownUrl = getMarkdownUrl();
+          const response = await fetch(markdownUrl);
+          const text = await response.text();
+          setMarkdownContent(text);
+          
+          // Wait a bit for the content to be set and Clipboard.js to initialize
+          setTimeout(() => {
+            if (buttonRef.current) {
+              buttonRef.current.click();
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Failed to load markdown on demand:', error);
+        }
+      };
+      
+      loadAndCopy();
+    }
+    // If content is already loaded, Clipboard.js will handle the copy
     console.log('Copy button clicked, Clipboard.js will handle the copy');
   };
 
@@ -120,10 +137,9 @@ export default function ArticleButtons({ articleUrl }) {
         ref={buttonRef}
         className={styles.button}
         onClick={handleCopyMarkdown}
-        disabled={isLoading || !markdownContent}
       >
         <ClipboardIcon />
-        {isLoading ? 'Loading...' : copied ? 'Copied!' : 'Copy for LLM'}
+        {copied ? 'Copied!' : 'Copy for LLM'}
       </button>
       <span className={styles.divider} />
       <button 
