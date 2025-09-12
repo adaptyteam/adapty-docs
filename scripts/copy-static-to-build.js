@@ -40,13 +40,33 @@ async function copyStaticMarkdownAndLlms() {
       copied.push('llms-full.txt');
       console.log('Copied llms-full.txt to build directory');
     }
+    
+    // Copy platform-specific LLM files
+    const platforms = ['ios', 'android', 'react-native', 'flutter', 'unity'];
+    for (const platform of platforms) {
+      // Copy regular platform LLM file
+      const platformLlmsPath = path.join(staticDir, `${platform}-llms.txt`);
+      if (await fs.pathExists(platformLlmsPath)) {
+        await fs.copy(platformLlmsPath, path.join(buildDir, `${platform}-llms.txt`), { overwrite: true });
+        copied.push(`${platform}-llms.txt`);
+        console.log(`Copied ${platform}-llms.txt to build directory`);
+      }
+      
+      // Copy full platform LLM file
+      const platformLlmsFullPath = path.join(staticDir, `${platform}-llms-full.txt`);
+      if (await fs.pathExists(platformLlmsFullPath)) {
+        await fs.copy(platformLlmsFullPath, path.join(buildDir, `${platform}-llms-full.txt`), { overwrite: true });
+        copied.push(`${platform}-llms-full.txt`);
+        console.log(`Copied ${platform}-llms-full.txt to build directory`);
+      }
+    }
     if (copied.length === 0) {
-      console.log('No markdown files or llms.txt found to copy.');
+      console.log('No markdown files or LLM files found to copy.');
     } else {
-      console.log('Successfully copied markdown files and llms.txt to build directory');
+      console.log('Successfully copied markdown files and LLM files to build directory');
     }
   } catch (err) {
-    console.error('Error copying markdown files and llms.txt:', err);
+    console.error('Error copying markdown files and LLM files:', err);
     process.exit(1);
   }
 }
