@@ -61,6 +61,37 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (the cor
 />
 </Zoom>
 
+## Test notifications
+
+To check whether you have successfully subscribed to real-time developer notifications:
+
+1. Save changes in the Google Play Console settings.
+2. Under the **Topic name** in Google Play Console, click **Send test notification**.
+
+<Zoom>
+  <img src={require('./img/rtdn-test.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Go to the [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) in Adapty. If a test notification has been sent, you'll see its status above the topic name.
+
+<Zoom>
+  <img src={require('./img/rtdn-adapty-test.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## Fixing incorrect format in Enable Pub/Sub API field
 
 If the contents of the **Enable Pub/Sub API** field are in the wrong format (the correct format starts with `projects/...`), follow these steps to troubleshoot and resolve the issue:
