@@ -6,6 +6,9 @@ rank: 100
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
+
+<CustomDocCardList />
 
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
@@ -55,9 +58,3 @@ To launch your onboarding:
    - [Flutter](flutter-onboardings.md)
    - [React Native](react-native-onboardings.md)
 4. Test the onboarding and release it for your users.
-
-To grow further, you can also try more advanced ways to work with onboardings:
-
-- Add more audiences to the placement to show different onboardings to different user groups.
-- Run A/B tests of onboardings to find the most efficient option.
-- Connect onboardings to paywalls and increase the conversion.
