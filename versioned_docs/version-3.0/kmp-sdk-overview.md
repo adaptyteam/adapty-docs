@@ -9,7 +9,7 @@ displayed_sidebar: sdkkmp
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Kotlin-Multiplatform.svg?style=flat&logo=kotlin)](https://github.com/adaptyteam/AdaptySDK-Kotlin-Multiplatform/releases)
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-KMP.svg?style=flat&logo=kotlin)](https://github.com/adaptyteam/AdaptySDK-KMP/releases)
 
 Welcome! We're here to make in-app purchases a breeze 🚀
 
