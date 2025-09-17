@@ -8,7 +8,7 @@ module.exports = function cookieCheckerPlugin(context, options) {
             tagName: 'script',
             attributes: {
               type: 'text/javascript',
-              src: '/docs/js/cookie-checker.js',
+              src: '/docs/cookie-checker.js',
             },
           },
         ],
