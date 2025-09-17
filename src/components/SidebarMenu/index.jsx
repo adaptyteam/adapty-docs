@@ -11,7 +11,7 @@ export default function SidebarMenu() {
   const { pathname } = router.location;
   const activeDocContext = useActiveDocContext();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   
   // Debug: log the pathname and active context
   
@@ -22,11 +22,12 @@ export default function SidebarMenu() {
     { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
+      { name: 'Kotlin Multiplatform', path: '/docs/kotlin-multiplatform-sdk-overview', sidebarId: 'sdkkmp' },
   ];
   
   // Try to detect current platform from active sidebar
   let currentPlatform = platforms[0]; // Default to iOS
-  
+
   
   if (activeDocContext && activeDocContext.sidebar) {
     const sidebarId = activeDocContext.sidebar;
@@ -50,6 +51,8 @@ export default function SidebarMenu() {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkflutter');
     } else if (pathname.includes('unity-sdk') || pathname.includes('unity')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
+    } else if (pathname.includes('kmp') || pathname.includes('kotlin-multiplatform')) {
+        currentPlatform = platforms.find(p => p.sidebarId === 'sdkkmp');
     } else {
       // Fallback to the old logic
       currentPlatform = platforms.find(p => {
@@ -58,7 +61,7 @@ export default function SidebarMenu() {
       }) || platforms[0];
     }
   }
-  
+
 
   const handlePlatformChange = (platform) => {
     // Get the current document ID
@@ -84,11 +87,11 @@ export default function SidebarMenu() {
   
   // Get the current document ID from activeDocContext
   const currentDocId = activeDocContext?.activeDoc?.id;
-  
+
   
   // Check if current document belongs to a mobile SDK sidebar
   const isMobileSdkPage = currentDocId && isMobileSdkDocument(currentDocId);
-  
+
   
   // Also check if we're on a platform overview page by URL
   const isOverviewPage = pathname.includes('-sdk-overview');
@@ -123,7 +126,7 @@ export default function SidebarMenu() {
   if (!shouldShowSwitcher) {
     return null;
   }
-  
+
   
   return (
     <div style={{
