@@ -41,7 +41,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation platform(libs.adapty.bom)
                 implementation libs.adapty.kmp
             }
         }
@@ -57,7 +56,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(platform(libs.adapty.bom))  
                 implementation(libs.adapty.kmp)
             }
         }
@@ -74,13 +72,11 @@ kotlin {
 // libs.versions.toml
 [versions]
 ..
-adapty-bom    = "<the latest SDK version>"
 adapty-kmp    = "<the latest SDK version>"
 
 [libraries]
 ..
-adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adapty-bom" }
-adapty-kmp = { module = "com.adapty:adapty-kmp", version.ref = "adapty-kmp" }
+adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
 
 // build.gradle.kts
 
@@ -88,7 +84,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(platform(libs.adapty.bom))  
                 implementation(libs.adapty.kmp)
             }
         }
