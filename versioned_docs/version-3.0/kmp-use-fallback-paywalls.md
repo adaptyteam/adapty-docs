@@ -8,37 +8,46 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-To use fallback paywalls and onboardings:
+To use fallback paywalls in your Kotlin Multiplatform project, you need to place the fallback JSON file in the appropriate location for each platform and then call the `setFallbackPaywalls` method.
 
-1. Place the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `assets` or `res/raw` directory of your Kotlin Multiplatform project.
-2. Call the `.setFallbackPaywalls` method. Place this method in your code **before** fetching a paywall or onboarding, ensuring that the mobile app possesses it when a fallback paywall or onboarding is required to replace the standard one.
+## Platform-specific setup
 
-Here's an example of retrieving fallback paywall or onboarding data from a locally stored JSON file named `ios_fallback.json`.
+### For Android
 
-:::note
-The SDK provides two approaches for setting fallback paywalls:
-- **Callback-based**: `setFallbackPaywalls(assetId, onError)` - for immediate execution
-- **Suspend function**: `awaitSetFallbackPaywalls(assetId)` - for use in coroutines
-:::
+1. Place the fallback file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `android/app/src/main/assets/` directory.
+2. Use the relative path from the `assets` directory as the `assetId` parameter.
+
+### For iOS
+
+1. In Xcode, use the menu **File** -> **Add Files to "YourProjectName"** to add the fallback file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard).
+2. Use the filename (including extension) as the `assetId` parameter.
+
+## Implementation
+
+Here's an example of setting up fallback paywalls for both platforms:
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 
-// Using callback-based approach
-Adapty.setFallbackPaywalls(assetId = "ios_fallback.json") { error ->
-    if (error != null) {
-        // handle the error
+Adapty.setFallbackPaywalls(assetId = "fallback.json")
+    .onSuccess { 
+        // Fallback paywalls loaded successfully
     }
-}
-
-// Alternative: Using suspend function approach
-// Adapty.awaitSetFallbackPaywalls(assetId = "ios_fallback.json")
+    .onError { error ->
+        // Handle the error
+    }
 ```
+
+:::note
+The same `assetId` parameter works for both platforms, but the file needs to be placed in the correct location for each platform:
+- **Android**: `android/app/src/main/assets/fallback.json`
+- **iOS**: Add to Xcode project bundle as `fallback.json`
+:::
 
 Parameters:
 
 | Parameter   | Description                                                                                                                                                                       |
 | :---------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **assetId** | The filename (including extension) of the fallback paywalls JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). This file should be placed in your app's `assets` or `res/raw` directory. |
+| **assetId** | The filename (including extension) of the fallback paywalls JSON file. For Android, this should be the relative path from the `assets` directory. For iOS, this should be the filename as it appears in the Xcode project bundle. |
 
 <SampleApp /> 

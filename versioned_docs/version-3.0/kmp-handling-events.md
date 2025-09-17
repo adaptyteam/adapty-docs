@@ -181,7 +181,7 @@ override fun paywallViewDidStartPurchase(view: AdaptyUIView, product: AdaptyPayw
 
 ### Successful, canceled, or pending purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked. By default, it automatically dismisses the paywall unless the purchase was canceled by the user:
+If a purchase succeeds, this method will be invoked. By default, it automatically dismisses the paywall unless the purchase was canceled by the user:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishPurchase(
@@ -270,7 +270,7 @@ We recommend dismissing the paywall screen in case of successful purchase.
 
 ### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If a purchase fails, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailPurchase(
@@ -309,7 +309,7 @@ override fun paywallViewDidFailPurchase(
 
 ### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishRestore(view: AdaptyUIView, profile: AdaptyProfile) {

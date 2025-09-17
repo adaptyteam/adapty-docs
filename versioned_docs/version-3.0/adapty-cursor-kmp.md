@@ -56,16 +56,9 @@ To add Adapty documentation to Cursor:
 
 For platform-specific development, we recommend adding the GitHub repositories for the Adapty SDKs you're using. This gives you access to the latest code examples, changelogs, and implementation details.
 
-Follow the same process as above, but use the relevant SDK repository URL:
+Follow the same process as above, but use the KMP SDK repository URL: `https://github.com/adaptyteam/AdaptySDK-KMP`
 
-- **iOS SDK**: `https://github.com/adaptyteam/AdaptySDK-iOS`
-- **Android SDK**: `https://github.com/adaptyteam/AdaptySDK-Android`
-- **Kotlin Multiplatform SDK**: `https://github.com/adaptyteam/AdaptySDK-Kotlin-Multiplatform`
-- **Flutter SDK**: `https://github.com/adaptyteam/AdaptySDK-Flutter`
-- **React Native SDK**: `https://github.com/adaptyteam/AdaptySDK-React-Native`
-- **Unity SDK**: `https://github.com/adaptyteam/AdaptySDK-Unity`
-
-Name each doc `Adapty <Platform> SDK` (e.g., `Adapty Kotlin Multiplatform SDK`).
+Name this doc `Adapty Kotlin Multiplatform SDK` for your convenience.
 
 ## Reference Adapty in your prompts
 

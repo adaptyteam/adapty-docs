@@ -70,9 +70,9 @@ To receive messages from Adapty, you need to make some additional configuration:
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.OnProfileUpdatedListener
 
-Adapty.setOnProfileUpdatedListener(OnProfileUpdatedListener { profile ->
+Adapty.setOnProfileUpdatedListener { profile ->
     // handle any changes to subscription state
-})
+}
 ```
 
 Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.

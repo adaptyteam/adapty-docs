@@ -122,11 +122,13 @@ Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a
 
 
 ```kotlin showLineNumbers
-Adapty.presentCodeRedemptionSheet { error ->
-    error?.let {
+Adapty.presentCodeRedemptionSheet()
+    .onSuccess {
+        // code redemption sheet presented successfully
+    }
+    .onError { error ->
         // handle the error
     }
-}
 ```
 
 :::danger
