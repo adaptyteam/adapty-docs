@@ -34,8 +34,6 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
@@ -52,24 +50,6 @@ Adapty.getPaywall(
     // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // the requested paywall
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
@@ -92,9 +72,6 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin showLineNumbers
 Adapty.getPaywallProducts(paywall).onSuccess { products ->
     // the requested products
@@ -102,24 +79,6 @@ Adapty.getPaywallProducts(paywall).onSuccess { products ->
     // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywallProducts(paywall, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
-        // the requested products
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 Response parameters:
 

@@ -13,5 +13,4 @@ This page contains guides for implementing paywalls manually in your Kotlin Mult
 - **[Restore purchases](kmp-restore-purchase)** - Restore previous purchases
 - **[Implement Observer mode](implement-observer-mode-kmp)** - Set up Observer mode for analytics and paywall integration
 - **[Report transactions in Observer Mode](report-transactions-observer-mode-kmp)** - Report purchase transactions in Observer Mode
-- **[Present Paywall Builder paywalls in Observer mode](kmp-present-paywall-builder-paywalls-in-observer-mode)** - Display Paywall Builder paywalls in Observer mode
 - **[Troubleshooting](kmp-troubleshoot-purchases)** - Resolve common purchase issues

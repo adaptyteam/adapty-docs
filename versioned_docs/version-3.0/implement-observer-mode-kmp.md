@@ -30,20 +30,18 @@ When running in Observer mode, Adapty SDK won't close any transactions, so make 
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig
 
-class MyApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        Adapty.activate(
-            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-                .withObserverMode(true) // default false
-                .build()
-        ) { error ->
-            error?.let {
-                // handle the error
-            }
-        }
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withObserverMode(true)     // default false
+    .build()
+
+Adapty.activate(configuration = config)
+    .onSuccess {
+        Log.d("Adapty", "SDK initialised in observer mode")
     }
-}
+    .onError { error ->
+        Log.e("Adapty", "Adapty init error: ${error.message}")
+    }
 ```
 
 Parameters:
@@ -56,5 +54,5 @@ Parameters:
 
 If you also want to use Adapty's paywalls and A/B testing features, you can — but it requires some extra setup in Observer mode. Here's what you'll need to do in addition to the steps above:
 
-1. Display paywalls as usual for [remote config paywalls](present-remote-config-paywalls-kmp.md). For Paywall Builder paywalls, follow the specific setup guides for [Kotlin Multiplatform](kmp-present-paywall-builder-paywalls-in-observer-mode).
+1. Display paywalls as usual for [remote config paywalls](present-remote-config-paywalls-kmp.md).
 3. [Associate paywalls](report-transactions-observer-mode-kmp) with purchase transactions.
