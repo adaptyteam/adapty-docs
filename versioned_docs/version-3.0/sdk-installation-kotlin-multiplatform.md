@@ -34,7 +34,7 @@ Choose your dependency setup method:
 - If you use version catalogs, add dependencies to your `libs.versions.toml` file and then, reference it in `build.gradle.kts`
 
 <Tabs>
-<TabItem value="module-level build.gradle.kts" label="module-level build.gradle" default>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
 ```kotlin showLineNumbers
 kotlin {
@@ -66,7 +66,7 @@ kotlin {
 </TabItem>
 
 
-<TabItem value="version catalog" label="Versions library" default>
+<TabItem value="version-catalog" label="Versions library" default>
 
 ```toml showLineNumbers
 // libs.versions.toml
