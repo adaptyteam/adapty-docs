@@ -350,9 +350,9 @@ const config = {
       async: true,
     },
   ],
-  
+
   plugins: [
-    // Custom meta plugin for keywords and rank
+    require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
     // Existing build plugins
     function copyMarkdownPlugin() {

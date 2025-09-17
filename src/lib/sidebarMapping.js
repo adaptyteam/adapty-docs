@@ -118,5 +118,3 @@ export function getCorrespondingDocId(docId, targetSidebarId) {
 export { sidebarMapping, titleGroups };
 
 // Log the generated mapping for verification
-console.log('Generated sidebar mapping:', sidebarMapping);
-console.log('Title groups:', titleGroups);

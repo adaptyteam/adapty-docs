@@ -19,26 +19,21 @@ export default function ArticleButtons({ articleUrl }) {
   const [markdownContent, setMarkdownContent] = useState('');
   const buttonRef = useRef(null);
   const clipboardRef = useRef(null);
-  
-  console.log('ArticleButtons rendered with articleUrl:', articleUrl);
+
 
   // Helper function to determine the markdown URL
   const getMarkdownUrl = () => {
-    console.log('getMarkdownUrl called with articleUrl:', articleUrl);
     
     // Normalize the articleUrl to handle both full URLs and pathnames
     const normalizedUrl = articleUrl.replace(/\/$/, '');
-    console.log('normalizedUrl:', normalizedUrl);
     
     // Check if the current URL is the docs root path
     if (normalizedUrl === 'http://localhost:3000/docs' || 
         normalizedUrl === 'https://adapty.io/docs') {
-      console.log('Detected docs root, serving what-is-adapty.md');
       return normalizedUrl + '/what-is-adapty.md';
     }
     
     // For all other URLs, append .md as before
-    console.log('Not docs root, appending .md');
     return `${normalizedUrl}.md`;
   };
 
@@ -46,15 +41,12 @@ export default function ArticleButtons({ articleUrl }) {
   useEffect(() => {
     const loadMarkdownContent = async () => {
       const markdownUrl = getMarkdownUrl();
-      console.log('Loading markdown from:', markdownUrl);
-      
+
       try {
         const response = await fetch(markdownUrl);
         const text = await response.text();
         setMarkdownContent(text);
-        console.log('Markdown content loaded successfully');
       } catch (error) {
-        console.error('Failed to load markdown:', error);
         setMarkdownContent('');
       }
     };
@@ -77,7 +69,6 @@ export default function ArticleButtons({ articleUrl }) {
 
       // Success event
       clipboardRef.current.on('success', (e) => {
-        console.log('Clipboard.js: Copy successful');
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
         e.clearSelection();
@@ -107,7 +98,7 @@ export default function ArticleButtons({ articleUrl }) {
           const response = await fetch(markdownUrl);
           const text = await response.text();
           setMarkdownContent(text);
-          
+
           // Wait a bit for the content to be set and Clipboard.js to initialize
           setTimeout(() => {
             if (buttonRef.current) {
@@ -115,19 +106,16 @@ export default function ArticleButtons({ articleUrl }) {
             }
           }, 100);
         } catch (error) {
-          console.error('Failed to load markdown on demand:', error);
         }
       };
-      
+
       loadAndCopy();
     }
     // If content is already loaded, Clipboard.js will handle the copy
-    console.log('Copy button clicked, Clipboard.js will handle the copy');
   };
 
   const handleViewMarkdown = () => {
     const markdownUrl = getMarkdownUrl();
-    console.log('Opening markdown URL:', markdownUrl);
     window.open(markdownUrl, '_blank');
   };
 
