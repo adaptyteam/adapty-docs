@@ -14,11 +14,13 @@ val profileParameters = AdaptyProfileParameters.Builder()
     .withAttStatus(3) // 3 = ATTrackingManagerAuthorizationStatusAuthorized
     .build()
 
-Adapty.updateProfile(profileParameters) { error ->
-    error?.let {
+Adapty.updateProfile(profileParameters)
+    .onSuccess {
+        // ATT status updated successfully
+    }
+    .onError { error ->
         // handle AdaptyError
     }
-}
 ```
 
 :::warning

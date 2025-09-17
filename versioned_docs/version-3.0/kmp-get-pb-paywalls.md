@@ -95,10 +95,12 @@ if (paywall.hasViewConfiguration) {
     // use your custom logic
 }
 ```
-| Parameter       | Presence       | Description                                                  |
-| :-------------- | :------------- | :----------------------------------------------------------- |
-| **paywall**     | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **loadTimeout** | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
+| Parameter                    | Presence       | Description                                                  |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**                  | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
+| **loadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. For Kotlin Multiplatform: You can create `TimeInterval` with extension functions (like `5.seconds`, where `.seconds` is from `import com.adapty.utils.seconds`), or `TimeInterval.seconds(5)`. To set no limitation, use `TimeInterval.INFINITE`. |
+| **preloadProducts**          | optional       | Set to `true` to preload products for better performance. When enabled, products are loaded in advance, reducing the time needed to display the paywall. |
+| **androidPersonalizedOffers** | optional       | Define a dictionary of product IDs and their personalized offer status for Android. When set to `true` for a product ID, it indicates that the product has a personalized offer available. This is used to display personalized pricing or offers to users. |
 
 :::note
 If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder).
@@ -128,21 +130,14 @@ import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyPaywall
 import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
-// Using suspend function with Result
-val result: AdaptyResult<AdaptyPaywall> = Adapty.getPaywallForDefaultAudience(
+Adapty.getPaywallForDefaultAudience(
     placementId = "YOUR_PLACEMENT_ID",
     locale = "en",
-    fetchPolicy = AdaptyPaywallFetchPolicy.Default
-)
-when (result) {
-    is AdaptyResult.Success -> {
-        val paywall = result.value
-        // the requested paywall
-    }
-    is AdaptyResult.Error -> {
-        val error = result.error
-        // handle the error
-    }
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
 }
 ```
 

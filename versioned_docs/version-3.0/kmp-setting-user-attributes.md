@@ -31,11 +31,13 @@ val builder = AdaptyProfileParameters.Builder()
     .withGender(AdaptyProfile.Gender.FEMALE)
     .withBirthday(AdaptyProfile.Date(1970, 1, 3))
   
-Adapty.updateProfile(builder.build()) { error ->
-    error?.let {
+Adapty.updateProfile(builder.build())
+    .onSuccess {
+        // profile updated successfully
+    }
+    .onError { error ->
         // handle the error
     }
-}
 ```
 
 

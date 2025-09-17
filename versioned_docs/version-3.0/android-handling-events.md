@@ -94,7 +94,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Successful, canceled, or pending purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFinished(
@@ -173,7 +173,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If purchase fails, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFailure(
@@ -211,7 +211,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onRestoreSuccess(

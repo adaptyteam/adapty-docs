@@ -23,18 +23,13 @@ When you decide whether to show a paywall or paid content to a user, you check t
 The easiest way to get the subscription status is to use the `getProfile` method to access the profile:
 
 ```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // check the access
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
     }
-}
+    .onError { error ->
+        // handle the error
+    }
 ```
 
 ### Listen to subscription updates
@@ -58,7 +53,7 @@ class SubscriptionManager {
     
     // Use stored profile instead of calling getProfile()
     fun hasAccess(): Boolean {
-        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+        return currentProfile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
     }
 }
 ```
@@ -72,39 +67,47 @@ Adapty automatically calls the profile update listener when your app starts, pro
 When you need to make immediate decisions about showing paywalls or granting access to paid features, you can check the user's profile directly. This approach is useful for scenarios like app launch, when entering premium sections, or before displaying specific content.
 
 ```kotlin showLineNumbers
-private fun initializePaywall() {
-    loadPaywall { paywallView ->
-        checkAccessLevel { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    if (!result.value && paywallView != null) {
-                        // Show paywall if no access
-                        // Implementation depends on your app's UI framework
-                    }
-                }
-                is AdaptyResult.Error -> {
-                    if (paywallView != null) {
-                        // Show paywall if access check fails
-                        // Implementation depends on your app's UI framework
-                    }
-                }
+private fun checkAccessAndShowPaywall() {
+    // First, check if user has access
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasAccess = profile.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+            
+            if (!hasAccess) {
+                // User doesn't have access, show paywall
+                showPaywall()
+            } else {
+                // User has access, show premium content
+                showPremiumContent()
             }
         }
-    }
+        .onError { error ->
+            // If we can't check access, show paywall as fallback
+            showPaywall()
+        }
 }
 
-private fun checkAccessLevel(callback: (AdaptyResult<Boolean>) -> Unit) {
-    Adapty.getProfile { result ->
-        when (result) {
-            is AdaptyResult.Success -> {
-                val hasAccess = result.value.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
-                callback(AdaptyResult.Success(hasAccess))
-            }
-            is AdaptyResult.Error -> {
-                callback(AdaptyResult.Error(result.error))
+private fun showPaywall() {
+    // Get and display paywall using the KMP SDK
+    Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            if (paywall.hasViewConfiguration) {
+                val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+                paywallView?.present()
+            } else {
+                // Handle remote config paywall or show custom UI
+                handleRemoteConfigPaywall(paywall)
             }
         }
-    }
+        .onError { error ->
+            // Handle paywall loading error
+            showError("Unable to load paywall")
+        }
+}
+
+private fun showPremiumContent() {
+    // Show your premium content here
+    // This is where you unlock paid features
 }
 ```
 

@@ -1,202 +1,148 @@
 ---
 title: "Identify users in Kotlin Multiplatform SDK"
-description: "Learn how to identify users in your Kotlin Multiplatform app with Adapty."
-metadataTitle: "Identify Users | Adapty Docs"
-keywords: ['identify', 'user id', 'customer id']
-rank: 95
-displayed_sidebar: sdkkmp
+description: "Quickstart guide to setting up Adapty for in-app subscription management in KMP."
+metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 50
 ---
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
-User identification is optional but recommended for most apps. When you identify users, Adapty can:
+:::important
+This guide is for you if you have your own authentication system. Here, you will learn how to work with user profiles in Adapty to ensure it aligns with your existing authentication system.
+:::
 
-- Track subscription status across devices
-- Provide consistent analytics and user data
-- Enable server-side operations like granting access levels
+How you manage users' purchases depends on your app's authentication model:
+- If your app doesn't use backend authentication and doesn't store user data, see the [section about anonymous users](#anonymous-users).
+- If your app has (or will have) backend authentication, see the [section about identified users](#identified-users).
 
-## Identify users
+**Key concepts**:
+- **Profiles** are the entities required for the SDK to work. Adapty creates them automatically.
+- They can be anonymous **(without customer user ID)** or identified **(with customer user ID)**.
+- You provide **customer user ID** in order to cross-reference profiles in Adapty with your internal auth system
 
-To identify a user, call the `identify` method with your user ID:
+Here is what is different for anonymous and identified users:
 
-<Tabs groupId="current-os" queryString>
+|                         | Anonymous users                                   | Identified users                                                        |
+|-------------------------|---------------------------------------------------|-------------------------------------------------------------------------|
+| **Purchase management** | Store-level purchase restoration                  | Maintain purchase history across devices through their customer user ID |
+| **Profile management**  | New profiles on each reinstall                    | The same profile across sessions and devices                            |
+| **Data persistence**    | Anonymous users' data is tied to app installation | Identified users' data persists across app installations                |
 
-<TabItem value="kotlin" label="Kotlin" default>
 
-```kotlin showLineNumbers
-Adapty.identify("USER_ID") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // User identified successfully
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+## Anonymous users
 
-```java showLineNumbers
-Adapty.identify("USER_ID", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // User identified successfully
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-    }
-});
-```
-</TabItem>
-</Tabs>
+If you don't have backend authentication, **you don't need to handle authentication in the app code**:
 
-## When to identify users
+1. When the SDK is activated on the app's first launch, Adapty **creates a new profile for the user**.
+2. When the user purchases anything in the app, this purchase is **associated with their Adapty profile and their store account**.
+3. When the user **re-installs** the app or installs it from a **new device**, Adapty **creates a new anonymous profile on activation**.
+4. If the user has previously made purchases in your app, by default, their purchases are automatically synced from the App Store on the SDK activation.
 
-Identify users when they:
+So, with anonymous users, new profiles will be created on each installation, but that's not a problem because, in the Adapty analytics, you can [configure what will be considered a new installation](general#4-installs-definition-for-analytics).
 
-- **Sign in to your app** - Use their account ID or email
-- **Create an account** - Use the newly created user ID
-- **Complete onboarding** - Use a generated or assigned user ID
+## Identified users
 
-## Example: Identify user on login
+You have two options to identify users in the app:
 
-Here's how to identify a user when they sign in to your app:
+- [**During login/signup:**](#during-loginsignup) If users sign in after your app starts, call `identify()` with a customer user ID when they authenticate.
 
-<Tabs groupId="current-os" queryString>
+- [**During the SDK activation:**](#during-the-sdk-activation) If you already have a customer user ID stored when the app launches, send it when calling `activate()`.
 
-<TabItem value="kotlin" label="Kotlin" default>
+:::important
+By default, when Adapty receives a purchase from a Customer User ID that is currently associated with another Customer User ID, the access level is shared, so both profiles have paid access. You can configure this setting to transfer paid access from one profile to another or disable sharing completely. See the [article](general#6-sharing-purchases-between-user-accounts) for more details.
+:::
 
-```kotlin showLineNumbers
-class LoginActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+<Zoom>
+  <img src={require('./img/identify-diagram.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
-        findViewById<Button>(R.id.login_button).setOnClickListener {
-            performLogin()
-        }
-    }
+### During login/signup
 
-    private fun performLogin() {
-        // Your login logic here
-        val userId = "user_123" // Get from your authentication system
-        
-        Adapty.identify(userId) { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val profile = result.value
-                    // User identified successfully
-                    // Navigate to main screen
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
-                }
-                is AdaptyResult.Error -> {
-                    // Handle error but still allow login
-                    // User can still use the app
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+If you're identifying users after the app launch (for example, after they log into your app or sign up), use the `identify` method to set their customer user ID.
 
-```java showLineNumbers
-public class LoginActivity extends AppCompatActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+- If you **haven't used this customer user ID before**, Adapty will automatically link it to the current profile.
+- If you **have used this customer user ID to identify the user before**, Adapty will switch to working with the profile associated with this customer user ID.
 
-        findViewById(R.id.login_button).setOnClickListener(v -> performLogin());
-    }
-
-    private void performLogin() {
-        // Your login logic here
-        String userId = "user_123"; // Get from your authentication system
-        
-        Adapty.identify(userId, result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-                // User identified successfully
-                // Navigate to main screen
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-            } else if (result instanceof AdaptyResult.Error) {
-                // Handle error but still allow login
-                // User can still use the app
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-            }
-        });
-    }
-}
-```
-</TabItem>
-</Tabs>
-
-## Update user attributes
-
-You can also update user attributes when identifying them:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+:::important
+Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+:::
 
 ```kotlin showLineNumbers
-val attributes = mapOf(
-    "email" to "user@example.com",
-    "name" to "John Doe",
-    "age" to 25
-)
-
-Adapty.identify("USER_ID", attributes) { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // User identified with attributes
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-        }
+Adapty.identify("YOUR_USER_ID") // Unique for each user
+    .onSuccess {
+        // successful identify
     }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Map<String, Object> attributes = new HashMap<>();
-attributes.put("email", "user@example.com");
-attributes.put("name", "John Doe");
-attributes.put("age", 25);
-
-Adapty.identify("USER_ID", attributes, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // User identified with attributes
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
+    .onError { error ->
+        // handle the error
     }
-});
 ```
-</TabItem>
-</Tabs>
+
+### During the SDK activation
+
+If you already know a customer user ID when you activate the SDK, you can send it in the `activate` method instead of calling `identify` separately.
+
+If you know a customer user ID but set it only after the activation, that will mean that, upon activation, Adapty will create a new anonymous profile and switch to the existing one only after you call `identify`.
+
+You can pass either an existing customer user ID (the one you have used before) or a new one. If you pass a new one, a new profile created upon activation will be automatically linked to the customer user ID.
+
+:::note
+By default, created anonymous profiles won't affect the dashboard [analytics](analytics-charts.md), because installs will be counted by new device IDs. However, if you want to change this behavior and count new customer user IDs instead of device IDs, go to **App settings** and set up [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build()
+```
+
+
+### Log users out
+
+If you have a button for logging users out, use the `logout` method.
+
+:::important
+Logging users out creates a new anonymous profile for the user.
+:::
+
+```kotlin showLineNumbers
+Adapty.logout()
+    .onSuccess {
+        // successful logout
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+:::info
+To log users back into the app, use the `identify` method.
+:::
+
+### Allow purchases without login
+
+If your users can make purchases both before and after they log into your app, you need to ensure that they will keep access after they log in:
+
+1. When a logged-out user makes a purchase, Adapty ties it to their anonymous profile ID.
+2. When the user logs into their account, Adapty switches to working with their identified profile.
+    - If it is a new customer user ID (e.g., the purchase has been made before registration), Adapty assigns the customer user ID to the current profile, so all the purchase history is maintained.
+    - If it is an existing customer user ID (the customer user ID is already linked to a profile), you need to get the actual access level after the profile switch. You can either call [`getProfile`](kmp-check-subscription-status.md) right after the identification, or [listen for profile updates](kmp-check-subscription-status.md) so the data syncs automatically.
 
 ## Next steps
 
-After identifying users, you can:
+Congratulations! You have implemented in-app payment logic in your app! We wish you all the best with your app monetization!
 
-- [Check their subscription status](kmp-check-subscription-status.md)
-- [Show paywalls](kmp-present-paywalls.md) based on their access level
-- [Update user attributes](kmp-setting-user-attributes.md) as needed
+To get even more from Adapty, you can explore these topics:
+- [**Testing**](troubleshooting-test-purchases.md): Ensure that everything works as expected
+- [**Onboardings**](kmp-onboardings.md): Engage users with onboardings and drive retention
+- [**Integrations**](configuration.md): Integrate with marketing attribution and analytics services in just one line of code
+- [**Set custom profile attributes**](kmp-setting-user-attributes.md): Add custom attributes to user profiles and create segments, so you can launch A/B tests or show different paywalls to different users

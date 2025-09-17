@@ -167,7 +167,7 @@ AdaptyUIPaywallPlatformView(
 
 #### Successful purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If a purchase succeeds, this method will be invoked:
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="standalone" label="Standalone screen" default>
@@ -284,7 +284,7 @@ We recommend dismissing the screen in that case. Refer to [Respond to button act
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If a purchase fails, this method will be invoked:
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="standalone" label="Standalone screen" default>
@@ -338,7 +338,7 @@ AdaptyUIPaywallPlatformView(
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="standalone" label="Standalone screen" default>
@@ -393,7 +393,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 #### Failed restore
 
-If `Adapty.restorePurchases()` fails, this method will be invoked:
+If restoring a purchase fails, this method will be invoked:
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="standalone" label="Standalone screen" default>

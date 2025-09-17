@@ -56,11 +56,13 @@ Calling `.logShowPaywall(paywall)` is not needed if you are displaying paywalls 
 :::
 
 ```kotlin showLineNumbers
-Adapty.logShowPaywall(paywall = paywall) { error ->
-    error?.let {
+Adapty.logShowPaywall(paywall = paywall)
+    .onSuccess {
+        // paywall view logged successfully
+    }
+    .onError { error ->
         // handle the error
     }
-}
 ```
 
 Request parameters:

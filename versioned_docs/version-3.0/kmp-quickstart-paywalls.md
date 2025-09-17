@@ -50,18 +50,18 @@ To get the view configuration, you must switch on the **Show on device** toggle 
 :::
 
 ```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
-    if (result is AdaptyResult.Success) {
-        val paywall = result.value
-        
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
         if (!paywall.hasViewConfiguration) {
-            return@getPaywall
+            return@onSuccess
         }
         
         val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
         paywallView?.present()
     }
-}
+    .onError { error ->
+        // handle the error
+    }
 ```
 
 ## 2. Display the paywall
@@ -124,17 +124,17 @@ AdaptyUI.setObserver(object : AdaptyUIObserver {
 })
 
 // Get and display the paywall
-Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
-    if (paywallResult is AdaptyResult.Success) {
-        val paywall = paywallResult.value
-
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
         if (!paywall.hasViewConfiguration) {
             // Use custom logic
-            return@getPaywall
+            return@onSuccess
         }
 
         val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
         paywallView?.present()
     }
-}
+    .onError { error ->
+        // handle the error
+    }
 ```

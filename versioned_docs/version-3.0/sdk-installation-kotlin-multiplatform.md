@@ -230,19 +230,19 @@ class MyApp : Application() {
         val config = AdaptyConfig
             .Builder("PUBLIC_SDK_KEY")
             .build()
-
-        Adapty.activate(configuration = config) { error ->
-            if (error == null) {
+        
+        Adapty.activate(configuration = config)
+            .onSuccess {
                 Log.d("Adapty", "SDK initialised")
-            } else {
-                Log.e("Adapty", "Adapty init error: ${'$'}{error.message}")
             }
-        }
+            .onError { error ->
+                Log.e("Adapty", "Adapty init error: ${error.message}")
+            }
     }
 }
 ```
 
-To get your your **Public SDK Key**:
+To get your **Public SDK Key**:
 
 1. Go to Adapty Dashboard and navigate to [App settings → General](https://app.adapty.io/settings/general).
 2. From the **Api keys** section, copy the **Public SDK Key** (NOT the Secret Key).
