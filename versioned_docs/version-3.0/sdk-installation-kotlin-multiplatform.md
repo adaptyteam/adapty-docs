@@ -24,44 +24,41 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 :::
 
 
-## Install Adapty SDK
-
-The installation flow depends on your app:
-- **Compose Multiplatform app**: Follow only the [Gradle installation](#install-via-gradle) section, but skip [adding iOS wrapper](#add-ios-wrapper).
-- **App with a native iOS target (an Xcode module)**: Follow both [Gradle installation](#install-via-gradle) and [adding iOS wrapper](#add-ios-wrapper) sections.
-
-### Install via Gradle
+## Install Adapty SDK via Gradle
 
 Adapty SDK installation with Gradle is required for both Android and iOS apps.
 
 Choose your dependency setup method:
-- If your project only uses `.gradle.kts` files, add dependencies to your module-level `build.gradle.kts`
-- If you use version catalogs, add dependencies to your `libs.versions.toml` and `build.gradle.kts` files
+- Standard Gradle: Add dependencies to your **module-level** `build.gradle`
+- If your project uses `.gradle.kts` files, add dependencies to your **module-level** `build.gradle.kts`
+- If you use version catalogs, add dependencies to your `libs.versions.toml` file and then, reference it in `build.gradle.kts`
 
 <Tabs>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle" default>
+
+```kotlin showLineNumbers
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation platform(libs.adapty.bom)
+                implementation libs.adapty.kmp
+            }
+        }
+    }
+}
+```
+
+</TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
 
 ```kotlin showLineNumbers
-plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinSerialization)
-}
-
 kotlin {
-    androidTarget()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(platform(libs.adapty.bom))  
                 implementation(libs.adapty.kmp)
-                implementation(libs.kotlinx.coroutines)
-                implementation(libs.kotlinx.serialization)
-                
             }
         }
     }
@@ -71,31 +68,32 @@ kotlin {
 </TabItem>
 
 
-<TabItem value="version catalog" label="libs.versions.toml" default>
+<TabItem value="version catalog" label="Versions library" default>
 
 ```toml showLineNumbers
+// libs.versions.toml
 [versions]
 ..
-kotlin        = "2.1.10"  
 adapty-bom    = "<the latest SDK version>"
 adapty-kmp    = "<the latest SDK version>"
-agp = "8.7.3"
-kotlinx-coroutines = "1.10.1"
-kotlinx-serialization = "1.8.1"
 
 [libraries]
 ..
 adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adapty-bom" }
 adapty-kmp = { module = "com.adapty:adapty-kmp", version.ref = "adapty-kmp" }
-kotlinx-coroutines  = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
-kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
-[plugins]
-..
-kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-androidLibrary      = { id = "com.android.library", version.ref = "agp" }
-kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+// build.gradle.kts
 
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(platform(libs.adapty.bom))  
+                implementation(libs.adapty.kmp)
+            }
+        }
+    }
+}
 
 ```
 
@@ -104,7 +102,7 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 
 
 :::note
-If you get a Maven related error, make sure that you have `mavenCentral()` in your Gradle scripts.
+If you get a Maven-related error, make sure that you have `mavenCentral()` in your Gradle scripts.
 
 <details>
    <summary>The instruction on how to add it</summary>
@@ -135,80 +133,6 @@ dependencyResolutionManagement {
 
 </details>
 :::
-
-### Add iOS wrapper
-
-If your project includes a native Xcode module (for extra iOS-specific features), add the Adapty iOS wrapper with one of the package managers below.
-
-:::info
-- You can skip this step for a pure Compose Multiplatform app.
-- Do not call `Adapty.activate` in Swift/Obj-C. Initialisation must stay in your shared Kotlin code; the iOS wrapper only forwards calls from the KMP layer.
-  :::
-
-<Tabs>
-<TabItem value="spm" label="Swift Package Manager (recommended)" default>
-
-1. Enter the repository URL: [https://github.com/AdaptyTeam/AdaptySDK-iOS.git](https://github.com/AdaptyTeam/AdaptySDK-iOS.git).
-2. Select the version and click **Add Package**.
-3. Choose the modules you need:
-    1. **Adapty** is the mandatory module.
-    2. **AdaptyUI** is optional and needed if you plan to use the Adapty Paywall Builder.
-4. Xcode will add the package dependency to your project. To import it, in the **Choose Package Products** window, click the **Add package** button once again. The package will then appear in the **Packages** list.
-
-</TabItem>
-
-<TabItem value="cocoapods" label="CocoaPods (legacy)" default>
-:::info
-
-CocoaPods is now in maintenance mode, with development officially stopped. We recommend switching to [Swift Package Manager](sdk-installation-kotlin-multiplatform#install-via-swift-package-manager).
-
-:::
-
-1. Add Adapty to your `Podfile`. Choose the modules you need:
-
-    1. **Adapty** is the mandatory module.
-    2. **AdaptyUI** is an optional module you need if you plan to use the [Adapty Paywall Builder](adapty-paywall-builder).
-
-   ```shell showLineNumbers title="Podfile"
-   pod 'Adapty', '~> <the latest SDK version>'
-   pod 'AdaptyUI', '~> <the latest SDK version>' # optional module needed only for Paywall Builder
-   ```
-
-2. Run:
-
-   ```showLineNumbers title="Shell"
-   pod install
-   ```
-
-This will create a `.xcworkspace` file for your app. Use this file for all future development.
-
-</TabItem>
-</Tabs>
-
-## Build static frameworks for iOS targets
-
-:::note
-This step is optional — only if the build fails.
-:::
-
-In some projects Xcode insists on linking static Kotlin/Native frameworks. Add `isStatic = true` to every iOS target in your shared module:
-
-
-```kotlin title="build.gradle.kts" showLineNumbers
-kotlin {
-    // Make each generated framework static
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "Shared"      // adjust if your Xcode import expects another name
-            isStatic = true
-        }
-    }
-}
-```
 
 ## Activate Adapty SDK
 
@@ -293,7 +217,7 @@ class MyApp : Application() {
 
 ## Configure Proguard (Android)
 
-Before launching your app in the production, add `-keep class com.adapty.** { *; }` to your Proguard configuration.
+Before launching your app in the production, you might need to add `-keep class com.adapty.** { *; }` to your Proguard configuration.
 
 ## Optional setup
 
