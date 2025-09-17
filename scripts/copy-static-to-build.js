@@ -11,11 +11,11 @@ async function copyStaticMarkdownAndLlms() {
   }
 
   try {
-    // Copy all .md files from static root
+    // Copy all .md and .js files from static root
     const files = await fs.readdir(staticDir);
     let copied = [];
     for (const file of files) {
-      if (file.endsWith('.md')) {
+      if (file.endsWith('.md') || file.endsWith('.js')) {
         await fs.copy(
           path.join(staticDir, file),
           path.join(buildDir, file),
@@ -24,6 +24,16 @@ async function copyStaticMarkdownAndLlms() {
         copied.push(file);
         console.log(`Copied ${file} to build directory`);
       }
+    }
+    
+    // Copy js directory if it exists
+    const jsDir = path.join(staticDir, 'js');
+    const buildJsDir = path.join(buildDir, 'js');
+    if (await fs.pathExists(jsDir)) {
+      await fs.copy(jsDir, buildJsDir, { overwrite: true });
+      const jsFiles = await fs.readdir(jsDir);
+      copied.push(...jsFiles.map(file => `js/${file}`));
+      console.log('Copied js directory to build directory');
     }
     // Always copy llms.txt if it exists
     const llmsPath = path.join(staticDir, 'llms.txt');
