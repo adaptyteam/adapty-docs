@@ -72,17 +72,6 @@ Each A/B test type is useful if:
 | **Adapty SDK version**          | Any for paywalls. Except :warning: 3.8.0+ for onboardings                                                          | :warning: 3.5.0+                                              |
 | **Best for**                    | Testing independent changes in a single paywall/onboarding placement without considering the overall app economics | Evaluating overall monetization strategies app-wide           |
 
-| Feature | Regular A/B test | Cross-placement A/B test |
-| --- | --- | --- |
-| **What is tested** | One paywall/onboarding | Set of paywalls in one variant |
-| **Variant consistency** | Defined per placement | Same variant across all placements |
-| **Audience targeting** | Per placement | Shared across placements |
-| **Analytics** | You analyze one placement | You analyze the whole app (placements in the test) |
-| **Variant weight** | Per placement | Per variant |
-| **Users** | All users | Only new users (those who haven’t seen an Adapty paywall) |
-| **Adapty SDK version** | Any for paywalls<br/>:warning: 3.8.0+ for onboardings | :warning: 3.5.0+ |
-| **Best for** | Independent changes in a single placement | App-wide monetization strategy |
-
 Each paywall/onboarding gets a weight that splits traffic during the test.
 
 For instance, with weights of 70 % and 30 %, the first paywall is shown to roughly 700 of 1,000 users, the second to about 300. In cross-placement tests, weights are set per variant, not per paywall.
