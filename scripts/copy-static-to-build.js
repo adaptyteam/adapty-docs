@@ -3,6 +3,7 @@ const path = require('path');
 
 async function copyStaticMarkdownAndLlms() {
   const staticDir = path.join(__dirname, '..', 'static');
+  const publicDir = path.join(__dirname, '..', 'public');
   const buildDir = path.join(__dirname, '..', 'build');
 
   if (!fs.existsSync(staticDir)) {
@@ -34,6 +35,14 @@ async function copyStaticMarkdownAndLlms() {
       const jsFiles = await fs.readdir(jsDir);
       copied.push(...jsFiles.map(file => `js/${file}`));
       console.log('Copied js directory to build directory');
+    }
+    
+    // Copy public directory if it exists
+    if (await fs.pathExists(publicDir)) {
+      await fs.copy(publicDir, buildDir, { overwrite: true });
+      const publicFiles = await fs.readdir(publicDir);
+      copied.push(...publicFiles.map(file => `public/${file}`));
+      console.log('Copied public directory to build directory');
     }
     // Always copy llms.txt if it exists
     const llmsPath = path.join(staticDir, 'llms.txt');
