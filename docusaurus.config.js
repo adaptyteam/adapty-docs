@@ -7,8 +7,6 @@
 
 import { themes as prismThemes } from "prism-react-renderer";
 
-import { ProvidePlugin } from "webpack";
-
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
@@ -409,37 +407,6 @@ const config = {
         },
       };
     },
-    // Add custom webpack config to make @stoplight/elements work
-    () => ({
-      name: "custom-webpack-config",
-      configureWebpack: () => {
-        return {
-          module: {
-            rules: [
-              {
-                test: /\.m?js/,
-                resolve: {
-                  fullySpecified: false,
-                },
-              },
-            ],
-          },
-          plugins: [
-            new ProvidePlugin({
-              process: require.resolve("process/browser"),
-            }),
-          ],
-          resolve: {
-            fallback: {
-              buffer: require.resolve("buffer"),
-              stream: false,
-              path: false,
-              process: false,
-            },
-          },
-        };
-      },
-    }),
   ],
 };
 
