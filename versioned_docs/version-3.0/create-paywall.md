@@ -1,6 +1,6 @@
 ---
 title: "Create paywall"
-description: "Learn how to create high-converting paywalls using Adapty’s Paywall Builder."
+description: "Learn how to create high-converting paywalls."
 metadataTitle: "Creating a Paywall in Adapty | Adapty Docs"
 ---
 

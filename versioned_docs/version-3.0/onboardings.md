@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-<CustomDocCardList />
+<CustomDocCardList ids={['create-onboarding', 'design-onboarding', 'onboarding-user-engagement']} />
 
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 

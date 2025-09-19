@@ -4,13 +4,14 @@ description: "Explore Adapty's product settings to configure and optimize in-app
 metadataTitle: "Product Configuration Guide | Adapty Docs"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import ZoomImage from '@site/src/components/ZoomImage';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-<CustomDocCardList />
+<CustomDocCardList ids={['create-product', 'edit-product', 'add-product-to-paywall']} />
+
+<ZoomImage id="product.webp" />
 
 In Adapty, products are everything you sell in your app — subscriptions, consumables, non-consumables, lifetime unlocks, coins, credits, or any other purchasable content.
 

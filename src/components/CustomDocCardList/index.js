@@ -17,11 +17,8 @@ function CustomDocCard({ item }) {
   );
 }
 
-export default function CustomDocCardList() {
+export default function CustomDocCardList({ ids = null }) {
   const category = useCurrentSidebarCategory();
-  
-  console.log('CustomDocCardList - category:', category);
-  console.log('CustomDocCardList - category.items:', category?.items);
 
   if (!category || !category.items) {
     return (
@@ -32,10 +29,32 @@ export default function CustomDocCardList() {
     );
   }
 
-  // Filter items like the official DocCardList does
-  const filteredItems = filterDocCardListItems(category.items);
+  // If specific IDs are provided, filter BEFORE using Docusaurus filter
+  let itemsToFilter = category.items;
   
-  console.log('CustomDocCardList - filteredItems:', filteredItems);
+  if (ids && Array.isArray(ids) && ids.length > 0) {
+    // Filter raw items first
+    itemsToFilter = itemsToFilter.filter(item => {
+      // Check direct docId
+      const directMatch = item.docId && ids.includes(item.docId);
+      
+      // Check category href (extract ID from /docs/ID format)
+      let categoryMatch = false;
+      let categoryId = null;
+      if (item.href && item.href.startsWith('/docs/')) {
+        categoryId = item.href.replace('/docs/', '');
+        categoryMatch = ids.includes(categoryId);
+      }
+      
+      // Check category link docId (fallback)
+      const categoryLinkMatch = item.link && item.link.docId && ids.includes(item.link.docId);
+      
+      return directMatch || categoryMatch || categoryLinkMatch;
+    });
+  }
+  
+  // Now apply Docusaurus filter to the (possibly pre-filtered) items
+  let filteredItems = filterDocCardListItems(itemsToFilter);
 
   if (filteredItems.length === 0) {
     return (
@@ -48,7 +67,7 @@ export default function CustomDocCardList() {
 
   return (
     <div className={styles.container}>
-      {filteredItems.slice(0, 9).map((item, index) => (
+      {filteredItems.slice(0, ids ? filteredItems.length : 9).map((item, index) => (
         <CustomDocCard key={index} item={item} />
       ))}
     </div>

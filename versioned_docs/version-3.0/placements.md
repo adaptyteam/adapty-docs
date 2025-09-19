@@ -4,11 +4,12 @@ description: "Manage placements in Adapty to optimize paywall visibility and rev
 metadataTitle: "Managing Placements in Adapty | Adapty Docs"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import ZoomImage from '@site/src/components/ZoomImage';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-<CustomDocCardList />
+<CustomDocCardList ids={['choose-meaningful-placements', 'create-placement', 'audience']} />
+
+<ZoomImage id="placement.webp" />
 
 In Adapty, placements are points in your app where you show a [paywall](paywalls.md) or an [onboarding](onboardings.md). A placement can be anything from a button tap on the home screen, to the end of a free trial, to the first launch of the app.
 
