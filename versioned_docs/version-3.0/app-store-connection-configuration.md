@@ -16,7 +16,7 @@ Although you might have initially configured the integration of your mobile app 
 Configuration changes can be done safely during the Sandbox phase, until your mobile app goes live with Adapty SDK installed. Changes after the release can break the purchase flow in your app.
 :::
 
-## Step 1. Provide Bundle ID
+## Step 1. Provide Bundle ID and Apple app ID
 
 Bundle ID is the unique identifier of your app in the App Store. This is required for the basic functionality of Adapty, such as subscription processing.
 

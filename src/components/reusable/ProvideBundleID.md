@@ -24,25 +24,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 
 
-3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu.
-
-   
-
-<Zoom>
-  <img src={require('@site/versioned_docs/version-3.0/img/26f79d5-App_settings_top_menu.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-4. Paste the copied value to the **Bundle ID** field.
+3. Open the [**App settings** -> **iOS SDK** tab](https://app.adapty.io/settings/ios-sdk) from the Adapty top menu and paste the copied value to the **Bundle ID** field.
 
    
 
@@ -56,3 +38,6 @@ import 'react-medium-image-zoom/dist/styles.css';
   }}
 />
 </Zoom>
+
+4. Get back to the **App information** page in App Store Connect and copy **Apple ID** from there.
+5. On the [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) page in the Adapty dashboard, paste the ID to the **Apple app ID** field.
