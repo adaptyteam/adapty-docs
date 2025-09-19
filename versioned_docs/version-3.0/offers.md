@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-<CustomDocCardList ids={['create-offer', 'add-offer-to-paywall']} />
+<CustomDocCardList ids={['create-offer', 'offers-in-stores']} />
 
 Offers in the App Store and Google Play are special deals or discounts provided by these platforms for in-app purchases. 
 
