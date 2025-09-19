@@ -38,8 +38,7 @@ const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-      view.dismiss(); // default behavior
-      return true;
+      return true; // allow paywall closing
   }
 });
 ```
@@ -68,6 +67,7 @@ const view = await createPaywallView(paywall);
 const unsubscribe = view.registerEventHandlers({
     onUrlPress(url) {
         Linking.openURL(url);
+        return false; // Keep paywall open
     },
 });
 ```
