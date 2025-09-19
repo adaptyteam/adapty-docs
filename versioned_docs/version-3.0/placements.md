@@ -5,46 +5,21 @@ metadataTitle: "Managing Placements in Adapty | Adapty Docs"
 keywords: ['placement']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import ZoomImage from '@site/src/components/ZoomImage';
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-With Adapty's placement system, you can create and run [paywalls](paywalls), [onboardings](https://adapty.io/docs/onboardings), and [A/B tests](ab-tests) at different points in your app user's journey, such as onboarding flow, app settings, etc. These points are called **Placements**.
+<CustomDocCardList ids={['choose-meaningful-placements', 'create-placement', 'audience']} />
 
-A placement in your app can manage multiple paywalls, onboardings, or A/B tests at a time, each made for a certain group of users, which we call  [Audiences](audience). Moreover, you can experiment with paywalls and onboardings, replacing one with another over time without releasing a new app version.
+<ZoomImage id="placement.webp" />
 
-The only thing you hardcode in the mobile app is the placement ID.
+In Adapty, placements are points in your app where you show a [paywall](paywalls.md) or an [onboarding](onboardings.md). A placement can be anything from a button tap on the home screen, to the end of a free trial, to the first launch of the app.
 
-## Placements list
+With placements, you don’t need to hardcode which paywall or onboarding is displayed. The only thing you hardcode is the placement ID — everything else can be managed from the dashboard without redeploying your app.
 
-There are two types of placements:
-- **Paywall placements**
-- **Onboarding placements**
+Placements give you flexibility to:
 
-To view all your placements, go to **Placements** from the Adapty main menu. You will see them categorized by **Paywalls** and **Onboardings** tabs.
+- **Run [A/B tests](ab-tests.md)**: Compare different paywalls or onboardings and see which performs best.
 
-Each tab offers a comprehensive view of various locations in the user journey where paywalls, onboardings, or A/B tests can appear. Each item in the list corresponds to a specific placement, allowing easy management and modification.
+- **Target user groups**: Show different content to different [audiences](audience.md) (e.g., new vs. returning users, or based on country).
 
-You can edit placement details, associate them with the desired paywall, onboarding, or A/B test for a specified audience, or remove unnecessary placements. The numbers in the table reflect the analytics for placements since their activation.
-
-
-<Zoom>
-  <img src={require('./img/placements-list.png').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-
-From here you can:
-
-- [Create a new placement](create-placement)
-- [Edit an existing placement](edit-placement)
-- [Delete an existing placement](delete-placement)
-- Download local fallback [paywalls](https://adapty.io/docs/fallback-paywalls) or [onboardings](https://adapty.io/docs/local-fallback-onboarding). Those for paywalls are especially useful and will be used when a user opens the app and there's no connection with Adapty backend (e.g., no internet connection or in the rare case when the backend is down) and there's no cache on the device.
+This way, you can experiment, personalize, and optimize your monetization flow — all without touching the app code.
