@@ -168,7 +168,7 @@ To get your **Public SDK Key**:
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to activate the **AdaptyUI** module to use the [Adapty Paywall Builder](display-pb-paywalls.md), make sure to set `.withActivateUI(true)` in your configuration.
+If you plan to activate the **AdaptyUI** module to use the [Adapty Paywall Builder](kmp-present-paywalls.md), make sure to set `.withActivateUI(true)` in your configuration.
 
 :::info
 important

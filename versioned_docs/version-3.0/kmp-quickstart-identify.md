@@ -143,6 +143,5 @@ Congratulations! You have implemented in-app payment logic in your app! We wish 
 
 To get even more from Adapty, you can explore these topics:
 - [**Testing**](troubleshooting-test-purchases.md): Ensure that everything works as expected
-- [**Onboardings**](kmp-onboardings.md): Engage users with onboardings and drive retention
 - [**Integrations**](configuration.md): Integrate with marketing attribution and analytics services in just one line of code
 - [**Set custom profile attributes**](kmp-setting-user-attributes.md): Add custom attributes to user profiles and create segments, so you can launch A/B tests or show different paywalls to different users

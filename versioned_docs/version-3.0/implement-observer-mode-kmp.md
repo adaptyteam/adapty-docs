@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 If you already have your own purchase infrastructure and aren't ready to fully switch to Adapty, you can explore [Observer mode](observer-vs-full-mode). In its basic form, Observer Mode offers advanced analytics and seamless integration with attribution and analytics systems.
 
 If this meets your needs, you only need to:
-1. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [Kotlin Multiplatform](sdk-installation-kmp#configure-adapty-sdk).
+1. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md).
 2. [Report transactions](report-transactions-observer-mode-kmp) from your existing purchase infrastructure to Adapty.
 
 ## Observer mode setup

@@ -37,8 +37,3 @@ This guide helps you resolve common issues when using paywalls designed in the A
 
 **Solution**: Ensure you are not calling `logShowPaywall` in your code if you're using the Paywall builder.
 
-## Other issues
-
-**Issue**: You're experiencing other Paywall Builder-related problems not covered above.
-
-**Solution**: Migrate the SDK to the latest version using the [migration guides](kmp-sdk-migration-guides) if needed. Many issues are resolved in newer SDK versions.
