@@ -17,7 +17,7 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 This guide shows how to handle custom and pre-existing actions in your code.
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+**Only purchases, restorations, paywall closures, and URL opening are handled automatically.** All other button actions require proper response implementation in the app code.
 :::
 
 ## Close paywalls
@@ -38,8 +38,7 @@ const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-      view.dismiss(); // default behavior
-      return true;
+      return true; // allow paywall closing
   }
 });
 ```
@@ -68,6 +67,7 @@ const view = await createPaywallView(paywall);
 const unsubscribe = view.registerEventHandlers({
     onUrlPress(url) {
         Linking.openURL(url);
+        return false; // Keep paywall open
     },
 });
 ```
