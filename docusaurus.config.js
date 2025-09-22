@@ -7,6 +7,8 @@
 
 import { themes as prismThemes } from "prism-react-renderer";
 
+const { webpackPlugin } = require('./plugins/webpack-plugin.cjs');
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
@@ -131,6 +133,28 @@ const config = {
             position: "left",
             type: "docSidebar",
             sidebarId: "APISidebar",
+          },
+          {
+            label: "API Reference",
+            position: "left",
+            items: [
+              {
+                label: "Adapty API",
+                href: "/api-adapty",
+              },
+              {
+                label: "Webhooks API", 
+                href: "/api-webhooks",
+              },
+              {
+                label: "Test API v1 (Dyte)",
+                href: "/api-v1",
+              },
+              {
+                label: "Test API v2 (Dyte)",
+                href: "/api-v2",
+              },
+            ],
           },
           {
             label: "Support Forum",
@@ -354,6 +378,8 @@ const config = {
   plugins: [
     // Custom meta plugin for keywords and rank
     require.resolve('./plugins/custom-meta-plugin.js'),
+    // Webpack plugin for Node.js polyfills
+    webpackPlugin,
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {
