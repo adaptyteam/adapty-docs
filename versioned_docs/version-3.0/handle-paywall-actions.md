@@ -17,7 +17,7 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 This guide shows how to handle custom and pre-existing actions in your code.
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+**Only purchases, restorations, paywall closures, and URL opening are handled automatically.** All other button actions require proper response implementation in the app code.
 :::
 
 ## Close paywalls
@@ -28,7 +28,7 @@ To add a button that will close your paywall:
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
 :::info
-In the iOS, Android SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+In the iOS SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
 :::
 
 
