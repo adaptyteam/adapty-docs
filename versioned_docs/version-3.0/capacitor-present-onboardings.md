@@ -35,7 +35,7 @@ import { adapty, createOnboardingView } from '@adapty/capacitor';
 try {
   const view = await createOnboardingView(onboarding);
   
-  view.registerEventHandlers({
+  view.setEventHandlers({
     onClose: (actionId, meta) => {
       console.log('Onboarding closed:', actionId);
       return true; // Allow the onboarding to close

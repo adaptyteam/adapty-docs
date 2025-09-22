@@ -9,7 +9,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
 
-Onboardings configured with the builder generate events your app can respond to. Use the `registerEventHandlers` method to handle these events for standalone screen presentation.
+Onboardings configured with the builder generate events your app can respond to. Use the `setEventHandlers` method to handle these events for standalone screen presentation.
 
 Before you start, ensure that:
 
@@ -20,7 +20,7 @@ Before you start, ensure that:
 
 ### Set up event handlers
 
-To handle events for standalone screen onboardings, use the `view.registerEventHandlers` method:
+To handle events for standalone screen onboardings, use the `view.setEventHandlers` method:
 
 ```typescript showLineNumbers
 import { adapty, createOnboardingView } from '@adapty/capacitor';
@@ -28,7 +28,7 @@ import { adapty, createOnboardingView } from '@adapty/capacitor';
 try {
   const view = await createOnboardingView(onboarding);
   
-  view.registerEventHandlers({
+  view.setEventHandlers({
     onAnalytics(event, meta) {
       console.log('Analytics event:', event);
     },
@@ -84,7 +84,7 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
 ```typescript showLineNumbers
-view.registerEventHandlers({
+view.setEventHandlers({
   onCustom(actionId, meta) {
     switch (actionId) {
       case 'login':
@@ -121,7 +121,7 @@ When an onboarding finishes loading, this event will be triggered:
 
 ```typescript showLineNumbers
 // Standalone screen presentation
-view.registerEventHandlers({
+view.setEventHandlers({
   onFinishedLoading(meta) {
     console.log('Onboarding loaded:', meta.onboardingId);
   },
@@ -166,7 +166,7 @@ Note that you need to manage what happens when a user closes the onboarding. For
 
 ```typescript showLineNumbers
 // Standalone screen presentation
-view.registerEventHandlers({
+view.setEventHandlers({
   onClose(actionId, meta) {
     console.log('Onboarding closed:', actionId);
     return true; // Allow the onboarding to close
@@ -202,7 +202,7 @@ If a user clicks a button that opens a paywall, you will get a button action ID 
 
 ```typescript showLineNumbers
 // Standalone screen presentation
-view.registerEventHandlers({
+view.setEventHandlers({
   onPaywall(actionId, meta) {
     console.log('Paywall action triggered:', actionId);
     // Implement your paywall opening logic here
@@ -234,7 +234,7 @@ When your users respond to a quiz question or input their data into an input fie
 
 ```typescript showLineNumbers
 // Standalone screen presentation
-view.registerEventHandlers({
+view.setEventHandlers({
   onStateUpdated(action, meta) {
     console.log('State updated:', action.elementId, action.params);
     // Save user response
@@ -350,7 +350,7 @@ You receive an analytics event when various navigation-related events occur duri
 
 ```typescript showLineNumbers
 // Standalone screen presentation
-view.registerEventHandlers({
+view.setEventHandlers({
   onAnalytics(event, meta) {
     console.log('Analytics event:', event.type, meta.onboardingId);
   },

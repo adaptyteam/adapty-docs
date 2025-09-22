@@ -26,7 +26,7 @@ import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
-view.registerEventHandlers({
+view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
     return false; 

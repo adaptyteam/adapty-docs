@@ -104,7 +104,7 @@ Read our guides on how to handle button [actions](capacitor-handle-paywall-actio
 :::
 
 ```typescript showLineNumbers title="Capacitor"
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
     return false;
@@ -140,7 +140,7 @@ export default function PaywallScreen() {
 
       const view = await createPaywallView(paywall);
 
-      view.registerEventHandlers({
+      view.setEventHandlers({
         onUrlPress(url) {
           window.open(url, '_blank');
           return false;

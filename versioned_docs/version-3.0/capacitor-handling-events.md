@@ -18,14 +18,14 @@ This guide covers event handling for purchases, restorations, product selection,
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.setEventHandlers` method:
 
 ```typescript showLineNumbers
 import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onCloseButtonPress() {
     console.log('User closed paywall');
     return true; // Allow the paywall to close

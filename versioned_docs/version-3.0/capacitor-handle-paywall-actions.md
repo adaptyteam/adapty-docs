@@ -35,7 +35,7 @@ import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onCloseButtonPress() {
     console.log('User closed paywall');
     return true; // Allow the paywall to close
@@ -63,7 +63,7 @@ import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
     return false; // Don't close the paywall
@@ -83,7 +83,7 @@ import { adapty, createPaywallView } from '@adapty/capacitor';
 
 const view = await createPaywallView(paywall);
 
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onCustomAction(actionId) {
     if (actionId === 'login') {
       // Navigate to login screen
@@ -103,7 +103,7 @@ To add a button that handles any other actions:
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
 ```typescript showLineNumbers
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
   onCustomAction(actionId) {
     if (actionId === 'openNewPaywall') {
       // Display another paywall
