@@ -2,7 +2,7 @@
 title: "Add offers to Adapty"
 description: "Create and manage special subscription offers using Adapty’s tools."
 metadataTitle: "Creating Special Offers | Adapty Docs"
-keywords: ['trial'],
+keywords: ['trial']
 rank: 90
 ---
 
