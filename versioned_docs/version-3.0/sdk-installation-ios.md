@@ -353,3 +353,18 @@ extension YourApp: AdaptyDelegate {
     }
 }
 ```
+
+To get all current unfinished transactions, use the `getUnfinishedTransactions()` method:
+
+```swift showLineNumbers title="Swift"
+func loadUnfinishedTransactions() {
+    Task { @MainActor in
+        do {
+            let transactions = try await Adapty.getUnfinishedTransactions()
+            // Handle the transactions
+        } catch {
+            print("Error loading unfinished transactions: \(error)")
+        }
+    }
+}
+```
