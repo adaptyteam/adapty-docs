@@ -53,7 +53,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 

@@ -12,8 +12,6 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 :::important
 This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](react-native-handle-paywall-actions.md) for details.
@@ -25,14 +23,10 @@ Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't nee
 This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](react-native-handling-events-legacy).
 :::
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the event handlers method:
+To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
 
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
-```javascript showLineNumbers title="React Native (TSX)"
-import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty/dist/ui';
-To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -89,7 +83,11 @@ import { Linking } from 'react-native';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the `view.registerEventHandlers` method:
+For standalone screen, implement the event handlers method:
+
+```javascript showLineNumbers title="React Native (TSX)"
+import { Linking } from 'react-native';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 
@@ -116,9 +114,16 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 ```
+
+</TabItem>
+</Tabs>
+
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
+
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -148,8 +153,6 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 ```
-</TabItem>
-</Tabs>
 
 </TabItem>
 </Tabs>
