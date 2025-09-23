@@ -91,13 +91,6 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
                 // For example, in Compose Multiplatform:
                 // uriHandler.openUri(action.url)
                 
-                // Or show a confirmation dialog first:
-                view.showDialog(
-                    title = "Open URL?",
-                    content = action.url,
-                    primaryActionTitle = "Cancel",
-                    secondaryActionTitle = "Open"
-                )
             }
         }
     }
