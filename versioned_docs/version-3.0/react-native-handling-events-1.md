@@ -6,6 +6,8 @@ toc_max_heading_level: 4
 keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed']
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
@@ -30,6 +32,64 @@ To control or monitor processes occurring on the paywall screen within your mobi
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
+To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="Platform view" default>
+
+For platform view, you handle events directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
+
+```javascript showLineNumbers title="React Native (TSX)"
+import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { Linking } from 'react-native';
+
+<AdaptyPaywallView
+  paywall={paywall}
+  eventHandlers={{
+    onCloseButtonPress() {
+      // Handle close button press
+    },
+    onAndroidSystemBack() {
+      // Handle Android back button
+    },
+    onPurchaseCompleted(purchaseResult, product) {
+      // Handle successful purchase
+    },
+    onPurchaseStarted(product) {
+      // Handle purchase start
+    },
+    onPurchaseFailed(error, product) {
+      // Handle purchase failure
+    },
+    onRestoreCompleted(profile) {
+      // Handle successful restore
+    },
+    onRestoreFailed(error) {
+      // Handle restore failure
+    },
+    onProductSelected(productId) {
+      // Handle product selection
+    },
+    onRenderingFailed(error) {
+      // Handle rendering errors
+    },
+    onLoadingProductsFailed(error) {
+      // Handle product loading errors
+    },
+    onUrlPress(url) {
+      Linking.openURL(url);
+    },
+    onCustomAction(actionId) {
+      // Handle custom actions
+    },
+  }}
+/>
+```
+
+</TabItem>
+<TabItem value="standalone" label="Standalone screen">
+
+For standalone screen, implement the `view.registerEventHandlers` method:
 
 const view = await createPaywallView(paywall);
 
@@ -88,6 +148,9 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 ```
+</TabItem>
+</Tabs>
+
 </TabItem>
 </Tabs>
 
