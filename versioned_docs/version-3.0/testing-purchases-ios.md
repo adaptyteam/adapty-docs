@@ -22,4 +22,3 @@ You can either choose to test in Sandbox or using TestFlight. Sandbox is the bes
 Choose the method that works best for you:
 
 - [Testing in Sandbox](test-purchases-in-sandbox)
-- [Testing via TestFlight](test-purchases-with-testflight)
