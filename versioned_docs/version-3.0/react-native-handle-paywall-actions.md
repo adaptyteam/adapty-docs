@@ -27,6 +27,9 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
 
@@ -53,10 +56,8 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the close handler using `registerEventHandlers`:
+For standalone screen, implement the close handler:
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -68,9 +69,16 @@ const unsubscribe = view.setEventHandlers({
   }
 });
 ```
+
+</TabItem>
+</Tabs>
+
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
+
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -86,9 +94,6 @@ const unsubscribe = view.registerEventHandlers({
 </TabItem>
 </Tabs>
 
-</TabItem>
-</Tabs>
-
 ## Open URLs from paywalls
 
 :::tip
@@ -99,6 +104,9 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -122,10 +130,8 @@ import { Linking } from 'react-native';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the URL handler using `registerEventHandlers`:
+For standalone screen, implement the URL handler:
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
@@ -139,8 +145,16 @@ const unsubscribe = view.setEventHandlers({
     },
 });
 ```
+
 </TabItem>
-<TabItem value="new" label="SDK version < 3.12" default>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
+
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
@@ -158,15 +172,15 @@ const unsubscribe = view.registerEventHandlers({
 </TabItem>
 </Tabs>
 
-</TabItem>
-</Tabs>
-
 ## Log into the app
 
 To add a button that logs users into your app:
 
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -191,10 +205,8 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the login handler using `registerEventHandlers`:
+For standalone screen, implement the login handler:
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -208,8 +220,15 @@ const unsubscribe = view.setEventHandlers({
     }
 });
 ```
+
 </TabItem>
-<TabItem value="new" label="SDK version < 3.12" default>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -224,8 +243,6 @@ const unsubscribe = view.registerEventHandlers({
     }
 });
 ```
-</TabItem>
-</Tabs>
 
 </TabItem>
 </Tabs>
@@ -238,6 +255,9 @@ To add a button that handles any other actions:
 2. In your app code, implement a handler for the action ID you've created.
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -262,12 +282,10 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement custom action handlers using `registerEventHandlers`:
+For standalone screen, implement custom action handlers:
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
     onCustomAction(actionId) {
         if (actionId === 'openNewPaywall') {
             // Display another paywall
@@ -278,8 +296,12 @@ const unsubscribe = view.registerEventHandlers({
 
 </TabItem>
 </Tabs>
+
 </TabItem>
-<TabItem value="new" label="SDK version < 3.12" default>
+
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
 
 ```javascript
 const unsubscribe = view.registerEventHandlers({
@@ -290,5 +312,6 @@ const unsubscribe = view.registerEventHandlers({
     },
 });
 ```
+
 </TabItem>
 </Tabs>

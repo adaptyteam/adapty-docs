@@ -12,8 +12,6 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 :::important
 This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](react-native-handle-paywall-actions.md) for details.
@@ -26,6 +24,9 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 :::
 
 To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -82,11 +83,8 @@ import { Linking } from 'react-native';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the `view.registerEventHandlers` method:
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the event handlers method:
+For standalone screen, implement the event handlers method:
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -116,9 +114,16 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 ```
+
+</TabItem>
+</Tabs>
+
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
+
+For SDK version < 3.12, only standalone screen presentation is supported:
+
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -148,8 +153,6 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 ```
-</TabItem>
-</Tabs>
 
 </TabItem>
 </Tabs>

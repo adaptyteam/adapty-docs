@@ -69,7 +69,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -196,7 +196,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -267,7 +267,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -346,7 +346,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -419,7 +419,7 @@ const openPaywall = async (actionId) => {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -487,7 +487,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -635,7 +635,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
