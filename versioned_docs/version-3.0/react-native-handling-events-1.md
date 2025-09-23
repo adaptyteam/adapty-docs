@@ -10,6 +10,8 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
 import Details from '@site/src/components/Details';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 :::important
 This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](react-native-handle-paywall-actions.md) for details.
@@ -21,8 +23,42 @@ Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't nee
 This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](react-native-handling-events-legacy).
 :::
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the `view.registerEventHandlers` method:
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the event handlers method:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native (TSX)"
+import { Linking } from 'react-native';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error, product) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+});
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -52,6 +88,8 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 ```
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event examples (Click to expand)</summary>

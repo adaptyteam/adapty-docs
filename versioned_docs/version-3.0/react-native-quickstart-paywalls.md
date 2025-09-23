@@ -106,7 +106,7 @@ Read our guides on how to handle button [actions](react-native-handle-paywall-ac
 :::
 
 ```typescript showLineNumbers title="React Native"
-const unsubscribe = view.registerEventHandlers({
+const unsubscribe = view.setEventHandlers({
     onCloseButtonPress() {
         return true; // allow paywall closing
     }
@@ -140,7 +140,7 @@ export default function PaywallScreen() {
 
       const view = await createPaywallView(paywall);
 
-      view.registerEventHandlers({
+      view.setEventHandlers({
           onCloseButtonPress() {
               return true;
         },

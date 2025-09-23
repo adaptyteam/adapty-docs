@@ -8,6 +8,8 @@ toc_max_heading_level: 4
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Details from '@site/src/components/Details';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
 
@@ -24,8 +26,50 @@ Before you start, ensure that:
 
 ### Set up event handlers
 
-To handle events for full-screen onboardings, use the `view.registerEventHandlers` method:
+To handle events for full-screen onboardings, use the event handlers method:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -63,6 +107,8 @@ try {
   // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 ## Embedded widget events
 
@@ -121,6 +167,36 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 
 Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onCustom(actionId, meta) {
+      handleCustomAction(actionId);
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -146,6 +222,8 @@ const unsubscribe = view.registerEventHandlers({
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -167,6 +245,29 @@ const unsubscribe = view.registerEventHandlers({
 
 When an onboarding finishes loading, this event will be triggered:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onFinishedLoading(meta) {
+      console.log('Onboarding loaded:', meta.onboardingId);
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -185,6 +286,8 @@ const unsubscribe = view.registerEventHandlers({
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -220,6 +323,30 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onClose(actionId, meta) {
+      // Handle navigation back or dismiss the view
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -239,6 +366,8 @@ const unsubscribe = view.registerEventHandlers({
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -264,6 +393,33 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    openPaywall(actionId);
+  },
+});
+
+const openPaywall = async (actionId) => {
+  // Implement your paywall opening logic here
+};
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onPaywall(actionId, meta) {
+      openPaywall(actionId);
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -286,6 +442,8 @@ const openPaywall = async (actionId) => {
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 <Details>
 <summary>Event example (Click to expand)</summary>
@@ -307,6 +465,29 @@ const openPaywall = async (actionId) => {
 
 When your users respond to a quiz question or input their data into an input field, the state update event will be triggered:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    saveUserResponse(action.elementId, action.params);
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      saveUserResponse(action.elementId, action.params);
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -325,6 +506,8 @@ const unsubscribe = view.registerEventHandlers({
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 :::note
 If you want to save or process data, you need to implement the methods yourself.
@@ -430,6 +613,29 @@ The `action` object contains:
 
 You receive an analytics event when various navigation-related events occur during the onboarding flow:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript showLineNumbers title="React Native"
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.type, meta.onboardingId);
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onAnalytics(event, meta) {
+      trackEvent(event.type, meta.onboardingId);
+    },
+  }}
+/>
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
 // Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
@@ -448,6 +654,8 @@ const unsubscribe = view.registerEventHandlers({
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 The `event` object can be one of the following types:
 

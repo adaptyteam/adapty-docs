@@ -7,7 +7,9 @@ metadataTitle: "Presenting Paywalls in React Native | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -27,6 +29,24 @@ To display a paywall, use the `view.present()` method on the `view` created by t
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.setEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty/dist/ui';
 
@@ -40,6 +60,10 @@ try {
   // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
+
 
 ## Use developer-defined timer
 

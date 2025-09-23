@@ -36,6 +36,24 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To have more customization options, [embed it in the component hierarchy](#embed-in-component-hierarchy).
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+view.setEventHandlers(); // handle close press, etc
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -49,6 +67,8 @@ try {
     // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
 
 

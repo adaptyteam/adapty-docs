@@ -31,6 +31,22 @@ To add a button that will close your paywall:
 In the React Native SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+      return true; // allow paywall closing
+  }
+});
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -42,6 +58,9 @@ const unsubscribe = view.registerEventHandlers({
   }
 });
 ```
+
+</TabItem>
+</Tabs>
 
 ## Open URLs from paywalls
 
@@ -58,6 +77,23 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 In the React Native SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {Linking} from 'react-native';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
@@ -72,12 +108,33 @@ const unsubscribe = view.registerEventHandlers({
 });
 ```
 
+</TabItem>
+</Tabs>
+
 ## Log into the app
 
 To add a button that logs users into your app:
 
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -92,6 +149,8 @@ const unsubscribe = view.registerEventHandlers({
     }
 });
 ```
+</TabItem>
+</Tabs>
 
 ## Handle custom actions
 
@@ -102,6 +161,8 @@ To add a button that handles any other actions:
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
 const unsubscribe = view.registerEventHandlers({
     onCustomAction(actionId) {
@@ -111,3 +172,17 @@ const unsubscribe = view.registerEventHandlers({
     },
 });
 ```
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
+
+```javascript
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+</TabItem>
+</Tabs>
