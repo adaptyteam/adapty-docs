@@ -18,7 +18,7 @@ After you set up your integration, it's time to test it. You can test both your 
 Before you start testing an integration, make sure you have already:
 
 1. Set up the webhook integration as described in the [Set up webhook integration](set-up-webhook-integration) topic.
-2. Set up the environment as described in the [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) topics. Make sure you built your test app in the sandbox environment rather than in the production one.
+2. Set up the environment as described in the [Test in-app purchases in Apple App Store](test-purchases-in-sandbox.md) and [Test in-app purchases in Google Play Store](testing-on-android) topics. Make sure you built your test app in the sandbox environment rather than in the production one.
 3. Make a purchase/start a trial/make a refund that will raise an event you've chosen to send to the webhook. For example, to get the **Subscription started** event, purchase a new subscription.
 
 ## Validation of the result
