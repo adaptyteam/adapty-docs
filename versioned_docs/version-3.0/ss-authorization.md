@@ -4,10 +4,12 @@ description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
 toc_max_heading_level: 2
+keywords: ['rate limit', 'api rate limit']
 ---
 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
 import ResponseExample from '@site/src/components/reusable/ResponseExample.md';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 ## Authorization
 
@@ -22,13 +24,19 @@ The server-side API requests require specific headers and a JSON body. Use the d
 | **Header**                  | **Description**                                              |
 | --------------------------- | ------------------------------------------------------------ |
 | **adapty-profile-id**       | <p>The user’s Adapty profile ID. Visible in the **Adapty ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. </p><p>Interchangeable with **adapty-customer-user-id**, use any of them.</p> |
-| **adapty-customer-user-id** | <p>The user’s ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. </p><p>Interchangeable with **adapty-profile-id**, use any of them.</p><p> ⚠️ Works only if you [identify users](identifying-users) in your app code using the Adapty SDK.</p> |
+| **adapty-customer-user-id** | <p>The user's ID in your system. Visible in the **Customer user ID** field in the [Adapty Dashboard -> **Profiles**](https://app.adapty.io/profiles/users) -> specific profile page. </p><p>Interchangeable with **adapty-profile-id**, use any of them.</p><p> ⚠️ Works only if you <InlineTooltip tooltip="identify users in your app">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> in your app code using the Adapty SDK.</p> |
 | **adapty-platform**         | (optional) Specify the platform of the device on which the app is installed. We recommend setting this parameter in the [Create profile](ss-create-profile) and [Update profile](ss-update-profile) requests when modifying the [Installation Meta](server-side-api-objects#installation-meta) object, as it depends on the device the user is using, and a single user may have multiple devices. Possible values: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`, or `web`. |
 | **Content-Type**            | Set to `application/json` for the API to process the request. |
 
 **Body**
 
 The API expects a JSON-formatted body with the necessary data for the request.
+
+## Rate limits
+
+To avoid throttling, ensure that the number of requests (per app) stays below 40,000 per minute.
+
+If this limit is exceeded, the system may slow down or temporarily block further requests to maintain optimal performance for all users.
 
 ---
 
@@ -42,3 +50,6 @@ The API expects a JSON-formatted body with the necessary data for the request.
 - [Revoke access level](ss-revoke-access-level)
 - [Set transaction](ss-set-transaction)
 - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
+- [Get paywall](ss-get-paywall)
+- [List paywalls](ss-list-paywalls)
+- [Update paywall](ss-update-paywall)

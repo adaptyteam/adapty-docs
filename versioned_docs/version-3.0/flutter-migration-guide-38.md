@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to Adapty Flutter SDK 3.8.0"
-description: ""
-metadataTitle: ""
+title: "Migrate Adapty Flutter SDK to v. 3.8"
+description: "Migrate to Adapty Flutter SDK v3.8 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty Flutter SDK v3.8 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';

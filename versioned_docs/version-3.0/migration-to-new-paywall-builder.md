@@ -19,24 +19,40 @@ We’re thrilled to introduce our [**New Paywall Builder**](adapty-paywall-build
 
 Adapty offers two versions of the Paywall Builder simultaneously:
 
-- **New Paywall Builder**: Located under the **Builder** tab of the paywall in the Adapty Dashboard, this version is the most recent and versatile. Paywalls created here require iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher.
+- **New Paywall Builder**: Located under the **Builder & Generator** tab of the paywall in the Adapty Dashboard, this version is the most recent and versatile. Paywalls created here require iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher.
 - **Legacy Paywall Builder**: Found under the **Legacy Builder** tab, this outdated version should only be used to support older app versions with SDKs below v3.x.x. We recommend avoiding it for new paywalls as it will be deprecated soon.
 
 ## Migrating Paywalls to the New Builder
 
-Migrating a paywall from the legacy builder to the new builder will create a new version of your paywall in the **Builder** tab. This version can be edited using the new Paywall Builder and will display in apps with Adapty SDK v3.0 or later. The legacy version remains in the **Legacy Builder** tab and supports apps with SDK 2.x or earlier.
+Migrating a paywall from the legacy builder to the new builder will create a new version of your paywall in the **Builder & Generator** tab. This version can be edited using the new Paywall Builder and will display in apps with Adapty SDK v3.0 or later. The legacy version remains in the **Legacy Builder** tab and supports apps with SDK 2.x or earlier.
 
 You’ll maintain paywalls in both formats separately, with changes in one format not affecting the other.
 
 ## Steps to Migrate a Paywall
 
+To migrate a paywall to the new Paywall Builder:
+
 1. Open the paywall you want to migrate.
-2. Open the **Builder** tab.
-
-   
+2. Open the **Builder & Generator** tab.
+3. Click **Migrate paywall**.
 
 <Zoom>
-  <img src={require('./img/3f4d4c2-PB_migrate_paywall.webp').default}
+   <img src={require('./img/migrate-paywall.png').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+</Zoom>
+
+4. After the migration is done, review the result and make sure the paywall looks as it should. If not, correct it.
+5. Click **Save**.
+6. If there are some issues, they will be highlighted in red and you will see them at once. Fix them and save the paywall again.
+
+<Zoom>
+  <img src={require('./img/migration-issues.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -45,29 +61,6 @@ You’ll maintain paywalls in both formats separately, with changes in one forma
   }}
 />
 </Zoom>
-
-
-
-3. Click the **Migrate paywall** button.
-4. After the migration is done, review the result, make sure the paywall looks as it should. If not, correct it.
-5. Click the **Save** button. 
-6. If there are some issues, they will be highlighted red and you will see them at once. Fix them and save the paywall again.
-
-   
-
-<Zoom>
-  <img src={require('./img/78f63f0-PB_hughlighted_issues.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
 
 You can migrate your paywalls one at a time to review and fix them as needed.
 

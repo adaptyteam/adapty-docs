@@ -6,10 +6,9 @@ metadataTitle: "Managing Test Devices | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Due to caching, changes made to paywalls or placements may take up to 20 minutes to reflect on the device. This delay is needed to speed up fetching a paywall for regular users, but it can be inconvenient when testing your changes.
-
-For testing purposes, you can assign your device as test, which will disable caching and ensure that your changes are immediately displayed.
+For testing purposes, you can assign your device as a test device, which disables caching and ensures that your changes are reflected immediately.
 
 :::note
 Testing devices are supported starting from specific SDK versions:
@@ -59,17 +58,17 @@ Flutter and Unity support will be added later.
 4. In the **Add test device** window, enter:
 
    | Field                                    | Description                                                                                                                                                                                                                             |
-   | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   |:-----------------------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
    | **Test device name**                     | Name of the test device(s) for your reference.                                                                                                                                                                                          |
    | **ID used to identify this test device** | Choose the identifier type you plan to use to identify the test device(s). Follow our recommendations in the [Which identifier you should use](test-devices#which-identifier-you-should-use) section below to pick the best option. |
-   | ** ID value**                            | Enter the value of the identifier.                                                                                                                                                                                                      |
+   | **ID value**                             | Enter the value of the identifier.                                                                                                                                                                                                      |
 5. Remember to click **Add test device** button to save the changes.
 
 ## Which identifier you should use
 
 To identify a device, you can use several identifiers. We recommend the following:
 
-- **Customer User ID** for both iOS and Android devices if you [identify your users in Adapty](identifying-users). That is the best choice, especially if you have more that one test device for one account in your app. If Customer User ID is used as **ID used to identify this test device**, all the devices connected to this account will be marked as test devices.
+- **Customer User ID** for both iOS and Android devices if you <InlineTooltip tooltip="identify your users in Adapty">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>. That is the best choice, especially if you have more that one test device for one account in your app. If Customer User ID is used as **ID used to identify this test device**, all the devices connected to this account will be marked as test devices.
 - **IDFA (iOS)** and **Advertising ID (Android)**: These advertising identifiers are a perfect choice for iOS and Android devices respectively if you're already asking your users for consent to access them. Even if you have a Customer User ID, you may prefer using advertising identifiers if you switch between accounts in your app while testing. Additionally,  those identifiers are beneficial if the same account has both test and personal devices and you don't want the personal devices marked as test devices.
 
 There are other options, such as the Adapty Profile ID, IDFV, and Android ID, which are less convenient but can be used if you cannot use Customer User ID, IDFA, or Advertising ID. 
@@ -80,7 +79,7 @@ Let's review all possible options in detail.
 
 | Identifier | Usage |
 |----------|-----|
-| Customer User ID | <p>A unique identifier set by you to identify your users in your system. This could be the user's email, your internal ID, or any other string. To use this option, you must [Identify your users in Adapty](identifying-users).</p><p></p><p>It is the best choice for identifying a test device, especially if you're using several devices for the same account. All the devices with this account will be considered test.</p> |
+| Customer User ID | <p>A unique identifier set by you to identify your users in your system. This could be the user's email, your internal ID, or any other string. To use this option, you must <InlineTooltip tooltip="Identify your users in Adapty">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.</p><p></p><p>It is the best choice for identifying a test device, especially if you're using several devices for the same account. All the devices with this account will be considered test.</p> |
 | Adapty profile ID | <p>A unique identifier for the [user profile](profiles-crm)  in Adapty.</p><p></p><p>Use it if you cannot use Customer User ID, IDFA for iOS, or Advertising ID for Android. Note that the Adapty Profile ID can change if you reinstall the app or re-log in.</p> |
 
 

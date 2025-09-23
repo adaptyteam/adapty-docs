@@ -8,22 +8,25 @@ keywords: ['attribution', 'updateAttribution']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
 Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), and [Facebook Ads](facebook-ads). Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
 
-Send subscription events with correct user properties and ID's to attributions services you use.
+You can also integrate with [Adapty's User Acquisition](user-acquisition.md) to connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
 
 ### Important
+Send subscription events with correct user properties and ID's to attributions services you use.
 
 :::warning
 
 - **Avoid event duplication**: Be sure to disable subscription event forwarding from both devices and your server to prevent duplicates. If you're using direct integration with Facebook, remember to turn off event forwarding from AppsFlyer, Adjust, or Branch.
 
-- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won’t be able to send subscription events.
+- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won't be able to send subscription events.
 - **Set a single attribution source**: Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
   For iOS devices, this means non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if it's enabled. You can disable Apple Search Ads attribution collection by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads). 
-- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won’t be overwritten in analytics once stored.
+- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won't be overwritten in analytics once stored.
 
 :::
 
@@ -45,8 +48,6 @@ Don't see your attribution provider?
 Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll consider adding it.
 :::
 
-<!--
-
 ### Setting attribution data
 
 To set attribution data for the profile, use `.updateAttribution()` method:
@@ -63,7 +64,11 @@ Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<n
 </TabItem>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
-Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->
+Adapty.updateAttribution(
+    mapOf("source" to "appsflyer", "campaign" to "summer_sale_2024"),
+    "appsflyer",
+    "networkUserId"
+) { error ->
     if (error == null) {
         // succesfull attribution update
     }
@@ -162,7 +167,7 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
         // It's important to include the network user ID
         Adapty.updateAttribution(
             conversionData,
-            AdaptyAttributionSource.APPSFLYER,
+            "appsflyer",
             AppsFlyerLib.getInstance().getAppsFlyerUID(context)
         ) { error ->
             if (error != null) {
@@ -244,7 +249,7 @@ func adjustAttributionChanged(_ attribution: ADJAttribution?) {
 ```kotlin showLineNumbers
 adjustConfig.setOnAttributionChangedListener { attribution ->
     attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
+        Adapty.updateAttribution(attribution, "adjust") { error ->
             if (error != null) {
                 //handle error
             }
@@ -295,7 +300,7 @@ Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) i
 object branchListener : Branch.BranchReferralInitListener {
     override fun onInitFinished(referringParams: JSONObject?, error: BranchError?) {
         referringParams?.let { data ->
-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
+            Adapty.updateAttribution(data, "branch") { error ->
                 if (error != null) {
                     //handle error
                 }
@@ -329,11 +334,11 @@ You should also configure [Branch integration](branch) in Adapty Dashboard.
 
 ### Apple Search Ads
 
-Adapty can automatically collect Apple Search Ad attribution data. All you need is to add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plist` file and set it to `YES` (boolean value).
+Adapty can automatically collect Apple Search Ad attribution data. All you need is to add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app's `Info.plist` file and set it to `YES` (boolean value).
 
 ### Facebook Ads
 
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty via [`.updateProfile()`](setting-user-attributes) method. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
+Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty by following the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -373,9 +378,6 @@ Adapty.updateProfile(builder.build(), error -> {
 ```
 </TabItem>
 </Tabs>
-
--->
-
 
 ### Custom
 

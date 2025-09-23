@@ -2,7 +2,7 @@
 title: "Observer mode"
 description: "Compare Observer Mode and Full Mode in Adapty for subscriptions."
 metadataTitle: "Observer Mode vs Full Mode in Adapty | Adapty Docs"
-keywords: ['observer']
+keywords: ['observer', 'report transactions']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -30,7 +30,7 @@ In Observer mode, you report new transactions from Apple/Google to the Adapty SD
 ## How to set up Observer mode
 
 1. Set up initial integration of Adapty [with Google Play](initial-android) and [with App Store](initial_ios). 
-2. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
+2. Turn it on when configuring the Adapty SDK by setting the `observerMode` parameter to `true`. Follow the setup instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Android](sdk-installation-android#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md#configure-adapty-sdk), and [Unity](sdk-installation-unity#configure-adapty-sdk).
 3. [Report transactions](report-transactions-observer-mode) from your existing purchase infrastructure to Adapty for iOS and iOS-based cross-platform frameworks.
 4. (optional) If you want to use 3d-party integrations, set them up as described in the [Configure 3d-party integration](configuration) topic.
 

@@ -1,5 +1,5 @@
 ---
-title: "iOS - Handle paywall events"
+title: "Handle paywall events in legacy iOS SDK"
 description: "Handle events in iOS (Legacy) apps with Adapty’s event tracking system."
 metadataTitle: "Handling Events in iOS (Legacy) | Adapty Docs"
 toc_max_heading_level: 4

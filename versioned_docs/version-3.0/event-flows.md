@@ -1,14 +1,14 @@
 ---
 title: "Event flows"
-description: "Discover detailed schemes of subscription event flows in Adapty. Learn how subscription events are generated and sent to integrations, helping you track key moments in your customers’ journeys."
+description: "Discover detailed schemes of subscription event flows in Adapty. Learn how subscription events are generated and sent to integrations, helping you track key moments in your customers' journeys."
 metadataTitle: "Understanding Event Flows in Adapty: Schemes and Scenarios"
-keywords: ['refund', 'trial', 'restore', 'events']
+keywords: ['refund', 'trial', 'restore', 'events', 'event']
 rank: 70
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 
 In Adapty, you'll receive various subscription events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
@@ -333,7 +333,7 @@ If the payment never succeeds till the end of the grace period, the flow is the 
 
 ## Sharing Purchases Across User Accounts Flows
 
-When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) attempts to restore or extend a subscription already tied to a different [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), Adapty’s **Sharing paid access between user accounts** setting controls how access is managed. The flow will vary depending on the selected option.
+When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> attempts to restore or extend a subscription already tied to a different <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, Adapty's **Sharing paid access between user accounts** setting controls how access is managed. The flow will vary depending on the selected option.
 
 ###  Transfer Access to New User Flow
 
@@ -396,7 +396,7 @@ Here’s a breakdown of the fields related to access level assignment and transf
 
 ###  Shared Access Between Users Flow
 
-This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) to maintain complete transaction history and analytics.
+This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they'll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> to maintain complete transaction history and analytics.
 
 Therefore, only 1 event will be created: **Access level updated** to grant access to the second user.
 
@@ -433,7 +433,7 @@ Here’s a breakdown of the fields related to access level assignment and sharin
 
 ###  Access Not Shared Between Users Flow
 
-With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single [Customer User ID](identifying-users#setting-customer-user-id-on-configuration). 
+With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>. 
 
 <Zoom>
   <img src={require('./img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp').default}

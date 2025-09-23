@@ -45,3 +45,6 @@ We've created a unified environment for the server-side API, web API, and analyt
 - [Set transaction](ss-set-transaction)
 - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
 - [Add integration identifiers](ss-add-integration)
+- [Get paywall](ss-get-paywall)
+- [List paywalls](ss-list-paywalls)
+- [Update paywall](ss-update-paywall)

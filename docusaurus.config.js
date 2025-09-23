@@ -51,11 +51,6 @@ const config = {
               path: "/",
               banner: "none",
             },
-            /*"2.0": {
-              banner: "none",
-              path: "2.0",
-
-            },*/
           },
           includeCurrentVersion: false,
         },
@@ -72,37 +67,15 @@ const config = {
       }),
     ],
   ],
-  /*plugins: [
-    [
-      '@docusaurus/plugin-client-redirects',
-      {
-        redirects: [
-          {
-            to: '/generate-in-app-purchase-key',
-            from: '/in-app-purchase-api-storekit-2',
-          },
-          {
-            to: '/enable-app-store-server-notifications',
-            from: '/app-store-server-notifications',
-          },
-          {
-            to: '/offers',
-            from: '/app-store-promotional-offers',
-          },
-          {
-            to: '/app-store-connection-configuration#step-4-enter-app-store-shared-secret',
-            from: '/app-store-shared-secret',
-          },
-        ],
-      },
-    ],
-  ],*/
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
-      metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
+      metadata: [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'keywords', content: 'adapty, subscription management, mobile subscriptions, app monetization, in-app purchases, subscription analytics, paywall, revenue optimization' }
+      ],
       navbar: {
         title: "",
         logo: {
@@ -122,32 +95,47 @@ const config = {
             position: "left",
             label: "Documentation",
           },
-          /*{
-            label: "SDK Reference",
+          {
+            label: "Mobile SDK ⏷",
             position: "left",
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                type: "docSidebar",
+                sidebarId: "sdkios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                type: "docSidebar",
+                sidebarId: "sdkandroid",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                type: "docSidebar",
+                sidebarId: "sdkflutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                type: "docSidebar",
+                sidebarId: "sdkreactnative",
               },
+              {
+                label: "Unity",
+                type: "docSidebar",
+                sidebarId: "sdkunity",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
+              }
             ],
-          },*/
+          },
           {
             label: "Server API",
             position: "left",
-            href: "/getting-started-with-server-side-api",
+            type: "docSidebar",
+            sidebarId: "APISidebar",
           },
           {
             label: "Support Forum",
@@ -240,19 +228,19 @@ const config = {
             items: [
               {
                 label: "iOS",
-                href: "https://swift.adapty.io/documentation/adapty/",
+                href: "/sdk-installation-ios",
               },
               {
                 label: "Android",
-                href: "https://kotlin.adapty.io/",
+                href: "/sdk-installation-android",
               },
               {
                 label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/adapty_flutter-library.html",
+                href: "/sdk-installation-flutter",
               },
               {
                 label: "React Native",
-                href: "https://react-native.adapty.io/classes/adapty",
+                href: "/sdk-installation-reactnative",
               },
               {
                 label: "SDK Models",
@@ -365,6 +353,64 @@ const config = {
     {
       src: 'https://survey.survicate.com/workspaces/af55d3f51f8189593de1c948b75c88f6/web_surveys.js',
       async: true,
+    },
+  ],
+
+  plugins: [
+    require('./plugins/cookie-checker-plugin'),
+    require.resolve('./plugins/custom-meta-plugin.js'),
+    // Existing build plugins
+    function copyMarkdownPlugin() {
+      return {
+        name: 'copy-markdown-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-markdown.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-markdown.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsTxtPlugin() {
+      return {
+        name: 'generate-llms-txt-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-txt.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-txt.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsFullPlugin() {
+      return {
+        name: 'generate-llms-full-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-full.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-full.js:', e);
+          }
+        },
+      };
+    },
+    function copyStaticToBuildPlugin() {
+      return {
+        name: 'copy-static-to-build-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/copy-static-to-build.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running copy-static-to-build.js:', e);
+          }
+        },
+      };
     },
   ],
 };

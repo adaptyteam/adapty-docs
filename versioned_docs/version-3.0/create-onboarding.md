@@ -1,6 +1,7 @@
 ---
 title: "Create onboarding"
 metadataTitle: "Create Onboardings in Adapty | Adapty Docs"
+rank: 90
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -66,6 +67,11 @@ To create a new onboarding in the Adapty dashboard:
    />
    </Zoom>
 5. If everything works fine, click **Publish** at the top right. Please wait until it is published before getting back to Adapty. Otherwise, your progress will be lost.
+
+:::danger
+If you don't click **Publish**, the SDK won't be able to get the onboarding you've created.
+:::
+
    <Zoom>
    <img src={require('./img/create-onboarding5.png').default}
    style={{
@@ -96,9 +102,6 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
 2. Enter the placement name and ID. Then, click **Run onboarding** and select an onboarding to show to all users.
 3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
 
-:::info
-You can also run [A/B tests](ab-tests.md) to understand which onboarding works better.
-:::
 
 ## Step 3. Integrate the onboarding into your app
 
@@ -106,5 +109,10 @@ You can also run [A/B tests](ab-tests.md) to understand which onboarding works b
 Onboardings are available only for apps using Adapty iOS, Android, or Flutter SDK version 3.8.0 or higher.
 :::
 
-To start displaying onboardings in your app, [integrate them using Adapty SDK](onboarding-sdk.md).
+To start displaying onboardings in your app, integrate them using Adapty SDK:
+- [iOS](ios-onboardings.md)
+- [Android](android-onboardings.md)
+- [Flutter](flutter-onboardings.md)
+- [React Native](react-native-onboardings.md)
 
+To understand which onboarding works better, you can also run [A/B tests](ab-tests.md).

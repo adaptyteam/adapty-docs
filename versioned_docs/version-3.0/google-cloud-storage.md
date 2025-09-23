@@ -286,7 +286,7 @@ Here is the table structure for the events:
 | **attribution_ad_set** | Attribution ad set. |
 | **attribution_creative** | Attribution creative keyword. |
 | **attributes** | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). This will include any custom attributes you’ve set up to send from your mobile app. To send it, enable the **Send User Attributes** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page. |
-
+| **integration_ids**             | All integration IDs associated with a profile. Dictionary. Example: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
 
 Here is the table structure for the paywall visits:
 

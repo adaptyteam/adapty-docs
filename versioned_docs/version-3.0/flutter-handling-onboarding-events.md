@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Handle onboarding events"
+title: "Handle onboarding events in Flutter SDK"
 description: "Handle onboarding-related events in Flutter using Adapty."
 metadataTitle: "Handling Onboarding Events in Flutter | Adapty Docs"
 toc_max_heading_level: 4
@@ -16,7 +16,7 @@ Onboardings configured with the builder generate events your app can respond to.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Flutter SDK](installation-of-adapty-sdks.md) 3.8.0 or later.
+1. You have installed [Adapty Flutter SDK](sdk-installation-flutter.md) 3.8.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -175,6 +175,22 @@ onCustomAction: (meta, actionId) {
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
 ### Finishing loading onboarding
 
 When an onboarding finishes loading, this event will be triggered:
@@ -193,6 +209,22 @@ onDidFinishLoading: (meta) {
   print('Onboarding loaded: ${meta.onboardingId}');
 }
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
 
 ### Closing onboarding
 
@@ -229,6 +261,23 @@ onCloseAction: (meta, actionId) {
 }
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
 ### Opening a paywall
 
 :::tip
@@ -256,6 +305,23 @@ onPaywallAction: (meta, actionId) {
   _openPaywall(actionId);
 }
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
 
 ### Updating field state
 
@@ -287,6 +353,94 @@ The `params` object contains user input data, which can be one of the following 
 - `multiSelect`: Multiple selections from a list of options
 - `input`: Text input from the user
 - `datePicker`: Date selected by the user
+
+<Details>
+<summary>Saved data examples (Click to expand)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
 
 ### Tracking navigation
 
@@ -328,3 +482,86 @@ Each event includes `meta` information containing:
 | `screenClientId` | Identifier of the current screen |
 | `screenIndex` | Current screen's position in the flow |
 | `screensTotal` | Total number of screens in the flow |
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

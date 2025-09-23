@@ -23,7 +23,7 @@ import TabItem from '@theme/TabItem';
   </a>
 
 :::tip
-[Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
+[Start using Adapty with FlutterFlow and get 3 months of Pro+ for free!](https://app.adapty.io/flutterflow-offer/.)
 :::
 
 Adapty is a versatile platform designed to help mobile apps grow. Whether you’re just starting out or already have thousands of users, Adapty lets you save months on integrating in-app purchases and double subscription revenue with paywall management.
@@ -40,5 +40,5 @@ What else Adapty offers you:
 - **Integrations**: Adapty seamlessly connects with third-party analytics tools like Amplitude, AppsFlyer, Adjust, Branch, Mixpanel, Facebook Ads, AppMetrica, custom Webhooks, and more.
 
 :::tip
-[Start using Adapty with FlutterFlow and get 3 months for free!](https://app.adapty.io/flutterflow-offer/.)
+[Start using Adapty with FlutterFlow and get 3 months of Pro+ for free!](https://app.adapty.io/flutterflow-offer/.)
 :::

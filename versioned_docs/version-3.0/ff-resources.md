@@ -1,7 +1,8 @@
 ---
-title: "Adapty Resources"
+title: "Adapty FlutterFlow plugin actions and data types"
 description: "Access Adapty's feature flag resources to streamline subscription-based features."
 metadataTitle: "Feature Flag Resources | Adapty Docs"
+rank: 40
 ---
 ## Custom Actions
 

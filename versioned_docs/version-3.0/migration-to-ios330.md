@@ -1,7 +1,7 @@
 ---
-title: "Migration guide to Adapty iOS SDK 3.3.x"
-description: ""
-metadataTitle: ""
+title: "Migrate Adapty iOS SDK to v. 3.3"
+description: "Migrate to Adapty iOS SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty iOS SDK v3.3 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';
@@ -113,7 +113,7 @@ do {
 }
 ```
 
-For more details about the method, check out [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)..
+For more details about the method, check out [Fetch the view configuration of paywall designed using Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
 
 ## Change parameters in SwiftUI
 

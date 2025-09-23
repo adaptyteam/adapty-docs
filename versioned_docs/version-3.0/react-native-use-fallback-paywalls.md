@@ -17,18 +17,33 @@ Follow the instructions below to use the fallback paywalls in your mobile app co
       - `{ relativeAssetPath: 'android_fallback.json' }` if you placed the file to the  root of `assets` itself
       - `{ relativeAssetPath: '<additional_folder>/android_fallback.json' }` if you placed it in a child folder of `assets`
    2. **For android/app/src/main/res/raw/**: Pass `{ rawResName: 'android_fallback' }`. Type the file name without the file extension.
-2. Pass the result of step 2 to the `android` property of `FallbackPaywallsLocation`.
+2. Pass the result of step 2 to the `android` property of `FileLocation`.
 
 ### For iOS
 
 1. In XCode, use the menu **File** -> **Add Files to "YourProjectName"** to add the fallback file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard).
-2. Pass `{ fileName: 'ios_fallback.json' }` to the `ios` property of `FallbackPaywallsLocation`.
+2. Pass `{ fileName: 'ios_fallback.json' }` to the `ios` property of `FileLocation`.
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
-<Tabs groupId="current-os" queryString> <TabItem value="current" label="Current (v2.11+)" default> 
+<Tabs groupId="current-os" queryString> <TabItem value="current" label="Current (v3.8+)" default> 
 ```typescript showLineNumbers
-//after v2.11
+//after v3.8
+const fileLocation = {
+  ios: {
+    fileName: 'ios_fallback.json'
+  },
+  android: {
+    //if the file is located in 'android/app/src/main/assets/'
+    relativeAssetPath: 'android_fallback.json'
+  }
+}
+await adapty.setFallback(fileLocation);
+```
+</TabItem> 
+<TabItem value="old" label="Legacy (before v3.8)" default> 
+```typescript showLineNumbers
+//Legacy (before v3.8)
 const paywallsLocation = {
   ios: {
     fileName: 'ios_fallback.json'
@@ -41,19 +56,6 @@ const paywallsLocation = {
 await adapty.setFallbackPaywalls(paywallsLocation);
 ```
 </TabItem> 
-<TabItem value="old" label="Legacy (before v2.11)" default> 
-```typescript showLineNumbers
-//Legacy (before v2.11)
-const fallbackPaywalls = Platform.select({
-  ios: require('./ios_fallback.json'),
-  android: require('./android_fallback.json'),
-});
-// React Native automatically parses JSON, but we do not need that
-const fallbackString = JSON.stringify(fallbackPaywalls);
-
-await adapty.setFallbackPaywalls(fallbackString);
-```
-</TabItem> 
 </Tabs>
 
 
@@ -63,4 +65,4 @@ Parameters:
 
 | Parameter            | Description                                              |
 | :------------------- | :------------------------------------------------------- |
-| **paywallsLocation** | The object represents the location of the file resource. |
+| **fileLocation** | The object represents the location of the file resource. |

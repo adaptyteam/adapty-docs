@@ -8,7 +8,15 @@ keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'o
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::important
+This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](android-handle-paywall-actions.md) for details.
+:::
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -26,37 +34,6 @@ Below are the defaults from `AdaptyUiDefaultEventListener`.
 
 ### User-generated events
 
-#### Actions
-
-When a user performs an action (like clicking a close, custom button, or opening a URL), the `onActionPerformed(…)` method will be triggered. You’ll need to define what each action should do. 
-
-The following built-in actions are supported:
-
-- `Close`
-- `OpenUrl(url)`
-
-Custom actions are handled differently. For example, if a user taps a custom button, like **Login** or **Open another paywall**, the delegate method `onActionPerformed(…)` will be triggered with the `Custom(id)` case and the `id` parameter is the **Button action ID** from the Adapty Dashboard. The ID for the custom action "login" is predefined, but for other custom actions, you can create your own IDs, like "open_another_paywall". 
-
-Here’s an example, but feel free to handle the actions in your own way:
-
-```kotlin showLineNumbers title="Kotlin"
-override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-    when (action) {
-        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed()
-        
-        is AdaptyUI.Action.OpenUrl -> //launching intent to open url
-       
-        is AdaptyUI.Action.Custom -> //no default action
-    }
-}
-```
-
-:::tip
-
-Make sure to implement responses for all [predefined and custom actions](paywall-buttons) you’ve set up in the Adapty Dashboard.
-
-:::
-
 #### Product selection
 
 If a product is selected for purchase (by a user or by the system), this method will be invoked:
@@ -67,6 +44,23 @@ public override fun onProductSelected(
     context: Context,
 ) {}
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
 
 #### Started purchase
 
@@ -79,11 +73,28 @@ public override fun onPurchaseStarted(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
 #### Successful, canceled, or pending purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFinished(
@@ -96,13 +107,73 @@ public override fun onPurchaseFinished(
 }
 ```
 
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 We recommend dismissing the screen in that case. 
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If purchase fails, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFailure(
@@ -112,11 +183,35 @@ public override fun onPurchaseFailure(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onRestoreSuccess(
@@ -125,7 +220,32 @@ public override fun onRestoreSuccess(
 ) {}
 ```
 
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](android-listen-subscription-changes.md) topic to learn how to check it.
 
 #### Failed restore
 
@@ -138,7 +258,71 @@ public override fun onRestoreFailure(
 ) {}
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
 #### Upgrade subscription
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK version 3.10.0 or later" default>
+
+When a user attempts to purchase a new subscription while another subscription is active, you can control how the new purchase should be handled by overriding this method. You have two options:
+
+1. **Replace the current subscription** with the new one:
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Keep both subscriptions** (add the new one separately):
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+If you don't override this method, the default behavior is to keep both subscriptions active (equivalent to using `AdaptyPurchaseParameters.Empty`).
+:::
+
+You can also set additional purchase parameters if needed:
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // optional - for replacing current subscription
+    .withOfferPersonalized(true) // optional - if using personalized pricing
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK version earlier than 3.10.0" default>
 
 If a new subscription is purchased while another is still active, override this method to replace the current one with the new one. If the active subscription should remain active and the new one is added separately, call `onSubscriptionUpdateParamsReceived(null)`:
 
@@ -151,6 +335,29 @@ public override fun onAwaitingSubscriptionUpdateParams(
     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
 }
 ```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
 
 ### Data fetching and rendering
 
@@ -165,6 +372,22 @@ public override fun onLoadingProductsFailure(
 ): Boolean = false
 ```
 
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
 If you return `true`, AdaptyUI will repeat the request in 2 seconds.
 
 #### Rendering errors
@@ -177,5 +400,21 @@ public override fun onRenderingError(
     context: Context,
 ) {}
 ```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
