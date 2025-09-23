@@ -138,27 +138,18 @@ Add the initialization as early as possible—typically in your shared Kotlin co
 ```kotlin title="Kotlin" showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig
-import com.adapty.kmp.models.AdaptyLogLevel
-import android.util.Log
 
-// In your Application subclass
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .build()
 
-        val config = AdaptyConfig
-            .Builder("PUBLIC_SDK_KEY")
-            .build()
-        
-        Adapty.activate(configuration = config)
-            .onSuccess {
-                Log.d("Adapty", "SDK initialised")
-            }
-            .onError { error ->
-                Log.e("Adapty", "Adapty init error: ${error.message}")
-            }
+Adapty.activate(configuration = config)
+    .onSuccess {
+        Log.d("Adapty", "SDK initialised")
     }
-}
+    .onError { error ->
+        Log.e("Adapty", "Adapty init error: ${error.message}")
+    }
 ```
 
 To get your **Public SDK Key**:
@@ -177,7 +168,7 @@ To get your **Public SDK Key**:
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to activate the **AdaptyUI** module to use the [Adapty Paywall Builder](display-pb-paywalls.md), make sure to set `.withActivateUI(true)` in your configuration.
+If you plan to activate the **AdaptyUI** module to use the [Adapty Paywall Builder](kmp-present-paywalls.md), make sure to set `.withActivateUI(true)` in your configuration.
 
 :::info
 important
@@ -188,26 +179,19 @@ In your code, you must activate the core Adapty module before activating AdaptyU
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig
 import com.adapty.kmp.models.AdaptyLogLevel
-import android.util.Log
 
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withActivateUI(true)           // true for activating the AdaptyUI module
+    .build()  
 
-        val config = AdaptyConfig
-            .Builder("PUBLIC_SDK_KEY")
-            .withActivateUI(true)           // true for activating the AdaptyUI module
-            .build()  
-
-        Adapty.activate(configuration = config) { error ->
-            if (error == null) {
-                Log.d("Adapty", "SDK initialised")
-            } else {
-                Log.e("Adapty", "Adapty init error: ${'$'}{error.message}")
-            }
-        }
+Adapty.activate(configuration = config)
+    .onSuccess {
+        Log.d("Adapty", "SDK initialised")
     }
-}       
+    .onError { error ->
+        Log.e("Adapty", "Adapty init error: ${error.message}")
+    }    
 ```
 
 ## Configure Proguard (Android)

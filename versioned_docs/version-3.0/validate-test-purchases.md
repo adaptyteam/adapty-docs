@@ -35,7 +35,7 @@ If transactions work as expected, proceed to the [Release checklist](release-che
 
 ## ❌ Test purchase is not successful
 
-If you observe no transaction event within 10 minutes or encounter an error in the mobile app, refer to the [ Troubleshooting](troubleshooting-test-purchases) and articles on error handling [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter, React Native, Unity](error-handling-on-flutter-react-native-unity), and [Kotlin Multiplatform](error-handling-on-kotlin-multiplatform.md) for potential solutions.
+If you observe no transaction event within 10 minutes or encounter an error in the mobile app, refer to the [ Troubleshooting](troubleshooting-test-purchases) and articles on error handling [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter](error-handling-on-flutter-react-native-unity), [for React Native](react-native-handle-errors.md), [for Unity](unity-handle-errors.md), and [Kotlin Multiplatform](kmp-handle-errors.md) for potential solutions.
 
 
 <Zoom>

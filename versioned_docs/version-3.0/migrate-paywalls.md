@@ -14,13 +14,17 @@ Migration lets you copy all visual configurations:
 - Media
 - Localization
 
-Migration applies only to builder configuration and it doesn't copy products or remote config. 
+Migration applies only to builder configuration, and it doesn't copy products or remote config. 
 
 :::note
 If you migrate a paywall builder configuration with custom fonts, test them on a device as they may display incorrectly.
 :::
 
 ## Migrate paywall
+
+:::important
+You can migrate only paywalls created in the **new** Adapty paywall builder. To migrate **legacy** paywall builder paywalls, you must migrate them to the new paywall builder first.
+:::
 
 To migrate a paywall builder configuration:
 

@@ -1,8 +1,7 @@
 ---
-title: "Identify users in Android SDK"
-description: "Identify users in Adapty to improve personalized subscription experiences (Android)."
+title: "Identify users in Kotlin Multiplatform SDK"
+description: "Identify users in Adapty to improve personalized subscription experiences."
 metadataTitle: "Identifying Users in Adapty | Adapty Docs"
-displayed_sidebar: sdkandroid
 ---
 
 import Zoom from 'react-medium-image-zoom';

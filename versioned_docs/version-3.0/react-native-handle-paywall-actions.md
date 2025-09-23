@@ -17,7 +17,7 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 This guide shows how to handle custom and pre-existing actions in your code.
 
 :::warning
-**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+**Only purchases, restorations, paywall closures, and URL opening are handled automatically.** All other button actions require proper response implementation in the app code.
 :::
 
 ## Close paywalls
@@ -55,6 +55,22 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 
 For standalone screen, implement the close handler using `registerEventHandlers`:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+      return true; // allow paywall closing
+  }
+});
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -62,11 +78,13 @@ const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
   onCloseButtonPress() {
-      view.dismiss(); // default behavior
-      return true;
+      return true; // allow paywall closing
   }
 });
 ```
+
+</TabItem>
+</Tabs>
 
 </TabItem>
 </Tabs>
@@ -106,6 +124,23 @@ import { Linking } from 'react-native';
 
 For standalone screen, implement the URL handler using `registerEventHandlers`:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {Linking} from 'react-native';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
@@ -115,9 +150,13 @@ const view = await createPaywallView(paywall);
 const unsubscribe = view.registerEventHandlers({
     onUrlPress(url) {
         Linking.openURL(url);
+        return false; // Keep paywall open
     },
 });
 ```
+
+</TabItem>
+</Tabs>
 
 </TabItem>
 </Tabs>
@@ -154,6 +193,24 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 
 For standalone screen, implement the login handler using `registerEventHandlers`:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
+
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
@@ -167,6 +224,8 @@ const unsubscribe = view.registerEventHandlers({
     }
 });
 ```
+</TabItem>
+</Tabs>
 
 </TabItem>
 </Tabs>
@@ -205,6 +264,8 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 
 For standalone screen, implement custom action handlers using `registerEventHandlers`:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript
 const unsubscribe = view.registerEventHandlers({
     onCustomAction(actionId) {
@@ -215,5 +276,19 @@ const unsubscribe = view.registerEventHandlers({
 });
 ```
 
+</TabItem>
+</Tabs>
+</TabItem>
+<TabItem value="new" label="SDK version < 3.12" default>
+
+```javascript
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
 </TabItem>
 </Tabs>

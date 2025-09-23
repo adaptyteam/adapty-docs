@@ -97,7 +97,7 @@ Read our guides on how to handle button [actions](kmp-handle-paywall-actions.md)
 AdaptyUI.setObserver(object : AdaptyUIObserver {
     override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
         when (action) {
-            is AdaptyUIAction.CloseAction -> view.dismiss()
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
         }
     }
 })

@@ -46,9 +46,3 @@ This guide helps you resolve common issues when implementing purchases manually 
 **Reason**: This is typically related to sandbox testing issues.
 
 **Solution**: Create a new sandbox user and try again. This often resolves sandbox-related purchase completion handler issues.
-
-## Other issues
-
-**Issue**: You're experiencing other purchase-related problems not covered above.
-
-**Solution**: Migrate the SDK to the latest version using the [migration guides](kmp-sdk-migration-guides) if needed. Many issues are resolved in newer SDK versions.

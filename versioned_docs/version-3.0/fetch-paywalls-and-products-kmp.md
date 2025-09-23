@@ -25,7 +25,7 @@ Before showcasing remote config and custom paywalls, you need to fetch the infor
 
 3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
 
-4. [Install Adapty SDK](sdk-installation-kmp) in your mobile app.
+4. [Install Adapty SDK](sdk-installation-kotlin-multiplatform.md) in your mobile app.
 </details>
 
 ## Fetch paywall information
@@ -34,8 +34,6 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
@@ -52,29 +50,11 @@ Adapty.getPaywall(
     // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // the requested paywall
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
-| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](kmp-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p> |
 | **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls in two layers: regularly updated cache described above and [fallback paywalls](kmp-use-fallback-paywalls) . We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
 | **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p></p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
@@ -92,9 +72,6 @@ Response parameters:
 
 Once you have the paywall, you can query the product array that corresponds to it:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin showLineNumbers
 Adapty.getPaywallProducts(paywall).onSuccess { products ->
     // the requested products
@@ -102,24 +79,6 @@ Adapty.getPaywallProducts(paywall).onSuccess { products ->
     // handle the error
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywallProducts(paywall, result -> {
-    if (result instanceof AdaptyResult.Success) {
-        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
-        // the requested products
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-      
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 Response parameters:
 

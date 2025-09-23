@@ -126,11 +126,11 @@ For more details on how to display a paywall, see our [guide](react-native-prese
 
 ## 3. Handle button actions
 
-When users click buttons in the paywall, the React Native SDK automatically handles purchases, restoration, and closing the paywall.
+When users click buttons in the paywall, the React Native SDK automatically handles purchases, restoration, closing the paywall, and opening URLs.
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
-For example, you will definitely need to support opening links when users tap them.
+For example, here is the default behavior for the close button. You don't need to add it in the code, but here, you can see how it is done if needed.
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="Platform view" default>
@@ -163,11 +163,10 @@ import { Linking } from 'react-native';
 For standalone screen, implement event handlers using `registerEventHandlers`:
 
 ```typescript showLineNumbers title="React Native"
-const unsubscribe = view.registerEventHandlers({
-    onUrlPress(url) {
-      Linking.openURL(url);
-      return false;
-  },
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
 });
 ```
 
@@ -263,10 +262,9 @@ export default function PaywallScreen() {
 
       const view = await createPaywallView(paywall);
 
-      view.registerEventHandlers({
-          onUrlPress(url) {
-              Linking.openURL(url);
-              return false;
+      view.setEventHandlers({
+          onCloseButtonPress() {
+              return true;
         },
       });
 

@@ -66,6 +66,24 @@ To display a paywall as a standalone screen that users can dismiss, use the `vie
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.setEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty/dist/ui';
 
@@ -79,6 +97,10 @@ try {
   // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
+
 
 ## Use developer-defined timer
 

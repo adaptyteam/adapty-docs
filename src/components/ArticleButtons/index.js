@@ -41,15 +41,12 @@ export default function ArticleButtons({ articleUrl }) {
   useEffect(() => {
     const loadMarkdownContent = async () => {
       const markdownUrl = getMarkdownUrl();
-      console.log('Loading markdown from:', markdownUrl);
 
       try {
         const response = await fetch(markdownUrl);
         const text = await response.text();
         setMarkdownContent(text);
-        console.log('Markdown content loaded successfully');
       } catch (error) {
-        console.error('Failed to load markdown:', error);
         setMarkdownContent('');
       }
     };
@@ -72,7 +69,6 @@ export default function ArticleButtons({ articleUrl }) {
 
       // Success event
       clipboardRef.current.on('success', (e) => {
-        console.log('Clipboard.js: Copy successful');
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
         e.clearSelection();
@@ -110,14 +106,12 @@ export default function ArticleButtons({ articleUrl }) {
             }
           }, 100);
         } catch (error) {
-          console.error('Failed to load markdown on demand:', error);
         }
       };
 
       loadAndCopy();
     }
     // If content is already loaded, Clipboard.js will handle the copy
-    console.log('Copy button clicked, Clipboard.js will handle the copy');
   };
 
   const handleViewMarkdown = () => {

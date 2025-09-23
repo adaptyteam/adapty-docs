@@ -1,7 +1,9 @@
 ---
-title: "Add promo offers & trials to Adapty"
+title: "Add offers to Adapty"
 description: "Create and manage special subscription offers using Adapty’s tools."
 metadataTitle: "Creating Special Offers | Adapty Docs"
+keywords: ['trial']
+rank: 90
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -11,11 +13,11 @@ Adapty allows you to offer trials or discounts to new, existing, or churned subs
 
 After you have set them up in App Store Connect or Google Play Console, you need to add them to Adapty in two steps:
 
-1. [Create offers in Adapty using the offer IDs from stores.](#1-create-offer)
-2. [Add offers to paywalls, so they can be applied.](#2-add-offer-to-paywall)
+1. [Add offers to products in Adapty using the offer IDs from stores.](#1-create-offer)
+2. [Add offers to paywalls so they can be applied.](#2-add-offer-to-paywall)
 
 :::warning
-Introductory offers from the App Store are applied automatically if the user is eligible. Do not create them in Adapty. You only need to follow this guide if you are working with promotional or win-back offers from App Store and any offers from Play Store.
+Introductory offers from the App Store are applied automatically if the user is eligible. Do not add them to products in Adapty. You only need to follow this guide if you are working with promotional or win-back offers from App Store and any offers from Play Store.
 :::
 
 ## 0. Before you start
@@ -28,7 +30,7 @@ Before you start setting up offers in Adapty, ensure the following:
 2. You have created the [products](create-product.md) in Adapty and added their IDs.
 3. For App Store: You have uploaded [the in-app purchase key for promotional offers](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers).
 
-## 1. Create offer
+## 1. Add offer to product in Adapty
 
 Once your promotional offer (for both the Play Store and App Store) or Win-back offer (for the App Store) is set up in the app stores, add it to Adapty is simple:
 
@@ -90,7 +92,7 @@ If the **App Store Offer ID** or **Play Store Offer ID** field is not active, sw
 ## 2. Add offer to paywall
 
 :::info
-You can't add offers to paywalls in the **live** status. If you want to add an offer to an existing paywall, [duplicate](duplicate-paywalls.md) it and configure products in a new paywall, but don't forget to add it to [placements](edit-placement.md) where it must be used.
+You can't add offers to paywalls in the **live** status. If you want to add an offer to an existing paywall, [duplicate](duplicate-paywalls.md) it and configure products in a new paywall.
 :::
 
 To make an offer visible and selectable within a [paywall](paywalls) for your app's users, follow these steps:
@@ -147,8 +149,8 @@ When you create a paywall in the Adapty Paywall Builder, you have some more cust
 
 Note the following about how offers work in Adapty:
 - When a user is eligible for an offer, Adapty automatically applies the offer you've configured when the user makes a purchase.
-- If a product has both a trial period and promotional offers configured in the App Store, eligible users will receive the trial period first. After the trial ends, if the user is still eligible for the promotional offer and you've configured this offer in Adapty, it will be applied when they attempt to purchase the product again.
+- If a product has both an introductory offer and promotional offers configured in the App Store, eligible users will receive the introductory offer first. After its period ends, if the user is still eligible for the promotional offer and you've configured this offer in Adapty, it will be applied when they attempt to purchase the product again.
 - If you want more control over how offers are applied or need to sell your product without offers in certain cases, you have several options:
    - Configure eligibility criteria in the App Store or Google Play Console
    - Create a separate product without offers in the App Store or Google Play Console
-   - Create a separate product without offers in Adapty, add paywalls containing both product variants to a [placement](placements.md), and use audience segments to control which paywall is displayed to different users
+   - Create a separate product without offers in Adapty, add paywalls containing both product variants to a [placement](placements.md), and use audience [segments](segments.md) to control which paywall is displayed to different users. For example, you can create segments based on the **Subscription product** or **Paid access level**, or use [custom attributes](profiles-crm.md) to implement your own logic.

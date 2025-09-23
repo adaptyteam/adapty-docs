@@ -2,29 +2,14 @@
 title: "Offers in Google Play"
 description: "Configure Google Play offers to improve app monetization and retention."
 metadataTitle: "Google Play Offers Guide | Adapty Docs"
+keywords: ['trial']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 In Google Play, offers of any type (free trials or discounted payments) are added as **offers**. To create an offer, you must first, create a subscription and add an auto-recurring base plan.
-
-:::note
-Offers in Google Play are supported in the Adapty SDK 2.6 or newer.
-:::
-
-With Billing Library v5, Google introduced a new way of working with offers. It gives you much more flexibility, but it's important to configure them properly. You can create multiple offers for every base plan, and this means that you have to decide which offer should be used at a given moment. Please check the docs on [base plans](android-products) if you're not familiar with them.
-
-<Zoom>
-  <img src={require('./img/04aca48-sub-offers.jpeg').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
 
 Offers are always created for base plans in subscriptions. In the screenshot below, you can see a subscription `premium_access`(1) with two base plans: `1-month` (2) and `1-year` (3).
 

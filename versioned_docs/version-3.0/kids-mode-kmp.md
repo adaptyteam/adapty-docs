@@ -29,20 +29,25 @@ To comply with policies, you need to disable the collection of the Android Adver
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig
+import com.adapty.kmp.models.AdaptyLogLevel
 
 override fun onCreate() {
     super.onCreate()
-    Adapty.activate(
-        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+
+    val config = AdaptyConfig
+        .Builder("PUBLIC_SDK_KEY")
         // highlight-start
-            .withGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
-            .withIpAddressCollectionDisabled(true) // set to `true`
+        .withGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+        .withIpAddressCollectionDisabled(true)           // set to `true`
         // highlight-end
-            .build()
-    ) { error ->
-        error?.let {
-            // handle the error
+        .build()
+
+    Adapty.activate(configuration = config)
+        .onSuccess {
+            Log.d("Adapty", "SDK initialised with privacy settings")
         }
-    }
+        .onError { error ->
+            Log.e("Adapty", "Adapty init error: ${error.message}")
+        }
 }
 ```
