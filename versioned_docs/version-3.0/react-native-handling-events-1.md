@@ -40,9 +40,9 @@ const unsubscribe = view.registerEventHandlers({
     return purchaseResult.type !== 'user_cancelled';
   },
   onPurchaseStarted(product) { /***/},
-  onPurchaseFailed(error) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
   onRestoreCompleted(profile) { /***/ },
-  onRestoreFailed(error, product) { /***/ },
+  onRestoreFailed(error) { /***/ },
   onProductSelected(productId) { /***/},
   onRenderingFailed(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
@@ -234,6 +234,7 @@ Event handlers return a boolean. If `true` is returned, the displaying process i
 
 Some event handlers have a default behavior that you can override if needed:
 - `onCloseButtonPress`: closes paywall when close button pressed.
+- `onUrlPress`: opens the tapped URL and keeps the paywall open.
 - `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
 - `onRestoreCompleted`: closes paywall after successful restore.
 - `onPurchaseCompleted`: closes paywall unless user cancelled.
