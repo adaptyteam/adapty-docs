@@ -150,6 +150,14 @@ const unsubscribe = view.registerEventHandlers({
     "message": "Purchase failed due to insufficient funds",
     "details": {
       "underlyingError": "Insufficient funds in account"
+    },
+    "product": {
+        "vendorProductId": "premium_monthly",
+            "localizedTitle": "Premium Monthly",
+            "localizedDescription": "Premium subscription for 1 month",
+            "localizedPrice": "$9.99",
+            "price": 9.99,
+            "currencyCode": "USD"
     }
   }
 }
