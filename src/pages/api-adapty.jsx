@@ -26,6 +26,8 @@ function APIElement({ layout = 'sidebar' }) {
             layout={layout}
             hideSchemas
             hideInternal
+            tryItCredentialsPolicy="omit"
+            tryItCorsProxy="https://cors-anywhere.herokuapp.com/"
           />
         </div>
       )}

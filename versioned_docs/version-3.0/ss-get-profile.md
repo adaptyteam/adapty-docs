@@ -32,7 +32,7 @@ GET https://api.adapty.io/api/v2/server-side-api/profile/
 ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
 
@@ -48,7 +48,7 @@ url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
 headers = {
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "Content-Type": "application/json",
+    "Accept": "application/json",
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
@@ -65,7 +65,7 @@ print(response.text)
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Accept", "application/json");
 
 const requestOptions = {
   method: "GET",
