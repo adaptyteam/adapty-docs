@@ -42,9 +42,10 @@ Each A/B test type is useful if:
   - You want to run your A/B test for only one placement even if you have multiple placements in your app and see economics changes for this one placement only.
   - You want to run an A/B test on old users (those who have seen at least one Adapty paywall).
 - **Crossplacement A/B test**:
-  - You want to synchronize variants used across multiple placements—e.g., if you want to change prices in the onboarding flow and in your app’s settings the same time.
+  - You want to synchronize variants used across multiple placements—e.g., if you want to change prices in the onboarding flow and in your app's settings the same time.
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
+  - You want to measure accurate user economy from install across the entire app with lifetime test membership.
   - You want to use multiple paywalls within a single variant:
 
 <Zoom>
@@ -116,6 +117,8 @@ Crossplacement A/B tests guarantee the same variant across all placements in the
 
 - They always have the highest priority in a placement.
 - Only new users can participate, i.e. the users who have not seen a single Adapty paywall before (to be precise, `getPaywall` SDK method was called). That is done because it's not possible to guarantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test has been started.
+
+Crossplacement A/B tests also feature lifetime test membership—once a user is assigned to a variant, they remain in that test for the duration of their relationship with your app. This ensures test results remain pure and uncontaminated by variant switching, as users continue to see their assigned variant across all placements even after you stop accepting new members to the test. All revenue numbers continue to be tracked from original test members, including subscription renewals and trial conversions.
 
 ## Creating A/B tests
 
