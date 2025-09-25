@@ -39,17 +39,17 @@ For platform view, handle the close action through the `eventHandlers` prop:
 import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 
 <AdaptyPaywallView
-  paywall={paywall}
-  eventHandlers={{
-    onCloseButtonPress() {
-      // Handle close button press - navigate away or hide component
-      navigation.goBack();
-    },
-    onAndroidSystemBack() {
-      // Handle Android back button
-      navigation.goBack();
-    },
-  }}
+    paywall={paywall}
+    eventHandlers={{
+        onCloseButtonPress() {
+            // Handle close button press - navigate away or hide component
+            navigation.goBack();
+        },
+        onAndroidSystemBack() {
+            // Handle Android back button
+            navigation.goBack();
+        },
+    }}
 />
 ```
 
@@ -64,9 +64,9 @@ import {createPaywallView} from 'react-native-adapty/dist/ui';
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.setEventHandlers({
-  onCloseButtonPress() {
-      return true; // allow paywall closing
-  }
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
 });
 ```
 
@@ -85,9 +85,9 @@ import {createPaywallView} from 'react-native-adapty/dist/ui';
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-      return true; // allow paywall closing
-  }
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
 });
 ```
 
@@ -118,12 +118,12 @@ import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 import { Linking } from 'react-native';
 
 <AdaptyPaywallView
-  paywall={paywall}
-  eventHandlers={{
-    onUrlPress(url) {
-      Linking.openURL(url);
-    },
-  }}
+    paywall={paywall}
+    eventHandlers={{
+        onUrlPress(url) {
+            Linking.openURL(url);
+        },
+    }}
 />
 ```
 
@@ -268,14 +268,14 @@ For platform view, handle custom actions through the `eventHandlers` prop:
 import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
 
 <AdaptyPaywallView
-  paywall={paywall}
-  eventHandlers={{
-    onCustomAction(actionId) {
-      if (actionId === 'openNewPaywall') {
-        // Display another paywall
-      }
-    },
-  }}
+    paywall={paywall}
+    eventHandlers={{
+        onCustomAction(actionId) {
+            if (actionId === 'openNewPaywall') {
+                // Display another paywall
+            }
+        },
+    }}
 />
 ```
 

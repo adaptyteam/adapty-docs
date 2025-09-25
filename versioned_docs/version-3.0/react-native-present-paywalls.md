@@ -81,6 +81,11 @@ try {
   // handle the error
 }
 ```
+
+:::important
+Calling `setEventHandlers` multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+:::
+
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>

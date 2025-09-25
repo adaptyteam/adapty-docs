@@ -83,7 +83,11 @@ import { Linking } from 'react-native';
 </TabItem>
 <TabItem value="standalone" label="Standalone screen">
 
-For standalone screen, implement the event handlers method:
+For standalone screen, implement the event handlers method.
+
+:::important
+Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+:::
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
