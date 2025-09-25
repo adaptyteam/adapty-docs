@@ -14,6 +14,9 @@ Adapty React Native SDK 3.12.0 is a major release that introduces improvements t
 To improve the SDK performance, we have reworked the way we handle the Adapty Paywall Builder and Adapty Onboarding Builder events, and the `registerEventHandlers` method has been replaced with the `setEventHandlers` method.
 If you use the Adapty Paywall Builder and/or Adapty Onboarding Builder, find `registerEventHandlers` in your app code and replace it with `setEventHandlers`.
 
+:::important
+Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+:::
 
 ```diff showLineNumbers 
 - const unsubscribe = view.registerEventHandlers({
