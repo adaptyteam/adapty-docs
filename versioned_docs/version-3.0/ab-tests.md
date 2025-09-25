@@ -45,7 +45,6 @@ Each A/B test type is useful if:
   - You want to synchronize variants used across multiple placements—e.g., if you want to change prices in the onboarding flow and in your app's settings the same time.
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
-  - You want to measure accurate user economy from install across the entire app, where users stay in their assigned variant forever.
   - You want to use multiple paywalls within a single variant:
 
 <Zoom>
@@ -119,7 +118,7 @@ Crossplacement A/B tests guarantee the same variant across all placements in the
 - Only new users can participate, i.e. the users who have not seen a single Adapty paywall before (to be precise, `getPaywall` SDK method was called). That is done because it's not possible to guarantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test has been started.
 
 :::important
-Crossplacement A/B tests also feature permanent test membership—once a user is assigned to a variant, they stay in that variant forever, even after you stop the test. This prevents test contamination: if users who saw higher prices suddenly started seeing lower prices, it would skew your results since they'd be more likely to purchase the cheaper option.
+Crossplacement A/B tests also feature extended test membership—once a user is assigned to a variant, they stay in that variant for 3 months, even after you stop the test. This prevents test contamination: if users who saw higher prices suddenly started seeing lower prices, it would skew your results since they'd be more likely to purchase the cheaper option.
 :::
 
 ## Creating A/B tests
