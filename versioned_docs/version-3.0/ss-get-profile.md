@@ -3,7 +3,8 @@ title: " Get profile with server-side API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
-
+keywords: ['get profile']
+rank: 80
 ---
 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
