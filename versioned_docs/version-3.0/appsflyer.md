@@ -180,9 +180,6 @@ Below the credentials, there are three groups of events you can send to AppsFlye
 </Zoom>
 
 
-
-
-
 We recommend using the default event names provided by Adapty. But you can change the event names based on your needs.
 
 Adapty will send subscription events to AppsFlyer using a server-to-server integration, allowing you to view all subscription events in your AppsFlyer dashboard and link them to your acquisition campaigns.
@@ -293,13 +290,16 @@ import { adapty, AttributionSource } from 'react-native-adapty';
 import appsFlyer from 'react-native-appsflyer';
 
 appsFlyer.onInstallConversionData(installData => {
-    try {
-        const uid = appsFlyer.getAppsFlyerUID();
-        adapty.setIntegrationIdentifier("appsflyer_id", uid);
-        adapty.updateAttribution(installData, "appsflyer");
-    } catch (error) {
-        // handle the error
-    }
+    appsFlyer.getAppsFlyerUID((error, networkUserId) => {
+        if (error) {
+            // handle the error
+        }
+        try {
+            adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
+        } catch (error) {
+            // handle the error
+        }
+    });
 });
 
 // ...
@@ -308,3 +308,20 @@ appsFlyer.initSdk(/*...*/);
 </TabItem>
 </Tabs>
 
+## Troubleshooting
+
+### Revenue discrepancy
+
+If there is a revenue discrepancy between Adapty and AppsFlyer, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
+
+### Missing integration data
+
+If event sending fails, that is usually because of the missing integration data. Ensure the following to resolve this issue:
+- Your app has the AppsFlyer SDK installed.
+- You are calling the `getAppsFlyerUID` method.
+
+### Authentication failure
+
+If you are getting the `Failed to authenticate` error in the console, this might be due to the AppsFlyer version and credential version mismatch.
+
+See the [migration guide](switch-from-appsflyer-s2s-api-2-to-3.md) or replace the credentials with the valid ones from [here](https://hq1.appsflyer.com/security-center/api-tokens).
