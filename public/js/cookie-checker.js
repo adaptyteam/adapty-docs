@@ -17,53 +17,104 @@
   function initFrontChat() {
     // Check if Front Chat is already initialized
     if (window.FrontChat && !window.frontChatInitialized) {
-      window.FrontChat('init', {chatId: '8c29a73497848bcc146ce8fa79bf4c57', useDefaultLauncher: true});
+      window.FrontChat('init', {chatId: '8c29a73497848bcc146ce8fa79bf4c57', useDefaultLauncher: false});
       window.frontChatInitialized = true;
       
-      // Show Ask AI pointer after Front Chat is fully loaded and visible
+      // Create custom Ask AI button after Front Chat is initialized
       setTimeout(() => {
-        waitForChatButton();
-      }, 2000);
-      
-      // Fallback: also show pointer after 5 seconds regardless
-      setTimeout(() => {
-        if (!document.querySelector('.ask-ai-pointer')) {
-          createAskAIPointer();
-        }
-      }, 5000);
+        createCustomAskAIButton();
+      }, 1000);
     }
   }
 
-  // Function to wait for Front Chat button to be visible
-  function waitForChatButton() {
-    let attempts = 0;
-    const maxAttempts = 20; // 10 seconds total (20 * 500ms)
-    
-    const checkForButton = () => {
-      attempts++;
-      
-      // Look for Front Chat button with multiple selectors
-      const chatButton = document.querySelector('[class*="fc-"]') || 
-                        document.querySelector('[class*="front"]') || 
-                        document.querySelector('[class*="chat"]') ||
-                        document.querySelector('iframe[src*="frontapp.com"]') ||
-                        document.querySelector('iframe[src*="front"]') ||
-                        document.querySelector('div[style*="position: fixed"][style*="bottom"]') ||
-                        document.querySelector('div[style*="z-index"]');
-      
-      if (chatButton) {
-        // Chat button is visible, now show our pointer
-        createAskAIPointer();
-      } else if (attempts < maxAttempts) {
-        // Keep checking every 500ms
-        setTimeout(checkForButton, 500);
-      } else {
-        // Fallback: show pointer even if chat button not detected
-        createAskAIPointer();
+  // Function to create custom Ask AI button
+  function createCustomAskAIButton() {
+    // Check if button already exists
+    if (document.querySelector('.custom-ask-ai-button')) {
+      return;
+    }
+
+    // Create the button element
+    const button = document.createElement('div');
+    button.className = 'custom-ask-ai-button';
+    button.innerHTML = `
+      <div class="ask-ai-text">
+        <div class="ask-ai-line">Ask</div>
+        <div class="ask-ai-line">AI</div>
+      </div>
+    `;
+
+    // Add click handler to open Front chat
+    button.addEventListener('click', () => {
+      if (window.FrontChat) {
+        window.FrontChat('show');
       }
-    };
-    
-    checkForButton();
+    });
+
+    // Add styles
+    button.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      cursor: pointer;
+      opacity: 0;
+      animation: askAiFadeIn 1s ease-out forwards;
+    `;
+
+    // Add CSS styles for the button
+    if (!document.querySelector('#custom-ask-ai-styles')) {
+      const style = document.createElement('style');
+      style.id = 'custom-ask-ai-styles';
+      style.textContent = `
+        .custom-ask-ai-button {
+          background: #6720ff;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(103, 32, 255, 0.3);
+          transition: all 0.3s ease;
+        }
+        
+        .custom-ask-ai-button:hover {
+          background: #7e41ff;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(103, 32, 255, 0.4);
+        }
+        
+        .custom-ask-ai-button:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(103, 32, 255, 0.3);
+        }
+        
+        .ask-ai-text {
+          padding: 16px 40px;
+          font-family: 'Inter', system-ui, sans-serif;
+          font-weight: 700;
+          font-size: 18px;
+          line-height: 1.2;
+          color: #ffffff;
+          text-align: center;
+          white-space: nowrap;
+        }
+        
+        .ask-ai-line {
+          display: block;
+        }
+        
+        @keyframes askAiFadeIn {
+          0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(button);
   }
 
   // Function to load Front Chat script
@@ -83,82 +134,15 @@
     document.head.appendChild(script);
   }
 
-  // Function to create Ask AI pointer
-  function createAskAIPointer() {
-    // Check if pointer already exists
-    if (document.querySelector('.ask-ai-pointer')) {
-      return;
-    }
-
-    // Create the pointer element
-    const pointer = document.createElement('div');
-    pointer.className = 'ask-ai-pointer';
-    pointer.innerHTML = `
-      <div class="ask-ai-text">
-        <div class="ask-ai-line">Ask</div>
-        <div class="ask-ai-line">AI</div>
-      </div>
-    `;
-
-    // Add styles
-    pointer.style.cssText = `
-      position: fixed;
-      bottom: 10px;
-      right: 90px;
-      z-index: 9999;
-      pointer-events: none;
-      opacity: 0;
-      animation: askAiFadeIn 1s ease-out forwards;
-    `;
-
-    // Add CSS styles for the text
-    if (!document.querySelector('#ask-ai-styles')) {
-      const style = document.createElement('style');
-      style.id = 'ask-ai-styles';
-      style.textContent = `
-        .ask-ai-text {
-          background: white;
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-family: 'Inter', system-ui, sans-serif;
-          font-weight: 700;
-          font-size: 27px;
-          line-height: 1.2;
-          color: #000000;
-          text-align: center;
-          white-space: nowrap;
-        }
-        
-        .ask-ai-line {
-          display: block;
-        }
-        
-        @keyframes askAiFadeIn {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    document.body.appendChild(pointer);
-  }
-
-  // Function to remove Ask AI pointer
-  function removeAskAIPointer() {
-    const pointer = document.querySelector('.ask-ai-pointer');
-    if (pointer) {
-      pointer.style.opacity = '0';
-      pointer.style.transition = 'opacity 0.3s ease-out';
+  // Function to remove custom Ask AI button
+  function removeCustomAskAIButton() {
+    const button = document.querySelector('.custom-ask-ai-button');
+    if (button) {
+      button.style.opacity = '0';
+      button.style.transition = 'opacity 0.3s ease-out';
       setTimeout(() => {
-        if (pointer && pointer.parentNode) {
-          pointer.parentNode.removeChild(pointer);
+        if (button && button.parentNode) {
+          button.parentNode.removeChild(button);
         }
       }, 300);
     }
@@ -176,8 +160,8 @@
     } else {
       // Reset Front Chat initialization flag when cookies are not present
       window.frontChatInitialized = false;
-      // Remove Ask AI pointer when cookies are not present
-      removeAskAIPointer();
+      // Remove custom Ask AI button when cookies are not present
+      removeCustomAskAIButton();
     }
   }
 
@@ -196,4 +180,4 @@
 
   // Export function for manual testing
   window.checkCookieAndInitChat = checkCookieAndInitChat;
-})(); 
+})();
