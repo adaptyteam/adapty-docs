@@ -338,7 +338,9 @@ To prevent this issue, set the **Invoice numbering** in the [**Stripe settings**
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
 
 :::tip
-For enhanced analytics, you can include a `variation_id` in your Stripe metadata to attribute purchases to specific paywall instances. This is particularly useful when implementing in-house web paywalls where you want to track which specific paywall showing led to the conversion:
+For enhanced analytics, you can include a `variation_id` in your Stripe metadata to attribute purchases to specific paywall instances. This is particularly useful when implementing in-house web paywalls where you want to track which specific paywall showing led to the conversion.
+
+Note that `variation_id` is only read from metadata in Stripe Subscription (`sub_...`) and Checkout Session (`ses_...`) objects:
 
 ```json showLineNumbers title="Stripe Metadata with variation_id"
 {

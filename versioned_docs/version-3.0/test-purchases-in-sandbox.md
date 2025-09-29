@@ -9,28 +9,28 @@ rank: 100
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
+Once you've configured everything in the Adapty Dashboard and your mobile app, it's time to conduct in-app purchase testing.
+
+**Note:** none of the test tools charge users when they test buying a product. The App Store doesn’t send emails for purchases or refunds made in the test environments.
+
 :::info
 To proceed with in-app purchases testing, make sure:
-- You’ve completed the quickstart guides on store integration, adding products, and the Adapty SDK integration.
+- You’ve completed the [quickstart](quickstart.md) guides on store integration, adding products, and the Adapty SDK integration.
 - Your product is marked [**Ready to submit**](InvalidProductIdentifiers.md#step-2-check-products-step-3-check-products) in App Store Connect.
 :::
 
-## Testing environment
-
-We recommend the only reliable option to test in-app purchases using the [sandbox environment](#sandbox-testing). This way:
-
-- **You can have a clean purchase history**: Let you purchase like a new user and control eligibility.
-- **You use a real device**: Enable interaction with the Apple server to perform purchases properly.
-
 ## Sandbox testing
 
-For proper results, select your use case: 
+:::info
+We recommend testing in-app purchases with a real device. While sandbox purchases can run on simulators, real devices are needed to fully test all flows, including payment dialogs and biometric prompts.
+:::
 
-- **Build in Xcode and run on a test device**: Convenient for developers and QA engineers. Skip [Step 3](#step-3-download-the-app-from-testflight) below for this case.
-- **Sandbox test account with TestFlight**: Suitable for anyone else. Skip [Step 6](#step-6-build-in-xcode-and-run) below fro this case.
+You have two main ways to test in-app purchases: 
 
-For more details, you can refer to [Apple documentation on Testing In-App Purchases with sandbox](https://developer.apple.com/documentation/storekit/testing-in-app-purchases-with-sandbox).
+- **Build in Xcode and run on a test device**: Convenient for developers and QA engineers.
+- **Use a sandbox test account with TestFlight**: Suitable for anyone else. 
 
+Both these options are covered in the guide below.
 
 ### Step 1. Create Sandbox test account in App Store Connect
 
@@ -86,7 +86,7 @@ Skip this step if the Developer mode is already enabled on your test device.
 
 You’ll need a Mac with Xcode installed and your test device cable:
 
-1. Open Xcode on your Mac.
+1. Open Xcode on your Mac. If you're going to test in-app purchases with TestFlight, you only need to have XCode installed; you don't need to have an app there.
 2. Connect your test device to the Mac using the cable.
 3. Go to **Settings > Privacy & Security > Developer Mode** on your test device and turn on **Developer Mode**.
 
@@ -96,21 +96,45 @@ You’ll need a Mac with Xcode installed and your test device cable:
 This step applies only if you're testing with TestFlight. If you’re building the app in Xcode, skip this step.
 :::
 
-On your test device, make sure you are signed in with your production Apple Account, then download the app you test from TestFlight.
+For details on submitting your app to TestFlight, go to the [Apple documentation](https://developer.apple.com/documentation/StoreKit/testing-in-app-purchases-with-sandbox#Prepare-for-sandbox-testing).
+
+Before downloading the TestFlight app, on your test device, make sure you are signed in with your production Apple Account. Then download the app you test from TestFlight.
 
 :::danger
 Do not open the app once downloaded. Just proceed with the next steps.
-If accidentally opened, remove it from your test device and download it again. Otherwise, your purchases will use the production environment instead of the sandbox.
+If accidentally opened, remove it from your test device and download it again. Otherwise, your purchase history may not be clear, and testing in-app purchases will lead to errors.
 :::
-
-For details on TestFlight, go to the [Apple documentation](https://developer.apple.com/documentation/StoreKit/testing-in-app-purchases-with-sandbox#Prepare-for-sandbox-testing).
 
 ### Step 4. Switch to Sandbox test account
 
 1. Go to **Settings > Your Apple Account > Media & Purchases** on your test device.
 2. Select **Sign Out** from the pop-up menu.
 3. Go to **Settings > Developer**. If the **Developer** option is not available, make sure you've [enabled it in step 2](#step-2-enable-the-developer-mode).
+
+<Zoom>
+  <img src={require('./img/devmode.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 4. Scroll down to the **Sandbox Apple Account** section and tap **Sign In**.
+
+<Zoom>
+  <img src={require('./img/sandbox-acc.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 5. Sign in with your Sandbox Apple Account credentials.
 
 ### Step 5. Clear purchase history
@@ -144,6 +168,10 @@ Your app is now ready for testing on the device.
 Open the app and make your test purchase through a paywall.
 
 Once done, go to the article on [validating test purchases](validate-test-purchases.md) to check your results.
+
+### Step 8. Keep testing
+
+Now, your testing environment is all set. If you want to test it once again, don't forget to [clear the purchase history of the sandbox account](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/manage-sandbox-apple-account-settings/).
 
 ## Testing issues
 
@@ -189,6 +217,20 @@ If the user has an inherited access level, follow these steps for accurate testi
 4. [Switch to Sandbox test account](#step-4-switch-to-sandbox-test-account).
 5. [Clear purchase history](#step-5-clear-purchase-history).
 6. [Open the app and make your test purchase](#step-6-make-test-purchase).
+
+### Updating app in TestFlight
+
+If the TestFlight app has been updated:
+
+1. Remove the app from the test device.
+2. [Download the app from TestFlight](#step-3-download-the-app-from-testflight).
+3. [Switch to Sandbox test account](#step-4-switch-to-sandbox-test-account).
+4. [Clear purchase history](#step-5-clear-purchase-history).
+5. [Open the app and make your test purchase](#step-6-make-test-purchase).
+
+### Authorization during the purchase process
+
+If you have downloaded the TestFlight app and haven't [logged into the sandbox account from the device settings](#step-4-switch-to-sandbox-test-account), logging into it during the purchase process won't work. For purchase to succeed, you must log into your sandbox account from the device settings before attempting to make a purchase.
 
 ## Test subscriptions
 
