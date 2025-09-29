@@ -60,7 +60,7 @@ However, custom HTML elements are neither preloaded nor cached, so it is recomme
 
 ### Element ID and action ID
 
-If you want to use a button for custom actions, [assign it an **action ID** and then use it in your source code](http://adapty.io/docs/ios-handling-onboarding-events#custom-actions). Action IDs let you handle different buttons with the same action ID in the same way.
+If you want to use a button for custom actions, assign it an **action ID** and then use it in your source code. Action IDs let you handle different buttons with the same action ID in the same way.
 
   <Zoom>
   <img src={require('./img/ios-events-1.webp').default}
@@ -73,7 +73,7 @@ If you want to use a button for custom actions, [assign it an **action ID** and 
   />
   </Zoom>
 
-If you want to [process user input in a specific field](http://adapty.io/docs/ios-handling-onboarding-events) (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
+If you want to process user input in a specific field (e.g., save their age or email), assign it an **element ID** and then use it in your source code to associate questions with answers. Element IDs can be used only once in your onboarding.
 
   <Zoom>
   <img src={require('./img/design-onboarding5.png').default}
@@ -123,9 +123,15 @@ You have the following customization options in the builder:
   />
   </Zoom>
 
-:::tip
-If you use a background image, you can also set a background color similar to the image's primary color, so that transitions between screens are as smooth as possible.
-:::
+## Copy screens and elements
+
+If you've created an onboarding and want to reuse parts of it, or if you want to make slight changes and run A/B tests, you can copy one or more screens from one onboarding to another.
+
+To copy screens, open the onboarding builder and either:
+- Right-click a single screen and select **Copy** or select multiple screens with `Shift`, right-click, and choose **Copy**
+- Select the desired screen(s) and press `Ctrl+C` (Windows) or `⌘+C` (Mac)
+
+You can also copy individual elements or text blocks, either within the same onboarding or between different onboardings.
 
 ## Copy screens from web-to-app funnels
 

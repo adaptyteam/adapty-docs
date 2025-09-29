@@ -14,7 +14,9 @@ import Details from '@site/src/components/Details';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-<PaywallAction />
+:::important
+This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](android-handle-paywall-actions.md) for details.
+:::
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -92,7 +94,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Successful, canceled, or pending purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFinished(
@@ -171,7 +173,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If purchase fails, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFailure(
@@ -209,7 +211,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onRestoreSuccess(
@@ -243,7 +245,7 @@ public override fun onRestoreSuccess(
 ```
 </Details>
 
-We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](android-listen-subscription-changes.md) topic to learn how to check it.
 
 #### Failed restore
 

@@ -2,11 +2,14 @@
 title: "Initial integration with Stripe"
 description: "Integrate Stripe with Adapty for seamless subscription payment processing."
 metadataTitle: "Stripe Integration Guide | Adapty Docs"
+keywords: ['stripe', 'stripe integration']
+rank: 50
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
 
@@ -272,7 +275,7 @@ If you are using Checkout Sessions, [make sure you're creating a Stripe Customer
 
 ### 5\. Provide access to users on the mobile
 
-To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see [Identifying users](identifying-users) for more).
+To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
 
 ### 6\. Test your integration
 
@@ -288,7 +291,7 @@ Your users can now complete purchases on the web and access paid features in you
 
 Adapty has to tie a purchase to a [customer profile](profiles-crm) for it to be available on the mobile — so by default it creates profiles upon receiving webhooks from Stripe. You can choose what to use as customer user ID in Adapty:
 
-1. **Default and recommended: **`customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+1. **Default and recommended:** `customer_user_id` you supplied in metadata in [step 4 above](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
 2. `email` in Stripe's Customer object (see [Stripe's docs](https://stripe.com/docs/api/customers/object#customer_object-email))
 3. `client_reference_id` in Stripe's Session object (see [Stripe's docs](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-client_reference_id))
 
@@ -333,6 +336,19 @@ To prevent this issue, set the **Invoice numbering** in the [**Stripe settings**
 
 ## Get more from your Stripe data
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+:::tip
+For enhanced analytics, you can include a `variation_id` in your Stripe metadata to attribute purchases to specific paywall instances. This is particularly useful when implementing in-house web paywalls where you want to track which specific paywall showing led to the conversion.
+
+Note that `variation_id` is only read from metadata in Stripe Subscription (`sub_...`) and Checkout Session (`ses_...`) objects:
+
+```json showLineNumbers title="Stripe Metadata with variation_id"
+{
+  'customer_user_id': "YOUR_USER_ID",
+  'variation_id': "YOUR_VARIATION_ID"
+}
+```
+:::
 
 Integrations you can use to forward and analyze your Stripe events:
 - [Amplitude](https://adapty.io/docs/amplitude/)

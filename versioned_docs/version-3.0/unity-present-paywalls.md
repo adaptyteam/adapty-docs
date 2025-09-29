@@ -1,7 +1,9 @@
 ---
-title: "Unity - Present new Paywall Builder paywalls"
-description: "Present paywalls in Unity apps using Adapty’s monetization tools."
-metadataTitle: "Presenting Paywalls in Unity | Adapty Docs"
+title: "Display paywalls"
+description: "Learn how to display paywalls in your Unity app with Adapty SDK."
+metadataTitle: "Display Paywalls | Unity SDK | Adapty Docs"
+slug: /unity-present-paywalls
+displayed_sidebar: sdkunity
 ---
 
 import Zoom from 'react-medium-image-zoom';

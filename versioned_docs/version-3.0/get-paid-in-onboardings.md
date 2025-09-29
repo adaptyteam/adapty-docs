@@ -5,6 +5,8 @@ metadataTitle: "Connect paywalls to onboardings in Adapty | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 You can set up a seamless transition from onboardings to paywalls, so that onboardings not only improve the user experience and retention but also generate revenue for you.
 
@@ -23,7 +25,7 @@ You need two different placements: one for a paywall and another for an onboardi
 
 To show a paywall after onboarding, you only need to handle an event generated each time users close the onboarding.
 
-As soon as users close onboarding, the [event](ios-handling-onboarding-events#closing-onboarding) is triggered. So, if you want to display a paywall after your onboarding immediately, you can implement [getting and displaying a paywall](display-pb-paywalls.md) as a reaction to the event.
+As soon as users close onboarding, the [event](ios-handling-onboarding-events#closing-onboarding) is triggered. So, if you want to display a paywall after your onboarding immediately, you can implement <InlineTooltip tooltip="getting and displaying a paywall">[iOS](ios-present-paywalls.md), [Android](android-present-paywalls.md), [Flutter](flutter-present-paywalls.md), [React Native](react-native-present-paywalls.md), and [Unity](unity-present-paywalls.md)</InlineTooltip> as a reaction to the event.
 
 ## Show paywall inside onboarding
 
@@ -45,6 +47,6 @@ As soon as users close onboarding, the [event](ios-handling-onboarding-events#cl
    />
    </Zoom>
 
-   3. Now, when you have this button, each time your users tap it, it will generate an [action containing the action ID](handling-onboarding-events.md). 
+   3. Now, when you have this button, each time your users tap it, it will generate an action containing the action ID. 
 
-   To handle this action in your app code, you will need to [get the paywall](fetch-paywalls-and-products.md) and then [display it](display-pb-paywalls.md).
+   To handle this action in your app code, you will need to [get the paywall](fetch-paywalls-and-products.md) and then [display it](ios-quickstart-paywalls.md).

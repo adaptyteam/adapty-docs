@@ -22,11 +22,11 @@ This object contains details about the applied offer.
 
 ### Properties
 
-| Name     | Type   | Required          | Description                                                  |
-| -------- | ------ | ----------------- | ------------------------------------------------------------ |
-| category | String | :heavy_plus_sign: | Category of the applied offer. Possible values: `introductory`, `promotional`, `winback`. |
-| type     | String | :heavy_plus_sign: | Type of the applied offer. Possible values: `free_trial`, `pay_as_you_go`, `pay_up_front`. |
-| Id       | String | :heavy_plus_sign: | The **Offer name** of the applied offer as specified in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
+| Name     | Type   | Required | Description                                                  |
+| -------- | ------ | -------- | ------------------------------------------------------------ |
+| category | String | Yes      | Category of the applied offer. Possible values: `introductory`, `promotional`, `winback`. |
+| type     | String | Yes      | Type of the applied offer. Possible values: `free_trial`, `pay_as_you_go`, `pay_up_front`. |
+| Id       | String | Yes      | The **Offer name** of the applied offer as specified in the [**Products**](https://app.adapty.io/products) section of the Adapty Dashboard. |
 
 ## Paywall object
 
@@ -38,16 +38,16 @@ This object contains details about a product in Adapty.
 
 ### Properties
 
-| Name                           | Type    | Required           | Description                                                  |
-| ------------------------------ | ------- | ------------------ | ------------------------------------------------------------ |
-| title                          | String  | :heavy_minus_sign: | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
-| is_consumable                  | Boolean | :heavy_plus_sign:  | Indicates whether the product is consumable.                 |
-| adapty_product_id              | UUID    | :heavy_minus_sign: | Internal product ID as used in Adapty.                       |
-| vendor_product_id              | String  | :heavy_plus_sign:  | The product ID in app stores.                                |
-| introductory_offer_eligibility | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for an iOS introductory offer. |
-| promotional_offer_eligibility  | Boolean | :heavy_minus_sign: | Specifies if the user is eligible for a promotional offer.   |
-| base_plan_id                   | String  | :heavy_minus_sign: | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
-| offer                          | JSON    | :heavy_minus_sign: | An [Offer](web-api-objects#offer-object) object as a JSON.   |
+| Name                           | Type    | Required | Description                                                  |
+| ------------------------------ | ------- | -------- | ------------------------------------------------------------ |
+| title                          | String  | No       | **Product name** from the [**Products**](https://app.adapty.io/products) section in the Adapty Dashboard. |
+| is_consumable                  | Boolean | Yes      | Indicates whether the product is consumable.                 |
+| adapty_product_id              | UUID    | No       | Internal product ID as used in Adapty.                       |
+| vendor_product_id              | String  | Yes      | The product ID in app stores.                                |
+| introductory_offer_eligibility | Boolean | No       | Specifies if the user is eligible for an iOS introductory offer. |
+| promotional_offer_eligibility  | Boolean | No       | Specifies if the user is eligible for a promotional offer.   |
+| base_plan_id                   | String  | No       | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe. |
+| offer                          | JSON    | No       | An [Offer](web-api-objects#offer-object) object as a JSON.   |
 
 ### Example
 

@@ -1,25 +1,17 @@
 ---
-title: "Check subscription status"
+title: "Check subscription status in iOS SDK"
 description: "Track and manage user subscription status in Adapty for improved customer retention."
 metadataTitle: "Understanding Subscription Status | Adapty Docs"
-keywords: ['getProfile']
+keywords: ['getProfile', 'cache']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
 With Adapty, keeping track of subscription status is made easy. You don't have to manually insert product IDs into your code. Instead, you can effortlessly confirm a user's subscription status by checking for an active [access level](access-level).
 
-<details>
-   <summary>Before you start checking subscription status (Click to Expand)</summary>
-
-   - For iOS, set up [App Store Server Notifications](enable-app-store-server-notifications)
-   - For Android, set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
-</details>
+Before you start checking subscription status, set up [App Store Server Notifications](enable-app-store-server-notifications).
 
 ## Access level and the AdaptyProfile object
 
@@ -61,69 +53,6 @@ Adapty.getProfile { result in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // check the access
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // check the access
-      
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final profile = await Adapty().getProfile();
-  // check the access
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.GetProfile((profile, error) => {
-  if (error != null) {
-    // handle the error
-    return;
-  }
-  
-  // check the access
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-    const profile = await adapty.getProfile();
-} catch (error) {
-  // handle the error
-}
-```
-</TabItem>
 </Tabs>
 
 Response parameters:
@@ -161,86 +90,6 @@ Adapty.getProfile { result in
 }
 ```
 </TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            
-            if (profile.accessLevels["premium"]?.isActive == true) {
-                // grant access to premium features
-            }
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // handle the error
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        
-        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
-        
-        if (premium != null && premium.isActive()) {
-            // grant access to premium features
-        }
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // handle the error
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  final profile = await Adapty().getProfile();
-  if (profile?.accessLevels['premium']?.isActive ?? false) {
-        // grant access to premium features
-    }
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.GetProfile((profile, error) => {
-  if (error != null) {
-    // handle the error
-    return;
-  }
-
-  // "premium" is an identifier of default access level
-  var accessLevel = profile.AccessLevels["premium"];
-  if (accessLevel != null && accessLevel.IsActive) {
-    // grant access to premium features
-  }
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-try {
-    const profile = await adapty.getProfile();
-    
-  const isActive = profile.accessLevels["premium"]?.isActive;
-    if (isActive) {
-        // grant access to premium features
-    }
-} catch (error) {
-    // handle the error
-}
-```
-</TabItem>
 </Tabs>
 
 ### Listening for subscription status updates
@@ -248,9 +97,6 @@ try {
 Whenever the user's subscription changes, Adapty fires an event. 
 
 To receive messages from Adapty, you need to make some additional configuration:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
 
 ```swift showLineNumbers
 Adapty.delegate = self
@@ -260,48 +106,6 @@ nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
     // handle any changes to subscription state
 }
 ```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-Adapty.setOnProfileUpdatedListener { profile ->
-    // handle any changes to subscription state
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers t
-Adapty.setOnProfileUpdatedListener(profile -> {
-    // handle any changes to subscription state
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-Adapty().didUpdateProfileStream.listen((profile) {
-  // handle any changes to subscription state
-});
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
-public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-  public void OnLoadLatestProfile(AdaptyProfile profile) {
-    // handle any changes to subscription state
-  }
-}
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-// Create an "onLatestProfileLoad" event listener
-adapty.addEventListener('onLatestProfileLoad', profile => {
-    // handle any changes to subscription state
-});
-```
-</TabItem>
-</Tabs>
 
 Adapty also fires an event at the start of the application. In this case, the cached subscription status will be passed.
 
