@@ -13,6 +13,8 @@ Adapty React Native SDK 3.12.0 is a major release that introduces improvements t
 
 - The `registerEventHandlers` method used to display paywalls and onboardings has been replaced with the `setEventHandlers` method.
 - The platform view event handlers for onboardings have been moved outside of `eventHandlers`
+- The `logShowOnboarding` method has been deleted
+- The minimum React Native version has been updated to 0.73.0
 
 ## Replace `registerEventHandlers` with `setEventHandlers`
 
@@ -87,3 +89,14 @@ Event handlers for onboardings have been moved outside the `eventHandlers` objec
     }}
 />
 ```
+
+## Delete `logShowOnboarding`
+
+In Adapty SDK 3.12.0, we have deleted the `logShowOnboarding` method from the SDK.
+If you have been using this method, it won't be available when you upgrade the SDK to version 3.12 or later.
+
+Instead, you can [create onboardings in the Adapty no-code onboarding builder](onboardings.md). Analytics for these onboardings are tracked automatically, and you have a lot of customization options.
+
+## Update React Native
+
+Starting from Adapty SDK 3.12.0, the minimum supported version of React Native is 0.73.0. If you are using an earlier version, update React Native to version 0.73.0 or later, so your experience with the Adapty SDK is consistent and reliable.
