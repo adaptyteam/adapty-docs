@@ -120,31 +120,47 @@ When using `AdaptyOnboardingView`, you can handle events through inline callback
 ```typescript showLineNumbers title="React Native (TSX)"
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
-<AdaptyOnboardingView
+const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+  // Handle analytics events
+}, []);
+
+const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+  // Handle close actions
+}, []);
+
+const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+  // Handle custom actions
+}, []);
+
+const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+  // Handle paywall actions
+}, []);
+
+const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
+  // Handle state updates
+}, []);
+
+const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+  // Handle when onboarding finishes loading
+}, []);
+
+const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
+  // Handle errors
+}, []);
+
+return (
+  <AdaptyOnboardingView
     onboarding={onboarding}
-    style={{ /* your styles */ }}
-    onAnalytics={(event, meta) => {
-        // Handle analytics events
-    }}
-    onClose={(actionId, meta) => {
-        // Handle close actions
-    }}
-    onCustom={(actionId, meta) => {
-        // Handle custom actions
-    }}
-    onPaywall={(actionId, meta) => {
-        // Handle paywall actions
-    }}
-    onStateUpdated={(action, meta) => {
-        // Handle state updates
-    }}
-    onFinishedLoading={(meta) => {
-        // Handle when onboarding finishes loading
-    }}
-    onError={(error) => {
-        // Handle errors
-    }}
-/>
+    style={styles.container}
+    onAnalytics={onAnalytics}
+    onClose={onClose}
+    onCustom={onCustom}
+    onPaywall={onPaywall}
+    onStateUpdated={onStateUpdated}
+    onFinishedLoading={onFinishedLoading}
+    onError={onError}
+  />
+);
 ```
 
 </TabItem>
@@ -225,12 +241,17 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onCustom={(actionId, meta) => {
-    // Handle custom actions
-  }}
-/>
+const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+  // Handle custom actions
+}, []);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onCustom={onCustom}
+  />
+);
 ```
 </TabItem>
 
@@ -294,12 +315,17 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onFinishedLoading={(meta) => {
-    console.log('Onboarding loaded:', meta.onboardingId);
-  }}
-/>
+const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+  console.log('Onboarding loaded:', meta.onboardingId);
+}, []);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onFinishedLoading={onFinishedLoading}
+  />
+);
 ```
 </TabItem>
 
@@ -371,12 +397,17 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onClose={(actionId, meta) => {
-    navigation.goBack();  
-  }}
-/>
+const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+  navigation.goBack();  
+}, [navigation]);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onClose={onClose}
+  />
+);
 ```
 </TabItem>
 
@@ -442,12 +473,17 @@ const openPaywall = async (actionId) => {
 };
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onPaywall={(actionId, meta) => {
-    openPaywall(actionId);
-  }}
-/>
+const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+  openPaywall(actionId);
+}, []);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onPaywall={onPaywall}
+  />
+);
 ```
 </TabItem>
 
@@ -508,12 +544,17 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onStateUpdated={(action, meta) => {
-    saveUserResponse(action.elementId, action.params);
-  }}
-/>
+const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
+  saveUserResponse(action.elementId, action.params);
+}, []);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onStateUpdated={onStateUpdated}
+  />
+);
 ```
 </TabItem>
 
@@ -654,12 +695,17 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // Embedded widget
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  onAnalytics={(event, meta) => {
-    trackEvent(event.type, meta.onboardingId);
-  }}
-/>
+const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+  trackEvent(event.type, meta.onboardingId);
+}, []);
+
+return (
+  <AdaptyOnboardingView
+    onboarding={onboarding}
+    style={styles.container}
+    onAnalytics={onAnalytics}
+  />
+);
 ```
 </TabItem>
 
