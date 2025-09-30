@@ -24,9 +24,9 @@ To set up the AppMetrica integration:
 
 1. Open the [AppMetrica apps list](https://appmetrica.yandex.ru/application/list)
 2. Select the app you want to track
-3. Go to **Settings** and copy the **Application ID** and **Post API key** 
+3. Go to **Settings > Main** and copy the **Application ID** and **Post API key** 
 <Zoom>
-  <img src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.webp').default}
+  <img src={require('./img/appmetrica.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
