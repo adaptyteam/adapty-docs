@@ -42,11 +42,6 @@ The **embedded component** approach requires SDK 3.12.0 or later.
 
 To embed a paywall within your existing component tree, use the `AdaptyPaywallView` component directly in your React Native component hierarchy. This approach gives you full control over when and how the paywall can be dismissed.
 
-:::note
-
-This approach is ideal for required paywalls, mandatory purchase flows, or any scenario where you need to ensure users complete the purchase before proceeding. You can control dismissal through your own UI elements and logic. The paywall cannot be dismissed by system gestures (swipe, back button) when embedded.
-
-:::
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
