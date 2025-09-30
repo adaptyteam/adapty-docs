@@ -18,8 +18,10 @@ Adapty React Native SDK 3.12.0 is a major release that introduces improvements t
 
 ## Replace `registerEventHandlers` with `setEventHandlers`
 
-To improve the SDK performance, we have reworked the way we handle the Adapty Paywall Builder and Adapty Onboarding Builder events, and the `registerEventHandlers` method has been replaced with the `setEventHandlers` method.
+The `registerEventHandlers` method used for working with Adapty Paywall and Onboarding Builder has been replaced with the `setEventHandlers` method.
 If you use the Adapty Paywall Builder and/or Adapty Onboarding Builder, find `registerEventHandlers` in your app code and replace it with `setEventHandlers`.
+
+The change has been introduced to make the method behavior clearer: Handlers now work one-at-a-time because each returns true/false, and having multiple handlers for a single event made the resulting behavior unclear.
 
 :::important
 Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
@@ -30,19 +32,23 @@ Calling this method multiple times will re-register **all** event handlers (both
 -    // your event handlers
 - })
 
-  const unsubscribe = view.setEventHandlers({
+ const unsubscribe = view.setEventHandlers({
     // your event handlers
  })
 ``` 
 
 ## Update onboarding event handlers in the platform view
 
-Event handlers for onboardings have been moved outside the `eventHandlers` object in `AdaptyOnboardingView`. If you are displaying onboardings using `AdaptyOnboardingView`, update the event handling structure:
+Event handlers for onboardings have been moved outside the `eventHandlers` object in `AdaptyOnboardingView`. If you are displaying onboardings using `AdaptyOnboardingView`, update the event handling structure.
+
+:::important
+Note the way we recommend implementing event handlers. To avoid recreating objects on each render, use `useCallback` for functions that handle events.
+:::
 
 ```diff showLineNumbers
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ /* your styles */ }}
+- <AdaptyOnboardingView
+-  onboarding={onboarding}
+-  style={{ /* your styles */ }}
 -  eventHandlers={{
 -    onAnalytics(event, meta) { 
 -      // Handle analytics events
@@ -66,29 +72,39 @@ Event handlers for onboardings have been moved outside the `eventHandlers` objec
 -      // Handle errors
 -    },
 -  }}
-    onAnalytics={(event, meta) => {
-      // Handle analytics events
-    }}
-    onClose={(actionId, meta) => {
-      // Handle close actions
-    }}
-    onCustom={(actionId, meta) => {
-      // Handle custom actions
-    }}
-    onPaywall={(actionId, meta) => {
-      // Handle paywall actions
-    }}
-    onStateUpdated={(action, meta) => {
-      // Handle state updates
-    }}
-    onFinishedLoading={(meta) => {
-      // Handle when onboarding finishes loading
-    }}
-    onError={(error) => {
-      // Handle errors
-    }}
-/>
+- />
++ <AdaptyOnboardingView
++   onboarding={onboarding}
++   style={{ /* your styles */ }}
++   onAnalytics={useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
++     // Handle analytics events
++   }, [])}
++   onClose={useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
++     // Handle close actions
++   }, [])}
++   onCustom={useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
++     // Handle custom actions
++   }, [])}
++   onPaywall={useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
++     // Handle paywall actions
++   }, [])}
++   onStateUpdated={useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
++     // Handle state updates
++   }, [])}
++   onFinishedLoading={useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
++     // Handle when onboarding finishes loading
++   }, [])}
++   onError={useCallback<OnboardingEventHandlers['onError']>((error) => {
++     // Handle errors
++   }, [])}
++   eventHandlers={useMemo((): Partial<OnboardingEventHandlers> => ({
++     onFinishedLoading(meta) {
++       // Handle when onboarding finishes loading
++     }
++   }), [])}
++ />
 ```
+
 
 ## Delete `logShowOnboarding`
 
