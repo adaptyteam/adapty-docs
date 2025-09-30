@@ -143,16 +143,12 @@ const config = {
                 href: "/api-adapty",
               },
               {
-                label: "Webhooks API", 
-                href: "/api-webhooks",
+                label: "Web API", 
+                href: "/api-web",
               },
               {
-                label: "Test API v1 (Dyte)",
-                href: "/api-v1",
-              },
-              {
-                label: "Test API v2 (Dyte)",
-                href: "/api-v2",
+                label: "Export Analytics API",
+                href: "/api-export-analytics",
               },
             ],
           },
@@ -276,7 +272,7 @@ const config = {
               },
               {
                 label: "Web API",
-                href: "/web-api",
+                href: "/api-web",
               },
               {
                 label: "Analytics export API",
