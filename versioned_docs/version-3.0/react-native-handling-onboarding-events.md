@@ -149,7 +149,7 @@ import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12" default>
 
 ```javascript showLineNumbers title="React Native"
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
