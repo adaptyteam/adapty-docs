@@ -80,6 +80,42 @@ To embed an onboarding within your existing component tree, use the `AdaptyOnboa
 This approach is ideal for required onboardings, mandatory tutorials, or any flow where you need to ensure users complete the onboarding before proceeding. You can control dismissal through your own UI elements and logic.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+<AdaptyOnboardingView
+    onboarding={onboarding}
+    style={{ /* your styles */ }}
+    onAnalytics={(event, meta) => {
+        // Handle analytics events
+    }}
+    onClose={(actionId, meta) => {
+        // Handle close actions
+    }}
+    onCustom={(actionId, meta) => {
+        // Handle custom actions
+    }}
+    onPaywall={(actionId, meta) => {
+        // Handle paywall actions
+    }}
+    onStateUpdated={(action, meta) => {
+        // Handle state updates
+    }}
+    onFinishedLoading={(meta) => {
+        // Handle when onboarding finishes loading
+    }}
+    onError={(error) => {
+        // Handle errors
+    }}
+/>
+```
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.12" default>
+
 ```typescript showLineNumbers title="React Native (TSX)"
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -111,6 +147,8 @@ import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
   }}
 />
 ```
+</TabItem>
+</Tabs>
 
 ## Next steps
 

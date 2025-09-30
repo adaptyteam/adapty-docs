@@ -114,6 +114,43 @@ try {
 
 When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.12 or later" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+<AdaptyOnboardingView
+    onboarding={onboarding}
+    style={{ /* your styles */ }}
+    onAnalytics={(event, meta) => {
+        // Handle analytics events
+    }}
+    onClose={(actionId, meta) => {
+        // Handle close actions
+    }}
+    onCustom={(actionId, meta) => {
+        // Handle custom actions
+    }}
+    onPaywall={(actionId, meta) => {
+        // Handle paywall actions
+    }}
+    onStateUpdated={(action, meta) => {
+        // Handle state updates
+    }}
+    onFinishedLoading={(meta) => {
+        // Handle when onboarding finishes loading
+    }}
+    onError={(error) => {
+        // Handle errors
+    }}
+/>
+```
+
+</TabItem>
+
+<TabItem value="new" label="SDK version < 3.12" default>
+
 ```javascript showLineNumbers title="React Native"
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -145,6 +182,9 @@ import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
   }}
 />
 ```
+
+</TabItem>
+</Tabs>
 
 ## Event types
 
@@ -187,10 +227,8 @@ const unsubscribe = view.setEventHandlers({
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onCustom(actionId, meta) {
-      handleCustomAction(actionId);
-    },
+  onCustom={(actionId, meta) => {
+    // Handle custom actions
   }}
 />
 ```
@@ -258,10 +296,8 @@ const unsubscribe = view.setEventHandlers({
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onFinishedLoading(meta) {
-      console.log('Onboarding loaded:', meta.onboardingId);
-    },
+  onFinishedLoading={(meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
   }}
 />
 ```
@@ -337,10 +373,8 @@ const unsubscribe = view.setEventHandlers({
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onClose(actionId, meta) {
-      // Handle navigation back or dismiss the view
-    },
+  onClose={(actionId, meta) => {
+    navigation.goBack();  
   }}
 />
 ```
@@ -410,10 +444,8 @@ const openPaywall = async (actionId) => {
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onPaywall(actionId, meta) {
-      openPaywall(actionId);
-    },
+  onPaywall={(actionId, meta) => {
+    openPaywall(actionId);
   }}
 />
 ```
@@ -478,10 +510,8 @@ const unsubscribe = view.setEventHandlers({
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onStateUpdated(action, meta) {
-      saveUserResponse(action.elementId, action.params);
-    },
+  onStateUpdated={(action, meta) => {
+    saveUserResponse(action.elementId, action.params);
   }}
 />
 ```
@@ -626,10 +656,8 @@ const unsubscribe = view.setEventHandlers({
 // Embedded widget
 <AdaptyOnboardingView
   onboarding={onboarding}
-  eventHandlers={{
-    onAnalytics(event, meta) {
-      trackEvent(event.type, meta.onboardingId);
-    },
+  onAnalytics={(event, meta) => {
+    trackEvent(event.type, meta.onboardingId);
   }}
 />
 ```
