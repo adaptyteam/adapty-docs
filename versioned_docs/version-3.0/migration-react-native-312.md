@@ -73,36 +73,53 @@ Note the way we recommend implementing event handlers. To avoid recreating objec
 -    },
 -  }}
 - />
-+ <AdaptyOnboardingView
-+   onboarding={onboarding}
-+   style={{ /* your styles */ }}
-+   onAnalytics={useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
-+     // Handle analytics events
-+   }, [])}
-+   onClose={useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
-+     // Handle close actions
-+   }, [])}
-+   onCustom={useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
-+     // Handle custom actions
-+   }, [])}
-+   onPaywall={useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
-+     // Handle paywall actions
-+   }, [])}
-+   onStateUpdated={useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
-+     // Handle state updates
-+   }, [])}
-+   onFinishedLoading={useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
++ const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
++   // Handle analytics events
++ }, []);
++
++ const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
++   // Handle close actions
++ }, []);
++
++ const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
++   // Handle custom actions
++ }, []);
++
++ const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
++   // Handle paywall actions
++ }, []);
++
++ const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
++   // Handle state updates
++ }, []);
++
++ const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
++   // Handle when onboarding finishes loading
++ }, []);
++
++ const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
++   // Handle errors
++ }, []);
++
++ const eventHandlers = useMemo((): Partial<OnboardingEventHandlers> => ({
++   onFinishedLoading(meta) {
 +     // Handle when onboarding finishes loading
-+   }, [])}
-+   onError={useCallback<OnboardingEventHandlers['onError']>((error) => {
-+     // Handle errors
-+   }, [])}
-+   eventHandlers={useMemo((): Partial<OnboardingEventHandlers> => ({
-+     onFinishedLoading(meta) {
-+       // Handle when onboarding finishes loading
-+     }
-+   }), [])}
-+ />
++   }
++ }), []);
++
++ return (
++   <AdaptyOnboardingView
++     onboarding={onboarding}
++     style={styles.container}
++     onAnalytics={onAnalytics}
++     onClose={onClose}
++     onCustom={onCustom}
++     onPaywall={onPaywall}
++     onStateUpdated={onStateUpdated}
++     onFinishedLoading={onFinishedLoading}
++     onError={onError}
++   />
++ );
 ```
 
 
