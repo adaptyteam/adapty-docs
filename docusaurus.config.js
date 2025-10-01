@@ -7,6 +7,8 @@
 
 import { themes as prismThemes } from "prism-react-renderer";
 
+const { webpackPlugin } = require('./plugins/webpack-plugin.cjs');
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
@@ -131,6 +133,24 @@ const config = {
             sidebarId: "APISidebar",
           },
           {
+            label: "API Reference",
+            position: "left",
+            items: [
+              {
+                label: "Adapty API",
+                href: "/api-adapty",
+              },
+              {
+                label: "Web API",
+                href: "/api-web",
+              },
+              {
+                label: "Export Analytics API",
+                href: "/api-export-analytics",
+              },
+            ],
+          },
+          {
             label: "Support Forum",
             position: "left",
             href: "https://ask.adapty.io/questions",
@@ -250,7 +270,7 @@ const config = {
               },
               {
                 label: "Web API",
-                href: "/web-api",
+                href: "/api-web",
               },
               {
                 label: "Analytics export API",
@@ -355,6 +375,8 @@ const config = {
     [require('./plugins/gtm-plugin'), {
       trackingID: 'GTM-PXJV3N7',
     }],
+    // Webpack plugin for Node.js polyfills
+    webpackPlugin,
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {
