@@ -31,76 +31,57 @@ To control or monitor processes occurring on the paywall screen within your mobi
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, you handle events directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
+For React component, you handle events through individual event handler props in the `AdaptyPaywallView` component:
 
-```javascript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty';
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
 import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
-  // Handle close button press
-}, []);
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
 
-const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
-  // Handle Android back button
-}, []);
-
-const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {
-  // Handle successful purchase
-}, []);
-
-const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {
-  // Handle purchase start
-}, []);
-
-const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {
-  // Handle purchase failure
-}, []);
-
-const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {
-  // Handle successful restore
-}, []);
-
-const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {
-  // Handle restore failure
-}, []);
-
-const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {
-  // Handle product selection
-}, []);
-
-const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {
-  // Handle rendering errors
-}, []);
-
-const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {
-  // Handle product loading errors
-}, []);
-
-const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
-  Linking.openURL(url);
-}, []);
-
-const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
-  // Handle custom actions
-}, []);
-
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCloseButtonPress={onCloseButtonPress}
-  onAndroidSystemBack={onAndroidSystemBack}
-  onPurchaseCompleted={onPurchaseCompleted}
-  onPurchaseStarted={onPurchaseStarted}
-  onPurchaseFailed={onPurchaseFailed}
-  onRestoreCompleted={onRestoreCompleted}
-  onRestoreFailed={onRestoreFailed}
-  onProductSelected={onProductSelected}
-  onRenderingFailed={onRenderingFailed}
-  onLoadingProductsFailed={onLoadingProductsFailed}
-  onUrlPress={onUrlPress}
-  onCustomAction={onCustomAction}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onPaywallClosed={onPaywallClosed}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -153,7 +134,7 @@ For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty';
+import { createPaywallView } from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 

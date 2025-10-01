@@ -37,27 +37,33 @@ In the React Native SDK, the `close` action triggers closing the paywall by defa
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, handle the close action through the `eventHandlers` prop:
+For React component, handle the close action through individual event handler props:
 
 ```javascript
+import React, { useCallback } from 'react';
 import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
-  // Handle close button press - navigate away or hide component
-  navigation.goBack();
-}, [navigation]);
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
 
-const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
-  // Handle Android back button
-  navigation.goBack();
-}, [navigation]);
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
+    // Handle Android back button
+    navigation.goBack();
+  }, [navigation]);
 
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCloseButtonPress={onCloseButtonPress}
-  onAndroidSystemBack={onAndroidSystemBack}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -122,21 +128,27 @@ In the React Native SDK, the `openUrl` action triggers opening the URL by defaul
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, handle URL opening through the `eventHandlers` prop:
+For React component, handle URL opening through the event handler prop:
 
 ```javascript
-import { AdaptyPaywallView } from 'react-native-adapty';
+import React, { useCallback } from 'react';
 import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
-  Linking.openURL(url);
-}, []);
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
 
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onUrlPress={onUrlPress}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -197,22 +209,28 @@ To add a button that logs users into your app:
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, handle login through the `eventHandlers` prop:
+For React component, handle login through the event handler prop:
 
 ```javascript
+import React, { useCallback } from 'react';
 import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
-  if (actionId === 'login') {
-    navigation.navigate('Login');
-  }
-}, [navigation]);
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'login') {
+      navigation.navigate('Login');
+    }
+  }, [navigation]);
 
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCustomAction={onCustomAction}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -275,22 +293,28 @@ For example, if you have another set of subscription offers or one-time purchase
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, handle custom actions through the `eventHandlers` prop:
+For React component, handle custom actions through the event handler prop:
 
 ```javascript
+import React, { useCallback } from 'react';
 import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
-  if (actionId === 'openNewPaywall') {
-    // Display another paywall
-  }
-}, []);
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another paywall
+    }
+  }, []);
 
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCustomAction={onCustomAction}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
 ```
 
 </TabItem>
