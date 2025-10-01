@@ -27,6 +27,10 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
+:::info
+In the React Native SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+:::
+
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
@@ -107,6 +111,10 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
+
+:::info
+In the React Native SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
+:::
 
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
