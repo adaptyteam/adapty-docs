@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 Adapty React Native SDK 3.12.0 is a major release that introduces improvements that require migration steps on your end:
 
 - The `registerEventHandlers` method used to display paywalls and onboardings has been replaced with the `setEventHandlers` method.
-- The platform view event handlers for onboardings have been moved outside of `eventHandlers`
+- The React component event handlers for onboardings have been moved outside of `eventHandlers`
 - The `logShowOnboarding` method has been deleted
 - The minimum React Native version has been updated to 0.73.0
 
@@ -21,7 +21,9 @@ Adapty React Native SDK 3.12.0 is a major release that introduces improvements t
 The `registerEventHandlers` method used for working with Adapty Paywall and Onboarding Builder has been replaced with the `setEventHandlers` method.
 If you use the Adapty Paywall Builder and/or Adapty Onboarding Builder, find `registerEventHandlers` in your app code and replace it with `setEventHandlers`.
 
-The change has been introduced to make the method behavior clearer: Handlers now work one-at-a-time because each returns true/false, and having multiple handlers for a single event made the resulting behavior unclear.
+The change has been introduced to make the method behavior clearer: Handlers now work one-at-a-time because each returns `true`/`false`, and having multiple handlers for a single event made the resulting behavior unclear.
+
+Note that when using React components like `AdaptyOnboardingView` or `AdaptyPaywallView`, you don't need to return `true`/`false` from event handlers since you control the component's visibility through your own state management. Return values are only needed for modal screen presentation where the SDK manages the view lifecycle.
 
 :::important
 Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
@@ -37,7 +39,7 @@ Calling this method multiple times will re-register **all** event handlers (both
  })
 ``` 
 
-## Update onboarding event handlers in the platform view
+## Update onboarding event handlers in the React component
 
 Event handlers for onboardings have been moved outside the `eventHandlers` object in `AdaptyOnboardingView`. If you are displaying onboardings using `AdaptyOnboardingView`, update the event handling structure.
 

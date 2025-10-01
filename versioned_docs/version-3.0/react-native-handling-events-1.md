@@ -29,61 +29,84 @@ To control or monitor processes occurring on the paywall screen within your mobi
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, you handle events directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
+For React component, you handle events directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
 
 ```javascript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
 import { Linking } from 'react-native';
+
+const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+  // Handle close button press
+}, []);
+
+const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
+  // Handle Android back button
+}, []);
+
+const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {
+  // Handle successful purchase
+}, []);
+
+const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {
+  // Handle purchase start
+}, []);
+
+const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {
+  // Handle purchase failure
+}, []);
+
+const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {
+  // Handle successful restore
+}, []);
+
+const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {
+  // Handle restore failure
+}, []);
+
+const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {
+  // Handle product selection
+}, []);
+
+const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {
+  // Handle rendering errors
+}, []);
+
+const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {
+  // Handle product loading errors
+}, []);
+
+const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+  Linking.openURL(url);
+}, []);
+
+const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+  // Handle custom actions
+}, []);
 
 <AdaptyPaywallView
   paywall={paywall}
-  eventHandlers={{
-    onCloseButtonPress() {
-      // Handle close button press
-    },
-    onAndroidSystemBack() {
-      // Handle Android back button
-    },
-    onPurchaseCompleted(purchaseResult, product) {
-      // Handle successful purchase
-    },
-    onPurchaseStarted(product) {
-      // Handle purchase start
-    },
-    onPurchaseFailed(error, product) {
-      // Handle purchase failure
-    },
-    onRestoreCompleted(profile) {
-      // Handle successful restore
-    },
-    onRestoreFailed(error) {
-      // Handle restore failure
-    },
-    onProductSelected(productId) {
-      // Handle product selection
-    },
-    onRenderingFailed(error) {
-      // Handle rendering errors
-    },
-    onLoadingProductsFailed(error) {
-      // Handle product loading errors
-    },
-    onUrlPress(url) {
-      Linking.openURL(url);
-    },
-    onCustomAction(actionId) {
-      // Handle custom actions
-    },
-  }}
+  style={styles.container}
+  onCloseButtonPress={onCloseButtonPress}
+  onAndroidSystemBack={onAndroidSystemBack}
+  onPurchaseCompleted={onPurchaseCompleted}
+  onPurchaseStarted={onPurchaseStarted}
+  onPurchaseFailed={onPurchaseFailed}
+  onRestoreCompleted={onRestoreCompleted}
+  onRestoreFailed={onRestoreFailed}
+  onProductSelected={onProductSelected}
+  onRenderingFailed={onRenderingFailed}
+  onLoadingProductsFailed={onLoadingProductsFailed}
+  onUrlPress={onUrlPress}
+  onCustomAction={onCustomAction}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement the event handlers method.
+For modal presentation, implement the event handlers method.
 
 :::important
 Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
@@ -91,7 +114,7 @@ Calling this method multiple times will re-register **all** event handlers (both
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -126,11 +149,11 @@ const unsubscribe = view.setEventHandlers({
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
-For SDK version < 3.12, only standalone screen presentation is supported:
+For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 

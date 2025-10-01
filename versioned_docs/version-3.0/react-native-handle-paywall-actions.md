@@ -31,35 +31,38 @@ To add a button that will close your paywall:
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, handle the close action through the `eventHandlers` prop:
+For React component, handle the close action through the `eventHandlers` prop:
 
 ```javascript
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
+
+const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+  // Handle close button press - navigate away or hide component
+  navigation.goBack();
+}, [navigation]);
+
+const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
+  // Handle Android back button
+  navigation.goBack();
+}, [navigation]);
 
 <AdaptyPaywallView
-    paywall={paywall}
-    eventHandlers={{
-        onCloseButtonPress() {
-            // Handle close button press - navigate away or hide component
-            navigation.goBack();
-        },
-        onAndroidSystemBack() {
-            // Handle Android back button
-            navigation.goBack();
-        },
-    }}
+  paywall={paywall}
+  style={styles.container}
+  onCloseButtonPress={onCloseButtonPress}
+  onAndroidSystemBack={onAndroidSystemBack}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement the close handler:
+For modal presentation, implement the close handler:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -77,10 +80,10 @@ const unsubscribe = view.setEventHandlers({
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
-For SDK version < 3.12, only standalone screen presentation is supported:
+For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -109,31 +112,32 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, handle URL opening through the `eventHandlers` prop:
+For React component, handle URL opening through the `eventHandlers` prop:
 
 ```javascript
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
 import { Linking } from 'react-native';
 
+const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+  Linking.openURL(url);
+}, []);
+
 <AdaptyPaywallView
-    paywall={paywall}
-    eventHandlers={{
-        onUrlPress(url) {
-            Linking.openURL(url);
-        },
-    }}
+  paywall={paywall}
+  style={styles.container}
+  onUrlPress={onUrlPress}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement the URL handler:
+For modal presentation, implement the URL handler:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 import {Linking} from 'react-native';
 
 const view = await createPaywallView(paywall);
@@ -153,10 +157,10 @@ const unsubscribe = view.setEventHandlers({
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
-For SDK version < 3.12, only standalone screen presentation is supported:
+For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 import {Linking} from 'react-native';
 
 const view = await createPaywallView(paywall);
@@ -183,32 +187,33 @@ To add a button that logs users into your app:
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, handle login through the `eventHandlers` prop:
+For React component, handle login through the `eventHandlers` prop:
 
 ```javascript
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
+
+const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+  if (actionId === 'login') {
+    navigation.navigate('Login');
+  }
+}, [navigation]);
 
 <AdaptyPaywallView
   paywall={paywall}
-  eventHandlers={{
-    onCustomAction(actionId) {
-      if (actionId === 'login') {
-        navigation.navigate('Login');
-      }
-    },
-  }}
+  style={styles.container}
+  onCustomAction={onCustomAction}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement the login handler:
+For modal presentation, implement the login handler:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -228,10 +233,10 @@ const unsubscribe = view.setEventHandlers({
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
-For SDK version < 3.12, only standalone screen presentation is supported:
+For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -260,29 +265,30 @@ For example, if you have another set of subscription offers or one-time purchase
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, handle custom actions through the `eventHandlers` prop:
+For React component, handle custom actions through the `eventHandlers` prop:
 
 ```javascript
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
+
+const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+  if (actionId === 'openNewPaywall') {
+    // Display another paywall
+  }
+}, []);
 
 <AdaptyPaywallView
-    paywall={paywall}
-    eventHandlers={{
-        onCustomAction(actionId) {
-            if (actionId === 'openNewPaywall') {
-                // Display another paywall
-            }
-        },
-    }}
+  paywall={paywall}
+  style={styles.container}
+  onCustomAction={onCustomAction}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement custom action handlers:
+For modal presentation, implement custom action handlers:
 
 ```javascript
 const unsubscribe = view.setEventHandlers({
@@ -301,7 +307,7 @@ const unsubscribe = view.setEventHandlers({
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
-For SDK version < 3.12, only standalone screen presentation is supported:
+For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
 const unsubscribe = view.registerEventHandlers({

@@ -29,14 +29,14 @@ This guide is for **new Paywall Builder paywalls** only, which require SDK v3.0 
 
 Adapty React Native SDK provides two ways to present paywalls:
 
-- **Embedded component**: Embedded component gives you complete control over the UI and logic. 
+- **React component**: Embedded component gives you complete control over the UI and logic. 
 
-- **Standalone screen**: Modal presentation.
+- **Modal presentation**
 
-## Embed in component hierarchy
+## React component
 
 :::note
-The **embedded component** approach requires SDK 3.12.0 or later.
+The **React component** approach requires SDK 3.12.0 or later.
 :::
 
 
@@ -49,16 +49,80 @@ This approach is ideal for required paywalls, mandatory purchase flows, or any s
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
+
+const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+  // Handle close button press
+}, []);
+
+const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
+  // Handle Android back button
+}, []);
+
+const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {
+  // Handle product selection
+}, []);
+
+const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {
+  // Handle purchase start
+}, []);
+
+const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {
+  // Handle successful purchase
+}, []);
+
+const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {
+  // Handle purchase failure
+}, []);
+
+const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {
+  // Handle restore start
+}, []);
+
+const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {
+  // Handle successful restore
+}, []);
+
+const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {
+  // Handle restore failure
+}, []);
+
+const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {
+  // Handle rendering errors
+}, []);
+
+const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {
+  // Handle product loading errors
+}, []);
+
+const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+  // Handle URL press
+}, []);
+
+const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+  // Handle custom actions
+}, []);
 
 <AdaptyPaywallView
   paywall={paywall}
-  style={{ /* your styles */ }}
-  eventHandlers={{ /* your event handlers */ }}
+  style={styles.container}
+  onCloseButtonPress={onCloseButtonPress}
+  onAndroidSystemBack={onAndroidSystemBack}
+  onProductSelected={onProductSelected}
+  onPurchaseStarted={onPurchaseStarted}
+  onPurchaseCompleted={onPurchaseCompleted}
+  onPurchaseFailed={onPurchaseFailed}
+  onRestoreStarted={onRestoreStarted}
+  onRestoreCompleted={onRestoreCompleted}
+  onRestoreFailed={onRestoreFailed}
+  onRenderingFailed={onRenderingFailed}
+  onLoadingProductsFailed={onLoadingProductsFailed}
+  onUrlPress={onUrlPress}
+  onCustomAction={onCustomAction}
 />
 ```
 
-## Present as standalone screen
+## Modal presentation
 
 To display a paywall as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more time to create a new `view` instance.
 
@@ -69,7 +133,7 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createPaywallView } from 'react-native-adapty/dist/ui';
+import { createPaywallView } from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -90,7 +154,7 @@ Calling `setEventHandlers` multiple times will re-register **all** event handler
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createPaywallView } from 'react-native-adapty/dist/ui';
+import { createPaywallView } from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
