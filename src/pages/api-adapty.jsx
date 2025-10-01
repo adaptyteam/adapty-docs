@@ -6,6 +6,9 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 // Import our custom API component
 import AdaptyAPI from '../components/API/AdaptyAPI';
 
+// Import API page styles
+import '../css/api-pages.css';
+
 function APIElement({ layout = 'sidebar' }) {
   return (
     <BrowserOnly
@@ -36,7 +39,7 @@ export default function AdaptyAPIPage() {
         <meta
           name="description"
           content="Explore Adapty's main API documentation. Learn how to integrate with Adapty's subscription management platform."
-        ></meta>
+        />
       </Head>
 
       <APIElement layout="sidebar" />

@@ -6,6 +6,9 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 // Import our custom API component
 import ExportAnalyticsAPI from '../components/API/ExportAnalyticsAPI';
 
+// Import API page styles
+import '../css/api-pages.css';
+
 function APIElement({ layout = 'sidebar' }) {
   return (
     <BrowserOnly
@@ -36,7 +39,7 @@ export default function ExportAnalyticsAPIPage() {
         <meta
           name="description"
           content="Explore Adapty's Export Analytics API documentation. Learn how to export analytics data to CSV or JSON format for deeper insights into your app's performance metrics."
-        ></meta>
+        />
       </Head>
 
       <APIElement layout="sidebar" />
