@@ -13,6 +13,10 @@ function webpackPlugin(context, options) {
                 fullySpecified: false,
               },
             },
+            {
+              test: /\.ya?ml$/,
+              type: 'asset/source',
+            },
           ],
         },
         plugins: [
