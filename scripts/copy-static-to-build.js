@@ -4,6 +4,7 @@ const path = require('path');
 async function copyStaticMarkdownAndLlms() {
   const staticDir = path.join(__dirname, '..', 'static');
   const buildDir = path.join(__dirname, '..', 'build');
+  const apiSpecsDir = path.join(__dirname, '..', 'api-specs');
 
   if (!fs.existsSync(staticDir)) {
     console.error('Static directory does not exist.');
@@ -60,10 +61,31 @@ async function copyStaticMarkdownAndLlms() {
         console.log(`Copied ${platform}-llms-full.txt to build directory`);
       }
     }
+    // Copy API YAML files from static/api to build/api directory
+    const apiDir = path.join(staticDir, 'api');
+    const buildApiDir = path.join(buildDir, 'api');
+    if (await fs.pathExists(apiDir)) {
+      // Ensure build/api directory exists
+      await fs.ensureDir(buildApiDir);
+      
+      const apiFiles = await fs.readdir(apiDir);
+      for (const file of apiFiles) {
+        if (file.endsWith('.yaml') || file.endsWith('.yml')) {
+          await fs.copy(
+            path.join(apiDir, file),
+            path.join(buildApiDir, file),
+            { overwrite: true }
+          );
+          copied.push(`api/${file}`);
+          console.log(`Copied ${file} to build/api directory`);
+        }
+      }
+    }
+    
     if (copied.length === 0) {
-      console.log('No markdown files or LLM files found to copy.');
+      console.log('No markdown files, LLM files, or API YAML files found to copy.');
     } else {
-      console.log('Successfully copied markdown files and LLM files to build directory');
+      console.log('Successfully copied markdown files, LLM files, and API YAML files');
     }
   } catch (err) {
     console.error('Error copying markdown files and LLM files:', err);

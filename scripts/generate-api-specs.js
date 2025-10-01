@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Scan the static/api directory for YAML files
+// Scan the api-specs directory for YAML files
 function generateApiSpecs() {
-  const apiDir = path.join(__dirname, '../static/api');
+  const apiDir = path.join(__dirname, '../api-specs');
   const specs = [];
   
   if (fs.existsSync(apiDir)) {
