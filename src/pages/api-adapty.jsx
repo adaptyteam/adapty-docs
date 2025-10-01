@@ -2,10 +2,9 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import Head from '@docusaurus/Head';
 import BrowserOnly from '@docusaurus/BrowserOnly';
-import clsx from 'clsx';
 
-// Import Stoplight Elements at the top level
-import { API } from '@stoplight/elements';
+// Import our custom API component
+import AdaptyAPI from '../components/API/AdaptyAPI';
 
 function APIElement({ layout = 'sidebar' }) {
   return (
@@ -16,26 +15,12 @@ function APIElement({ layout = 'sidebar' }) {
         </div>
       }
     >
-      {() => (
-        <div className={clsx('elements-container', layout)}>
-          <API
-            className="stacked"
-            apiDescriptionUrl="/docs/api/adapty-api.yaml"
-            basePath="/"
-            router="hash"
-            layout={layout}
-            hideSchemas
-            hideInternal
-            tryItCredentialsPolicy="omit"
-            tryItCorsProxy="https://cors-anywhere.herokuapp.com/"
-          />
-        </div>
-      )}
+      {() => <AdaptyAPI layout={layout} />}
     </BrowserOnly>
   );
 }
 
-export default function AdaptyAPI() {
+export default function AdaptyAPIPage() {
   return (
     <Layout
       title="Adapty API"
