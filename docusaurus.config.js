@@ -268,7 +268,11 @@ const config = {
             items: [
               {
                 label: "Server-side API",
-                href: "/getting-started-with-server-side-api",
+                href: "/docs/getting-started-with-server-side-api",
+              },
+              {
+                label: "Adapty API",
+                href: "/api-adapty",
               },
               {
                 label: "Web API",
@@ -276,7 +280,7 @@ const config = {
               },
               {
                 label: "Analytics export API",
-                href: "/export-analytics-api",
+                href: "/api-export-analytics",
               },
             ],
           },

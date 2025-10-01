@@ -6,6 +6,9 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 // Import our custom API component
 import WebAPI from '../components/API/WebAPI';
 
+// Import API page styles
+import '../css/api-pages.css';
+
 function APIElement({ layout = 'sidebar' }) {
   return (
     <BrowserOnly
@@ -36,7 +39,7 @@ export default function WebAPIPage() {
         <meta
           name="description"
           content="Explore Adapty's Web API documentation. Learn how to integrate paywalls, record views, and add attribution data to your web applications."
-        ></meta>
+        />
       </Head>
 
       <APIElement layout="sidebar" />
