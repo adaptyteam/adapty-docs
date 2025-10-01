@@ -13,8 +13,8 @@ import TabItem from '@theme/TabItem';
 
 Onboardings configured with the builder generate events your app can respond to. The way you handle these events depends on which presentation approach you're using:
 
-- **Full-screen presentation**: Requires setting up event handlers that handle events for all onboarding views
-- **Embedded widget**: Handles events through inline callback parameters directly in the widget
+- **Modal presentation**: Requires setting up event handlers that handle events for all onboarding views
+- **React component**: Handles events through inline callback parameters directly in the widget
 
 Before you start, ensure that:
 
@@ -22,11 +22,11 @@ Before you start, ensure that:
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
-## Full-screen presentation events
+## Modal presentation events
 
 ### Set up event handlers
 
-To handle events for full-screen onboardings, use the event handlers method:
+To handle events for modal presentation, use the event handlers method:
 
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
@@ -110,7 +110,7 @@ try {
 </TabItem>
 </Tabs>
 
-## Embedded widget events
+## React component events
 
 When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
 
@@ -148,19 +148,17 @@ const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
   // Handle errors
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onAnalytics={onAnalytics}
-    onClose={onClose}
-    onCustom={onCustom}
-    onPaywall={onPaywall}
-    onStateUpdated={onStateUpdated}
-    onFinishedLoading={onFinishedLoading}
-    onError={onError}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onAnalytics={onAnalytics}
+  onClose={onClose}
+  onCustom={onCustom}
+  onPaywall={onPaywall}
+  onStateUpdated={onStateUpdated}
+  onFinishedLoading={onFinishedLoading}
+  onError={onError}
+/>
 ```
 
 </TabItem>
@@ -226,7 +224,7 @@ Then, you can use this ID in your code and handle it as a custom action. For exa
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onCustom(actionId, meta) {
     switch (actionId) {
@@ -240,24 +238,22 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 
-// Embedded widget
+// React component
 const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
   // Handle custom actions
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onCustom={onCustom}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onCustom={onCustom}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onCustom(actionId, meta) {
     switch (actionId) {
@@ -271,7 +267,7 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -307,38 +303,36 @@ When an onboarding finishes loading, this event will be triggered:
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onFinishedLoading(meta) {
     console.log('Onboarding loaded:', meta.onboardingId);
   },
 });
 
-// Embedded widget
+// React component
 const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
   console.log('Onboarding loaded:', meta.onboardingId);
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onFinishedLoading={onFinishedLoading}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onFinishedLoading={onFinishedLoading}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onFinishedLoading(meta) {
     console.log('Onboarding loaded:', meta.onboardingId);
   },
 });
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -388,7 +382,7 @@ Note that you need to manage what happens when a user closes the onboarding. For
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onClose(actionId, meta) {
     await view.dismiss();
@@ -396,24 +390,22 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 
-// Embedded widget
+// React component
 const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
   navigation.goBack();  
 }, [navigation]);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onClose={onClose}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onClose={onClose}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onClose(actionId, meta) {
     await view.dismiss();
@@ -421,7 +413,7 @@ const unsubscribe = view.registerEventHandlers({
   },
 });
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -461,7 +453,7 @@ If a user clicks a button that opens a paywall, you will get a button action ID 
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onPaywall(actionId, meta) {
     openPaywall(actionId);
@@ -472,24 +464,22 @@ const openPaywall = async (actionId) => {
   // Implement your paywall opening logic here
 };
 
-// Embedded widget
+// React component
 const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
   openPaywall(actionId);
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onPaywall={onPaywall}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onPaywall={onPaywall}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onPaywall(actionId, meta) {
     openPaywall(actionId);
@@ -500,7 +490,7 @@ const openPaywall = async (actionId) => {
   // Implement your paywall opening logic here
 };
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -536,38 +526,36 @@ When your users respond to a quiz question or input their data into an input fie
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onStateUpdated(action, meta) {
     saveUserResponse(action.elementId, action.params);
   },
 });
 
-// Embedded widget
+// React component
 const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
   saveUserResponse(action.elementId, action.params);
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onStateUpdated={onStateUpdated}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onStateUpdated={onStateUpdated}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onStateUpdated(action, meta) {
     saveUserResponse(action.elementId, action.params);
   },
 });
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{
@@ -687,38 +675,36 @@ You receive an analytics event when various navigation-related events occur duri
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.setEventHandlers({
   onAnalytics(event, meta) {
     trackEvent(event.type, meta.onboardingId);
   },
 });
 
-// Embedded widget
+// React component
 const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
   trackEvent(event.type, meta.onboardingId);
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onAnalytics={onAnalytics}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onAnalytics={onAnalytics}
+/>
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-// Full-screen presentation
+// Modal presentation
 const unsubscribe = view.registerEventHandlers({
   onAnalytics(event, meta) {
     trackEvent(event.type, meta.onboardingId);
   },
 });
 
-// Embedded widget
+// React component
 <AdaptyOnboardingView
   onboarding={onboarding}
   eventHandlers={{

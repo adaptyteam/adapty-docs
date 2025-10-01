@@ -82,30 +82,31 @@ if (paywall.hasViewConfiguration) {
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
 To embed a paywall within your existing component tree, use the `AdaptyPaywallView` component directly in your React Native component hierarchy:
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
+
+const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+  // Handle close button press
+}, []);
+
+const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+  Linking.openURL(url);
+}, []);
 
 <AdaptyPaywallView
   paywall={paywall}
-  style={{ flex: 1 }}
-  eventHandlers={{
-    onCloseButtonPress() {
-      // Handle close button press
-    },
-    onUrlPress(url) {
-      Linking.openURL(url);
-    },
-    // ... other event handlers
-  }}
+  style={styles.container}
+  onCloseButtonPress={onCloseButtonPress}
+  onUrlPress={onUrlPress}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
 To display the paywall as a standalone screen, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
 
@@ -133,34 +134,39 @@ However, other buttons have custom or pre-defined IDs and require handling actio
 For example, here is the default behavior for the close button. You don't need to add it in the code, but here, you can see how it is done if needed.
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
-For platform view, handle actions directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
+For React component, handle actions directly in the `AdaptyPaywallView` component:
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
 import { Linking } from 'react-native';
+
+const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+  Linking.openURL(url);
+}, []);
+
+const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+  // Handle close button press
+}, []);
+
+const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+  // Handle custom actions
+}, []);
 
 <AdaptyPaywallView
   paywall={paywall}
-  eventHandlers={{
-    onUrlPress(url) {
-      Linking.openURL(url);
-    },
-    onCloseButtonPress() {
-      // Handle close button press
-    },
-    onCustomAction(actionId) {
-      // Handle custom actions
-    },
-  }}
+  style={styles.container}
+  onUrlPress={onUrlPress}
+  onCloseButtonPress={onCloseButtonPress}
+  onCustomAction={onCustomAction}
 />
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
-For standalone screen, implement event handlers using `registerEventHandlers`:
+For modal presentation, implement event handlers using `registerEventHandlers`:
 
 ```typescript showLineNumbers title="React Native"
 const unsubscribe = view.setEventHandlers({
@@ -188,13 +194,13 @@ Now, you need to [check the users' access level](react-native-check-subscription
 Here is how all those steps can be integrated in your app together.
 
 <Tabs groupId="presentation-method" queryString>
-<TabItem value="platform" label="Platform view" default>
+<TabItem value="platform" label="React component" default>
 
 ```javascript showLineNumbers title="React Native (TSX)"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, View } from 'react-native';
 import { adapty } from '@adapty/react-native-ui';
-import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
+import { AdaptyPaywallView } from 'react-native-adapty';
 import { Linking } from 'react-native';
 
 export default function PaywallScreen() {
@@ -212,6 +218,14 @@ export default function PaywallScreen() {
     }
   };
 
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press
+  }, []);
+
   useEffect(() => {
     loadPaywall();
   }, []);
@@ -222,14 +236,8 @@ export default function PaywallScreen() {
         <AdaptyPaywallView
           paywall={paywall}
           style={{ flex: 1 }}
-          eventHandlers={{
-            onUrlPress(url) {
-              Linking.openURL(url);
-            },
-            onCloseButtonPress() {
-              // Handle close button press
-            },
-          }}
+          onUrlPress={onUrlPress}
+          onCloseButtonPress={onCloseButtonPress}
         />
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -242,7 +250,7 @@ export default function PaywallScreen() {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Standalone screen">
+<TabItem value="standalone" label="Modal presentation">
 
 ```javascript showLineNumbers title="React Native"
 import React, { useEffect } from 'react';

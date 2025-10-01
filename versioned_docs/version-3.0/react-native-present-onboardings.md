@@ -20,11 +20,11 @@ Before you start, ensure that:
 
 Adapty React Native SDK provides two ways to present onboardings:
 
-- **Standalone screen**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
+- **Modal presentation**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
 
-- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
+- **React component**: React component gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
 
-## Present as standalone screen
+## Modal presentation
 
 To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
@@ -72,7 +72,7 @@ try {
 
 
 
-## Embed in component hierarchy
+## React component
 
 To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your React Native component hierarchy. This approach gives you full control over when and how the onboarding can be dismissed.
 
@@ -114,19 +114,17 @@ const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
   // Handle errors
 }, []);
 
-return (
-  <AdaptyOnboardingView
-    onboarding={onboarding}
-    style={styles.container}
-    onAnalytics={onAnalytics}
-    onClose={onClose}
-    onCustom={onCustom}
-    onPaywall={onPaywall}
-    onStateUpdated={onStateUpdated}
-    onFinishedLoading={onFinishedLoading}
-    onError={onError}
-  />
-);
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  style={styles.container}
+  onAnalytics={onAnalytics}
+  onClose={onClose}
+  onCustom={onCustom}
+  onPaywall={onPaywall}
+  onStateUpdated={onStateUpdated}
+  onFinishedLoading={onFinishedLoading}
+  onError={onError}
+/>
 ```
 </TabItem>
 
