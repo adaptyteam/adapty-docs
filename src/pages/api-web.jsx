@@ -2,12 +2,7 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import Head from '@docusaurus/Head';
 import BrowserOnly from '@docusaurus/BrowserOnly';
-
-// Import our custom API component
-import WebAPI from '../components/API/WebAPI';
-
-// Import API page styles
-import '../css/api-pages.css';
+import clsx from 'clsx';
 
 function APIElement({ layout = 'sidebar' }) {
   return (
@@ -18,7 +13,24 @@ function APIElement({ layout = 'sidebar' }) {
         </div>
       }
     >
-      {() => <WebAPI layout={layout} />}
+      {() => {
+        // eslint-disable-next-line no-undef
+        const { API } = require('@stoplight/elements');
+
+        return (
+          <div className={clsx('elements-container', layout)}>
+            <API
+              className="stacked"
+              apiDescriptionUrl="/docs/api/web-api.yaml"
+              basePath="/"
+              router="hash"
+              layout={layout}
+              hideSchemas
+              hideInternal
+            />
+          </div>
+        );
+      }}
     </BrowserOnly>
   );
 }
