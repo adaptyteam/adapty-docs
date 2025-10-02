@@ -90,7 +90,7 @@ function MyPaywall({ paywall }) {
 For modal presentation, implement the event handlers method.
 
 :::important
-Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+Calling `setEventHandlers` multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
 :::
 
 ```javascript showLineNumbers title="React Native (TSX)"
