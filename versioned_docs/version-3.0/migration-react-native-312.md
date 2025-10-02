@@ -11,8 +11,8 @@ import TabItem from '@theme/TabItem';
 
 Adapty React Native SDK 3.12.0 is a major release that introduces improvements that require migration steps on your end:
 
-- The `registerEventHandlers` method used to display paywalls and onboardings has been replaced with the `setEventHandlers` method.
-- The React component event handlers for onboardings have been moved outside of `eventHandlers`
+- The `registerEventHandlers` method has been replaced with the `setEventHandlers` method.
+- In `AdaptyOnboardingView`, event handlers are now passed as individual props instead of an `eventHandlers` object
 - The `logShowOnboarding` method has been deleted
 - The minimum React Native version has been updated to 0.73.0
 
@@ -48,81 +48,48 @@ Note the way we recommend implementing event handlers. To avoid recreating objec
 :::
 
 ```diff showLineNumbers
-- <AdaptyOnboardingView
--  onboarding={onboarding}
--  style={{ /* your styles */ }}
--  eventHandlers={{
--    onAnalytics(event, meta) { 
--      // Handle analytics events
--    },
--    onClose(actionId, meta) { 
--      // Handle close actions
--    },
--    onCustom(actionId, meta) { 
--      // Handle custom actions
--    },
--    onPaywall(actionId, meta) { 
--      // Handle paywall actions
--    },
--    onStateUpdated(action, meta) { 
--      // Handle state updates
--    },
--    onFinishedLoading(meta) { 
--      // Handle when onboarding finishes loading
--    },
--    onError(error) { 
--      // Handle errors
--    },
--  }}
-- />
-+ const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
-+   // Handle analytics events
-+ }, []);
+ import React, { useCallback } from 'react';
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
++ import type { OnboardingEventHandlers } from 'react-native-adapty';
 +
-+ const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
-+   // Handle close actions
-+ }, []);
++ function MyOnboarding({ onboarding }) {
++   const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
++   const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
++   const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
++   const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
++   const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
++   const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
++   const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
 +
-+ const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
-+   // Handle custom actions
-+ }, []);
-+
-+ const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
-+   // Handle paywall actions
-+ }, []);
-+
-+ const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
-+   // Handle state updates
-+ }, []);
-+
-+ const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
-+   // Handle when onboarding finishes loading
-+ }, []);
-+
-+ const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
-+   // Handle errors
-+ }, []);
-+
-+ const eventHandlers = useMemo((): Partial<OnboardingEventHandlers> => ({
-+   onFinishedLoading(meta) {
-+     // Handle when onboarding finishes loading
-+   }
-+ }), []);
-+
-+ return (
-+   <AdaptyOnboardingView
-+     onboarding={onboarding}
-+     style={styles.container}
-+     onAnalytics={onAnalytics}
-+     onClose={onClose}
-+     onCustom={onCustom}
-+     onPaywall={onPaywall}
-+     onStateUpdated={onStateUpdated}
-+     onFinishedLoading={onFinishedLoading}
-+     onError={onError}
-+   />
-+ );
+   return (
+     <AdaptyOnboardingView
+       onboarding={onboarding}
+       style={styles.container}
+-       eventHandlers={{
+-         onAnalytics(event, meta) { /* ... */ },
+-         onClose(actionId, meta) { /* ... */ },
+-         onCustom(actionId, meta) { /* ... */ },
+-         onPaywall(actionId, meta) { /* ... */ },
+-         onStateUpdated(action, meta) { /* ... */ },
+-         onFinishedLoading(meta) { /* ... */ },
+-         onError(error) { /* ... */ },
+-       }}
++       onAnalytics={onAnalytics}
++       onClose={onClose}
++       onCustom={onCustom}
++       onPaywall={onPaywall}
++       onStateUpdated={onStateUpdated}
++       onFinishedLoading={onFinishedLoading}
++       onError={onError}
+     />
+   );
++ }
 ```
+
+:::note
+For backward compatibility, the `eventHandlers` prop is still supported but is deprecated. We recommend migrating to individual event handler props as shown above.
+:::
 
 
 ## Delete `logShowOnboarding`

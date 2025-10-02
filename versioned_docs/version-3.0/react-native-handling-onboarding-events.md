@@ -31,7 +31,7 @@ To handle events for modal presentation, use the event handlers method:
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```javascript showLineNumbers title="React Native"
-import { createOnboardingView } from 'react-native-adapty/dist/ui';
+import { createOnboardingView } from 'react-native-adapty';
 
 const view = await createOnboardingView(onboarding);
 
@@ -118,47 +118,33 @@ When using `AdaptyOnboardingView`, you can handle events through inline callback
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
-  // Handle analytics events
-}, []);
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
 
-const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
-  // Handle close actions
-}, []);
-
-const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
-  // Handle custom actions
-}, []);
-
-const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
-  // Handle paywall actions
-}, []);
-
-const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
-  // Handle state updates
-}, []);
-
-const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
-  // Handle when onboarding finishes loading
-}, []);
-
-const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
-  // Handle errors
-}, []);
-
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onAnalytics={onAnalytics}
-  onClose={onClose}
-  onCustom={onCustom}
-  onPaywall={onPaywall}
-  onStateUpdated={onStateUpdated}
-  onFinishedLoading={onFinishedLoading}
-  onError={onError}
-/>
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -166,35 +152,40 @@ const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
 <TabItem value="new" label="SDK version < 3.12" default>
 
 ```javascript showLineNumbers title="React Native"
+import React from 'react';
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ flex: 1 }}
-  eventHandlers={{
-    onAnalytics(event, meta) {
-      // Track analytics events
-    },
-    onClose(actionId, meta) {
-      // Handle close action
-    },
-    onCustom(actionId, meta) {
-      // Handle custom actions
-    },
-    onPaywall(actionId, meta) {
-      // Handle paywall actions
-    },
-    onStateUpdated(action, meta) {
-      // Handle user input updates
-    },
-    onFinishedLoading(meta) {
-      // Onboarding finished loading
-    },
-    onError(error) {
-      // Handle loading errors
-    },
-  }}
-/>
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) {
+          // Track analytics events
+        },
+        onClose(actionId, meta) {
+          // Handle close action
+        },
+        onCustom(actionId, meta) {
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) {
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) {
+          // Handle user input updates
+        },
+        onFinishedLoading(meta) {
+          // Onboarding finished loading
+        },
+        onError(error) {
+          // Handle loading errors
+        },
+      }}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -239,15 +230,30 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // React component
-const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
-  // Handle custom actions
-}, []);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onCustom={onCustom}
-/>
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -268,14 +274,21 @@ const unsubscribe = view.registerEventHandlers({
 });
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onCustom(actionId, meta) {
-      handleCustomAction(actionId);
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onCustom(actionId, meta) {
+          handleCustomAction(actionId);
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>
@@ -311,15 +324,23 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // React component
-const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
-  console.log('Onboarding loaded:', meta.onboardingId);
-}, []);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onFinishedLoading={onFinishedLoading}
-/>
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -333,14 +354,21 @@ const unsubscribe = view.registerEventHandlers({
 });
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onFinishedLoading(meta) {
-      console.log('Onboarding loaded:', meta.onboardingId);
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onFinishedLoading(meta) {
+          console.log('Onboarding loaded:', meta.onboardingId);
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>
@@ -391,15 +419,23 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // React component
-const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
-  navigation.goBack();  
-}, [navigation]);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onClose={onClose}
-/>
+function MyOnboarding({ onboarding }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -414,14 +450,21 @@ const unsubscribe = view.registerEventHandlers({
 });
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onClose(actionId, meta) {
-      // Handle navigation back or dismiss the view
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onClose(actionId, meta) {
+          // Handle navigation back or dismiss the view
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>
@@ -465,15 +508,23 @@ const openPaywall = async (actionId) => {
 };
 
 // React component
-const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
-  openPaywall(actionId);
-}, []);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onPaywall={onPaywall}
-/>
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -491,14 +542,21 @@ const openPaywall = async (actionId) => {
 };
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onPaywall(actionId, meta) {
-      openPaywall(actionId);
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onPaywall(actionId, meta) {
+          openPaywall(actionId);
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>
@@ -534,15 +592,23 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // React component
-const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
-  saveUserResponse(action.elementId, action.params);
-}, []);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onStateUpdated={onStateUpdated}
-/>
+function MyOnboarding({ onboarding }) {
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
+    saveUserResponse(action.elementId, action.params);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onStateUpdated={onStateUpdated}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -556,14 +622,21 @@ const unsubscribe = view.registerEventHandlers({
 });
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onStateUpdated(action, meta) {
-      saveUserResponse(action.elementId, action.params);
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onStateUpdated(action, meta) {
+          saveUserResponse(action.elementId, action.params);
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>
@@ -683,15 +756,23 @@ const unsubscribe = view.setEventHandlers({
 });
 
 // React component
-const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
-  trackEvent(event.type, meta.onboardingId);
-}, []);
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onAnalytics={onAnalytics}
-/>
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.type, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
 ```
 </TabItem>
 
@@ -705,14 +786,21 @@ const unsubscribe = view.registerEventHandlers({
 });
 
 // React component
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  eventHandlers={{
-    onAnalytics(event, meta) {
-      trackEvent(event.type, meta.onboardingId);
-    },
-  }}
-/>
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      eventHandlers={{
+        onAnalytics(event, meta) {
+          trackEvent(event.type, meta.onboardingId);
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>

@@ -39,11 +39,12 @@ This approach is best for optional onboardings where users should have the freed
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.12 or later" default>
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createOnboardingView } from 'react-native-adapty/dist/ui';
+import { createOnboardingView } from 'react-native-adapty';
 
 const view = await createOnboardingView(onboarding);
 
-view.setEventHandlers(); // handle close press, etc
+// Optional: handle onboarding events (close, custom actions, etc)
+// view.setEventHandlers({ ... });
 
 try {
     await view.present();
@@ -84,82 +85,73 @@ This approach is ideal for required onboardings, mandatory tutorials, or any flo
 <TabItem value="new" label="SDK version 3.12 or later" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
 
-const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
-  // Handle analytics events
-}, []);
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
 
-const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
-  // Handle close actions
-}, []);
-
-const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
-  // Handle custom actions
-}, []);
-
-const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
-  // Handle paywall actions
-}, []);
-
-const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {
-  // Handle state updates
-}, []);
-
-const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
-  // Handle when onboarding finishes loading
-}, []);
-
-const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {
-  // Handle errors
-}, []);
-
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={styles.container}
-  onAnalytics={onAnalytics}
-  onClose={onClose}
-  onCustom={onCustom}
-  onPaywall={onPaywall}
-  onStateUpdated={onStateUpdated}
-  onFinishedLoading={onFinishedLoading}
-  onError={onError}
-/>
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
 ```
 </TabItem>
 
 <TabItem value="old" label="SDK version < 3.12" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
+import React from 'react';
 import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ /* your styles */ }}
-  eventHandlers={{
-    onAnalytics(event, meta) { 
-      // Handle analytics events
-    },
-    onClose(actionId, meta) { 
-      // Handle close actions
-    },
-    onCustom(actionId, meta) { 
-      // Handle custom actions
-    },
-    onPaywall(actionId, meta) { 
-      // Handle paywall actions
-    },
-    onStateUpdated(action, meta) { 
-      // Handle state updates
-    },
-    onFinishedLoading(meta) { 
-      // Handle when onboarding finishes loading
-    },
-    onError(error) { 
-      // Handle errors
-    },
-  }}
-/>
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) { 
+          // Handle analytics events
+        },
+        onClose(actionId, meta) { 
+          // Handle close actions
+        },
+        onCustom(actionId, meta) { 
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) { 
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) { 
+          // Handle state updates
+        },
+        onFinishedLoading(meta) { 
+          // Handle when onboarding finishes loading
+        },
+        onError(error) { 
+          // Handle errors
+        },
+      }}
+    />
+  );
+}
 ```
 </TabItem>
 </Tabs>

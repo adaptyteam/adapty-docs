@@ -49,77 +49,56 @@ This approach is ideal for required paywalls, mandatory purchase flows, or any s
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback, useMemo } from 'react';
 import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
-  // Handle close button press
-}, []);
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
 
-const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
-  // Handle Android back button
-}, []);
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
 
-const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {
-  // Handle product selection
-}, []);
-
-const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {
-  // Handle purchase start
-}, []);
-
-const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {
-  // Handle successful purchase
-}, []);
-
-const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {
-  // Handle purchase failure
-}, []);
-
-const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {
-  // Handle restore start
-}, []);
-
-const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {
-  // Handle successful restore
-}, []);
-
-const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {
-  // Handle restore failure
-}, []);
-
-const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {
-  // Handle rendering errors
-}, []);
-
-const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {
-  // Handle product loading errors
-}, []);
-
-const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
-  // Handle URL press
-}, []);
-
-const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
-  // Handle custom actions
-}, []);
-
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCloseButtonPress={onCloseButtonPress}
-  onAndroidSystemBack={onAndroidSystemBack}
-  onProductSelected={onProductSelected}
-  onPurchaseStarted={onPurchaseStarted}
-  onPurchaseCompleted={onPurchaseCompleted}
-  onPurchaseFailed={onPurchaseFailed}
-  onRestoreStarted={onRestoreStarted}
-  onRestoreCompleted={onRestoreCompleted}
-  onRestoreFailed={onRestoreFailed}
-  onRenderingFailed={onRenderingFailed}
-  onLoadingProductsFailed={onLoadingProductsFailed}
-  onUrlPress={onUrlPress}
-  onCustomAction={onCustomAction}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onPaywallClosed={onPaywallClosed}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
 ```
 
 ## Modal presentation
@@ -137,7 +116,8 @@ import { createPaywallView } from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
-view.setEventHandlers(); // handle close press, etc
+// Optional: handle paywall events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
 
 try {
   await view.present();
@@ -176,25 +156,26 @@ try {
 To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
 
 <Tabs>
-<TabItem value="embed" label="Embedded component">
+<TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-//and then you can pass it to createPaywallView as follows:
-view = await createPaywallView(paywall, { customTimers })
-```
-</TabItem>
-<TabItem value="standalone" label="Standalone screen">
-```typescript showLineNumbers title="React Native (TSX)"
-// Custom timers are not currently supported with AdaptyPaywallView
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
 <AdaptyPaywallView
   paywall={paywall}
-  eventHandlers={{
-    // ... your event handlers
-  }}
-  customTimers={{ 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }}
+  params={paywallParams}
+  // ... your event handlers
 />
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
 
-In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The timer dynamically updates with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
