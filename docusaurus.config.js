@@ -57,10 +57,6 @@ const config = {
         blog: {
           showReadingTime: false,
         },
-        gtag: {
-          trackingID: "G-0M1BCR2275", // Replace with your Google Analytics Measurement ID
-          anonymizeIP: true, // Optional, anonymize IP addresses
-        },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -359,6 +355,9 @@ const config = {
   plugins: [
     require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
+    [require('./plugins/gtm-plugin'), {
+      trackingID: 'GTM-PXJV3N7',
+    }],
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {

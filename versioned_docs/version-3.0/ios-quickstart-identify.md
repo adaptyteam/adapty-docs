@@ -204,7 +204,7 @@ If your users can make purchases both before and after they log into your app, y
 Congratulations! You have implemented in-app payment logic in your app! We wish you all the best with your app monetization!
 
 To get even more from Adapty, you can explore these topics:
-- [**Testing**](testing-purchases-ios.md): Ensure that everything works as expected
+- [**Testing**](test-purchases-in-sandbox.md): Ensure that everything works as expected
 - [**Onboardings**](ios-onboardings.md): Engage users with onboardings and drive retention
 - [**Integrations**](configuration.md): Integrate with marketing attribution and analytics services in just one line of code
 - [**Set custom profile attributes**](setting-user-attributes.md): Add custom attributes to user profiles and create segments, so you can launch A/B tests or show different paywalls to different users

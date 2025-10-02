@@ -20,7 +20,7 @@ This guide is for **new Paywall Builder paywalls** only.
 To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` interface methods. Some methods have default implementations that handle common scenarios automatically.
 
 :::note
-**Implementation Notes**: These methods are where you add your custom logic to respond to paywall events. You can use `view.showDialog()` (a suspend function) to show dialogs, `view.dismiss()` to close the paywall, or implement any other custom behavior you need.
+**Implementation Notes**: These methods are where you add your custom logic to respond to paywall events. You can use `view.dismiss()` to close the paywall, or implement any other custom behavior you need.
 :::
 
 ## User-generated events
