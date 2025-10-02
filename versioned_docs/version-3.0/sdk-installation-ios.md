@@ -117,7 +117,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
       } catch {
         // Handle error appropriately for your app
         print("Adapty activation failed: ", error)
@@ -190,7 +190,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
         try await AdaptyUI.activate()
       } catch {
         // Handle error appropriately for your app
