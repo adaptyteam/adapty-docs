@@ -35,3 +35,4 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 - [React Native (Expo)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)
 - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity)
 - [Kotlin Multiplatform](https://github.com/adaptyteam/AdaptySDK-KMP/example)
+- [Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)

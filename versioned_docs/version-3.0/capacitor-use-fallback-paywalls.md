@@ -21,7 +21,7 @@ Follow the instructions below to use the fallback paywalls in your mobile app co
 
 ### For iOS
 
-1. In XCode, use the menu **File** -> **Add Files to "YourProjectName"** to add the fallback file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard).
+1. In Xcode, use the menu **File** -> **Add Files to "YourProjectName"** to add the fallback file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). Make sure the file is added to your app target.
 2. Pass `{ fileName: 'ios_fallback.json' }` to the `ios` property of `FileLocation`.
 
 Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
@@ -40,7 +40,7 @@ const fileLocation = {
   }
 };
 
-await adapty.setFallback(fileLocation);
+await adapty.setFallback({ fileLocation });
 ```
 
 Parameters:

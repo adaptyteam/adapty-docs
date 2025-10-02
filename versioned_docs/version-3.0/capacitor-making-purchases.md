@@ -64,10 +64,6 @@ Response parameters:
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **result** | An [`AdaptyPurchaseResult`](capacitor-sdk-models#adaptypurchaseresult) object with a `type` field indicating the purchase outcome (`'success'`, `'user_cancelled'`, or `'pending'`) and a `profile` field containing the updated [`AdaptyProfile`](capacitor-sdk-models#adaptyprofile) on successful purchases. |
 
-:::warning
-**Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
-:::
-
 ## Change subscription when making a purchase
 
 When a user opts for a new subscription instead of renewing the current one, the way it works depends on the app store:

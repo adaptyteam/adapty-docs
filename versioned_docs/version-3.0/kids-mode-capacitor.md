@@ -67,14 +67,14 @@ If you're using CocoaPods for iOS, you can also enable Kids Mode at the native l
    ```ruby showLineNumbers title="Podfile"
    post_install do |installer|
      installer.pods_project.targets.each do |target|
-       // highlight-start
+       # highlight-start
        if target.name == 'Adapty'
          target.build_configurations.each do |config|
            config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
            config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
          end
        end
-       // highlight-end
+       # highlight-end
      end
    end
    ```
