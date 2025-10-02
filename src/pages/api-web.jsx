@@ -46,8 +46,8 @@ export default function WebAPIPage() {
       <Head>
         {/* Load styles for Stoplight Elements */}
         <title>Web API | Adapty Docs</title>
-        <link rel="preload" href="/docs/elements.min.css" as="style" />
-        <link rel="stylesheet" href="/docs/elements.min.css" />
+        <link rel="preload" href="https://unpkg.com/@stoplight/elements@7.7.11/styles.min.css" as="style" />
+        <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements@7.7.11/styles.min.css" />
         <meta
           name="description"
           content="Explore Adapty's Web API documentation. Learn how to integrate paywalls, record views, and add attribution data to your web applications."
