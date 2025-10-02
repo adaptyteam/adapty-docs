@@ -120,6 +120,9 @@ const unsubscribe = view.setEventHandlers({
       Linking.openURL(url);
       return false; // Keep paywall open
   },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },  
 });
 ```
 
