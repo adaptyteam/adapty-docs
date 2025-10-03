@@ -15,15 +15,9 @@ Before you start, ensure that:
 1. You have [created an onboarding](create-onboarding.md).
 2. You have added the onboarding to a [placement](placements.md).
 
-Adapty Capacitor SDK provides two ways to present onboardings:
+## Present onboarding
 
-- **Standalone screen:** Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
-
-- **Embedded component:** Gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
-
-## Present as standalone screen
-
-To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
+To display an onboarding, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
 Reusing the same `view` without recreating it may result in an error.

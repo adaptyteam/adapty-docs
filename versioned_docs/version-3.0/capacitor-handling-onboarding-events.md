@@ -16,11 +16,9 @@ Before you start, ensure that:
 1. You have [created an onboarding](create-onboarding.md).
 2. You have added the onboarding to a [placement](placements.md).
 
-## Standalone screen events
+## Set up event handlers
 
-### Set up event handlers
-
-To handle events for standalone screen onboardings, use the `view.setEventHandlers` method:
+To handle events for onboardings, use the `view.setEventHandlers` method:
 
 ```typescript showLineNumbers
 import { adapty, createOnboardingView } from '@adapty/capacitor';
@@ -64,7 +62,7 @@ try {
 
 ## Event types
 
-The following sections describe the different types of events you can handle, regardless of which presentation approach you're using.
+The following sections describe the different types of events you can handle.
 
 ### Handle custom actions
 
@@ -120,14 +118,11 @@ view.setEventHandlers({
 When an onboarding finishes loading, this event will be triggered:
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.setEventHandlers({
   onFinishedLoading(meta) {
     console.log('Onboarding loaded:', meta.onboardingId);
   },
 });
-
-
 ```
 
 <Details>
@@ -165,15 +160,12 @@ Note that you need to manage what happens when a user closes the onboarding. For
 :::
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.setEventHandlers({
   onClose(actionId, meta) {
     console.log('Onboarding closed:', actionId);
     return true; // Allow the onboarding to close
   },
 });
-
-
 ```
 
 <Details>
@@ -201,15 +193,12 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.setEventHandlers({
   onPaywall(actionId, meta) {
     console.log('Paywall action triggered:', actionId);
     // Implement your paywall opening logic here
   },
 });
-
-
 ```
 
 <Details>
@@ -233,15 +222,12 @@ view.setEventHandlers({
 When your users respond to a quiz question or input their data into an input field, the state update event will be triggered:
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.setEventHandlers({
   onStateUpdated(action, meta) {
     console.log('State updated:', action.elementId, action.params);
     // Save user response
   },
 });
-
-
 ```
 
 :::note
@@ -349,14 +335,11 @@ The `action` object contains:
 You receive an analytics event when various navigation-related events occur during the onboarding flow:
 
 ```typescript showLineNumbers
-// Standalone screen presentation
 view.setEventHandlers({
   onAnalytics(event, meta) {
     console.log('Analytics event:', event.type, meta.onboardingId);
   },
 });
-
-
 ```
 
 The `event` object can be one of the following types:
