@@ -17,8 +17,14 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
+
+## Requirements
+
+Minimum SDK requirements:
+- `minSdkVersion 19` for core SDK functionality
+- `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
