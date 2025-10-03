@@ -5,40 +5,21 @@ metadataTitle: "Overview of Paywalls in Adapty | Adapty Docs"
 keywords: ['paywall']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import ZoomImage from '@site/src/components/ZoomImage';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-A paywall serves as an in-app storefront where customers can browse and make purchases. What sets it apart is its dynamic nature, allowing you to modify it without requiring app updates. You can even introduce new paywalls to users based on various factors using [Placements](placements).
+<CustomDocCardList ids={['create-paywall', 'adapty-paywall-builder', 'paywall-metrics']} />
 
-There are two ways to design a paywall:
+<ZoomImage id="paywall.webp" width="500px" />
 
-- **[Paywall Builder](adapty-paywall-builder)**: An easy and flexible no-code tool designed to help you create top-performing paywalls without requiring development or design skills.
+In Adapty, **paywalls are the only way to deliver products through your app**. This way you can easily track how different product sets perform across user groups and manage how products are visually presented.
 
-- **[Remote Config](customize-paywall-with-remote-config)**: A powerful tool that allows you to build a paywall using JSON.
+Adapty offers you two main ways to design a paywall:
+- **Use the Adapty Paywall Builder**: You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes.
+- **Design your paywall manually**: When designing a paywall manually, you have the following options:
+   - [Use a remote config](customize-paywall-with-remote-config.md): Instead of hardcoding values in your app code, you can manage your paywall elements (like text and media) dynamically from the dashboard without redeploying your app.
+   - <InlineTooltip tooltip="Delegate handling purchases to Adapty">[iOS](making-purchases.md), [Android](android-making-purchases.md), [Flutter](flutter-making-purchases.md), [React Native](react-native-making-purchases.md), and [Unity](unity-making-purchases.md)</InlineTooltip>: Integrating with the store APIs on your own is very time-consuming. Instead of doing it, you can use just one method in the Adapty SDK that handles all the complicated purchase logic.
 
-With either approach, you'll create impressive paywalls for your users.
-
-How you display these paywalls in your mobile app depends on the tool you choose:
-
-1. **Paywalls designed with the Paywall Builder** include both what to display and how to display it. They can also process most user actions such as making purchases, opening links, or clicking buttons without requiring development. 
-
-   Refer to [Design paywalls with Paywall Builder](adapty-paywall-builder) for design details and <InlineTooltip tooltip="quickstart guides">[iOS](ios-quickstart-paywalls.md), [Android](android-quickstart-paywalls.md), [Flutter](flutter-quickstart-paywalls.md), [React Native](react-native-quickstart-paywalls.md), and [Unity](unity-quickstart-paywalls.md)</InlineTooltip> for implementation guidance.
-
-2. **Paywalls customized using remote config** can be tailored to your specific requirements, giving you complete freedom to design and process them as needed. 
-
-   Refer to [Design paywall with remote config](customize-paywall-with-remote-config) for design details and <InlineTooltip tooltip="developer docs">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> for implementation guidance.
-
-## Paywall states
-
-Paywalls can have four distinct states:
-
-- **Draft**: These paywalls are in the preparation stage and have never been used in any placements or A/B tests. Use this state while you are designing your paywall until you are ready to use it in your mobile app.
-- **Live**: These paywalls are currently active and running in placements and/or A/B tests. Live paywalls can be used in multiple A/B tests and associated with various placements. You may conduct one or more A/B tests based on a live paywall if it turns out to be effective.
-- **Inactive**: These paywalls were previously active in placements but are no longer live. You can repurpose an inactive paywall for a new A/B test or choose to [archive it](archive-paywalls) if it is no longer required.
-- **Archived**: These paywalls are no longer in use and have been archived. You can always [restore the archived paywall to an active state](restore-paywall).
-
-:::info
-Changes to live paywalls are reflected immediately.
-:::
+<CustomDocCardList ids={['fallback-paywalls', 'paywall-localization', 'customize-paywall-with-remote-config', 'web-paywall']} />
