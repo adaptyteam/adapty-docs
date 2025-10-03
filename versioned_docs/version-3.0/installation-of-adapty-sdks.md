@@ -21,7 +21,7 @@ You have three paths to get started depending on your preferences:
 - **Use LLMs**: Our docs are LLM-friendly. Read our [guide](adapty-cursor.md) on how to get the most out of using LLMs with the Adapty documentation.
 - **Explore sample apps**:
     - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
-    - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android)
+    - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)
     - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
     - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
     - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
