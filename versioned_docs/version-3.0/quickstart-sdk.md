@@ -44,7 +44,7 @@ Choose your platform and dive right in:
 
 **Unity**
 - **[SDK Quickstart](unity-sdk-overview.md)**
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity)**
+- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)**
 
 **Kotlin Multiplatform**:
 - **[SDK Quickstart](kmp-sdk-overview.md)**
