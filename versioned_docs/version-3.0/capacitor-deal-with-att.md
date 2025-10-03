@@ -12,8 +12,10 @@ import { adapty } from '@adapty/capacitor';
 
 try {
   await adapty.updateProfile({
-    // you can also pass a string value if you prefer
-    appTrackingTransparencyStatus: 'authorized',
+    params: {
+      // you can also pass a string value if you prefer
+      appTrackingTransparencyStatus: 'authorized',
+    }
   });
   console.log('ATT status updated successfully');
 } catch (error) {

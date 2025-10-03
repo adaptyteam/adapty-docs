@@ -56,7 +56,7 @@ Calling `.logShowPaywall(paywall)` is not needed if you are displaying paywalls 
 import { adapty } from '@adapty/capacitor';
 
 try {
-  await adapty.logShowPaywall(paywall);
+  await adapty.logShowPaywall({ paywall });
 } catch (error) {
   console.error('Failed to log paywall view:', error);
 }

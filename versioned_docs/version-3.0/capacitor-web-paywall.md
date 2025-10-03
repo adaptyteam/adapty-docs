@@ -20,7 +20,7 @@ This way, if the payment has been successful and access rights have been updated
 import { adapty } from '@adapty/capacitor';
 
 try {
-  await adapty.openWebPaywall(product);
+  await adapty.openWebPaywall({ paywallOrProduct: product });
 } catch (error) {
   console.error('Failed to open web paywall:', error);
 }
@@ -28,8 +28,8 @@ try {
 
 :::note
 There are two versions of the `openWebPaywall` method:
-1. `openWebPaywall(product)` that generates URLs by paywall and adds the product data to URLs as well.
-2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
+1. `openWebPaywall({ paywallOrProduct: product })` that generates URLs by paywall and adds the product data to URLs as well.
+2. `openWebPaywall({ paywallOrProduct: paywall })` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
 :::
 
 #### Handle errors
