@@ -24,9 +24,9 @@ To set up the AppMetrica integration:
 
 1. Open the [AppMetrica apps list](https://appmetrica.yandex.ru/application/list)
 2. Select the app you want to track
-3. Go to **Settings** and copy the **Application ID** and **Post API key** 
+3. Go to **Settings > Main** and copy the **Application ID** and **Post API key** 
 <Zoom>
-  <img src={require('./img/0f09ff5-CleanShot_2023-08-18_at_19.56.422x.webp').default}
+  <img src={require('./img/appmetrica.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -114,26 +114,28 @@ Use the `setIntegrationIdentifier()` method to set these values. Here's how to i
 **Setting appmetrica_device_id**
 
 ```swift showLineNumbers
-val startupParamsCallback = object: StartupParamsCallback {
-    override fun onReceive(result: StartupParamsCallback.Result?) {
-        val deviceIdHash = result?.deviceIdHash ?: return
+AppMetrica.requestStartupIdentifiers(on: nil) { ids, error in
+  if let error {
+    // handle AppMetrica error    
+    return
+  }
 
-        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
-            if (error != null) {
-                // handle the error
-            }
-        }
-    }
+  guard let deviceIDHash = ids?[.deviceIDHashKey] as? String else {
+    // handle AppMetrica error
+    return
+  }
 
-    override fun onRequestError(
-        reason: StartupParamsCallback.Reason,
-        result: StartupParamsCallback.Result?
-    ) {
-        //handle the error
+  Task {
+    do {
+      try await Adapty.setIntegrationIdentifier(
+        key: "appmetrica_device_id",
+        value: deviceIDHash
+      )
+    } catch {
+      // handle the error
     }
+  }
 }
-
-AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
 ```
 
 **Setting appmetrica_profile_id**

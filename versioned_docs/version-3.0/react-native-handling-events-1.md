@@ -3,7 +3,7 @@ title: "React Native - Handle paywall events"
 description: "Handle subscription events in React Native with Adapty's SDK."
 metadataTitle: "Handling Events in React Native | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onPaywallClosed', 'onPaywallShown', 'onWebPaymentNavigationFinished']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -40,9 +40,9 @@ const unsubscribe = view.registerEventHandlers({
     return purchaseResult.type !== 'user_cancelled';
   },
   onPurchaseStarted(product) { /***/},
-  onPurchaseFailed(error) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
   onRestoreCompleted(profile) { /***/ },
-  onRestoreFailed(error, product) { /***/ },
+  onRestoreFailed(error) { /***/ },
   onProductSelected(productId) { /***/},
   onRenderingFailed(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
@@ -50,6 +50,9 @@ const unsubscribe = view.registerEventHandlers({
       Linking.openURL(url);
       return false; // Keep paywall open
   },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
 });
 ```
 
@@ -147,6 +150,14 @@ const unsubscribe = view.registerEventHandlers({
     "message": "Purchase failed due to insufficient funds",
     "details": {
       "underlyingError": "Insufficient funds in account"
+    },
+    "product": {
+        "vendorProductId": "premium_monthly",
+            "localizedTitle": "Premium Monthly",
+            "localizedDescription": "Premium subscription for 1 month",
+            "localizedPrice": "$9.99",
+            "price": 9.99,
+            "currencyCode": "USD"
     }
   }
 }
@@ -207,6 +218,21 @@ const unsubscribe = view.registerEventHandlers({
     }
   }
 }
+
+// onPaywallShown
+{
+  "event": "paywall_shown"
+}
+
+// onPaywallClosed
+{
+  "event": "paywall_closed"
+}
+
+// onWebPaymentNavigationFinished
+{
+  "event": "web_payment_navigation_finished"
+}
 ```
 </Details>
 
@@ -216,10 +242,10 @@ Event handlers return a boolean. If `true` is returned, the displaying process i
 
 Some event handlers have a default behavior that you can override if needed:
 - `onCloseButtonPress`: closes paywall when close button pressed.
+- `onUrlPress`: opens the tapped URL and keeps the paywall open.
 - `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
 - `onRestoreCompleted`: closes paywall after successful restore.
 - `onPurchaseCompleted`: closes paywall unless user cancelled.
-- `onUrlPress`: opens URLs in system browser and keeps paywall open. Note that this behavior is supported only starting from the SDK version 3.9.0.
 
 ### Event handlers
 
@@ -231,7 +257,6 @@ Some event handlers have a default behavior that you can override if needed:
 | **onCloseButtonPress**      | If the close button is visible and a user taps it, this method will be invoked. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                                                |
 | **onPurchaseCompleted**     | If the purchase succeeds, the user cancels their purchase, or the purchase appears to be pending, this method will be invoked. In case of a successful purchase, it will provide an updated `AdaptyProfile`.                                                                                                    |
 | **onPurchaseStarted**       | If a user taps the "Purchase" action button to start the purchase process, this method will be invoked.                                                                                                                                                                                                         |
-| **onPurchaseCancelled**     | If a user initiates the purchase process and manually interrupts it, this method will be invoked.                                                                                                                                                                                                               |
 | **onPurchaseFailed**        | If the purchase process fails, this method will be invoked and provide `AdaptyError`.                                                                                                                                                                                                                           |
 | **onRestoreStarted**        | If a user starts a purchase restoration, this method will be invoked.                                                                                                                                                                                                                                           |
 | **onRestoreCompleted**      | If a user's purchase restoration succeeds, this method will be invoked and provide an updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has the required `accessLevel`. Refer to the [Subscription status](react-native-listen-subscription-changes) topic to learn how to check it. |
@@ -239,4 +264,6 @@ Some event handlers have a default behavior that you can override if needed:
 | **onProductSelected**       | When any product in the paywall view is selected, this method will be invoked, so that you can monitor what the user selects before the purchase.                                                                                                                                                               |
 | **onRenderingFailed**       | If an error occurs during view rendering, this method will be invoked and provide `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                                   |
 | **onLoadingProductsFailed** | If you  haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, this method will be invoked and provide `AdaptyError`.                                                                                          |
-
+| **onPaywallShown**            | When the paywall is displayed to the user, this method will be invoked.                                                                                                                                                                                                                                                      |
+| **onPaywallClosed**           | When the paywall is closed by the user, this method will be invoked.                                                                                                                                                                                                                                                       |
+| **onWebPaymentNavigationFinished** | When the web payment navigation process is completed, this method will be invoked.                                                                                                                                                                                                                                    |

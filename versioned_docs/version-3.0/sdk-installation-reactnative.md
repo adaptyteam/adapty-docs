@@ -1,5 +1,5 @@
 ---
-title: "React Native - Adapty SDK installation & configuration"
+title: "Install & configure React Native SDK"
 description: "Step-by-step guide on installing Adapty SDK on React Native for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on React Native | Adapty Docs"
 keywords: ['install sdk', 'sdk install', 'install sdk react native', 'expo', 'react native', 'google play billing library', 'gpbl', 'billing library']
@@ -29,7 +29,7 @@ For a complete implementation walkthrough, you can also see the video:
 
 ## Requirements
 
-The Adapty React Native SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.1+.
+The Adapty React Native SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
@@ -116,7 +116,7 @@ To avoid activation errors in the development environment, use the [tips](#devel
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have installed AdaptyUI module, you need AdaptyUI to be active. It is done automatically when you activate the core module; you don't need to do anything else.
+If you plan to use [Paywall Builder](adapty-paywall-builder.md), you need the AdaptyUI module. It is activated automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
 
@@ -253,5 +253,5 @@ If you get a minimum iOS version error, update your Podfile:
 -platform :ios, min_ios_version_supported
 +platform :ios, '13.0'  # For core features only
 # OR
-+platform :ios, '15.1'  # If using paywalls created in the paywall builder
++platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```

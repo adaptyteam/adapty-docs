@@ -2,6 +2,7 @@
 title: "Implement Observer mode in iOS SDK"
 description: "Implement observer mode in Adapty to track user subscription events in iOS SDK."
 metadataTitle: "Implementing Observer Mode in iOS SDK | Adapty Docs"
+keywords: ['observer', 'report transactions']
 ---
 
 import Zoom from 'react-medium-image-zoom';

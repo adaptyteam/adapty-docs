@@ -110,7 +110,7 @@ Parameters:
 
 **Reporting transactions**
 
-Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](restore-purchase-flutter) page.
+Use `restorePurchases` to report a transaction to Adapty in Observer Mode, as explained on the [Restore Purchases in Mobile Code](flutter-restore-purchase) page.
 
 :::warning
 **Don't skip transaction reporting!**

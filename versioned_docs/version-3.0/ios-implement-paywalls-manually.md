@@ -1,5 +1,5 @@
 ---
-title: "Implement paywalls manually"
+title: "Implement paywalls manually in iOS SDK"
 description: "Learn how to implement paywalls manually in your iOS app with Adapty SDK."
 metadataTitle: "Implement Paywalls Manually | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios
@@ -13,4 +13,5 @@ This page contains guides for implementing paywalls manually in your iOS app. Ch
 - **[Restore purchases](restore-purchase)** - Restore previous purchases
 - **[Implement Observer mode](implement-observer-mode)** - Set up Observer mode for analytics and paywall integration
 - **[Report transactions in Observer Mode](report-transactions-observer-mode)** - Report purchase transactions in Observer Mode
-- **[Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)** - Display Paywall Builder paywalls in Observer mode 
+- **[Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)** - Display Paywall Builder paywalls in Observer mode
+- **[Troubleshooting](ios-troubleshoot-purchases)** - Resolve common purchase issues 

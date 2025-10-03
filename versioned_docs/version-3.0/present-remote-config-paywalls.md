@@ -1,8 +1,8 @@
 ---
 title: "Render paywall designed by remote config in iOS SDK"
-description: "Discover how to present remote config paywalls in Adapty iOS SDK to personalize user experience."
-metadataTitle: "Presenting Remote Config Paywalls | iOS SDK | Adapty Docs"
-keywords: ['remote config', 'iOS']
+description: "Discover how to present remote config paywalls in Adapty to personalize user experience."
+metadataTitle: "Presenting Remote Config Paywalls | Adapty Docs"
+keywords: ['remote config']
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -64,6 +64,32 @@ const App: React.FC = () => {
 }
 ```
 </TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+// In your Application subclass
+class MyApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        val config = AdaptyConfig
+            .Builder("PUBLIC_SDK_KEY")
+            .build()
+
+        Adapty.activate(configuration = config) { error ->
+            if (error == null) {
+                Log.d("Adapty", "SDK initialised")
+            } else {
+                Log.e("Adapty", "Adapty init error: ${'$'}{error.message}")
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 

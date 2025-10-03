@@ -2,6 +2,7 @@
 title: "Quickstart guide"
 description: "Integrate Adapty with App Store, Google Play, custom stores, Stripe, and Paddle."
 metadataTitle: "Integrate with stores or web payments and set up products | Adapty Docs"
+rank: 70
 ---
 
 Welcome to Adapty! You’re about to take the first step toward growing your in-app purchases with the best solution for boosting your app’s revenue.

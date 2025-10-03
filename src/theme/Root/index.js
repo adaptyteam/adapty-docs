@@ -1,6 +1,11 @@
 import React, { useEffect } from 'react';
+import { useLocation } from '@docusaurus/router';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 export default function Root({children}) {
+  const location = useLocation();
+  const { siteConfig } = useDocusaurusContext();
+
   useEffect(() => {
     // Add script to head
     const script = document.createElement('script');
@@ -45,5 +50,8 @@ export default function Root({children}) {
     };
   }, []);
 
+  // Note: Meta tags for keywords and rank are now handled by the build-time plugin
+  // This ensures they are properly injected into the HTML during the build process
+
   return <>{children}</>;
-} 
+}

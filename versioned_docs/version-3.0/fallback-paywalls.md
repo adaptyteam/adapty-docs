@@ -19,9 +19,11 @@ To display your fallback paywall to users:
 
 1. Download the file from the Adapty Dashboard - one file per app store and Adapty SDK version - as described below.
 2. Process the file in your mobile app code:
-   1. **For iOS and Android:** Place it alongside your app on the user's device, and pass it to the `.setFallbackPaywalls` method. See detailed instructions for [iOS](ios-use-fallback-paywalls) and [Android](android-use-fallback-paywalls).
-   2. **For React Native:** Place it alongside your app on the user's device, and pass it to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
-   3. **For Flutter and Unity:** Pass the contents of the file (the JSON string itself) to the `.setFallbackPaywalls` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls) and [Unity](unity-use-fallback-paywalls).
+   1. **For iOS:** Add the file to your Xcode project bundle and pass the file name to the `.setFallback` method. See detailed instructions for [iOS](ios-use-fallback-paywalls).
+   2. **For Android:** Place the file in the `assets` or `res/raw` directory and pass the file location to the `.setFallback` method. See detailed instructions for [Android](android-use-fallback-paywalls).
+   3. **For React Native:** Add the file to your Xcode project bundle for iOS and place it in the `android/app/src/main/assets/` or `android/app/src/main/res/raw/` directory for Android, then pass the file location to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
+   4. **For Flutter:** Place the file in your app's assets and pass the asset path to the `.setFallback` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls).
+   5. **For Unity:** Place the file in your app's StreamingAssets folder and pass the file name to the `.SetFallbackPaywalls` method. See detailed instructions for [Unity](unity-use-fallback-paywalls).
 
 
 ## Download fallback paywalls as a file in the Adapty Dashboard

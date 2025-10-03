@@ -10,12 +10,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Setting up real-time developer notifications (RTDN) is crucial for ensuring data accuracy as it enables you to receive updates instantly from the Play Store, including information on refunds and other events.
 
-1. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu.
-
-   
+1. Ensure you have **Google Cloud Pub/Sub** enabled. Open [this link](https://console.cloud.google.com/apis/enableflow) and select your app project at the top left. If you haven't enabled **Google Cloud Pub/Sub**, you must do it here.
 
 <Zoom>
-  <img src={require('./img/26f79d5-App_settings_top_menu.webp').default}
+  <img src={require('./img/pubsub.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -25,8 +23,7 @@ Setting up real-time developer notifications (RTDN) is crucial for ensuring data
 />
 </Zoom>
 
-
-2. Copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
+2. Open the [**App settings**](https://app.adapty.io/settings/android-sdk) from the Adapty top menu and copy the contents of the **Enable Pub/Sub API** field next to the **Google Play RTDN topic name** title.
 
    
 
@@ -48,8 +45,10 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (the cor
 
 :::
 
-3. Open the [Google Play Console](https://play.google.com/console/), choose your app, and scroll down the left menu to find **Monetize** -> **Monetization setup**.
-4. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
+3. Open the [Google Play Console](https://play.google.com/console/), choose your app, and go to **Monetize with Play** -> **Monetization setup**. In the **Google Play Billing** section, select the **Enable real-time notifications** check-box.
+
+4. Paste the contents of the **Enable Pub/Sub API** field you've copied in the Adapty **App Settings** into the **Topic name** field.
+5. Click **Save changes** in the Google Play Console.
 
 <Zoom>
   <img src={require('./img/e55ba0e-paste_topic_name.webp').default}
@@ -62,8 +61,36 @@ If the contents of the **Enable Pub/Sub API** field have a wrong format (the cor
 />
 </Zoom>
 
-5. Paste the contents of the **Enable Pub/Sub API** field you've copied in the Adapty **App Settings** into the **Topic name** field.
-6. Click the **Save changes** button in the Google Play Console.
+## Test notifications
+
+To check whether you have successfully subscribed to real-time developer notifications:
+
+1. Save changes in the Google Play Console settings.
+2. Under the **Topic name** in Google Play Console, click **Send test notification**.
+
+<Zoom>
+  <img src={require('./img/rtdn-test.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Go to the [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) in Adapty. If a test notification has been sent, you'll see its status above the topic name.
+
+<Zoom>
+  <img src={require('./img/rtdn-adapty-test.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 ## Fixing incorrect format in Enable Pub/Sub API field
 
@@ -170,4 +197,5 @@ Set up the Adapty SDK for:
 - [Android](sdk-installation-android)
 - [Flutter](sdk-installation-flutter)
 - [React Native](sdk-installation-reactnative)
+- [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
 - [Unity](sdk-installation-unity)

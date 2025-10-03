@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Clipboard from 'clipboard';
 import styles from './styles.module.css';
 
 function ClipboardIcon() {
@@ -15,52 +16,113 @@ function MarkdownIcon() {
 
 export default function ArticleButtons({ articleUrl }) {
   const [copied, setCopied] = useState(false);
-  
-  console.log('ArticleButtons rendered with articleUrl:', articleUrl);
+  const [markdownContent, setMarkdownContent] = useState('');
+  const buttonRef = useRef(null);
+  const clipboardRef = useRef(null);
+
 
   // Helper function to determine the markdown URL
   const getMarkdownUrl = () => {
-    console.log('getMarkdownUrl called with articleUrl:', articleUrl);
     
     // Normalize the articleUrl to handle both full URLs and pathnames
     const normalizedUrl = articleUrl.replace(/\/$/, '');
-    console.log('normalizedUrl:', normalizedUrl);
     
     // Check if the current URL is the docs root path
     if (normalizedUrl === 'http://localhost:3000/docs' || 
         normalizedUrl === 'https://adapty.io/docs') {
-      console.log('Detected docs root, serving what-is-adapty.md');
       return normalizedUrl + '/what-is-adapty.md';
     }
     
     // For all other URLs, append .md as before
-    console.log('Not docs root, appending .md');
     return `${normalizedUrl}.md`;
   };
 
-  const handleCopyMarkdown = async () => {
-    try {
+  // Load markdown content when component mounts or URL changes
+  useEffect(() => {
+    const loadMarkdownContent = async () => {
       const markdownUrl = getMarkdownUrl();
-      console.log('Fetching markdown from:', markdownUrl);
-      const response = await fetch(markdownUrl);
-      const text = await response.text();
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy markdown:', error);
+
+      try {
+        const response = await fetch(markdownUrl);
+        const text = await response.text();
+        setMarkdownContent(text);
+      } catch (error) {
+        setMarkdownContent('');
+      }
+    };
+
+    loadMarkdownContent();
+  }, [articleUrl]);
+
+  // Initialize Clipboard.js when content is loaded
+  useEffect(() => {
+    if (markdownContent && buttonRef.current) {
+      // Clean up existing clipboard instance
+      if (clipboardRef.current) {
+        clipboardRef.current.destroy();
+      }
+
+      // Create new clipboard instance
+      clipboardRef.current = new Clipboard(buttonRef.current, {
+        text: () => markdownContent
+      });
+
+      // Success event
+      clipboardRef.current.on('success', (e) => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        e.clearSelection();
+      });
+
+      // Error event
+      clipboardRef.current.on('error', (e) => {
+        console.error('Clipboard.js: Copy failed', e);
+        // You could show an error message here if needed
+      });
+
+      // Cleanup on unmount
+      return () => {
+        if (clipboardRef.current) {
+          clipboardRef.current.destroy();
+        }
+      };
     }
+  }, [markdownContent]);
+
+  const handleCopyMarkdown = () => {
+    // If content isn't loaded yet, fetch it on demand
+    if (!markdownContent) {
+      const loadAndCopy = async () => {
+        try {
+          const markdownUrl = getMarkdownUrl();
+          const response = await fetch(markdownUrl);
+          const text = await response.text();
+          setMarkdownContent(text);
+
+          // Wait a bit for the content to be set and Clipboard.js to initialize
+          setTimeout(() => {
+            if (buttonRef.current) {
+              buttonRef.current.click();
+            }
+          }, 100);
+        } catch (error) {
+        }
+      };
+
+      loadAndCopy();
+    }
+    // If content is already loaded, Clipboard.js will handle the copy
   };
 
   const handleViewMarkdown = () => {
     const markdownUrl = getMarkdownUrl();
-    console.log('Opening markdown URL:', markdownUrl);
     window.open(markdownUrl, '_blank');
   };
 
   return (
     <div className={styles.buttonRow}>
       <button 
+        ref={buttonRef}
         className={styles.button}
         onClick={handleCopyMarkdown}
       >

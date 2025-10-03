@@ -18,17 +18,21 @@ Before you start, ensure that:
 
 Adapty Flutter SDK provides two ways to present onboardings:
 
-- **Full-screen presentation (classic view)**: Modal presentation gives users native platform dismissal gestures (swipe, back button).
+- **Standalone screen**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
 
-- **Embedded widget (platform view)**: Embedded component gives you complete control over dismissal through your own UI and logic.
+- **Embedded widget (platform view)**: Embedded component gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
 
 
-## Present as full-screen modal
+## Present as standalone screen
 
-To display an onboarding as a full-screen modal, use the `onboardingView.present()` method on the `onboardingView` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `onboardingView` instance.
+To display an onboarding as a standalone screen that users can dismiss, use the `onboardingView.present()` method on the `onboardingView` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `onboardingView` instance.
 
 :::warning
 Reusing the same `onboardingView` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+:::note
+This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To have more customization options, [embed it in the component hierarchy](#embed-in-widget-hierarchy).
 :::
 
 ```javascript showLineNumbers title="Flutter"
@@ -58,7 +62,11 @@ try {
 
 ## Embed in widget hierarchy
 
-To embed an onboarding within your existing widget tree, use the `AdaptyUIOnboardingPlatformView` widget directly in your Flutter widget hierarchy:
+To embed an onboarding within your existing widget tree, use the `AdaptyUIOnboardingPlatformView` widget directly in your Flutter widget hierarchy. This approach gives you full control over when and how the onboarding can be dismissed.
+
+:::note
+This approach is ideal for required onboardings, mandatory tutorials, or any flow where you need to ensure users complete the onboarding before proceeding. You can control dismissal through your own UI elements and logic.
+:::
 
 ```javascript showLineNumbers title="Flutter"
 AdaptyUIOnboardingPlatformView(

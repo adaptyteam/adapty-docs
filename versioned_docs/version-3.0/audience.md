@@ -10,11 +10,12 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-**Audiences** in Adapty are [user segments](segments), helping you customize paywalls or A/B tests for specific groups of your users. You can set up these segments using special filters to make sure the right users see the right paywalls in your mobile app.
+**Audiences** in Adapty are groups of users based on [segments](segments), helping you customize paywalls, onboardings, or A/B tests for specific user groups. You can define these segments using filters to ensure the right users see the right paywall or onboarding in your app.
 
-In Adapty, a **Placement** is where you can show paywalls or A/B tests. When you add an audience to a placement, you're targeting specific user groups with personalized content. For instance, you might show different paywalls based on a user's age, device, or subscription status. If a user falls into multiple groups, you can choose which group gets the priority, deciding which paywall they'll see.
 
-In the example below, we have a placement with the identifier `Onboarding`. In your app code, you will access the placement using this identifier. If the user belongs to the "Yoga beginners" audience, they will see the first paywall Those who do not fit the "Yoga beginners" audience will see the second paywall.
+In Adapty, a **Placement** is where you can show paywalls, onboardings, or A/B tests. When you add an audience to a placement, you're targeting specific user groups with personalized content. For instance, you might show different paywalls based on a user's age, device, or subscription status. If a user falls into multiple groups, you can choose which group gets the priority, deciding which paywall they'll see.
+
+In the example below, we have an onboarding flow to display your placement with the `Onboarding` identifier. In your app code, you will access the placement using this identifier. If the user belongs to the "Yoga beginners" audience, they will see the first paywall. Those who do not fit the "Yoga beginners" audience will see the second paywall.
 
 
 <Zoom>
@@ -32,7 +33,7 @@ In the example below, we have a placement with the identifier `Onboarding`. In y
 
 
 
-To display a paywall or A/B test to a specific audience, do the following:
+To display a paywall, onboarding, or A/B test to a specific audience, do the following:
 
 1. [Create a user segment](segments#creation). You can skip this step if you want to show the paywall or A/B test to all users. In such a case, use the "All users" audience created by default.
 2. [Add this segment as an audience to placement and define which paywall or A/B test should be shown to it](add-audience-paywall-ab-test). The "All users" audience is automatically added to every placement; you only need to specify which paywall or A/B test should be displayed.

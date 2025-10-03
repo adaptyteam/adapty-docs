@@ -1,5 +1,5 @@
 ---
-title: "SDK Models"
+title: "Unity SDK Models"
 description: "Data models and types for Unity Adapty SDK."
 metadataTitle: "SDK Models | Unity SDK | Adapty Docs"
 slug: /unity-sdk-models
@@ -182,6 +182,63 @@ Parameters to change one subscription to another.
 | OldSubVendorProductId | string | The product id for current subscription to change |
 | ReplacementMode       | [AdaptySubscriptionUpdateReplacementMode](#adaptysubscriptionupdatereplacementmode) | The proration mode for subscription update |
 
+### AdaptyPurchaseResult
+
+Result of a purchase operation.
+
+| Name     | Type                                                                                      | Description                                                                                                                                    |
+| :------- | :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type     | [AdaptyPurchaseResultType](#adaptyPurchaseresulttype)                                     | The type of purchase result                                                                                                                    |
+| Profile  | [AdaptyProfile](#adaptyprofile)                                                           | Updated user profile after purchase                                                                                                            |
+
+### AdaptyPaywallFetchPolicy
+
+Policy for fetching paywall data.
+
+| Name                                                      | Type             | Description                                                                                                                      |
+| :-------------------------------------------------------- | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| Default                                                   | static           | Default fetch policy (reload revalidating cache data)                                                                             |
+| ReloadRevalidatingCacheData                               | static           | Reload and revalidate cache data                                                                                                  |
+| ReturnCacheDataElseLoad                                   | static           | Return cache data if available, else load from server                                                                             |
+| ReturnCacheDataIfNotExpiredElseLoad(TimeSpan maxAge)      | static method    | Return cache data if not expired, else load from server                                                                           |
+
+### AdaptyProfileParameters
+
+Parameters for updating user profile.
+
+| Name                           | Type                                                                                      | Description                                                                                                                                    |
+| :----------------------------- | :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| FirstName                      | string                                                                                    | User's first name                                                                                                                              |
+| LastName                       | string                                                                                    | User's last name                                                                                                                               |
+| Gender                         | [AdaptyProfileGender](#adaptyprofilegender) (optional)                                    | User's gender                                                                                                                                  |
+| Birthday                       | DateTime (optional)                                                                       | User's birthday                                                                                                                                |
+| Email                          | string                                                                                    | User's email address                                                                                                                           |
+| PhoneNumber                    | string                                                                                    | User's phone number                                                                                                                            |
+| AppTrackingTransparencyStatus  | [AppTrackingTransparencyStatus](#apptrackingtransparencystatus) (optional)                | App tracking transparency status                                                                                                              |
+| AnalyticsDisabled              | bool (optional)                                                                           | Whether analytics is disabled                                                                                                                  |
+| CustomAttributes               | Dictionary&lt;string, dynamic&gt;                                                               | Custom user attributes                                                                                                                         |
+
+### AdaptyConfiguration
+
+Configuration for SDK initialization.
+
+| Name                                    | Type                                                                                      | Description                                                                                                                                    |
+| :-------------------------------------- | :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| ApiKey                                  | string                                                                                    | Adapty API key                                                                                                                                 |
+| CustomerUserId                          | string (optional)                                                                         | Customer user ID                                                                                                                               |
+| ObserverMode                            | bool (optional)                                                                           | Whether to run in observer mode                                                                                                                |
+| AppleIdfaCollectionDisabled             | bool (optional)                                                                           | Whether Apple IDFA collection is disabled                                                                                                      |
+| GoogleAdvertisingIdCollectionDisabled   | bool (optional)                                                                           | Whether Google Advertising ID collection is disabled                                                                                           |
+| IpAddressCollectionDisabled             | bool (optional)                                                                           | Whether IP address collection is disabled                                                                                                      |
+| BackendBaseUrl                          | string (optional)                                                                         | Custom backend base URL                                                                                                                        |
+| BackendFallbackBaseUrl                  | string (optional)                                                                         | Custom backend fallback base URL                                                                                                               |
+| BackendConfigsBaseUrl                   | string (optional)                                                                         | Custom backend configs base URL                                                                                                                |
+| BackendProxyHost                        | string (optional)                                                                         | Backend proxy host                                                                                                                             |
+| BackendProxyPort                        | int (optional)                                                                            | Backend proxy port                                                                                                                             |
+| LogLevel                                | [AdaptyLogLevel](#adaptyloglevel) (optional)                                              | Log level for SDK                                                                                                                              |
+| ActivateUI                              | bool (optional)                                                                           | Whether to activate UI features                                                                                                                |
+| AdaptyUIMediaCache                      | [AdaptyUIMediaCacheConfiguration](#adaptyuimediacacheconfiguration) (optional)            | Media cache configuration for UI                                                                                                               |
+
 ### Enums
 
 #### AdaptySubscriptionPeriodUnit
@@ -209,4 +266,33 @@ Parameters to change one subscription to another.
 - `ImmediateAndChargeProratedPrice` - Immediate and charge prorated price
 - `ImmediateWithoutProration` - Immediate without proration
 - `Deferred` - Deferred
-- `ImmediateAndChargeFullPrice` - Immediate and charge full price 
+- `ImmediateAndChargeFullPrice` - Immediate and charge full price
+
+#### AdaptyPurchaseResultType
+- `Pending` - Purchase is pending
+- `UserCancelled` - User cancelled the purchase
+- `Success` - Purchase was successful
+
+#### AdaptyLogLevel
+- `Error` - Error level logging
+- `Warn` - Warning level logging
+- `Info` - Info level logging
+- `Verbose` - Verbose level logging
+- `Debug` - Debug level logging
+
+#### AdaptyProfileGender
+- `Female` - Female gender
+- `Male` - Male gender
+- `Other` - Other gender
+
+
+#### AdaptyRefundPreference
+- `NoPreference` - No refund preference
+- `Grant` - Grant refund
+- `Decline` - Decline refund
+
+#### AppTrackingTransparencyStatus
+- `NotDetermined` - Status not determined
+- `Restricted` - Status restricted
+- `Denied` - Status denied
+- `Authorized` - Status authorized 

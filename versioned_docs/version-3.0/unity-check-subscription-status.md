@@ -3,6 +3,8 @@ title: "Check subscription status in Unity SDK"
 description: "Learn how to check subscription status in your Unity app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
 ---
 
 To decide whether users can access paid content or see a paywall, you need to check their [access level](access-level.md) in the profile.

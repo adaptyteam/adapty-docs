@@ -19,7 +19,7 @@ Adapty SDK 3.8.0 is a major release that brought some improvements which however
    placementId: string;
    locale?: string;
    fetchPolicy?: AdaptyPlacementFetchPolicy;
-   loadTimeout?: number;
+   loadTimeoutMs?: number;
  }
 ```
 

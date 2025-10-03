@@ -46,6 +46,10 @@ Choose your platform and dive right in:
 - **[SDK Quickstart](unity-sdk-overview.md)**
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity)**
 
+**Kotlin Multiplatform**:
+- **[SDK Quickstart](kmp-sdk-overview.md)**
+- **[Sample App](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example)**
+
 ## Next steps
 
 Once you've configured the Adapty SDK in the app code, you can move on to [testing the implementation](quickstart-test.md).

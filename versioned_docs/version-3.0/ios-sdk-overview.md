@@ -40,10 +40,6 @@ Here's what we'll cover in the integration guide:
 3. [Check the subscription status](ios-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](ios-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
 
-:::note
-Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenuecat.md) to make this experience as simple as possible.
-:::
-
 ### See it in action
 
 Want to see how it all comes together? We've got you covered:
@@ -66,24 +62,21 @@ Want to see how it all comes together? We've got you covered:
 </TabItem>
 </Tabs>
 
-
-To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
-
 ## Main concepts
 
 Before diving into the code, let's get familiar with the key concepts that make Adapty work. 
 
 The beauty of Adapty's approach is that only placements are hardcoded in your app. Everything else – products, paywall designs, pricing, and offers – can be managed flexibly from the Adapty dashboard without app updates:
 
-1. **Product** - Anything available for purchase in your app – subscription, consumable product, or lifetime access.
+1. [**Product**](product.md) - Anything available for purchase in your app – subscription, consumable product, or lifetime access.
 
-2. **Paywall** - The only way to retrieve products from Adapty and use it to its full power. We've designed it this way to make it easier to track how different product combinations affect your monetization metrics. A paywall in Adapty serves as both a specific set of your products and the visual configuration that accompanies them.
+2. [**Paywall**](paywalls.md) - The only way to retrieve products from Adapty and use it to its full power. We've designed it this way to make it easier to track how different product combinations affect your monetization metrics. A paywall in Adapty serves as both a specific set of your products and the visual configuration that accompanies them.
 
-3. **Placement** - A strategic point in your user journey where you want to show a paywall. Think of placements as the "where" and "when" of your monetization strategy. Common placements include:
+3. [**Placement**](placements.md) - A strategic point in your user journey where you want to show a paywall. Think of placements as the "where" and "when" of your monetization strategy. Common placements include:
    - `main` - Your primary paywall location
    - `onboarding` - Shown during the user onboarding flow
    - `settings` - Accessible from your app's settings
 
-   Start with the basics like `main` or `onboarding` for your first integration, then think about where else in your app users might be ready to purchase.
+   Start with the basics like `main` or `onboarding` for your first integration, then [think about where else in your app users might be ready to purchase](choose-meaningful-placements.md).
 
-4. **Profile** - When users purchase a product, their profile is assigned an **access level** which you use to define access to paid features.
+4. [**Profile**](profiles-crm.md) - When users purchase a product, their profile is assigned an **access level** which you use to define access to paid features.

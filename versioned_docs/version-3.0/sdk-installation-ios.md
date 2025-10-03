@@ -1,9 +1,9 @@
 ---
-title: "iOS - Adapty SDK installation & configuration"
+title: "Install & configure iOS SDK"
 description: "Step-by-step guide on installing Adapty SDK on iOS for subscription-based apps."
 metadataTitle: "Installing Adapty SDK on iOS | Adapty Docs"
-keywords: ['install sdk', 'sdk install', 'install sdk ios']
-rank: 80
+keywords: ['install sdk', 'sdk install', 'install sdk ios', 'adaptyui']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -117,7 +117,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
       } catch {
         // Handle error appropriately for your app
         print("Adapty activation failed: ", error)
@@ -190,7 +190,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
         try await AdaptyUI.activate()
       } catch {
         // Handle error appropriately for your app

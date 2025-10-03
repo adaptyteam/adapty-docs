@@ -123,6 +123,31 @@ You have the following customization options in the builder:
   />
   </Zoom>
 
-:::tip
-If you use a background image, you can also set a background color similar to the image's primary color, so that transitions between screens are as smooth as possible.
-:::
+## Copy screens and elements
+
+If you've created an onboarding and want to reuse parts of it, or if you want to make slight changes and run A/B tests, you can copy one or more screens from one onboarding to another.
+
+To copy screens, open the onboarding builder and either:
+- Right-click a single screen and select **Copy** or select multiple screens with `Shift`, right-click, and choose **Copy**
+- Select the desired screen(s) and press `Ctrl+C` (Windows) or `⌘+C` (Mac)
+
+You can also copy individual elements or text blocks, either within the same onboarding or between different onboardings.
+
+## Copy screens from web-to-app funnels
+
+If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and want to use screens from funnels in onboardings, you can quickly do it by copying screens in the funnel builder and pasting them in the onboarding builder:
+
+1. In the FunnelFox funnel builder, right-click a screen and select **Copy**, or select the screen and press `Ctrl+C`/`⌘+C`.
+2. Open the onboarding builder.
+3. Right-click the screen where you want to insert the copied screen and select **Paste**, or select it and press `Ctrl+V`/`⌘+V`. The copied screen will be inserted below the selected screen.
+
+  <Zoom>
+  <img src={require('./img/funnel-to-onboarding.gif').default}
+  style={{
+  border: '1px solid #727272', /* border width and color */
+  width: '700px', /* image width */
+  display: 'block', /* for alignment */
+  margin: '0 auto' /* center alignment */
+  }}
+  />
+  </Zoom>

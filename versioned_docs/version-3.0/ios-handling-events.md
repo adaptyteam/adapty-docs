@@ -3,7 +3,7 @@ title: "Handle paywall events in iOS SDK"
 description: "Handle subscription-related events in iOS using Adapty for better app monetization."
 metadataTitle: "Handling Events in iOS | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -66,9 +66,9 @@ You can register only the closure parameters you need, and omit those you do not
 |:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **isPresented**                   | required | A binding that manages whether the paywall screen is displayed.                                                                                                                                                                                                                                                                |
 | **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
-| **didFailPurchase**               | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                                                                                                    |
-| **didFinishRestore**              | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                                                                                               |
-| **didFailRestore**                | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                                                                                |
+| **didFailPurchase**               | required | Invoked when purchase fails.                                                                                                                                                                                                                                                                                                   |
+| **didFinishRestore**              | required | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
+| **didFailRestore**                | required | Invoked when restoring a purchase fails.                                                                                                                                                                                                                                                                                       |
 | **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
 | **fullScreen**                    | optional | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`.                                                                                                                                                                                                                                       |
 | **didAppear**                     | optional | Invoked when the paywall view was presented.                                                                                                                                                                                                                                                                                   |
@@ -76,7 +76,7 @@ You can register only the closure parameters you need, and omit those you do not
 | **didPerformAction**              | optional | Invoked when a user clicks a button. Different buttons have different action IDs. Two action IDs are pre-defined: `close` and `openURL`, while others are custom and can be set in the builder.                                                                                                                                |
 | **didSelectProduct**              | optional | If the product was selected for purchase (by a user or by the system), this callback will be invoked.                                                                                                                                                                                                                          |
 | **didStartPurchase**              | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                                                                             |
-| **didFinishPurchase**             | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                                                                                                   |
+| **didFinishPurchase**             | optional | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
 | **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                                                                                                                  |
 | **didStartRestore**               | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                                                                              |
 | **didFailLoadingProducts**        | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                                                                              |
@@ -180,17 +180,14 @@ func paywallController(
 
 #### Successful or canceled purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If purchase succeeds, this method will be invoked:
 
 ```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController,
     didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
     purchaseResult: AdaptyPurchaseResult
-) {
-    if !purchaseResult.isPurchaseCancelled {
-        controller.dismiss(animated: true)
-    }
+) { }
 }
 ```
 
@@ -245,7 +242,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If purchase fails, this method will be invoked:
 
 ```swift showLineNumbers title="Swift"
 func paywallController(
@@ -319,7 +316,7 @@ func paywallController(
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```swift showLineNumbers title="Swift"
 func paywallController(
@@ -357,7 +354,7 @@ We recommend dismissing the screen if a the has the required `accessLevel`. Refe
 
 #### Failed restore
 
-If `Adapty.restorePurchases()` fails, this method will be invoked:
+If restoring a purchase fails, this method will be invoked:
 
 ```swift showLineNumbers title="Swift"
 public func paywallController(

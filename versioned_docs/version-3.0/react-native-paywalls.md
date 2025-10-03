@@ -1,5 +1,5 @@
 ---
-title: "Paywalls"
+title: "Paywalls in React Native SDK"
 description: "Learn how to work with paywalls in your React Native app with Adapty SDK."
 metadataTitle: "Paywalls | React Native SDK | Adapty Docs"
 displayed_sidebar: sdkreactnative

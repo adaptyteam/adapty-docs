@@ -1,5 +1,5 @@
 ---
-title: "Reference"
+title: "Reference for Unity SDK"
 description: "Reference documentation for Adapty Unity SDK."
 metadataTitle: "Reference | Unity SDK | Adapty Docs"
 displayed_sidebar: sdkunity

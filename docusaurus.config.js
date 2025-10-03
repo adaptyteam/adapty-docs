@@ -51,20 +51,11 @@ const config = {
               path: "/",
               banner: "none",
             },
-            /*"2.0": {
-              banner: "none",
-              path: "2.0",
-
-            },*/
           },
           includeCurrentVersion: false,
         },
         blog: {
           showReadingTime: false,
-        },
-        gtag: {
-          trackingID: "G-0M1BCR2275", // Replace with your Google Analytics Measurement ID
-          anonymizeIP: true, // Optional, anonymize IP addresses
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -72,37 +63,15 @@ const config = {
       }),
     ],
   ],
-  /*plugins: [
-    [
-      '@docusaurus/plugin-client-redirects',
-      {
-        redirects: [
-          {
-            to: '/generate-in-app-purchase-key',
-            from: '/in-app-purchase-api-storekit-2',
-          },
-          {
-            to: '/enable-app-store-server-notifications',
-            from: '/app-store-server-notifications',
-          },
-          {
-            to: '/offers',
-            from: '/app-store-promotional-offers',
-          },
-          {
-            to: '/app-store-connection-configuration#step-4-enter-app-store-shared-secret',
-            from: '/app-store-shared-secret',
-          },
-        ],
-      },
-    ],
-  ],*/
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
-      metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
+      metadata: [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'keywords', content: 'adapty, subscription management, mobile subscriptions, app monetization, in-app purchases, subscription analytics, paywall, revenue optimization' }
+      ],
       navbar: {
         title: "",
         logo: {
@@ -155,6 +124,11 @@ const config = {
                 label: "Capacitor",
                 type: "docSidebar",
                 sidebarId: "sdkcapacitor",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
               }
             ],
           },
@@ -382,7 +356,14 @@ const config = {
       async: true,
     },
   ],
+
   plugins: [
+    require('./plugins/cookie-checker-plugin'),
+    require.resolve('./plugins/custom-meta-plugin.js'),
+    [require('./plugins/gtm-plugin'), {
+      trackingID: 'GTM-PXJV3N7',
+    }],
+    // Existing build plugins
     function copyMarkdownPlugin() {
       return {
         name: 'copy-markdown-plugin',
@@ -405,6 +386,19 @@ const config = {
             execSync('node scripts/generate-llms-txt.js', { stdio: 'inherit' });
           } catch (e) {
             console.error('Error running generate-llms-txt.js:', e);
+          }
+        },
+      };
+    },
+    function generateLlmsFullPlugin() {
+      return {
+        name: 'generate-llms-full-plugin',
+        async postBuild() {
+          const { execSync } = require('child_process');
+          try {
+            execSync('node scripts/generate-llms-full.js', { stdio: 'inherit' });
+          } catch (e) {
+            console.error('Error running generate-llms-full.js:', e);
           }
         },
       };

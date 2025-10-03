@@ -2,7 +2,7 @@
 title: "Render paywall designed by remote config in Flutter SDK"
 description: "Discover how to present remote config paywalls in Adapty Flutter SDK to personalize user experience."
 metadataTitle: "Presenting Remote Config Paywalls | Flutter SDK | Adapty Docs"
-keywords: ['remote config', 'Flutter']
+keywords: ['remote config']
 displayed_sidebar: sdkflutter
 ---
 
@@ -33,7 +33,7 @@ Make sure to [record the paywall view event](present-remote-config-paywalls-flut
 
 After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](flutter-making-purchases).
 
-We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-flutter). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+We recommend [creating a backup paywall called a fallback paywall](flutter-use-fallback-paywalls). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
 
 ## Track paywall view events
 
@@ -56,6 +56,6 @@ try {
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                |
-| :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](sdk-models-flutter#adaptypaywall) object. | 
+| Parameter   | Presence | Description                                                           |
+| :---------- | :------- |:----------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](flutter-sdk-models#adaptypaywall) object.        | 

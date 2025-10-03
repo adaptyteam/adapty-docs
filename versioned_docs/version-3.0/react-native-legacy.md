@@ -1,5 +1,5 @@
 ---
-title: "Legacy"
+title: "Legacy guides for React Native SDK"
 description: "Legacy documentation for Adapty React Native SDK."
 metadataTitle: "Legacy | React Native SDK | Adapty Docs"
 displayed_sidebar: sdkreactnative

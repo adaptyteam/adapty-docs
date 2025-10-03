@@ -2,7 +2,8 @@
 title: "Fetch paywalls and products for remote config paywalls in iOS SDK"
 description: "Fetch paywalls and products in Adapty iOS SDK to enhance user monetization."
 metadataTitle: "Fetching Paywalls & Products | Adapty Docs"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'iOS']
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'cache']
+rank: 100
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -27,7 +28,7 @@ Before showcasing remote config and custom paywalls, you need to fetch the infor
 
 3. [Create placements and incorporate your paywall into the placement](create-placement) in the Adapty Dashboard.
 
-4. <InlineTooltip tooltip="Install Adapty SDK">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-react-native), and [Unity](sdk-installation-unity)</InlineTooltip> in your mobile app.
+4. [Install Adapty SDK](sdk-installation-ios) in your mobile app.
 </details>
 
 ## Fetch paywall information

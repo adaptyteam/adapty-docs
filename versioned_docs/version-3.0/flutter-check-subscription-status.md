@@ -3,6 +3,8 @@ title: "Check subscription status in Flutter SDK"
 description: "Learn how to check subscription status in your Flutter app with Adapty."
 metadataTitle: "Check Subscription Status | Adapty Docs"
 displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'subscription status']
+rank: 85
 ---
 
 To decide whether users can access paid content or see a paywall, you need to check their [access level](access-level.md) in the profile.

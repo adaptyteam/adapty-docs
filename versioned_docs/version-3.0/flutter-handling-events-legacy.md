@@ -1,5 +1,5 @@
 ---
-title: "Flutter - Handle paywall events"
+title: "Handle paywall events in legacy Flutter SDK"
 description: "Handle subscription events in Flutter (Legacy) with Adapty’s SDK."
 metadataTitle: "Handling Events in Flutter (Legacy) | Adapty Docs"
 ---

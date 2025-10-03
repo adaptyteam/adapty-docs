@@ -60,7 +60,7 @@ Remote config has 2 views:
 Both the **Table** and **JSON** views include the same configuration elements. The only distinction is a matter of preference, with the sole difference being that the table view offers a context menu, which can be helpful for correcting localization errors.  
 You can switch between views by clicking on the **Table** or **JSON** tab whenever necessary.
 
-Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. Here are some examples of how you can use a remote config.
+Whatever view you've chosen to customize your paywall, you can later access this data from SDK using the`remoteConfig` or `remoteConfigString` properties of `AdaptyPaywall`, and make some adjustments to your paywall. You can also programmatically update remote config values using the [server-side API](ss-update-paywall) to dynamically modify paywall configurations without manual dashboard updates. Here are some examples of how you can use a remote config.
 
 <Tabs groupId="current-os" queryString>
   <TabItem value="Titles" label="Titles" default>

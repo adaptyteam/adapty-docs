@@ -19,14 +19,14 @@ If you no longer use the product and want to replace it with another one, we str
 
 To edit the product:
 
-1. Open the **[Paywalls and Products](https://app.adapty.io/products)** section from the Adapty main menu, then select the **Products** tab.
-2. Click the **3-dot** button next to the product and select the **Edit** option.
+1. Go to **[Products](https://app.adapty.io/products)** from the Adapty main menu.
+2. Click the **3-dot** button next to the product and select **Edit**.
 3. In the opened **Edit** window, make the changes you need. For more details on the options in this window, please read the [Create product](create-product) section.
-4. Click the **Save** button to confirm the changes.
+4. Click**Save**.
 
 
 <Zoom>
-  <img src={require('./img/4218c22-edit_product.webp').default}
+  <img src={require('./img/edit-product.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

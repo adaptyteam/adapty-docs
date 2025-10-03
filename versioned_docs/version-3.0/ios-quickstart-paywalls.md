@@ -2,8 +2,8 @@
 title: "Enable purchases by using paywalls in iOS SDK"
 description: "Quickstart guide to setting up Adapty for in-app subscription management."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls ios', 'sdk ios']
-rank: 70
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
 ---
 
 import Tabs from '@theme/Tabs';
@@ -13,17 +13,17 @@ import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 
 To enable in-app purchases, you need to understand three key concepts:
 
-- **Products** – anything users can buy (subscriptions, consumables, lifetime access)
-- **Paywalls** are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
-- **Placements** – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
+- [**Products**](product.md) – anything users can buy (subscriptions, consumables, lifetime access)
+- [**Paywalls**](paywalls.md) are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
+- [**Placements**](placements.md) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
 
 Adapty offers you three ways to enable purchases in your app. Select one of them depending on your app requirements:
 
 | Implementation         | Complexity | When to use                                                                                                                                                                                                                                |
 |------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Adapty Paywall Builder | ✅ Easy     | You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
-| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](making-purchases).                                                                                                    |
-| Observer mode              | 🔴 Hard    | You already have your own purchase handling infrastructure and want to kep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode).                                                  |
+| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](making-purchases).                                                              |
+| Observer mode              | 🔴 Hard    | You already have your own purchase handling infrastructure and want to keep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode).                                                 |
 
 :::important
 **The steps below show how to implement a paywall created in the Adapty paywall builder.**
@@ -37,7 +37,7 @@ To display a paywall created in the Adapty paywall builder, in your app code, yo
 2. **Display the paywall and Adapty will handle purchases for you**: Show the paywall container you've got in your app.
 3. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
 
-## 1. Get the paywall
+## 1. Get the paywall created in the paywall builder
 
 Your paywalls are associated with placements configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests.md). 
 
@@ -158,7 +158,7 @@ When users click buttons in the paywall, the iOS SDK automatically handles purch
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
-For example, you may want to close the paywall after your app users open a web link. Let's see how you can handle it in your implementation.
+For example, here is the default behavior for the close button. You don't need to add it in the code, but here, you can see how it is done if needed.
 
 :::tip
 Read our guides on how to handle button [actions](handle-paywall-actions.md) and [events](ios-handling-events.md).
@@ -169,17 +169,14 @@ Read our guides on how to handle button [actions](handle-paywall-actions.md) and
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-For SwiftUI, when you receive the `openUrl` action, set the `paywallPresented` value to `false` to hide the paywall.
-
 ```swift
 import SwiftUI
 import AdaptyUI
 
 didPerformAction: { action in
     switch action {
-        case let .openURL(url):
-            UIApplication.shared.open(url, options: [:]) 
-            paywallPresented = false
+        case let .close:
+            paywallPresented = false // default behavior
         default:
             break
     }
@@ -188,15 +185,13 @@ didPerformAction: { action in
 </TabItem>
 
 <TabItem value="uikit" label="UIKit" default>
-For UIKit, you need to implement the `paywallController(_:didPerform:)` method from the delegate that will dismiss the displayed controller when the user opens a link.
 
 ```swift
 func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
     switch action {
-        case let .openURL(url):
-            UIApplication.shared.open(url, options: [:]) 
-            controller.dismiss(animated: true)
+        case let .close:
+            controller.dismiss(animated: true) // default behavior
         break
     }
 }
@@ -248,8 +243,7 @@ struct ContentView: View {
       configuration: paywallConfiguration,
       didPerformAction: { action in
         switch action.type {
-          case let .openURL(url):
-              UIApplication.shared.open(url, options: [:]) 
+          case let .close:
               paywallPresented = false
           default:
               break
@@ -352,8 +346,7 @@ extension ViewController: AdaptyPaywallControllerDelegate {
   func paywallController(_ controller: AdaptyPaywallController,
                        didPerform action: AdaptyUI.Action) {
     switch action {
-        case let .openURL(url):
-            UIApplication.shared.open(url, options: [:]) 
+        case let .close:
             controller.dismiss(animated: true)
         break
     }

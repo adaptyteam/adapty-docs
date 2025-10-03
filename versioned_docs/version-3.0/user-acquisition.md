@@ -14,7 +14,9 @@ User Acquisition helps you connect ad spend with subscription revenue, giving yo
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
-User Acquisition is only available with iOS and Android Adapty SDK version 3.9.0 or higher. Compatibility with the Adapty SDK for Flutter is coming soon.
+User Acquisition is only available with:
+- iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
+- React Native Adapty SDK version 3.10.0 or higher.
 :::
 
 ## How to set up User Acquisition integration
@@ -61,7 +63,7 @@ You can check the full list of supported events [here](events.md).
 
 ## SDK configuration
 
-To listen for installation details updates, extend `AdaptyDelegate` with these two methods:
+To listen for installation details updates, use these two methods:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -94,6 +96,36 @@ Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
 ```
 
 </TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', data => {
+    // use installation details
+});
+
+adapty.addEventListener('onInstallationDetailsFail', error => {
+    // installation details update failed
+});
+```
+
+</TabItem>
+
+
+<TabItem value="flutter" label="Flutter">
+
+```javascript showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+    // use installation details
+});
+
+Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
+    // installation details update failed
+});
+```
+
+</TabItem>
+
 </Tabs>
 
 You can also retrieve the installation status manually:
@@ -145,4 +177,53 @@ Adapty.getCurrentInstallationStatus { result ->
 ```
 
 </TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const installationStatus = await adapty.getCurrentInstallationStatus();
+
+    switch (installationStatus.status) {
+        case 'not_available':
+            // Installation details are not available on this device
+            break;
+        case 'not_determined':
+            // Installation details have not been determined yet
+            break;
+        case 'determined':
+            const details = installationStatus.details;
+            // Use the installation details
+            break;
+    }
+} catch (error) {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```javascript showLineNumbers
+try {
+    final status = await Adapty().getCurrentInstallationStatus();
+
+    switch (status) {
+        case AdaptyInstallationStatusNotAvailable():
+        // Installation details are not available on this device
+        case AdaptyInstallationStatusNotDetermined():
+        // Installation details have not been determined yet
+        case AdaptyInstallationStatusDetermined(details: final details):
+        // Use the installation details
+    }
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+
 </Tabs>

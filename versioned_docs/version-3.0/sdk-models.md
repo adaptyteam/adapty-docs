@@ -1,5 +1,5 @@
 ---
-title: "SDK Models"
+title: "iOS SDK Models"
 description: "Understand Adapty’s SDK models to optimize in-app purchase handling."
 metadataTitle: "Understanding SDK Models | Adapty Docs"
 ---
@@ -82,12 +82,45 @@ An information about a [subscription offer.](https://swift.adapty.io/documentati
 | currencyCode | string (optional) | The currency code of the locale used to format the price of the product |
 | localizedPrice | string (optional) | A formatted price of a discount for a user's locale |
 
+### AdaptySubscriptionOffer.OfferType
+
+Enum representing the type of subscription offer.
+
+| Value | Description |
+|-------|-------------|
+| `introductory` | Introductory offer (first-time user discount) |
+| `promotional` | Promotional offer (targeted discount) |
+| `winBack` | Win-back offer (re-engagement discount) |
+
+### AdaptySubscriptionOffer.PaymentMode
+
+Enum representing the payment mode for subscription offers.
+
+| Value | Description |
+|-------|-------------|
+| `payAsYouGo` | Pay as you go (recurring payments) |
+| `payUpFront` | Pay up front (one-time payment for multiple periods) |
+| `freeTrial` | Free trial (no payment required) |
+| `unknown` | Unknown payment mode |
+
 ### AdaptyProductSubscriptionPeriod
 
 | Name          | Type             | Description                                                                                                                      |
 | :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | unit          | AdaptyPeriodUnit | A unit of time that a subscription period is specified in. The possible values are: `day`, `week`, `month`, `year` and `unknown` |
 | numberOfUnits | number           | A number of period units                                                                                                         |
+
+### AdaptyProductSubscriptionPeriod.Unit
+
+Enum representing the unit of time for subscription periods.
+
+| Value | Description |
+|-------|-------------|
+| `day` | Daily subscription period |
+| `week` | Weekly subscription period |
+| `month` | Monthly subscription period |
+| `year` | Yearly subscription period |
+| `unknown` | Unknown period unit |
 
 ### AdaptyPaywall.ViewConfiguration
 
@@ -96,22 +129,31 @@ An information about a [subscription offer.](https://swift.adapty.io/documentati
 | responseLocale     | AdaptyLocale       | The locale of the response             |
 | url                | URL                | Configuration URL for the paywall      |
 
+### AdaptyProductIdentifier
+
+(_Flutter only_)  
+A structured representation of a product identifier in the Flutter SDK, providing more information than simple string identifiers.
+
+| Name             | Type   | Description                                                                                    |
+| :--------------- | :----- | :--------------------------------------------------------------------------------------------- |
+| vendorProductId  | string | The vendor product ID from the store (App Store Connect or Google Play Console).              |
+
 
 ### AdaptyPaywall
 
 An information about a [paywall.](https://swift.adapty.io/documentation/adapty/adaptypaywall)
 
-| Name               | Type                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-|--------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name               | Type                  | Description                                                                                                                                                                                                  |
+|--------------------|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | placement          | [AdaptyPlacement](#adaptyplacement)                                 | Placement information for the paywall                                                                                                                                                                                                                                                                                                                                                                                                                |
 | instanceIdentity   | string                | An identifier of a paywall, configured in Adapty Dashboard                                                                                                                                                                                                                                                                                                                                                                                            |
-| variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                                                                                                                                                                                                                                                             |
-| name               | string                | Paywall name                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| remoteConfig       | [AdaptyRemoteConfig](#adaptyremoteconfig) (optional)                | A custom configuration configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                               |
-| hasViewConfiguration | bool                 | Whether the paywall has view configuration available                                                                                                                                                                                                                                                                                                                                                                                                   |
-| viewConfiguration  | [AdaptyPaywall.ViewConfiguration](#adaptypaywallviewconfiguration) (optional) | View configuration for the paywall                                                                                                                                                                                                                                                                                                                                                                                                                |
-| vendorProductIds   | array of strings      | Array of related products ids                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| webPaywallBaseUrl  | URL (optional)        | For more information, see <InlineTooltip tooltip="how to implement a web paywall in your app">[iOS](ios-web-paywall.md), [Flutter](flutter-web-paywall.md), and [React Native](react-native-web-paywall.md)</InlineTooltip>. |
+| variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                    |
+| name               | string                | Paywall name                                                                                                                                                                                                 |
+| remoteConfig       | [AdaptyRemoteConfig](#adaptyremoteconfig) (optional)                | A custom configuration configured in Adapty Dashboard for this paywall                                                                                                                                       |
+| hasViewConfiguration | bool                 | Whether the paywall has view configuration available                                                                                                                                                         |
+| viewConfiguration  | [AdaptyPaywall.ViewConfiguration](#adaptypaywallviewconfiguration) (optional) | View configuration for the paywall                                                                                                                                                                           |
+| vendorProductIds   | array of strings      | Array of related products ids                                                                                                                                                                                |
+| webPaywallBaseUrl  | URL (optional)        | For more information, see the [guide on how to implement a web paywall in your app](ios-web-paywall.md). |
 
 
 ### AdaptyProfile
@@ -136,7 +178,7 @@ Information about the [user's access level.](https://swift.adapty.io/documentati
 | id | string | Unique identifier of the access level configured by you in Adapty Dashboard |
 | isActive | boolean | True if this access level is active. Generally, you can check this property to determine wether a user has an access to premium features |
 | vendorProductId | string | An identifier of a product in a store that unlocked this access level |
-| store | string | A store of the purchase that unlocked this access level. Possible values are `'app_store' | 'adapty'` |
+| store | string | A store of the purchase that unlocked this access level. Possible values are `'app_store' | 'play_store' | 'adapty'` |
 | activatedAt | Date | Time when this access level was activated. |
 | startsAt | Date (optional) | Time when this access level has started (could be in the future). |
 | renewedAt | Date (optional) | Time when the access level was renewed. |
@@ -161,7 +203,7 @@ Information about the [user's subscription.](https://swift.adapty.io/documentati
 
 | Name | Type | Description |
 |----|----|-----------|
-| store | string | A store of the purchase that unlocked this subscription. Possible values are `'app_store' | 'adapty'` |
+| store | string | A store of the purchase that unlocked this subscription. Possible values are `'app_store' | 'play_store' | 'adapty'` |
 | vendorProductId | string | An identifier of a product in a store that unlocked this subscription |
 | vendorTransactionId | string | A transaction id of a purchase in a store that unlocked this subscription |
 | vendorOriginalTransactionId | string | An original transaction id of the purchase in a store that unlocked this subscription. For auto-renewable subscription, this will be an id of the first transaction in this subscription |
@@ -193,7 +235,7 @@ Information about the user's non-subscription purchases.
 | purchaseId | string | An identifier of the purchase in Adapty. You can use it to ensure that you've already processed this purchase (for example tracking one time products) |
 | vendorProductId | string | An identifier of the product in a store |
 | vendorTransactionId | string (optional) | Transaction ID in a store |
-| store | string | A store of the purchase. Possible values are `'app_store' | 'adapty'` |
+| store | string | A store of the purchase. Possible values are `'app_store' | 'play_store' | 'adapty'` |
 | purchasedAt | Date | Date when the product was purchased |
 | isRefund | boolean | True if the purchase was refunded |
 | isConsumable | boolean | True if the product is consumable (should only be processed once) |

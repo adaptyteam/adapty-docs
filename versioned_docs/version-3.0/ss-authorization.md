@@ -50,3 +50,6 @@ If this limit is exceeded, the system may slow down or temporarily block further
 - [Revoke access level](ss-revoke-access-level)
 - [Set transaction](ss-set-transaction)
 - [Validate purchase, provide access level to customer, and import their transaction history](ss-purchase-in-stripe)
+- [Get paywall](ss-get-paywall)
+- [List paywalls](ss-list-paywalls)
+- [Update paywall](ss-update-paywall)
