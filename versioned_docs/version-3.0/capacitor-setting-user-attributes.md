@@ -27,7 +27,7 @@ const params = {
 };
 
 try {
-  await adapty.updateProfile({ params });
+  await adapty.updateProfile(params);
   console.log('Profile updated successfully');
 } catch (error) {
   console.error('Failed to update profile:', error);
@@ -60,12 +60,10 @@ import { adapty } from '@adapty/capacitor';
 
 try {
   await adapty.updateProfile({
-    params: {
-      codableCustomAttributes: {
-        key_1: 'value_1',
-        key_2: 2,
-      },
-    }
+    codableCustomAttributes: {
+      key_1: 'value_1',
+      key_2: 2,
+    },
   });
   console.log('Custom attributes updated successfully');
 } catch (error) {
@@ -81,12 +79,10 @@ import { adapty } from '@adapty/capacitor';
 try {
   // to remove keys, pass null as their values
   await adapty.updateProfile({
-    params: {
-      codableCustomAttributes: {
-        key_1: null,
-        key_2: null,
-      },
-    }
+    codableCustomAttributes: {
+      key_1: null,
+      key_2: null,
+    },
   });
   console.log('Custom attributes removed successfully');
 } catch (error) {

@@ -40,7 +40,7 @@ Make sure to [record the paywall view event](present-remote-config-paywalls-capa
 
 After you've done with displaying the paywall, continue with setting up a purchase flow. When the user makes a purchase, simply call `.makePurchase()` with the product from your paywall. For details on the`.makePurchase()` method, read [Making purchases](capacitor-making-purchases).
 
-We recommend [creating a backup paywall called a fallback paywall](fallback-paywalls-capacitor). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
+We recommend [creating a backup paywall called a fallback paywall](capacitor-use-fallback-paywalls). This backup will display to the user when there's no internet connection or cache available, ensuring a smooth experience even in these situations. 
 
 ## Track paywall view events
 
@@ -66,4 +66,4 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                |
 | :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](sdk-models-capacitor#adaptypaywall) object. | 
+| **paywall** | required | An [`AdaptyPaywall`](capacitor-sdk-models#adaptypaywall) object. | 
