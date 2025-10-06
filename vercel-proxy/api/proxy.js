@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless Function - CORS Proxy
- * This handles requests to /api/proxy/*
+ * This handles requests to /api/proxy with url query parameter
  */
 
 export default async function handler(req, res) {
@@ -16,20 +16,19 @@ export default async function handler(req, res) {
   }
   
   try {
-    // Get the path from the URL - everything after /api/proxy
-    const fullUrl = req.url;
-    const targetPath = fullUrl.replace('/api/proxy', '') || '/';
-    const targetHost = 'api.adapty.io';
+    // Get the target URL from query parameter (Stoplight Elements sends this)
+    const targetUrl = req.query.url;
     
-    // Build the full URL
-    const url = `https://${targetHost}${targetPath}`;
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'Missing url parameter' });
+    }
     
-    console.log('Proxying request to:', url);
-    console.log('Original URL:', fullUrl);
-    console.log('Target path:', targetPath);
+    console.log('Proxying request to:', targetUrl);
+    console.log('Method:', req.method);
+    console.log('Headers:', req.headers);
     
     // Forward the request
-    const response = await fetch(url, {
+    const response = await fetch(targetUrl, {
       method: req.method,
       headers: {
         'Content-Type': req.headers['content-type'] || 'application/json',

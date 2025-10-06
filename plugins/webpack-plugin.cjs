@@ -42,8 +42,15 @@ function webpackPlugin(context, options) {
             '/api-proxy': {
               target: 'https://api.adapty.io',
               changeOrigin: true,
-              pathRewrite: {
-                '^/api-proxy': '',
+              pathRewrite: function(path, req) {
+                // Handle the concatenated URL issue
+                // If path contains the full URL, extract just the path part
+                if (path.includes('https://api.adapty.io')) {
+                  const urlMatch = path.match(/https:\/\/api\.adapty\.io(.*)/);
+                  return urlMatch ? urlMatch[1] : '/';
+                }
+                // Remove the /api-proxy prefix
+                return path.replace('^/api-proxy', '');
               },
               onProxyReq: function(proxyReq, req, res) {
                 // Add CORS headers to the response
@@ -63,8 +70,15 @@ function webpackPlugin(context, options) {
             '/api-proxy-admin': {
               target: 'https://api-admin.adapty.io',
               changeOrigin: true,
-              pathRewrite: {
-                '^/api-proxy-admin': '',
+              pathRewrite: function(path, req) {
+                // Handle the concatenated URL issue
+                // If path contains the full URL, extract just the path part
+                if (path.includes('https://api-admin.adapty.io')) {
+                  const urlMatch = path.match(/https:\/\/api-admin\.adapty\.io(.*)/);
+                  return urlMatch ? urlMatch[1] : '/';
+                }
+                // Remove the /api-proxy-admin prefix
+                return path.replace('^/api-proxy-admin', '');
               },
               onProxyReq: function(proxyReq, req, res) {
                 // Add CORS headers to the response

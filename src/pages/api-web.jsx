@@ -24,7 +24,7 @@ function APIElement({ layout = 'sidebar' }) {
            window.location.hostname === 'dev-docs.adapty.io');
         const corsProxy = isLocalhost 
           ? 'http://localhost:3000/api-proxy'
-          : 'https://adapty-cors-proxy-58n71f2j3-eandreeva-twrs-projects.vercel.app';
+          : 'https://adapty-cors-proxy-58n71f2j3-eandreeva-twrs-projects.vercel.app/api-proxy';
 
         return (
           <div className={clsx('elements-container', layout)}>
