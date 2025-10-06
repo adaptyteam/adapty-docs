@@ -1,5 +1,5 @@
 ---
-title: "Capacitor SDK overview"
+title: "Capacitor SDK overview (Beta)"
 description: "Learn about Adapty Capacitor SDK and its key features."
 metadataTitle: "Capacitor SDK Overview | Adapty Docs"
 slug: /capacitor-sdk-overview
@@ -13,7 +13,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Welcome! We're here to make in-app purchases a breeze 🚀
 
-We've built the Adapty Capacitor SDK to take the headache out of in-app purchases so you can focus on what you do best – building amazing apps. Here's what we handle for you:
+We've built the Adapty Capacitor SDK (Beta) to take the headache out of in-app purchases so you can focus on what you do best – building amazing apps. Here's what we handle for you:
 
 - Handle purchases, receipt validation, and subscription management out of the box
 - Create and test paywalls without app updates

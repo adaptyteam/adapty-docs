@@ -22,8 +22,8 @@ export default function SidebarMenu() {
     { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
-      { name: 'Capacitor', path: '/docs/capacitor-sdk-overview', sidebarId: 'sdkcapacitor' },
       { name: 'Kotlin Multiplatform', path: '/docs/kotlin-multiplatform-sdk-overview', sidebarId: 'sdkkmp' },
+      { name: 'Capacitor (Beta)', path: '/docs/capacitor-sdk-overview', sidebarId: 'sdkcapacitor' },
   ];
   
   // Try to detect current platform from active sidebar
