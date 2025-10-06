@@ -36,67 +36,6 @@ function webpackPlugin(context, options) {
             process: 'process/browser.js',
           },
         },
-        // Add dev server proxy for CORS handling
-        devServer: {
-          proxy: {
-            '/api-proxy': {
-              target: 'https://api.adapty.io',
-              changeOrigin: true,
-              pathRewrite: function(path, req) {
-                // Handle the concatenated URL issue
-                // If path contains the full URL, extract just the path part
-                if (path.includes('https://api.adapty.io')) {
-                  const urlMatch = path.match(/https:\/\/api\.adapty\.io(.*)/);
-                  return urlMatch ? urlMatch[1] : '/';
-                }
-                // Remove the /api-proxy prefix
-                return path.replace('^/api-proxy', '');
-              },
-              onProxyReq: function(proxyReq, req, res) {
-                // Add CORS headers to the response
-                res.setHeader('Access-Control-Allow-Origin', '*');
-                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, adapty-customer-user-id, adapty-profile-id, adapty-platform');
-                res.setHeader('Access-Control-Allow-Credentials', 'true');
-              },
-              onProxyRes: function(proxyRes, req, res) {
-                // Add CORS headers to the response
-                proxyRes.headers['Access-Control-Allow-Origin'] = '*';
-                proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
-                proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, adapty-customer-user-id, adapty-profile-id, adapty-platform';
-                proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-              },
-            },
-            '/api-proxy-admin': {
-              target: 'https://api-admin.adapty.io',
-              changeOrigin: true,
-              pathRewrite: function(path, req) {
-                // Handle the concatenated URL issue
-                // If path contains the full URL, extract just the path part
-                if (path.includes('https://api-admin.adapty.io')) {
-                  const urlMatch = path.match(/https:\/\/api-admin\.adapty\.io(.*)/);
-                  return urlMatch ? urlMatch[1] : '/';
-                }
-                // Remove the /api-proxy-admin prefix
-                return path.replace('^/api-proxy-admin', '');
-              },
-              onProxyReq: function(proxyReq, req, res) {
-                // Add CORS headers to the response
-                res.setHeader('Access-Control-Allow-Origin', '*');
-                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, adapty-customer-user-id, adapty-profile-id, adapty-platform');
-                res.setHeader('Access-Control-Allow-Credentials', 'true');
-              },
-              onProxyRes: function(proxyRes, req, res) {
-                // Add CORS headers to the response
-                proxyRes.headers['Access-Control-Allow-Origin'] = '*';
-                proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
-                proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, adapty-customer-user-id, adapty-profile-id, adapty-platform';
-                proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-              },
-            },
-          },
-        },
       };
     },
   };
