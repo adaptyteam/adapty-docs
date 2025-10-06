@@ -16,6 +16,15 @@ function APIElement({ layout = 'sidebar' }) {
       {() => {
         // eslint-disable-next-line no-undef
         const { API } = require('@stoplight/elements');
+        
+        // Determine CORS proxy URL based on environment
+        const isLocalhost = typeof window !== 'undefined' && 
+          (window.location.hostname === 'localhost' || 
+           window.location.hostname === '127.0.0.1' ||
+           window.location.hostname === 'dev-docs.adapty.io');
+        const corsProxy = isLocalhost 
+          ? 'http://localhost:3000/api-proxy'
+          : 'https://adapty-cors-proxy-58n71f2j3-eandreeva-twrs-projects.vercel.app';
 
         return (
           <div className={clsx('elements-container', layout)}>
@@ -27,6 +36,7 @@ function APIElement({ layout = 'sidebar' }) {
               layout={layout}
               hideSchemas
               hideInternal
+              tryItCorsProxy={corsProxy}
             />
           </div>
         );
