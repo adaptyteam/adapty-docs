@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless Function - CORS Proxy
- * This handles requests to /api/proxy
+ * This handles requests to /api/proxy/*
  */
 
 export default async function handler(req, res) {
@@ -16,14 +16,17 @@ export default async function handler(req, res) {
   }
   
   try {
-    // Get the path from query parameter
-    const targetPath = req.query.path || '/';
+    // Get the path from the URL - everything after /api/proxy
+    const fullUrl = req.url;
+    const targetPath = fullUrl.replace('/api/proxy', '') || '/';
     const targetHost = 'api.adapty.io';
     
     // Build the full URL
     const url = `https://${targetHost}${targetPath}`;
     
     console.log('Proxying request to:', url);
+    console.log('Original URL:', fullUrl);
+    console.log('Target path:', targetPath);
     
     // Forward the request
     const response = await fetch(url, {
