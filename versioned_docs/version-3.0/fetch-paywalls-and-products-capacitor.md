@@ -77,7 +77,7 @@ Once you have the paywall, you can query the product array that corresponds to i
 import { adapty } from '@adapty/capacitor';
 
 try {
-  const products = await adapty.getPaywallProducts(paywall);
+  const products = await adapty.getPaywallProducts({ paywall });
   // the requested products list
 } catch (error) {
   console.error('Failed to fetch products:', error);

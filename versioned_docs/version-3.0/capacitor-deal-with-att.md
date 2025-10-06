@@ -8,14 +8,11 @@ displayed_sidebar: sdkcapacitor
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
 ```typescript showLineNumbers
-import { adapty } from '@adapty/capacitor';
+import { adapty, AppTrackingTransparencyStatus } from '@adapty/capacitor';
 
 try {
   await adapty.updateProfile({
-    params: {
-      // you can also pass a string value if you prefer
-      appTrackingTransparencyStatus: 'authorized',
-    }
+    appTrackingTransparencyStatus: AppTrackingTransparencyStatus.Authorized,
   });
   console.log('ATT status updated successfully');
 } catch (error) {

@@ -15,10 +15,6 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 
 This guide shows how to handle custom and pre-existing actions in your code.
 
-:::warning
-**Only purchases, restorations, and closing the paywall are handled automatically.** All the other button actions, such as opening links, require implementing proper responses in the app code.
-:::
-
 ## Close paywalls
 
 To add a button that will close your paywall:
@@ -55,7 +51,7 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
 :::info
-In the Capacitor SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
+In the Capacitor SDK, the `window.open` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
 ```typescript showLineNumbers

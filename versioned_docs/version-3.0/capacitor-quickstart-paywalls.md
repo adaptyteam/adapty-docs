@@ -100,7 +100,7 @@ However, other buttons have custom or pre-defined IDs and require handling actio
 For example, you may want to keep the paywall open after your app users open a web link. Let's see how you can handle it in your implementation.
 
 :::tip
-Read our guides on how to handle button [actions](capacitor-handle-paywall-actions.md) and [events](capacitor-handling-events-1.md).
+Read our guides on how to handle button [actions](capacitor-handle-paywall-actions.md) and [events](capacitor-handling-events.md).
 :::
 
 ```typescript showLineNumbers title="Capacitor"
@@ -154,7 +154,6 @@ export default function PaywallScreen() {
     }
   };
 
-  // you can add a button to manually trigger the paywall for testing purposes
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
       <button onClick={showPaywall}>Show Paywall</button>
