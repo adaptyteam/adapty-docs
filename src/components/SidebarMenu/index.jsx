@@ -22,6 +22,7 @@ export default function SidebarMenu() {
     { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
+      { name: 'Capacitor', path: '/docs/capacitor-sdk-overview', sidebarId: 'sdkcapacitor' },
       { name: 'Kotlin Multiplatform', path: '/docs/kotlin-multiplatform-sdk-overview', sidebarId: 'sdkkmp' },
   ];
   
@@ -51,6 +52,8 @@ export default function SidebarMenu() {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkflutter');
     } else if (pathname.includes('unity-sdk') || pathname.includes('unity')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
+    } else if (pathname.includes('capacitor-sdk') || pathname.includes('capacitor')) {
+        currentPlatform = platforms.find(p => p.sidebarId === 'sdkcapacitor');
     } else if (pathname.includes('kmp') || pathname.includes('kotlin-multiplatform')) {
         currentPlatform = platforms.find(p => p.sidebarId === 'sdkkmp');
     } else {
@@ -134,10 +137,10 @@ export default function SidebarMenu() {
       padding: '24px 16px 8px 16px',
       background: '#f8f9fa',
       borderBottom: '1px solid #e9ecef',
-      marginBottom: '4px',
       position: 'sticky',
       top: '0',
       zIndex: '10',
+      flexShrink: 0,
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
     }}>
       <div style={{

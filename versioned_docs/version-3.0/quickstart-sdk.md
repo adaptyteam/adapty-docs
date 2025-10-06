@@ -46,6 +46,10 @@ Choose your platform and dive right in:
 - **[SDK Quickstart](unity-sdk-overview.md)**
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity)**
 
+**Capacitor (Beta)**
+- **[SDK Quickstart](capacitor-sdk-overview.md)**
+- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)**
+
 **Kotlin Multiplatform**:
 - **[SDK Quickstart](kmp-sdk-overview.md)**
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example)**
