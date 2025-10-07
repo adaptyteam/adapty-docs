@@ -5,13 +5,24 @@ metadataTitle: "Implement Paywalls Manually | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios
 ---
 
-This page contains guides for implementing paywalls manually in your iOS app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Fetch paywalls and products](fetch-paywalls-and-products)** - Retrieve paywalls and product data
-- **[Present remote config paywalls](present-remote-config-paywalls)** - Display remote config paywalls
-- **[Accept purchases](making-purchases)** - Handle purchase transactions
-- **[Restore purchases](restore-purchase)** - Restore previous purchases
-- **[Implement Observer mode](implement-observer-mode)** - Set up Observer mode for analytics and paywall integration
-- **[Report transactions in Observer Mode](report-transactions-observer-mode)** - Report purchase transactions in Observer Mode
-- **[Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)** - Display Paywall Builder paywalls in Observer mode
-- **[Troubleshooting](ios-troubleshoot-purchases)** - Resolve common purchase issues 
+## Accept purchases
+
+If you are working with paywalls you've implemented yourself, you can delegate handling purchases to Adapty, using the `makePurchase` method. This way, we will handle all the user scenarios, and you will only need to handle the purchase results.
+
+:::important
+`makePurchase` with products created in the Adapty dashboard. Make sure you configure products and ways to retrieve them in the dashboard by following the [quickstart guide](quickstart).
+:::
+
+<CustomDocCardList ids={['fetch-paywalls-and-products', 'present-remote-config-paywalls', 'making-purchases', 'restore-purchase', 'ios-troubleshoot-purchases']} />
+
+## Observer mode
+
+If you want to implement your own purchase handling logic from scratch, but still want to benefit from the advanced analytics in Adapty, you can use the observer mode.
+
+:::important
+Consider the observer mode limitations [here](observer-vs-full-mode).
+:::
+
+<CustomDocCardList ids={['implement-observer-mode', 'report-transactions-observer-mode', 'ios-present-paywall-builder-paywalls-in-observer-mode', 'ios-troubleshoot-purchases']} />
