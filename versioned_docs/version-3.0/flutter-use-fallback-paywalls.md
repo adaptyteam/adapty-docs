@@ -1,6 +1,6 @@
 ---
 title: "Flutter - Use fallback paywalls"
-description: "Implement fallback paywalls in Flutter with Adapty to ensure seamless subscription handling."
+description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls in Flutter | Adapty Docs"
 ---
 

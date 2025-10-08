@@ -5,12 +5,24 @@ metadataTitle: "Paywalls | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter
 ---
 
-This page contains all guides for working with paywalls in your Flutter app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](flutter-get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](flutter-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](flutter-handling-events)** - Manage paywall interactions
-- **[Work with paywalls offline](flutter-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](flutter-localizations-and-locale-codes)** - Support multiple languages
-- **[Implement web paywalls](flutter-web-paywall)** - Use web-based paywalls
-- **[Implement paywalls manually](flutter-implement-paywalls-manually)** - Build custom paywall UI 
+## Display paywalls
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['flutter-get-pb-paywalls', 'flutter-present-paywalls', 'flutter-handling-events', 'flutter-handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](flutter-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products-flutter', 'present-remote-config-paywalls-flutter', 'flutter-making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](flutter-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['flutter-use-fallback-paywalls', 'flutter-web-paywall']} />

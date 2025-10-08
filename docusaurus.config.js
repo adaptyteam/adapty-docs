@@ -124,6 +124,11 @@ const config = {
                 label: "Kotlin Multiplatform",
                 type: "docSidebar",
                 sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
