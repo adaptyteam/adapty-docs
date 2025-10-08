@@ -1,6 +1,6 @@
 ---
-title: "Work with paywalls offline"
-description: "Learn how to use fallback paywalls in your Unity app with Adapty SDK."
+title: "Use fallback paywalls"
+description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Work with Paywalls Offline | Unity SDK | Adapty Docs"
 slug: /unity-use-fallback-paywalls
 displayed_sidebar: sdkunity

@@ -34,6 +34,10 @@ In Adapty, a [product](product) serves as a combination of products from both th
 
 To display the products, you need to obtain a [Paywall](paywalls) from one of your [placements](placements) with `getPaywall` method.
 
+:::important
+Don't hardcode product IDs! Since paywalls are configured remotely, the available products, the number of products, and special offers (such as free trials) can change over time. Make sure your code handles these scenarios.  
+For example, if you initially retrieve two products, your app should display those two products. However, if you later retrieve three products, your app should display all three without requiring any code changes. The only thing you should hardcode is the placement ID.
+:::
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
