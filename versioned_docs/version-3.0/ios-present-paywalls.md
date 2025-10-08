@@ -23,7 +23,9 @@ This guide is for **[new Paywall Builder paywalls](adapty-paywall-builder.md)** 
 
 ## Present paywalls in SwiftUI
 
-In order to display the visual paywall on the device screen, use the `.paywall` modifier in SwiftUI:
+### Present as a modal view
+
+In order to display the visual paywall on the device screen as a modal view, use the `.paywall` modifier in SwiftUI:
 
 ```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
@@ -77,6 +79,28 @@ Parameters:
 | **placeholderBuilder**            | optional | A function for rendering the placeholder view while the paywall is loading.                                                                                                                                                                                                                                                    |
 
 Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters.
+
+### Present as a non-modal view
+
+You can also present paywalls as navigation destinations or inline views within your app's navigation flow. Use `AdaptyPaywallView` directly in your SwiftUI views:
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyPaywallView(
+    paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
 
 
 ## Present paywalls in UIKit

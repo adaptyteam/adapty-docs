@@ -5,12 +5,24 @@ metadataTitle: "Paywalls | iOS SDK | Adapty Docs"
 displayed_sidebar: sdkios
 ---
 
-This page contains all guides for working with paywalls in your iOS app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](ios-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](ios-handling-events)** - Manage paywall interactions
-- **[Work with paywalls offline](ios-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](localizations-and-locale-codes)** - Support multiple languages
-- **[Implement web paywalls](ios-web-paywall)** - Use web-based paywalls
-- **[Implement paywalls manually](ios-implement-paywalls-manually)** - Build custom paywall UI
+## Display paywalls 
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['get-pb-paywalls', 'ios-present-paywalls', 'ios-handling-events', 'handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](ios-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products', 'present-remote-config-paywalls', 'making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](ios-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['ios-use-fallback-paywalls', 'localizations-and-locale-codes', 'ios-web-paywall']} />

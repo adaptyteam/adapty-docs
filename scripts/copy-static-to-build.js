@@ -3,6 +3,7 @@ const path = require('path');
 
 async function copyStaticMarkdownAndLlms() {
   const staticDir = path.join(__dirname, '..', 'static');
+  const publicDir = path.join(__dirname, '..', 'public');
   const buildDir = path.join(__dirname, '..', 'build');
   const apiSpecsDir = path.join(__dirname, '..', 'api-specs');
 
@@ -12,11 +13,11 @@ async function copyStaticMarkdownAndLlms() {
   }
 
   try {
-    // Copy all .md files from static root
+    // Copy all .md and .js files from static root
     const files = await fs.readdir(staticDir);
     let copied = [];
     for (const file of files) {
-      if (file.endsWith('.md')) {
+      if (file.endsWith('.md') || file.endsWith('.js')) {
         await fs.copy(
           path.join(staticDir, file),
           path.join(buildDir, file),
@@ -25,6 +26,24 @@ async function copyStaticMarkdownAndLlms() {
         copied.push(file);
         console.log(`Copied ${file} to build directory`);
       }
+    }
+    
+    // Copy js directory if it exists
+    const jsDir = path.join(staticDir, 'js');
+    const buildJsDir = path.join(buildDir, 'js');
+    if (await fs.pathExists(jsDir)) {
+      await fs.copy(jsDir, buildJsDir, { overwrite: true });
+      const jsFiles = await fs.readdir(jsDir);
+      copied.push(...jsFiles.map(file => `js/${file}`));
+      console.log('Copied js directory to build directory');
+    }
+    
+    // Copy public directory if it exists
+    if (await fs.pathExists(publicDir)) {
+      await fs.copy(publicDir, buildDir, { overwrite: true });
+      const publicFiles = await fs.readdir(publicDir);
+      copied.push(...publicFiles.map(file => `public/${file}`));
+      console.log('Copied public directory to build directory');
     }
     // Always copy llms.txt if it exists
     const llmsPath = path.join(staticDir, 'llms.txt');

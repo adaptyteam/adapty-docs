@@ -59,10 +59,6 @@ const config = {
         blog: {
           showReadingTime: false,
         },
-        gtag: {
-          trackingID: "G-0M1BCR2275", // Replace with your Google Analytics Measurement ID
-          anonymizeIP: true, // Optional, anonymize IP addresses
-        },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -125,6 +121,16 @@ const config = {
                 label: "Unity",
                 type: "docSidebar",
                 sidebarId: "sdkunity",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
@@ -143,7 +149,7 @@ const config = {
                 href: "/api-adapty",
               },
               {
-                label: "Web API", 
+                label: "Web API",
                 href: "/api-web",
               },
               {
@@ -166,13 +172,13 @@ const config = {
             href: "https://app.adapty.io/login",
             label: "Sign In",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-in",
+            className: "navbar__item navbar__link navbar__link--sign-in",
           },
           {
             href: "https://app.adapty.io/registration",
             label: "Sign Up for Free",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-up",
+            className: "navbar__item navbar__link navbar__link--sign-up",
           },
           // {
           //   href: "https://docs.adapty.io/discuss",
@@ -374,12 +380,15 @@ const config = {
       async: true,
     },
   ],
-  
+
   plugins: [
-    // Custom meta plugin for keywords and rank
+    require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
     // Webpack plugin for Node.js polyfills
     webpackPlugin,
+    [require('./plugins/gtm-plugin'), {
+      trackingID: 'GTM-PXJV3N7',
+    }],
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {

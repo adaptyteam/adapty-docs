@@ -13,8 +13,6 @@ Consistency in visuals is key to great design. When building no-code paywalls, y
 This section describes the new Paywall Builder, which works with iOS, Android, and React Native SDKs version 3.0 or higher and Flutter and Unity SDKs version 3.3.0 or higher. For information on the legacy Paywall Builder compatible with Adapty SDK v2.x or earlier, see [Custom fonts in legacy Paywall Builder](using-custom-fonts-in-legacy-paywall-builder).
 :::
 
-##
-
 ## What can be customized
 
 Every text element in Paywall Builder can have its own font and style. You can adjust this in the font controls for each text element:
@@ -151,7 +149,11 @@ You can confirm the filename is correct by calling `ResourcesCompat.getFont(cont
 
 ## Adding the font files to your app's bundle
 
-If you’re already using a custom font elsewhere in your app, you’re likely all set. But if not, make sure to include the font file in your app's project and bundle. Read how to do it below:
+If you’re already using a custom font elsewhere in your app, you just need to add your paywall fonts in the same way. If not, make sure to include the font file in your app's project and bundle. Read how to do it below:
 
 - On iOS: [In Apple official documentation](https://developer.apple.com/documentation/uikit/text_display_and_fonts/adding_a_custom_font_to_your_app)
 - On Android: [In Android official documentation](https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml)
+
+:::important
+When downloading font bundles from Adapty, you'll receive all font variations in an archive. Only add the specific font files your paywall uses to your app bundle to minimize app size. For example, if you only use `OpenSans-Regular.ttf` in your paywall, don't include `OpenSans-Bold.ttf` in your app bundle.
+:::

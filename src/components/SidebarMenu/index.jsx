@@ -6,21 +6,14 @@ import { isMobileSdkDocument, getCorrespondingDocId } from '../../lib/sidebarMap
 
 
 export default function SidebarMenu() {
-  console.log('SidebarMenu component is rendering - START');
-  console.log('SidebarMenu - component is being called');
   
   const router = useHistory();
   const { pathname } = router.location;
   const activeDocContext = useActiveDocContext();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  console.log('SidebarMenu - router:', router);
-  console.log('SidebarMenu - pathname:', pathname);
-  console.log('SidebarMenu - activeDocContext:', activeDocContext);
+
   
   // Debug: log the pathname and active context
-  console.log('SidebarMenu pathname:', pathname);
-  console.log('Active doc context:', activeDocContext);
   
   // Define platform options with correct paths
   const platforms = [
@@ -29,57 +22,49 @@ export default function SidebarMenu() {
     { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
+      { name: 'Kotlin Multiplatform', path: '/docs/kotlin-multiplatform-sdk-overview', sidebarId: 'sdkkmp' },
+      { name: 'Capacitor (Beta)', path: '/docs/capacitor-sdk-overview', sidebarId: 'sdkcapacitor' },
   ];
   
   // Try to detect current platform from active sidebar
   let currentPlatform = platforms[0]; // Default to iOS
-  
-  console.log('SidebarMenu - activeDocContext:', activeDocContext);
-  console.log('SidebarMenu - activeDocContext.sidebar:', activeDocContext?.sidebar);
+
   
   if (activeDocContext && activeDocContext.sidebar) {
     const sidebarId = activeDocContext.sidebar;
-    console.log('SidebarMenu - detected sidebarId:', sidebarId);
     const detectedPlatform = platforms.find(p => p.sidebarId === sidebarId);
-    console.log('SidebarMenu - detected platform:', detectedPlatform);
     if (detectedPlatform) {
       currentPlatform = detectedPlatform;
-      console.log('SidebarMenu - using detected platform:', currentPlatform.name);
     }
   }
   
   // Fallback to URL-based detection
   if (currentPlatform === platforms[0]) {
-    console.log('SidebarMenu - falling back to URL-based detection');
-    console.log('SidebarMenu - pathname:', pathname);
     
     // More specific URL-based detection
     if (pathname.includes('react-native-sdk') || pathname.includes('reactnative')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkreactnative');
-      console.log('SidebarMenu - detected React Native from URL');
     } else if (pathname.includes('ios-sdk') || pathname.includes('ios')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkios');
-      console.log('SidebarMenu - detected iOS from URL');
     } else if (pathname.includes('android-sdk') || pathname.includes('android')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkandroid');
-      console.log('SidebarMenu - detected Android from URL');
     } else if (pathname.includes('flutter-sdk') || pathname.includes('flutter')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkflutter');
-      console.log('SidebarMenu - detected Flutter from URL');
     } else if (pathname.includes('unity-sdk') || pathname.includes('unity')) {
       currentPlatform = platforms.find(p => p.sidebarId === 'sdkunity');
-      console.log('SidebarMenu - detected Unity from URL');
+    } else if (pathname.includes('capacitor-sdk') || pathname.includes('capacitor')) {
+        currentPlatform = platforms.find(p => p.sidebarId === 'sdkcapacitor');
+    } else if (pathname.includes('kmp') || pathname.includes('kotlin-multiplatform')) {
+        currentPlatform = platforms.find(p => p.sidebarId === 'sdkkmp');
     } else {
       // Fallback to the old logic
-      console.log('SidebarMenu - using old URL detection logic');
       currentPlatform = platforms.find(p => {
         const platformPath = p.name.toLowerCase().replace(' ', '-');
         return pathname.includes(platformPath);
       }) || platforms[0];
     }
   }
-  
-  console.log('Current platform detected:', currentPlatform.name, 'from sidebar:', activeDocContext?.sidebar);
+
 
   const handlePlatformChange = (platform) => {
     // Get the current document ID
@@ -92,43 +77,33 @@ export default function SidebarMenu() {
       if (correspondingDocId) {
         // Navigate to the corresponding document
         router.push(`/docs/${correspondingDocId}`);
-        console.log(`Navigating to corresponding page: ${correspondingDocId}`);
       } else {
         // Fallback to the platform overview page
         router.push(platform.path);
-        console.log(`No corresponding page found, falling back to overview: ${platform.path}`);
       }
     } else {
       // If no current document ID, fallback to overview
       router.push(platform.path);
-      console.log(`No current document ID, falling back to overview: ${platform.path}`);
     }
   };
 
-  console.log('SidebarMenu - about to return JSX');
   
   // Get the current document ID from activeDocContext
   const currentDocId = activeDocContext?.activeDoc?.id;
-  
-  console.log('SidebarMenu - currentDocId:', currentDocId);
-  console.log('SidebarMenu - activeDocContext:', activeDocContext);
+
   
   // Check if current document belongs to a mobile SDK sidebar
   const isMobileSdkPage = currentDocId && isMobileSdkDocument(currentDocId);
-  
-  console.log('SidebarMenu - currentDocId:', currentDocId);
-  console.log('SidebarMenu - isMobileSdkPage:', isMobileSdkPage);
+
   
   // Also check if we're on a platform overview page by URL
   const isOverviewPage = pathname.includes('-sdk-overview');
-  console.log('SidebarMenu - isOverviewPage:', isOverviewPage);
   
   // Show switcher if it's a mobile SDK page OR an overview page
   const shouldShowSwitcher = isMobileSdkPage || isOverviewPage;
 
   // Add/remove CSS class to sidebar container based on switcher visibility
   useEffect(() => {
-    console.log('SidebarMenu useEffect - shouldShowSwitcher:', shouldShowSwitcher);
     
     // Find the sidebar container
     const sidebarContainer = document.querySelector('.theme-doc-sidebar-container');
@@ -136,31 +111,25 @@ export default function SidebarMenu() {
     if (sidebarContainer) {
       if (shouldShowSwitcher) {
         sidebarContainer.classList.add('platform-switcher-visible');
-        console.log('SidebarMenu - Added platform-switcher-visible class to sidebar container');
       } else {
         sidebarContainer.classList.remove('platform-switcher-visible');
-        console.log('SidebarMenu - Removed platform-switcher-visible class from sidebar container');
       }
     } else {
-      console.log('SidebarMenu - Sidebar container not found');
     }
 
     // Cleanup on unmount
     return () => {
       if (sidebarContainer) {
         sidebarContainer.classList.remove('platform-switcher-visible');
-        console.log('SidebarMenu - Cleanup: removed platform-switcher-visible class from sidebar container');
       }
     };
   }, [shouldShowSwitcher]);
 
   // Don't show switcher if not on a mobile SDK page or overview page
   if (!shouldShowSwitcher) {
-    console.log('SidebarMenu - not showing (not a mobile SDK page or overview page)');
     return null;
   }
-  
-  console.log('SidebarMenu - about to render the switcher');
+
   
   return (
     <div style={{
@@ -168,10 +137,10 @@ export default function SidebarMenu() {
       padding: '24px 16px 8px 16px',
       background: '#f8f9fa',
       borderBottom: '1px solid #e9ecef',
-      marginBottom: '4px',
       position: 'sticky',
       top: '0',
       zIndex: '10',
+      flexShrink: 0,
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
     }}>
       <div style={{

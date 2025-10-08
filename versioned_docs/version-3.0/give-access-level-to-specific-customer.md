@@ -11,12 +11,12 @@ You can manually adjust the access level for a particular customer right in the 
 
 ## Give access level to a specific customer in the Adapty Dashboard
 
-1. Open the **[Profiles and Segments](https://app.adapty.io/placements)** section from the Adapty main menu, then select the **Profiles** tab.
+1. Go to **[Profiles and Segments](https://app.adapty.io/placements)** from the Adapty main menu.
 
    
 
 <Zoom>
-  <img src={require('./img/444f659-profiles_list.webp').default}
+  <img src={require('./img/profiles-list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,12 +29,14 @@ You can manually adjust the access level for a particular customer right in the 
 
 
 
-2. In the **Profiles** window, click on the customer you want to grant access to. 
+2. Click on the customer you want to grant access to. 
+
+3. Click **Add access level**.
 
    
 
 <Zoom>
-  <img src={require('./img/96d0abf-add_access_level_to_customer.webp').default}
+  <img src={require('./img/add-access-level.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -47,27 +49,9 @@ You can manually adjust the access level for a particular customer right in the 
 
 
 
-3. In the opened window, click the **Add access level** button.
+4. Select the access level to grant and when it should expire for this customer.
 
-   
-
-<Zoom>
-  <img src={require('./img/2379036-add_access_level_to_customer1.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
-4. In the opened **Add Access level** window, select the Access level to grant and when it should expire for this customer.
-
-5. Click the **Apply** button.
+5. Click **Apply**.
 
 ## Give access level to a specific customer via API
 

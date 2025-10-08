@@ -7,7 +7,7 @@ metadataTitle: "Validating Test Purchases in Adapty | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Before releasing your mobile app to production, it's crucial to test in-app purchases thoroughly. Please refer to our [Test in-app purchases in Apple App Store](testing-purchases-ios) and [Test in-app purchases in Google Play Store](testing-on-android) topics for detailed guidance on testing. Once you begin testing, you need to verify the success of test purchases.
+Before releasing your mobile app to production, it's crucial to test in-app purchases thoroughly. Please refer to our [Test in-app purchases in Apple App Store](test-purchases-in-sandbox.md) and [Test in-app purchases in Google Play Store](testing-on-android) topics for detailed guidance on testing. Once you begin testing, you need to verify the success of test purchases.
 
 Every time you make a test purchase on your mobile device, view the corresponding transaction in the [**Event Feed**](https://app.adapty.io/event-feed) in the Adapty Dashboard. If the purchase does not appear in the **Event Feed**, it's not being tracked by Adapty. 
 
@@ -35,7 +35,7 @@ If transactions work as expected, proceed to the [Release checklist](release-che
 
 ## ❌ Test purchase is not successful
 
-If you observe no transaction event within 10 minutes or encounter an error in the mobile app, refer to the [ Troubleshooting](troubleshooting-test-purchases) and articles on error handling [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter, React Native, and Unity](error-handling-on-flutter-react-native-unity) for potential solutions.
+If you observe no transaction event within 10 minutes or encounter an error in the mobile app, refer to the [ Troubleshooting](troubleshooting-test-purchases) and articles on error handling [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter](error-handling-on-flutter-react-native-unity), [for React Native](react-native-handle-errors.md), [for Unity](unity-handle-errors.md), and [Kotlin Multiplatform](kmp-handle-errors.md) for potential solutions.
 
 
 <Zoom>

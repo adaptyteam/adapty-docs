@@ -20,28 +20,20 @@ The Adapty dashboard members system allows you to grant different levels of acce
 The following roles are available for members in the Adapty dashboard:
 
 
-<Zoom>
-  <img src={require('./img/22c99e5-6187b395ae899b73d8d64a26_Frame_1434.webp').default}
-  style={{
-    border: 'none', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+| Role        | Access to Billing | Add new members | Change anything | Access to all sections |
+|-------------|-------------------|-----------------|-----------------|------------------------|
+| Owner       | ✅                 | ✅               | ✅               | ✅                      |
+| Admin       | ❌                 | ✅               | ✅               | ✅                      |
+| Viewer      | ❌                 | ❌               | ❌               | ✅                      |
+| Support     | ❌                 | ❌               | ❌               | ❌                      |
+| ASA manager | ❌                 | ❌               | ❌               | ❌                      |
 
 
-
-
-
-**Owner:** The Owner is the original creator of the Adapty account and holds the highest level of access and control. Owners have complete access to Adapty billing, allowing them to manage payment information and subscription plans. Additionally, only Owners and Admins can specify application access for new members. There can be only one Owner for each Adapty account.
-
-**Admin:** Members with the Admin role have full access to the chosen applications.  They can perform various management tasks, including creating and modifying paywalls, conducting A/B tests, analyzing analytics, and managing members within those applications.
-
-**Viewer:** Members with the Viewer role have read-only access to the chosen applications. They can view information but cannot create or modify paywalls, A/B tests, and other features, invite new users, create new apps, and change the app settings.
-
-**Support:** Members with the Support role have access only to user profiles in chosen applications. However, they cannot perform actions like adding new members or accessing any other sections of Adapty. This role is particularly suitable for support teams or individuals who need to assist customers with subscription-related inquiries or troubleshooting.
+- **Owner:** The Owner is the original creator of the Adapty account and holds the highest level of access and control. Owners have complete access to Adapty billing, allowing them to manage payment information and subscription plans. Additionally, only Owners and Admins can specify application access for new members. There can be only one Owner for each Adapty account.
+- **Admin:** Members with the Admin role have full access to the chosen applications.  They can perform various management tasks, including creating and modifying paywalls, conducting A/B tests, analyzing analytics, and managing members within those applications.
+- **Viewer:** Members with the Viewer role have read-only access to the chosen applications. They can view information but cannot create or modify paywalls, A/B tests, and other features, invite new users, create new apps, and change the app settings.
+- **Support:** Members with the Support role have access only to user profiles in chosen applications. However, they cannot perform actions like adding new members or accessing any other sections of Adapty. This role is particularly suitable for support teams or individuals who need to assist customers with subscription-related inquiries or troubleshooting.
+- **ASA manager**: Members with the ASA manager role have access only to the Ads Intelligence dashboard.
 
 ### How to add a member
 

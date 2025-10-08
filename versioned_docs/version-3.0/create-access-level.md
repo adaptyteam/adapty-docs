@@ -13,11 +13,11 @@ When you create an app in the Adapty Dashboard, the `premium` access level is au
 
 To create a new access level:
 
-1. Open the **[Paywalls and Products](https://app.adapty.io/access-levels) ** section from the Adapty main menu, then select the **Access levels** tab.
+1. Go to **[Products](https://app.adapty.io/access-levels)** from the Adapty main menu, then select the **Access levels** tab.
 
    
 <Zoom>
-  <img src={require('./img/5b2bc83-access_levels.webp').default}
+  <img src={require('./img/access-level-list.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -30,7 +30,7 @@ To create a new access level:
 
 
 
-2. Click the **Create access level** button. 
+2. Click **Create access level**. 
 
    
 <Zoom>
@@ -49,4 +49,4 @@ To create a new access level:
 
 3. In the **Create access level** window, assign it an ID. This ID will serve as the identifier within your mobile app, enabling access to additional features upon user purchase. Additionally, this identifier aids in distinguishing one access level from others within the app. Ensure it's clear and easily understandable for your convenience.
 
-4. Click the **Create access level** button to confirm the access level creation.
+4. Click **Create access level** to confirm the access level creation.

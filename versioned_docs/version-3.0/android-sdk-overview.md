@@ -42,7 +42,7 @@ Here's what we'll cover in the integration guide:
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Android) that demonstrates the full setup
+- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app) that demonstrates the full setup
 
 ## Main concepts
 
