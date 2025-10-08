@@ -121,14 +121,14 @@ const config = {
                 sidebarId: "sdkunity",
               },
               {
-                label: "Capacitor",
-                type: "docSidebar",
-                sidebarId: "sdkcapacitor",
-              },
-              {
                 label: "Kotlin Multiplatform",
                 type: "docSidebar",
                 sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
