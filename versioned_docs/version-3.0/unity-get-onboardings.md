@@ -15,7 +15,7 @@ Before you start, ensure that:
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
-## Fetch onboarding
+## Fetch onboarding and create view
 
 When you create an [onboarding](onboardings.md) with our no-code builder, it's stored as a container with configuration that your app needs to fetch and display. This container manages the entire experience - what content appears, how it's presented, and how user interactions (like quiz answers or form inputs) are processed. The container also automatically tracks analytics events, so you don't need to implement separate view tracking.
 
@@ -48,6 +48,26 @@ Response parameters:
 | Parameter | Description                                                                                                                                                       |
 |:----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Onboarding      | An [`AdaptyOnboarding`](unity-sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+
+After fetching the onboarding, call the `CreateOnboardingView` method.
+
+:::warning
+The result of the `CreateOnboardingView` method can only be used once. If you need to use it again, call the `CreateOnboardingView` method anew. Calling it twice without recreating may result in the `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```csharp showLineNumbers
+AdaptyUI.CreateOnboardingView(onboarding, (view, error) => {
+    // handle the result
+});
+```
+
+Parameters:
+
+| Parameter      | Presence       | Description                                                                  |
+|:---------------| :------------- |:-----------------------------------------------------------------------------|
+| **onboarding** | required       | An `AdaptyOnboarding` object to obtain a controller for the desired paywall. |
+
+Once you have successfully loaded the щтищфквштп and its view configuration, you can [present it in your mobile app](unity-present-onboardings).
 
 
 ## Speed up onboarding fetching with default audience onboarding
