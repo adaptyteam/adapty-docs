@@ -103,6 +103,45 @@ If you are using multiple languages, learn how to add a [Paywall Builder localiz
 
 Once you have successfully loaded the paywall and its view configuration, you can present it in your mobile app.
 
+## Customize assets
+
+To customize images and videos in your paywall, implement the custom assets.
+
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset bundle, you target these elements by their IDs and customize their behavior.
+
+For other images and videos, you need to [set a custom ID](https://adapty.io/docs/custom-media) in the Adapty dashboard.
+
+For example, you can:
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+:::important
+To use this feature, update the Adapty Unity SDK to version 3.8.0 or higher.
+:::
+
+Here's an example of how you can provide custom assets via a simple dictionary:
+
+```csharp showLineNumbers
+var customAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "custom_image", AdaptyCustomAsset.LocalImageFile("custom_assets/images/custom_image.png") },
+    { "hero_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/custom_video.mp4") }
+};
+
+var parameters = new AdaptyUICreatePaywallViewParameters()
+    .SetCustomAssets(customAssets)
+    .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+:::note
+If an asset is not found, the paywall will fall back to its default appearance.
+:::
 
 ## Set up developer-defined timers
 

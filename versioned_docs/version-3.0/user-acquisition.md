@@ -17,6 +17,7 @@ This is a one-way integration — to see your revenue data in User Acquisition, 
 User Acquisition is only available with:
 - iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
 - React Native Adapty SDK version 3.10.0 or higher.
+- Unity SDK version 3.12.0 or higher.
 :::
 
 ## How to set up User Acquisition integration
@@ -126,6 +127,24 @@ Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
 
 </TabItem>
 
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.SetEventListener(this);
+
+public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details)
+{
+    // use installation details
+}
+
+public void OnInstallationDetailsFail(AdaptyError error)
+{
+    // installation details update failed
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 You can also retrieve the installation status manually:
@@ -222,6 +241,32 @@ try {
 } catch (e) {
     // handle the error
 }
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetCurrentInstallationStatus((status, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    switch (status.Status) {
+        case AdaptyInstallationStatusType.NotAvailable:
+            // Installation details are not available on this device
+            break;
+        case AdaptyInstallationStatusType.NotDetermined:
+            // Installation details have not been determined yet
+            break;
+        case AdaptyInstallationStatusType.Determined:
+            // Use the installation details
+            var details = status.Details;
+            break;
+    }
+});
 ```
 
 </TabItem>
