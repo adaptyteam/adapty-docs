@@ -32,7 +32,7 @@ Choose your platform and dive right in:
 
 **Android**
 - **[SDK Quickstart](android-sdk-overview.md)** 
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Android)**
+- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)**
 
 **Flutter**
 - **[SDK Quickstart](flutter-sdk-overview.md)** 
@@ -44,7 +44,7 @@ Choose your platform and dive right in:
 
 **Unity**
 - **[SDK Quickstart](unity-sdk-overview.md)**
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity)**
+- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)**
 
 **Capacitor (Beta)**
 - **[SDK Quickstart](capacitor-sdk-overview.md)**
