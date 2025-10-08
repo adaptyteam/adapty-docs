@@ -1,6 +1,6 @@
 ---
 title: "Use fallbacks in iOS SDK"
-description: "Use fallbacks to handle cases when users are offline or Adapty servers aren't available"
+description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls on iOS | Adapty Docs"
 ---
 
