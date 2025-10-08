@@ -1,23 +1,22 @@
 ---
-title: "Deal with ATT in React Native SDK"
-description: "Get started with Adapty on React Native to streamline subscription setup and management."
-metadataTitle: "Getting Started with React Native | Adapty Docs"
-displayed_sidebar: sdkreactnative
+title: "Deal with ATT in Capacitor SDK"
+description: "Get started with Adapty on Capacitor to streamline subscription setup and management."
+metadataTitle: "Getting Started with Capacitor | Adapty Docs"
+displayed_sidebar: sdkcapacitor
 ---
-
 
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
 ```typescript showLineNumbers
-import { AppTrackingTransparencyStatus } from 'react-native-adapty';
+import { adapty, AppTrackingTransparencyStatus } from '@adapty/capacitor';
 
 try {
   await adapty.updateProfile({
-    // you can also pass a string value (validated via tsc) if you prefer
     appTrackingTransparencyStatus: AppTrackingTransparencyStatus.Authorized,
   });
+  console.log('ATT status updated successfully');
 } catch (error) {
-  // handle `AdaptyError`
+  console.error('Failed to update ATT status:', error);
 }
 ```
 
