@@ -1,6 +1,6 @@
 ---
 title: "Use fallbacks in iOS SDK"
-description: "Learn how to use fallback paywalls and onboardings on iOS to ensure seamless user experiences."
+description: "Use fallbacks to handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls on iOS | Adapty Docs"
 ---
 
