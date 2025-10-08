@@ -4,6 +4,63 @@ import Head from '@docusaurus/Head';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import clsx from 'clsx';
 
+function DynamicAPIElement({ layout = 'sidebar' }) {
+  const [APIComponent, setAPIComponent] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    import('@stoplight/elements')
+      .then((elements) => {
+        console.log('Loaded elements:', elements);
+        console.log('API component:', elements.API);
+        console.log('API type:', typeof elements.API);
+        
+        if (elements.API && typeof elements.API === 'function') {
+          setAPIComponent(() => elements.API);
+        } else {
+          throw new Error('API component is not a valid React component');
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load @stoplight/elements:', err);
+        setError(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div>Loading API documentation...</div>
+      </div>
+    );
+  }
+
+  if (error || !APIComponent) {
+    return (
+      <div className="loading-container">
+        <div>Failed to load API documentation: {error?.message || 'Unknown error'}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={clsx('elements-container', layout)}>
+      <APIComponent
+        className="stacked"
+        apiDescriptionUrl="/docs/api/web-api.yaml"
+        basePath="/"
+        router="hash"
+        layout={layout}
+        hideSchemas
+        hideInternal
+      />
+    </div>
+  );
+}
+
 function APIElement({ layout = 'sidebar' }) {
   return (
     <BrowserOnly
@@ -13,24 +70,7 @@ function APIElement({ layout = 'sidebar' }) {
         </div>
       }
     >
-      {() => {
-        // eslint-disable-next-line no-undef
-        const { API } = require('@stoplight/elements');
-
-        return (
-          <div className={clsx('elements-container', layout)}>
-            <API
-              className="stacked"
-              apiDescriptionUrl="/docs/api/web-api.yaml"
-              basePath="/"
-              router="hash"
-              layout={layout}
-              hideSchemas
-              hideInternal
-            />
-          </div>
-        );
-      }}
+      {() => <DynamicAPIElement layout={layout} />}
     </BrowserOnly>
   );
 }
