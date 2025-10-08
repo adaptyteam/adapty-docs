@@ -9,7 +9,7 @@ displayed_sidebar: sdkcapacitor
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor-main.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor-main/releases)
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
 
 Welcome! We're here to make in-app purchases a breeze 🚀
 
@@ -38,22 +38,11 @@ Here's what we'll cover in the integration guide:
 3. [Check the subscription status](capacitor-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](capacitor-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
 
-:::note
-Migrating to Adapty from RevenueCat? Check out our [guide](migration-from-revenuecat.md) to make this experience as simple as possible.
-:::
-
 ### See it in action
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample apps**: Check out our [complete examples](https://github.com/adaptyteam/AdaptySDK-Capacitor-main/tree/main/example-app) that demonstrate the full setup
-- **Video tutorial**: Follow along with our step-by-step implementation video below
-
-<div style={{ textAlign: 'center' }}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
-
-To start using the Adapty SDK, you need to understand Adapty's main concepts and integrate the SDK into your app.
+- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools) that demonstrates the full setup
 
 ## Main concepts
 

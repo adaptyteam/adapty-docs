@@ -1,5 +1,5 @@
 ---
-title: "Capacitor - Present new Paywall Builder paywalls"
+title: "Present Paywall Builder paywalls in Capacitor SDK"
 description: "Present paywalls in Capacitor apps using Adapty."
 metadataTitle: "Presenting Paywalls in Capacitor | Adapty Docs"
 ---

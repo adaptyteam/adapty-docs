@@ -40,8 +40,7 @@ try {
 
 Response parameters:
 
-| Parameter | Description |
-|---------|-----------|
-| **profile** | An [`AdaptyProfile`](capacitor-sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases. Check the **access level status** to determine whether the user has access to the app. |
+| Parameter | Description                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile** | An [`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases. Check the **access level status** to determine whether the user has access to the app. |
 
-<SampleApp />

@@ -66,4 +66,4 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                |
 | :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](capacitor-sdk-models#adaptypaywall) object. | 
+| **paywall** | required | An [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) object. | 

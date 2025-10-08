@@ -40,4 +40,4 @@ Parameters:
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
 | **transactionId** | required | <ul><li> For iOS: Identifier of the transaction.</li><li> For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
-| **variationId**   | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](capacitor-sdk-models#adaptypaywall) object. | 
+| **variationId**   | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://capacitor.adapty.io/interfaces/adaptypaywall) object. | 

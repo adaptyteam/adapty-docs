@@ -75,9 +75,9 @@ Parameters:
 
 Response parameters:
 
-| Parameter | Description |
-|:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onboarding** | An [`AdaptyOnboarding`](capacitor-sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+| Parameter | Description                                                                                                                                                                             |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | An [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
 ## Speed up onboarding fetching with default audience onboarding
 

@@ -55,9 +55,9 @@ For example, if you initially retrieve 2 products, your app should display those
 
 Response parameters:
 
-| Parameter | Description                                                                                                                                                          |
-| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Paywall   | An [`AdaptyPaywall`](capacitor-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Parameter | Description                                                                                                                                                                         |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | An [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 

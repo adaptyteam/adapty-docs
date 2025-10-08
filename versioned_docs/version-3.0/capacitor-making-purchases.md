@@ -54,15 +54,15 @@ try {
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                                                         |
-| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
-| **product** | required | An [`AdaptyPaywallProduct`](capacitor-sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
+| Parameter   | Presence | Description                                                                                                                 |
+| :---------- | :------- |:----------------------------------------------------------------------------------------------------------------------------|
+| **product** | required | An [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) object retrieved from the paywall. |
 
 Response parameters:
 
-| Parameter | Description                                                                                                                                                                                                                                                                                                                                                            |
-|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **result** | An [`AdaptyPurchaseResult`](capacitor-sdk-models#adaptypurchaseresult) object with a `type` field indicating the purchase outcome (`'success'`, `'user_cancelled'`, or `'pending'`) and a `profile` field containing the updated [`AdaptyProfile`](capacitor-sdk-models#adaptyprofile) on successful purchases. |
+| Parameter | Description                                                                                                                                                                                                                                                                                                                                         |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **result** | An [`AdaptyPurchaseResult`](https://capacitor.adapty.io/interfaces/adaptypurchaseresult) object with a `type` field indicating the purchase outcome (`'success'`, `'user_cancelled'`, or `'pending'`) and a `profile` field containing the updated [`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile) on successful purchases. |
 
 ## Change subscription when making a purchase
 
@@ -113,7 +113,7 @@ Additional request parameter:
 
 | Parameter  | Presence | Description                                                  |
 | :--------- | :------- | :----------------------------------------------------------- |
-| **params** | optional | An object of the [`MakePurchaseParamsInput`](capacitor-sdk-models#makepurchaseparamsinput) type containing platform-specific purchase parameters. |
+| **params** | optional | An object of the [`MakePurchaseParamsInput`](https://capacitor.adapty.io/types/makepurchaseparamsinput) type containing platform-specific purchase parameters. |
 
 The `MakePurchaseParamsInput` structure includes:
 
