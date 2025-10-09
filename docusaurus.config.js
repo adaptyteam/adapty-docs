@@ -381,6 +381,8 @@ const config = {
   plugins: [
     require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
+    // Webpack plugin for Node.js polyfills
+    webpackPlugin,
     [require('./plugins/gtm-plugin'), {
       trackingID: 'GTM-PXJV3N7',
     }],
