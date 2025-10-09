@@ -18,13 +18,15 @@ export default function ZoomImage({
     };
 
     return (
-        <Zoom>
-            <img
-                src={require(`@site/versioned_docs/version-3.0/img/${id}`).default}
-                alt={alt}
-                style={defaultStyle}
-                {...props}
-            />
-        </Zoom>
+        <div style={{ marginBottom: '24px' }}>
+            <Zoom>
+                <img
+                    src={require(`@site/versioned_docs/version-3.0/img/${id}`).default}
+                    alt={alt}
+                    style={defaultStyle}
+                    {...props}
+                />
+            </Zoom>
+        </div>
     );
 }
