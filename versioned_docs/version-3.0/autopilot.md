@@ -52,6 +52,15 @@ To create a report on your app:
 />
 </Zoom>
 
+<br/>
+
+:::note
+If the analysis doesn't start, it may be due to one of the following reasons:
+- Adapty couldn't select a top-performing paywall because there is not enough purchase data yet.
+- There are no purchases in the USA.
+- Your top-performing paywall has two or more products with the same period.
+:::
+
 2. Select your app from the list and click **Analyze this app**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
 
 <Zoom>

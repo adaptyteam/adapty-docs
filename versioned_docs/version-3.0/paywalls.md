@@ -12,9 +12,9 @@ import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
 <CustomDocCardList ids={['create-paywall', 'adapty-paywall-builder', 'paywall-metrics']} />
 
-<ZoomImage id="paywall.webp" width="500px" />
+<ZoomImage id="paywall.webp" width="700px" />
 
-In Adapty, **paywalls are the only way to deliver products through your app**. This way you can easily track how different product sets perform across user groups and manage how products are visually presented.
+In Adapty, **paywalls are the only way to show and sell products in your app**. This way, you can easily track how different product sets perform for different user groups and control how each product is displayed.
 
 Adapty offers you two main ways to design a paywall:
 - **Use the Adapty Paywall Builder**: You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes.
