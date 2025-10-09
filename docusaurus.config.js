@@ -386,8 +386,6 @@ const config = {
     [require('./plugins/gtm-plugin'), {
       trackingID: 'GTM-PXJV3N7',
     }],
-    // Webpack plugin for Node.js polyfills
-    webpackPlugin,
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {
