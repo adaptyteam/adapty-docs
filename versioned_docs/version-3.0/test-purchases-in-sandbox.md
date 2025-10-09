@@ -1,5 +1,5 @@
 ---
-title: "Test in-app purchases in App Store"
+title: "Sandbox testing"
 description: "Test purchases in the sandbox environment to ensure smooth transactions."
 metadataTitle: "Testing Purchases in Sandbox Mode | Adapty Docs"
 keywords: ['test', 'sandbox']
