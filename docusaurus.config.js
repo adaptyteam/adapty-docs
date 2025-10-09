@@ -124,6 +124,11 @@ const config = {
                 label: "Kotlin Multiplatform",
                 type: "docSidebar",
                 sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
@@ -147,13 +152,13 @@ const config = {
             href: "https://app.adapty.io/login",
             label: "Sign In",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-in",
+            className: "navbar__item navbar__link navbar__link--sign-in",
           },
           {
             href: "https://app.adapty.io/registration",
             label: "Sign Up for Free",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-up",
+            className: "navbar__item navbar__link navbar__link--sign-up",
           },
           // {
           //   href: "https://docs.adapty.io/discuss",

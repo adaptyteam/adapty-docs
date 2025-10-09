@@ -20,7 +20,7 @@ Adapty SDK includes two key modules for seamless integration into your Unity app
 - **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Unity), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 ## Requirements

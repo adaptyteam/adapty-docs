@@ -9,7 +9,9 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-If you use such Google products as Google Analytics, Firebase, and BigQuery you may enrich your analytical data with events from Adapty using the integration described in this article. Events are sent through Google Analytics to Firebase and may be used in any of these services.
+If you use such Google products as Google Analytics and Firebase, you may enrich your analytical data with events from Adapty using the integration described in this article. Events are sent through Google Analytics to Firebase and may be used in any of these services. 
+
+This feature enables you to align your users’ behavior with their payment history in Firebase, empowering you to make informed product decisions.
 
 ## How to set up Firebase integration
 
@@ -48,8 +50,6 @@ Then Adapty needs your Firebase App ID and Google Analytics API Secret to send e
   }}
 />
 </Zoom>
-
-
 
 
 
@@ -105,8 +105,11 @@ Under **Additional settings**, go to the **Measurement Protocol API secrets** pa
 
 
 
-Then, your next step will be adjusting integration in Adapty Dashboard. You will need to provide Firebase App ID and Google Analytics API Secret to us for your iOS and Android platforms.
+Then, your next step will be adjusting integration in Adapty Dashboard. You will need to provide Firebase App ID and Google Analytics API Secret to us for your iOS, Android, and/or Stripe platforms.
 
+:::note
+If you are using the Stripe integration, consider its limitations in the dedicated [guide](stripe#current-limitations). These limitations will apply to the Firebase integration as well.
+:::
 
 <Zoom>
   <img src={require('./img/4eaae3f-CleanShot_2023-08-21_at_12.35.312x.webp').default}
@@ -124,6 +127,15 @@ Then, your next step will be adjusting integration in Adapty Dashboard. You will
 
 
 ## SDK configuration
+
+:::important
+For the integration to work, ensure you add Firebase to your app first:
+- [iOS](https://firebase.google.com/docs/ios/setup)
+- [Android](https://firebase.google.com/docs/android/setup)
+- [Flutter](https://firebase.google.com/docs/flutter/setup)
+- [React Native](https://firebase.google.com/docs/web/setup)
+- [Unity](https://firebase.google.com/docs/unity/setup)
+:::
 
 Then you have to set up Adapty SDK to associate your users with Firebase. For each user, you should send the `firebase_app_instance_id` to Adapty. Here you can see an example of the code that can be used to integrate Firebase SDK and Adapty SDK.
 
@@ -313,10 +325,18 @@ This means that your events will be enriched with `subscription_state` and `subs
 
 
 
- Please check that your user property names are `subscription_state` and `subscription_product_id`. Otherwise, we won't be able to send you subscription status data. 
-
-:::note
-There is a time delay between when events are sent from Adapty and when they appear on the Google Analytics Dashboard. It's suggested to monitor the Realtime Dashboard on your Google Analytics account to see the latest events in real-time.
-:::
+ Please check that your user property names are `subscription_state` and `subscription_product_id`. Otherwise, we won't be able to send you subscription status data.
 
 And that's all! Wait for new insights from Google.
+
+## Troubleshooting
+
+### Data discrepancy
+
+If there is a data discrepancy between Adapty and Firebase, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
+
+Additionally, sandbox events are sent to Firebase by default, and this cannot be disabled. So, in situations when an app has a few Production events and a los of Sandbox ones, there can be a notable discrepancy in numbers between Adapty’s Analytics and Firebase.
+
+### Events are shown as delivered in Adapty but not available in Firebase
+
+There is a time delay between when events are sent from Adapty and when they appear on the Google Analytics Dashboard. It's suggested to monitor the Realtime Dashboard on your Google Analytics account to see the latest events in real-time.

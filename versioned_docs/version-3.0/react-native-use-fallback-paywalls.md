@@ -1,6 +1,6 @@
 ---
 title: "React Native - Use fallback paywalls"
-description: "Use fallback paywalls in React Native apps with Adapty for stable revenue."
+description: "Handle cases when users are offline or Adapty servers aren't available."
 metadataTitle: "Using Fallback Paywalls in React Native | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';
