@@ -5,6 +5,10 @@ metadataTitle: "Understanding SDK Models | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://kotlin.adapty.io/////////////adapty/).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding

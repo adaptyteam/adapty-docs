@@ -1,6 +1,6 @@
 ---
 title: "Capacitor - Use fallback paywalls"
-description: "Use fallback paywalls in Capacitor apps with Adapty for stable revenue."
+description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls in Capacitor | Adapty Docs"
 ---
 import Tabs from '@theme/Tabs';

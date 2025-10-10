@@ -41,7 +41,7 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | **transaction** | required | <ul><li> For StoreKit 1: SKPaymentTransaction.</li><li> For StoreKit 2: Transaction.</li></ul> |
-| **variationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| **variationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](https://swift.adapty.io/documentation/adapty/adaptypaywall) object. |
 
 </TabItem>
 <TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
@@ -73,7 +73,7 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | **transaction** | required | <ul><li> For StoreKit 1: SKPaymentTransaction.</li><li> For StoreKit 2: Transaction.</li></ul> |
-| **variationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| **variationId** | optional | The unique ID of the paywall variation. Retrieve it from the `variationId` property of the [AdaptyPaywall](https://swift.adapty.io/documentation/adapty/adaptypaywall) object. |
 
 </TabItem>
 <TabItem value="old2" label="Adapty SDK up to 3.2.x (legacy)" default> 
@@ -101,7 +101,7 @@ Request parameters:
 
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://swift.adapty.io/documentation/adapty/adaptypaywall) object. |
 | transactionId | required | <p>For StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p> |
 
 </TabItem> 

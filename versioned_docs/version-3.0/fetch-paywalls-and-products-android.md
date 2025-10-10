@@ -90,7 +90,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                  |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | An [`AdaptyPaywall`](android-sdk-models#adaptypaywall)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch products
 
@@ -136,9 +136,9 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                                                 |
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Products  | List of  [`AdaptyPaywallProduct`](android-sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
+| Products  | List of  [`AdaptyPaywallProduct`](https://kotlin.adapty.io////////////adapty/com.adapty.models/-adapty-paywall-product/)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
 
-When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](android-sdk-models#adaptypaywallproduct) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
+When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](https://kotlin.adapty.io////////////adapty/com.adapty.models/-adapty-paywall-product/) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
 
 | Property                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

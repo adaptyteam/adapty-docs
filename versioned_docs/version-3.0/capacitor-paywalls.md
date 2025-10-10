@@ -5,11 +5,24 @@ metadataTitle: "Paywalls | Capacitor SDK | Adapty Docs"
 displayed_sidebar: sdkcapacitor
 ---
 
-This page contains all guides for working with paywalls in your Capacitor app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](capacitor-get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](capacitor-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](capacitor-handling-events-1)** - Manage paywall interactions
-- **[Work with paywalls offline](capacitor-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Implement web paywalls](capacitor-web-paywall)** - Use web-based paywalls
-- **[Implement paywalls manually](capacitor-implement-paywalls-manually)** - Build custom paywall UI 
+## Display paywalls
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['capacitor-get-pb-paywalls', 'capacitor-present-paywalls', 'capacitor-handling-events', 'capacitor-handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](capacitor-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products-capacitor', 'present-remote-config-paywalls-capacitor', 'capacitor-making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](capacitor-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['capacitor-use-fallback-paywalls', 'capacitor-web-paywall']} />

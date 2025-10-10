@@ -69,6 +69,6 @@ Response parameters:
 
 | Parameter | Description |
 |---------|-----------|
-| **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+| **Profile** | <p>An [`AdaptyProfile`](https://kotlin.adapty.io/////////adapty/com.adapty.models/-adapty-profile/) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
 
 <SampleApp />
