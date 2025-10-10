@@ -74,9 +74,11 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-3. At this stage, we will detect your top-performing paywall. Review its information and click **Proceed to competitors research**.
+3. At this stage, we will detect your top-performing paywall. Review the paywall information and click **Proceed to competitors research**.
 
-<Zoom>
+   Note that we select your top-performing paywall only among **live** paywalls. If your successful paywall is not added to any placement currently, it won't be considered.
+
+   <Zoom>
   <img src={require('./img/app-analysis.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
