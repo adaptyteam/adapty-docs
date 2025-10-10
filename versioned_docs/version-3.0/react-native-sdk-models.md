@@ -6,6 +6,10 @@ slug: /react-native-sdk-models
 displayed_sidebar: sdkreactnative
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://react-native.adapty.io/modules).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding

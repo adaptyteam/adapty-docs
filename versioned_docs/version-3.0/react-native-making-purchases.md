@@ -60,15 +60,15 @@ try {
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                                                         |
-| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
+| Parameter   | Presence | Description                                                                                                                    |
+| :---------- | :------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | required | An [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) object retrieved from the paywall. |
 
 Response parameters:
 
 | Parameter | Description                                                                                                                                                                                                                                                                                                                                                            |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
+| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
