@@ -30,6 +30,22 @@ function DynamicAPIElement({ layout = 'sidebar' }) {
       });
   }, []);
 
+  // Set default API key in localStorage for Stoplight Elements
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && !loading && APIComponent) {
+      const storageKey = 'TryIt_securitySchemeValues';
+      const existingAuth = localStorage.getItem(storageKey);
+      
+      // Only set default if no auth is already stored
+      if (!existingAuth) {
+        const defaultAuth = {
+          apikeyAuth: 'Api-Key "YOUR_SECRET_API_KEY"'
+        };
+        localStorage.setItem(storageKey, JSON.stringify(defaultAuth));
+      }
+    }
+  }, [loading, APIComponent]);
+
   if (loading) {
     return (
       <div className="loading-container">

@@ -178,5 +178,5 @@ The request failed because the specified paywall wasn't found. Double-check the 
 
 **See also:**
 
-- [List paywalls](ss-list-paywalls)
-- [Update paywall](ss-update-paywall) 
+- [List paywalls](api-adapty#/operations/listPaywalls)
+- [Update paywall](api-adapty#/operations/updatePaywall) 

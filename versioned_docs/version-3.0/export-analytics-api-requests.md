@@ -35,9 +35,9 @@ We've created a unified environment for the server-side API, web API, and analyt
 
 **Requests:**
 
-- [Retrieve analytics data](export-analytics-api-retrieve-analytics-data)
-- [Retrieve cohort data](export-analytics-api-retrieve-cohort-data)
-- [Retrieve conversion data](export-analytics-api-retrieve-conversion-data)
-- [Retrieve funnel data](export-analytics-api-retrieve-funnel-data)
-- [Retrieve Lifetime Value (LTV) data](export-analytics-api-retrieve-ltv)
-- [Retrieve retention data](export-analytics-api-retrieve-retention-data)
+- [Retrieve analytics data](api-export-analytics#/operations/retrieveAnalyticsData)
+- [Retrieve cohort data](api-export-analytics#/operations/retrieveCohortData)
+- [Retrieve conversion data](api-export-analytics#/operations/retrieveConversionData)
+- [Retrieve funnel data](api-export-analytics#/operations/retrieveFunnelData)
+- [Retrieve Lifetime Value (LTV) data](api-export-analytics#/operations/retrieveLTVData)
+- [Retrieve retention data](api-export-analytics#/operations/retrieveRetentionData)

@@ -101,7 +101,7 @@ After your products are set up in the stores, you are ready to add your products
 
    Configuring product information for the App Store, Play Store, and Stripe ensures smooth integration and effective management of in-app purchases or subscriptions with Adapty.
 
-6. (optional) You can add products from any custom store by clicking **Add custom store**. In the **Manage custom store info** window, you can select an existing custom store or add a new one and associate a product with it. Keep in mind that Adapty only tracks transactions from the App Store, Google Play, and Stripe. For custom stores, you’ll need to submit transactions using the Adapty server-side API [Set transaction method](ss-set-transaction).
+6. (optional) You can add products from any custom store by clicking **Add custom store**. In the **Manage custom store info** window, you can select an existing custom store or add a new one and associate a product with it. Keep in mind that Adapty only tracks transactions from the App Store, Google Play, and Stripe. For custom stores, you’ll need to submit transactions using the Adapty server-side API [Set transaction method](api-adapty#/operations/setTransaction).
 
 7. Click **Create** to finalize the product creation.
 

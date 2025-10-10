@@ -141,24 +141,6 @@ const config = {
             sidebarId: "APISidebar",
           },
           {
-            label: "API Reference",
-            position: "left",
-            items: [
-              {
-                label: "Adapty API",
-                href: "/api-adapty",
-              },
-              {
-                label: "Web API",
-                href: "/api-web",
-              },
-              {
-                label: "Export Analytics API",
-                href: "/api-export-analytics",
-              },
-            ],
-          },
-          {
             label: "Support Forum",
             position: "left",
             href: "https://ask.adapty.io/questions",
