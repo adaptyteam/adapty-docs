@@ -191,6 +191,70 @@ This shows that 50% of users who made their first subscription payment on Januar
 
 </details>
 
+### Paywall view -> Trial
+
+This metric tracks how many users started the trial after they saw a paywall.
+
+<details>
+<summary>How it works</summary>
+
+**Let**:
+
+- **X** = number of users who saw a paywall on a selected date.
+
+- **Y** = number of users who started the trial any time later.
+
+**Formula**: Conversion = (Y / X) × 100%
+
+**Example**:
+
+- On January 1, there were 100 paywall views.
+
+- By January 8, 20 of those users had started the trial.
+
+  - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
+
+- By February 1, 30 more users had started the trial.
+
+  - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
+
+This shows that 50% of users who saw a paywall on January 1 started the trial, up to the current moment.
+
+
+</details>
+
+### Paywall view -> Paid
+
+This metric tracks how many users made a purchase after they saw a paywall.
+
+<details>
+<summary>How it works</summary>
+
+**Let**:
+
+- **X** = number of users who saw a paywall on a selected date.
+
+- **Y** = number of users who made a purchase any time later.
+
+**Formula**: Conversion = (Y / X) × 100%
+
+**Example**:
+
+- On January 1, there were 100 paywall views.
+
+- By January 8, 20 of those users had made a purchase.
+
+  - On January 8, the conversion for January 1 = (20 / 100) × 100% = 20%
+
+- By February 1, 30 more users had made a purchase.
+
+  - On February 1, the conversion for January 1 = ((20 + 30) / 100) × 100% = 50%
+
+This shows that 50% of users who saw a paywall on January 1 made a purchase, up to the current moment.
+
+
+</details>
+
 ### 2nd Period -> 3rd Period
 This metric tracks how many users renewed again after their second subscription period.
 
