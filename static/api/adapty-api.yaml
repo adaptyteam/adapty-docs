@@ -358,7 +358,55 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TransactionRequest'
+              $ref: '#/components/schemas/TransactionDTORequest'
+            examples:
+              one_time_purchase:
+                summary: One-time purchase example
+                value:
+                  purchase_type: "one_time_purchase"
+                  store: "app_store"
+                  environment: "Production"
+                  store_product_id: "premium_lifetime"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  is_family_shared: false
+                  price:
+                    country: "US"
+                    currency: "USD"
+                    value: 9.99
+                  purchased_at: "2024-01-15T10:30:00Z"
+                  variation_id: "variation_123"
+                  offer: null
+                  refunded_at: null
+                  cancellation_reason: null
+              subscription:
+                summary: Subscription example
+                value:
+                  purchase_type: "subscription"
+                  store: "app_store"
+                  environment: "Production"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  is_family_shared: false
+                  price:
+                    country: "US"
+                    currency: "USD"
+                    value: 4.99
+                  purchased_at: "2024-01-15T10:30:00Z"
+                  originally_purchased_at: "2024-01-15T10:30:00Z"
+                  expires_at: "2024-02-15T10:30:00Z"
+                  renew_status: true
+                  renew_status_changed_at: null
+                  billing_issue_detected_at: null
+                  grace_period_expires_at: null
+                  variation_id: "variation_123"
+                  offer:
+                    category: "introductory"
+                    type: "free_trial"
+                    id: "trial_offer_123"
+                  refunded_at: null
+                  cancellation_reason: null
 
   /api/v2/server-side-api/purchase/profile/grant/access-level/:
     post:
@@ -415,6 +463,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GrantAccessRequest'
+            examples:
+              immediate_grant:
+                summary: Grant access immediately
+                value:
+                  access_level_id: "premium"
+              scheduled_grant:
+                summary: Grant access with start and end dates
+                value:
+                  access_level_id: "premium"
+                  starts_at: "2024-01-01T00:00:00Z"
+                  expires_at: "2024-12-31T23:59:59Z"
+              lifetime_grant:
+                summary: Grant lifetime access
+                value:
+                  access_level_id: "premium"
+                  starts_at: "2024-01-01T00:00:00Z"
 
   /api/v2/server-side-api/purchase/profile/revoke/access-level/:
     post:
@@ -471,6 +535,16 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RevokeAccessRequest'
+            examples:
+              immediate_revoke:
+                summary: Revoke access immediately
+                value:
+                  access_level_id: "premium"
+              scheduled_revoke:
+                summary: Schedule access revocation
+                value:
+                  access_level_id: "premium"
+                  revoke_at: "2024-12-31T23:59:59Z"
 
   # Refund Saver Management
   /api/v2/server-side-api/purchase/profile/refund-saver/settings/:
@@ -1659,16 +1733,25 @@ components:
         - error_code
         - status_code
     
-    TransactionRequest:
+    TransactionDTORequest:
+      oneOf:
+        - $ref: '#/components/schemas/OneTimePurchaseDTO'
+        - $ref: '#/components/schemas/SubscriptionDTO'
+      discriminator:
+        propertyName: purchase_type
+
+    OneTimePurchaseDTO:
       type: object
+      title: One-time Purchase
+      description: Transaction data for a one-time purchase
       properties:
         purchase_type:
           type: string
-          enum: [subscription, one_time_purchase]
+          enum: [one_time_purchase]
           description: Type of purchase
         store:
           type: string
-          enum: [app_store, play_store, stripe]
+          enum: [app_store, play_store, stripe, paddle]
           description: Store where the purchase was made
         environment:
           type: string
@@ -1689,7 +1772,7 @@ components:
           default: false
           description: Whether the purchase is family shared
         price:
-          $ref: '#/components/schemas/Price'
+          $ref: '#/components/schemas/PriceDTO'
         purchased_at:
           type: string
           format: date-time
@@ -1699,7 +1782,7 @@ components:
           nullable: true
           description: Variation ID for A/B testing
         offer:
-          $ref: '#/components/schemas/Offer'
+          $ref: '#/components/schemas/OfferDTO'
           nullable: true
         refunded_at:
           type: string
@@ -1708,38 +1791,9 @@ components:
           description: When the purchase was refunded
         cancellation_reason:
           type: string
+          enum: [billing_error, cancelled_by_developer, new_subscription_replace, price_increase, product_was_not_available, refund, unknown, upgraded, voluntarily_cancelled, adapty_revoked]
           nullable: true
           description: Reason for cancellation
-        # Subscription-specific fields
-        originally_purchased_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the subscription was originally purchased (subscription only)
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the subscription expires (subscription only)
-        renew_status:
-          type: boolean
-          nullable: true
-          description: Whether the subscription will renew (subscription only)
-        renew_status_changed_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the renewal status was changed (subscription only)
-        billing_issue_detected_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When billing issue was detected (subscription only)
-        grace_period_expires_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When grace period expires (subscription only)
       required:
         - purchase_type
         - store
@@ -1748,6 +1802,136 @@ components:
         - store_original_transaction_id
         - price
         - purchased_at
+
+    SubscriptionDTO:
+      type: object
+      title: Subscription
+      description: Transaction data for a subscription purchase
+      properties:
+        purchase_type:
+          type: string
+          enum: [subscription]
+          description: Type of purchase
+        store:
+          type: string
+          enum: [app_store, play_store, stripe, paddle]
+          description: Store where the purchase was made
+        environment:
+          type: string
+          enum: [Production, Sandbox]
+          default: Production
+          description: Environment where the purchase was made
+        store_product_id:
+          type: string
+          description: Product ID in the store
+        store_transaction_id:
+          type: string
+          description: Transaction ID in the store
+        store_original_transaction_id:
+          type: string
+          description: Original transaction ID in the store
+        is_family_shared:
+          type: boolean
+          default: false
+          description: Whether the purchase is family shared
+        price:
+          $ref: '#/components/schemas/PriceDTO'
+        purchased_at:
+          type: string
+          format: date-time
+          description: When the purchase was made
+        variation_id:
+          type: string
+          nullable: true
+          description: Variation ID for A/B testing
+        offer:
+          $ref: '#/components/schemas/OfferDTO'
+          nullable: true
+        refunded_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the purchase was refunded
+        cancellation_reason:
+          type: string
+          enum: [billing_error, cancelled_by_developer, new_subscription_replace, price_increase, product_was_not_available, refund, unknown, upgraded, voluntarily_cancelled, adapty_revoked]
+          nullable: true
+          description: Reason for cancellation
+        # Subscription-specific fields
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: When the subscription was originally purchased
+        expires_at:
+          type: string
+          format: date-time
+          description: When the subscription expires
+        renew_status:
+          type: boolean
+          description: Whether the subscription will renew
+        renew_status_changed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the renewal status was changed
+        billing_issue_detected_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When billing issue was detected
+        grace_period_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When grace period expires
+      required:
+        - purchase_type
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - price
+        - purchased_at
+        - originally_purchased_at
+        - expires_at
+        - renew_status
+
+    PriceDTO:
+      type: object
+      properties:
+        country:
+          type: string
+          description: Country code
+        currency:
+          type: string
+          description: Currency code
+        value:
+          type: number
+          format: float
+          description: Price value
+      required:
+        - country
+        - currency
+        - value
+
+    OfferDTO:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [introductory, promotional, offer_code, win_back]
+          description: Offer category
+        type:
+          type: string
+          enum: [free_trial, pay_as_you_go, pay_up_front]
+          description: Offer type
+        id:
+          type: string
+          nullable: true
+          description: Offer ID
+      required:
+        - category
+        - type
     
     GrantAccessRequest:
       type: object
@@ -2295,41 +2479,6 @@ components:
         - is_deleted
         - products
     
-    Price:
-      type: object
-      properties:
-        country:
-          type: string
-          description: Country code
-        currency:
-          type: string
-          description: Currency code
-        value:
-          type: number
-          format: float
-          description: Price value
-      required:
-        - country
-        - currency
-        - value
-    
-    Offer:
-      type: object
-      properties:
-        category:
-          type: string
-          enum: [introductory, promotional]
-          description: Offer category
-        type:
-          type: string
-          description: Offer type
-        id:
-          type: string
-          nullable: true
-          description: Offer ID
-      required:
-        - category
-        - type
     
     # ========================================
     # API OBJECTS REFERENCE
