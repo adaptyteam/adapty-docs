@@ -140,9 +140,13 @@ Your plan consists of three parts: setting new prices, updating paywalls, and co
 
 To start with the first stage:
 
-1. Create new products right from the report. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
-2. Duplicate your current top-performing paywall and add products to it.
+1. Create new products right from the report or modify your existing products. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
+2. Duplicate your current top-performing paywall and add products to it. You can also modify your current paywall design according to the recommendations.
 3. Launch A/B test that will compare how the new paywall performs against the current paywall.
+
+:::important
+The recommendations page will show you the target number of subscribers and the minimum duration for the A/B test. Follow these recommendations to get the most accurate data before you begin with the next stage. You will need to stop the A/B test manually.
+:::
 
 <Zoom>
   <img src={require('./img/recommendation.webp').default}
