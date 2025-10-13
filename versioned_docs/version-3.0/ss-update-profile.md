@@ -243,6 +243,6 @@ This will link the `customer_user_id` to the user's existing profile.
 
 **See also:**
 
-- [Get profile](ss-get-profile)
-- [Create profile](ss-create-profile)
-- [Delete profile](ss-delete-profile)
+- [Get profile](api-adapty#/operations/getProfile)
+- [Create profile](api-adapty#/operations/createProfile)
+- [Delete profile](api-adapty#/operations/deleteProfile)

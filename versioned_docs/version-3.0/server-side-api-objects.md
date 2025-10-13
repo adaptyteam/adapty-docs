@@ -23,14 +23,14 @@ All datetime values are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601), for 
 
 Info about customer's [access level](access-level). 
 
-Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases). Alternatively, you can [grant specific access](ss-grant-access-level) for a specified time to a user via server-side API.
+Access levels let you control what your app's users can do in your mobile app without hardcoding specific product IDs. Each product defines how long the user gets a certain access level. So, whenever a user makes a purchase, Adapty grants access to the app for a specific period (for subscriptions) or forever (for lifetime purchases). Alternatively, you can [grant specific access](api-adapty#/operations/grantAccessLevel) for a specified time to a user via server-side API.
 
 You can do the following action via Adapty server-side API:
 
-- [Check users's access level](ss-get-profile) by retrieving their profile details
-- [Grant specific access](ss-grant-access-level) to your end user without providing a transaction
-- [Set transaction and grant access level](ss-set-transaction) to your end user
-- [Revoke access level](ss-revoke-access-level) from your end user
+- [Check users's access level](api-adapty#/operations/getProfile) by retrieving their profile details
+- [Grant specific access](api-adapty#/operations/grantAccessLevel) to your end user without providing a transaction
+- [Set transaction and grant access level](api-adapty#/operations/setTransaction) to your end user
+- [Revoke access level](api-adapty#/operations/revokeAccessLevel) from your end user
 
 <AccessLevel />
 
@@ -48,8 +48,8 @@ Information about installation of the app on a specific device.
 
 You can do the following action via Adapty server-side API:
 
-- [Create a profile with spesific installation meta](ss-create-profile)
-- [Update user's installation meta](ss-update-profile)
+- [Create a profile with spesific installation meta](api-adapty#/operations/createProfile)
+- [Update user's installation meta](api-adapty#/operations/updateProfile)
 
 | Parameter          | Type   | Required | Nullable | Description                                                  |
 | :----------------- | :----- | -------- | -------- | :----------------------------------------------------------- |
@@ -74,7 +74,7 @@ Info about non-subscription purchases. These can be one-time \(consumable\) prod
 
 You can do the following action via Adapty server-side API:
 
-- [Check user's current non-subscriptions](ss-get-profile) by retrieving their profile details
+- [Check user's current non-subscriptions](api-adapty#/operations/getProfile) by retrieving their profile details
 
 | Parameter                     | Type          | Required | Nullable | Description                                                  |
 | :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
@@ -103,7 +103,7 @@ Information on the applied offer. The Offer object is a part of the  [Subscripti
 
 You can do the following actions with offers via Adapty server-side API:
 
-- [Apply offer](ss-set-transaction) when setting a transaction to your user
+- [Apply offer](api-adapty#/operations/setTransaction) when setting a transaction to your user
 
 | Parameter | Type   | Required | Nullable | Description                                                  |
 | -- | ------ | -------- | -------- | ------------------------------------------------------------ |
@@ -117,7 +117,7 @@ Information about the cost of your product in local currency. The Price object i
 
 You can do the following actions with product price via Adapty server-side API:
 
-- [Set transaction to your user](ss-set-transaction) and specify its price
+- [Set transaction to your user](api-adapty#/operations/setTransaction) and specify its price
 
 | Parameter | Type   | Required | Nullable | Description                               |
 | --------- | ------ | -------- | -------- | ----------------------------------------- |
@@ -133,10 +133,10 @@ Info about the [customer and their subscription](server-side-api-objects#profile
 
 You can do the following actions with user profiles via Adapty server-side API:
 
-- [Retrieve/get the end-user's profile](ss-get-profile) with their access levels, subscriptions, non-subscriptions, etc.
-- [Create a new end-user profile](ss-create-profile)
-- [Update your end-user profile](ss-update-profile)
-- [Delete your end-user](ss-delete-profile)
+- [Retrieve/get the end-user's profile](api-adapty#/operations/getProfile) with their access levels, subscriptions, non-subscriptions, etc.
+- [Create a new end-user profile](api-adapty#/operations/createProfile)
+- [Update your end-user profile](api-adapty#/operations/updateProfile)
+- [Delete your end-user](api-adapty#/operations/deleteProfile)
 
 <ProfileObject />
 
@@ -194,8 +194,8 @@ This object contains information about a [remote config](customize-paywall-with-
 
 Info about your end user subscription.  You can do the following action via Adapty server-side API:
 
-- [Check the user's current subscription](ss-get-profile) by retrieving their profile details
-- [Set transaction to your user](ss-set-transaction) and grant a subscription to them
+- [Check the user's current subscription](api-adapty#/operations/getProfile) by retrieving their profile details
+- [Set transaction to your user](api-adapty#/operations/setTransaction) and grant a subscription to them
 
 <Subscription />
 
