@@ -39,7 +39,7 @@ function DynamicAPIElement({ layout = 'sidebar' }) {
       // Only set default if no auth is already stored
       if (!existingAuth) {
         const defaultAuth = {
-          apikeyAuth: 'Api-Key "YOUR_SECRET_API_KEY"'
+          apikeyAuth: 'Api-Key YOUR_SECRET_API_KEY'
         };
         localStorage.setItem(storageKey, JSON.stringify(defaultAuth));
       }
