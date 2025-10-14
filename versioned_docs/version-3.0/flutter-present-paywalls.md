@@ -53,9 +53,9 @@ try {
 ```
 ## Show dialog
 
-Use this method instead of native alert dialogs when paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, making them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
 
-```typescript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 try {
   final selectedAction = await view.showDialog(
     title: 'Open URL?',
