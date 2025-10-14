@@ -43,15 +43,19 @@ Use this method instead of native alert dialogs when a paywall view is presented
 
 ```dart showLineNumbers title="Flutter"
 try {
-  final selectedAction = await view.showDialog(
-    title: 'Open URL?',
-    content: 'Do you want to open this link?',
-    primaryActionTitle: 'Cancel',
-    secondaryActionTitle: 'OK',
+  final action = await view.showDialog(
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
   );
   
-  // handle dialog action
+  if (action == AdaptyUIDialogActionType.secondary) {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
 } catch (e) {
-  // handle the error
+  // handle error
 }
 ```
