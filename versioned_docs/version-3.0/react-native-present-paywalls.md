@@ -198,3 +198,22 @@ view = await createPaywallView(paywall, { customTimers })
 </Tabs>
 
 In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+## Show dialog
+
+Use this method instead of native alert dialogs when paywall view is presented on Android. On Android, regular RN alerts appear behind the paywall view, making them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const selectedAction = await view.showDialog({
+    title: 'Open URL?',
+    content: 'Do you want to open this link?',
+    primaryActionTitle: 'Cancel',
+    secondaryActionTitle: 'OK',
+  });
+  
+  // handle dialog action
+} catch (error) {
+  // handle the error
+}
+```
