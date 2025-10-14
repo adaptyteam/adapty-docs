@@ -25,7 +25,7 @@ Although v1 is still supported, we recommend moving to v2 for expanded functiona
 | **Base URL and Endpoint**           | Base URL and all endpoints are changed. Update your configuration as described in the request endpoints |
 | **Request Headers**                 | <ol><li> Add either `adapty-profile-id` or `adapty-customer-user-id` as a header.</li><li> Add a new `adapty-platform` header.</li></ol> |
 | **Request and Response Structure**  | Modify parameters as outlined for each request and update your integration to handle the [new response formats](api-responses). |
-| **Changed access level management** | The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three: <ul><li> [Set Transaction](ss-set-transaction): Add transaction details with adding access.</li><li> [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.</li><li> [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.</li></ul> |
+| **Changed access level management** | The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three: <ul><li> [Set Transaction](api-adapty#/operations/setTransaction): Add transaction details with adding access.</li><li> [Grant Access Level](api-adapty#/operations/grantAccessLevel): Add or extend access without transaction.</li><li> [Revoke Access Level](api-adapty#/operations/revokeAccessLevel): Shorten or revoke access without transaction.</li></ul> |
 
 ## Migration Steps
 
@@ -43,9 +43,9 @@ To simplify using our server-side API, we've prepared a Postman collection and a
 1. **Base URL and Endpoint**: Please pay attention to the request endpoints and update all of them with new ones.
 2. **Request Header**: In v2, requests require either `adapty-profile-id` or `adapty-customer-user-id` as the header. In addition, a new `adapty-platform` header should be added to the request.
 3. **New Access Management Requests:** The old [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request is now split into three:
-   - [Set Transaction](ss-set-transaction): Add transaction details with adding access.
-   - [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.
-   - [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.
+   - [Set Transaction](api-adapty#/operations/setTransaction): Add transaction details with adding access.
+   - [Grant Access Level](api-adapty#/operations/grantAccessLevel): Add or extend access without transaction.
+   - [Revoke Access Level](api-adapty#/operations/revokeAccessLevel): Shorten or revoke access without transaction.
 4. **Request and Response Structure:** Modify parameters as outlined for each request and update your integration to handle the [new response formats](api-responses).
 
 --->
@@ -71,9 +71,9 @@ In version 1, you used to use:
 
 They are now replaced with three separate requests to distinguish between adding transactions and managing access levels:
 
-1. **[Grant Access Level](ss-grant-access-level):** Use this request to extend an access level without linking it to a transaction.
-2. **[Revoke Access Level](ss-revoke-access-level):** to immediately revoke or shorten access.
-3. **[Set Transaction](ss-set-transaction):** Use this request to add transaction details to Adapty with access levels.
+1. **[Grant Access Level](api-adapty#/operations/grantAccessLevel):** Use this request to extend an access level without linking it to a transaction.
+2. **[Revoke Access Level](api-adapty#/operations/revokeAccessLevel):** to immediately revoke or shorten access.
+3. **[Set Transaction](api-adapty#/operations/setTransaction):** Use this request to add transaction details to Adapty with access levels.
 
 ---
 
@@ -81,11 +81,11 @@ They are now replaced with three separate requests to distinguish between adding
 
 :::info
 
-For a detailed description, refer to the [Grant access level](ss-grant-access-level) request.
+For a detailed description, refer to the [Grant access level](api-adapty#/operations/grantAccessLevel) request.
 
 :::
 
-In version 1, the [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request was used to grant access. Now you can grant access with the [Grant access level](ss-grant-access-level) request without providing transaction details.
+In version 1, the [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request was used to grant access. Now you can grant access with the [Grant access level](api-adapty#/operations/grantAccessLevel) request without providing transaction details.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/grant/access-level/`
 - Parameters to keep:
@@ -108,11 +108,11 @@ In version 1, the [Prolong/grant a subscription for a user](server-side-api-spec
 
 :::info
 
-For a detailed description, refer to the [Revoke access level](ss-revoke-access-level) request.
+For a detailed description, refer to the [Revoke access level](api-adapty#/operations/revokeAccessLevel) request.
 
 :::
 
-In version 1, you used the [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately revoke access and the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request to shorten it. Now you can use the [Revoke access level](ss-revoke-access-level) request for both actions.
+In version 1, you used the [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user) request to immediately revoke access and the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request to shorten it. Now you can use the [Revoke access level](api-adapty#/operations/revokeAccessLevel) request for both actions.
 
 <!---
 
@@ -134,13 +134,13 @@ In version 1, you used the [Revoke access level](server-side-api-specs-legacy#re
 
 :::info
 
-For a detailed description, refer to the [Set transaction](ss-set-transaction) request.
+For a detailed description, refer to the [Set transaction](api-adapty#/operations/setTransaction) request.
 
 :::
 
 In version 1, transactions were recorded using the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request, which was limited to subscription transactions.
 
-In version 2, this functionality has been replaced by the [Set Transaction](ss-set-transaction) request. This request can handle both subscription transactions and one-time purchases.
+In version 2, this functionality has been replaced by the [Set Transaction](api-adapty#/operations/setTransaction) request. This request can handle both subscription transactions and one-time purchases.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
 - **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording subscription transactions.
@@ -192,13 +192,13 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 
 :::info
 
-For a detailed description, refer to the [Set transaction](ss-set-transaction) request.
+For a detailed description, refer to the [Set transaction](api-adapty#/operations/setTransaction) request.
 
 :::
 
 In version 1, transactions were recorded using the [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) request, which was limited to subscription transactions.
 
-In version 2, this functionality has been replaced by the [Set Transaction](ss-set-transaction) request. This request can handle both subscription transactions and one-time purchases.
+In version 2, this functionality has been replaced by the [Set Transaction](api-adapty#/operations/setTransaction) request. This request can handle both subscription transactions and one-time purchases.
 
 - **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
 - **Details:** The parameters required vary based on whether the transaction is a subscription or a one-time purchase. See the guidelines below for recording one-time purchase transactions.
@@ -246,7 +246,7 @@ In version 2, this functionality has been replaced by the [Set Transaction](ss-s
 
 :::info
 
-For a detailed description, refer to the [Get profile](ss-get-profile) request.
+For a detailed description, refer to the [Get profile](api-adapty#/operations/getProfile) request.
 
 :::
 
@@ -261,7 +261,7 @@ Change the request as follows:
 
 :::info
 
-For a detailed description, refer to the [Update profile](ss-update-profile) request.
+For a detailed description, refer to the [Update profile](api-adapty#/operations/updateProfile) request.
 
 :::
 
@@ -284,7 +284,7 @@ In version 1, you could only update user attributes. With version 2, you can mod
 
 :::info
 
-For a detailed description, refer to the [Delete profile](ss-delete-profile) request.
+For a detailed description, refer to the [Delete profile](api-adapty#/operations/deleteProfile) request.
 
 :::
 

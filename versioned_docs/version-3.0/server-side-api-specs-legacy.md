@@ -61,9 +61,9 @@ customer_user_id = '012?012' # GET: /profiles/MDEyPzAxMg==/?is_user_id_base64url
 **You are viewing the guide for the legacy server-side API.**
 For the latest version, refer to the following requests:
 
-- [Set Transaction](ss-set-transaction): Add transaction details with adding access.
-- [Grant Access Level](ss-grant-access-level): Add or extend access without transaction.
-- [Revoke Access Level](ss-revoke-access-level): Shorten or revoke access without transaction.
+- [Set Transaction](api-adapty#/operations/setTransaction): Add transaction details with adding access.
+- [Grant Access Level](api-adapty#/operations/grantAccessLevel): Add or extend access without transaction.
+- [Revoke Access Level](api-adapty#/operations/revokeAccessLevel): Shorten or revoke access without transaction.
 
 :::
 
@@ -237,7 +237,7 @@ Learn more about responses in the [API Objects](server-side-api-objects) section
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Revoke Access Level](ss-revoke-access-level) request which can both shorten or revoke access without a transaction.
+For the latest version, refer to the [Revoke Access Level](api-adapty#/operations/revokeAccessLevel) request which can both shorten or revoke access without a transaction.
 
 :::
 
@@ -304,7 +304,7 @@ Profile events are generated along the way and imported transactions are counted
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Get profile](ss-get-profile) request.
+For the latest version, refer to the [Get profile](api-adapty#/operations/getProfile) request.
 
 :::
 
@@ -349,7 +349,7 @@ To get an extended response, add Key **"extended"** with any value to Query Para
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Create profile](ss-create-profile) request.
+For the latest version, refer to the [Create profile](api-adapty#/operations/createProfile) request.
 
 :::
 
@@ -380,7 +380,7 @@ You can also set the user's attributes the same way as in the PATCH method.
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Update profile](ss-update-profile) request.
+For the latest version, refer to the [Update profile](api-adapty#/operations/updateProfile) request.
 
 :::
 
@@ -432,7 +432,7 @@ The response is the same as the GET request (**extended** parameter does not wor
 :::warning
 
 **You are viewing the guide for the legacy server-side API.**
-For the latest version, refer to the [Delete profile](ss-delete-profile) request.
+For the latest version, refer to the [Delete profile](api-adapty#/operations/deleteProfile) request.
 
 :::
 

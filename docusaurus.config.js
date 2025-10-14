@@ -259,11 +259,7 @@ const config = {
               {
                 label: "React Native",
                 href: "/sdk-installation-reactnative",
-              },
-              {
-                label: "SDK Models",
-                href: "https://adapty.io/docs/sdk-models",
-              },
+              }
             ],
           },
           {

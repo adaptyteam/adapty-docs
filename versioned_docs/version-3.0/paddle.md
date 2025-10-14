@@ -305,4 +305,4 @@ Integrations you can use to forward and analyze your Paddle events:
 
 **See also:**
 
-- [Validate purchase in Paddle, get access level, and import transaction history from Paddle with server-side API](ss-validate-paddle-token)
+- [Validate purchase in Paddle, get access level, and import transaction history from Paddle with server-side API](api-adapty#/operations/validatePaddlePurchase)

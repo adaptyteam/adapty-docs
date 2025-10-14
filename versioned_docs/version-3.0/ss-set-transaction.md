@@ -31,7 +31,7 @@ import Subscription from '@site/src/components/reusable/Subscription.md';
 
 Creates a new transaction for an end user of your app in Adapty and provides access level. The transaction created by this method will appear in your [analytics](https://app.adapty.io/analytics) and [Event Feed](https://app.adapty.io/event-feed) and well as will be sent to all integrations.
 
-This method is recommended over the [Grant access level](ss-grant-access-level) one.
+This method is recommended over the [Grant access level](api-adapty#/operations/grantAccessLevel) one.
 
 :::important
 If the product is not [created in Adapty](create-product), the transaction will still be recorded in the Adapty database, meaning it will appear in analytics and be included in integration events. 
@@ -307,6 +307,6 @@ Placeholders:
 
 **See also:**
 
-- [Grant access level](ss-grant-access-level)
-- [Revoke access level](ss-revoke-access-level)
-- [Validate Stripe purchases, manage access levels, and import transaction history](ss-purchase-in-stripe)
+- [Grant access level](api-adapty#/operations/grantAccessLevel)
+- [Revoke access level](api-adapty#/operations/revokeAccessLevel)
+- [Validate Stripe purchases, manage access levels, and import transaction history](api-adapty#/operations/validateStripePurchase)

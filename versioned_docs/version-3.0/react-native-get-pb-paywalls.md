@@ -60,9 +60,9 @@ Parameters:
 
 Response parameters:
 
-| Parameter | Description                                                                                                                                                          |
-| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Paywall   | An [`AdaptyPaywall`](react-native-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Parameter | Description                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | An [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 

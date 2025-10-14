@@ -151,5 +151,5 @@ No parameters
 
 **See also:**
 
-- [Add integration identifiers](ss-add-integration)
-- [Get profile](ss-get-profile)
+- [Add integration identifiers](api-adapty#/operations/setIntegrationIdentifiers)
+- [Get profile](api-adapty#/operations/getProfile)

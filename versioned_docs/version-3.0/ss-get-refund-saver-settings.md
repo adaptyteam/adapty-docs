@@ -135,4 +135,4 @@ No parameters
 **See also:**
 
 - [Refund Saver](refund-saver.md) 
--  [Set user consent and refund settings with API](ss-set-refund-saver-settings.md) 
+-  [Set user consent and refund settings with API](api-adapty#/operations/setRefundSaverSettings.md) 

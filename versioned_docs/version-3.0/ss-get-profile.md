@@ -207,6 +207,6 @@ No parameters
 
 **See also:**
 
-- [Create profile](ss-create-profile)
-- [Update profile](ss-update-profile)
-- [Delete profile](ss-delete-profile)
+- [Create profile](api-adapty#/operations/createProfile)
+- [Update profile](api-adapty#/operations/updateProfile)
+- [Delete profile](api-adapty#/operations/deleteProfile)

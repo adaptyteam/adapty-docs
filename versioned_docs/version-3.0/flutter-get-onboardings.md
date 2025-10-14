@@ -66,7 +66,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                |
 |:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Onboarding      | An [`AdaptyOnboarding`](flutter-sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+| Onboarding      | An [`AdaptyOnboarding`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyOnboarding-class.html) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
 
 ## Speed up onboarding fetching with default audience onboarding
