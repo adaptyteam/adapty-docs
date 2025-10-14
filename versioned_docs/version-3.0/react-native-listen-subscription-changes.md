@@ -52,7 +52,7 @@ Here is an example for checking for the default "premium" access level:
 try {
     const profile = await adapty.getProfile();
     
-  const isActive = profile.accessLevels["premium"]?.isActive;
+  const isActive = profile.accessLevels?.["premium"]?.isActive;
     if (isActive) {
         // grant access to premium features
     }
