@@ -6,6 +6,10 @@ slug: /react-native-sdk-models
 displayed_sidebar: sdkreactnative
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://react-native.adapty.io/modules).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding
@@ -22,6 +26,7 @@ Information about an [onboarding](onboardings.md).
 | variationId       | string                                                              | An identifier of a variation, used to attribute purchases to this onboarding |
 | version           | number (optional)                                                   | Version of the onboarding configuration |
 | payloadData       | string (optional)                                                   | Additional payload data |
+| requestLocale     | string                                                              | Requested locale for the onboarding |
 | onboardingBuilder | [AdaptyOnboardingBuilder](#adaptyonboardingbuilder) (optional)      | Builder configuration for the onboarding |
 
 ### AdaptyOnboardingBuilder
@@ -38,7 +43,7 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | Name                                     | Type                                                                                                                    | Description                                                                                                                                                                       |
 |:-----------------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | vendorProductId                          | string                                                                                                                  | Unique identifier of a product from App Store Connect or Google Play Console                                                                                                      |
-| adaptyProductId                          | string                                                                                                                  | Unique identifier of the product in Adapty                                                                                                                                        |
+| adaptyId                                 | string                                                                                                                  | Unique identifier of the product in Adapty                                                                                                                                        |
 | paywallVariationId                       | string                                                                                                                  | Same as variationId property of the parent AdaptyPaywall                                                                                                                          |
 | paywallABTestName                        | string                                                                                                                  | Same as abTestName property of the parent AdaptyPaywall                                                                                                                          |
 | paywallName                              | string                                                                                                                  | Same as name property of the parent AdaptyPaywall                                                                                                                                 |
@@ -82,6 +87,17 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | numberOfUnits | number           | A number of period units                                                                                                         |
 | unit          | ProductPeriod    | A unit of time that a subscription period is specified in. The possible values are: `day`, `week`, `month`, `year` |
 
+### AdaptySubscriptionOffer
+
+Subscription offer model to products.
+
+| Name | Type | Description |
+|----|----|-----------|
+| identifier | [AdaptySubscriptionOfferId](#adaptysubscriptionofferid) | Subscription offer identifier |
+| phases | array of [AdaptyDiscountPhase](#adaptydiscountphase) | Array of discount phases |
+| android | object (optional) | Android-specific properties |
+| android.offerTags | array of strings (optional) | Tags associated with this offer |
+
 ### AdaptySubscriptionOfferId
 
 | Name | Type | Description |
@@ -111,11 +127,13 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 | name               | string                | A paywall name                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | remoteConfig       | [AdaptyRemoteConfig](#adaptyremoteconfig) (optional)     | A remote config configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                                  |
 | variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                                                                                                                                                                                                                                                             |
-| products           | array of [ProductReference](#productreference)          | Array of initial products info                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| products           | array of [ProductReference](#productreference) (deprecated)          | Array of initial products info (deprecated, use productIdentifiers instead)                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| productIdentifiers | array of [AdaptyProductIdentifier](#adaptyproductidentifier)          | Array of product identifiers for this paywall                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | id                 | string                | An identifier of a paywall, configured in Adapty Dashboard                                                                                                                                                                                                                                                                                                                                                                                            |
 | version            | number (optional)      | Version of the paywall configuration                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | webPurchaseUrl     | string (optional)      | URL for web purchase functionality                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | payloadData        | string (optional)      | Additional payload data                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| requestLocale      | string                | Requested locale for the paywall                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | paywallBuilder     | [AdaptyPaywallBuilder](#adaptypaywallbuilder) (optional) | Builder configuration for the paywall                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ### AdaptyPaywallBuilder
@@ -182,6 +200,8 @@ Information about the [user's access level.](https://swift.adapty.io/documentati
 | startsAt | Date (optional) | The time when this access level has started (could be in the future) |
 | cancellationReason | string (optional) | The reason why the subscription was cancelled. Possible values are: voluntarily_cancelled, billing_error, refund, price_increase, product_was_not_available, unknown |
 | isRefund | boolean | Whether the purchase was refunded |
+| android | object (optional) | Android-specific properties |
+| android.offerId | string (optional) | Offer identifier |
 
 ### AdaptyProfile.Subscription
 
@@ -239,6 +259,64 @@ Information about the user's non-subscription purchases.
 | android.basePlanId | string (optional) | Base plan ID. Android Only. |
 | android.offerId | string (optional) | Offer ID. Android Only. |
 
+### AdaptyProductIdentifier
+
+Interface representing a product identifier with vendor and platform-specific information.
+
+| Name | Type | Description |
+|----|----|-----------|
+| vendorProductId | string | The vendor-specific product identifier (e.g., App Store or Google Play product ID) |
+| basePlanId | string (optional) | The base plan identifier for Google Play subscriptions (Android only) |
+| adaptyProductId | string | Internal Adapty product identifier |
+
+### AdaptyProfileParameters
+
+Parameters for updating user profile.
+
+| Name | Type | Description |
+|----|----|-----------|
+| analyticsDisabled | boolean (optional) | Whether to disable analytics |
+| codableCustomAttributes | object (optional) | Custom attributes to set |
+| appTrackingTransparencyStatus | [AppTrackingTransparencyStatus](#apptrackingtransparencystatus) (optional) | App Tracking Transparency status |
+| firstName | string (optional) | User's first name |
+| lastName | string (optional) | User's last name |
+| gender | [Gender](#gender) (optional) | User's gender |
+| birthday | string (optional) | User's birthday |
+| email | string (optional) | User's email |
+| phoneNumber | string (optional) | User's phone number |
+
+### AdaptyPurchaseResult
+
+Union type representing purchase result.
+
+| Name | Type | Description |
+|----|----|-----------|
+| type | string | Result type. Possible values: `pending`, `user_cancelled`, `success` |
+| profile | [AdaptyProfile](#adaptyprofile) (optional) | Updated user profile (only present when type is `success`) |
+
+### AdaptyAndroidPurchaseParams
+
+Android purchase parameters structure.
+
+| Name | Type | Description |
+|----|----|-----------|
+| subscriptionUpdateParams | object (optional) | Android subscription update parameters |
+| subscriptionUpdateParams.oldSubVendorProductId | string | The product id for current subscription to change |
+| subscriptionUpdateParams.prorationMode | [AdaptyAndroidSubscriptionUpdateReplacementMode](#adaptyandroidsubscriptionupdatereplacementmode) | The proration mode for subscription update |
+| isOfferPersonalized | boolean (optional) | Whether the offer is personalized |
+| obfuscatedAccountId | string (optional) | Obfuscated account ID |
+| obfuscatedProfileId | string (optional) | Obfuscated profile ID |
+
+### AdaptyAndroidSubscriptionUpdateParameters
+
+Android subscription update parameters (deprecated).
+
+| Name | Type | Description |
+|----|----|-----------|
+| oldSubVendorProductId | string | The product id for current subscription to change |
+| prorationMode | [AdaptyAndroidSubscriptionUpdateReplacementMode](#adaptyandroidsubscriptionupdatereplacementmode) | The proration mode for subscription update |
+| isOfferPersonalized | boolean (optional) | Whether the offer is personalized (deprecated, use AdaptyAndroidPurchaseParams instead) |
+
 ### Enums
 
 #### VendorStore
@@ -263,4 +341,39 @@ Information about the user's non-subscription purchases.
 - `day` - Day period
 - `week` - Week period
 - `month` - Month period
-- `year` - Year period 
+- `year` - Year period
+
+#### AdaptyAndroidSubscriptionUpdateReplacementMode
+- `charge_full_price` - Charge full price
+- `deferred` - Deferred
+- `without_proration` - Without proration
+- `charge_prorated_price` - Charge prorated price
+- `with_time_proration` - With time proration
+
+#### FetchPolicy
+- `reload_revalidating_cache_data` - Always reload data from server
+- `return_cache_data_else_load` - Return cached data if available, otherwise load from server
+- `return_cache_data_if_not_expired_else_load` - Return cached data if not expired, otherwise load from server
+
+#### LogLevel
+- `verbose` - Logs any additional information that may be useful during debugging
+- `error` - Logs only errors
+- `warn` - Logs messages from the SDK that do not cause critical errors
+- `info` - Logs various information messages
+
+#### Gender
+- `f` - Female
+- `m` - Male
+- `o` - Other
+
+#### AppTrackingTransparencyStatus
+- `0` - Not determined
+- `1` - Restricted
+- `2` - Denied
+- `3` - Authorized
+- `4` - Unknown
+
+#### RefundPreference
+- `no_preference` - No preference
+- `grant` - Grant refund
+- `decline` - Decline refund 

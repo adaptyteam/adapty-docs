@@ -4,7 +4,7 @@
 import sidebarConfig from '../../versioned_sidebars/version-3.0-sidebars.json';
 
 // Mobile SDK sidebar IDs
-const MOBILE_SDK_SIDEBARS = ['sdkios', 'sdkandroid', 'sdkflutter', 'sdkreactnative', 'sdkunity'];
+const MOBILE_SDK_SIDEBARS = ['sdkios', 'sdkandroid', 'sdkflutter', 'sdkreactnative', 'sdkunity', 'sdkcapacitor', 'sdkkmp'];
 
 // Function to extract all documents from a sidebar recursively
 function extractDocumentsFromSidebar(sidebarItems, sidebarId) {
@@ -118,5 +118,3 @@ export function getCorrespondingDocId(docId, targetSidebarId) {
 export { sidebarMapping, titleGroups };
 
 // Log the generated mapping for verification
-console.log('Generated sidebar mapping:', sidebarMapping);
-console.log('Title groups:', titleGroups);

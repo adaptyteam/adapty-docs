@@ -5,6 +5,10 @@ metadataTitle: "Understanding SDK Models | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding
@@ -36,9 +40,8 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | localizedTitle                           | string                                                                                                                  | The name of the product                                                                                                                                                          |
 | price                                    | [AdaptyPrice](#adaptyprice) (optional)                                                                                  | The cost of the product in the local currency                                                                                                                                    |
 | subscription                             | [AdaptyProductSubscription](#adaptyproductsubscription) (optional)                                                      | Detailed information about subscription (intro, offers, etc.)                                                                                                                     |
-| ios                                      | object (optional)                                                                                                       | iOS-specific properties                                                                                                                                                          |
-| ios.isFamilyShareable                    | boolean                                                                                                                 | Boolean value that indicates whether the product is available for family sharing in App Store Connect. Will be false for iOS version below 14.0 and macOS version below 11.0. iOS Only. |
-| ios.regionCode                           | string (optional)                                                                                                       | The region code of the locale used to format the price of the product. ISO 3166 ALPHA-2 (US, DE). iOS Only.                                                                      |
+| isFamilyShareable                        | boolean                                                                                                                 | Boolean value that indicates whether the product is available for family sharing in App Store Connect. Will be false for iOS version below 14.0 and macOS version below 11.0. iOS Only. |
+| regionCode                               | string (optional)                                                                                                       | The region code of the locale used to format the price of the product. ISO 3166 ALPHA-2 (US, DE). iOS Only.                                                                      |
 
 ### AdaptyPrice
 
@@ -53,14 +56,12 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 
 | Name                          | Type                                                                                                                    | Description                                                                                                                                                                       |
 |:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| subscriptionPeriod            | [AdaptyProductSubscriptionPeriod](#adaptyproductsubscriptionperiod)                                                                   | The period details for products that are subscriptions. Will be null for iOS version below 11.2 and macOS version below 10.14.4.                                                                                                                              |
-| localizedSubscriptionPeriod   | string (optional)                                                                                                       | The period's language is determined by the preferred language set on the device                                                                                                         |
+| period                        | [AdaptySubscriptionPeriod](#adaptysubscriptionperiod)                                                                   | The period details for products that are subscriptions                                                                                                                              |
+| localizedPeriod               | string (optional)                                                                                                       | The period's language is determined by the preferred language set on the device                                                                                                         |
 | offer                         | [AdaptySubscriptionOffer](#adaptysubscriptionoffer) (optional)                                                          | A subscription offer if available for the auto-renewable subscription                                                                                                                   |
-| ios                           | object (optional)                                                                                                       | iOS-specific properties                                                                                                                                                          |
-| ios.groupIdentifier           | string (optional)                                                                                                       | An identifier of the subscription group to which the subscription belongs. Will be null for iOS version below 12.0 and macOS version below 10.14. iOS Only.                                                                                    |
-| android                       | object (optional)                                                                                                       | Android-specific properties                                                                                                                                                      |
-| android.basePlanId            | string                                                                                                                  | The identifier of the base plan. Android Only.                                                                                                                                    |
-| android.renewalType           | string (optional)                                                                                                       | The renewal type. Possible values: 'prepaid', 'autorenewable'. Android Only.                                                                                                       |
+| groupIdentifier               | string (optional)                                                                                                       | An identifier of the subscription group to which the subscription belongs. Will be null for iOS version below 12.0 and macOS version below 10.14. iOS Only.                                                                                    |
+| basePlanId                    | string (optional)                                                                                                       | The identifier of the base plan. Android Only.                                                                                                                                    |
+| renewalType                   | [AdaptyRenewalType](#adaptyrenewaltype)                                                                                 | The type of the subscription renewal. Android Only.                                                                                                                                    |
 
 ### AdaptyProductSubscriptionPeriod
 
@@ -75,6 +76,8 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 |:------------------------------|:------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | identifier                    | string                                                                                                                  | Unique identifier of a discount offer for a product                                                                                                                              |
 | phases                        | array of [AdaptySubscriptionPhase](#adaptysubscriptionphase)                                                            | A list of discount phases available for this offer                                                                                                                               |
+
+|| offerTags                     | array of strings (optional)                                                                                            | Tags associated with this offer                                                                                                                               |
 
 ### AdaptySubscriptionPhase
 
@@ -99,6 +102,9 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 | remoteConfig       | [AdaptyRemoteConfig](#adaptyremoteconfig) (optional)     | A remote config configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                                  |
 | variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                                                                                                                                                                                                                                                             |
 | instanceIdentity   | string                | Unique identifier of the paywall configuration                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+|| productIdentifiers | array of [AdaptyProductIdentifier](#adaptyproductidentifier) | Array of related product identifiers |
+|| vendorProductIds   | array of strings (deprecated) | Array of related products ids (deprecated, use productIdentifiers instead) |
 
 ### AdaptyPlacement
 
@@ -131,6 +137,8 @@ An information about a [user's](https://swift.adapty.io/documentation/adapty/ada
 | accessLevels     | object\<string, [AdaptyProfile.AccessLevel](#adaptyprofileaccesslevel)>                   | The keys are access level identifiers configured by you in Adapty Dashboard. The values are AccessLevel objects. Can be null if the customer has no access levels  |
 | subscriptions    | object\<string, [AdaptyProfile.Subscription](#adaptyprofilesubscription)>                 | The keys are product ids from App Store Connect. The values are Subscription objects. Can be null if the customer has no subscriptions        |
 | nonSubscriptions | object\<string, array of [AdaptyProfile.NonSubscription](#adaptyprofilenonsubscription)>  | The keys are product ids from App Store Connect. The values are arrays of NonSubscription objects. Can be null if the customer has no purchases |
+
+|| isTestUser       | boolean                                                                                   | Indicates if the profile belongs to a test device |
 
 ### AdaptyProfile.AccessLevel
 
@@ -210,6 +218,25 @@ Parameters to change one subscription to another.
 | oldSubVendorProductId | string | The product id for current subscription to change |
 | replacementMode       | [AdaptyAndroidSubscriptionUpdateReplacementMode](#adaptyandroidsubscriptionupdatereplacementmode) | The proration mode for subscription update |
 
+### AdaptySubscriptionOfferIdentifier
+
+Identifier for subscription offers.
+
+| Name | Type | Description |
+|-------|------|-------------|
+| id | string (optional) | Unique identifier of the offer |
+| type | [AdaptySubscriptionOfferType](#adaptysubscriptionoffertype) | Type of the subscription offer |
+
+### AdaptyPaywallFetchPolicy
+
+Sealed class for paywall fetch policies.
+
+| Name | Type | Description |
+|-------|------|-------------|
+| ReloadRevalidatingCacheData | class | Always reload data from server |
+| ReturnCacheDataElseLoad | class | Return cached data if available, otherwise load from server |
+| ReturnCacheDataIfNotExpiredElseLoad | class | Return cached data if not expired, otherwise load from server |
+
 ### Enums
 
 #### ProductPeriod
@@ -217,6 +244,28 @@ Parameters to change one subscription to another.
 - `week` - Week period  
 - `month` - Month period
 - `year` - Year period
+
+#### AdaptySubscriptionOfferType
+- `introductory` - Introductory offer (first-time user discount)
+- `promotional` - Promotional offer (targeted discount)
+- `winBack` - Win-back offer (re-engagement discount)
+
+#### AdaptyPaymentMode
+- `payAsYouGo` - Pay as you go (recurring payments)
+- `payUpFront` - Pay up front (one-time payment for multiple periods)
+- `freeTrial` - Free trial (no payment required)
+- `unknown` - Unknown payment mode
+
+#### AdaptyPeriodUnit
+- `day` - Daily period unit
+- `week` - Weekly period unit
+- `month` - Monthly period unit
+- `year` - Yearly period unit
+- `unknown` - Unknown period unit
+
+#### AdaptyRenewalType
+- `prepaid` - Prepaid subscription
+- `autorenewable` - Auto-renewable subscription
 
 #### OfferType
 - `free_trial` - Free trial

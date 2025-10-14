@@ -7,6 +7,8 @@
 
 import { themes as prismThemes } from "prism-react-renderer";
 
+const { webpackPlugin } = require('./plugins/webpack-plugin.cjs');
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
@@ -57,10 +59,6 @@ const config = {
         blog: {
           showReadingTime: false,
         },
-        gtag: {
-          trackingID: "G-0M1BCR2275", // Replace with your Google Analytics Measurement ID
-          anonymizeIP: true, // Optional, anonymize IP addresses
-        },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -72,7 +70,10 @@ const config = {
     ({
       // Replace with your project's social card
       image: "img/opengraph_adapty.png",
-      metadata: [{ name: 'twitter:card', content: 'summary_large_image' }],
+      metadata: [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'keywords', content: 'adapty, subscription management, mobile subscriptions, app monetization, in-app purchases, subscription analytics, paywall, revenue optimization' }
+      ],
       navbar: {
         title: "",
         logo: {
@@ -120,6 +121,16 @@ const config = {
                 label: "Unity",
                 type: "docSidebar",
                 sidebarId: "sdkunity",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                type: "docSidebar",
+                sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
@@ -143,13 +154,13 @@ const config = {
             href: "https://app.adapty.io/login",
             label: "Sign In",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-in",
+            className: "navbar__item navbar__link navbar__link--sign-in",
           },
           {
             href: "https://app.adapty.io/registration",
             label: "Sign Up for Free",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-up",
+            className: "navbar__item navbar__link navbar__link--sign-up",
           },
           // {
           //   href: "https://docs.adapty.io/discuss",
@@ -233,11 +244,7 @@ const config = {
               {
                 label: "React Native",
                 href: "/sdk-installation-reactnative",
-              },
-              {
-                label: "SDK Models",
-                href: "https://adapty.io/docs/sdk-models",
-              },
+              }
             ],
           },
           {
@@ -245,15 +252,19 @@ const config = {
             items: [
               {
                 label: "Server-side API",
-                href: "/getting-started-with-server-side-api",
+                href: "/docs/getting-started-with-server-side-api",
+              },
+              {
+                label: "Adapty API",
+                href: "/api-adapty",
               },
               {
                 label: "Web API",
-                href: "/web-api",
+                href: "/api-web",
               },
               {
                 label: "Analytics export API",
-                href: "/export-analytics-api",
+                href: "/api-export-analytics",
               },
             ],
           },
@@ -347,8 +358,15 @@ const config = {
       async: true,
     },
   ],
-  
+
   plugins: [
+    require('./plugins/cookie-checker-plugin'),
+    require.resolve('./plugins/custom-meta-plugin.js'),
+    // Webpack plugin for Node.js polyfills
+    webpackPlugin,
+    [require('./plugins/gtm-plugin'), {
+      trackingID: 'GTM-PXJV3N7',
+    }],
     // Existing build plugins
     function copyMarkdownPlugin() {
       return {

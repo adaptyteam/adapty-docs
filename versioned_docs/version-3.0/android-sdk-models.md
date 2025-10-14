@@ -5,6 +5,10 @@ metadataTitle: "Understanding SDK Models | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://kotlin.adapty.io/////////////adapty/).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding
@@ -34,6 +38,7 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | localizedTitle                           | string                                                                                                                  | The name of the product                                                                                                                                                          |
 | price                                    | [AdaptyPaywallProduct.Price](#adaptypaywallproductprice) (optional)                                                      | The cost of the product in the local currency                                                                                                                                    |
 | subscriptionDetails                      | [AdaptyProductSubscriptionDetails](#adaptyproductsubscriptiondetails) (optional)                                          | Detailed information about subscription (intro, offers, etc.)                                                                                                                     |
+| productDetails                           | ProductDetails                                                                                                            | Underlying system representation of the product                                                                                                                                   |
 
 ### AdaptyPaywallProduct.Price
 
@@ -52,14 +57,18 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | localizedSubscriptionPeriod   | string (optional)                                                                                                       | The period's language is determined by the preferred language set on the device                                                                                                         |
 | offer                         | [AdaptyProductDiscountPhase](#adaptyproductdiscountphase) (optional)                                                          | A subscription offer if available for the auto-renewable subscription                                                                                                                   |
 | basePlanId                    | string                                                                                                                  | The identifier of the base plan. Android Only.                                                                                                                                    |
-| renewalType                   | string (optional)                                                                                                       | The renewal type. Possible values: 'prepaid', 'autorenewable'. Android Only.                                                                                                       |
+| renewalType                   | [AdaptyProductSubscriptionDetails.RenewalType](#adaptyproductsubscriptiondetailsrenewaltype)                                                                                                       | The renewal type. Android Only.                                                                                                       |
+| offerId                       | string (optional)                                                                                                       | A discount offer for this basePlanId                                                                                                                                              |
+| offerTags                     | array of strings                                                                                                        | Tags defined in Google Play console for current basePlanId and offerId                                                                                                             |
+| introductoryOfferEligibility  | [AdaptyEligibility](#adaptyeligibility)                                                                                 | User's eligibility for your introductory offer                                                                                                                                     |
+| introductoryOfferPhases       | array of [AdaptyProductDiscountPhase](#adaptyproductdiscountphase)                                                      | A list that can contain up to two discount phases: the free trial phase and the introductory price phase                                                                           |
 
 ### AdaptyProductSubscriptionPeriod
 
 | Name          | Type             | Description                                                                                                                      |
 | :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | numberOfUnits | number           | A number of period units                                                                                                         |
-| unit          | ProductPeriod    | A unit of time that a subscription period is specified in. The possible values are: `day`, `week`, `month`, `year` |
+| unit          | [AdaptyPeriodUnit](#adaptyperiodunit)    | A unit of time that a subscription period is specified in |
 
 ### AdaptyProductDiscountPhase
 
@@ -70,7 +79,7 @@ An information about a [product.](https://swift.adapty.io/documentation/adapty/a
 | numberOfPeriods               | number                                                                                                                  | A number of periods this product discount is available                                                                                                                           |
 | price                         | [AdaptyPaywallProduct.Price](#adaptypaywallproductprice)                                                                                             | Discount price of a product in a local currency                                                                                                                                   |
 | subscriptionPeriod            | [AdaptyProductSubscriptionPeriod](#adaptyproductsubscriptionperiod)                                                                   | An information about period for a product discount                                                                                                                                |
-| paymentMode                   | OfferType                                                                                                               | A payment mode for this product discount. Possible values: `free_trial`, `pay_as_you_go`, `pay_up_front`                                                                         |
+| paymentMode                   | [AdaptyProductDiscountPhase.PaymentMode](#adaptyproductdiscountphasepaymentmode)                                                                                                               | A payment mode for this product discount                                                                         |
 
 ### AdaptyPaywall
 
@@ -83,6 +92,7 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 | name               | string                | A paywall name                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | remoteConfig       | [AdaptyRemoteConfig](#adaptyremoteconfig) (optional)     | A remote config configured in Adapty Dashboard for this paywall                                                                                                                                                                                                                                                                                                                                                                                  |
 | variationId        | string                | An identifier of a variation, used to attribute purchases to this paywall                                                                                                                                                                                                                                                                                                                                                                             |
+| vendorProductIds   | array of strings      | Array of related products ids                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ### AdaptyPlacement
 
@@ -99,9 +109,9 @@ An information about a [paywall.](https://swift.adapty.io/documentation/adapty/a
 
 | Name          | Type             | Description                                                                                                                      |
 | :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------- |
-| lang          | string           | Identifier of a paywall locale                                                                                                |
-| data          | object           | A custom dictionary configured in Adapty Dashboard for this paywall                                                             |
-| dataString    | string           | A custom JSON string configured in Adapty Dashboard for this paywall                                                |
+| locale        | string           | Identifier of a paywall locale                                                                                                |
+| dataMap       | object           | A custom dictionary configured in Adapty Dashboard for this paywall (same as jsonString)                                                             |
+| jsonString    | string           | A custom JSON string configured in Adapty Dashboard for this paywall                                                |
 
 ### AdaptyProfile
 
@@ -194,13 +204,39 @@ Parameters to change one subscription to another.
 | oldSubVendorProductId | string | The product id for current subscription to change |
 | replacementMode       | [AdaptyAndroidSubscriptionUpdateReplacementMode](#adaptyandroidsubscriptionupdatereplacementmode) | The proration mode for subscription update |
 
-### Enums
+### AdaptyPlacementFetchPolicy
 
-#### ProductPeriod
-- `day` - Day period
-- `week` - Week period  
-- `month` - Month period
-- `year` - Year period
+Sealed class for placement fetch policies.
+
+| Name | Type | Description |
+|-------|------|-------------|
+| ReloadRevalidatingCacheData | class | Always reload data from server |
+| ReturnCacheDataElseLoad | class | Return cached data if available, otherwise load from server |
+| ReturnCacheDataIfNotExpiredElseLoad | class | Return cached data if not expired, otherwise load from server |
+
+### AdaptyEligibility
+
+Enum representing eligibility status.
+
+| Value | Description |
+|-------|-------------|
+| `ELIGIBLE` | User is eligible for the offer |
+| `INELIGIBLE` | User is not eligible for the offer |
+| `NOT_APPLICABLE` | Offer is not applicable |
+
+### AdaptyPeriodUnit
+
+Enum representing the unit of time for subscription periods.
+
+| Value | Description |
+|-------|-------------|
+| `DAY` | Daily period unit |
+| `WEEK` | Weekly period unit |
+| `MONTH` | Monthly period unit |
+| `YEAR` | Yearly period unit |
+| `UNKNOWN` | Unknown period unit |
+
+### Enums
 
 #### OfferType
 - `free_trial` - Free trial
@@ -212,4 +248,14 @@ Parameters to change one subscription to another.
 - `immediate_and_charge_prorated_price` - Immediate and charge prorated price
 - `immediate_without_proration` - Immediate without proration
 - `deferred` - Deferred
-- `immediate_and_charge_full_price` - Immediate and charge full price 
+- `immediate_and_charge_full_price` - Immediate and charge full price
+
+#### AdaptyProductDiscountPhase.PaymentMode
+- `PAY_AS_YOU_GO` - Pay as you go (recurring payments)
+- `PAY_UPFRONT` - Pay up front (one-time payment for multiple periods)
+- `FREE_TRIAL` - Free trial (no payment required)
+- `UNKNOWN` - Unknown payment mode
+
+#### AdaptyProductSubscriptionDetails.RenewalType
+- `AUTORENEWABLE` - Auto-renewable subscription
+- `PREPAID` - Prepaid subscription 

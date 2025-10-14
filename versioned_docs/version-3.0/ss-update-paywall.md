@@ -17,7 +17,7 @@ Updates the [remote config](customize-paywall-with-remote-config.md) of a specif
 :::important
 If you update a remote config, it will overwrite all the existing remote configs!
 
-If you need to preserve the existing remote configs, first, [get the paywall](ss-get-paywall.md). Then, copy the `remote_configs` from there and modify the objects you need in the update request.
+If you need to preserve the existing remote configs, first, [get the paywall](api-adapty#/operations/getPaywall.md). Then, copy the `remote_configs` from there and modify the objects you need in the update request.
 :::
 
 ## Method and endpoint
@@ -238,5 +238,5 @@ The request failed because the specified paywall wasn't found. Double-check the 
 
 **See also:**
 
-- [Get paywall](ss-get-paywall)
-- [List paywalls](ss-list-paywalls) 
+- [Get paywall](api-adapty#/operations/getPaywall)
+- [List paywalls](api-adapty#/operations/listPaywalls) 

@@ -44,7 +44,7 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/) object. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -64,7 +64,7 @@ Parameters:
 | Parameter       | Presence | Description                                                  |
 | --------------- | -------- | ------------------------------------------------------------ |
 | transactionInfo | required | The TransactionInfo from the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
+| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/)  object. |
 
 </TabItem>
 </Tabs>
@@ -106,7 +106,7 @@ Parameters:
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
 | transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/) object. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -130,7 +130,7 @@ Parameters:
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
 | transactionId | required | String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall)  object. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/)  object. |
 
 </TabItem>
 </Tabs>
@@ -166,7 +166,7 @@ Request parameters:
 | Parameter     | Presence | Description                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
 | transactionId | required | String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId   | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/) object. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -182,7 +182,7 @@ Adapty.setVariationId(transactionId, variationId, error -> {
 | Parameter                                         | Presence | Description                                                  |
 | ------------------------------------------------- | -------- | ------------------------------------------------------------ |
 | transactionId                                     | required | String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class. |
-| variationId                                       | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId                                       | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://kotlin.adapty.io///////////adapty/com.adapty.models/-adapty-paywall/) object. |
 
 </TabItem>
 </Tabs>

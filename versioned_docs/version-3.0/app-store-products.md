@@ -31,7 +31,7 @@ To create a product that will be linked to Adapty:
 
 2. If you haven't created a subscription group, click the **Create** button under the **Subscription Groups** title to initiate the process. [Subscription Groups](https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions) in App Store Connect categorize and manage your products, allowing users to switch between different offerings seamlessly. Note that it's not possible to create a subscription outside of a group.
 
-3. In the opened **Create Subscription Group** window, enter a the new subscription group name in the **Reference Name** field. The reference name is a user-defined label or identifier that helps you distinguish and manage different subscription groups within your app.
+3. In the opened **Create Subscription Group** window, enter a new subscription group name in the **Reference Name** field. The reference name is a user-defined label or identifier that helps you distinguish and manage different subscription groups within your app.
 
    The reference name is not visible to users; it's primarily for your internal use and organization. It allows you to easily identify and refer to specific subscription groups when managing them within the App Store Connect interface. This can be particularly useful if you have multiple subscription offerings or want to categorize them in a way that makes sense for your app's structure.
 

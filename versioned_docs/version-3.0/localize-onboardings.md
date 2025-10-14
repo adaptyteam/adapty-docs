@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::important
-Localizations in onboardings are supported in the [iOS](get-onboardings.md) and [Android](android-get-onboardings.md) SDKs starting from SDK version 3.11. If your SDK version is below 3.11, the default locale will be used.
+Localizations in onboardings are supported in the [iOS](get-onboardings.md), [Android](android-get-onboardings.md), [Flutter](flutter-get-onboardings.md), and [React Native](react-native-get-onboardings.md) SDKs starting from SDK version 3.11. If your SDK version is below 3.11, the default locale will be used.
 :::
 
 Localization can be a time-consuming process that requires careful attention to detail. When you use Onboarding Builder, Adapty handles most of the heavy lifting for you. This page explains how the localization process works.

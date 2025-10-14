@@ -232,7 +232,7 @@ If it is your first product for this app, you must manually submit it for review
 
 You can select an existing custom store or add a new one and associate a product with it. 
 
-Keep in mind that Adapty only tracks transactions from the App Store, Google Play, and Stripe. For custom stores, you'll need to submit transactions using the Adapty server-side API [Set transaction method](ss-set-transaction.md).
+Keep in mind that Adapty only tracks transactions from the App Store, Google Play, and Stripe. For custom stores, you'll need to submit transactions using the Adapty server-side API [Set transaction method](api-adapty#/operations/setTransaction.md).
 
 </TabItem>
 

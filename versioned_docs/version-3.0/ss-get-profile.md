@@ -3,7 +3,8 @@ title: " Get profile with server-side API"
 description: ""
 metadataTitle: ""
 displayed_sidebar: APISidebar
-
+keywords: ['get profile']
+rank: 80
 ---
 
 import ProfileResponse from '@site/src/components/reusable/ProfileResponse.md';
@@ -32,7 +33,7 @@ GET https://api.adapty.io/api/v2/server-side-api/profile/
 ```bash showLineNumbers
 curl --location 'https://api.adapty.io/api/v2/server-side-api/profile/' \
 --header 'adapty-customer-user-id: <YOUR_CUSTOMER_USER_ID>' \
---header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
 --header 'Authorization: Api-Key <YOUR_SECRET_API_KEY>'
 ```
 
@@ -48,7 +49,7 @@ url = "https://api.adapty.io/api/v2/server-side-api/profile/"
 
 headers = {
     "adapty-customer-user-id": "<YOUR_CUSTOMER_USER_ID>",
-    "Content-Type": "application/json",
+    "Accept": "application/json",
     "Authorization": "Api-Key <YOUR_SECRET_API_KEY>"
 }
 
@@ -65,7 +66,7 @@ print(response.text)
 const myHeaders = new Headers();
 myHeaders.append("Authorization", "Api-Key <YOUR_SECRET_API_KEY>");
 myHeaders.append("adapty-customer-user-id", "<YOUR_CUSTOMER_USER_ID>");
-myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Accept", "application/json");
 
 const requestOptions = {
   method: "GET",
@@ -206,6 +207,6 @@ No parameters
 
 **See also:**
 
-- [Create profile](ss-create-profile)
-- [Update profile](ss-update-profile)
-- [Delete profile](ss-delete-profile)
+- [Create profile](api-adapty#/operations/createProfile)
+- [Update profile](api-adapty#/operations/updateProfile)
+- [Delete profile](api-adapty#/operations/deleteProfile)

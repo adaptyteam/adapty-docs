@@ -170,6 +170,6 @@ Contain a list of errors with parameters.
 
 **See also:**
 
-- [Grant access level](ss-grant-access-level)
-- [Revoke access level](ss-revoke-access-level)
-- [Set transaction](ss-set-transaction)
+- [Grant access level](api-adapty#/operations/grantAccessLevel)
+- [Revoke access level](api-adapty#/operations/revokeAccessLevel)
+- [Set transaction](api-adapty#/operations/setTransaction)

@@ -34,6 +34,6 @@ We've created a unified environment for the server-side API, web API, and analyt
 
 **What's next: Requests:**
 
-- [Get paywall](web-api-get-paywall)
-- [Record paywall view](web-api-record-paywall-view)
-- [Add attribution](web-api-add-attribution)
+- [Get paywall](api-web#/operations/getPaywall)
+- [Record paywall view](api-web#/operations/recordPaywallView)
+- [Add attribution](api-web#/operations/addAttribution)

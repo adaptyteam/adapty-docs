@@ -72,18 +72,14 @@ export default function Feedback() {
 
         // Handle link clicks
         const handleLinkClick = (e) => {
-            console.log('Click detected:', e.target);
             // Check if the clicked element is a link or has a link parent
             const link = e.target.closest('a');
-            console.log('Found link:', link);
             if (link) {
-                console.log('Submitting feedback due to link click');
                 handleSubmitFeedback();
             }
         };
 
         // Setup event listeners
-        console.log('Setting up event listeners');
         resetIdleTimer();
         window.addEventListener('scroll', handleScroll, { passive: true });
         document.addEventListener('visibilitychange', handleVisibility);
@@ -91,7 +87,6 @@ export default function Feedback() {
 
         // Cleanup
         return () => {
-            console.log('Cleaning up event listeners');
             if (idleTimerRef.current) {
                 clearTimeout(idleTimerRef.current);
             }

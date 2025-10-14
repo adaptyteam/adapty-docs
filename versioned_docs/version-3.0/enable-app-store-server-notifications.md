@@ -65,4 +65,5 @@ Set up the Adapty SDK for:
 - [iOS](sdk-installation-ios)
 - [Flutter](sdk-installation-flutter)
 - [React Native](sdk-installation-reactnative)
+- [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
 - [Unity](sdk-installation-unity)

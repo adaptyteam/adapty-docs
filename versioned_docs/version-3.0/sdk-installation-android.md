@@ -14,11 +14,17 @@ import GetKey from '@site/src/components/reusable/GetKey.md';
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
+- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
+
+## Requirements
+
+Minimum SDK requirements:
+- `minSdkVersion 19` for core SDK functionality
+- `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
@@ -134,6 +140,10 @@ dependencyResolutionManagement {
 
 ```kotlin showLineNumbers
 // In your Application class
+import android.app.Application
+import com.adapty.Adapty
+import com.adapty.models.AdaptyConfig
+
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
@@ -151,6 +161,10 @@ class MyApplication : Application() {
 
 ```java showLineNumbers
 // In your Application class
+import android.app.Application;
+import com.adapty.Adapty;
+import com.adapty.models.AdaptyConfig;
+
 public class MyApplication extends Application {
     @Override
     public void onCreate() {
@@ -171,23 +185,7 @@ public class MyApplication extends Application {
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](adapty-paywall-builder.md) and have [installed AdaptyUI module](sdk-installation-android#install-adapty-sdk), you also need to activate AdaptyUI:
-
-:::important
-In your code, you must activate the core Adapty module before activating AdaptyUI.
-:::
-
-```kotlin showLineNumbers title="Kotlin"
-import com.adapty.ui.AdaptyUI
-
-AdaptyUI.activate()
-```
-
-```java showLineNumbers title="Java"
-import com.adapty.ui.AdaptyUI;
-
-AdaptyUI.activate();
-```
+If you plan to use [Paywall Builder](adapty-paywall-builder.md), you need the AdaptyUI module. It is activated automatically when you activate the core module; you don't need to do anything else.
 
 ## Configure Proguard
 
@@ -214,12 +212,18 @@ You can set the log level in your app before configuring Adapty.
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
+import com.adapty.Adapty
+import com.adapty.utils.AdaptyLogLevel
+
 Adapty.logLevel = AdaptyLogLevel.VERBOSE 
 //recommended for development and the first production release
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
+import com.adapty.Adapty;
+import com.adapty.utils.AdaptyLogLevel;
+
 Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
 //recommended for development and the first production release
 ```
@@ -233,6 +237,9 @@ If you for some reason need to send messages from Adapty to your system or save 
 <Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
+import com.adapty.Adapty
+import com.adapty.utils.AdaptyLogLevel
+
 Adapty.setLogHandler { level, message ->
     //handle the log
 }
@@ -240,6 +247,9 @@ Adapty.setLogHandler { level, message ->
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```java showLineNumbers
+import com.adapty.Adapty;
+import com.adapty.utils.AdaptyLogLevel;
+
 Adapty.setLogHandler((level, message) -> {
     //handle the log
 });
@@ -261,6 +271,8 @@ Use this parameter to enhance user privacy, comply with regional data protection
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
 AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .withIpAddressCollectionDisabled(true)
     .build()
@@ -269,6 +281,8 @@ AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
 new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .withIpAddressCollectionDisabled(true)
     .build();
@@ -286,6 +300,8 @@ Use this parameter to comply with Play Store policies, avoid triggering the adve
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
 AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .withAdIdCollectionDisabled(true)
     .build()
@@ -294,6 +310,8 @@ AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
 new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
     .withAdIdCollectionDisabled(true)
     .build();
@@ -313,6 +331,7 @@ Use `AdaptyUI.configureMediaCache` to override the default cache size and validi
 ```kotlin showLineNumbers
 import com.adapty.ui.AdaptyUI
 import com.adapty.ui.AdaptyUI.MediaCacheConfiguration
+import com.adapty.utils.days
 
 val cacheConfig = MediaCacheConfiguration.Builder()
     .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
@@ -327,6 +346,7 @@ AdaptyUI.configureMediaCache(cacheConfig)
 ```java showLineNumbers
 import com.adapty.ui.AdaptyUI;
 import com.adapty.ui.AdaptyUI.MediaCacheConfiguration;
+import com.adapty.utils.TimeInterval;
 
 MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
     .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB

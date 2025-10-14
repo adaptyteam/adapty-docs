@@ -249,19 +249,43 @@ To ensure users who buy on the web get access on mobile, call `Adapty.activate()
 
 Once everything's set up, you can test your integration. Transactions made in Paddle's Test environment will appear as **Test** in Adapty. Transactions from the Production environment will appear as **Production**.
 
-:::note
-In Adapty's analytics, transaction amounts include taxes and Paddle fees, which differs from Paddle's dashboard where amounts are shown after taxes and fees. This means the numbers you see in Adapty will be higher than those in your Paddle dashboard.
-:::
-
-:::note
-Unlike other stores, refunds in Paddle only affect the specific transaction being refunded and do not automatically cancel the subscription. The subscription will continue to be active unless explicitly canceled.
-:::
-
 Your integration is now complete. Users can purchase subscriptions on your website and automatically access premium features in your mobile app, while you track all subscription analytics from your unified Adapty dashboard.
 
-:::tip
-You can also include `variation_id` in the `custom_data` field to attribute purchases to specific paywall instances. Adapty will process this data from webhooks and include it in analytics.
+## Important considerations
+
+- In Adapty's analytics, transaction amounts include taxes and Paddle fees, which differs from Paddle's dashboard where amounts are shown after taxes and fees. This means the numbers you see in Adapty will be higher than those in your Paddle dashboard.
+- Unlike other stores, refunds in Paddle only affect the specific transaction being refunded and do not automatically cancel the subscription. The subscription will continue to be active unless explicitly canceled.
+- You can also include `variation_id` in the `custom_data` field to attribute purchases to specific paywall instances. Adapty will process this data from webhooks and include it in analytics.
+
+### Paid trials
+
+When working with paid trials in Paddle, you need to create two products in Adapty:
+
+1. Create a non-subscription product and link it to the Paddle price that charges for the trial period. 
+2. Then create a subscription product (Monthly/Weekly/etc.) and link it to the Paddle price that has the free trial component.
+
+From Paddle's perspective, this is one product with two prices in a single transaction - one price for the trial charge (e.g., $0.99) and another price for the free trial ($0.00). 
+
+From Adapty's perspective, this creates two separate events: a non-subscription purchase for the trial payment and a trial started event for the subscription product.
+
+For example, when a user starts a $0.99 paid trial for a $9.99/month subscription, Paddle creates one transaction with both prices, while Adapty processes this as a non-subscription purchase of $0.99 (immediate payment) and a trial started event at $0.00 (future subscription at $9.99/month).
+
+:::note
+When users cancel a paid trial, you get the **Trial expired** and **Trial renewal canceled** events.
 :::
+
+## Get more from your Paddle data
+
+:::important
+For your Paddle events to work with integrations, your users must be logged into the app using their App Store/Google Play account at least once. 
+:::
+
+Once you integrate with Paddle, Adapty is ready to provide insights right away. To make the most of your Paddle data, you can set up additional Adapty integrations to forward Paddle events—bringing all your subscription analytics into a single Adapty Dashboard.
+
+Integrations you can use to forward and analyze your Paddle events:
+- [AppsFlyer](appsflyer.md)
+- [Webhook](https://adapty.io/docs/webhook)
+- [Posthog](https://adapty.io/docs/posthog)
 
 ## Current limitations
 
@@ -281,4 +305,4 @@ You can also include `variation_id` in the `custom_data` field to attribute purc
 
 **See also:**
 
-- [Validate purchase in Paddle, get access level, and import transaction history from Paddle with server-side API](ss-validate-paddle-token)
+- [Validate purchase in Paddle, get access level, and import transaction history from Paddle with server-side API](api-adapty#/operations/validatePaddlePurchase)

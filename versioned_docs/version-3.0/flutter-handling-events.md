@@ -78,7 +78,7 @@ void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct 
 
 #### Successful purchase
 
-If `Adapty.makePurchase()` succeeds, this method will be invoked:
+If a purchase succeeds, this method will be invoked:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
@@ -164,7 +164,7 @@ We recommend dismissing the screen in that case. Refer to [Respond to button act
 
 #### Failed purchase
 
-If `Adapty.makePurchase()` fails, this method will be invoked:
+If a purchase fails, this method will be invoked:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
@@ -199,7 +199,7 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 
 #### Successful restore
 
-If `Adapty.restorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
@@ -235,7 +235,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 #### Failed restore
 
-If `Adapty.restorePurchases()` fails, this method will be invoked:
+If restoring a purchase fails, this method will be invoked:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {

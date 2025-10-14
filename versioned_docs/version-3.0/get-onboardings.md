@@ -1,17 +1,19 @@
 ---
-title: "Get onboardings in iOS SDK"
-description: "Learn how to retrieve onboardings in Adapty for iOS."
+title: "Fetch onboardings and their configuration"
+description: "Learn how to retrieve onboardings in Adapty for."
 metadataTitle: "Retrieving onboardings in Adapty | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-After [you designed the visual part for your onboarding](design-onboarding.md) with the builder in the Adapty Dashboard, you can display it in your iOS app. The first step in this process is to get the onboarding associated with the placement and its view configuration as described below.
+After [you designed the visual part for your onboarding](design-onboarding.md) with the builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the onboarding associated with the placement and its view configuration as described below.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty iOS SDK](sdk-installation-ios.md) version 3.8.0 or higher.
+1. You have installed [Adapty iOS, Android, Flutter, or React Native SDK](installation-of-adapty-sdks.md) version 3.8.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
@@ -22,6 +24,7 @@ When you create an [onboarding](onboardings.md) with our no-code builder, it's s
 For best performance, fetch the onboarding configuration early to give images enough time to download before showing to users.
 
 To get an onboarding, use the `getOnboarding` method:
+
 
 ```swift showLineNumbers
 do {
@@ -45,7 +48,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                |
 |:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Onboarding      | An [`AdaptyOnboarding`](sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+| Onboarding      | An [`AdaptyOnboarding`](https://swift.adapty.io/documentation/adapty/adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
 
 ## Speed up onboarding fetching with default audience onboarding

@@ -52,8 +52,8 @@ Adapty.restorePurchases { [weak self] result in
 
 Response parameters:
 
-| Parameter | Description |
-|---------|-----------|
-| **Profile** | <p>An [`AdaptyProfile`](sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+| Parameter | Description                                                                                                                                                                                                                                                                               |
+|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>An [`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
 
 <SampleApp />

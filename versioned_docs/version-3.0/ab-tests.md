@@ -2,7 +2,7 @@
 title: "A/B test"
 description: "Optimize subscription pricing with A/B tests in Adapty for better conversion rates."
 metadataTitle: "A/B Testing for Paywalls | Adapty Docs"
-keywords: ['cross']
+keywords: ['cross', 'a/b test', 'ab test']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -42,7 +42,7 @@ Each A/B test type is useful if:
   - You want to run your A/B test for only one placement even if you have multiple placements in your app and see economics changes for this one placement only.
   - You want to run an A/B test on old users (those who have seen at least one Adapty paywall).
 - **Crossplacement A/B test**:
-  - You want to synchronize variants used across multiple placements—e.g., if you want to change prices in the onboarding flow and in your app’s settings the same time.
+  - You want to synchronize variants used across multiple placements—e.g., if you want to change prices in the onboarding flow and in your app's settings the same time.
   - You want to evaluate your app's overall economy, ensuring that A/B testing is conducted across the entire app rather than just specific parts, making it easier to analyze results in the A/B testing statistics.
   - You want to run an A/B test on new users only, i.e. the users who have never seen a single Adapty paywall.
   - You want to use multiple paywalls within a single variant:
@@ -71,17 +71,6 @@ Each A/B test type is useful if:
 | **Users**                       | For all users                                                                                                      | Only new users (those who haven’t seen an Adapty paywall)     |
 | **Adapty SDK version**          | Any for paywalls. Except :warning: 3.8.0+ for onboardings                                                          | :warning: 3.5.0+                                              |
 | **Best for**                    | Testing independent changes in a single paywall/onboarding placement without considering the overall app economics | Evaluating overall monetization strategies app-wide           |
-
-| Feature | Regular A/B test | Cross-placement A/B test |
-| --- | --- | --- |
-| **What is tested** | One paywall/onboarding | Set of paywalls in one variant |
-| **Variant consistency** | Defined per placement | Same variant across all placements |
-| **Audience targeting** | Per placement | Shared across placements |
-| **Analytics** | You analyze one placement | You analyze the whole app (placements in the test) |
-| **Variant weight** | Per placement | Per variant |
-| **Users** | All users | Only new users (those who haven’t seen an Adapty paywall) |
-| **Adapty SDK version** | Any for paywalls<br/>:warning: 3.8.0+ for onboardings | :warning: 3.5.0+ |
-| **Best for** | Independent changes in a single placement | App-wide monetization strategy |
 
 Each paywall/onboarding gets a weight that splits traffic during the test.
 
@@ -127,6 +116,10 @@ Crossplacement A/B tests guarantee the same variant across all placements in the
 
 - They always have the highest priority in a placement.
 - Only new users can participate, i.e. the users who have not seen a single Adapty paywall before (to be precise, `getPaywall` SDK method was called). That is done because it's not possible to guarantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test has been started.
+
+:::important
+Crossplacement A/B tests also feature extended test membership—once a user is assigned to a variant, they stay in that variant for 3 months, even after you stop the test. This prevents test contamination: if users who saw higher prices suddenly started seeing lower prices, it would skew your results since they'd be more likely to purchase the cheaper option.
+:::
 
 ## Creating A/B tests
 
