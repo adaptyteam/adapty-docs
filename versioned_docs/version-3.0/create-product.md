@@ -237,7 +237,7 @@ To add a new product to your app:
 
 7. **Optional:** You can add products from any custom store by clicking **Add custom store**. In the **Manage custom store info** window, you can select an existing custom store or add a new one and associate a product with it. Keep in mind that Adapty only tracks transactions from the App Store, Google Play, and Stripe. For custom stores, you’ll need to submit transactions using the Adapty server-side API [Set transaction method](ss-set-transaction).
 
-8. Click **Save product** to finalize the product creation.
+8. Click **Save product** to finalize the product creation. The product status synchronization may take up to five minutes, so wait until they update in the table.
 
 9. You can [create offers](create-offer) for the product if needed. To add offers, click **Yes, add offers**. Otherwise, click **No, thanks**.
 
