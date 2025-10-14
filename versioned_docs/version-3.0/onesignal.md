@@ -190,21 +190,19 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 <TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
-OneSignal.shared.setSubscriptionObserver((changes) {
-    final playerId = changes.to.userId;
-    if (playerId != null) {
-        final builder = 
-            AdaptyProfileParametersBuilder()
-                ..setOneSignalPlayerId(playerId);
-                // ..setOneSignalSubscriptionId(playerId);
-        try {
-            Adapty().updateProfile(builder.build());
-        } on AdaptyError catch (adaptyError) {
-            // handle the error
-        } catch (e) {
-            // handle the error
-        }
-    }
+ OneSignal.shared.setSubscriptionObserver((changes) {
+   final subscriptionId = OneSignal.User.pushSubscription.id;
+   if (subscriptionId != null) {
+       await Adapty().setIntegrationIdentifier(
+            key: "one_signal_subscription_id",
+            value: subscriptionId,
+       );
+      } on AdaptyError catch (adaptyError) {
+         // handle error
+      } catch (e) {
+         // handle error
+      }
+   }
 });
 ```
 
