@@ -74,8 +74,10 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-3. At this stage, we will detect your top-performing paywall. Review its information and click **Proceed to competitors research**.
+3. At this stage, we will detect your top-performing paywall. Review the paywall information and click **Proceed to competitors research**.
 
+   Note that we select your top-performing paywall only among **live** paywalls. If your successful paywall is not added to any placement currently, it won't be considered.
+   
 <Zoom>
   <img src={require('./img/app-analysis.webp').default}
   style={{
@@ -138,9 +140,13 @@ Your plan consists of three parts: setting new prices, updating paywalls, and co
 
 To start with the first stage:
 
-1. Create new products right from the report. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
-2. Duplicate your current top-performing paywall and add products to it.
+1. Create new products right from the report or modify your existing products. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
+2. Duplicate your current top-performing paywall and add products to it. You can also modify your current paywall design according to the recommendations or generate a new one using the AI generator in the [Adapty Paywall Builder](adapty-paywall-builder.md).
 3. Launch A/B test that will compare how the new paywall performs against the current paywall.
+
+:::important
+The recommendations page will show you the target number of subscribers and the minimum duration for the A/B test. Follow these recommendations to get the most accurate data before you begin with the next stage. You will need to stop the A/B test manually.
+:::
 
 <Zoom>
   <img src={require('./img/recommendation.webp').default}

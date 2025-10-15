@@ -70,6 +70,6 @@ Adapty.logShowPaywall(paywall)
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                |
-| :---------- | :------- | :--------------------------------------------------------- |
-| **paywall** | required | An [`AdaptyPaywall`](sdk-models#adaptypaywall) object. |
+| Parameter   | Presence | Description                                                                              |
+| :---------- | :------- |:-----------------------------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) object. |
