@@ -126,7 +126,7 @@ In addition to the predefined tags, you can send [custom attributes](segments#cu
 
 Custom user attributes are automatically sent to OneSignal if the **Send user attributes** checkbox is enabled on the [integration page](https://app.adapty.io/integrations/onesignal). When unchecked, Adapty sends exactly 10 tags. If checked, more than 10 tags can be sent, allowing for enhanced data capture. 
 
-### SDK configuration
+## SDK configuration
 
 There are two ways to integrate OneSignal with Adapty:
 
@@ -190,20 +190,20 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 <TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
- OneSignal.shared.setSubscriptionObserver((changes) {
-   final subscriptionId = OneSignal.User.pushSubscription.id;
-   if (subscriptionId != null) {
-       await Adapty().setIntegrationIdentifier(
-            key: "one_signal_subscription_id",
-            value: subscriptionId,
-       );
-      } on AdaptyError catch (adaptyError) {
-         // handle error
-      } catch (e) {
-         // handle error
-      }
+// 1. Since OneSignal.User.pushSubscription.id may return null if called too early, 
+// OneSignal suggests to listen for the updates:
+
+OneSignal.User.pushSubscription.addObserver((state) {
+   if (state.current.optedIn) {
+      // now you can try to retrieve subscriptionId
    }
 });
+
+// 2. Then you can push subscriptionId to Adapty:
+final subscriptionId = OneSignal.User.pushSubscription.id;
+if (subscriptionId != null) {
+   await Adapty().setIntegrationIdentifier(key: "one_signal_subscription_id", value: subscriptionId);
+}
 ```
 
 </TabItem>
@@ -338,7 +338,10 @@ OneSignal.addSubscriptionObserver(event => {
 
 </Tabs>
 
-Read more about `OSSubscriptionObserver` in the [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
+Read more in the OneSignal documentation:
+
+- [Push subscription ID](https://documentation.onesignal.com/docs/en/mobile-sdk-reference#user-pushsubscription-id)
+- [Push subscription changes](https://documentation.onesignal.com/docs/en/mobile-sdk-reference#addobserver-push-subscription-changes)
 
 ## Dealing with multiple devices
 
