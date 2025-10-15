@@ -4,64 +4,44 @@ description: "See the app analytics in Adapty UA."
 metadataTitle: "Using Adapty User Acquisition | Adapty Docs"
 keywords: ['adapty ua', 'user acquisition']
 ---
+import ZoomImage from '@site/src/components/ZoomImage';
 
 [Analytics](https://app.adapty.io/ua/analytics) is a section of the Adapty UA Dashboard that allows you to see multiple campaign metrics in a single place. You can customize which charts you would like to see and view data for all of your campaigns at once.
 
-
+[screenshot]
 
 ## Metrics
 
-The **Analytics** page has the following campaign metrics available:
+Adapty User Acquisition provides comprehensive **metrics** to measure campaign performance and user behavior. These metrics are available as standard values, with key metrics also offered as **cohort metrics** for time-based analysis of user groups.
 
-| Metric      | Description |
-|-------------|-------------|
-| Spend       |             |
-| Impressions |             |
-| Clicks      |             |
-| CPI         |             |
-| CPC         |             |
-| CPM         |             |
-| ICR         |             |
-| IPM         |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-|             |             |
-
-## Cohorts metrics
-
-
+See the complete metric list [here](ua-metrics.md).
 
 ## Customize which metrics to show
 
-You can customize which metrics to show as well as their order. To do that, press Edit in the top-right corner and then either remove charts you don't need, add more or rearrange existing ones by drag and dropping. You can also customize Overview contents in the "Add" menu:
+You can customize which metrics to show as well as their order. To do that, click the current present name (it's **Default** at first) in the top-right corner, select **Edit columns** and then either remove charts you don't need, add more or rearrange existing ones by drag and dropping. 
+
+<ZoomImage id="ua-customize.gif" width="900px" />
+
+For cohort metrics, you can add one or more cohorts at once. Select them from the existing cohorts or create custom ones.
+
+<ZoomImage id="ua-cohorts.webp" width="500px" />
+
+You can also save views you use most as presets, so you can switch between them quickly anytime. Click the current preset name and click the **Save** icon or, in the **Edit columns** window, click **Save as preset**.
+
+<ZoomImage id="ua-preset.webp" width="900px" />
 
 ## Controls
 
-Controls for diving deeper into your data in Overview are very similar to what we have in [Charts](charts) — and most of them are described in [Analytics controls](controls-filters-grouping-compare-proceeds).
+On the **Analytics** page, you have four main controls:
+- **Time ranges**: See [more](controls-filters-grouping-compare-proceeds#time-ranges).
+- **Filters**: Filter by metrics, so you can see only those values that are above or below some threshold.
+- **Group by**: Group by campaign parameters (like campaign ID or country) or time periods, so the results are better organized.
+- **Store commission and taxes**: See [more](controls-filters-grouping-compare-proceeds#store-commission-and-taxes).
 
-There is one important difference, though: you can group and filter by country, store, and, most notably, by app — as Overview shows data for all of your apps at once by default. This can be helpful to understand how each of your app contributes to your business metrics:
+<ZoomImage id="ua-controls.webp" width="900px" />
 
+## Export data
 
+To analyze the raw data behind analytics, you can export it in CSV format by clicking the **Export** button.
 
-:::note
-**Timezone and install settings**
-
-Note that these settings apply to all your apps and override what you have in [App settings](general).
-
-- **Installs**: By default, installs are counted by `device_id`—a new installation or reinstallation on a device is counted as a separate install. You can change it by clicking **Edit**. For a detailed explanation of other options, see the [Installs definition for analytics](general#4-installs-definition-for-analytics) section.
-- **Timezone**: By default, the timezone for the **Overview** page is inherited from one of your apps. If your apps have different reporting timezones, customize the Overview timezone by clicking **Edit** and selecting the appropriate option from the dropdown.
-
-
-:::
+<ZoomImage id="ua-export.webp" width="900px" />
