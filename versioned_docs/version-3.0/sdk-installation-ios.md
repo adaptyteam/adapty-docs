@@ -325,3 +325,46 @@ Parameters:
 | memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
 | memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
 | diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+
+### Transaction finishing behavior
+
+:::info
+This feature is available starting from SDK version 3.12.0.
+:::
+
+By default, Adapty automatically finishes transactions after successful validation. However, if you need advanced transaction validation (such as server-side receipt validation, fraud detection, or custom business logic), you can configure the SDK to use manual transaction finishing.
+
+```swift showLineNumbers title="Swift"
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(transactionsFinishBehavior: .manual) // .auto is the default
+```
+
+When using manual transaction finishing, you need to implement the `onUnfinishedTransaction` delegate method to handle unfinished transactions:
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        // For example: server-side receipt validation, fraud detection, etc.
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+To get all current unfinished transactions, use the `getUnfinishedTransactions()` method:
+
+```swift showLineNumbers title="Swift"
+func loadUnfinishedTransactions() {
+    Task { @MainActor in
+        do {
+            let transactions = try await Adapty.getUnfinishedTransactions()
+            // Handle the transactions
+        } catch {
+            print("Error loading unfinished transactions: \(error)")
+        }
+    }
+}
+```

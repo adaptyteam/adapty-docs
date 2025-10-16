@@ -143,3 +143,37 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Finish transaction manually
+
+:::info
+This feature is available starting from SDK version 3.12.0.
+:::
+
+By default, Adapty automatically finishes transactions after successful validation. However, if you need advanced transaction validation (such as server-side receipt validation, fraud detection, or custom business logic), you can configure the SDK to use manual transaction finishing.
+
+### Configure manual transaction finishing
+
+When activating Adapty, set the transaction finishing behavior to manual:
+
+```swift showLineNumbers title="Swift"
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(transactionsFinishBehavior: .manual) // .auto is the default
+```
+
+### Handle unfinished transactions
+
+When using manual transaction finishing, you need to implement the `onUnfinishedTransaction` delegate method to handle unfinished transactions:
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        // For example: server-side receipt validation, fraud detection, etc.
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
