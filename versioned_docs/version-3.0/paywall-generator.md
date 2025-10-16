@@ -21,12 +21,13 @@ You can't prompt which elements will be inside the paywall. Mainly, the paywall 
 
 To generate a paywall:
 
-1. In the **Layout settings** of the paywall, click **Change template > Generate template**. Or, for a new paywall, click **Generate paywall** from the **Builder & Generator tab**.
-2. Write your prompt in the input field. Or, select one of the predefined prompts to test what the paywall generator can create for your app. See [the tips below](#how-to-write-prompts-for-paywall-generator) to learn how to write the most effective prompt to get a nice-looking production-ready paywall.
+1. [Add **Apple App ID** in the **App settings > iOS SDK**](app-store-connection-configuration#step-1-provide-bundle-id-and-apple-app-id) if you haven't done it yet.
+2. In the **Layout settings** of the paywall, click **Change template > Generate template**. Or, for a new paywall, click **Generate paywall** from the **Builder & Generator tab**.
+3. Write your prompt in the input field. Or, select one of the predefined prompts to test what the paywall generator can create for your app. See [the tips below](#how-to-write-prompts-for-paywall-generator) to learn how to write the most effective prompt to get a nice-looking production-ready paywall.
    <ZoomImage id="prompt.webp" width="700px" />
 
-3. The paywall generator will pull information about your app from the App Store a generate a relevant paywall with the products you've added.
-4. Choose one of the five generated templates and click **Pick & Open in Builder**, or chat with the generator like you do with your favorite AI agents to improve the generation result. You can get back to the chat anytime later and try other templates from the thread. 
+4. The paywall generator will pull information about your app from the App Store a generate a relevant paywall with the products you've added.
+5. Choose one of the five generated templates and click **Pick & Open in Builder**, or chat with the generator like you do with your favorite AI agents to improve the generation result. You can get back to the chat anytime later and try other templates from the thread. 
 
 :::important
 You can generate up to 10 sets of templates per day for an app. Each chat can contain up to 10 generations. If you reach this limit, create a new chat and use context from the previous chat to write a detailed prompt.
