@@ -61,7 +61,7 @@ We have 2 formats of date and time - American and European. You can set one of t
 />
 </Zoom>
 
-Please also note that all charts in Adapy analytics are displayed in UTC time.
+Please also note that all charts in Adapty analytics are displayed in UTC time.
 
 ### Data comparison
 
