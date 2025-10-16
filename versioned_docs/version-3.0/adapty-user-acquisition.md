@@ -18,4 +18,4 @@ Measuring user acquisition performance is challenging. Data is often scattered a
 
 Adapty UA provides built-in attribution and unified analytics. You can focus on growing your app instead of managing data systems.
 
-<CustomDocCardList ids={['ua-analytics', 'ua-meta-ads', 'ua-integrations']} />
+<CustomDocCardList ids={['ua-analytics', 'ua-meta-ads']} />
