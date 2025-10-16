@@ -98,3 +98,24 @@ viewModelScope.launch {
     view?.present()
 }
 ```
+
+## Show dialog
+
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+viewModelScope.launch {
+    val action = view.showDialog(
+        title = "Close paywall?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    )
+    
+    if (action == AdaptyUIDialogActionType.SECONDARY) {
+        // User confirmed - close the paywall
+        view.dismiss()
+    }
+    // If primary - do nothing, user stays
+}
+```

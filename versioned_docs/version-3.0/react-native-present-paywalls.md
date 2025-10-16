@@ -205,15 +205,19 @@ Use this method instead of native alert dialogs when a paywall view is presented
 
 ```typescript showLineNumbers title="React Native (TSX)"
 try {
-  const selectedAction = await view.showDialog({
-    title: 'Open URL?',
-    content: 'Do you want to open this link?',
-    primaryActionTitle: 'Cancel',
-    secondaryActionTitle: 'OK',
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
   });
   
-  // handle dialog action
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
 } catch (error) {
-  // handle the error
+  // handle error
 }
 ```

@@ -40,14 +40,18 @@ Use this method instead of native alert dialogs when a paywall view is presented
 
 ```csharp showLineNumbers title="Unity"
 var dialog = new AdaptyUIDialogConfiguration()
-    .SetTitle("Open URL?")
-    .SetContent("Do you want to open this link?")
-    .SetDefaultActionTitle("Cancel")
-    .SetSecondaryActionTitle("OK");
+    .SetTitle("Close paywall?")
+    .SetContent("You will lose access to exclusive offers.")
+    .SetDefaultActionTitle("Stay")
+    .SetSecondaryActionTitle("Close");
 
 AdaptyUI.ShowDialog(view, dialog, (action, error) => {
     if (error == null) {
-        // handle dialog action
+        if (action == AdaptyUIDialogActionType.Secondary) {
+            // User confirmed - close the paywall
+            view.Dismiss();
+        }
+        // If primary - do nothing, user stays
     }
 });
 ```
