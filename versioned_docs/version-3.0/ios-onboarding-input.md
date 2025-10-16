@@ -128,7 +128,7 @@ The `action` object contains:
 
 ### Enrich user profiles with data
 
-If you want to immediately link the input data with the user profile and avoid asking them twice for the same info, you need to [update the user profile](setting-user-attributes.md) with the input data when handling the `AdaptyOnboardingsStateUpdatedAction`.
+If you want to immediately link the input data with the user profile and avoid asking them twice for the same info, you need to [update the user profile](setting-user-attributes.md) with the input data when handling the action.
 
 For example, you ask users to enter their name in the text field with the `name` ID, and you want to set this field's value as user's first name. Also, you ask them to enter their email in the `email` field. In your app code, it can look like this:
 
