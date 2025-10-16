@@ -8,7 +8,7 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 [Analytics](https://app.adapty.io/ua/analytics) is a section of the Adapty UA Dashboard that allows you to see multiple campaign metrics in a single place. You can customize which charts you would like to see and view data for all of your campaigns at once.
 
-[screenshot]
+<ZoomImage id="ua-analytics.webp" width="900px" />
 
 ## Metrics
 
