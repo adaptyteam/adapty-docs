@@ -41,7 +41,7 @@ These tips will help you write prompts for generating a production-ready paywall
 
 - The more details you specify in the prompt, the better.
   - **Bad**: Make my paywall look modern
-  - **Good**: Create a modern, minimalistic paywall with a light background, rounded buttons, and subtle gradients. Include a bold headline and clear pricing for monthly and yearly plans.
+  - **Good**: Create a modern, minimalistic paywall with a light background, rounded buttons, and subtle gradients. 
 - Don't describe your app in detail – Adapty pulls this automatically from the App Store:
   - **Bad**: Create a Christmas paywall for my app that teaches people how to draw.
   - **Good**: Create a festive Christmas-themed paywall with warm colors, hand-drawn snowflakes, and a cheerful “Unlock all lessons” headline.
