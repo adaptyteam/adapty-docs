@@ -12,12 +12,11 @@ Each product you configure has an [**access level**](access-level.md) linked to 
 
 The Adapty SDK is very reliable, and it's very rare for its servers to be unavailable. However, even in this rare case, your users won't notice it.
 
-If a user makes a purchase, but Adapty cannot receive a response, the SDK switches to verifying purchases directly in the store. Therefore, the access level is granted locally in the app, and no additional setup is required to enable it. The SDK handles this automatically behind the scenes, and you'll see the access levels show up in the customer data just like normal.
+If a user makes a purchase, but Adapty cannot receive a response, the SDK switches to verifying purchases directly in the store. Therefore, the access level is granted locally in the app, and no additional setup is required to enable it. The SDK handles this automatically behind the scenes, and users will access what they paid for just like normal.
 
 Note the following about how local access levels work:
 
-- When users are back online, their updated access levels are automatically pushed to the Adapty servers.
+- When users are back online, transaction information is automatically pushed to the Adapty servers, which then applies the transactions to the user profile and returns the updated profile to the SDK.
 - Updated data won't appear in the Adapty analytics until data is pushed.
-- Purchases won't be recognized for cross-platform until data is pushed.
 - Local access levels work only when the Adapty servers are down. Otherwise, the SDK will use any cached data.
-- Local access levels don't work for consumable products.
+- Local access levels don't work for consumable products, except when a consumable product is assigned a subscription type (monthly, annual, weekly, etc.) in the Adapty dashboard.
