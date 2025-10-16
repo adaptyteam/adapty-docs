@@ -36,7 +36,7 @@ You can generate up to 10 sets of templates per day for an app. Each chat can co
 
 5. Chats are organized as threads and saved in your app account. You can get back to chats anytime later and try other templates from threads. You can always check which prompts worked the best or adjust some templates you used before.
 
-<ZoomImage id="threads.webp" width="700px" />
+<ZoomImage id="threads.gif" width="700px" />
 
 ## How to write prompts for paywall generator
 
