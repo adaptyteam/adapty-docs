@@ -13,7 +13,7 @@ export default function ZoomImage({
         border: '1px solid #727272',
         width: width,
         display: 'block',
-        margin: '0 auto',
+        margin: '20px auto',
         ...style
     };
 

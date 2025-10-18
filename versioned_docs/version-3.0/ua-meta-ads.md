@@ -8,8 +8,6 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 [Meta Ads campaigns](https://app.adapty.io/ua/meta-ads) is a section of the Adapty UA Dashboard that allows you to view and analyze your Meta Ads campaign performance. You can see metrics for your campaigns, ad sets, and individual ads across three dedicated tabs.
 
-[screenshot]
-
 ## Campaign tabs
 
 The Meta Ads section provides three main views to analyze your advertising performance at different levels:
@@ -26,7 +24,7 @@ Meta Ads campaigns in Adapty UA provide comprehensive metrics to measure campaig
 
 The available metrics include:
 - **Campaign metrics**: Campaign name, Campaign ID, Spend, Impressions, Clicks, CPI, CPC, CPM, CTR, ICR, IPM, LTV
-- **Ad Set metrics**: Adset name, Adset ID, plus all standard performance metrics
+- **Ad Set metrics**: Ad set name, Ad set ID, plus all standard performance metrics
 - **Ad metrics**: Ad name, Ad ID, plus all standard performance metrics
 
 For detailed descriptions of metrics, see [Metrics](ua-metrics.md).
