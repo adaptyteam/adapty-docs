@@ -163,7 +163,7 @@ For updated examples, see the [Present new Paywall Builder paywalls in React Nat
 
 ```diff showLineNumbers
 - import { createPaywallView } from '@adapty/react-native-ui';
-+ import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
