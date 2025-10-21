@@ -42,7 +42,7 @@ Here's what we'll cover in the integration guide:
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools) that demonstrates the full setup
+- **Sample apps**: Check out our [complete examples](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples) that demonstrate the full setup
 
 ## Main concepts
 

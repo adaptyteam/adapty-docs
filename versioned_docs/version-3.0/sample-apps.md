@@ -35,4 +35,7 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 - [React Native (Expo)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)
 - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)
 - [Kotlin Multiplatform](https://github.com/adaptyteam/AdaptySDK-KMP/example)
-- [Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
+- [Capacitor (React)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
+- [Capacitor (Vue.js)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
+- [Capacitor (Angular)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
+- [Capacitor (Advanced dev tools)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
