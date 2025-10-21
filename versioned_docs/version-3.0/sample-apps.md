@@ -31,6 +31,7 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
 - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)
 - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
+- [React Native (Basic example on pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/BasicExample)
 - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
 - [React Native (Expo)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)
 - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)
