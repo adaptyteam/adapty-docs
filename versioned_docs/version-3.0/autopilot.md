@@ -140,7 +140,7 @@ Your plan consists of three parts: setting new prices, updating paywalls, and co
 
 To start with the first stage:
 
-1. Create new products right from the report or modify your existing products. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
+1. Create new products right from the report or modify your existing products. You can automatically push your new products to App Store and Google Play right away.
 2. Duplicate your current top-performing paywall and add products to it. You can also modify your current paywall design according to the recommendations or generate a new one using the AI generator in the [Adapty Paywall Builder](adapty-paywall-builder.md).
 3. Launch A/B test that will compare how the new paywall performs against the current paywall.
 
