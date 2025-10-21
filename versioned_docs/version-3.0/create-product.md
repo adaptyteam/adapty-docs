@@ -24,7 +24,7 @@ To add a new product to your app:
 1. Go to **[Products](https://app.adapty.io/products)** from the Adapty main menu.
 
 <Zoom>
-  <img src={require('./img/products-tab.png').default}
+  <img src={require('./img/products-tab.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -29,7 +29,7 @@ Let's say you want to add a monthly subscription as a product.
 2. Click **Create product** at the top right.
 
 <Zoom>
-  <img src={require('./img/create-product.png').default}
+  <img src={require('./img/products-tab.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
