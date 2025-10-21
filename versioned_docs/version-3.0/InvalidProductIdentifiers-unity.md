@@ -34,7 +34,7 @@ If you're encountering the `noProductIDsFound` error, follow these steps to reso
 
 2. Click on the subscription group name. You'll see your products listed under the **Subscriptions** section.
 
-3. Ensure the product you're testing is marked **Ready to Submit**. If not, follow the instructions on the [Product in App Store](app-store-products) page.
+3. Ensure the product you're testing is marked **Ready to Submit**.
     <Zoom>
    <img src={require('./img/ready-to-submit.webp').default}
       style={{
