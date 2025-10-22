@@ -3,7 +3,7 @@ title: "Fetch Paywall Builder paywalls and their configuration in Kotlin Multipl
 description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your Kotlin Multiplatform app."
 metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
 displayed_sidebar: sdkkmp
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 rank: 70
 ---
 
@@ -64,7 +64,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                     |
 | :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Paywall   | An [`AdaptyPaywall`](kmp-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 
@@ -143,3 +143,72 @@ Adapty.getPaywallForDefaultAudience(
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.Default` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
+## Customize assets
+
+To customize images and videos in your paywall, implement the custom assets.
+
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset bundle, you target these elements by their IDs and customize their behavior.
+
+For other images and videos, you need to [set a custom ID](https://adapty.io/docs/custom-media) in the Adapty dashboard.
+
+For example, you can:
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+:::important
+To use this feature, update the Adapty SDK to version 3.7.0 or higher.
+:::
+
+Here's an example of how you can provide custom assets via a map:
+
+:::info
+The Kotlin Multiplatform SDK supports local assets only. For remote content, you should download and cache assets locally before using them in custom assets.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyCustomAsset
+
+// Create custom assets map
+val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+    // Load image from app resources (common in Compose Multiplatform)
+    "hero_image" to AdaptyCustomAsset.localImageResource(
+        path = "images/hero_image.png"  // Path in src/commonMain/resources
+    ),
+
+    // Load video from app resources
+    "demo_video" to AdaptyCustomAsset.localVideoResource(
+        path = "videos/demo_video.mp4"
+    ),
+
+    // Apply custom brand colors
+    "brand_primary" to AdaptyCustomAsset.color(
+        colorHex = "#FF6B35"
+    ),
+
+    // Create gradient background
+    "card_gradient" to AdaptyCustomAsset.linearGradient(
+        colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+        stops = listOf(0.0f, 0.5f, 1.0f)
+    )
+)
+
+// Use custom assets when creating paywall view
+val paywallViewResult = AdaptyUI.createPaywallView(
+    paywall = paywall,
+    customAssets = customAssets
+)
+paywallViewResult.onSuccess { paywallView ->
+    // Present the paywall with custom assets
+    paywallView.present()
+}.onError { error ->
+    // Handle the error - paywall will fall back to default appearance
+    AppLogger.e("Failed to create paywall view: ${error.message}")
+}
+```
+
+:::note
+If an asset is not found or fails to load, the paywall will fall back to its default appearance configured in the Paywall Builder.
+:::

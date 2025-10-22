@@ -4,7 +4,8 @@ description: "Explore Adapty's product settings to configure and optimize in-app
 metadataTitle: "Product Configuration Guide | Adapty Docs"
 ---
 
-import ZoomImage from '@site/src/components/ZoomImage';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
@@ -25,6 +26,31 @@ Products connect to your monetization flow step by step:
 
 - A **placement** can target different **[audiences](audience.md)** — that’s how you customize paywalls, run experiments, and optimize performance across user groups.
 
-Make sure you've [done the initial configuration](quickstart) without skipping a single step and [created the products in the App Store](app-store-products) and/or [created products in Google Play](android-products) before adding them in the Adapty Dashboard.
+:::note
+Checklist to successfully display products in your mobile app
+
+1. [Create products in the Adapty Dashboard](create-product).
+2. [Create a paywall in the Adapty Dashboard and add products to it](create-paywall)
+3. Show paywalls using the placements they belong to in your mobile app:
+   - [iOS](ios-quickstart-paywalls.md)
+   - [Android](android-quickstart-paywalls.md)
+   - [Flutter](flutter-quickstart-paywalls.md)
+   - [React Native](react-native-quickstart-paywalls.md)
+   - [Unity](unity-quickstart-paywalls.md)
+:::
+
+After you create products in the Adapty Dashboard, they are visible in the  **[Products](https://app.adapty.io/products)** section.
+
+
+<Zoom>
+  <img src={require('./img/poducts-list.png').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
 
 

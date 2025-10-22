@@ -12,7 +12,7 @@ StoreKit testing in Xcode allows you to test in-app purchases locally without se
 For this kind of testing, you need to:
 
 1. [Create a product in Adapty](quickstart-products.md) and assign it a **App Store product ID**.
-2. In Xcode, create a local StoreKit configuration file and add a product to it. The product ID must be the same as **App Store product ID** in Adapty.
+2. In Xcode, create a local [StoreKit configuration file](https://developer.apple.com/documentation/xcode/setting-up-storekit-testing-in-xcode) and add a product to it. The product ID must be the same as **App Store product ID** in Adapty.
 3. Add the StoreKit configuration file to your build schema and build the app. Launch it on the emulator or on your device.
 
 ## Should I use StoreKit testing in Xcode?

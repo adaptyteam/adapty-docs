@@ -24,7 +24,7 @@ To add a new product to your app:
 1. Go to **[Products](https://app.adapty.io/products)** from the Adapty main menu.
 
 <Zoom>
-  <img src={require('./img/products-tab.png').default}
+  <img src={require('./img/products-tab.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -35,17 +35,6 @@ To add a new product to your app:
 </Zoom>
 
 2. Click **Create product** in the top-right corner. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
-
-<Zoom>
-  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
 
 3. Select **Create a new product and push to stores**.
 
@@ -168,18 +157,6 @@ To add a new product to your app:
 </Zoom>
 
 2. Click **Create product** in the top-right corner. Adapty supports all types of products: subscriptions, non-consumable \(including lifetime\), and consumable.
-
-<Zoom>
-  <img src={require('./img/1d1a1f9-CleanShot_2023-07-28_at_16.38.192x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
 
 3. Select **Connect an existing store product**.
 
