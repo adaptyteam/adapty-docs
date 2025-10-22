@@ -9,6 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
+import ZoomImage from '@site/src/components/ZoomImage';
 
 <CustomDocCardList ids={['create-product', 'edit-product', 'add-product-to-paywall']} />
 
