@@ -94,8 +94,8 @@ Read our guides on how to handle button [actions](kmp-handle-paywall-actions.md)
 :::
 
 ```kotlin showLineNumbers
-AdaptyUI.setObserver(object : AdaptyUIObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
         when (action) {
             AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
         }
@@ -115,8 +115,8 @@ Here is how all those steps can be integrated in your app together.
 
 ```kotlin showLineNumbers
 // Set up the observer for handling paywall actions
-AdaptyUI.setObserver(object : AdaptyUIObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
         when (action) {
             is AdaptyUIAction.CloseAction -> view.dismiss()
         }
