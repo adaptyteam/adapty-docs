@@ -42,7 +42,11 @@ Here's what we'll cover in the integration guide:
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools) that demonstrates the full setup
+**Sample apps**: Check out our complete examples that demonstrate the full setup:
+- [React](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
+- [Vue.js](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
+- [Angular](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
+- [Advanced development tools with all the methods – useful for more complicated cases](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
 
 ## Main concepts
 

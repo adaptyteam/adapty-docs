@@ -28,7 +28,7 @@ Choose your platform and dive right in:
 
 **iOS**
 - **[SDK Quickstart](ios-sdk-overview.md)** 
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)**
+- **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)**
 
 **Android**
 - **[SDK Quickstart](android-sdk-overview.md)** 
@@ -48,7 +48,7 @@ Choose your platform and dive right in:
 
 **Capacitor (Beta)**
 - **[SDK Quickstart](capacitor-sdk-overview.md)**
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)**
+- **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples)**
 
 **Kotlin Multiplatform**:
 - **[SDK Quickstart](kmp-sdk-overview.md)**

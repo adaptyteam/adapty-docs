@@ -28,4 +28,4 @@ You have three paths to get started depending on your preferences:
     - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
     - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)
     - [Kotlin Multiplatform](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example)
-    - [Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
+    - [Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples)
