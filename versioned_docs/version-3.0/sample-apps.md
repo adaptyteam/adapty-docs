@@ -38,4 +38,4 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 - [Capacitor (React)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
 - [Capacitor (Vue.js)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
 - [Capacitor (Angular)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
-- [Capacitor (Advanced dev tools)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
+- [Capacitor (Advanced development tools with all the methods – useful for more complicated cases)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
