@@ -13,10 +13,13 @@ User Acquisition helps you connect ad spend with subscription revenue, giving yo
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
+The User Acquisition integration is supported in all Adapty SDK platforms including Kotlin Multiplatform.
+
 :::warning
 User Acquisition is only available with:
 - iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
 - React Native Adapty SDK version 3.10.0 or higher.
+- Kotlin Multiplatform Adapty SDK version 3.8.0 or higher.
 :::
 
 ## How to set up User Acquisition integration
@@ -82,7 +85,7 @@ nonisolated func onInstallationDetailsFail(error: AdaptyError) {
 
 </TabItem>
 
-<TabItem value="android" label="Kotlin">
+<TabItem value="android" label="Android">
 
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
@@ -91,6 +94,31 @@ Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
     }
     override fun onInstallationDetailsFailure(error: AdaptyError) {
         // installation details update failed
+    }
+})
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.OnInstallationDetailsListener
+import com.adapty.kmp.models.AdaptyInstallationDetails
+
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        // use installation details
+        val installId = details.installId
+        val installTime = details.installTime
+        val launchCount = details.appLaunchCount
+        val payload = details.payload
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // installation details update failed
+        println("Installation details failed: ${error.message}")
     }
 })
 ```
@@ -136,7 +164,7 @@ You can also retrieve the installation status manually:
 ```swift showLineNumbers
 do {
     let status = try await Adapty.getCurrentInstallationStatus()
-    
+
     switch status {
     case .notAvailable:
         // Installation details are not available on this device
@@ -151,7 +179,7 @@ do {
 ```
 
 </TabItem>
-<TabItem value="android" label="Kotlin">
+<TabItem value="android" label="Android">
 
 ```kotlin showLineNumbers
 Adapty.getCurrentInstallationStatus { result ->
@@ -172,6 +200,44 @@ Adapty.getCurrentInstallationStatus { result ->
         is AdaptyResult.Error -> {
             // handle the error
         }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyInstallationStatus
+import com.adapty.kmp.models.AdaptyInstallationStatusDetermined
+import com.adapty.kmp.models.AdaptyInstallationStatusNotAvailable
+import com.adapty.kmp.models.AdaptyInstallationStatusNotDetermined
+
+suspend fun getInstallationStatus() {
+    val result = Adapty.getCurrentInstallationStatus()
+    result.onSuccess { status ->
+        when (status) {
+            is AdaptyInstallationStatusDetermined -> {
+                // Use the installation details
+                val details = status.details
+                println("Install ID: ${details.installId}")
+                println("Install time: ${details.installTime}")
+                println("Launch count: ${details.appLaunchCount}")
+            }
+            AdaptyInstallationStatusNotAvailable -> {
+                // Installation details are not available on this device
+                println("Installation details not available")
+            }
+            AdaptyInstallationStatusNotDetermined -> {
+                // Installation details have not been determined yet
+                println("Installation details not determined yet")
+            }
+        }
+    }.onError { error ->
+        // handle the error
+        println("Failed to get installation status: ${error.message}")
     }
 }
 ```
