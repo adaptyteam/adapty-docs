@@ -395,3 +395,35 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 ```
 </TabItem>
 </Tabs>
+
+## Run Adapty in a custom process
+
+By default, Adapty can only run in the main process of your app.
+If your app uses multiple processes, initialize Adapty only once; otherwise, unexpected behavior may occur.
+
+If you need to run Adapty in a different process, specify it in your configuration:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+If you try to activate Adapty in another process without setting this value, the SDK will log a warning and skip activation.
