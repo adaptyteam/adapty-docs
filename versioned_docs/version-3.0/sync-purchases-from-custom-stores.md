@@ -1,52 +1,35 @@
 ---
-title: "Sync purchases between web and mobile"
-description: "Sync subscribers on web and mobile."
+title: "Sync transactions from custom stores"
+description: "Sync transactions from custom stores to Adapty to provide access and track revenue."
 metadataTitle: "Guides | API | Adapty"
 displayed_sidebar: APISidebar
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-If your users can purchase a product on your **website**, you can keep their access levels automatically synced with your **mobile app**.
+If you're selling subscriptions or in-app purchases through **custom stores** like Amazon Appstore, Microsoft Store, or your own payment platform, you can sync those transactions with Adapty to automatically manage access levels and track revenue in your analytics.
 
-In this guide, you will learn how to do it using the Adapty API and SDK.
+In this guide, you'll learn how to connect custom store purchases with Adapty using the SDK and API.
 
 #### Sample use case
 
-Let's say, in your app, sers can sign up for a freemium plan on both mobile and web. You allow them to upgrade to a Premium plan on your website via Stripe or Chargebee.
-Once a user subscribes on the web, you want them to immediately get Premium access in the mobile app — without waiting or re-logging.
+Let's say you're distributing your app on Amazon Appstore, or you've built your own web store for direct purchases. When a user completes a purchase through these platforms, you want to:
+- Automatically grant them access to premium features in your mobile app
+- Track the transaction in Adapty analytics alongside your App Store and Google Play revenue
+- Trigger integrations and webhooks just like any other subscription
 
-That’s what Adapty helps you automate.
+That's what this integration helps you achieve.
 
 ## Step 1. Identify users
 
 Adapty uses `customer_user_id` to identify users across platforms.
 
-You should create this ID once and pass it to both your mobile SDK and web backend. 
-
-### Sign up from web
-
-When your users sign up on your website, you need to create a profile for them in Adapty using the server-side API.
-
-See the method reference [here](api-adapty#/operations/createProfile).
-
-```curl
-curl --request POST \
-  --url https://api.adapty.io/api/v2/server-side-api/profile/ \
-  --header 'Accept: application/json' \
-  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
-  --header 'Content-Type: application/json' \
-  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID'
-```
-
-### Sign up from app
-
-When your users first sign up from the app, you can pass their customer user ID during the SDK activation, or if you have activated the Adapty SDK before the signup stage, use the `identify` method to create a new profile and assign it a customer user ID.
+You should create this ID once and pass it to both your mobile SDK and web backend. When your users first sign up from the app, you can pass their customer user ID during the SDK activation, or if you have activated the Adapty SDK before the signup stage, use the `identify` method to create a new profile and assign it a customer user ID.
 
 :::important
-If you identify new users after the SDK activation, first, the SDK will create an anonymous profile, as it can't work without any profile at all. Next, when you identify the user and assign them a new customer user ID, a new profile will be created.
+If you identify new users after SDK activation, the SDK will first create an anonymous profile (it can't work without one). When you call `identify` with a customer user ID, a new profile will be created.
 
-This behavior is completely normal, and it won't affect the analytics accuracy. Read more [here](ios-quickstart-identify.md ).
+This behavior is normal and won't affect analytics accuracy. Read more [here](ios-quickstart-identify.md).
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -145,52 +128,76 @@ try {
 </TabItem>
 </Tabs>
 
-## Step 2. Check subscription status via API
+## Step 2. Create a custom store in Adapty Dashboard
 
-When a user logs in on your website, fetch their Adapty profile using the API.
+Before you can sync transactions, you need to set up a custom store in the Adapty Dashboard.
 
-If the user doesn’t have an active subscription, you can display a paywall.
+1. Go to [**App Settings → General**](https://app.adapty.io/settings/general) in the Adapty Dashboard.
+2. In the **Stores** section, click **Add Store**.
+3. Select **Custom store** from the list.
+4. Give your store a name (e.g., "Amazon Appstore", "Microsoft Store", or "Web Store").
+5. Save the store.
 
-See the method reference [here](api-adapty#/operations/getProfile).
+Once created, you'll use this store when syncing transactions via API. Make sure to note the store name—you'll need it in Step 3.
 
-```curl
-curl --request GET \
-  --url https://api.adapty.io/api/v2/server-side-api/profile/ \
-  --header 'Accept: application/json' \
-  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
-  --header 'adapty-customer-user-id: YOUR_USER_ID' \
-```
+## Step 3. Create products in your custom store
 
-## Step 3. Display a paywall on your website
+After creating your custom store, you need to add products to it so Adapty can match transactions to the correct items.
 
-On your website, show a paywall for freemium users.
-You can use any payment provider (Stripe, Chargebee, LemonSqueezy, etc.).
+1. In the Adapty Dashboard, navigate to [**Products & Paywalls → Products**](https://app.adapty.io/products).
+2. Click **Add Product**.
+3. Fill in the product details:
+   - **Product ID**: This should match the product identifier from your custom store (e.g., Amazon product ID)
+   - **Store**: Select the custom store you created in Step 2
+   - **Access Level**: Choose which access level this product grants
+   - **Duration**: Set the subscription duration (if applicable)
+4. Save the product.
 
-## Step 4. Update subscription status in Adapty
+Repeat this for each product you sell through your custom store.
 
-After the payment is completed on your website, call Adapty API to update the user’s access level according to the product they bought.
+## Step 4. Sync transactions via API
 
-See the method reference [here](api-adapty#/operations/grantAccessLevel).
+When a purchase is completed in your custom store, you need to validate it on your backend and then sync it to Adapty using the Set Transaction API.
+
+This API call will:
+- Record the transaction in Adapty
+- Grant the corresponding access level to the user
+- Trigger any integrations and webhooks you've configured
+- Make the transaction appear in your analytics
+
+See the full method reference [here](api-adapty#/operations/setTransaction).
 
 ```curl
 curl --request POST \
-  --url https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/ \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/profile/transaction/ \
   --header 'Accept: application/json' \
   --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
   --header 'Content-Type: application/json' \
   --header 'adapty-customer-user-id: YOUR_USER_ID' \
   --data '{
-  "access_level_id": "YOUR_ACCESS_LEVEL"
+  "store": "YOUR_CUSTOM_STORE_NAME",
+  "product_id": "YOUR_PRODUCT_ID",
+  "transaction_id": "UNIQUE_TRANSACTION_ID",
+  "purchased_at": "2024-01-15T10:30:00Z",
+  "price": 9.99,
+  "currency": "USD"
 }'
 ```
 
-## Step 5. Sync status in the app
+:::important Required parameters
+- **store**: The exact name of your custom store from Step 2
+- **product_id**: The product ID you configured in Step 3
+- **transaction_id**: A unique identifier for this transaction (must be unique per user)
+- **purchased_at**: ISO 8601 timestamp when the purchase occurred
+- **price**: The amount paid by the user
+- **currency**: Three-letter ISO currency code (e.g., USD, EUR, GBP)
+:::
 
-When the user opens your mobile app, pull the updated profile and unlock paid features.
+## Step 5. Verify access in the app
 
-You need to either get their profile or sync it automatically. Then, get the access level from it.
+Once the transaction is synced, the user's profile will be automatically updated with the new access level.
 
-Below, you see how to get the profile and check its status. For more details, go [here](ios-check-subscription-status.md).
+When the user opens your mobile app, fetch their profile to check their subscription status and unlock premium features.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS" default>
