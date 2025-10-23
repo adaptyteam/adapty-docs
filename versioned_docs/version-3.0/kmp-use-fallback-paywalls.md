@@ -29,7 +29,7 @@ Here's an example of setting up fallback paywalls for both platforms:
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 
-Adapty.setFallbackPaywalls(assetId = "fallback.json")
+Adapty.setFallback(assetId = "fallback.json")
     .onSuccess { 
         // Fallback paywalls loaded successfully
     }
