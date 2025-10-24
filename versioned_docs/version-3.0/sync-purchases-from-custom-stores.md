@@ -134,37 +134,24 @@ try {
 For Adapty to match custom store transactions with your products, you need to add products and and set up the custom store details for them.
 
 1. Go to [**Products**](https://app.adapty.io/settings/general) from the left menu in the Adapty Dashboard and click **Create product**. Or, click an existing product to edit it.
-2. Click **+** and select **Add a custom store**.
-3. Click **Create new custom store**.
+2. Ensure you have selected an [access level](access-level.md) you want to grant users purchasing the product.
+3. Click **+** and select **Add a custom store**.
+4. Click **Create new custom store**.
 
 <ZoomImage id="add-custom-store.webp" width="500px" />
 
-4. Give your store a name (e.g., "Amazon Appstore", "Microsoft Store", or "Web Store") and ID. Click **Create custom store**.
+5. Give your store a name (e.g., "Amazon Appstore", "Microsoft Store", or "Web Store") and ID. Click **Create custom store**.
 
 <ZoomImage id="new-store.webp" width="500px" />
 
-5. Then, click **Save changes** to link the product to the custom store.
+6. Then, click **Save changes** to link the product to the custom store.
+7. Enter **Store product ID** for the product, so you map it with some product in that store. Then, click **Save**.
 
-Once created, you'll use this store when syncing transactions via API. Make sure to note the store name—you'll need it in Step 3.
+<ZoomImage id="store-product-id.webp" width="500px" />
 
-## Step 3. Create products in your custom store
+## Step 3. Sync transactions via API
 
-After creating your custom store, you need to add products to it so Adapty can match transactions to the correct items.
-
-1. In the Adapty Dashboard, navigate to [**Products & Paywalls → Products**](https://app.adapty.io/products).
-2. Click **Add Product**.
-3. Fill in the product details:
-   - **Product ID**: This should match the product identifier from your custom store (e.g., Amazon product ID)
-   - **Store**: Select the custom store you created in Step 2
-   - **Access Level**: Choose which access level this product grants
-   - **Duration**: Set the subscription duration (if applicable)
-4. Save the product.
-
-Repeat this for each product you sell through your custom store.
-
-## Step 4. Sync transactions via API
-
-When a purchase is completed in your custom store, you need to validate it on your backend and then sync it to Adapty using the Set Transaction API.
+When a purchase is completed in your custom store, you need to sync it to Adapty using the server-side API.
 
 This API call will:
 - Record the transaction in Adapty
@@ -176,31 +163,37 @@ See the full method reference [here](api-adapty#/operations/setTransaction).
 
 ```curl
 curl --request POST \
-  --url https://api.adapty.io/api/v2/server-side-api/purchase/profile/transaction/ \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/ \
   --header 'Accept: application/json' \
   --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
   --header 'Content-Type: application/json' \
-  --header 'adapty-customer-user-id: YOUR_USER_ID' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
   --data '{
-  "store": "YOUR_CUSTOM_STORE_NAME",
-  "product_id": "YOUR_PRODUCT_ID",
-  "transaction_id": "UNIQUE_TRANSACTION_ID",
-  "purchased_at": "2024-01-15T10:30:00Z",
-  "price": 9.99,
-  "currency": "USD"
+  "purchase_type": "PRODUCT_PERIOD",
+  "store": "YOUR_CUSTOM_STORE",
+  "environment": "production",
+  "store_product_id": "YOUR_STORE_PRODUCT_ID",
+  "store_transaction_id": "STORE_TRANSACTION_ID",
+  "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
+  "price": {
+    "country": "COUNTRY_CODE",
+    "currency": "CURRENCY_CODE",
+    "value": "YOUR_PRICE"
+  },
+  "purchased_at": "2024-01-15T10:30:00Z"
 }'
 ```
 
-:::important Required parameters
-- **store**: The exact name of your custom store from Step 2
-- **product_id**: The product ID you configured in Step 3
-- **transaction_id**: A unique identifier for this transaction (must be unique per user)
+:::important 
+Important parameters:
+- **store**: The ID of your custom store from Step 2
+- **store_product_id**: Store product ID from Step 2
+- **store_transaction_id**: A unique identifier for this transaction
 - **purchased_at**: ISO 8601 timestamp when the purchase occurred
 - **price**: The amount paid by the user
-- **currency**: Three-letter ISO currency code (e.g., USD, EUR, GBP)
 :::
 
-## Step 5. Verify access in the app
+## Step 4. Verify access in the app
 
 Once the transaction is synced, the user's profile will be automatically updated with the new access level.
 
