@@ -188,7 +188,7 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 
 ## Step 6. Add App Store Connect API key
 
-Generate an App Store Connect API key and add it to Adapty to be able to manage your products in the App Store from the Adapty dashboard:
+Generate an App Store Connect API key and add it to Adapty to be able to [manage your products in the App Store from the Adapty dashboard](create-product#create-product-and-push-to-store):
 
 1. In App Store Connect, go to [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) and click **+**.
 
