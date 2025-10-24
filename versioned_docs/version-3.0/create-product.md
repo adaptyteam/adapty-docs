@@ -17,6 +17,8 @@ The way you create products in Adapty depends on whether you already have them i
 Before you start, ensure you've configured the integration with the stores you need:
 - [App Store](initial_ios.md)
 - [Google Play](initial-android.md)
+
+If you configured the App Store integration some time ago, ensure you've [added the App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key) as well.
 :::
 
 To add a new product to your app:

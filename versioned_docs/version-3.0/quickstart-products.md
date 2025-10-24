@@ -48,6 +48,10 @@ Let's say you want to add a monthly subscription as a product.
 
 <TabItem value="no-products" label="No products in stores yet" default>
 
+:::important
+Before you start, ensure you have configured the integration with [App Store](initial_ios.md) and/or [Google Play](initial-android.md). For App Store, ensure you have [added the App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key), so Adapty can push products.
+:::
+
 3. Select **Create a new product and push to stores**.
 
 4. Add product details:
