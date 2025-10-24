@@ -6,6 +6,7 @@ displayed_sidebar: APISidebar
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import ZoomImage from '@site/src/components/ZoomImage';
 
 If you're selling subscriptions or in-app purchases through **custom stores** like Amazon Appstore, Microsoft Store, or your own payment platform, you can sync those transactions with Adapty to automatically manage access levels and track revenue in your analytics.
 
@@ -24,7 +25,7 @@ That's what this integration helps you achieve.
 
 Adapty uses `customer_user_id` to identify users across platforms.
 
-You should create this ID once and pass it to both your mobile SDK and web backend. When your users first sign up from the app, you can pass their customer user ID during the SDK activation, or if you have activated the Adapty SDK before the signup stage, use the `identify` method to create a new profile and assign it a customer user ID.
+You need to create this ID once and pass it to both your mobile SDK and web backend. When your users first sign up from the app, you can pass their customer user ID during the SDK activation, or if you have activated the Adapty SDK before the signup stage, use the `identify` method to create a new profile and assign it a customer user ID.
 
 :::important
 If you identify new users after SDK activation, the SDK will first create an anonymous profile (it can't work without one). When you call `identify` with a customer user ID, a new profile will be created.
@@ -128,15 +129,21 @@ try {
 </TabItem>
 </Tabs>
 
-## Step 2. Create a custom store in Adapty Dashboard
+## Step 2. Create products in a custom store in Adapty Dashboard
 
-Before you can sync transactions, you need to set up a custom store in the Adapty Dashboard.
+For Adapty to match custom store transactions with your products, you need to add products and and set up the custom store details for them.
 
-1. Go to [**App Settings → General**](https://app.adapty.io/settings/general) in the Adapty Dashboard.
-2. In the **Stores** section, click **Add Store**.
-3. Select **Custom store** from the list.
-4. Give your store a name (e.g., "Amazon Appstore", "Microsoft Store", or "Web Store").
-5. Save the store.
+1. Go to [**Products**](https://app.adapty.io/settings/general) from the left menu in the Adapty Dashboard and click **Create product**. Or, click an existing product to edit it.
+2. Click **+** and select **Add a custom store**.
+3. Click **Create new custom store**.
+
+<ZoomImage id="add-custom-store.webp" width="500px" />
+
+4. Give your store a name (e.g., "Amazon Appstore", "Microsoft Store", or "Web Store") and ID. Click **Create custom store**.
+
+<ZoomImage id="new-store.webp" width="500px" />
+
+5. Then, click **Save changes** to link the product to the custom store.
 
 Once created, you'll use this store when syncing transactions via API. Make sure to note the store name—you'll need it in Step 3.
 
