@@ -9,6 +9,10 @@ Adapty UA’s Meta integration lets you track and optimize campaign performance 
 
 ## Step 1. Connect your Facebook account
 
+:::important
+Ensure your Facebook account has access to campaigns and pixels you need.
+:::
+
 1. Go to **Integrations > Meta** from the left sidebar and click **Continue with Facebook**.
 
 <ZoomImage id="ua-connect-meta.webp" width="700px" />
@@ -33,7 +37,7 @@ To add a Meta campaign to Adapty User Acquisition and track how your Meta ads wo
 
 <ZoomImage id="ua-url.webp" width="900px" />
 
-3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your campaign, go to the **Tracking** section, and paste the value to the **URL parameters** field. This will allow Adapty to connect installs and purchases to ads in Meta.
+3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your campaign and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
 
 <ZoomImage id="ua-lnk.webp" width="900px" />
 
