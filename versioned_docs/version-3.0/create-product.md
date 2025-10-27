@@ -17,6 +17,8 @@ The way you create products in Adapty depends on whether you already have them i
 Before you start, ensure you've configured the integration with the stores you need:
 - [App Store](initial_ios.md)
 - [Google Play](initial-android.md)
+
+If you configured the App Store integration some time ago, ensure you've [added the App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key) as well.
 :::
 
 To add a new product to your app:
@@ -73,8 +75,8 @@ To add a new product to your app:
 5. Click **Save & Continue**.
 6. Configure the product information for App Store if you plan to publish there:
    - **Product ID**: Create a permanent unique ID for the product.
-   - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
-   - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store.
+   - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name. After Adapty creates it, you can select it from the dropdown.
+   - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store. See the official Apple [recommendations and specifications](https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots/) for submitting screenshots.
 
 <Zoom>
   <img src={require('./img/push-app-store.webp').default}

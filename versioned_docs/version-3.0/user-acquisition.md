@@ -1,5 +1,5 @@
 ---
-title: "User Acquisition"
+title: "Get started with Adapty User Acquisition"
 description: "Connect with Adapty User Acquisition to blend ad spending and subscription revenue and see the whole app economy in one place."
 metadataTitle: "Connecting with Adapty User Acquisition | Adapty Docs"
 ---
@@ -13,16 +13,12 @@ User Acquisition helps you connect ad spend with subscription revenue, giving yo
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
-The User Acquisition integration is supported in all Adapty SDK platforms including Kotlin Multiplatform.
-
 :::warning
-User Acquisition is only available with:
-- iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
-- React Native Adapty SDK version 3.10.0 or higher.
-- Kotlin Multiplatform Adapty SDK version 3.8.0 or higher.
+User Acquisition is only available with the Adapty SDK version 3.9.1 or higher.
 :::
 
-## How to set up User Acquisition integration
+## Enable the User Acquisition integration
+
 To enable the integration:
 1. Go to [Integrations > Adapty](https://app.adapty.io/integrations/user-acquisition) in the Adapty Dashboard.
 2. Turn on the toggle.
@@ -64,7 +60,11 @@ You can check the full list of supported events [here](events.md).
 />
 </Zoom>
 
-## SDK configuration
+## Listen for installation details updates
+
+:::important
+You need to [install and activate the Adapty SDK](installation-of-adapty-sdks.md) first.
+:::
 
 To listen for installation details updates, use these two methods:
 
@@ -85,7 +85,7 @@ nonisolated func onInstallationDetailsFail(error: AdaptyError) {
 
 </TabItem>
 
-<TabItem value="android" label="Android">
+<TabItem value="android" label="Kotlin">
 
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
@@ -94,31 +94,6 @@ Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
     }
     override fun onInstallationDetailsFailure(error: AdaptyError) {
         // installation details update failed
-    }
-})
-```
-
-</TabItem>
-
-<TabItem value="kmp" label="Kotlin Multiplatform">
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.OnInstallationDetailsListener
-import com.adapty.kmp.models.AdaptyInstallationDetails
-
-Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
-    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        // use installation details
-        val installId = details.installId
-        val installTime = details.installTime
-        val launchCount = details.appLaunchCount
-        val payload = details.payload
-    }
-
-    override fun onInstallationDetailsFailure(error: AdaptyError) {
-        // installation details update failed
-        println("Installation details failed: ${error.message}")
     }
 })
 ```
@@ -164,7 +139,7 @@ You can also retrieve the installation status manually:
 ```swift showLineNumbers
 do {
     let status = try await Adapty.getCurrentInstallationStatus()
-
+    
     switch status {
     case .notAvailable:
         // Installation details are not available on this device
@@ -179,7 +154,7 @@ do {
 ```
 
 </TabItem>
-<TabItem value="android" label="Android">
+<TabItem value="android" label="Kotlin">
 
 ```kotlin showLineNumbers
 Adapty.getCurrentInstallationStatus { result ->
@@ -200,44 +175,6 @@ Adapty.getCurrentInstallationStatus { result ->
         is AdaptyResult.Error -> {
             // handle the error
         }
-    }
-}
-```
-
-</TabItem>
-
-<TabItem value="kmp" label="Kotlin Multiplatform">
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyInstallationStatus
-import com.adapty.kmp.models.AdaptyInstallationStatusDetermined
-import com.adapty.kmp.models.AdaptyInstallationStatusNotAvailable
-import com.adapty.kmp.models.AdaptyInstallationStatusNotDetermined
-
-suspend fun getInstallationStatus() {
-    val result = Adapty.getCurrentInstallationStatus()
-    result.onSuccess { status ->
-        when (status) {
-            is AdaptyInstallationStatusDetermined -> {
-                // Use the installation details
-                val details = status.details
-                println("Install ID: ${details.installId}")
-                println("Install time: ${details.installTime}")
-                println("Launch count: ${details.appLaunchCount}")
-            }
-            AdaptyInstallationStatusNotAvailable -> {
-                // Installation details are not available on this device
-                println("Installation details not available")
-            }
-            AdaptyInstallationStatusNotDetermined -> {
-                // Installation details have not been determined yet
-                println("Installation details not determined yet")
-            }
-        }
-    }.onError { error ->
-        // handle the error
-        println("Failed to get installation status: ${error.message}")
     }
 }
 ```
