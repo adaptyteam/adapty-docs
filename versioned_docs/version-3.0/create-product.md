@@ -220,6 +220,10 @@ To add a new product to your app:
 
 9. You can [create offers](create-offer) for the product if needed. To add offers, click **Yes, add offers**. Otherwise, click **No, thanks**.
 
+:::note
+Introductory offers are created in Adapty only when pushing a product to the store. When importing or for previously created products, introductory offers are not synced and are not displayed in Adapty but will still work correctly in the app.
+:::
+
 ## Next steps
 
 Congratulations! You've added your products to Adapty. What's next?
