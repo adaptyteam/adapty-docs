@@ -18,4 +18,11 @@ Measuring user acquisition performance is challenging. Data is often scattered a
 
 Adapty UA provides built-in attribution and unified analytics. You can focus on growing your app instead of managing data systems.
 
-<CustomDocCardList ids={['ua-analytics', 'ua-integrations']} />
+<CustomDocCardList ids={['user-acquisition', 'ua-analytics', 'ua-integrations']} />
+
+## Get started
+
+To get started with Adapty User Acquisition:
+
+1. [Enable Adapty UA](user-acquisition.md)
+2. Enable the [Meta Ads](ua-facebook.md) and/or [TikTok for business](ua-tiktok.md) and add campaigns.
