@@ -86,15 +86,21 @@ Click **Save** to apply your attribution settings.
 
 <ZoomImage id="ua-meta-attribution-settings.webp" width="900px" />
 
-### Deferred deeplinks
+### Deferred deep linking
 
-Deferred deeplinks allow you to pass custom data to your app when users install it after clicking your Meta Ads. This is particularly useful for creating personalized user experiences and tracking campaign performance with granular data.
+Deferred deeplinks allow you to pass custom data to your app when users install it after clicking your Meta Ads. For example, you can navigate them to a specific location in your app right after they install and launch it.
 
 Here's how it works:
 
-1. When a user clicks your Meta ad, Meta stores the deeplink data. 
-2. After the user installs your app and it launches for the first time, Adapty retrieves the stored data and your app receives the custom parameters, allowing you to personalize the experience or track the campaign.
+1. When a user clicks your Meta ad, Meta stores the click data. 
+2. When Adapty registers the install event, it gets deferred data from the click.
+3. After the user installs your app, and it launches for the first time, Adapty retrieves the stored data and your app receives the custom parameters, allowing you to react to different values in the app code.
 
+Adapty supports the following deferred data parameters:
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- 
 To set up deferred deeplinks:
 
 1. Go to the **Deferred Deeplinks** tab in your campaign configuration. 
