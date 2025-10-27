@@ -4,6 +4,8 @@ metadataTitle: "Using Adapty User Acquisition | Adapty Docs"
 keywords: ['adapty ua', 'user acquisition']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 Adapty UA’s TikTok for Business integration lets you track and optimize campaign performance in TikTok.
 
