@@ -16,15 +16,13 @@ Advanced transaction management in Adapty gives you more control over how transa
 
 Advanced transaction management introduces three optional features that work together:
 
-| Feature | Purpose |
-|----------|----------|
-| [`appAccountToken`](#assign-appaccounttoken) | Links Apple transactions to your internal user ID |
-| [`jwsTransaction`](#access-the-jws-representation) | Provides Apple’s signed transaction payload for validation |
-| [Manual finishing](#3-manual-transaction-finishing) | Lets you finish transactions only after your backend confirms success |
+| Feature                                                     | Purpose |
+|-------------------------------------------------------------|----------|
+| [`appAccountToken`](#assign-appaccounttoken)                | Links Apple transactions to your internal user ID |
+| [`jwsTransaction`](#access-the-jws-representation)          | Provides Apple’s signed transaction payload for validation |
+| [Manual finishing](#control-transaction-finishing-behavior) | Lets you finish transactions only after your backend confirms success |
 
 Together, these tools let you build robust custom validation flows while Adapty continues syncing transactions with its backend.
-
-<ZoomImage id="transaction-management.png" width="700px" />
 
 :::important
 Most apps don’t need this.
@@ -79,14 +77,14 @@ do {
 let configurationBuilder =
     AdaptyConfiguration
         .builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
 
 Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
 }
 
 // Or when identifying a user:
-Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
     if let error {
         // handle the error
     }
@@ -97,7 +95,7 @@ Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
 
 ## Access the JWS representation 
 
-When you make a purchase, the result includes Apple’s transaction in [JWS Compact Serialization format](https://developer.apple.com/documentation/AppStoreServerAPI/JWSTransaction).
+When you make a purchase, the result includes Apple’s transaction in [JWS Compact Serialization format](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo).
 You can forward this value to your backend for independent validation or logging.
 
 ```swift
@@ -106,6 +104,8 @@ let jwsRepresentation = result.jwsTransaction
 ```
 
 ## Control transaction finishing behavior
+
+<ZoomImage id="transaction-management.png" width="700px" />
 
 By default, Adapty automatically finishes StoreKit transactions after validation.
 If you need to delay finishing until your backend confirms success, set the finishing behavior to manual.
