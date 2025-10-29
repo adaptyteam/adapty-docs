@@ -128,7 +128,7 @@ Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
 
 </Tabs>
 
-### Set up fallback deferred data parameters
+#### Set up fallback deferred data parameters
 
 In the [Meta Ads](ua-facebook.md) and [TikTok for Business](ua-tiktok.md) integrations, you can set up fallback values for deferred data parameters. If deferred data is not retrieved from the click link, these fallback values will be used instead.
 
