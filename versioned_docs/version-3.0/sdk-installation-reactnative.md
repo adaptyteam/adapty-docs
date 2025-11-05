@@ -42,27 +42,35 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 <Tabs>
 <TabItem value="expo" label="Expo" default>
 
-1. Install EAS CLI (if not already):
-   ```sh showLineNumbers title="Shell"
-   npm install -g eas-cli
+:::warning
+[Expo DevClient](https://docs.expo.dev/versions/latest/sdk/dev-client/) is required. Expo Go will **not** work because the Adapty SDK includes native dependencies.
+:::
+
+1. Install Adapty SDK:
+   ```sh 
+   npx expo install react-native-adapty
+   npx expo prebuild
    ```
-2. Install the dev client:
-   ```sh showLineNumbers title="Shell"
-   expo install expo-dev-client
-   ```
-3. Install Adapty SDK:
-   ```sh showLineNumbers title="Shell"
-   expo install react-native-adapty
-   ```
-4. Build your app for development:
-   ```sh showLineNumbers title="Shell"
+2. Build your app for development using EAS or local build:
+   ```sh title="EAS Build"
+   # For iOS
    eas build --profile development --platform ios
+   
+   # For Android
    eas build --profile development --platform android
    ```
-5. Start the dev server:
-   ```sh showLineNumbers title="Shell"
-   expo start --dev-client
+   ```sh title="Local Build"
+   # For iOS
+   npx expo run:ios
+   
+   # For Android
+   npx expo run:android
    ```
+3. Start the dev server:
+   ```sh 
+   npx expo start --dev-client
+   ```
+
 
 </TabItem>
 <TabItem value="react-native" label="Pure React Native">
