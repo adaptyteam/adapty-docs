@@ -186,6 +186,105 @@ The **App Store shared secret**, also known as the App Store Connect Shared Secr
 
 6. Click the **Save** button in the Adapty Dashboard to confirm the changes.
 
+## Step 6. Add App Store Connect API key
+
+Generate an App Store Connect API key and add it to Adapty to be able to [manage your products in the App Store from the Adapty dashboard](create-product#create-product-and-push-to-store):
+
+1. In App Store Connect, go to [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) and click **+**.
+
+<Zoom>
+  <img src={require('./img/app-store-connect-api.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. In the **Generate API key window**, enter a name for the key and grant it the **Admin** access.
+
+<Zoom>
+  <img src={require('./img/generate-api-key.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Click **Download** next to your key. Note that you can download it only once.
+
+<Zoom>
+  <img src={require('./img/download-api-key.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. In the Adapty dashboard, go to [**App settings > iOS SDK**](https://app.adapty.io/settings/ios-sdk) and click **Connect API key**.
+
+<Zoom>
+  <img src={require('./img/connect-api-key.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Fill in the fields in the window:
+   - **Issuer ID**: Copy from [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api). It is above the **API keys** table.
+
+<Zoom>
+  <img src={require('./img/issuer-id.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+   - **Key ID**: Copy from [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api). It is in the **API keys** table next to your key.
+
+<Zoom>
+  <img src={require('./img/key-id.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+   - **API key**: Upload the API key file you've downloaded from App Store Connect.
+
+<Zoom>
+  <img src={require('./img/app-store-connect-key.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '500px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Click **Connect**.
+
+
 **What's next**
 
 - [Enable App Store server notifications](enable-app-store-server-notifications)

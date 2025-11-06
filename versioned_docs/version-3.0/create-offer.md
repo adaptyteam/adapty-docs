@@ -48,7 +48,7 @@ Once your promotional offer (for both the Play Store and App Store) or Win-back 
 />
 </Zoom>
 
-3. In the **Edit product** window, switch to the **Offers** tab and click **Add offer**.
+3. In the **Edit product** window, click **+** and select **Add offers**.
 
 <Zoom>
   <img src={require('./img/add-offer.webp').default}
@@ -61,7 +61,8 @@ Once your promotional offer (for both the Play Store and App Store) or Win-back 
 />
 </Zoom>
 
-4. Then enter the offer details for the product.
+4. Click **Add offer**.
+5. Then enter the offer details for the product.
 
    Here are the fields for the offer:
 
@@ -71,9 +72,9 @@ Once your promotional offer (for both the Play Store and App Store) or Win-back 
    - **Play Store Offer ID**: Similarly, this is the unique ID for the offer [that you set in the Play Store](android-products).
 
 :::tip
-If the **App Store Offer ID** or **Play Store Offer ID** field is not active, switch to the **Products** tab and add a product ID.
+If the **App Store Offer ID** or **Play Store Offer ID** field is not active, switch to the **Products** tab and select a product ID.
 :::
-
+ 
 <Zoom>
   <img src={require('./img/offers.webp').default}
   style={{
@@ -86,8 +87,8 @@ If the **App Store Offer ID** or **Play Store Offer ID** field is not active, sw
 </Zoom>
 
 
-5. (optional) Add more offers if needed by clicking **Add offer**.
-6. Click **Save** to add the offers to the product.
+6. (optional) Add more offers if needed by clicking **Add offer**.
+7. Click **Save** to add the offers to the product.
 
 ## 2. Add offer to paywall
 

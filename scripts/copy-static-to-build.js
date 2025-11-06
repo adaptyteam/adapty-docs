@@ -5,6 +5,7 @@ async function copyStaticMarkdownAndLlms() {
   const staticDir = path.join(__dirname, '..', 'static');
   const publicDir = path.join(__dirname, '..', 'public');
   const buildDir = path.join(__dirname, '..', 'build');
+  const apiSpecsDir = path.join(__dirname, '..', 'api-specs');
 
   if (!fs.existsSync(staticDir)) {
     console.error('Static directory does not exist.');
@@ -79,10 +80,11 @@ async function copyStaticMarkdownAndLlms() {
         console.log(`Copied ${platform}-llms-full.txt to build directory`);
       }
     }
+    
     if (copied.length === 0) {
       console.log('No markdown files or LLM files found to copy.');
     } else {
-      console.log('Successfully copied markdown files and LLM files to build directory');
+      console.log('Successfully copied markdown files and LLM files');
     }
   } catch (err) {
     console.error('Error copying markdown files and LLM files:', err);

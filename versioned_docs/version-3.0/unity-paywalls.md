@@ -5,11 +5,24 @@ metadataTitle: "Paywalls | Unity SDK | Adapty Docs"
 displayed_sidebar: sdkunity
 ---
 
-This page contains all guides for working with paywalls in your Unity app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](unity-get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](unity-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](unity-handling-events)** - Manage paywall interactions
-- **[Work with paywalls offline](unity-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](unity-localizations-and-locale-codes)** - Support multiple languages
-- **[Implement paywalls manually](unity-implement-paywalls-manually)** - Build custom paywall UI 
+## Display paywalls
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['unity-get-pb-paywalls', 'unity-present-paywalls', 'unity-handling-events', 'unity-handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](unity-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products-unity', 'present-remote-config-paywalls-unity', 'unity-making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](unity-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['unity-use-fallback-paywalls']} />

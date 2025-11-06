@@ -5,11 +5,24 @@ metadataTitle: "Paywalls | Android SDK | Adapty Docs"
 displayed_sidebar: sdkandroid
 ---
 
-This page contains all guides for working with paywalls in your Android app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](android-get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](android-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](android-handling-events)** - Manage paywall interactions
-- **[Work with paywalls offline](android-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](android-localizations-and-locale-codes)** - Support multiple languages
-- **[Implement paywalls manually](android-implement-paywalls-manually)** - Build custom paywall UI 
+## Display paywalls
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['android-get-pb-paywalls', 'android-present-paywalls', 'android-handling-events', 'android-handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](android-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products-android', 'present-remote-config-paywalls-android', 'android-making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](android-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['android-use-fallback-paywalls', 'android-localizations-and-locale-codes']} />

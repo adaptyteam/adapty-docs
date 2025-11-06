@@ -9,7 +9,7 @@ displayed_sidebar: sdkreactnative
 If your application uses AppTrackingTransparency framework and presents an app-tracking authorization request to the user, then you should send the [authorization status](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/authorizationstatus/) to Adapty.
 
 ```typescript showLineNumbers
-import {AppTrackingTransparencyStatus} from 'react-native-adapty';
+import { AppTrackingTransparencyStatus } from 'react-native-adapty';
 
 try {
   await adapty.updateProfile({

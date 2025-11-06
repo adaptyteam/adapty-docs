@@ -117,7 +117,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
       } catch {
         // Handle error appropriately for your app
         print("Adapty activation failed: ", error)
@@ -190,7 +190,7 @@ struct YourApp: App {
     // Activate Adapty SDK asynchronously
     Task {
       do {
-        try await Adapty.activate(with: configurationBuilder)
+        try await Adapty.activate(with: config)
         try await AdaptyUI.activate()
       } catch {
         // Handle error appropriately for your app
@@ -325,3 +325,19 @@ Parameters:
 | memoryStorageTotalCostLimit | required | Total cost limit of the storage in bytes.                    |
 | memoryStorageCountLimit     | required | The item count limit of the memory storage.                  |
 | diskStorageSizeLimit        | required | The file size limit on disk of the storage in bytes. 0 means no limit. |
+
+### Transaction finishing behavior
+
+:::info
+This feature is available starting from SDK version 3.12.0.
+:::
+
+By default, Adapty automatically finishes transactions after successful validation. However, if you need advanced transaction validation (such as server-side receipt validation, fraud detection, or custom business logic), you can configure the SDK to use manual transaction finishing.
+
+```swift showLineNumbers title="Swift"
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(transactionsFinishBehavior: .manual) // .auto is the default
+```
+
+See more details on how to finish transactions in the [guide](ios-transaction-management).

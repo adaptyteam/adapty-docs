@@ -29,9 +29,13 @@ To help you get started with Adapty SDK, we've prepared sample apps that demonst
 ### Available sample apps
 
 - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
-- [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android)
+- [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)
 - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
 - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
 - [React Native (Expo)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)
-- [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity)
+- [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)
 - [Kotlin Multiplatform](https://github.com/adaptyteam/AdaptySDK-KMP/example)
+- [Capacitor (React)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
+- [Capacitor (Vue.js)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
+- [Capacitor (Angular)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
+- [Capacitor (Advanced development tools with all the methods – useful for more complicated cases)](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)

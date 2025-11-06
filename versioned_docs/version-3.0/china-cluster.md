@@ -38,7 +38,7 @@ For the China region, when configuring the SDK during the installation, follow t
 
 During configuration, add the China cluster as follows:
 
-For Adapty iOS SDK 3.6.0 or later, set the cluster as `.with(serverCluster: .cn)`. For older versions, include the `backendBaseUrl` parameter in your configuration: `.with(backendBaseUrl: URL(string: "https://api-cn.adapty.io/api/v1")!)`.
+Set the cluster as `.with(serverCluster: .cn)` in your configuration.
 
 <Tabs groupId="current-os" queryString>
 
@@ -98,7 +98,7 @@ Parameters:
 
 | Parameter          | Description                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| **backendBaseUrl** | Use the `URL(string: "https://api-cn.adapty.io/api/v1")!` value to connect your app to Adapty's China servers. |
+| **serverCluster** | Use the `.cn` value to connect your app to Adapty's China servers. |
 
 
 </TabItem> 
@@ -222,15 +222,13 @@ func shouldUseChinaServers() -> Bool {
 }
 
 // In your configuration
-let baseURL = shouldUseChinaServers() 
-    ? URL(string: "https://api-cn.adapty.io/api/v1")!
-    : URL(string: "https://api.adapty.io/api/v1")! // Default URL
+let configurationBuilder = AdaptyConfiguration
+    .Builder(withAPIKey: "PUBLIC_SDK_KEY")
 
-let configurationBuilder =
-    AdaptyConfiguration
-        .Builder(withAPIKey: "PUBLIC_SDK_KEY")
-        .with(serverCluster: .cn)
-        // other configuration options
+if shouldUseChinaServers() {
+    configurationBuilder.with(serverCluster: .cn)
+}
+// other configuration options
 ```
 
 </TabItem>

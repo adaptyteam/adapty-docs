@@ -1,0 +1,537 @@
+openapi: 3.1.0
+info:
+  title: Adapty Web API
+  version: 1.0.0
+  description: |
+    The Adapty Web API allows you to integrate Adapty's subscription management platform 
+    into your web applications. This API provides endpoints for retrieving paywalls, 
+    recording paywall views, and adding attribution data.
+servers:
+  - url: https://api.adapty.io
+    description: Production server
+paths:
+  /api/v2/web-api/paywall/:
+    post:
+      summary: Get paywall
+      description: Receives the paywall from the provided placement.
+      operationId: getPaywall
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPaywallRequest'
+            examples:
+              basic:
+                summary: Basic paywall request
+                value:
+                  store: "app_store"
+                  locale: "en"
+                  placement_id: "PaywallPlacementId"
+                  customer_user_id: "user123"
+      responses:
+        '200':
+          description: The successful response will contain the Paywall object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaywallResponse'
+              examples:
+                basic:
+                  summary: Basic paywall response
+                  value:
+                    placement_id: "onboarding"
+                    variation_id: "d76feea0-c0cf-4942-bef5-84ed701fc6db"
+                    paywall_id: "9a93fe6f-9162-4dc0-b4b7-73079ed95c34"
+                    ab_test_name: "1 week + 1 month | apple picture"
+                    paywall_name: "1 week + 1 month | apple picture"
+                    products:
+                      - title: "1 week"
+                        is_consumable: false
+                        adapty_product_id: "1c3e03e1-9c43-4f94-aeb5-c7ae2f73d0c2"
+                        vendor_product_id: "1_week_apple"
+                        introductory_offer_eligibility: true
+                        promotional_offer_eligibility: true
+                        base_plan_id: null
+                        offer: null
+                      - title: "1 month"
+                        is_consumable: false
+                        adapty_product_id: "f4088450-45a8-4737-8db0-367e642d7dcb"
+                        vendor_product_id: "1_month_apple"
+                        introductory_offer_eligibility: true
+                        promotional_offer_eligibility: true
+                        base_plan_id: null
+                        offer: null
+                    remote_config:
+                      lang: "en"
+                      data: "{\"default_product_number\":1,\"features\":[\"#fresh\",\"#green\",\"#healthy1\"],\"soft_paywall\":false,\"image_url\":\"https://adapty.io/apple.png\"}"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariationIdNotFoundError'
+
+  /api/v2/web-api/paywall/visit/:
+    post:
+      summary: Record paywall view
+      description: |
+        Adapty can help you measure the conversion of your paywalls. However, to do so, 
+        it is required for you to log when a paywall gets shown — without that we'd only 
+        know about the users who made a purchase and we'd miss those who did not. 
+        Use this request to log a paywall view.
+      operationId: recordPaywallView
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaywallViewRequest'
+            examples:
+              basic:
+                summary: Basic paywall view recording
+                value:
+                  visited_at: "2024-08-24T14:15:22Z"
+                  store: "app_store"
+                  variation_id: "00000000-0000-0000-0000-000000000000"
+                  customer_user_id: "user123"
+      responses:
+        '201':
+          description: The paywall view is recorded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Empty response body
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidDateFormatError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileNotFoundError'
+
+  /api/v2/web-api/attribution/:
+    post:
+      summary: Add custom attribution
+      description: Adds marketing custom attribution data to a profile.
+      operationId: addAttribution
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddAttributionRequest'
+            examples:
+              basic:
+                summary: Basic attribution data
+                value:
+                  status: "organic"
+                  attribution_user_id: "attribution_user_id_value"
+                  channel: "marketing_channel_value"
+                  campaign: "campaign_name_value"
+                  ad_group: "ad_group_name_value"
+                  ad_set: "ad_set_name_value"
+                  creative: "creative_name_value"
+                  customer_user_id: "user123"
+      responses:
+        '201':
+          description: The attribution is successfully added to the profile. The response body is blank.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Empty response body
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidEnumerationMemberError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileNotFoundError'
+
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        API requests must be authenticated by your public API key as the **Authorization** 
+        header with the value `Api-Key {your_public_api_key}`, for example, 
+        `Api-Key public_live_...`. Find this key in the Adapty Dashboard -> 
+        **App Settings** -> **General** tab -> **API keys** section.
+
+  schemas:
+    GetPaywallRequest:
+      type: object
+      required:
+        - store
+        - placement_id
+      properties:
+        store:
+          type: string
+          description: |
+            Store where the product was bought. Possible values: `app_store`, `play_store`, `stripe`, or the `Store ID` of your custom store.
+          example: "app_store"
+        locale:
+          type: string
+          description: An identifier of a paywall locale. This parameter is expected to be a language code composed of one or more subtags separated by the "-" character. The first subtag is for the language, the second one is for the region.
+          example: "en"
+        placement_id:
+          type: string
+          description: The identifier of the Placement. This is the value you specified when creating a placement in your Adapty Dashboard.
+          example: "PaywallPlacementId"
+        customer_user_id:
+          type: string
+          description: Either customer_user_id or profile_id is required. User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID.
+          example: "user123"
+        profile_id:
+          type: string
+          description: Either customer_user_id or profile_id is required. An identifier of a user in Adapty.
+          example: "3286abd3-48b0-4e9c-a5f6-ac0a006804a6"
+
+    RecordPaywallViewRequest:
+      type: object
+      required:
+        - store
+        - variation_id
+      properties:
+        customer_user_id:
+          type: string
+          description: An identifier of a user in your system.
+          example: "user123"
+        profile_id:
+          type: string
+          description: An identifier of a user in Adapty.
+          example: "3286abd3-48b0-4e9c-a5f6-ac0a006804a6"
+        visited_at:
+          type: string
+          format: date-time
+          description: The datetime when the user opened the paywall.
+          example: "2024-08-24T14:15:22Z"
+        store:
+          type: string
+          description: |
+            Store where the product was bought. Possible values: `app_store`, `play_store`, `stripe`, or the `Store ID` of your custom store.
+          example: "app_store"
+        variation_id:
+          type: string
+          format: uuid
+          description: The variation ID used to trace purchases to the specific paywall they were made from.
+          example: "00000000-0000-0000-0000-000000000000"
+
+    AddAttributionRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [organic, non_organic, unknown]
+          description: Indicates if the attribution is organic or non-organic.
+          example: "organic"
+        attribution_user_id:
+          type: string
+          description: ID assigned to the user by the attribution source.
+          example: "attribution_user_id_value"
+        channel:
+          type: string
+          description: Marketing channel name.
+          example: "marketing_channel_value"
+        campaign:
+          type: string
+          description: Marketing campaign name.
+          example: "campaign_name_value"
+        ad_group:
+          type: string
+          description: Attribution ad group.
+          example: "ad_group_name_value"
+        ad_set:
+          type: string
+          description: Attribution ad set.
+          example: "ad_set_name_value"
+        creative:
+          type: string
+          description: Attribution creative keyword.
+          example: "creative_name_value"
+        customer_user_id:
+          type: string
+          description: User ID you use in your app to identify the user if you do. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it.
+          example: "user123"
+        profile_id:
+          type: string
+          description: An identifier of a user in Adapty. You can find it in the **Adapty ID** field of the profile in the Adapty Dashboard.
+          example: "3286abd3-48b0-4e9c-a5f6-ac0a006804a6"
+
+    PaywallResponse:
+      type: object
+      required:
+        - placement_id
+        - variation_id
+        - paywall_id
+        - paywall_name
+        - products
+      properties:
+        placement_id:
+          type: string
+          description: The ID of the Placement where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard.
+          example: "onboarding"
+        variation_id:
+          type: string
+          format: uuid
+          description: The variation ID used to track purchases linked to this specific paywall
+          example: "d76feea0-c0cf-4942-bef5-84ed701fc6db"
+        paywall_id:
+          type: string
+          format: uuid
+          description: The unique identifier of the paywall
+          example: "9a93fe6f-9162-4dc0-b4b7-73079ed95c34"
+        ab_test_name:
+          type: string
+          description: The name of the parent A/B test
+          example: "1 week + 1 month | apple picture"
+        paywall_name:
+          type: string
+          description: The name of the paywall, as defined in your Adapty Dashboard
+          example: "1 week + 1 month | apple picture"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+          description: Array of Product objects containing product information for the paywall
+        remote_config:
+          $ref: '#/components/schemas/RemoteConfig'
+          description: A RemoteConfig object containing the full remote config of the paywall
+
+    Product:
+      type: object
+      required:
+        - is_consumable
+        - vendor_product_id
+      properties:
+        title:
+          type: string
+          description: Product name from the Products section in the Adapty Dashboard
+        is_consumable:
+          type: boolean
+          description: Indicates whether the product is consumable
+        adapty_product_id:
+          type: string
+          format: uuid
+          description: Internal product ID as used in Adapty
+        vendor_product_id:
+          type: string
+          description: The product ID in app stores
+        introductory_offer_eligibility:
+          type: boolean
+          description: Specifies if the user is eligible for an iOS introductory offer
+        promotional_offer_eligibility:
+          type: boolean
+          description: Specifies if the user is eligible for a promotional offer
+        base_plan_id:
+          type: string
+          nullable: true
+          description: |
+            Base plan ID for Google Play or price ID for Stripe. 
+            See [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) for Google Play or 
+            [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) for Stripe.
+        offer:
+          allOf:
+            - $ref: '#/components/schemas/Offer'
+          nullable: true
+          description: An Offer object as a JSON
+
+    Offer:
+      type: object
+      required:
+        - category
+        - type
+      properties:
+        category:
+          type: string
+          enum: [introductory, promotional, offer_code, win_back]
+          description: The category of the applied offer
+        type:
+          type: string
+          enum: [free_trial, pay_as_you_go, pay_up_front, unknown]
+          description: The type of active offer. If this isn't null, it means the offer was applied in the current subscription period.
+        id:
+          type: string
+          nullable: true
+          description: The ID of the applied offer
+
+    RemoteConfig:
+      type: object
+      required:
+        - lang
+        - data
+      properties:
+        lang:
+          type: string
+          description: |
+            Locale code for the paywall localization. It uses language and region subtags 
+            separated by a hyphen (-). Examples: `en` for English, `pt-br` for Brazilian Portuguese.
+          example: "en"
+        data:
+          type: string
+          description: |
+            Serialized JSON string representing the remote config of your paywall. 
+            You can find it in the Remote Config tab of a specific paywall in the Adapty Dashboard.
+
+    ParseError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+    UnauthorizedError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+    VariationIdNotFoundError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+    InvalidDateFormatError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+    InvalidEnumerationMemberError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+    ProfileNotFoundError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: string
+        error_code:
+          type: string
+        status_code:
+          type: integer
+
+security:
+  - apikeyAuth: []

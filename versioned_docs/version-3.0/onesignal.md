@@ -107,18 +107,18 @@ This integration updates and assigns various properties to your Adapty users as 
 OneSignal has a tag limit. This includes both Adapty-generated tags and any existing tags in OneSignal. Exceeding the limit may cause errors when sending events.
 :::
 
-| Tag | Type | Description                                                                                                                                     |
-|---|----|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `adapty_customer_user_id` | String | The unique identifier of the user in your app. It must be consistent across your system, Adapty, and OneSignal.                                 |
-| `adapty_profile_id` | String | The Adapty user profile ID, available in your [Adapty Dashboard](profiles-crm).                                                                 |
-| `environment` | String | `Sandbox` or `Production`, indicating the user’s current environment.                                                                           |
-| `store` | String | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store).       |
-| `vendor_product_id` | String | The product ID in the app store (e.g., `org.locals.12345`).                                                                                     |
-| `subscription_expires_at` | String | Expiration date of the latest subscription (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                               |
-| `last_event_type` | String | The latest event type from the [Adapty event list](events). For the **Subscription expired** event, Adapty sends the `last_event_type` property as `subscription_cancelled`.                                                                                    |
-| `purchase_date` | String | Last transaction date (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                                                    |
-| `active_subscription` | String | `true` if the user has an active subscription and `false` if the subscription has expired.                                                      |
-| `period_type` | String | Indicates the most recent period type for the purchase or renewal. Possible values: `trial` for a trial period or `normal` for all other cases. |
+| Tag | Type | Description                                                                                                                                                                                                                                                                                                                                      |
+|---|----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `adapty_customer_user_id` | String | The unique identifier of the user in your app. It must be consistent across your system, Adapty, and OneSignal.                                                                                                                                                                                                                                  |
+| `adapty_profile_id` | String | The Adapty user profile ID, available in your [Adapty Dashboard](profiles-crm).                                                                                                                                                                                                                                                                  |
+| `environment` | String | `Sandbox` or `Production`, indicating the user’s current environment.                                                                                                                                                                                                                                                                            |
+| `store` | String | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store).                                                                                                                                                                                                        |
+| `vendor_product_id` | String | The product ID in the app store (e.g., `org.locals.12345`).                                                                                                                                                                                                                                                                                      |
+| `subscription_expires_at` | String | Expiration date of the latest subscription (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                                                                                                                                                                                                                                |
+| `last_event_type` | String | The latest event type from the [Adapty event list](events).<br/> Note the following:<br/>- For the **Subscription expired** event, Adapty sends the `last_event_type` property as `subscription_cancelled`.<br/>- For **Trial renew canceled** – as `auto_renew_off`<br/>- For **Subscription renew canceled** – as `auto_renew_off_subscription` |
+| `purchase_date` | String | Last transaction date (`YYYY-MM-DDTHH:MM:SS+0000`, e.g., `2023-02-10T17:22:03.000000+0000`).                                                                                                                                                                                                                                                     |
+| `active_subscription` | String | `true` if the user has an active subscription and `false` if the subscription has expired.                                                                                                                                                                                                                                                       |
+| `period_type` | String | Indicates the most recent period type for the purchase or renewal. Possible values: `trial` for a trial period or `normal` for all other cases.                                                                                                                                                                                                  |
 
 All float values are rounded to integers. The strings remain unchanged.
 
@@ -126,7 +126,7 @@ In addition to the predefined tags, you can send [custom attributes](segments#cu
 
 Custom user attributes are automatically sent to OneSignal if the **Send user attributes** checkbox is enabled on the [integration page](https://app.adapty.io/integrations/onesignal). When unchecked, Adapty sends exactly 10 tags. If checked, more than 10 tags can be sent, allowing for enhanced data capture. 
 
-### SDK configuration
+## SDK configuration
 
 There are two ways to integrate OneSignal with Adapty:
 
@@ -190,22 +190,20 @@ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 <TabItem value="flutter" label="Flutter (Dart)" default>
 
 ```javascript showLineNumbers
-OneSignal.shared.setSubscriptionObserver((changes) {
-    final playerId = changes.to.userId;
-    if (playerId != null) {
-        final builder = 
-            AdaptyProfileParametersBuilder()
-                ..setOneSignalPlayerId(playerId);
-                // ..setOneSignalSubscriptionId(playerId);
-        try {
-            Adapty().updateProfile(builder.build());
-        } on AdaptyError catch (adaptyError) {
-            // handle the error
-        } catch (e) {
-            // handle the error
-        }
-    }
+// 1. Since OneSignal.User.pushSubscription.id may return null if called too early, 
+// OneSignal suggests to listen for the updates:
+
+OneSignal.User.pushSubscription.addObserver((state) {
+   if (state.current.optedIn) {
+      // now you can try to retrieve subscriptionId
+   }
 });
+
+// 2. Then you can push subscriptionId to Adapty:
+final subscriptionId = OneSignal.User.pushSubscription.id;
+if (subscriptionId != null) {
+   await Adapty().setIntegrationIdentifier(key: "one_signal_subscription_id", value: subscriptionId);
+}
 ```
 
 </TabItem>
@@ -340,7 +338,10 @@ OneSignal.addSubscriptionObserver(event => {
 
 </Tabs>
 
-Read more about `OSSubscriptionObserver` in the [OneSignal documentation](https://documentation.onesignal.com/docs/sdk-reference#handling-subscription-state-changes).
+Read more in the OneSignal documentation:
+
+- [Push subscription ID](https://documentation.onesignal.com/docs/en/mobile-sdk-reference#user-pushsubscription-id)
+- [Push subscription changes](https://documentation.onesignal.com/docs/en/mobile-sdk-reference#addobserver-push-subscription-changes)
 
 ## Dealing with multiple devices
 

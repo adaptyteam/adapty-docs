@@ -7,6 +7,10 @@ metadataTitle: "Understanding SDK Models | Adapty Docs"
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://swift.adapty.io/documentation/adapty).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding

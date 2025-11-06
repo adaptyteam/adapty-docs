@@ -1,5 +1,5 @@
 ---
-title: "Remote config paywall localization"
+title: "Localize paywalls using remote config"
 description: "Add remote config locales to personalize Adapty paywalls."
 metadataTitle: "Adding Remote Config Locales | Adapty Docs"
 ---
@@ -11,9 +11,18 @@ import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapting your paywalls for different languages is essential in a world with diverse cultures. Localization allows you to create tailored experiences for users in specific regions. For each paywall, you can add versions in various languages, ensuring that your product resonates with local audiences.
 
-If you’ve [designed a paywall using remote config](customize-paywall-with-remote-config), you can use the same remote config to set up localizations. Whether in table view or JSON format, you can easily adjust settings for each language. For example, translate string keys, toggle Boolean values (e.g., `TRUE` for English, `FALSE` for Italian), or even swap out background images. With this flexibility, you keep your core setup while tailoring the user experience for different languages.
+If you are not using the Adapty Paywall Builder to design paywalls, you can still localize your custom paywalls and manage localizations without redeploying your app:
 
-## Setting up localization for remote configured paywalls
+1. You create a remote config with variables in the Adapty dashboard. Variables can stand either for text, media, or other content types.
+2. You set up variable values for each locale.
+3. You handle variables in the app code.
+4. When you get a paywall with products and send a locale, you get proper variable values.
+
+This way, localizations are not hardcoded in the app code, and you can adjust them anytime
+
+Whether in table view or JSON format, you can easily adjust settings for each language. For example, translate string keys, toggle Boolean values (e.g., `TRUE` for English, `FALSE` for Italian), or even swap out background images.
+
+## Set up localization for remote configured paywalls
 
 1. Go to the [**Paywalls**](https://app.adapty.io/paywalls) section in Adapty.
 2. Click the paywall to open it.
@@ -50,7 +59,7 @@ If you’ve [designed a paywall using remote config](customize-paywall-with-remo
 
 Now, you can translate the content manually, use AI, or export the localization file for external translators.
 
-## Translating paywalls with AI
+## Translate paywalls with AI
 
 AI-powered translation is a quick and efficient way to localize your paywall.
 

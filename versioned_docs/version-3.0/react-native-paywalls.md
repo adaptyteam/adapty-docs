@@ -5,12 +5,24 @@ metadataTitle: "Paywalls | React Native SDK | Adapty Docs"
 displayed_sidebar: sdkreactnative
 ---
 
-This page contains all guides for working with paywalls in your React Native app. Choose the topic you need:
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-- **[Get paywalls](react-native-get-pb-paywalls)** - Retrieve paywalls from Adapty
-- **[Display paywalls](react-native-present-paywalls)** - Present paywalls to users
-- **[Handle paywall events](react-native-handling-events-1)** - Manage paywall interactions
-- **[Work with paywalls offline](react-native-use-fallback-paywalls)** - Use fallback paywalls when offline
-- **[Localize paywalls](react-native-localizations-and-locale-codes)** - Support multiple languages
-- **[Implement web paywalls](react-native-web-paywall)** - Use web-based paywalls
-- **[Implement paywalls manually](react-native-implement-paywalls-manually)** - Build custom paywall UI 
+## Display paywalls
+
+### Adapty Paywall Builder
+
+<CustomDocCardList ids={['react-native-get-pb-paywalls', 'react-native-present-paywalls', 'react-native-handling-events-1', 'react-native-handle-paywall-actions']} />
+
+:::tip
+To get started with the Adapty Paywall Builder paywalls quickly, see our [quickstart guide](react-native-quickstart-paywalls).
+:::
+
+### Implement paywalls manually
+
+<CustomDocCardList ids={['fetch-paywalls-and-products-react-native', 'present-remote-config-paywalls-react-native', 'react-native-making-purchases']} />
+
+For more guides on implementing paywalls and handling purchases manually, see the [category](react-native-implement-paywalls-manually).
+
+## Useful features
+
+<CustomDocCardList ids={['react-native-use-fallback-paywalls', 'react-native-web-paywall']} />
