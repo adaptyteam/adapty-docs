@@ -42,7 +42,7 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 <Tabs>
 <TabItem value="expo" label="Expo" default>
 
-:::warning
+:::important
 [Expo DevClient](https://docs.expo.dev/versions/latest/sdk/dev-client/) is required. Expo Go will **not** work because the Adapty SDK includes native dependencies.
 :::
 
@@ -52,20 +52,28 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
    npx expo prebuild
    ```
 2. Build your app for development using EAS or local build:
-   ```sh title="EAS Build"
-   # For iOS
-   eas build --profile development --platform ios
+
+   <Tabs>
+   <TabItem value="eas" label="EAS build" default>
+      ```sh 
+      # For iOS
+      eas build --profile development --platform ios
+      
+      # For Android
+      eas build --profile development --platform android
+      ```
+   </TabItem>
    
-   # For Android
-   eas build --profile development --platform android
-   ```
-   ```sh title="Local Build"
-   # For iOS
-   npx expo run:ios
-   
-   # For Android
-   npx expo run:android
-   ```
+   <TabItem value="local" label="Local build">
+      ```sh 
+      # For iOS
+      npx expo run:ios
+      
+      # For Android
+      npx expo run:android
+      ```
+   </TabItem>
+   </Tabs>
 3. Start the dev server:
    ```sh 
    npx expo start --dev-client
