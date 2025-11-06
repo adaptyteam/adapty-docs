@@ -20,12 +20,34 @@ export default function ArticleButtons({ articleUrl }) {
   const buttonRef = useRef(null);
   const clipboardRef = useRef(null);
 
+  // Helper function to trim query parameters from URL
+  const trimQueryParams = (url) => {
+    // Remove everything after and including the first '?'
+    return url.split('?')[0];
+  };
+
+  // Helper function to clean links in markdown content
+  const cleanMarkdownLinks = (content) => {
+    if (!content) return content;
+    
+    // Pattern to match markdown links: [text](url) or [text](url "title")
+    // Handles URLs with query parameters and optional titles
+    return content.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)([^\)]*)\)/g, (match, text, url, rest) => {
+      const cleanedUrl = trimQueryParams(url);
+      return `[${text}](${cleanedUrl}${rest})`;
+    }).replace(/<(https?:\/\/[^>]+)>/g, (match, url) => {
+      const cleanedUrl = trimQueryParams(url);
+      return `<${cleanedUrl}>`;
+    });
+  };
 
   // Helper function to determine the markdown URL
   const getMarkdownUrl = () => {
+    // Trim query parameters first
+    const cleanedUrl = trimQueryParams(articleUrl);
     
     // Normalize the articleUrl to handle both full URLs and pathnames
-    const normalizedUrl = articleUrl.replace(/\/$/, '');
+    const normalizedUrl = cleanedUrl.replace(/\/$/, '');
     
     // Check if the current URL is the docs root path
     if (normalizedUrl === 'http://localhost:3000/docs' || 
@@ -45,7 +67,9 @@ export default function ArticleButtons({ articleUrl }) {
       try {
         const response = await fetch(markdownUrl);
         const text = await response.text();
-        setMarkdownContent(text);
+        // Clean referral links in the markdown content
+        const cleanedText = cleanMarkdownLinks(text);
+        setMarkdownContent(cleanedText);
       } catch (error) {
         setMarkdownContent('');
       }
@@ -97,7 +121,9 @@ export default function ArticleButtons({ articleUrl }) {
           const markdownUrl = getMarkdownUrl();
           const response = await fetch(markdownUrl);
           const text = await response.text();
-          setMarkdownContent(text);
+          // Clean referral links in the markdown content
+          const cleanedText = cleanMarkdownLinks(text);
+          setMarkdownContent(cleanedText);
 
           // Wait a bit for the content to be set and Clipboard.js to initialize
           setTimeout(() => {
