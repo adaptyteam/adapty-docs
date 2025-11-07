@@ -75,6 +75,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
       ```
    </TabItem>
    </Tabs>
+   
+:::note
+If you encounter an Android Auto Backup manifest conflict during build, see the [troubleshooting section](#android-auto-backup-manifest-conflict-expo-only-solution) below.
+:::
+
 3. Start the dev server:
    ```sh 
    npx expo start --dev-client
@@ -272,3 +277,35 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+#### Android Auto Backup manifest conflict (Expo)
+
+When using Expo with multiple SDKs that configure Android Auto Backup (such as Adapty, AppsFlyer, or expo-secure-store), you may encounter a manifest merger conflict.
+
+A typical error looks like this: `Manifest merger failed : Attribute application@fullBackupContent value=(@xml/secure_store_backup_rules) from AndroidManifest.xml:24:248-306
+is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 value=(@xml/adapty_backup_rules).`
+
+To resolve this conflict, you need to let the Adapty plugin manage Android backup configuration.
+If your project also uses `expo-secure-store`, disable its own backup setup to avoid overlap.
+
+Here’s how to configure your `app.json`:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "replaceAndroidBackupConfig": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }]
+    ]
+  }
+}
+```
+The `replaceAndroidBackupConfig` option is `false` by default. When enabled, it lets the Adapty plugin control Android backup rules.
+Include `"configureAndroidBackup": false` if you use `expo-secure-store` to prevent warnings, since SecureStore’s backup configuration will now be handled by Adapty.
+
+This setup uses `tools:replace` to override Adapty’s backup rules and ensure sensitive data isn’t included in automatic backups for Adapty, expo-secure-store, and AppsFlyer.
+
+:::important
+This setup only respects backup requirements for Adapty, AppsFlyer, and expo-secure-store.
+If other libraries in your project define custom backup rules, you’ll need to configure those manually.
+:::
