@@ -75,6 +75,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
       ```
    </TabItem>
    </Tabs>
+   
+:::note
+If you encounter an Android Auto Backup manifest conflict during build, see the [troubleshooting section](#android-auto-backup-manifest-conflict-expo-only-solution) below.
+:::
+
 3. Start the dev server:
    ```sh 
    npx expo start --dev-client
@@ -272,3 +277,36 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+#### Android Auto Backup manifest conflict (Expo only solution)
+
+When using Expo with multiple SDKs that configure Android Auto Backup (such as Adapty, AppsFlyer, or expo-secure-store), you may encounter a manifest merger conflict:
+
+```text title="Android build error"
+Manifest merger failed : Attribute application@fullBackupContent value=(@xml/secure_store_backup_rules) from AndroidManifest.xml:24:248-306
+is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 value=(@xml/adapty_backup_rules).
+```
+
+To resolve this, use the Adapty Expo config with the `replaceAndroidBackupConfig` option in your `app.json`:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "replaceAndroidBackupConfig": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }]
+    ]
+  }
+}
+```
+Default `replaceAndroidBackupConfig` value is `false`.
+
+If you use `expo-secure-store`, you must add the `"configureAndroidBackup": false` option to prevent warnings, as backup rules for SecureStore are now managed by the Adapty plugin.
+
+This uses `tools:replace` to override the android Adapty SDK backup rules and exclude sensitive data from automatic backups for Adapty, expo-secure-store, and AppsFlyer.
+
+:::warning
+This configuration respects backup requirements for Adapty, AppsFlyer, and expo-secure-store only. If you use other libraries with custom backup rules, their settings will be ignored. In that case, you'll need to manually configure backup rules.
+:::
+
+
