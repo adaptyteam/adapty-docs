@@ -4,6 +4,7 @@ description: "Get realtime analytics from Apple Ads and manage and optimize your
 metadataTitle: "Apple Ads Manager | Adapty Docs"
 keywords: ['Apple ads manager', 'asa']
 ---
+import ZoomImage from '@site/src/components/ZoomImage';
 
 Apple Ads Manager is your optimization and analytics platform for Apple Ads.
 
@@ -14,6 +15,8 @@ Apple Ads Manager helps you to:
 - Manage your ads and campaigns right from the Adapty dashboard
 - Get AI-based predictions on how your campaigns will perform
 - Set up rule-based automations to adjust your ads
+
+<ZoomImage id="asa.webp" width="900px" />
 
 ## Why Apple Ads Manager?
 
