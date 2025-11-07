@@ -62,7 +62,7 @@ Now, let's move on to the final step – letting users make a purchase through t
 
 7. Click `subscriptionUpdateParameters`, search for `AdaptySubscriptionUpdateParameters` and select it. Click **Confirm**.
     :::info
-    By default, you can leave all the object fields empty. You would need to fill them in to replace one subscription with another in Android apps. Read more [here](sdk-models#adaptysubscriptionupdateparameters).
+    By default, you can leave all the object fields empty. You would need to fill them in to replace one subscription with another in Android apps. Read more [here](https://kotlin.adapty.io//////////adapty/com.adapty.models/-adapty-subscription-update-parameters/).
     :::
    <Zoom>
    <img src={require('./img/ff-subupdate.webp').default}

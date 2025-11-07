@@ -116,8 +116,8 @@ No parameters
 
 **See also:**
 
-- [Get profile](ss-get-profile)
-- [Create profile](ss-create-profile)
-- [Update profile](ss-update-profile)
+- [Get profile](api-adapty#/operations/getProfile)
+- [Create profile](api-adapty#/operations/createProfile)
+- [Update profile](api-adapty#/operations/updateProfile)
 
 ````

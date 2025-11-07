@@ -7,6 +7,8 @@
 
 import { themes as prismThemes } from "prism-react-renderer";
 
+const { webpackPlugin } = require('./plugins/webpack-plugin.cjs');
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Adapty",
@@ -124,6 +126,11 @@ const config = {
                 label: "Kotlin Multiplatform",
                 type: "docSidebar",
                 sidebarId: "sdkkmp",
+              },
+              {
+                label: "Capacitor",
+                type: "docSidebar",
+                sidebarId: "sdkcapacitor",
               }
             ],
           },
@@ -147,13 +154,13 @@ const config = {
             href: "https://app.adapty.io/login",
             label: "Sign In",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-in",
+            className: "navbar__item navbar__link navbar__link--sign-in",
           },
           {
             href: "https://app.adapty.io/registration",
             label: "Sign Up for Free",
             position: "right",
-            class: "navbar__item navbar__link navbar__link--sign-up",
+            className: "navbar__item navbar__link navbar__link--sign-up",
           },
           // {
           //   href: "https://docs.adapty.io/discuss",
@@ -237,11 +244,7 @@ const config = {
               {
                 label: "React Native",
                 href: "/sdk-installation-reactnative",
-              },
-              {
-                label: "SDK Models",
-                href: "https://adapty.io/docs/sdk-models",
-              },
+              }
             ],
           },
           {
@@ -249,15 +252,19 @@ const config = {
             items: [
               {
                 label: "Server-side API",
-                href: "/getting-started-with-server-side-api",
+                href: "/docs/getting-started-with-server-side-api",
+              },
+              {
+                label: "Adapty API",
+                href: "/api-adapty",
               },
               {
                 label: "Web API",
-                href: "/web-api",
+                href: "/api-web",
               },
               {
                 label: "Analytics export API",
-                href: "/export-analytics-api",
+                href: "/api-export-analytics",
               },
             ],
           },
@@ -355,6 +362,8 @@ const config = {
   plugins: [
     require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
+    // Webpack plugin for Node.js polyfills
+    webpackPlugin,
     [require('./plugins/gtm-plugin'), {
       trackingID: 'GTM-PXJV3N7',
     }],

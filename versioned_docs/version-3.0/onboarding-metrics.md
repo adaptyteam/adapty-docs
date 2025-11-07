@@ -8,6 +8,10 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Adapty collects a series of metrics to help you better measure the performance of the onboardings. All metrics are updated in real-time, except for the views, which are updated once every several minutes. This document outlines the metrics available, their definitions, and how they are calculated.
 
+:::important
+The onboarding revenue is calculated from all the transactions that occurred after the onboarding has been shown.
+:::
+
 Onboarding metrics are available on the onboarding list, providing you with an overview of the performance of all your onboardings. This consolidated view presents aggregated metrics for each onboarding, allowing you to assess their effectiveness and identify areas for improvement.
 
 For a more granular analysis of each onboarding, you can navigate to the onboarding detail metrics. In this section, you will find comprehensive metrics specific to the selected onboarding, offering deeper insights into its performance.

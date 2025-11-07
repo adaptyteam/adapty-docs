@@ -39,7 +39,7 @@ Adapty.reportTransaction(
 
 Parameters:
 
-| Parameter       | Presence | Description                                                  |
-| --------------- | -------- | ------------------------------------------------------------ |
-| transactionId   | required | The transaction ID from your app store purchase. This is typically the purchase token or transaction identifier returned by the store. |
-| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](kmp-sdk-models#adaptypaywall) object. |
+| Parameter       | Presence | Description                                                                                                                                                                                  |
+| --------------- | -------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| transactionId   | required | The transaction ID from your app store purchase. This is typically the purchase token or transaction identifier returned by the store.                                                       |
+| variationId     | optional | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](https://kmp.adapty.io//////adapty/com.adapty.kmp.models/-adapty-paywall/) object. |

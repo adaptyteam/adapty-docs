@@ -1,6 +1,6 @@
 ---
 title: "Android - Use fallback paywalls"
-description: "Use fallback paywalls in Android apps with Adapty to ensure revenue flow."
+description: "Handle cases when users are offline or Adapty servers aren't available."
 metadataTitle: "Using Fallback Paywalls on Android | Adapty Docs"
 ---
 

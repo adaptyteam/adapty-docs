@@ -27,9 +27,9 @@ Adapty offers three A/B test types:
 - **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. Once a <InlineTooltip tooltip="variant">A/B test variants are alternative versions of the paywall or onboarding to test.</InlineTooltip> is assigned by the A/B test, it will be consistently shown across all selected sections of your app.
 
 :::warning
-Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0.
+Crossplacement A/B tests are only available for Adapty SDKs starting from v3.5.0.
 
-Onboarding A/B tests require the native iOS or Android SDK version 3.8.0 or higher.
+Onboarding A/B tests require the SDK version 3.8.0 or higher.
 
 Users from previous versions skip them.
 :::

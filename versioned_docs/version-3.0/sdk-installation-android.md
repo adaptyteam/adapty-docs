@@ -17,7 +17,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 ## Requirements

@@ -335,7 +335,7 @@ And that's all! Wait for new insights from Google.
 
 If there is a data discrepancy between Adapty and Firebase, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
 
-Additionally, sandbox events are sent to Firebase by default, and this cannot be disabled. So, in situations when an app has a few Production events and a los of Sandbox ones, there can be a notable discrepancy in numbers between Adapty’s Analytics and Firebase.
+Additionally, sandbox events are sent to Firebase by default, and this cannot be disabled. So, in situations when an app has a few Production events and a lot of Sandbox ones, there can be a notable discrepancy in numbers between Adapty’s Analytics and Firebase.
 
 ### Events are shown as delivered in Adapty but not available in Firebase
 

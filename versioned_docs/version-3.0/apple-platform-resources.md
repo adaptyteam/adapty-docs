@@ -9,13 +9,13 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Adapty offers SDKs and integrations tailored for Apple Platforms, simplifying the development of in-app purchases, subscriptions, paywalls, and A/B tests. 
 
-Use the following resources to maximize the benefits Adapty provides for Google Platforms.
+Use the following resources to maximize the benefits Adapty provides for Apple.
 
-### Initial configuration in Google Play Console
+### Initial configuration in App Store Connect
 
 1. [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key)
 
-### Products and offers configuration in Google Play Console
+### Products and offers configuration in App Store Connect
 
 1. [Product in App Store](app-store-products)
 2. [Offers in App Store](app-store-offers)

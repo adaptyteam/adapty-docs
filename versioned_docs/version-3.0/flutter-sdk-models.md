@@ -5,6 +5,10 @@ metadataTitle: "Understanding SDK Models | Flutter SDK | Adapty Docs"
 displayed_sidebar: sdkflutter
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/).
+:::
+
 ## Interfaces
 
 ### AdaptyOnboarding

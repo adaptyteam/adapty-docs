@@ -35,5 +35,27 @@ try {
   // handle the error
 }
 ```
-
 <SampleApp />
+
+## Show dialog
+
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```dart showLineNumbers title="Flutter"
+try {
+  final action = await view.showDialog(
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  );
+  
+  if (action == AdaptyUIDialogActionType.secondary) {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (e) {
+  // handle error
+}
+```

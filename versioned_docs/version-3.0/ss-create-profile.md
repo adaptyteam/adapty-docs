@@ -257,6 +257,6 @@ To authorize the request, make sure to include `profile_id` and/or `customer_use
 
 **See also:**
 
-- [Get profile](ss-get-profile)
-- [Update profile](ss-update-profile)
-- [Delete profile](ss-delete-profile)
+- [Get profile](api-adapty#/operations/getProfile)
+- [Update profile](api-adapty#/operations/updateProfile)
+- [Delete profile](api-adapty#/operations/deleteProfile)

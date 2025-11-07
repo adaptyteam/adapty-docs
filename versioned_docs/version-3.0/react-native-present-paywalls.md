@@ -177,5 +177,51 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
 
-In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The timer dynamically updates with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+## Show dialog
+
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular RN alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Replace one subscription with another
+
+When a user attempts to purchase a new subscription while another subscription is active on Android, you can control how the new purchase should be handled by passing subscription update parameters when creating the paywall view. To replace the current subscription with the new one, use `productPurchaseParams` in `createPaywallView` with the `oldSubVendorProductId` and `prorationMode` parameters.
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { Platform } from 'react-native';
+import { createPaywallView } from 'react-native-adapty';
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```

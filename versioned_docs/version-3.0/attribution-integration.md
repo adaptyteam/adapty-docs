@@ -381,17 +381,39 @@ Adapty.updateProfile(builder.build(), error -> {
 
 ### Custom
 
-If you use another attribution system, you can pass the attribution data to Adapty. You can then segment users based on this data.  
-To set attributes, use only the keys from the example below (all keys are optional). The system supports max 30 available attributes, where the keys are limited to 30 characters. Every value in the map should be no longer than 50 characters. `status` can only be `organic`, `non-organic` or `unknown`. Any additional keys will be omitted. 
+If you use another attribution system that isn't listed above, you can pass custom attribution data to Adapty and segment users based on this data.
+
+To send custom attribution data, you can use only the following keys:
+- `status`
+- `channel`
+- `campaign`
+- `ad_group` 
+- `ad_set`
+- `creative`
+
+All the keys are optional.
+
+:::important
+Note the following:
+- If you set any key that is not on the list, it will be omitted.
+- For `status`, the only possible values are: `organic`, `non-organic`, or `unknown`.
+- The maximum value length is 50 characters.
+:::
+ 
+Here is an example of how to pass custom attribution data in your app code:
 
 ```swift showLineNumbers title="Swift"
 let attribution = [
-    "status": "non_organic|organic|unknown",
+    "status": "non-organic",
     "channel": "Google Ads",
     "campaign": "Christmas Sale",
     "ad_group": "ad group",
     "ad_set": "ad set",
     "creative": "creative id"
 ]
-Adapty.updateAttribution(attribution, source: "custom")
+Adapty.updateAttribution(attribution, source: "custom") { error in
+    if error == nil {
+        // successful attribution update
+    }
+}
 ```

@@ -37,10 +37,10 @@ Adapty.ReportTransaction(
 
 Parameters:
 
-| Parameter     | Presence | Description                                                  |
-| ------------- | -------- | ------------------------------------------------------------ |
+| Parameter     | Presence | Description                                                                                                                                                                                                                                                                                          |
+| ------------- | -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | transactionId | required | <ul><li> For iOS: Identifier of the transaction.</li><li> For Android: String identifier `purchase.getOrderId` of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
-| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](unity-sdk-models#adaptypaywall) object.                                                                                                                                                  |
 
 </TabItem>
 <TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
@@ -77,10 +77,10 @@ Adapty.ReportTransaction(
 
 Parameters:
 
-| Parameter     | Presence | Description                                                  |
-| ------------- | -------- | ------------------------------------------------------------ |
+| Parameter     | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | -------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | transactionId | required | <ul><li> For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) object.</li><li> For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction) object.</li><li> For Android: String identifier (`purchase.getOrderId`) of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</li></ul> |
-| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId   | optional | The string identifier of the variation. You can get it using `variationId` property  of the [AdaptyPaywall](unity-sdk-models#adaptypaywall) object.                                                                                                                                                                                                                                                                                                                                                                |
 
 </TabItem>
 <TabItem value="old2" label="Adapty SDK up to 3.2.x (legacy)" default> 
@@ -123,10 +123,10 @@ Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) =>
 });
 ```
 
-| Parameter                                              | Presence | Description                                                  |
-| ------------------------------------------------------ | -------- | ------------------------------------------------------------ |
+| Parameter                                              | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------ | -------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | transactionId                                          | required | <p>For iOS, StoreKit 1: an [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction)  object.</p><p>For iOS, StoreKit 2: [Transaction](https://developer.apple.com/documentation/storekit/transaction)  object.</p><p>For Android: String identifier (purchase.getOrderId of the purchase, where the purchase is an instance of the billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) class.</p> |
-| variationId                                            | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](sdk-models#adaptypaywall) object. |
+| variationId                                            | required | The string identifier of the variation. You can get it using `variationId` property of the [AdaptyPaywall](unity-sdk-models#adaptypaywall) object.                                                                                                                                                                                                                                                                                                                                              |
 
 </TabItem> 
 </Tabs> 
