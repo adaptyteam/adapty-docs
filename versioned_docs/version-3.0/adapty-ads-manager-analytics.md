@@ -85,3 +85,12 @@ To save the view preset, click the **Columns** dropdown again and click the **Sa
 <ZoomImage id="asa-preset.gif" width="700px" />
 
 ## Controls
+
+On the **Analytics** page, you have four main controls:
+1. **Pinned metrics**: Select the metrics to pin in the tab above the table view.
+2. **Time ranges**: See [more](controls-filters-grouping-compare-proceeds#time-ranges).
+3. **Filters**: Filter by metric values or campaign properties.
+4. **Store commission and taxes**: See [more](controls-filters-grouping-compare-proceeds#store-commission-and-taxes).
+5. **Search**: Search by campaign names.
+
+<ZoomImage id="asa-controls.webp" width="700px" />
