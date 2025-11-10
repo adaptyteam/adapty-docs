@@ -396,7 +396,38 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 </TabItem>
 </Tabs>
 
-## Run Adapty in a custom process
+### Set obfuscated account IDs
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### Run Adapty in a custom process
 
 By default, Adapty can only run in the main process of your app.
 If your app uses multiple processes, initialize Adapty only once; otherwise, unexpected behavior may occur.
