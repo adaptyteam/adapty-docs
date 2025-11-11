@@ -168,6 +168,38 @@ Parameters:
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
+### Manage prepaid plans (Android)
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        enablePendingPrepaidPlans: true,      
+    },
+  }
+});
+```
+
+### Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        obfuscatedAccountId: "YOUR_OBFUSCATED_ACCOUNT_ID",      
+    },
+  }
+});
+```
+
 ## Development environment tips
 
 #### Troubleshoot SDK activation errors on Capacitor's live-reload
