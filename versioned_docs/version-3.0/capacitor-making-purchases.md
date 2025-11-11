@@ -85,9 +85,7 @@ try {
           oldSubVendorProductId: 'old_product_id',
           prorationMode: 'charge_prorated_price'
         },
-        isOfferPersonalized: true,
-        obfuscatedAccountId: 'account_123',
-        obfuscatedProfileId: 'profile_456'
+        isOfferPersonalized: true
       }
     }
   });
@@ -124,9 +122,7 @@ The `MakePurchaseParamsInput` structure includes:
       oldSubVendorProductId: 'old_product_id',
       prorationMode: 'charge_prorated_price'
     },
-    isOfferPersonalized: true, 
-    obfuscatedAccountId: 'account_123',
-    obfuscatedProfileId: 'profile_456'
+    isOfferPersonalized: true
   }
 }
 ```
