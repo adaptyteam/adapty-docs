@@ -369,33 +369,6 @@ AdaptyUI.configureMediaCache(cacheConfig);
 You can clear the media cache at runtime using `AdaptyUI.clearMediaCache(strategy)`, where `strategy` can be `CLEAR_ALL` or `CLEAR_EXPIRED_ONLY`.
 :::
 
-### Manage prepaid plans
-
-If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
-
-<Tabs>
-<TabItem value="kotlin" label="Kotlin" default>
-
-```kotlin showLineNumbers
-import com.adapty.models.AdaptyConfig
-
-AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withEnablePendingPrepaidPlans(true)
-    .build()
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-import com.adapty.models.AdaptyConfig;
-
-new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
-    .withEnablePendingPrepaidPlans(true)
-    .build();
-```
-</TabItem>
-</Tabs>
-
 ### Set obfuscated account IDs
 
 Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.

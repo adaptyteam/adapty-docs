@@ -202,3 +202,30 @@ You can read more about subscriptions and replacement modes in the Google Develo
 - [Recommendations from Google for replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
 - Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
+
+### Manage prepaid plans
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build();
+```
+</TabItem>
+</Tabs>
