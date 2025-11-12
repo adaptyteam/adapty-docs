@@ -48,6 +48,8 @@ It is important to note that Adapty does not include non-recurring subscriptions
 
 Basically, MRR shows revenue from all active subscriptions normalized to one month. For example, for a yearly subscription, instead of counting full revenue from the start, revenue is split into 12 equal parts which are evenly spread across 12 month period.
 
+MRR excludes subscriptions that have been refunded. When a subscription is refunded, it's removed from the MRR calculation for all periods it was active, ensuring that MRR reflects only the recurring revenue from subscriptions that remain valid.
+
 E.g. if there are 2 active yearly subscriptions with price $240 and 10 monthly subscriptions with a price $30,  
 MRR = (2 \* $240 / 12) + (10 \* $30 / 1) + (20 \* $10 / 0.23) = $1209.5
 

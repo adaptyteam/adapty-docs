@@ -41,6 +41,10 @@ This metric is only useful when annual subscriptions are the biggest chunk of yo
 For example, there are 2 active annual subscriptions with a price of $240, and 10 monthly subscriptions with a price of $30, and 20 weekly subscriptions with a price of $10,  
 ARR = (2 _ $240 / 1) + (10 _ $30 / (1/12)) + (20\*$10 / (1/52)) = $14480
 
+:::note
+ARR excludes subscriptions that have been refunded. When a subscription is refunded, it's removed from the MRR calculation for all periods it was active, ensuring that MRR reflects only the recurring revenue from subscriptions that remain valid.
+:::
+
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
