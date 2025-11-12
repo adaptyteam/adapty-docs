@@ -109,3 +109,17 @@ By default, between the splash screen and onboarding, you will see the loading s
 - To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
 
 This helps create seamless transitions and custom loading experiences.
+
+## Configure iOS presentation style
+
+Configure how the onboarding is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```dart showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
