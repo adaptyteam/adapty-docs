@@ -225,3 +225,15 @@ const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
 
 const view = await createPaywallView(paywall, { productPurchaseParams });
 ```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
