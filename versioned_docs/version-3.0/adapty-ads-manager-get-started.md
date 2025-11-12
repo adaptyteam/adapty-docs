@@ -57,3 +57,9 @@ Now, you need to connect your Apple Ads Manager account to your Apple Ads accoun
 <ZoomImage id="grant-access.webp" width="300px" />
 
 After that, Adapty will start syncing your historical data from Apple Ads. You can already start exploring Adapty Ads Manager, but it will take some time until all the historical data is imported.
+
+## What's next
+
+After you've successfully synced your transaction data, proceed with learning how to:
+- [Manage your campaigns, ad groups, and keywords](ads-manager.md)
+- [Set up automation rules to adjust bids based on the campaign performance](ads-manager-automations.md)
