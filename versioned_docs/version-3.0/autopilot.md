@@ -22,6 +22,10 @@ So, you need to clearly understand **which prices to set** and **which paywalls 
 
 Adapty Growth Autopilot helps you to automate these tasks, so you have less to worry about.
 
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/u0HZep9X9e4?si=AKEfLK8NPeNdYpSM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
 ## How it works
 
 1. You select your app to analyze. This app must already have transactions in the production environment.
