@@ -6,8 +6,23 @@ keywords: ['adapty ua', 'user acquisition']
 import ZoomImage from '@site/src/components/ZoomImage';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 Adapty UA’s Meta integration lets you track and optimize campaign performance across Facebook, Instagram, Messenger, and Audience Network.
+
+<details>
+   <summary>See how to create a campaign in Meta Ads Manager</summary>
+
+1. Create a new campaign.
+2. Select **Traffic** as a campaign objective.
+   <ZoomImage id="meta-campaign.webp" width="500px" />
+3. Set **Conversion location** to **Website**.
+   <ZoomImage id="conversion-location.webp" width="500px" />
+4. Select **Website** as **Destination**. You will use the **Click link** from [Step 2](#step-2-add-campaigns) as **Website URL**.
+   <ZoomImage id="meta-destination.webp" width="500px" />
+
+See the [Meta Business Help Center article](https://www.facebook.com/business/help/621956575422138?id=649869995454285) for details on filling in other fields.
+</details>
 
 ## Step 1. Connect your Facebook account
 
