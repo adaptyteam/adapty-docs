@@ -110,7 +110,19 @@ Use a Public SDK key to integrate Adapty SDKs into your app, and a Secret Key to
 
 Specify the devices to be used for testing to ensure they get instant updates for paywall or placement changes, bypassing any caching delays. For more information, see [Testing devices](test-devices).
 
-## 9. Delete the app
+## 9. Cross-placement variation stickiness
+
+Define how long after a test completion a user is still served with the variants in the test. This affects analytics accuracy and user experience — as serving a user with a different offer than what they have seen before might influence their decision to buy.
+
+The maximum and default stickiness period is 90 days.
+
+:::warning
+Consider the following:
+- Changing this setting will affect all the users who previously received a variation. They will instantly qualify for a new paywall when they see a placement, which can spoil the results of your running A/B tests.
+- If the stickiness period is over for a user, they can be served with a new paywall or A/B test. However, even then, they won't be able to be a part of any other cross-placement test ever.
+:::
+
+## 10. Delete the app
 
 If you no longer need an app, you can delete it from Adapty. 
 
