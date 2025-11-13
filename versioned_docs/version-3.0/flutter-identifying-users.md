@@ -69,3 +69,62 @@ try {
 ```
 
 You can then login the user using `.identify()` method.
+
+## Assign `appAccountToken` (iOS)
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a **UUID** that lets you link App Store transactions to your internal user identity.  
+StoreKit associates this token with every transaction, so your backend can match App Store data to your users.
+
+Use a stable UUID generated per user and reuse it for the same account across devices.
+This ensures that purchases and App Store notifications stay correctly linked.
+
+You can set the token in two ways – during the SDK activation or when identifying the user.
+
+:::important
+You must always pass `appAccountToken` together with `customerUserId`.
+If you pass only the token, it will not be included in the transaction.
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
