@@ -13,7 +13,7 @@ import CustomDocCardList from '@site/src/components/CustomDocCardList';
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
 :::important
-Onboardings are available only for apps using Adapty iOS, Android, Flutter, and React Native SDK version 3.8.0 or higher. 
+Onboardings are available only for apps using Adapty iOS, Android, Flutter, React Native, and Unity SDK version 3.8.0 or higher. 
 :::
 
 ## What it is for
@@ -51,6 +51,13 @@ Onboardings are a paid feature in Adapty. Note the following about the pricing:
 To launch your onboarding:
 
 1. [Design an onboarding in the no-code editor.](design-onboarding.md)
-2. [Create a placement for the onboarding.](https://adapty.io/docs/create-onboarding#create-a-placement-for-your-onboarding)
-3. [Integrate the onboarding with your project using the Adapty SDK.](onboarding-sdk.md)
+2. [Create a placement for the onboarding.](create-onboarding#create-a-placement-for-your-onboarding)
+3. Integrate the onboarding with your project using the Adapty SDK:
+   - [iOS](ios-onboardings.md)
+   - [Android](android-onboardings.md)
+   - [Flutter](flutter-onboardings.md)
+   - [React Native](react-native-onboardings.md)
+   - [Capacitor](capacitor-onboardings.md)
+   - [Kotlin Multiplatform](kmp-onboardings.md)
+   - [Unity](unity-onboardings.md)
 4. Test the onboarding and release it for your users.
