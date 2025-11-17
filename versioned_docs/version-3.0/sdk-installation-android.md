@@ -476,13 +476,11 @@ tools:replace="android:fullBackupContent,android:dataExtractionRules">
 </application>
 ```
 
-If any SDK also sets `android:allowBackup`, you can optionally include it in `tools:replace` as well:
+If any SDK also sets `android:allowBackup`, include it in `tools:replace` as well:
 
 ```xml
 tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
 ```
-
-If your `compileSdkVersion` is lower than 31, and you don’t use `dataExtractionRules`, remove that attribute from `<application>` and from `tools:replace`.
 
 #### 3. Create merged backup rules files
 
