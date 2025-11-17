@@ -20,6 +20,7 @@ To resolve this issue, please check the following:
 1. **For iOS**: Ensure you use a real device rather than a simulator.
 2. Ensure that the `Bundle ID`/`Package name` of your app matches the one in the [**App settings**](https://app.adapty.io/settings/general).
 3. Ensure the `PUBLIC_SDK_KEY` in your app matches the **Public SDK key** in the Adapty Dashboard: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general).
+4. Ensure you are using a sandbox account – not a [local StoreKit configuration file](local-sk-files.md). If you have used a local StoreKit configuration file for testing before, ensure you are not using it in the current build. 
 
 ## No event is present in my testing profile
 
