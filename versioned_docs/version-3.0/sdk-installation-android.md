@@ -486,8 +486,7 @@ tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtract
 
 Create XML files under `app/src/main/res/xml/` that combine Adapty’s rules with rules from other SDKs. Android uses different backup rule formats depending on the OS version, so creating both files ensures compatibility across all Android versions your app supports:
 
-<Tabs>
-<TabItem value="12-plus" label="Android 12 and higher">
+**For Android 12 and higher** (uses the new data extraction rules format):
 
 ```xml title="sample_data_extraction_rules.xml"
 <?xml version="1.0" encoding="utf-8"?>
@@ -507,8 +506,7 @@ Create XML files under `app/src/main/res/xml/` that combine Adapty’s rules wit
 </data-extraction-rules>
 ```
 
-</TabItem>
-<TabItem value="11-minus" label="Android 11 and lower">
+**For Android 11 and lower** (uses the legacy full backup content format):
 
 ```xml title="sample_backup_rules.xml"
 <?xml version="1.0" encoding="utf-8"?>
@@ -523,9 +521,6 @@ Create XML files under `app/src/main/res/xml/` that combine Adapty’s rules wit
     <!-- <exclude domain="database" path="your_database_name" /> -->
 </full-backup-content>
 ```
-
-</TabItem>
-</Tabs>
 
 With this setup:
 
