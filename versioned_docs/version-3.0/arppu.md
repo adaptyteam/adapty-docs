@@ -37,6 +37,10 @@ For example, if your app generated $10,000 in revenue over a given period and ha
 
  It's important to note that the ARPPU value displayed represents the sum of total revenue divided by the total number of paying customers. The calculation is done before the store's fee and the refund amount is excluded from the revenue. As one user can pay more than one time during the whole period, the total ARPPU value may be higher than the daily value of ARPPU. This metric provides valuable insights into the revenue-generating capabilities of your app's paying user base and can help you optimize your pricing and subscription strategy to maximize revenue generation.
 
+:::note
+Refunds reduce the revenue component of this calculation, resulting in a lower ARPPU value. However, the user count in the denominator includes users whose purchases were later refunded, which can further decrease the average. This metric shows the true average revenue after accounting for refunds.
+:::
+
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 

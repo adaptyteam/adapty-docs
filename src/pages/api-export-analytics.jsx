@@ -34,14 +34,17 @@ function DynamicAPIElement({ layout = 'sidebar' }) {
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !loading && APIComponent) {
       const storageKey = 'TryIt_securitySchemeValues';
-      const existingAuth = localStorage.getItem(storageKey);
+      const pageKey = 'TryIt_lastPage';
+      const currentPage = 'export-analytics';
+      const lastPage = localStorage.getItem(pageKey);
       
-      // Only set default if no auth is already stored
-      if (!existingAuth) {
+      // Reset auth if we're on a different page or if no auth is stored
+      if (lastPage !== currentPage || !localStorage.getItem(storageKey)) {
         const defaultAuth = {
           apikeyAuth: 'Api-Key YOUR_SECRET_API_KEY'
         };
         localStorage.setItem(storageKey, JSON.stringify(defaultAuth));
+        localStorage.setItem(pageKey, currentPage);
       }
     }
   }, [loading, APIComponent]);
