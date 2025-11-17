@@ -52,7 +52,7 @@ tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtract
 
 #### 3. Create merged backup rules files
 
-Create two XML files in your Android project's `res/xml/` directory that combine Adapty's rules with rules from other SDKs. You'll need both files to support all Android versions:
+Create XML files in your Android project's `res/xml/` directory that combine Adapty's rules with rules from other SDKs. Android uses different backup rule formats depending on the OS version, so creating both files ensures compatibility across all Android versions your app supports:
 
 **For Android 12 and higher** (uses the new data extraction rules format):
 
