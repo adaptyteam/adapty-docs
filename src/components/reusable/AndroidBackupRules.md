@@ -52,7 +52,11 @@ tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtract
 
 #### 3. Create merged backup rules files
 
-Create XML files in your Android project's `res/xml/` directory that combine Adapty's rules with rules from other SDKs. Android uses different backup rule formats depending on the OS version, so creating both files ensures compatibility across all Android versions your app supports:
+Create XML files in your Android project's `res/xml/` directory that combine Adapty's rules with rules from other SDKs. Android uses different backup rule formats depending on the OS version, so creating both files ensures compatibility across all Android versions your app supports.
+
+:::note
+The examples below show AppsFlyer as a sample third-party SDK. Replace or add rules for any other SDKs you're using in your app.
+:::
 
 **For Android 12 and higher** (uses the new data extraction rules format):
 
