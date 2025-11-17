@@ -240,3 +240,112 @@ await Adapty().activate(
 | memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Default is 100 MB.                       |
 | memoryStorageCountLimit     | optional | The item count limit of the memory storage. Default is max int value.              |
 | diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Default is 100 MB.              |
+
+## Troubleshooting
+
+#### Android backup rules (Auto Backup configuration)
+
+Some SDKs (including Adapty) ship their own Android Auto Backup configuration. If you use multiple SDKs that define backup rules, the Android manifest merger can fail with an error mentioning `android:fullBackupContent`, `android:dataExtractionRules`, or `android:allowBackup`.
+
+Typical error symptoms: `Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+To resolve this, you need to:
+
+- Tell the manifest merger to use your app’s values for backup-related attributes.
+
+- Merge backup rules from Adapty and other SDKs into a single XML file (or a pair of files for Android 12+).
+
+:::important
+These changes are applied in the `android/` host project. Flutter does not override or manage Android backup rules — the manifest merger does. Make sure you're editing files inside `android/app/src/main/` in your Flutter project.
+:::
+
+#### 1. Add the `tools` namespace to your manifest
+
+In `android/app/src/main/AndroidManifest.xml`, ensure the root `<manifest>` tag includes tools:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. Override backup attributes in `<application>`
+
+In the same `android/app/src/main/AndroidManifest.xml` file, update the `<application>` tag so that your app provides the final values and tells the manifest merger to replace library values:
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           <!-- Android 11 and lower -->
+android:dataExtractionRules="@xml/sample_data_extraction_rules"<!-- Android 12+ -->
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+If any SDK also sets `android:allowBackup`, you can optionally include it in `tools:replace` as well:
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+If your `compileSdkVersion` is lower than 31, and you don’t use `dataExtractionRules`, remove that attribute from `<application>` and from `tools:replace`.
+
+#### 3. Create merged backup rules files
+
+Create XML files under `android/app/src/main/res/xml/` that combine Adapty’s rules with rules from other SDKs.
+
+<Tabs>
+<TabItem value="12-plus" label="Android 12 and higher">
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- AppsFlyer backup rules -->
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <!-- Adapty backup rules -->
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        <!-- Usually the same rules as cloud-backup -->
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+</TabItem>
+<TabItem value="11-minus" label="Android 11 and lower">
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- AppsFlyer backup rules -->
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    <!-- Adapty backup rules -->
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    <!-- Your own app-specific rules (if any) -->
+    <!-- <exclude domain="database" path="your_database_name" /> -->
+</full-backup-content>
+```
+
+</TabItem>
+</Tabs>
+
+With this setup:
+
+- Adapty’s backup exclusions (`AdaptySDKPrefs.xml`) are preserved.
+
+- Other SDKs’ exclusions (for example, `appsflyer-data`) are also applied.
+
+- The manifest merger uses your app’s configuration and no longer fails on conflicting backup attributes.
