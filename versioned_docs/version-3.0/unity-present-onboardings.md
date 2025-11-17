@@ -8,7 +8,7 @@ displayed_sidebar: sdkunity
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Гтшен app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
+If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Unity app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
 Before you start, ensure that:
 

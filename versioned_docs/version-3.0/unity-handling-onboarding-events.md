@@ -64,6 +64,37 @@ public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
     {
         // Handle errors
     }
+
+    // Implement other required interface methods
+    public void OnboardingViewDidFinishLoading(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta
+    ) { }
+
+    public void OnboardingViewOnCloseAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    ) { }
+
+    public void OnboardingViewOnPaywallAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    ) { }
+
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    ) { }
+
+    public void OnboardingViewOnAnalyticsEvent(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        AdaptyOnboardingsAnalyticsEvent analyticsEvent
+    ) { }
 }
 ```
 
@@ -437,6 +468,10 @@ public void OnboardingViewOnAnalyticsEvent(
     }
 }
 ```
+
+:::note
+The `TrackEvent` method is a placeholder that you need to implement yourself to send analytics to your preferred analytics service.
+:::
 
 <Details>
 <summary>Event examples (Click to expand)</summary>

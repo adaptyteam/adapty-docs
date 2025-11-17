@@ -24,14 +24,20 @@ For the best performance, fetch the onboarding configuration early to give image
 To get an onboarding, use the `GetOnboarding` method:
 
 ```csharp showLineNumbers
-Adapty.GetOnboarding("YOUR_PLACEMENT_ID", "en", (onboarding, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
+Adapty.GetOnboarding(
+    "YOUR_PLACEMENT_ID",
+    "en",
+    AdaptyPlacementFetchPolicy.Default,
+    null,
+    (onboarding, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
   
-  // onboarding - the resulting object
-});
+        // onboarding - the resulting object
+    }
+);
 ```
 
 Parameters:
@@ -65,9 +71,9 @@ Parameters:
 
 | Parameter      | Presence       | Description                                                                  |
 |:---------------| :------------- |:-----------------------------------------------------------------------------|
-| **onboarding** | required       | An `AdaptyOnboarding` object to obtain a controller for the desired paywall. |
+| **onboarding** | required       | An `AdaptyOnboarding` object to obtain a view for the desired onboarding. |
 
-Once you have successfully loaded the щтищфквштп and its view configuration, you can [present it in your mobile app](unity-present-onboardings).
+Once you have successfully loaded the onboarding and its view configuration, you can [present it in your mobile app](unity-present-onboardings).
 
 
 ## Speed up onboarding fetching with default audience onboarding
@@ -86,14 +92,19 @@ If faster fetching outweighs these drawbacks for your use case, use `GetOnboardi
 :::
 
 ```csharp showLineNumbers
-Adapty.GetOnboardingForDefaultAudience("YOUR_PLACEMENT_ID", "en", (onboarding, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
+Adapty.GetOnboardingForDefaultAudience(
+    "YOUR_PLACEMENT_ID",
+    "en",
+    null,
+    (onboarding, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
   
-  // onboarding - the resulting object
-});
+        // onboarding - the resulting object
+    }
+);
 ```
 
 Parameters:

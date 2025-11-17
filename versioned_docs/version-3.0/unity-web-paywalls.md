@@ -40,9 +40,11 @@ There are two versions of the `OpenWebPaywall` method:
 
 #### Handle errors
 
-| Error                                   | Description                                            | Recommended action                                                        |
-|-----------------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------|
-| AdaptyError.paywallWithoutPurchaseUrl   | The paywall doesn't have a web purchase URL configured | Check if the paywall has been properly configured in the Adapty Dashboard |
-| AdaptyError.productWithoutPurchaseUrl   | The product doesn't have a web purchase URL            | Verify the product configuration in the Adapty Dashboard                  |
-| AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
-| AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
+| Error Code | Description                                            | Recommended action                                                        |
+|-----------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| `AdaptyErrorCode.WrongParam`   | The paywall or product doesn't have a web purchase URL configured, or failed to open the URL in the browser | Check the error message for details. Verify the paywall/product configuration in the Adapty Dashboard, or check device settings. |
+| `AdaptyErrorCode.DecodingFailed` | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
+
+:::note
+Check the error's `Message` property to get specific details about what went wrong, as `WrongParam` can indicate several issues (missing purchase URL, failed to open browser, etc.).
+:::
