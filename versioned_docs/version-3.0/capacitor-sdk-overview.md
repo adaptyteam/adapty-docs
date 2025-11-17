@@ -13,7 +13,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Welcome! We're here to make in-app purchases a breeze 🚀
 
-We've built the Adapty Capacitor SDK (Beta) to take the headache out of in-app purchases so you can focus on what you do best – building amazing apps. Here's what we handle for you:
+We've built the [Adapty Capacitor SDK (Beta)](https://github.com/adaptyteam/AdaptySDK-Capacitor/) to take the headache out of in-app purchases so you can focus on what you do best – building amazing apps. Here's what we handle for you:
 
 - Handle purchases, receipt validation, and subscription management out of the box
 - Create and test paywalls without app updates
@@ -33,7 +33,7 @@ Our docs are optimized for use with LLMs. Check out [this article](adapty-cursor
 
 Here's what we'll cover in the integration guide:
 
-1. [Install & configure SDK](sdk-installation-capacitor.md): Add the SDK as a dependency to your project and activate it in the code.
+1. [Install & configure SDK](sdk-installation-capacitor.md): Add the SDK as a [dependency](https://www.npmjs.com/package/@adapty/capacitor) to your project and activate it in the code.
 2. [Enable purchases through paywalls](capacitor-quickstart-paywalls.md): Set up the purchase flow so users can buy products.
 3. [Check the subscription status](capacitor-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](capacitor-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
@@ -42,7 +42,11 @@ Here's what we'll cover in the integration guide:
 
 Want to see how it all comes together? We've got you covered:
 
-- **Sample app**: Check out our [complete example](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools) that demonstrates the full setup
+**Sample apps**: Check out our complete examples that demonstrate the full setup:
+- [React](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
+- [Vue.js](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
+- [Angular](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
+- [Advanced development tools with all the methods – useful for more complicated cases](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
 
 ## Main concepts
 

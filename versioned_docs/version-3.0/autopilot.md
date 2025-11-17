@@ -22,6 +22,10 @@ So, you need to clearly understand **which prices to set** and **which paywalls 
 
 Adapty Growth Autopilot helps you to automate these tasks, so you have less to worry about.
 
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/u0HZep9X9e4?si=AKEfLK8NPeNdYpSM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
 ## How it works
 
 1. You select your app to analyze. This app must already have transactions in the production environment.
@@ -52,6 +56,15 @@ To create a report on your app:
 />
 </Zoom>
 
+<br/>
+
+:::note
+If the analysis doesn't start, it may be due to one of the following reasons:
+- Adapty couldn't select a top-performing paywall because there is not enough purchase data yet.
+- There are no purchases in the USA.
+- Your top-performing paywall has two or more products with the same period.
+:::
+
 2. Select your app from the list and click **Analyze this app**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
 
 <Zoom>
@@ -65,8 +78,10 @@ To create a report on your app:
 />
 </Zoom>
 
-3. At this stage, we will detect your top-performing paywall. Review its information and click **Proceed to competitors research**.
+3. At this stage, we will detect your top-performing paywall. Review the paywall information and click **Proceed to competitors research**.
 
+   Note that we select your top-performing paywall only among **live** paywalls. If your successful paywall is not added to any placement currently, it won't be considered.
+   
 <Zoom>
   <img src={require('./img/app-analysis.webp').default}
   style={{
@@ -129,9 +144,13 @@ Your plan consists of three parts: setting new prices, updating paywalls, and co
 
 To start with the first stage:
 
-1. Create new products right from the report. Don't forget to add them to stores as well ([App Store](app-store-products.md) and [Google Play](android-products.md)).
-2. Duplicate your current top-performing paywall and add products to it.
+1. Create new products right from the report or modify your existing products. You can automatically push your new products to App Store and Google Play right away.
+2. Duplicate your current top-performing paywall and add products to it. You can also modify your current paywall design according to the recommendations or generate a new one using the AI generator in the [Adapty Paywall Builder](adapty-paywall-builder.md).
 3. Launch A/B test that will compare how the new paywall performs against the current paywall.
+
+:::important
+The recommendations page will show you the target number of subscribers and the minimum duration for the A/B test. Follow these recommendations to get the most accurate data before you begin with the next stage. You will need to stop the A/B test manually.
+:::
 
 <Zoom>
   <img src={require('./img/recommendation.webp').default}

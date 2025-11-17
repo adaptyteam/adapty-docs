@@ -368,3 +368,168 @@ AdaptyUI.configureMediaCache(cacheConfig);
 :::tip
 You can clear the media cache at runtime using `AdaptyUI.clearMediaCache(strategy)`, where `strategy` can be `CLEAR_ALL` or `CLEAR_EXPIRED_ONLY`.
 :::
+
+### Set obfuscated account IDs
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### Run Adapty in a custom process
+
+By default, Adapty can only run in the main process of your app.
+If your app uses multiple processes, initialize Adapty only once; otherwise, unexpected behavior may occur.
+
+If you need to run Adapty in a different process, specify it in your configuration:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+If you try to activate Adapty in another process without setting this value, the SDK will log a warning and skip activation.
+
+## Troubleshooting
+
+#### Android backup rules (Auto Backup configuration)
+
+Some SDKs (including Adapty) ship their own Android Auto Backup configuration. If you use multiple SDKs that define backup rules, the Android manifest merger can fail with an error mentioning `android:fullBackupContent`, `android:dataExtractionRules`, or `android:allowBackup`.
+
+Typical error symptoms: `Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+To resolve this, you need to:
+
+- Tell the manifest merger to use your app’s values for backup-related attributes.
+
+- Merge backup rules from Adapty and other SDKs into a single XML file (or a pair of files for Android 12+).
+
+#### 1. Add the `tools` namespace to your manifest
+
+If not present yet, add the `tools` namespace to the root `<manifest>` tag:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. Override backup attributes in `<application>`
+
+In your app’s `AndroidManifest.xml`, update the `<application>` tag so that your app provides the final values and tells the manifest merger to replace library values:
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           <!-- Android 11 and lower -->
+android:dataExtractionRules="@xml/sample_data_extraction_rules"<!-- Android 12+ -->
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+If any SDK also sets `android:allowBackup`, include it in `tools:replace` as well:
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+#### 3. Create merged backup rules files
+
+Create XML files under `app/src/main/res/xml/` that combine Adapty's rules with rules from other SDKs. Android uses different backup rule formats depending on the OS version, so creating both files ensures compatibility across all Android versions your app supports.
+
+:::note
+The examples below show AppsFlyer as a sample third-party SDK. Replace or add rules for any other SDKs you're using in your app.
+:::
+
+**For Android 12 and higher** (uses the new data extraction rules format):
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- AppsFlyer backup rules -->
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <!-- Adapty backup rules -->
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        <!-- Usually the same rules as cloud-backup -->
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+**For Android 11 and lower** (uses the legacy full backup content format):
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- AppsFlyer backup rules -->
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    <!-- Adapty backup rules -->
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    <!-- Your own app-specific rules (if any) -->
+    <!-- <exclude domain="database" path="your_database_name" /> -->
+</full-backup-content>
+```
+
+With this setup:
+
+- Adapty’s backup exclusions (`AdaptySDKPrefs.xml`) are preserved.
+
+- Other SDKs’ exclusions (for example, `appsflyer-data`) are also applied.
+
+- The manifest merger uses your app’s configuration and no longer fails on conflicting backup attributes.

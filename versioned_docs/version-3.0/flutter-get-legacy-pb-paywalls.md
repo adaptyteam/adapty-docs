@@ -55,7 +55,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                 |
 | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | An [`AdaptyPaywall`](flutter-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 

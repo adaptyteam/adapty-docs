@@ -32,5 +32,26 @@ view.Present((error) => {
   // handle the error
 });
 ```
-
 <SampleApp />
+
+## Show dialog
+
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```csharp showLineNumbers title="Unity"
+var dialog = new AdaptyUIDialogConfiguration()
+    .SetTitle("Close paywall?")
+    .SetContent("You will lose access to exclusive offers.")
+    .SetDefaultActionTitle("Stay")
+    .SetSecondaryActionTitle("Close");
+
+AdaptyUI.ShowDialog(view, dialog, (action, error) => {
+    if (error == null) {
+        if (action == AdaptyUIDialogActionType.Secondary) {
+            // User confirmed - close the paywall
+            view.Dismiss();
+        }
+        // If primary - do nothing, user stays
+    }
+});
+```

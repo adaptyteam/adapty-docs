@@ -44,7 +44,7 @@ The result of the `createOnboardingView` method can only be used once. If you ne
 :::
 
 ```typescript showLineNumbers
-import {createOnboardingView} from '@adapty/react-native-ui';
+import {createOnboardingView} from 'react-native-adapty/dist/ui';
 
 if (onboarding.hasViewConfiguration) {
     try {
@@ -70,7 +70,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                |
 |:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Onboarding      | An [`AdaptyOnboarding`](sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+| Onboarding      | An [`AdaptyOnboarding`](https://react-native.adapty.io/interfaces/adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
 
 ## Speed up onboarding fetching with default audience onboarding

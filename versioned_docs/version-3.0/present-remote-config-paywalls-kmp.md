@@ -67,6 +67,6 @@ Adapty.logShowPaywall(paywall = paywall)
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                           |
-| :---------- | :------- |:----------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](kmp-sdk-models#adaptypaywall) object.        |
+| Parameter   | Presence | Description                                                                                            |
+| :---------- | :------- |:-------------------------------------------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](https://kmp.adapty.io//////adapty/com.adapty.kmp.models/-adapty-paywall/) object. |

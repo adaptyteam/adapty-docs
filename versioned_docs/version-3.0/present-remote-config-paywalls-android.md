@@ -86,6 +86,6 @@ Adapty.logShowPaywall(paywall)
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                           |
-| :---------- | :------- |:----------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](android-sdk-models#adaptypaywall) object.        | 
+| Parameter   | Presence | Description                                                                                                 |
+| :---------- | :------- |:------------------------------------------------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](https://kotlin.adapty.io////////////adapty/com.adapty.models/-adapty-paywall/) object. | 

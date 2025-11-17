@@ -150,4 +150,4 @@ Placeholders:
 **See also:**
 
 - [Refund Saver](refund-saver.md) 
-- [Retrieve user consent and refund settings with API](ss-get-refund-saver-settings.md) 
+- [Retrieve user consent and refund settings with API](api-adapty#/operations/getRefundSaverSettings.md) 

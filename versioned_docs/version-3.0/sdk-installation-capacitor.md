@@ -10,6 +10,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your Capacitor app:
 
@@ -22,7 +23,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 
 ## Requirements
 
-The Adapty Capacitor SDK supports iOS 14.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
+The [Adapty Capacitor SDK](https://github.com/adaptyteam/AdaptySDK-Capacitor/) supports iOS 14.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
 
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
@@ -203,3 +204,11 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+####  Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />
+
+:::tip
+After changing native Android files, run `npx cap sync android` so Capacitor picks up the updated resources if you regenerate the platform.
+:::

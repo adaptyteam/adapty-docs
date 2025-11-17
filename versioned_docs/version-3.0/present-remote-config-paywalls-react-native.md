@@ -50,6 +50,6 @@ await adapty.logShowPaywall(paywall);
 
 Request parameters:
 
-| Parameter   | Presence | Description                                                               |
-| :---------- | :------- |:--------------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](react-native-sdk-models#adaptypaywall) object.       | 
+| Parameter   | Presence | Description                                                                                 |
+| :---------- | :------- |:--------------------------------------------------------------------------------------------|
+| **paywall** | required | An [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) object.       | 

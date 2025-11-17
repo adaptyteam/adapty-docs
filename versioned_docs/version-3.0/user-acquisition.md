@@ -1,5 +1,5 @@
 ---
-title: "User Acquisition"
+title: "Get started with Adapty User Acquisition"
 description: "Connect with Adapty User Acquisition to blend ad spending and subscription revenue and see the whole app economy in one place."
 metadataTitle: "Connecting with Adapty User Acquisition | Adapty Docs"
 ---
@@ -20,7 +20,8 @@ User Acquisition is only available with:
 - Unity SDK version 3.12.0 or higher.
 :::
 
-## How to set up User Acquisition integration
+## Enable the User Acquisition integration
+
 To enable the integration:
 1. Go to [Integrations > Adapty](https://app.adapty.io/integrations/user-acquisition) in the Adapty Dashboard.
 2. Turn on the toggle.
@@ -62,7 +63,11 @@ You can check the full list of supported events [here](events.md).
 />
 </Zoom>
 
-## SDK configuration
+## Listen for installation details updates
+
+:::important
+You need to [install and activate the Adapty SDK](installation-of-adapty-sdks.md) first.
+:::
 
 To listen for installation details updates, use these two methods:
 

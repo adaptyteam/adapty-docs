@@ -58,4 +58,4 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                           |
 | :---------- | :------- |:----------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](flutter-sdk-models#adaptypaywall) object.        | 
+| **paywall** | required | An [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) object.        | 

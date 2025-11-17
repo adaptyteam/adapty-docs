@@ -27,9 +27,9 @@ Adapty offers three A/B test types:
 - **Crossplacement A/B test:** An A/B test created for multiple paywall placements in your app. Once a <InlineTooltip tooltip="variant">A/B test variants are alternative versions of the paywall or onboarding to test.</InlineTooltip> is assigned by the A/B test, it will be consistently shown across all selected sections of your app.
 
 :::warning
-Crossplacement A/B tests are only available for native iOS, Flutter, and Android SDKs starting from v3.5.0.
+Crossplacement A/B tests are only available for Adapty SDKs starting from v3.5.0.
 
-Onboarding A/B tests require the native iOS or Android SDK version 3.8.0 or higher.
+Onboarding A/B tests require the SDK version 3.8.0 or higher.
 
 Users from previous versions skip them.
 :::
@@ -118,7 +118,7 @@ Crossplacement A/B tests guarantee the same variant across all placements in the
 - Only new users can participate, i.e. the users who have not seen a single Adapty paywall before (to be precise, `getPaywall` SDK method was called). That is done because it's not possible to guarantee for the old users that they will see the same paywall chain, because an existing user could have seen something before the test has been started.
 
 :::important
-Crossplacement A/B tests also feature extended test membership—once a user is assigned to a variant, they stay in that variant for 3 months, even after you stop the test. This prevents test contamination: if users who saw higher prices suddenly started seeing lower prices, it would skew your results since they'd be more likely to purchase the cheaper option.
+By default, once a user is assigned to a cross-placement test variant, they stay in that variant for 3 months, even after you stop the test. To override this behavior and allow showing other paywalls and A/B tests, configure the **[Cross-placement variation stickiness](general#9-cross-placement-variation-stickiness)** setting in the **App settings**. However, note that, even then, they won't be able to be a part of any other cross-placement test ever.
 :::
 
 ## Creating A/B tests

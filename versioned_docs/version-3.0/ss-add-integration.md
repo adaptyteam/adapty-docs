@@ -174,5 +174,5 @@ The request is successful. The response body is blank.
 
 **See also:**
 
-- [Get integration identifiers](ss-get-integration)
-- [Get profile](ss-get-profile)
+- [Get integration identifiers](api-adapty#/operations/getIntegrationIdentifiers)
+- [Get profile](api-adapty#/operations/getProfile)

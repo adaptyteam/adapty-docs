@@ -158,6 +158,6 @@ Placeholders:
 
 **See also:**
 
-- [Grant access level](ss-grant-access-level)
-- [Set transaction](ss-set-transaction)
-- [Validate Stripe purchases, manage access levels, and import transaction history](ss-purchase-in-stripe)
+- [Grant access level](api-adapty#/operations/grantAccessLevel)
+- [Set transaction](api-adapty#/operations/setTransaction)
+- [Validate Stripe purchases, manage access levels, and import transaction history](api-adapty#/operations/validateStripePurchase)

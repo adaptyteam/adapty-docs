@@ -98,13 +98,13 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                                                         |
 | :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
-| **Product** | required | An [`AdaptyPaywallProduct`](sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
+| **Product** | required | An [`AdaptyPaywallProduct`](https://kotlin.adapty.io/////adapty/com.adapty.models/-adapty-paywall-product/) object retrieved from the paywall. |
 
 Response parameters:
 
 | Parameter | Description                                                                                                                                                                                                                                                                                                                                                            |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
+| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](https://kotlin.adapty.io//////adapty/com.adapty.models/-adapty-profile/) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
@@ -155,7 +155,7 @@ Additional request parameter:
 
 | Parameter                    | Presence | Description                                                  |
 | :--------------------------- | :------- | :----------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](https://kotlin.adapty.io///////adapty/com.adapty.models/-adapty-subscription-update-parameters/) object. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
@@ -190,7 +190,7 @@ Additional request parameter:
 
 | Parameter                    | Presence | Description                                                  |
 | :--------------------------- | :------- | :----------------------------------------------------------- |
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](sdk-models#adaptysubscriptionupdateparameters) object. |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](https://kotlin.adapty.io///////adapty/com.adapty.models/-adapty-subscription-update-parameters/) object. |
 
 </TabItem>
 
@@ -203,44 +203,29 @@ You can read more about subscriptions and replacement modes in the Google Develo
 - Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
-## Set obfuscated account and profile IDs
+### Manage prepaid plans
 
-Google Play requires obfuscated account and profile IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
 
-You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
-
-<Tabs groupId="current-os" queryString>
+<Tabs>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-Adapty.makePurchase(
-    activity, 
-    product, 
-    AdaptyPurchaseParameters.Builder()
-        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
-        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
-        .build()
-) { result ->
-    // Handle result
-}
-```
+import com.adapty.models.AdaptyConfig
 
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build()
+```
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-Adapty.makePurchase(
-    activity, 
-    product, 
-    new AdaptyPurchaseParameters.Builder()
-        .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
-        .withObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
-        .build(),
-    result -> {
-        // Handle result
-    }
-);
-```
+import com.adapty.models.AdaptyConfig;
 
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build();
+```
 </TabItem>
 </Tabs>

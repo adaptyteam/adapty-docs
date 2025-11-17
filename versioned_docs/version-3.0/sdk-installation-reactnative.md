@@ -10,6 +10,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your React Native app:
 
@@ -42,27 +43,43 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 <Tabs>
 <TabItem value="expo" label="Expo" default>
 
-1. Install EAS CLI (if not already):
-   ```sh showLineNumbers title="Shell"
-   npm install -g eas-cli
+:::important
+[Expo DevClient](https://docs.expo.dev/versions/latest/sdk/dev-client/) is required. Expo Go will **not** work because the Adapty SDK includes native dependencies.
+:::
+
+1. Install Adapty SDK:
+   ```sh 
+   npx expo install react-native-adapty
+   npx expo prebuild
    ```
-2. Install the dev client:
-   ```sh showLineNumbers title="Shell"
-   expo install expo-dev-client
+2. Build your app for development using EAS or local build:
+
+   <Tabs>
+   <TabItem value="eas" label="EAS build" default>
+      ```sh 
+      # For iOS
+      eas build --profile development --platform ios
+      
+      # For Android
+      eas build --profile development --platform android
+      ```
+   </TabItem>
+   
+   <TabItem value="local" label="Local build">
+      ```sh 
+      # For iOS
+      npx expo run:ios
+      
+      # For Android
+      npx expo run:android
+      ```
+   </TabItem>
+   </Tabs>
+3. Start the dev server:
+   ```sh 
+   npx expo start --dev-client
    ```
-3. Install Adapty SDK:
-   ```sh showLineNumbers title="Shell"
-   expo install react-native-adapty
-   ```
-4. Build your app for development:
-   ```sh showLineNumbers title="Shell"
-   eas build --profile development --platform ios
-   eas build --profile development --platform android
-   ```
-5. Start the dev server:
-   ```sh showLineNumbers title="Shell"
-   expo start --dev-client
-   ```
+
 
 </TabItem>
 <TabItem value="react-native" label="Pure React Native">
@@ -255,3 +272,7 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+#### Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />

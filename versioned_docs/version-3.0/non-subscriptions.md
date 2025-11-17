@@ -33,6 +33,10 @@ Adapty's calculation logic for the Non-subscriptions chart involves counting the
 - Non-consumables are items that users can purchase once and use forever, such as a race track in a game app, or ad-free versions of an app. 
 - Non-renewing subscriptions are subscriptions that expire after a set period of time and do not renew automatically, such as a one-year subscription to a catalog of archived articles. The content of this in-app purchase can be static, but the subscription will not renew automatically once it expires. 
 
+:::note
+This chart counts only purchase events and does not subtract refunded purchases. If you have non-subscription products that are frequently refunded, the displayed count will be higher than the actual number of purchases that generated revenue.
+:::
+
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, and store.

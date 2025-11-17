@@ -13,8 +13,6 @@ A Product is any item or content that is available for purchase within a mobile 
 
 In Adapty you can combine similar products that you have in App Store and Play Store in a single internal product. This allows you to use a single Adapty product across all platforms, instead of using each vendor's products.
 
-Make sure you've [done the initial configuration](quickstart) without skipping a single step and [created the products in the App Store](app-store-products) and/or [created products in Google Play](android-products) before adding them in the Adapty Dashboard.
-
 :::note
 Checklist to successfully display products in your mobile app
 

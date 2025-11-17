@@ -212,5 +212,5 @@ Returns when invalid query parameters are provided.
 
 **See also:**
 
-- [Get paywall](ss-get-paywall)
-- [Update paywall](ss-update-paywall) 
+- [Get paywall](api-adapty#/operations/getPaywall)
+- [Update paywall](api-adapty#/operations/updatePaywall) 

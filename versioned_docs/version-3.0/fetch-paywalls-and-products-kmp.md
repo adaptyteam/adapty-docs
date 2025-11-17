@@ -70,7 +70,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                  |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | An [`AdaptyPaywall`](kmp-sdk-models#adaptypaywall)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch products
 
@@ -86,11 +86,11 @@ Adapty.getPaywallProducts(paywall).onSuccess { products ->
 
 Response parameters:
 
-| Parameter | Description                                                                                                                                                                                 |
-| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Products  | List of  [`AdaptyPaywallProduct`](kmp-sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
+| Parameter | Description                                                                                                                                                                                                                           |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products  | List of  [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
 
-When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](kmp-sdk-models#adaptypaywallproduct) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
+When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
 
 | Property                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

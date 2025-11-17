@@ -31,6 +31,10 @@ Adapty's Active Subscriptions calculation logic counts the number of paid, unexp
 
 For example, if there were 500 active subscriptions at the end of last month, 50 new subscriptions were started this month, and 25 subscriptions expired this month, then there are 525 active subscriptions at the end of this month.
 
+:::note
+When a subscription is refunded, it's subtracted from the active subscriptions count. This ensures the metric accurately reflects subscriptions that are currently generating revenue for your app.
+:::
+
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
