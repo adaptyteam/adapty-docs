@@ -23,7 +23,9 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 ```csharp showLineNumbers title="Unity"
-view.Present((error) => {
-  // handle the error
-});
+view.Present((presentError) => {
+    if (presentError != null) {
+        // handle the error
+    }
+};
 ```

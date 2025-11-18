@@ -24,20 +24,14 @@ For the best performance, fetch the onboarding configuration early to give image
 To get an onboarding, use the `GetOnboarding` method:
 
 ```csharp showLineNumbers
-Adapty.GetOnboarding(
-    "YOUR_PLACEMENT_ID",
-    "en",
-    AdaptyPlacementFetchPolicy.Default,
-    null,
-    (onboarding, error) => {
-        if (error != null) {
-            // handle the error
-            return;
-        }
-  
-        // onboarding - the resulting object
+Adapty.GetOnboarding("YOUR_PLACEMENT_ID", (onboarding, error) => {
+    if (error != null) {
+        // handle the error
+        return;
     }
-);
+    
+    // the requested onboarding
+});
 ```
 
 Parameters:
@@ -92,19 +86,14 @@ If faster fetching outweighs these drawbacks for your use case, use `GetOnboardi
 :::
 
 ```csharp showLineNumbers
-Adapty.GetOnboardingForDefaultAudience(
-    "YOUR_PLACEMENT_ID",
-    "en",
-    null,
-    (onboarding, error) => {
-        if (error != null) {
-            // handle the error
-            return;
-        }
-  
-        // onboarding - the resulting object
+Adapty.GetOnboardingForDefaultAudience("YOUR_PLACEMENT_ID", (onboarding, error) => {
+    if (error != null) {
+        // handle the error
+        return;
     }
-);
+    
+    // the requested onboarding
+});
 ```
 
 Parameters:
