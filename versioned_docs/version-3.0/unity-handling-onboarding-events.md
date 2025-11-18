@@ -51,9 +51,8 @@ public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
         string actionId
     )
     {
-        if (actionId == "allowNotifications")
-        {
-            // Request notification permissions
+        if (actionId == "allowNotifications") {
+            // request notification permissions
         }
     }
     
@@ -62,39 +61,10 @@ public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
         AdaptyError error
     )
     {
-        // Handle errors
+        // handle errors
     }
 
-    // Implement other required interface methods
-    public void OnboardingViewDidFinishLoading(
-        AdaptyUIOnboardingView view,
-        AdaptyUIOnboardingMeta meta
-    ) { }
-
-    public void OnboardingViewOnCloseAction(
-        AdaptyUIOnboardingView view,
-        AdaptyUIOnboardingMeta meta,
-        string actionId
-    ) { }
-
-    public void OnboardingViewOnPaywallAction(
-        AdaptyUIOnboardingView view,
-        AdaptyUIOnboardingMeta meta,
-        string actionId
-    ) { }
-
-    public void OnboardingViewOnStateUpdatedAction(
-        AdaptyUIOnboardingView view,
-        AdaptyUIOnboardingMeta meta,
-        string elementId,
-        AdaptyOnboardingsStateUpdatedParams @params
-    ) { }
-
-    public void OnboardingViewOnAnalyticsEvent(
-        AdaptyUIOnboardingView view,
-        AdaptyUIOnboardingMeta meta,
-        AdaptyOnboardingsAnalyticsEvent analyticsEvent
-    ) { }
+    // Implement other required interface methods...
 }
 ```
 
@@ -143,9 +113,8 @@ public void OnboardingViewOnCloseAction(
 )
 {
     view.Dismiss((error) => {
-        if (error != null)
-        {
-            Debug.LogError($"Failed to dismiss onboarding: {error.Message}");
+        if (error != null) {
+            // handle the error
         }
     });
 }
@@ -183,46 +152,25 @@ public void OnboardingViewOnPaywallAction(
     string actionId
 )
 {
-    // Get the paywall using the placement ID from the action
-    Adapty.GetPaywall(
-        actionId,
-        (paywall, error) =>
-        {
-            if (error != null)
-            {
-                Debug.LogError($"Failed to get paywall: {error.Message}");
+    Adapty.GetPaywall(actionId, (paywall, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
+            if (createError != null) {
+                // handle the error
                 return;
             }
 
-            // Create paywall view parameters
-            var parameters = new AdaptyUICreatePaywallViewParameters()
-                .SetPreloadProducts(true)
-                .SetLoadTimeout(new TimeSpan(0, 0, 3));
-
-            // Create and present the paywall view
-            AdaptyUI.CreatePaywallView(
-                paywall,
-                parameters,
-                (paywallView, paywallError) =>
-                {
-                    if (paywallError != null)
-                    {
-                        Debug.LogError($"Failed to create paywall view: {paywallError.Message}");
-                        return;
-                    }
-
-                    // Present the paywall
-                    paywallView.Present((presentError) =>
-                    {
-                        if (presentError != null)
-                        {
-                            Debug.LogError($"Failed to present paywall: {presentError.Message}");
-                        }
-                    });
+            paywallView.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
                 }
-            );
-        }
-    );
+            });
+        });
+    });
 }
 ```
 
@@ -253,7 +201,7 @@ public void OnboardingViewDidFinishLoading(
     AdaptyUIOnboardingMeta meta
 )
 {
-    // Handle loading completion
+    // handle loading completion
 }
 ```
 
@@ -305,29 +253,28 @@ public void OnboardingViewOnAnalyticsEvent(
     AdaptyOnboardingsAnalyticsEvent analyticsEvent
 )
 {
-    switch (analyticsEvent)
-    {
+    switch (analyticsEvent) {
         case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
-            // Track onboarding start
+            // track onboarding start
             TrackEvent("onboarding_started", meta);
             break;
         case AdaptyOnboardingsAnalyticsEventScreenPresented:
-            // Track screen presentation
+            // track screen presentation
             TrackEvent("screen_presented", meta);
             break;
         case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
-            // Track screen completion with user response
+            // track screen completion with user response
             TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
             break;
         case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
-            // Track successful onboarding completion
+            // track successful onboarding completion
             TrackEvent("onboarding_completed", meta);
             break;
         case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
-            // Handle unknown events
+            // handle unknown events
             TrackEvent(unknownEvent.Name, meta);
             break;
-        // Handle other cases as needed
+        // handle other cases as needed
     }
 }
 ```

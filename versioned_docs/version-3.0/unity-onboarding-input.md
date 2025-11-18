@@ -19,20 +19,18 @@ public void OnboardingViewOnStateUpdatedAction(
     AdaptyOnboardingsStateUpdatedParams @params
 )
 {
-    // Store user preferences or responses
-    switch (@params)
-    {
+    switch (@params) {
         case AdaptyOnboardingsSelectParams selectParams:
-            // Handle single selection
+            // handle single selection
             break;
         case AdaptyOnboardingsMultiSelectParams multiSelectParams:
-            // Handle multiple selections
+            // handle multiple selections
             break;
         case AdaptyOnboardingsInputParams inputParams:
-            // Handle text input
+            // handle text input
             break;
         case AdaptyOnboardingsDatePickerParams datePickerParams:
-            // Handle date selection
+            // handle date selection
             break;
     }
 }
@@ -153,34 +151,25 @@ public void OnboardingViewOnStateUpdatedAction(
     AdaptyOnboardingsStateUpdatedParams @params
 )
 {
-    // Store user preferences or responses
-    if (@params is AdaptyOnboardingsInputParams inputParams)
-    {
-        // Handle text input
+    if (@params is AdaptyOnboardingsInputParams inputParams) {
         var builder = new AdaptyProfileParameters.Builder();
         
-        // Map elementId to appropriate profile field
-        switch (elementId)
-        {
+        switch (elementId) {
             case "name":
-                if (inputParams.Input is AdaptyOnboardingsTextInput textInput)
-                {
+                if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
                     builder.SetFirstName(textInput.Value);
                 }
                 break;
             case "email":
-                if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput)
-                {
+                if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
                     builder.SetEmail(emailInput.Value);
                 }
                 break;
         }
         
-        Adapty.UpdateProfile(builder.Build(), (error) =>
-        {
-            if (error != null)
-            {
-                Debug.LogError($"Failed to update profile: {error.Message}");
+        Adapty.UpdateProfile(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
             }
         });
     }
@@ -207,26 +196,19 @@ public void OnboardingViewOnStateUpdatedAction(
     AdaptyOnboardingsStateUpdatedParams @params
 )
 {
-    // Handle quiz responses and set custom attributes
-    if (@params is AdaptyOnboardingsSelectParams selectParams)
-    {
-        // Handle quiz selection
+    if (@params is AdaptyOnboardingsSelectParams selectParams) {
         var builder = new AdaptyProfileParameters.Builder();
         
-        // Map quiz responses to custom attributes
-        switch (elementId)
-        {
+        switch (elementId) {
             case "experience":
-                // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
                 builder.SetCustomStringAttribute("experience", selectParams.Value);
                 break;
         }
         
-        Adapty.UpdateProfile(builder.Build(), (error) =>
-        {
-            if (error != null)
-            {
-                Debug.LogError($"Failed to update profile: {error.Message}");
+        Adapty.UpdateProfile(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
             }
         });
     }

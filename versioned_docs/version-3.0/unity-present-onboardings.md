@@ -23,7 +23,26 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 ```csharp showLineNumbers title="Unity"
-view.Present((error) => {
-  // handle the error
+// 1. Get an onboarding if you haven't done it yet
+Adapty.GetOnboarding("YOUR_PLACEMENT_ID", (onboarding, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+    
+    // 2. Create onboarding view
+    AdaptyUI.CreateOnboardingView(onboarding, (view, createError) => {
+        if (createError != null) {
+            // handle the error
+            return;
+        }
+        
+        // 3. Present it to the user
+        view.Present((presentError) => {
+            if (presentError != null) {
+                // handle the error
+            }
+        });
+    });
 });
 ```
