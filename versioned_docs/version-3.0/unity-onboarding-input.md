@@ -9,30 +9,35 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 When your users respond to a quiz question or input their data into an input field, the `OnboardingViewOnStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
 
-For example:
+Implement the `OnboardingViewOnStateUpdatedAction` method in your class:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnStateUpdatedAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    string elementId,
-    AdaptyOnboardingsStateUpdatedParams @params
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    switch (@params) {
-        case AdaptyOnboardingsSelectParams selectParams:
-            // handle single selection
-            break;
-        case AdaptyOnboardingsMultiSelectParams multiSelectParams:
-            // handle multiple selections
-            break;
-        case AdaptyOnboardingsInputParams inputParams:
-            // handle text input
-            break;
-        case AdaptyOnboardingsDatePickerParams datePickerParams:
-            // handle date selection
-            break;
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        switch (@params) {
+            case AdaptyOnboardingsSelectParams selectParams:
+                // handle single selection
+                break;
+            case AdaptyOnboardingsMultiSelectParams multiSelectParams:
+                // handle multiple selections
+                break;
+            case AdaptyOnboardingsInputParams inputParams:
+                // handle text input
+                break;
+            case AdaptyOnboardingsDatePickerParams datePickerParams:
+                // handle date selection
+                break;
+        }
     }
+    
+    // ... other interface methods
 }
 ```
 
@@ -144,35 +149,40 @@ If you want to immediately link the input data with the user profile and avoid a
 For example, you ask users to enter their name in the text field with the `name` ID, and you want to set this field's value as user's first name. Also, you ask them to enter their email in the `email` field. In your app code, it can look like this:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnStateUpdatedAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    string elementId,
-    AdaptyOnboardingsStateUpdatedParams @params
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    if (@params is AdaptyOnboardingsInputParams inputParams) {
-        var builder = new AdaptyProfileParameters.Builder();
-        
-        switch (elementId) {
-            case "name":
-                if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
-                    builder.SetFirstName(textInput.Value);
-                }
-                break;
-            case "email":
-                if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
-                    builder.SetEmail(emailInput.Value);
-                }
-                break;
-        }
-        
-        Adapty.UpdateProfile(builder.Build(), (error) => {
-            if (error != null) {
-                // handle the error
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsInputParams inputParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "name":
+                    if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
+                        builder.SetFirstName(textInput.Value);
+                    }
+                    break;
+                case "email":
+                    if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
+                        builder.SetEmail(emailInput.Value);
+                    }
+                    break;
             }
-        });
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
     }
+    
+    // ... other interface methods
 }
 ```
 
@@ -189,29 +199,34 @@ For example, you can ask users about their experience with sport and show differ
 2. Handle the quiz responses based on their IDs and [set custom attributes](unity-setting-user-attributes.md) for users.
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnStateUpdatedAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    string elementId,
-    AdaptyOnboardingsStateUpdatedParams @params
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    if (@params is AdaptyOnboardingsSelectParams selectParams) {
-        var builder = new AdaptyProfileParameters.Builder();
-        
-        switch (elementId) {
-            case "experience":
-                // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
-                builder.SetCustomStringAttribute("experience", selectParams.Value);
-                break;
-        }
-        
-        Adapty.UpdateProfile(builder.Build(), (error) => {
-            if (error != null) {
-                // handle the error
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsSelectParams selectParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "experience":
+                    // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.SetCustomStringAttribute("experience", selectParams.Value);
+                    break;
             }
-        });
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
     }
+    
+    // ... other interface methods
 }
 ```
 

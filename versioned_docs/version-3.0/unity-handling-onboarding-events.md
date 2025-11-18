@@ -35,7 +35,9 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 />
 </Zoom>
 
-Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `OnboardingViewOnCustomAction` will be triggered with the `actionId` parameter being the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the method `OnboardingViewOnCustomAction` will be triggered with the `actionId` parameter being the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+
+To handle onboarding events, implement the `AdaptyOnboardingsEventsListener` interface:
 
 ```csharp showLineNumbers title="Unity"
 public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
@@ -64,7 +66,7 @@ public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
         // handle errors
     }
 
-    // Implement other required interface methods...
+    // Implement other required interface methods (see examples below)
 }
 ```
 
@@ -103,20 +105,25 @@ Onboarding is considered closed when a user taps a button with the **Close** act
 Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
 :::
 
-For example:
+Implement the `OnboardingViewOnCloseAction` method in your class:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnCloseAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    string actionId
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    view.Dismiss((error) => {
-        if (error != null) {
-            // handle the error
-        }
-    });
+    public void OnboardingViewOnCloseAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        view.Dismiss((error) => {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+    
+    // ... other interface methods
 }
 ```
 
@@ -146,31 +153,36 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `OnboardingViewOnPaywallAction`, you can use the placement ID to get and open the paywall right away:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnPaywallAction(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    string actionId
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    Adapty.GetPaywall(actionId, (paywall, error) => {
-        if (error != null) {
-            // handle the error
-            return;
-        }
-
-        AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
-            if (createError != null) {
+    public void OnboardingViewOnPaywallAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        Adapty.GetPaywall(actionId, (paywall, error) => {
+            if (error != null) {
                 // handle the error
                 return;
             }
 
-            paywallView.Present((presentError) => {
-                if (presentError != null) {
+            AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
+                if (createError != null) {
                     // handle the error
+                    return;
                 }
+
+                paywallView.Present((presentError) => {
+                    if (presentError != null) {
+                        // handle the error
+                    }
+                });
             });
         });
-    });
+    }
+    
+    // ... other interface methods
 }
 ```
 
@@ -193,15 +205,20 @@ public void OnboardingViewOnPaywallAction(
 
 ## Finishing loading onboarding
 
-When an onboarding finishes loading, this method will be invoked:
+When an onboarding finishes loading, implement the `OnboardingViewDidFinishLoading` method:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewDidFinishLoading(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    // handle loading completion
+    public void OnboardingViewDidFinishLoading(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta
+    )
+    {
+        // handle loading completion
+    }
+    
+    // ... other interface methods
 }
 ```
 
@@ -247,35 +264,40 @@ Each event includes `meta` information containing:
 Here's an example of how you can use analytics events for tracking:
 
 ```csharp showLineNumbers title="Unity"
-public void OnboardingViewOnAnalyticsEvent(
-    AdaptyUIOnboardingView view,
-    AdaptyUIOnboardingMeta meta,
-    AdaptyOnboardingsAnalyticsEvent analyticsEvent
-)
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
 {
-    switch (analyticsEvent) {
-        case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
-            // track onboarding start
-            TrackEvent("onboarding_started", meta);
-            break;
-        case AdaptyOnboardingsAnalyticsEventScreenPresented:
-            // track screen presentation
-            TrackEvent("screen_presented", meta);
-            break;
-        case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
-            // track screen completion with user response
-            TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
-            break;
-        case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
-            // track successful onboarding completion
-            TrackEvent("onboarding_completed", meta);
-            break;
-        case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
-            // handle unknown events
-            TrackEvent(unknownEvent.Name, meta);
-            break;
-        // handle other cases as needed
+    public void OnboardingViewOnAnalyticsEvent(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        AdaptyOnboardingsAnalyticsEvent analyticsEvent
+    )
+    {
+        switch (analyticsEvent) {
+            case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
+                // track onboarding start
+                TrackEvent("onboarding_started", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenPresented:
+                // track screen presentation
+                TrackEvent("screen_presented", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
+                // track screen completion with user response
+                TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
+                break;
+            case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
+                // track successful onboarding completion
+                TrackEvent("onboarding_completed", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
+                // handle unknown events
+                TrackEvent(unknownEvent.Name, meta);
+                break;
+            // handle other cases as needed
+        }
     }
+    
+    // ... other interface methods
 }
 ```
 
