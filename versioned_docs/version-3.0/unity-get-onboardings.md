@@ -11,7 +11,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Unity SDK](sdk-installation-unity.md) version 3.12.0 or higher.
+1. You have installed [Adapty Unity SDK](sdk-installation-unity.md) version 3.14.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

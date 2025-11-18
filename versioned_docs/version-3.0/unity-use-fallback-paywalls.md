@@ -26,7 +26,7 @@ var fallbackPaywalls = new List<AdaptyPaywall>
 {
     // Your fallback paywall data
 };
-Adapty.SetFallbackPaywalls(fallbackPaywalls);
+Adapty.SetFallback(fallbackPaywalls);
 ```
 
 ## Use fallback paywalls

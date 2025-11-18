@@ -12,7 +12,7 @@ import Details from '@site/src/components/Details';
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Unity SDK](sdk-installation-unity.md) 3.12.0 or later.
+1. You have installed [Adapty Unity SDK](sdk-installation-unity.md) 3.14.0 or later.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 
