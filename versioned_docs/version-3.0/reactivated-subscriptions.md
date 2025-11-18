@@ -36,7 +36,7 @@ The New subscriptions count includes all subscriptions that were initially activ
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
-- ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
+- ✅ Group by: Product, country, store, paywall, duration, renewal status, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
 You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 
