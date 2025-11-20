@@ -37,7 +37,7 @@ This gives Autopilot a baseline to work from before suggesting any changes.
 We don't use your app's performance data to train recommendations for other apps. Your data stays private.
 :::
 
-<ZoomImage id="paywall.webp" width="700px" />
+<ZoomImage id="app-analysis.webp" width="700px" />
 
 #### Competitor data
 
@@ -49,7 +49,7 @@ This way, you're testing strategies that already work for apps like yours, not j
 Autopilot selects relevant competitors automatically based on what you can realistically compete with. We generally recommend sticking with these suggestions rather than adding apps that are too far ahead or too far behind. If your app falls into several categories, you might want to adjust the list to focus on the most relevant market segment.
 :::
 
-<ZoomImage id="paywall.webp" width="700px" />
+<ZoomImage id="competitors-analysis.webp" width="700px" />
 
 #### Industry benchmarks
 
@@ -57,7 +57,7 @@ Autopilot also uses category-level data to show how you compare to the industry 
 
 For example, your conversion funnel might be compared against the average for apps in your category. This helps you see if you're underperforming, doing about average, or already ahead of the curve.
 
-<ZoomImage id="paywall.webp" width="700px" />
+<ZoomImage id="industry-benchmarks.webp" width="700px" />
 
 ## How Autopilot decides what to recommend
 
@@ -88,7 +88,7 @@ Here's how it works:
 This turns experimentation into a repeatable process where each test teaches you something and moves you toward a more effective paywall.
 
 
-<ZoomImage id="paywall.webp" width="700px" />
+<ZoomImage id="growth-plan.webp" width="700px" />
 
 ## What happens after you complete the experiments
 
