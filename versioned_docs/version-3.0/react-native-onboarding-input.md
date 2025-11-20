@@ -11,11 +11,22 @@ When your users respond to a quiz question or input their data into an input fie
 For example:
 
 ```javascript
+// Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
   onStateUpdated(action, meta) {
     // Process data 
   },
 });
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Process data 
+    },
+  }}
+/>
 ```
 
 See the action format [here](https://react-native.adapty.io/types/onboardingstateupdatedaction).
@@ -117,6 +128,7 @@ If you want to immediately link the input data with the user profile and avoid a
 For example, you ask users to enter their name in the text field with the `name` ID, and you want to set this field's value as user's first name. Also, you ask them to enter their email in the `email` field. In your app code, it can look like this:
 
 ```javascript showLineNumbers
+// Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
   onStateUpdated(action, meta) {
     // Store user preferences or responses
@@ -146,6 +158,40 @@ const unsubscribe = view.registerEventHandlers({
     }
   },
 });
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Store user preferences or responses
+      if (action.elementType === 'input') {
+        const profileParams = {};
+        
+        // Map elementId to appropriate profile field
+        switch (action.elementId) {
+          case 'name':
+            if (action.value.type === 'text') {
+              profileParams.firstName = action.value.value;
+            }
+            break;
+          case 'email':
+            if (action.value.type === 'email') {
+              profileParams.email = action.value.value;
+            }
+            break;
+        }
+        
+        // Update profile if we have data to update
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // handle the error
+          });
+        }
+      }
+    },
+  }}
+/>
 ```
 
 ### Customize paywalls based on answers
@@ -161,6 +207,7 @@ For example, you can ask users about their experience with sport and show differ
 2. Handle the quiz responses based on their IDs and [set custom attributes](react-native-setting-user-attributes.md) for users.
 
 ```javascript showLineNumbers
+// Full-screen presentation
 const unsubscribe = view.registerEventHandlers({
   onStateUpdated(action, meta) {
     // Handle quiz responses and set custom attributes
@@ -186,6 +233,36 @@ const unsubscribe = view.registerEventHandlers({
     }
   },
 });
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Handle quiz responses and set custom attributes
+      if (action.elementType === 'select') {
+        const profileParams = {};
+        
+        // Map quiz responses to custom attributes
+        switch (action.elementId) {
+          case 'experience':
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            profileParams.codableCustomAttributes = {
+              experience: action.value.value
+            };
+            break;
+        }
+        
+        // Update profile if we have data to update
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // handle the error
+          });
+        }
+      }
+    },
+  }}
+/>
 ```
 
 3. [Create segments](segments.md) for each custom attribute value.
