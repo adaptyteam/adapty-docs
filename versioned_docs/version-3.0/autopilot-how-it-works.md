@@ -4,6 +4,7 @@ description: "Understand the logic behind the Growth Autopilot and trust us to g
 metadataTitle: "Growth Autopilot | Adapty Docs"
 keywords: ['autopilot', 'growth autopilot']
 ---
+import ZoomImage from '@site/src/components/ZoomImage';
 
 [Growth Autopilot](autopilot.md) helps you figure out which experiments to run based on your actual performance data and how similar apps in your market are doing. Instead of guessing what might work, you get specific recommendations for tests that are more likely to improve your results.
 
@@ -36,7 +37,9 @@ This gives Autopilot a baseline to work from before suggesting any changes.
 We don't use your app's performance data to train recommendations for other apps. Your data stays private.
 :::
 
-#### Market benchmark data
+<ZoomImage id="paywall.webp" width="700px" />
+
+#### Competitor data
 
 Autopilot compares your setup with similar apps in your market using public information like pricing, subscription structures, and common patterns in your category. This is based on third-party and public data, not private metrics from other Adapty clients.
 
@@ -46,11 +49,15 @@ This way, you're testing strategies that already work for apps like yours, not j
 Autopilot selects relevant competitors automatically based on what you can realistically compete with. We generally recommend sticking with these suggestions rather than adding apps that are too far ahead or too far behind. If your app falls into several categories, you might want to adjust the list to focus on the most relevant market segment.
 :::
 
+<ZoomImage id="paywall.webp" width="700px" />
+
 #### Industry benchmarks
 
 Autopilot also uses category-level data to show how you compare to the industry average. This data is anonymized and aggregated, not tied to specific apps.
 
 For example, your conversion funnel might be compared against the average for apps in your category. This helps you see if you're underperforming, doing about average, or already ahead of the curve.
+
+<ZoomImage id="paywall.webp" width="700px" />
 
 ## How Autopilot decides what to recommend
 
@@ -74,9 +81,19 @@ Here's how it works:
    
    Autopilot only suggests tests you can launch with your existing products and setup, or with small changes like creating a new product or adjusting a price. The goal is to keep testing fast and manageable.
 
+5. **Show you the reasoning**
+   
+   For each recommendation, Autopilot provides a clear hypothesis that explains exactly why this test is worth running. You'll see how your current metrics compare to competitors and industry averages, what the opportunity is, and which key metrics we expect to improve.
+
 This turns experimentation into a repeatable process where each test teaches you something and moves you toward a more effective paywall.
+
+
+<ZoomImage id="paywall.webp" width="700px" />
 
 ## What happens after you complete the experiments
 
 Once you finish all the recommended experiments and see an increase in revenue, your work isn't done. After some time with your new setup, you can rerun the analysis and start a fresh round of experiments. You might even choose to compete with more advanced competitors now that you've optimized your baseline. This iterative approach helps you keep maximizing your revenue as your app grows and the market evolves.
 
+:::tip
+More features are coming! Expect even smarter suggestions, an idea library to explore proven strategies, and the ability to launch experiments in one click. Autopilot will keep getting better at helping you grow.
+:::
