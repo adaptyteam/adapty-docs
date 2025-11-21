@@ -3,6 +3,8 @@ title: "Kids Mode in iOS SDK"
 description: "Easily enable Kids Mode to comply with Apple policies. No IDFA or ad data collected in iOS SDK."
 metadataTitle: "Kids Mode in iOS SDK | Adapty Docs"
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If your iOS application is intended for kids, you must follow the policies of [Apple](https://developer.apple.com/app-store/kids-apps/). If you're using the Adapty SDK, a few simple steps will help you configure it to meet these policies and pass app store reviews.
 
@@ -23,10 +25,27 @@ In the Adapty Dashboard, you need to disable the IP address collection. To do th
 
 ### Updates in your mobile app code
 
-You can only enable the Kids Mode with Cocoa Pods.
+In order to comply with policies, disable the collection of the user's IDFA and IP address.
 
-In order to comply with policies, disable the collection of the user's IDFA and IP address:
+<Tabs>
+<TabItem value="spm" label="Swift Package Manager" default>
+If you use Swift Package Manager, you can enable Kids Mode by selecting the **Adapty_KidsMode** module in Xcode when installing the SDK.
 
+In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps to add package dependencies may vary between Xcode versions, so refer to Xcode documentation if needed.
+
+1. Enter the repository URL:
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. Select the version (latest stable version is recommended) and click **Add Package**.
+3. In the **Choose Package Products** window, select the modules you need:
+   - **Adapty_KidsMode** (core module)
+   - **AdaptyUI** (optional - only if you plan to use Paywall Builder)
+
+   You won't need any other packages.
+4. Click **Add Package** to complete the installation.
+</TabItem>
+<TabItem value="cocoapods" label="CocoaPods">
 1. Update your Podfile:
 
    - If you **don't** have a `post_install` section, add the entire code block below.
@@ -52,3 +71,5 @@ In order to comply with policies, disable the collection of the user's IDFA and 
    ```sh showLineNumbers title="Shell"
    pod install 
    ```
+</TabItem>
+</Tabs>
