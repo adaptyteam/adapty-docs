@@ -69,4 +69,44 @@ Adapty.Logout((error) => {
 });
 ```
 
-You can then login the user using `.identify()` method. 
+You can then login the user using `.identify()` method.
+
+## Assign `appAccountToken` (iOS)
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a **UUID** that lets you link App Store transactions to your internal user identity.  
+StoreKit associates this token with every transaction, so your backend can match App Store data to your users.
+
+Use a stable UUID generated per user and reuse it for the same account across devices.
+This ensures that purchases and App Store notifications stay correctly linked.
+
+You can set the token in two ways – during the SDK activation or when identifying the user.
+
+:::important
+You must always pass `appAccountToken` together with `customerUserId`.
+If you pass only the token, it will not be included in the transaction.
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
