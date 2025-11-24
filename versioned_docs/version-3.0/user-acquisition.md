@@ -259,16 +259,16 @@ Adapty.GetCurrentInstallationStatus((status, error) => {
         return;
     }
 
-    switch (status.Status) {
-        case AdaptyInstallationStatusType.NotAvailable:
+    switch (status) {
+        case AdaptyInstallationStatusNotAvailable notAvailable:
             // Installation details are not available on this device
             break;
-        case AdaptyInstallationStatusType.NotDetermined:
+        case AdaptyInstallationStatusNotDetermined notDetermined:
             // Installation details have not been determined yet
             break;
-        case AdaptyInstallationStatusType.Determined:
+        case AdaptyInstallationStatusDetermined determined:
             // Use the installation details
-            var details = status.Details;
+            var details = determined.Details;
             break;
     }
 });
