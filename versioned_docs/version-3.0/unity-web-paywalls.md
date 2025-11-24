@@ -6,7 +6,7 @@ displayed_sidebar: sdkunity
 ---
 
 :::important
-Before you begin, make sure you have [configured your web paywall in the dashboard](web-paywall.md) and installed Adapty SDK version 3.6.1 or later.
+Before you begin, make sure you have [configured your web paywall in the dashboard](web-paywall.md) and installed Adapty SDK version 3.14 or later.
 :::
 
 If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. The `Adapty.OpenWebPaywall` method:
