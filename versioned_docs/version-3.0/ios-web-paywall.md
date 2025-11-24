@@ -83,13 +83,17 @@ class SubscriptionViewController: UIViewController {
 After users return to the app, refresh the UI to reflect the profile updates. `AdaptyDelegate` will receive and process profile update events.
 :::
 
-## Open web paywalls in in-app browser
+## Open web paywalls in an in-app browser
 
-By default, web paywalls open in the external browser – e.g., in Safari.
+:::important
+Opening web paywalls in an in-app browser is supported starting from Adapty SDK v. 3.15.
+:::
 
-However, to make the user experience smoother, you can open web paywalls in the in-app browser. This way, a browser window will appear on top of the running application, allowing users to make a purchase and then, quickly get back to the app.
+By default, web paywalls open in the external browser.
 
-To do this, set `in` to `inAppBrowser` when opening a web paywall:
+To provide a seamless user experience, you can open web paywalls in an in-app browser. This displays the web purchase page within your application, allowing users to complete transactions without switching apps.
+
+To enable this, set the `in` parameter to `.inAppBrowser`:
 
 ```swift
 do {
