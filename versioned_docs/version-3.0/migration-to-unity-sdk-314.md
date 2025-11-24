@@ -15,6 +15,7 @@ Adapty SDK 3.14.0 is a major release that brought some improvements that however
 4. Update paywall property access to use `AdaptyPlacement`.
 5. Update remote config access to use `AdaptyRemoteConfig` object.
 6. Replace `VendorProductIds` with `ProductIdentifiers` in the `AdaptyPaywall` model.
+7. Update `GetPaywall` fetch policy to use `AdaptyFetchPolicy`.
 
 ## Rename view creation and presentation methods
 
@@ -181,3 +182,18 @@ void ProcessPaywallProducts(AdaptyPaywall paywall) {
 ```
 
 The `AdaptyProductIdentifier` object provides access to the vendor product ID through the `VendorProductId` property, maintaining the same functionality while offering better structure for future enhancements.
+
+## Update GetPaywall fetch policy
+
+The `fetchPolicy` parameter type in the `GetPaywall` method has been changed from `AdaptyPaywallFetchPolicy` to `AdaptyPlacementFetchPolicy`. This change unifies the fetch policy usage across the SDK.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void GetPaywall(string placementId) {
+-  Adapty.GetPaywall(placementId, AdaptyPaywallFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
++  Adapty.GetPaywall(placementId, AdaptyPlacementFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
+    // handle the result
+  });
+}
+```
