@@ -55,3 +55,13 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
     }
 });
 ```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `Present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.FullScreen` (default) or `AdaptyUIIOSPresentationStyle.PageSheet` values.
+
+```csharp showLineNumbers title="Unity"
+view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
+    // handle the error
+});
+```

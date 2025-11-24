@@ -114,8 +114,6 @@ You may need to set these IDs if your app handles sensitive user data or if you'
 
 ```csharp showLineNumbers title="Unity"
 var purchaseParameters = new AdaptyPurchaseParametersBuilder()
-    .SetObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
-    .SetObfuscatedProfileId("YOUR_OBFUSCATED_PROFILE_ID")
     .Build();
 
 Adapty.MakePurchase(product, purchaseParameters, (result, error) => {
@@ -149,3 +147,22 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+### Manage prepaid plans (Android)
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
