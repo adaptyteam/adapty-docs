@@ -95,9 +95,9 @@ To provide a seamless user experience, you can open web paywalls in an in-app br
 
 To enable this, set the `in` parameter to `.inAppBrowser`:
 
-```swift
+```swift showLineNumbers title="Swift"
 do {
-    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser)
+    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser) // default – .externalBrowser
 } catch {
     print("Failed to open web paywall: \(error)")
 }
