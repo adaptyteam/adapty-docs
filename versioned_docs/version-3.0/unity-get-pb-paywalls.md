@@ -78,7 +78,7 @@ The result of the `CreatePaywallView` method can only be used once. If you need 
 :::
 
 ```csharp showLineNumbers
-var parameters = new AdaptyUICreateViewParameters()
+var parameters = new AdaptyUICreatePaywallViewParameters()
   .SetPreloadProducts(preloadProducts)
   .SetLoadTimeout(new TimeSpan(0, 0, 3));
 
@@ -153,11 +153,11 @@ var customTimers = new Dictionary<string, DateTime> {
     { "CUSTOM_TIMER_NY", new DateTime(2025, 1, 1) }
 };
 
-var parameters = new AdaptyUICreateViewParameters()
+var parameters = new AdaptyUICreatePaywallViewParameters()
     .SetCustomTimers(customTimers)
     .SetLoadTimeout(new TimeSpan(0, 0, 3));
 
-AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
     // handle the result
 });
 ```

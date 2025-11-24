@@ -44,9 +44,9 @@ Your paywalls are associated with placements configured in the dashboard. Placem
 
 To get a paywall created in the Adapty paywall builder, you need to:
 
-1. Get the `paywall` object by the [placement](placements.md) ID using the `GetPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
+1. Get the `paywall` object by the [placement](placements.md) ID using the `GetPaywall` method and check whether it is a paywall created in the builder using the `HasViewConfiguration` property.
 
-2. Create the paywall view using the `CreateView` method. The view contains the UI elements and styling needed to display the paywall.
+2. Create the paywall view using the `CreatePaywallView` method. The view contains the UI elements and styling needed to display the paywall.
 
 :::important
 To get the view configuration, you must switch on the **Show on device** toggle in the Paywall Builder. Otherwise, you will get an empty view configuration, and the paywall won't be displayed.
@@ -54,18 +54,23 @@ To get the view configuration, you must switch on the **Show on device** toggle 
 
 ```csharp showLineNumbers
 Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
-  if(error != null) {
-    // handle the error
-    return;
-  }
-  
-  // paywall - the resulting object
-});
-
-var parameters = new AdaptyUICreateViewParameters()
-
-AdaptyUI.CreateView(paywall, parameters, (view, error) => {
-  // handle the result
+    if(error != null) {
+        // handle the error
+        return;
+    }
+    
+    // Create paywall view parameters
+    var parameters = new AdaptyUICreatePaywallViewParameters();
+    
+    // Create the paywall view
+    AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+        if(error != null) {
+            // handle the error
+            return;
+        }
+        
+        // view - the paywall view ready to be presented
+    });
 });
 ```
 
@@ -77,7 +82,7 @@ This quickstart provides the minimum configuration required to display a paywall
 
 Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
 
-To display the paywall, use the `view.present()` method on the `view` created by the `СreateView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+To display the paywall, use the `view.Present()` method on the `view` created by the `CreatePaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `CreatePaywallView` one more to create a new `view` instance.
 
 ```csharp showLineNumbers title="Unity"
 view.Present((error) => {
@@ -101,7 +106,7 @@ Read our guides on how to handle button [actions](unity-handle-paywall-actions.m
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
+  AdaptyUIPaywallView view, 
   AdaptyUIUserAction action
 ) {
   switch (action.Type) {
@@ -128,18 +133,21 @@ Now, you need to [check the users' access level](unity-check-subscription-status
 
 Here is how all those steps can be integrated in your app together.
 
-```csharp
+```csharp showLineNumbers
 using System;
 using UnityEngine;
+using AdaptySDK;
 
-public class PaywallManager : MonoBehaviour
+public class PaywallManager : MonoBehaviour, AdaptyPaywallsEventsListener
 {
     [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
     
-    private AdaptyUIView currentPaywallView;
+    private AdaptyUIPaywallView currentPaywallView;
     
     void Start()
     {
+        // Register for paywall events
+        Adapty.SetPaywallsEventsListener(this);
         GetAndDisplayPaywall();
     }
     
@@ -151,7 +159,7 @@ public class PaywallManager : MonoBehaviour
                 return;
             }
             
-            if (paywall.hasViewConfiguration) {
+            if (paywall.HasViewConfiguration) {
                 CreateAndPresentPaywallView(paywall);
             } else {
                 Debug.LogWarning("Paywall was not created using the builder");
@@ -161,9 +169,9 @@ public class PaywallManager : MonoBehaviour
     
     private void CreateAndPresentPaywallView(AdaptyPaywall paywall)
     {
-        var parameters = new AdaptyUICreateViewParameters();
+        var parameters = new AdaptyUICreatePaywallViewParameters();
         
-        AdaptyUI.CreateView(paywall, parameters, (view, error) => {
+        AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
             if (error != null) {
                 Debug.LogError("Error creating paywall view: " + error.Message);
                 return;
@@ -182,8 +190,9 @@ public class PaywallManager : MonoBehaviour
         });
     }
     
+    // AdaptyPaywallsEventsListener implementation
     public void PaywallViewDidPerformAction(
-        AdaptyUIView view, 
+        AdaptyUIPaywallView view, 
         AdaptyUIUserAction action
     ) {
         switch (action.Type) {
@@ -192,12 +201,26 @@ public class PaywallManager : MonoBehaviour
                 view.Dismiss(null);
                 break;
             case AdaptyUIUserActionType.OpenUrl:
-              Application.OpenURL(action.Value);
-              break;
+                Application.OpenURL(action.Value);
+                break;
             default:
                 break;
         }
     }
+    
+    // Required interface methods (implement as needed)
+    public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidSelectProduct(AdaptyUIPaywallView view, string productId) { }
+    public void PaywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) { }
+    public void PaywallViewDidFinishPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyPurchaseResult purchasedResult) { }
+    public void PaywallViewDidFailPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) { }
+    public void PaywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
     
     public void ShowPaywall()
     {

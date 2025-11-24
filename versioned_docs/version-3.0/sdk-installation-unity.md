@@ -113,7 +113,7 @@ using UnityEngine;
 using AdaptySDK;
 
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-     public void OnLoadLatestProfile(Adapty.Profile profile) {
+     public void OnLoadLatestProfile(AdaptyProfile profile) {
        // handle updated profile data
      }
 }
@@ -208,8 +208,8 @@ You can set the log level in your app during Adapty configuration:
 
 ```csharp showLineNumbers title="C#"
 // 'verbose' is recommended for development and the first production release
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetLogLevel(AdaptyLogLevel.Verbose);
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
 ```
 
 ### Data policies
@@ -235,7 +235,7 @@ Use this parameter to comply with App Store/Google Play policies, avoid triggeri
 
 ```csharp showLineNumbers title="C#"
 var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetAppleIDFACollectionDisabled(true);
+    .SetAppleIDFACollectionDisabled(true)
     .SetGoogleAdvertisingIdCollectionDisabled(true);
 ```
 
