@@ -106,6 +106,30 @@ You can read more about subscriptions and replacement modes in the Google Develo
 - Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
+### Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+```csharp showLineNumbers title="Unity"
+var purchaseParameters = new AdaptyPurchaseParametersBuilder()
+    .Build();
+
+Adapty.MakePurchase(product, purchaseParameters, (result, error) => {
+    if (error != null) {
+        // Handle the error
+        return;
+    }
+    
+    switch (result.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Handle successful purchase
+            break;
+        // Handle other cases
+    }
+});
+```
 
 ## Redeem Offer Code in iOS
 
@@ -123,3 +147,22 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+### Manage prepaid plans (Android)
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
