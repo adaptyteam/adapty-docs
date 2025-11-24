@@ -13,6 +13,8 @@ import TabItem from '@theme/TabItem';
 Before you begin, make sure you have [configured your web paywall in the dashboard](web-paywall.md) and installed Adapty SDK version 3.6.1 or later.
 :::
 
+## Open web paywalls
+
 If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. The `.openWebPaywall` method:
 1. Generates a unique URL allowing Adapty to link a specific paywall shown to a particular user to the web page they are redirected to.
 2. Tracks when your users return to the app and then requests `.getProfile` at short intervals to determine whether the profile access rights have been updated. 
@@ -33,7 +35,7 @@ There are two versions of the `openWebPaywall` method:
 2. `openWebPaywall(paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
 :::
 
-#### Handle errors
+## Handle errors
 
 | Error                                   | Description                                            | Recommended action                                                        |
 |-----------------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------|
@@ -42,7 +44,7 @@ There are two versions of the `openWebPaywall` method:
 | AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
 | AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
 
-#### Implementation example
+## Implementation example
 ```swift showLineNumbers title="Swift"
 class SubscriptionViewController: UIViewController {
     var paywall: AdaptyPaywall?
@@ -81,3 +83,18 @@ class SubscriptionViewController: UIViewController {
 After users return to the app, refresh the UI to reflect the profile updates. `AdaptyDelegate` will receive and process profile update events.
 :::
 
+## Open web paywalls in in-app browser
+
+By default, web paywalls open in the external browser – e.g., in Safari.
+
+However, to make the user experience smoother, you can open web paywalls in the in-app browser. This way, a browser window will appear on top of the running application, allowing users to make a purchase and then, quickly get back to the app.
+
+To do this, set `in` to `inAppBrowser` when opening a web paywall:
+
+```swift
+do {
+    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser)
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```
