@@ -106,31 +106,6 @@ You can read more about subscriptions and replacement modes in the Google Develo
 - Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
 
-### Set obfuscated account IDs (Android)
-
-Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
-
-You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
-
-```csharp showLineNumbers title="Unity"
-var purchaseParameters = new AdaptyPurchaseParametersBuilder()
-    .Build();
-
-Adapty.MakePurchase(product, purchaseParameters, (result, error) => {
-    if (error != null) {
-        // Handle the error
-        return;
-    }
-    
-    switch (result.Type) {
-        case AdaptyPurchaseResultType.Success:
-            // Handle successful purchase
-            break;
-        // Handle other cases
-    }
-});
-```
-
 ## Redeem Offer Code in iOS
 
 Since iOS 14.0, your users can redeem Offer Codes. Code redemption means using a special code, like a promotional or gift card code, to get free access to content or features in an app or on the App Store. To enable users to redeem offer codes, you can display the offer code redemption sheet by using the SDK method:

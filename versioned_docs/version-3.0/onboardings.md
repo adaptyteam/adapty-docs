@@ -6,14 +6,11 @@ rank: 100
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import CustomDocCardList from '@site/src/components/CustomDocCardList';
-
-<CustomDocCardList ids={['create-onboarding', 'design-onboarding', 'onboarding-user-engagement']} />
 
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
 :::important
-Onboardings are available only for apps using Adapty iOS, Android, Flutter, React Native, and Unity SDK version 3.8.0 or higher. 
+Onboardings are available only for apps using Adapty iOS, Android, Flutter, and React Native SDK version 3.8.0 or higher. 
 :::
 
 ## What it is for
