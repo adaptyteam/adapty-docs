@@ -272,7 +272,7 @@ If you get a minimum iOS version error, update your Podfile:
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
 
-#### Android Auto Backup manifest conflict
+#### Android Auto Backup manifest conflict (pure React Native)
 
 <AndroidBackupRules />
 
@@ -300,8 +300,6 @@ Here’s how to configure your `app.json`:
 ```
 The `replaceAndroidBackupConfig` option is `false` by default. When enabled, it lets the Adapty plugin control Android backup rules.
 Include `"configureAndroidBackup": false` if you use `expo-secure-store` to prevent warnings, since SecureStore’s backup configuration will now be handled by Adapty.
-
-This setup uses `tools:replace` to override Adapty’s backup rules and ensure sensitive data isn’t included in automatic backups for Adapty, expo-secure-store, and AppsFlyer.
 
 :::important
 This setup only respects backup requirements for Adapty, AppsFlyer, and expo-secure-store.
