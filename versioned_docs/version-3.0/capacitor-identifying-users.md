@@ -77,3 +77,60 @@ try {
 ```
 
 You can then login the user using `.identify()` method.
+
+## Assign `appAccountToken` (iOS)
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a **UUID** that lets you link App Store transactions to your internal user identity.  
+StoreKit associates this token with every transaction, so your backend can match App Store data to your users.
+
+Use a stable UUID generated per user and reuse it for the same account across devices.
+This ensures that purchases and App Store notifications stay correctly linked.
+
+You can set the token in two ways – during the SDK activation or when identifying the user.
+
+:::important
+You must always pass `appAccountToken` together with `customerUserId`.
+If you pass only the token, it will not be included in the transaction.
+:::
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+// During configuration:
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        customerUserId: 'YOUR_USER_ID',
+        ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+    }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        ios: { appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN' },
+    }
+});
+```
+
+### Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+```typescript showLineNumbers
+// During configuration:
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+  }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+    }
+});
+```

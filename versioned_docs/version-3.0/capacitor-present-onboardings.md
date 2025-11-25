@@ -47,6 +47,14 @@ try {
 }
 ```
 
+## Configure iOS presentation style
+
+Configure how the onboarding is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+await view.present({ iosPresentationStyle: 'page_sheet' });
+```
+
 ## Next steps
 
 Once you've presented your onboarding, you'll want to [handle user interactions and events](capacitor-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
