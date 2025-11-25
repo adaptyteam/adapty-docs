@@ -10,19 +10,9 @@ import Details from '@site/src/components/Details';
 
 Adapty UA’s Meta integration lets you track and optimize campaign performance across Facebook, Instagram, Messenger, and Audience Network.
 
-<details>
-   <summary>See how to create a campaign in Meta Ads Manager</summary>
-
-1. Create a new campaign.
-2. Select **Traffic** as a campaign objective.
-   <ZoomImage id="meta-campaign.webp" width="500px" />
-3. Set **Conversion location** to **Website**.
-   <ZoomImage id="conversion-location.webp" width="500px" />
-4. Select **Website** as **Destination**. You will use the **Click link** from [Step 2](#step-2-add-campaigns) as **Website URL**.
-   <ZoomImage id="meta-destination.webp" width="500px" />
-
-See the [Meta Business Help Center article](https://www.facebook.com/business/help/621956575422138?id=649869995454285) for details on filling in other fields.
-</details>
+:::tip
+See our [guide on setting up ads in Meta Ads Manager](meta-create-campaign.md).
+:::
 
 ## Step 1. Connect your Facebook account
 
@@ -54,11 +44,11 @@ To add a Meta campaign to Adapty User Acquisition and track how your Meta ads wo
 
 <ZoomImage id="ua-url.webp" width="900px" />
 
-3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your campaign and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
+3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your ad and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
 
 <ZoomImage id="ua-lnk.webp" width="900px" />
 
-4. (Optional) To send the conversion events back to Meta, you can also associate your pixels from Meta with campaigns in Adapty UA. To do that, select one of your existing pixels in the **Pixel** dropdown.
+4. To send the conversion events back to Meta, you can also associate your pixels from Meta with campaigns in Adapty UA. To do that, select one of your existing pixels in the **Pixel** dropdown.
 
 ## Step 3. Map events
 
