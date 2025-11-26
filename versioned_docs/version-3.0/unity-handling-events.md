@@ -19,10 +19,29 @@ This guide covers event handling for purchases, restorations, product selection,
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
 :::warning
-This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](react-native-handling-events-legacy).
+This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](unity-handling-events-legacy).
 :::
 
 <SampleApp />
+
+## Handling events
+
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyPaywallsEventsListener` interface:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // Implement all required interface methods below
+}
+```
 
 ### User-generated events
 
@@ -32,8 +51,8 @@ If a product was selected for purchase (by a user or by the system), this method
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidSelectProduct(
-  AdaptyUIView view, 
-  string productId
+    AdaptyUIPaywallView view, 
+    string productId
 ) { }
 ```
 
@@ -53,8 +72,8 @@ If a user initiates the purchase process, this method will be invoked.
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product
 ) { }
 ```
 
@@ -77,13 +96,13 @@ public void PaywallViewDidStartPurchase(
 
 #### Successful or canceled purchase
 
-If `Adapty.MakePurchase()` succeeds, the user cancels their purchase or the purchase appears to be pending, this method will be invoked:
+If purchase succeeds, the user cancels their purchase, or the purchase appears to be pending, this method will be invoked:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product, 
-  AdaptyPurchaseResult purchasedResult
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyPurchaseResult purchasedResult
 ) { }
 ```
 
@@ -126,7 +145,7 @@ public void PaywallViewDidFinishPurchase(
     "currencyCode": "USD"
   },
   "purchaseResult": {
-    "type": "Cancelled"
+    "type": "UserCancelled"
   }
 }
 
@@ -151,13 +170,13 @@ We recommend dismissing the screen in that case.
 
 #### Failed purchase
 
-If `Adapty.MakePurchase()` fails, this method will be invoked:
+If purchase fails, this method will be invoked:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailPurchase(
-  AdaptyUIView view, 
-  AdaptyPaywallProduct product, 
-  AdaptyError error
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
 ) { }
 ```
 
@@ -187,12 +206,12 @@ public void PaywallViewDidFailPurchase(
 
 #### Successful restore
 
-If `Adapty.RestorePurchases()` succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishRestore(
-  AdaptyUIView view, 
-  AdaptyProfile profile
+    AdaptyUIPaywallView view, 
+    AdaptyProfile profile
 ) { }
 ```
 
@@ -225,12 +244,12 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 #### Failed restore
 
-If `Adapty.RestorePurchases()` fails, this method will be invoked:
+If restoring a purchase fails, this method will be invoked:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRestore(
-  AdaptyUIView view, 
-  AdaptyError error
+    AdaptyUIPaywallView view, 
+    AdaptyError error
 ) { }
 ```
 
@@ -258,8 +277,8 @@ If you didn't pass the product array during initialization, AdaptyUI will retrie
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
-  AdaptyUIView view, 
-  AdaptyError error
+    AdaptyUIPaywallView view, 
+    AdaptyError error
 ) { }
 ```
 
@@ -285,8 +304,8 @@ If an error occurs during the interface rendering, it will be reported by callin
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRendering(
-  AdaptyUIView view, 
-  AdaptyError error
+    AdaptyUIPaywallView view, 
+    AdaptyError error
 ) { }
 ```
 
@@ -308,216 +327,3 @@ public void PaywallViewDidFailRendering(
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
 
-## Paywall observer
-
-To handle paywall events, use the `Adapty` event handlers:
-
-```csharp
-using Adapty;
-
-Adapty.OnPaywallPresented += (paywall) =>
-{
-    Debug.Log($"Paywall presented: {paywall.DeveloperId}");
-};
-
-Adapty.OnPaywallDismissed += (paywall) =>
-{
-    Debug.Log($"Paywall dismissed: {paywall.DeveloperId}");
-};
-```
-
-## Handle paywall actions
-
-Paywalls can trigger various actions:
-
-```csharp
-Adapty.OnPaywallAction += (action) =>
-{
-    switch (action.Type)
-    {
-        case "close":
-            Debug.Log("User closed paywall");
-            break;
-        case "purchase":
-            Debug.Log("User initiated purchase");
-            HandlePurchase(action.ProductId);
-            break;
-        case "restore":
-            Debug.Log("User initiated restore");
-            HandleRestore();
-            break;
-        case "custom":
-            Debug.Log($"Custom action: {action.Data}");
-            HandleCustomAction(action.Data);
-            break;
-    }
-};
-```
-
-## Track paywall interactions
-
-Track user interactions with paywalls:
-
-```csharp
-Adapty.OnPaywallPresented += (paywall) =>
-{
-    Debug.Log($"User viewed paywall: {paywall.DeveloperId}");
-    
-    // Track analytics
-    TrackPaywallView(paywall.DeveloperId);
-};
-
-Adapty.OnPaywallDismissed += (paywall) =>
-{
-    Debug.Log($"User dismissed paywall: {paywall.DeveloperId}");
-    
-    // Track analytics
-    TrackPaywallDismiss(paywall.DeveloperId);
-};
-```
-
-## Handle purchase events
-
-When user makes a purchase through paywall:
-
-```csharp
-Adapty.OnPaywallAction += async (action) =>
-{
-    if (action.Type == "purchase")
-    {
-        try
-        {
-            var paywalls = await Adapty.GetPaywalls();
-            var paywall = paywalls.FirstOrDefault(p => p.DeveloperId == action.PaywallId);
-            var product = paywall?.Products.FirstOrDefault(p => p.VendorProductId == action.ProductId);
-            
-            if (product != null)
-            {
-                var purchase = await Adapty.MakePurchase(product);
-                Debug.Log($"Purchase successful: {purchase.PurchaseId}");
-                // Close paywall and update UI
-            }
-        }
-        catch (Exception error)
-        {
-            Debug.LogError($"Purchase failed: {error.Message}");
-        }
-    }
-};
-```
-
-## Custom paywall actions
-
-Handle custom actions defined in your paywall:
-
-```csharp
-Adapty.OnPaywallAction += (action) =>
-{
-    if (action.Type == "custom")
-    {
-        switch (action.Data["action"])
-        {
-            case "open_settings":
-                OpenAppSettings();
-                break;
-            case "contact_support":
-                OpenSupportChat();
-                break;
-            case "skip_paywall":
-                SkipPaywall();
-                break;
-            default:
-                Debug.Log($"Unknown custom action: {action.Data}");
-                break;
-        }
-    }
-};
-```
-
-## Paywall state management
-
-Manage paywall state in your app:
-
-```csharp
-public class PaywallManager : MonoBehaviour
-{
-    private AdaptyPaywall currentPaywall;
-    
-    void Start()
-    {
-        Adapty.OnPaywallPresented += (paywall) =>
-        {
-            currentPaywall = paywall;
-            Debug.Log($"Paywall presented: {paywall.DeveloperId}");
-        };
-        
-        Adapty.OnPaywallDismissed += (paywall) =>
-        {
-            if (currentPaywall?.DeveloperId == paywall.DeveloperId)
-            {
-                currentPaywall = null;
-            }
-            Debug.Log($"Paywall dismissed: {paywall.DeveloperId}");
-        };
-    }
-}
-```
-
-## Error handling
-
-Handle paywall errors:
-
-```csharp
-Adapty.OnPaywallError += (error) =>
-{
-    Debug.LogError($"Paywall error: {error.Message}");
-    
-    switch (error.Code)
-    {
-        case "LOAD_ERROR":
-            Debug.Log("Failed to load paywall");
-            ShowFallbackPaywall();
-            break;
-        case "PRESENTATION_ERROR":
-            Debug.Log("Failed to present paywall");
-            break;
-        default:
-            Debug.Log($"Unknown paywall error: {error.Code}");
-            break;
-    }
-};
-```
-
-## Clean up events
-
-Don't forget to clean up event handlers:
-
-```csharp
-void OnDestroy()
-{
-    Adapty.OnPaywallPresented -= HandlePaywallPresented;
-    Adapty.OnPaywallDismissed -= HandlePaywallDismissed;
-    Adapty.OnPaywallAction -= HandlePaywallAction;
-    Adapty.OnPaywallError -= HandlePaywallError;
-}
-
-private void HandlePaywallPresented(AdaptyPaywall paywall)
-{
-    // Handle paywall presented
-}
-
-private void HandlePaywallDismissed(AdaptyPaywall paywall)
-{
-    // Handle paywall dismissed
-}
-
-private void HandlePaywallAction(AdaptyPaywallAction action)
-{
-    // Handle paywall action
-}
-
-private void HandlePaywallError(AdaptyError error)
-{
-    // Handle paywall error
-}
-```

@@ -28,20 +28,19 @@ To add a button that will close your paywall:
 1. In the paywall builder, add a button and assign it the **Close** action.
 2. In your app code, implement a handler for the `close` action that dismisses the paywall.
 
-
-```javascript
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
-  AdaptyUIView view, 
-  AdaptyUIUserAction action
+    AdaptyUIPaywallView view, 
+    AdaptyUIUserAction action
 ) {
-  switch (action.Type) {
-    case AdaptyUIUserActionType.Close:
-      view.Dismiss(null);
-      break;
-    default:
-      // handle other events
-      break;
-  }
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
 }
 ```
 
@@ -56,17 +55,18 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
 
-```javascript
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
-    AdaptyUIView view,
+    AdaptyUIPaywallView view,
     AdaptyUIUserAction action
 ) {
     switch (action.Type) {
         case AdaptyUIUserActionType.OpenUrl:
             var urlString = action.Value;
-            if (urlString != null {
+            if (urlString != null) {
                 Application.OpenURL(urlString);
             }
+            break;
         default:
             // handle other events
             break;
@@ -78,17 +78,18 @@ public void PaywallViewDidPerformAction(
 
 To add a button that logs users into your app:
 
-1. In the paywall builder, add a button and assign it the **Login** action.
-2. In your app code, implement a handler for the `login` action that identifies your user.
+1. In the paywall builder, add a button and assign it the **Custom** action with ID `login`.
+2. In your app code, implement a handler for the `login` custom action that identifies your user.
 
-```javascript
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
-    AdaptyUIView view,
+    AdaptyUIPaywallView view,
     AdaptyUIUserAction action
 ) {
     switch (action.Type) {
         case AdaptyUIUserActionType.Custom:
             if (action.Value == "login") {
+                // Navigate to login scene
                 SceneManager.LoadScene("LoginScene");
             }
             break;
@@ -107,15 +108,16 @@ To add a button that handles any other actions:
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
-```javascript
+```csharp showLineNumbers title="Unity"
 public void PaywallViewDidPerformAction(
-    AdaptyUIView view,
+    AdaptyUIPaywallView view,
     AdaptyUIUserAction action
 ) {
     switch (action.Type) {
         case AdaptyUIUserActionType.Custom:
             if (action.Value == "openNewPaywall") {
                 // Display another paywall
+                ShowAlternativePaywall();
             }
             break;
         default:
@@ -124,4 +126,7 @@ public void PaywallViewDidPerformAction(
     }
 }
 
+private void ShowAlternativePaywall() {
+    // Implement your logic to show alternative paywall
+}
 ```
