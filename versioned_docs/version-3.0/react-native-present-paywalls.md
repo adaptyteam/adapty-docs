@@ -28,7 +28,7 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createPaywallView } from 'react-native-adapty/dist/ui';
+import { createPaywallView } from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -82,7 +82,7 @@ When a user attempts to purchase a new subscription while another subscription i
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import { Platform } from 'react-native';
-import { createPaywallView } from 'react-native-adapty/dist/ui';
+import { createPaywallView } from 'react-native-adapty';
 
 const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
   let params = {};

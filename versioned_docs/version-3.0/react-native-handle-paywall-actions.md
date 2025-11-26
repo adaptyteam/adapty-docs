@@ -32,7 +32,7 @@ In the React Native SDK, the `close` action triggers closing the paywall by defa
 :::
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -59,7 +59,7 @@ In the React Native SDK, the `openUrl` action triggers opening the URL by defaul
 :::
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 import {Linking} from 'react-native';
 
 const view = await createPaywallView(paywall);
@@ -80,7 +80,7 @@ To add a button that logs users into your app:
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
