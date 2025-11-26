@@ -44,7 +44,7 @@ The result of the `createOnboardingView` method can only be used once. If you ne
 :::
 
 ```typescript showLineNumbers
-import {createOnboardingView} from 'react-native-adapty/dist/ui';
+import {createOnboardingView} from 'react-native-adapty';
 
 if (onboarding.hasViewConfiguration) {
     try {
