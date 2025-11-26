@@ -71,7 +71,7 @@ try {
 
 <TabItem value="new" label="SDK version < 3.12" default>
 ```javascript showLineNumbers title="React Native"
-import { createOnboardingView } from 'react-native-adapty/dist/ui';
+import { createOnboardingView } from 'react-native-adapty';
 
 const view = await createOnboardingView(onboarding);
 
@@ -153,7 +153,7 @@ function MyOnboarding({ onboarding }) {
 
 ```javascript showLineNumbers title="React Native"
 import React from 'react';
-import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
+import { AdaptyOnboardingView } from 'react-native-adapty';
 
 function MyOnboarding({ onboarding }) {
   return (

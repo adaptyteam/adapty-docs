@@ -218,6 +218,18 @@ Parameters:
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are enabled on iOS and disabled on Android. To enable them on Android as well, set `localAccessLevelAllowed` to `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  android: {
+     localAccessLevelAllowed: true,      
+  },
+});
+```
+
 ## Development environment tips
 
 #### Delay SDK activation for development purposes

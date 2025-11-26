@@ -263,6 +263,7 @@ For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
