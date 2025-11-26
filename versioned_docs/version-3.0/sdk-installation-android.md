@@ -27,7 +27,7 @@ Minimum SDK requirements:
 - `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. 
 :::
 
 ## Install Adapty SDK
