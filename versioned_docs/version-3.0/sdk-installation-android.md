@@ -432,6 +432,33 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 
 If you try to activate Adapty in another process without setting this value, the SDK will log a warning and skip activation.
 
+### Enable local access levels
+
+By default, [local access levels](local-access-levels.md) are disabled on Android. To enable them, set `withLocalAccessLevelAllowed` to `true`:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
 ## Troubleshooting
 
 #### Android backup rules (Auto Backup configuration)
