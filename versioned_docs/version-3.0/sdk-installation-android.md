@@ -525,6 +525,8 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
     <cloud-backup>
         <!-- AppsFlyer backup rules -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <!-- Adapty backup rules -->
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </cloud-backup>
@@ -532,6 +534,8 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
     <device-transfer>
         <!-- Usually the same rules as cloud-backup -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </device-transfer>
 </data-extraction-rules>
