@@ -404,7 +404,7 @@ Here is an example of how to pass custom attribution data in your app code:
 
 ```swift showLineNumbers title="Swift"
 let attribution = [
-    "status": "non-organic",
+    "status": "non_organic|organic|unknown",
     "channel": "Google Ads",
     "campaign": "Christmas Sale",
     "ad_group": "ad group",
