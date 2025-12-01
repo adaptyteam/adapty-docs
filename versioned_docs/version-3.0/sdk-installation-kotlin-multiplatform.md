@@ -9,6 +9,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -278,3 +279,15 @@ val config = AdaptyConfig
     )
     .build()
 ```
+
+## Troubleshooting
+
+####  Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />
+
+:::important
+In a Kotlin Multiplatform project, apply these changes in the Android application module (the one that produces the APK/AAB), for example, `androidApp` or `app`:
+- Manifest: `androidApp/src/main/AndroidManifest.xml`
+- Backup rules XML: `androidApp/src/main/res/xml/`
+:::
