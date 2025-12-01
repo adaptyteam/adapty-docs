@@ -56,7 +56,7 @@ try {
 
 <TabItem value="old" label="SDK version < 3.12" default>
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createOnboardingView } from 'react-native-adapty';
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
 const view = await createOnboardingView(onboarding);
 

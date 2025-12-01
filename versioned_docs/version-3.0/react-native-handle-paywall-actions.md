@@ -93,7 +93,7 @@ const unsubscribe = view.setEventHandlers({
 For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 
@@ -180,7 +180,7 @@ const unsubscribe = view.setEventHandlers({
 For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript
-import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
 
 const view = await createPaywallView(paywall);

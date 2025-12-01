@@ -137,7 +137,7 @@ For SDK version < 3.12, only modal presentation is supported:
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 

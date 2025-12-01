@@ -71,7 +71,7 @@ try {
 
 <TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
-import { createOnboardingView } from 'react-native-adapty';
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
 const view = await createOnboardingView(onboarding);
 

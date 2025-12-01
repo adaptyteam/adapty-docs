@@ -27,7 +27,7 @@ Minimum SDK requirements:
 - `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. 
 :::
 
 ## Install Adapty SDK
@@ -525,6 +525,8 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
     <cloud-backup>
         <!-- AppsFlyer backup rules -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <!-- Adapty backup rules -->
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </cloud-backup>
@@ -532,6 +534,8 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
     <device-transfer>
         <!-- Usually the same rules as cloud-backup -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </device-transfer>
 </data-extraction-rules>
