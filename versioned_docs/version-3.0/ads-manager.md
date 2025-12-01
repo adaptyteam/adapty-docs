@@ -1,6 +1,6 @@
 ---
 title: "Ads Manager in Adapty Ads Manager"
-description: "Get realtime analytics from Apple Ads and manage and optimize your campaigns"
+description: "Get realtime analytics from Apple Ads and optimize your campaigns"
 metadataTitle: "Apple Ads Manager | Adapty Docs"
 keywords: ['Apple ads manager', 'asa']
 ---
