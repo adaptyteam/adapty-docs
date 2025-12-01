@@ -7,15 +7,17 @@ keywords: ['Apple ads manager', 'asa']
 import ZoomImage from '@site/src/components/ZoomImage';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-Apple Ads Manager is your optimization and analytics platform for Apple Ads.
+**Apple Ads Manager** is an all-in-one platform designed to help you manage, optimize, and scale your Apple Ads campaigns more efficiently. It connects your Apple Search Ads performance with key revenue metrics such as installs, trials, subscriptions, and lifetime value without requiring an MMP.
 
-Apple Ads Manager helps you to:
+With real-time analytics, AI-driven forecasts, and smart automation, Apple Ads Manager eliminates tedious manual bid changes, spreadsheets, and guesswork, and replaces them with clear insights and tools that help you take action faster.
 
-- Get real-time updates on the ASA performance
-- Connect your ad performance to revenue metrics without switching between multiple tools
-- Manage your ads and campaigns right from the Adapty dashboard
-- Get AI-based predictions on how your campaigns will perform
-- Set up rule-based automations to adjust your ads
+With Apple Ads Manager, you get:
+
+- **Real-time performance data** across campaigns, ad groups, and keywords
+- **End-to-end revenue tracking**: from search → install → trial → subscription → LTV
+- **AI predictions & recommendations** for profitable scaling
+- **Bulk management** of bids, budgets, statuses, and structures
+- **Rule-based automations** to keep your CPA/ROAS targets stable
 
 <CustomDocCardList ids={['adapty-ads-manager-get-started', 'adapty-ads-manager-analytics', 'ads-manager-create-campaign', 'ads-manager-create-ad-group', 'ads-manager-manage-keywords', 'ads-manager-automations']} />
 
@@ -23,7 +25,9 @@ Apple Ads Manager helps you to:
 
 ## Why Apple Ads Manager?
 
-Apple Ads Manager is faster, easier, and more ROI-focused than any alternative. 
+Because we give you the **most accurate data in the market.**
+
+Unlike the native Apple Ads console or MMPs, our data is **real-time, lossless, and fully connected** to trials, subscriptions, and LTV — without delays or attribution gaps.
 
 With its easy implementation and smooth user experience, you can manage everything in one place without having to switch between multiple tools.
 

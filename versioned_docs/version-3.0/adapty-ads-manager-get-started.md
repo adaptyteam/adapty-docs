@@ -15,6 +15,10 @@ In this guide, you will learn how to start working with Apple Ads Manager in two
 
 ## 1. Install the Adapty SDK
 
+:::important
+
+:::
+
 To connect your revenue data with the campaign performance, let Adapty keep track of your purchases:
 
 1. Install the Adapty SDK for your platform in the app code. Basically, at this stage you only need to add the SDK to your project and activate it:
@@ -28,6 +32,7 @@ To connect your revenue data with the campaign performance, let Adapty keep trac
 2. The next step depends on whether you already have in-app purchases implemented:
     - If you don't have in-app purchases implemented yet, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty. 
     - If you already have in-app purchases implemented without Adapty and don't plan to migrate to Adapty, [enable the observer mode](observer-vs-full-mode.md), so Adapty can access the transaction data.
+3. To receive revenue-related updates directly from the App Store, [enable App Store server notifications in Adapty](enable-app-store-server-notifications.md).
 
 ## 2. Connect Apple Ads
 
