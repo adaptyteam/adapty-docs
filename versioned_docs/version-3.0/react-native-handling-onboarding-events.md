@@ -69,7 +69,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 import { createOnboardingView } from 'react-native-adapty';
 
@@ -149,7 +149,7 @@ function MyOnboarding({ onboarding }) {
 
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 
 ```javascript showLineNumbers title="React Native"
 import React from 'react';
@@ -257,7 +257,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -344,7 +344,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -439,7 +439,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -528,7 +528,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -612,7 +612,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="new" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.12">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
