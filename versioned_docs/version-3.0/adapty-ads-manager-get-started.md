@@ -16,23 +16,25 @@ In this guide, you will learn how to start working with Apple Ads Manager in two
 ## 1. Install the Adapty SDK
 
 :::important
+Adapty Ads Manager is a **standalone product**. You can use it even if your paywalls, subscriptions, or analytics are not handled by Adapty — migrating your entire stack to Adapty is not required.
 
+To get accurate revenue data, the minimum setup is to install the Adapty SDK in the observer mode and enable App Store server notifications in Adapty.
 :::
 
 To connect your revenue data with the campaign performance, let Adapty keep track of your purchases:
 
-1. Install the Adapty SDK for your platform in the app code. Basically, at this stage you only need to add the SDK to your project and activate it:
-    - [iOS](sdk-installation-ios.md)
-    - [Android](sdk-installation-android.md)
-    - [Flutter](sdk-installation-flutter.md)
-    - [React Native](sdk-installation-reactnative.md)
-    - [Unity](sdk-installation-unity.md)
-    - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
-    - [Capacitor (Beta)](sdk-installation-capacitor.md)
-2. The next step depends on whether you already have in-app purchases implemented:
-    - If you don't have in-app purchases implemented yet, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty. 
-    - If you already have in-app purchases implemented without Adapty and don't plan to migrate to Adapty, [enable the observer mode](observer-vs-full-mode.md), so Adapty can access the transaction data.
-3. To receive revenue-related updates directly from the App Store, [enable App Store server notifications in Adapty](enable-app-store-server-notifications.md).
+1. The first step depends on whether you already have in-app purchases implemented:
+   - If you **already have in-app purchases implemented with Adapty**, you don't need to do anything else at this stage.
+   - If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, install the Adapty SDK for your platform in the observer mode. At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
+     - [iOS](implement-observer-mode.md)
+     - [Android](implement-observer-mode-android.md)
+     - [Flutter](implement-observer-mode-flutter.md)
+     - [React Native](implement-observer-mode-react-native.md)
+     - [Unity](implement-observer-mode-unity.md)
+     - [Kotlin Multiplatform](implement-observer-mode-kmp.md)
+     - [Capacitor (Beta)](implement-observer-mode-capacitor.md)
+   - If you **don't have in-app purchases implemented yet and want to use Adapty**, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty.
+2. To receive revenue-related updates directly from the App Store, [enable App Store server notifications in Adapty](enable-app-store-server-notifications.md).
 
 ## 2. Connect Apple Ads
 
