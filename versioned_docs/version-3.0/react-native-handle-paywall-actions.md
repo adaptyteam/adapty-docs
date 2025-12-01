@@ -32,7 +32,7 @@ In the React Native SDK, the `close` action triggers closing the paywall by defa
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
@@ -88,9 +88,9 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -123,7 +123,7 @@ In the React Native SDK, the `openUrl` action triggers opening the URL by defaul
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
@@ -175,9 +175,9 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
@@ -204,7 +204,7 @@ To add a button that logs users into your app:
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
@@ -257,9 +257,9 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript
 import {createPaywallView} from 'react-native-adapty';
@@ -289,7 +289,7 @@ To add a button that handles any other actions:
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
@@ -338,9 +338,9 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript
 const unsubscribe = view.registerEventHandlers({

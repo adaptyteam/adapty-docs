@@ -37,7 +37,7 @@ This approach is best for optional onboardings where users should have the freed
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createOnboardingView } from 'react-native-adapty';
 
@@ -54,7 +54,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -92,7 +92,7 @@ This approach is ideal for required onboardings, mandatory tutorials, or any flo
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import React, { useCallback } from 'react';
@@ -125,7 +125,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import React from 'react';

@@ -1,7 +1,7 @@
 ---
-title: "Migrate Adapty React Native SDK to v. 3.12"
-description: "Migrate to Adapty React Native SDK v3.12 for better performance and new monetization features."
-metadataTitle: "Migrating to Adapty React Native SDK v3.12 | Adapty Docs"
+title: "Migrate Adapty React Native SDK to v. 3.14"
+description: "Migrate to Adapty React Native SDK v3.14 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty React Native SDK v3.14 | Adapty Docs"
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -9,10 +9,11 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-Adapty React Native SDK 3.12.0 is a major release that introduces improvements that require migration steps on your end:
+Adapty React Native SDK 3.14.0 is a major release that introduces improvements that require migration steps on your end:
 
 - The `registerEventHandlers` method has been replaced with the `setEventHandlers` method.
 - In `AdaptyOnboardingView`, event handlers are now passed as individual props instead of an `eventHandlers` object
+- A new, simplified import style has been introduced for UI components
 - The `logShowOnboarding` method has been deleted
 - The minimum React Native version has been updated to 0.73.0
 
@@ -38,6 +39,30 @@ Calling this method multiple times will re-register **all** event handlers (both
     // your event handlers
  })
 ``` 
+
+## Update import paths for UI components
+
+Adapty SDK 3.14.0 introduces a simplified import style for UI components. Instead of importing from `react-native-adapty/dist/ui`, you can now import directly from `react-native-adapty`.
+
+The new import style is more consistent with standard React Native practices and makes the import statements cleaner. If you are using UI components like `AdaptyPaywallView` or `AdaptyOnboardingView`, update your imports as shown below:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
++ import { AdaptyPaywallView } from 'react-native-adapty';
+
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
+
+- import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
+
+- import { createOnboardingView } from 'react-native-adapty/dist/ui';
++ import { createOnboardingView } from 'react-native-adapty';
+```
+
+:::note
+For backward compatibility, the old import style (`react-native-adapty/dist/ui`) is still supported. However, we recommend using the new import style for consistency and clarity.
+:::
 
 ## Update onboarding event handlers in the React component
 
@@ -94,11 +119,11 @@ For backward compatibility, the `eventHandlers` prop is still supported but is d
 
 ## Delete `logShowOnboarding`
 
-In Adapty SDK 3.12.0, we have deleted the `logShowOnboarding` method from the SDK.
-If you have been using this method, it won't be available when you upgrade the SDK to version 3.12 or later.
+In Adapty SDK 3.14.0, we have deleted the `logShowOnboarding` method from the SDK.
+If you have been using this method, it won't be available when you upgrade the SDK to version 3.14 or later.
 
 Instead, you can [create onboardings in the Adapty no-code onboarding builder](onboardings.md). Analytics for these onboardings are tracked automatically, and you have a lot of customization options.
 
 ## Update React Native
 
-Starting from Adapty SDK 3.12.0, the minimum supported version of React Native is 0.73.0. If you are using an earlier version, update React Native to version 0.73.0 or later, so your experience with the Adapty SDK is consistent and reliable.
+Starting from Adapty SDK 3.14.0, the minimum supported version of React Native is 0.73.0. If you are using an earlier version, update React Native to version 0.73.0 or later, so your experience with the Adapty SDK is consistent and reliable.

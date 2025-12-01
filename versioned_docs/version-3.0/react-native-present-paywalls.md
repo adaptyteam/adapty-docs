@@ -36,7 +36,7 @@ Adapty React Native SDK provides two ways to present paywalls:
 ## React component
 
 :::note
-The **React component** approach requires SDK 3.12.0 or later.
+The **React component** approach requires SDK 3.14.0 or later.
 :::
 
 
@@ -110,7 +110,7 @@ Reusing the same `view` without recreating it may result in an `AdaptyUIError.vi
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty';
 
@@ -132,7 +132,7 @@ Calling `setEventHandlers` multiple times will re-register **all** event handler
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty/dist/ui';
 

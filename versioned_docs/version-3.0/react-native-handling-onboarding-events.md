@@ -29,7 +29,7 @@ Before you start, ensure that:
 To handle events for modal presentation, use the event handlers method:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 import { createOnboardingView } from 'react-native-adapty';
 
@@ -69,7 +69,7 @@ try {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -115,7 +115,7 @@ try {
 When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import React, { useCallback } from 'react';
@@ -149,7 +149,7 @@ function MyOnboarding({ onboarding }) {
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 
 ```javascript showLineNumbers title="React Native"
 import React from 'react';
@@ -213,7 +213,7 @@ In the builder, you can add a **custom** action to a button and assign it an ID.
 Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the event handler will be triggered with the `actionId` parameter that matches the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.setEventHandlers({
@@ -257,7 +257,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -314,7 +314,7 @@ function MyOnboarding({ onboarding }) {
 When an onboarding finishes loading, this event will be triggered:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.setEventHandlers({
@@ -344,7 +344,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -408,7 +408,7 @@ Note that you need to manage what happens when a user closes the onboarding. For
 :::
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.setEventHandlers({
@@ -439,7 +439,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -494,7 +494,7 @@ Handle this event to open a paywall if you want to open it inside the onboarding
 If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.setEventHandlers({
@@ -528,7 +528,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({
@@ -582,7 +582,7 @@ function MyOnboarding({ onboarding }) {
 You receive an analytics event when various navigation-related events occur during the onboarding flow:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.setEventHandlers({
@@ -612,7 +612,7 @@ function MyOnboarding({ onboarding }) {
 ```
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12">
+<TabItem value="old" label="SDK version < 3.14">
 ```javascript showLineNumbers title="React Native"
 // Modal presentation
 const unsubscribe = view.registerEventHandlers({

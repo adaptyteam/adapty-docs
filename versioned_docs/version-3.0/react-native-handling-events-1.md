@@ -26,7 +26,7 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
@@ -131,9 +131,9 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
