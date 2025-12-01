@@ -60,16 +60,16 @@ Revenue, ARPU, ARPPU, ARPAS, ROAS, and ROI are also available as cohort metrics 
 
 ## Advanced downloads
 
-| Metric | Description                                                                                                                                                                                                                               |
-|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Metric | Description                                                                                                                                                                                                                             |
+|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | New Downloads (Total) | The total number of tap-through and view-through new downloads within the reporting period.                                                                                                                                             |
 | New Downloads (View-Through) | New downloads from users who viewed your ad but didn't tap on it and had not previously downloaded your app are counted within a 24-hour window.                                                                                        |
-| New Downloads (Tap-Through) | New downloads from users who tapped on your ad and have not previously downloaded your app. These are counted within a 30-day attribution window.                                                                                        |
-| New Download Share (Tap-Through) | Shows what percentage of the total number of downloads from taps are new downloads (from users who tapped on your ad within a 30-day attribution window).                                                                              |
+| New Downloads (Tap-Through) | New downloads from users who tapped on your ad and have not previously downloaded your app. These are counted within a 30-day attribution window.                                                                                       |
+| New Download Share (Tap-Through) | Shows what percentage of total downloads from taps are new downloads. (from users who tapped on your ad within a 30-day attribution window).                                                                                             |
 | Redownloads (Total) | The total number of tap-through and view-through redownloads within the reporting period.                                                                                                                                               |
 | Redownloads (View-Through) | Redownloads from users who viewed your ad but didn't tap on it within a 24-hour window. These are counted when a user downloads your app, deletes it, and downloads it again on the same device or a different one after viewing an ad. |
 | Redownloads (Tap-Through) | Redownloads from users who tapped on your ad within a 30-day attribution window. These are counted when a user downloads your app, deletes it, and downloads it again on the same device or a different one after tapping on an ad.     |
-| Redownloads Share (Tap-Through) | Shows the percentage of total downloads from taps that are redownloads.                                                                                                                                                       |
+| Redownloads Share (Tap-Through) | Shows the percentage of total downloads from taps that are redownloads.                                                                                                                                                                 |
 
 ## Insights
 

@@ -6,7 +6,9 @@ keywords: ['apple ads', 'asa']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-Apple Ads Manager has a two-side integration with Apple Ads, so you can both get near real-time campaign updates from it and make changes to your campaigns right from the Apple Ads Manager dashboard.
+Apple Ads Manager has a two-way integration with Apple Ads: you get near real-time performance data, and you can create and edit campaigns directly from the Adapty dashboard in a much more convenient way than in the native UI.
+
+If you create a campaign in the native Apple Ads dashboard, it will automatically appear in Apple Ads Manager within 24 hours.
 
 In addition to [exploring comprehensive campaign metrics](adapty-ads-manager-analytics.md), you can manage all the campaign settings:
 - Create campaigns
@@ -18,7 +20,7 @@ In addition to [exploring comprehensive campaign metrics](adapty-ads-manager-ana
 A campaign focuses on a single app and runs ads in one placement on the App Store. Each campaign includes a daily budget and [ad groups](ads-manager-create-ad-group.md) that focus on a specific strategy for promoting your app. A campaign will continue to spend based on its budget settings.
 
 :::important
-Note that a campaign can’t run on its own; ad groups are the level where you set bids, audience, and keywords. Without an ad group, a campaign has no targeting or bidding and won’t serve. Create the campaign, then [add at least one ad group](ads-manager-create-ad-group.md) to activate it.
+Note that a campaign can’t run on its own; ad groups are the level where you set default bid, audience, and keywords. Without an ad group, a campaign has no targeting or bidding and won’t serve. Create the campaign, then [add at least one ad group](ads-manager-create-ad-group.md) to activate it.
 :::
 
 ## Create campaigns
@@ -37,7 +39,7 @@ To create a new Apple Ads campaign:
      - **Search tab**: Promotes your app at the top of the suggested apps list when users visit the Search tab in the App Store.
      - **Search results**: Promotes your app at the top of results when users search for relevant apps in the App Store.
      - **Product pages**: Shows your ad at the top of the **You might also like** list for users who have scrolled down relevant product pages.
-   - **Countries or regions**: The geographic locations where your campaign is eligible to serve and spend budget. Note that you won't be able to change it later.
+   - **Countries or regions**: The geographic locations where your campaign is eligible to serve and spend budget.
    - **Daily budget**: The maximum amount your campaign can spend per day before pausing delivery.
    - **Ad scheduling**: The ad start date and time. Optionally, you can also set the end date and time.
      <ZoomImage id="campaign-group.webp" width="700px" />
@@ -49,10 +51,16 @@ To create a new Apple Ads campaign:
 
 To edit any created campaign:
 
-1. Go to **Ads Manager > Campaigns** and click the campaign name.
+1. Open the campaign settings using either method:
+   - Click the campaign name in **Ads Manager > Campaigns**. Then, click **Edit campaign** on the top right.
+
    <ZoomImage id="click-campaign.webp" width="700px" />
-2. On the campaign page, click **Edit campaign** and adjust its settings. Note that you can edit only name, countries, and daily budget. If you want to change the ad placement or scheduling, create a new campaign instead.
-   <ZoomImage id="edit-campaign.webp" width="700px" />
+
+   - Or select the checkbox next to the campaign name and click **Actions > Edit campaign settings**.
+   <ZoomImage id="asa-edit-campaign-settings.webp" width="500px"/>
+   
+2. Adjust the campaign settings. Note that you can edit only name, countries, and daily budget. If you want to change the ad placement or scheduling, create a new campaign instead.
+
 3. Click **Save changes**.
 
 :::note
