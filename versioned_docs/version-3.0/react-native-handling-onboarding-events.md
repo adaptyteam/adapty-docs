@@ -27,7 +27,7 @@ Before you start, ensure that:
 To handle events for full-screen onboardings, use the `view.registerEventHandlers` method:
 
 ```javascript showLineNumbers title="React Native"
-import { createOnboardingView } from 'react-native-adapty';
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
 const view = await createOnboardingView(onboarding);
 
@@ -69,7 +69,7 @@ try {
 When using `AdaptyOnboardingView`, you can handle events through inline callback parameters directly in the widget:
 
 ```javascript showLineNumbers title="React Native"
-import { AdaptyOnboardingView } from 'react-native-adapty';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
 <AdaptyOnboardingView
   onboarding={onboarding}

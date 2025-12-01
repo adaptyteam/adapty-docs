@@ -37,7 +37,7 @@ This approach is best for optional onboardings where users should have the freed
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { createOnboardingView } from 'react-native-adapty';
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
 const view = await createOnboardingView(onboarding);
 
@@ -61,7 +61,7 @@ This approach is ideal for required onboardings, mandatory tutorials, or any flo
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyOnboardingView } from 'react-native-adapty';
+import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
 
 <AdaptyOnboardingView
   onboarding={onboarding}
