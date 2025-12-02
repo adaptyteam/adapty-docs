@@ -113,7 +113,7 @@ If it is your first product for this app, you must manually submit it for review
   - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
   - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
   - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
-- **Price (USD)**: The product price in USD.
+- **Price (USD)**: The product price in USD. If your product is already in the store, this value won't affect its actual price in the store; you can select any value from the list.
     
   <Zoom>
   <img src={require('./img/product-info.webp').default}

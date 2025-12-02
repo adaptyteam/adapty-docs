@@ -54,6 +54,10 @@ To add a Meta campaign to Adapty User Acquisition and track how your Meta ads wo
 You can also set additional link parameters to [work with deferred data](ua-deferred-data). For example, you can implement deferred deep linking.
 :::
 
+:::tip
+You can also set additional link parameters to [work with deferred data](ua-deferred-data). For example, you can implement deferred deep linking.
+:::
+
 ## Step 3. Map events
 
 To send conversion events back to Meta for campaign optimization, you need to configure event mapping in the **Events names** section. This allows Adapty to automatically send subscription events to your Meta pixel when users perform actions in your app.

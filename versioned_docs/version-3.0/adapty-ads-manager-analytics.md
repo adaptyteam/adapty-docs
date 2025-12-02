@@ -6,7 +6,7 @@ keywords: ['apple ads', 'asa']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-[Ads Manager](https://app.adapty.io/asa/campaigns) is a section of the Apple Ads Manager dashboard that allows you to see multiple metrics in a single place and organize them by campaign, app, ad group, keywords, and search terms. You can customize which metrics you would like to see and view data for all of your campaigns at once.
+[Ads Manager](https://app.adapty.io/asa/campaigns) is a section of the Adapty Ads Manager dashboard that lets you see all key metrics in one place and organize them by apps, campaigns, ad groups, keywords, and search terms. You can customize which metrics you see and view data for all your campaigns at once.
 
 ## Structure overview
 
@@ -56,13 +56,13 @@ On the **Search terms** tab, you can see all the metrics grouped by search terms
 
 ### Negative keywords
 
-On the **Keywords** tab, you can see a list of negative keywords and their data.
+On the **Negative keywords** tab, you can see a list of negative keywords and their metrics.
 
 <ZoomImage id="negative-keywords.webp" width="700px" />
 
 ## Metrics
 
-The columns available for display are split into several main groups:
+The columns available for display are grouped into several main categories:
 - **General**: Meta properties of ads and campaigns.
 - **Performance**: Information about the way users respond to your ads.
 - **Insights** (for keywords and search terms only): Impression share and search popularity. 
@@ -76,18 +76,18 @@ For the complete metric list and description, see the [article](adapty-ads-manag
 
 On each tab, you can customize which columns to display and in which order. You can also save views to get back to them quickly anytime.
 
-To customize the columns displayed and their order, click **Columns > Edit columns** on the top right. Then, select columns in the list and arrange them by drag and dropping. Click **Save** to apply the changes.
+To customize the columns displayed and their order, click **Columns > Edit columns** on the top right. Then, select columns in the list and arrange them by dragging and dropping. Click **Save** to apply the changes.
 
 <ZoomImage id="asa-edit-columns.gif" width="700px" />
 
-To save the view preset, click the **Columns** dropdown again and click the **Save** icon next to **Unsaved**. Enter the present name and click **Save**. Now, you can switch between different views using the **Columns** dropdown.
+To save a view preset, click the **Columns** dropdown again and click the **Save** icon next to **Unsaved**. Enter the preset name and click **Save**. Now, you can switch between different views using the **Columns** dropdown.
 
 <ZoomImage id="asa-preset.gif" width="700px" />
 
 ## Controls
 
-On the **Analytics** page, you have four main controls:
-1. **Pinned metrics**: Select the metrics to pin in the tab above the table view.
+On the **Analytics** page, you have five main controls:
+1. **Pinned metrics**: Select metrics to pin in the bar above the table view.
 2. **Time ranges**: See [more](controls-filters-grouping-compare-proceeds#time-ranges).
 3. **Filters**: Filter by metric values or campaign properties.
 4. **Store commission and taxes**: See [more](controls-filters-grouping-compare-proceeds#store-commission-and-taxes).

@@ -27,7 +27,7 @@ Minimum SDK requirements:
 - `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. 
 :::
 
 ## Install Adapty SDK
@@ -432,6 +432,33 @@ new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
 
 If you try to activate Adapty in another process without setting this value, the SDK will log a warning and skip activation.
 
+### Enable local access levels
+
+By default, [local access levels](local-access-levels.md) are disabled on Android. To enable them, set `withLocalAccessLevelAllowed` to `true`:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
 ## Troubleshooting
 
 #### Android backup rules (Auto Backup configuration)
@@ -497,6 +524,8 @@ Create XML files under `app/src/main/res/xml/` that combine Adapty’s rules wit
     <cloud-backup>
         <!-- AppsFlyer backup rules -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <!-- Adapty backup rules -->
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </cloud-backup>
@@ -504,6 +533,8 @@ Create XML files under `app/src/main/res/xml/` that combine Adapty’s rules wit
     <device-transfer>
         <!-- Usually the same rules as cloud-backup -->
         <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </device-transfer>
 </data-extraction-rules>

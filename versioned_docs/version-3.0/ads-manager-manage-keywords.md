@@ -6,12 +6,14 @@ keywords: ['apple ads', 'asa']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-Apple Ads Manager has a two-side integration with Apple Ads, so you can both get near real-time keyword performance updates from it and make changes to your keywords right from the Apple Ads Manager dashboard.
+Apple Ads Manager has a two-way integration with Apple Ads: you get near real-time performance data, and you can create and edit keywords directly from the Adapty dashboard in a much more convenient way than in the native UI.
+
+If you create a keyword in the native Apple Ads dashboard, it will automatically appear in Apple Ads Manager within 24 hours.
 
 In addition to [exploring comprehensive analytics](adapty-ads-manager-analytics.md), you can manage all your keyword settings:
 - Add keywords to ad groups
 - Add negative keywords
-- Add keywords as SKAG
+- Add keywords as SKAG (Single Keyword Ad Group)
 - Edit keywords directly in the table
 - Perform bulk actions on multiple keywords
 - Launch & pause keywords
@@ -50,12 +52,12 @@ To add keywords to an ad group:
 
 <ZoomImage id="add-keywords-action.webp" width="700px" /> 
 
-2. In the modal, select the campaigns and ad groups you want to add keywords to. After selecting ad groups in one campaign, you can them select another campaign and add more ad groups to the list.
+2. In the modal, select the campaigns and ad groups you want to add keywords to. After selecting ad groups in one campaign, you can then select another campaign and add more ad groups to the list.
 
 <ZoomImage id="select-ad-groups-keywords.webp" width="700px" />
 
 3. Click **Select** to proceed.
-4. In the **Add keywords** dialog, enter keywords in the **Keywords list** field. If you have a comma-delimited CSV file with keywords, you can paste its content, so Apple Ads Manager uploads all the keywords in bulk. 
+4. In the **Add keywords** dialog, enter keywords in the **Keywords list** field. If you have a comma-delimited file with keywords, you can paste its contents so Apple Ads Manager uploads all the keywords in bulk.
 5. For each keyword in the table, configure:
    - **Match type**: Select **Exact** or **Broad** match type
    - **CPT bid**: Set the maximum cost per tap bid for this keyword, or leave it empty to use the ad group's default max CPT bid
@@ -76,7 +78,7 @@ To add negative keywords:
 2. In the **Add negative keywords to** modal, select on which level you want to add negative keywords:
    - **Selected campaigns**: Add campaign-level negative keywords.
    - **Selected ad groups**: Add ad-group level negative keywords.
-   - **All ad groups in selected campaigns**: Add ad group-level keywords to all the ad groups in selected campaigns.
+   - **All ad groups in selected campaigns**: Add ad group-level negative keywords to all the ad groups in selected campaigns.
    :::note
    Consider the following:
    - Ad group-level negative keywords have higher priority than campaign-level negative keywords.
@@ -85,11 +87,11 @@ To add negative keywords:
 
   <ZoomImage id="select-campaigns.gif" width="700px" /> 
 
-3. Enter negative keywords in the **Keywords list** field. If you have a comma-delimited CSV file with keywords, you can paste its content, so Apple Ads Manager uploads all the keywords in bulk.
+3. Enter negative keywords in the **Keywords list** field. If you have a comma-delimited file with keywords, you can paste its content, so Apple Ads Manager uploads all the keywords in bulk.
 4. For each keyword in the table, select the **Match type**:
-   - **Exact**: Excludes only the exact keyword or very close variations
-   - **Broad**: Excludes the keyword and related search terms
-   Or select checkboxes next to them and change the match type in bulk.
+   - **Exact**: Excludes only the exact keyword or very close variations.
+   - **Broad**: Excludes the keyword and related search terms.
+      Or select checkboxes next to them and change the match type in bulk.
 5. Review your negative keywords and click **Add X keywords** (where X is the number of keywords you're adding).
 
 :::note
@@ -104,15 +106,15 @@ To add keywords as SKAG (Single Keyword Ad Group):
 1. Go to **Ads Manager** from the sidebar menu. On any tab, click **+** above the table, then select **Add keywords as SKAG** from the dropdown.
    <ZoomImage id="add-skag-keywords.webp" width="700px" />
 2. Select the campaigns where you want to create the SKAG ad groups. You can select multiple campaigns.
-3. By default, new ad groups will be created with the default settings targeting all users. If you want to change it, select **Copy settings from ad group** and select an existing ad group where you want to copy the settings from.
+3. By default, new ad groups will be created with the default settings targeting all users. If you want to change it, select **Copy settings from ad group** and select an existing ad group to copy the settings from.
    <ZoomImage id="copy-settings-from-ad-group.webp" width="700px" />
 4. Configure the settings for the new ad groups:
-   - **Ad group name prefix**: Optional prefix to add to each ad group name (e.g., "SKAG_" will create "SKAG_keyword1", "SKAG_keyword2", etc.). You can click **Tag** to dynamically add keywords, campaign name, and country to the group names.
+   - **Ad group name prefix**: Optional prefix to add to each ad group name (e.g., "SKAG_" will create "SKAG_keyword1", "SKAG_keyword2", etc.). You can click **Tag** to dynamically add the keyword, campaign name, and country to the group names.
    - **CPT bid** and **CPA cap**: Set the bid for all the keywords at once or select **Set CPT bid and CPA cap for each word manually** and set them for each keyword individually.
-5. Enter keywords in the **Keywords list** field. If you have a comma-delimited CSV file with keywords, you can paste its content, so Apple Ads Manager uploads all the keywords in bulk.
+5. Enter keywords in the **Keywords list** field. If you have a comma-delimited file with keywords, you can paste its content, so Apple Ads Manager uploads all the keywords in bulk.
 6. For each keyword in the table, select the **Match type**:
-   - **Exact**: Excludes only the exact keyword or very close variations
-   - **Broad**: Excludes the keyword and related search terms
+   - **Exact**: Matches only the exact keyword or very close variations
+   - **Broad**: Matches the keyword and related search terms
      Or select checkboxes next to them and change the match type in bulk.
 7. Select **Check for duplicates in target campaign** to ensure there are no identical keywords in the target campaigns.
 8. Click **Create** to create the SKAG ad groups.
@@ -144,7 +146,7 @@ To perform bulk actions:
 
 1. Go to **Ads Manager > Keywords** or **Ads Manager > Negative keywords** tab.
 2. Select multiple keywords by checking the boxes next to the keywords you want to manage.
-3. Click **Actions** dropdown menu and select one of the following options:
+3. Click the **Actions** dropdown and select one of the following options:
    - **Add as keywords**: Add the selected keywords as standard keywords 
    - **Add as negative keywords**: Add the selected keywords as negative keywords 
    - **Add as SKAG**: Create Single Keyword Ad Groups for the selected keywords

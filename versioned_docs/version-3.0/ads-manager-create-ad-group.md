@@ -6,7 +6,9 @@ keywords: ['apple ads', 'asa']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-Apple Ads Manager has a two-side integration with Apple Ads, so you can both get near real-time campaign updates from it and make changes to your ad groups right from the Apple Ads Manager dashboard.
+Apple Ads Manager has a two-way integration with Apple Ads: you get near real-time performance data, and you can create and edit campaigns directly from the Adapty dashboard in a much more convenient way than in the native UI.
+
+If you create an ad group in the native Apple Ads dashboard, it will automatically appear in Apple Ads Manager within 24 hours.
 
 In addition to [exploring comprehensive campaign metrics](adapty-ads-manager-analytics.md), you can manage all the ad group settings:
 - Create ad groups
@@ -18,7 +20,7 @@ In addition to [exploring comprehensive campaign metrics](adapty-ads-manager-ana
 An ad group belongs to a [campaign](ads-manager-create-campaign.md) and is where you configure the targeting and bidding strategy for your ads. Each ad group includes bid settings, audience targeting, and [keywords](ads-manager-manage-keywords.md) that determine when and to whom your ads are shown. Ad groups allow you to organize your advertising strategy within a campaign and test different targeting approaches.
 
 :::important
-Note that a campaign can't run without ad groups; ad groups are the level where you set bids, audience, and keywords. Without an ad group, a campaign has no targeting or bidding and won't serve. Create the campaign first, then [add at least one ad group](ads-manager-create-ad-group.md) to activate it.
+Note that a campaign can't run without ad groups. Ad groups are the level where you set default bid, audience, and keywords, so without at least one ad group a campaign has no targeting or bidding and won't serve. Create the campaign first, then [add at least one ad group](ads-manager-create-ad-group.md) to activate it.
 :::
 
 ## Create ad groups
@@ -34,13 +36,13 @@ To create a new Apple Ads ad group:
 4. Configure the ad group settings:
    - **Ad group name**: The label you assign to identify and search for your ad group in the dashboard.
    - **Default max CPT bid**: The maximum amount you're willing to pay for a tap on your ad. This bid applies to all keywords in the ad group unless you set individual keyword bids.
-   - **CPA cap (limits impressions)** (Optional): This setting specifies the amount you're willing to spend for a tap-through conversion and will set a bid ceiling for all keywords in your ad group.
+   - **CPA cap (limits impressions)** (Optional): This setting specifies the maximum amount you're willing to spend per tap-through conversion (for example, a download or another target action). It sets a bid ceiling for all keywords in your ad group.
 
-     Bid ceiling is calculated by multiplying CPA cap you provide by your tap-though conversion rate: `CPA Cap x CR (Tap-Through)`. If the keyword max CPT bid is lower than the result of the above equation, it'll be applied instead.
+     The bid ceiling is calculated by multiplying the CPA cap you provide by your tap-through conversion rate: `CPA Cap × CR (Tap-Through)`. If the keyword max CPT bid is lower than this value, the lower max CPT bid will be applied.
 
      For example, if your CPA cap is $5 and your tap-through conversion rate is 65%, the max bid applied for all keywords in the ad group would be $3.25. If the max CPT is set at $4, the max bid applied would still be $3.25.
 
-   - **Search Match**: Toggle to automatically match your ad to relevant searches beyond your specified keywords. When enabled, Apple Ads may show your ad for searches related to your keywords.
+   - **Search Match**: Toggle to automatically match your ad to relevant searches without having to specify keywords. When enabled, Apple Ads may show your ad for searches related to your app’s metadata and category.
    <ZoomImage id="new-ad-group.webp" width="700px" />
    - **Audience**: The targeting criteria that determines which users see your ads.
      - **All eligible users**: Shows your ads to all users eligible for your campaign.
@@ -49,20 +51,25 @@ To create a new Apple Ads ad group:
        - **Customer type**: Target all users, new users, or returning users.
        - **Gender**: Target by gender or all users.
        - **Age range**: Target specific age ranges or all users.
-   - **Ad scheduling**: Optional. Set when your ads start running:
+   - **Ad scheduling** (Optional): Set when your ads start running:
      - **Start date and time**: When your ad group should begin serving ads.
-     - **End date**: Optional. When your ad group should stop serving ads.
+     - **End date** (Optional): When your ad group should stop serving ads.
    <ZoomImage id="ad-group-audience.webp" width="700px" />
 5. Click **Create**.
-6. Now, if your campaign placement type is Search results, you can [add keywords](ads-manager-manage-keywords.md) to start serving ads. Otherwise, you are all set!
+6. If your campaign placement type is **Search results**, you can now [add keywords](ads-manager-manage-keywords.md) to start serving ads. For other placement types, you’re all set.
 
 ## Edit ad groups
 
 To edit any created ad group:
 
-1. Go to **Ads Manager > Ad groups** and click the ad group name, or navigate to a campaign page and click the ad group name.
-   <ZoomImage id="click-ad-group.webp" width="700px" />
-2. On the ad group page, click **Edit ad group** and adjust its settings. You can edit all the settings, except for the app and campaign.
+1. Open the campaign settings using either method:
+    - Click the campaign name in **Ads Manager > Ad groups**. Then, click **Edit ad group** on the top right.
+
+    <ZoomImage id="click-ad-group.webp" width="700px" />
+
+    - Or select the checkbox next to the ad group name and click **Actions > Edit ad group settings**.
+    <ZoomImage id="asa-edit-ad-group-settings.webp" width="500px"/>
+2. Adjust the ad group settings. You can edit all the settings, except for the app and campaign.
    <ZoomImage id="edit-ad-group.webp" width="700px" />
 3. Click **Save changes**.
 
