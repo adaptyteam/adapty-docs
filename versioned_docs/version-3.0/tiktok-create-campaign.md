@@ -20,20 +20,46 @@ If you are just getting started with TikTok for Business, you need to add your b
 
 Once your business account is approved, you will be redirected to creating your first campaign.
 
-## Step 2. Select the campaign objective
+## Step 2. Create a pixel
+
+You will need a TikTok pixel to connect your campaign data to revenue and get better results:
+1. Go to [**Events Manager**](https://ads.tiktok.com/i18n/events_manager/home). Click **Connect data source**.
+   <ZoomImage id="tiktok-data-source.webp" />
+2. Select **Web** as a data source type.
+   <ZoomImage id="tiktok-data-source-type.webp" />
+3. In the **Add your website** window, click **Skip**.
+   <ZoomImage id="add-your-website.webp" />
+4. Select **Manual setup** and click **Next**.
+   <ZoomImage id="manual-setup-tiktok.webp" />
+5. Select **TikTok pixel** and click **Next**.
+6. Give your pixel a name and click **Create**.
+   <ZoomImage id="tiktok-pixel.webp" />
+7. If you are planning to use TikTok for Business with some MMP service (e.g., [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
+8. To make this pixel available for use in campaigns, you need to send a test event to it. In [Adapty User Acquisition](adapty-user-acquisition.md):
+   1. Create a new TikTok campaign.
+   2. Expand a platform-specific section – e.g., iOS.
+   3. Select a pixel from the dropdown.
+   4. Click **Send test event**.
+   5. Select any event from the dropdown.
+      <ZoomImage id="tiktok-test-event.webp" />
+9. The test event will appear in TikTok in several minutes. When you see it in your pixel details, you can proceed with the campaign setup in TikTok Ads Manager.
+
+## Step 3. Select the campaign objective
+
+Go to the [ad creation page](https://ads.tiktok.com/i18n/nb_creation/create/objectives) in the Ads Manager.
 
 On the first screen, select the advertising objective and click **Continue**.
 
-Select **Brand awareness > Traffic** if you are working with [Adapty User Acquisition](adapty-user-acquisition.md) to connect the campaign data with your revenue metrics.
+Select **Sales > Website conversion**.
 
 <ZoomImage id="tiktok-objective.webp" />
 
-## Step 3. Fill in the campaign info
+## Step 4. Fill in the campaign info
 
 Next, fill in the campaign info:
 
 1. Name your campaign in the **Campaign name** field.
-2. In the **Optimization goal** field, select **Landing page view** or **Click**. Both will work in our case.
+2. In the **Optimization goal** field, select **Conversion**. 
    <ZoomImage id="tiktok-campaign-info.webp" />
 3. Your ad will be displayed in the TikTok feed and search. For additional setup, click **Advanced settings**. In **Placements**, configure the placement settings:
    - **User comment**: Select if you want to display your ad in the comments section as well. TikTok recommends keeping user comments on to help your ads achieve more impressions.
@@ -42,7 +68,7 @@ Next, fill in the campaign info:
    <ZoomImage id="tiktok-placement.webp" />
 4. Click **Continue**.
 
-## Step 4. Add ad content
+## Step 5. Add ad content
 
 Now, it's time to set up your creatives and destination URL:
 
@@ -60,7 +86,7 @@ Now, it's time to set up your creatives and destination URL:
    <ZoomImage id="tiktok-ad-text.webp" width="700px" />
 10. Click **Continue**.
 
-## Step 5. Configure targeting and budget
+## Step 6. Configure targeting and budget
 
 Finally, set up who should see your ad and how much you plan to pay for it:
 
@@ -80,12 +106,10 @@ Finally, set up who should see your ad and how much you plan to pay for it:
 
 When you finish, it will create a new campaign with one ad group. The ad group will contain one ad if you have configured a carousel or several ads if you have added creatives as separate ads.
 
-## Step 6. Enter payment details
+## Step 7. Enter payment details
 
 To start running the ad, after you configure targeting and ad budget, enter your payment details. After that, you are all set!
 
 ## What's next
 
-Once your ad is live:
-- [Set up a TikTok pixel](https://ads.tiktok.com/help/article/get-started-pixel?lang=en) to collect more insights on the campaign performance.
-- [Explore how the campaign affects your app revenue in Adapty User Acquisition](adapty-user-acquisition.md)
+If you use Adapty User Acquisition, [you can explore how the campaign affects your app revenue in the dashboard](adapty-user-acquisition.md)
