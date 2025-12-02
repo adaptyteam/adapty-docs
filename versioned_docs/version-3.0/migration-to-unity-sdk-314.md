@@ -91,13 +91,17 @@ If no additional parameters are needed, you can simply use:
 using AdaptySDK;
 
 void MakePurchase(AdaptyPaywallProduct product) {
-  Adapty.MakePurchase(product, null, (result, error) => {
+  Adapty.MakePurchase(product, (result, error) => {
     // handle purchase result
   });
 }
 ```
 
 ## Update fallback method
+
+:::important
+When upgrading to Unity SDK 3.14, you’ll need to download the new fallback files from the Adapty dashboard and replace the existing ones in your project.
+:::
 
 The method for setting fallbacks has been updated. The `SetFallbackPaywalls` method has been renamed to `SetFallback`:
 
