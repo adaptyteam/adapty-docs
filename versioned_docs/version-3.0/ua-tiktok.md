@@ -10,6 +10,10 @@ import Details from '@site/src/components/Details';
 
 Adapty UA’s TikTok for Business integration lets you track and optimize campaign performance in TikTok.
 
+:::tip
+See our [guide on setting up ads in TikTok for Business](tiktok-create-campaign.md).
+:::
+
 ## Step 1. Connect your TikTok account
 
 1. Go to **Integrations > TikTok Ads** from the left sidebar and click **Continue with TikTok**.

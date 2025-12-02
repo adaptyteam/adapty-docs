@@ -33,11 +33,31 @@ So, you need to link your business page to your Meta Ads business portfolio:
 
    <ZoomImage id="add-page-meta.png" />
 
-3. Optionally, attach your Instagram account on the **Account > Instagram accounts** in the settings.
+3. Optionally, attach your Instagram account on the **Account > Instagram accounts** page in the settings.
 
 Once you've connected your business page, you're ready to move further.
 
-## Step 2. Create campaign
+## Step 2. Add Meta pixel
+
+You will need a Meta pixel to connect your campaign data to revenue and get better results.
+
+Before you connect data and create a pixel, you will need:
+- A business page – add it to your business portfolio in [**Settings > Accounts > Pages**](https://business.facebook.com/latest/settings/pages)
+- A business manager account – you must have full control over the business portfolio
+- A business email – set in [**Settings > Business info**](https://business.facebook.com/latest/settings/business_info)
+- An ad account – add it to your business portfolio in [**Settings > Accounts > Ad accounts**](https://business.facebook.com/latest/settings/ad_accounts)
+
+When you're ready, create a pixel:
+1. Go to [**Events Manager**](https://www.facebook.com/events_manager2). Click **Connect data**.
+   <ZoomImage id="connect-data.webp" />
+2. Select **Web** as a data source type.
+   <ZoomImage id="new-data-source.webp" />
+3. Give your dataset a name and click **Create**.
+   <ZoomImage id="new-dataset.webp" />
+4. If you are planning to use Meta Ads with some MMP service (e.g., [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, when asked about the integration, you can just click **Cancel** in the setup window, and your pixel will still appear on the list.
+5. When your dataset appears on the list, you can proceed with creating a campaign.
+
+## Step 3. Create campaign
 
 To create a campaign in Meta Ads Manager:
 
@@ -45,59 +65,54 @@ To create a campaign in Meta Ads Manager:
 
    <ZoomImage id="meta-new-campaign.webp" />
 
-2. Select a campaign objective and click **Continue**.
+2. Select **Sales** as a campaign objective and click **Continue**.
    
-   Select **Traffic** if you are working with [Adapty User Acquisition](adapty-user-acquisition.md) to connect the campaign data with your revenue metrics.
    <ZoomImage id="meta-objective.webp" />
 
-3. Select **Manual traffic campaign** to have more control over the campaign settings. Then, click **Continue**
-
-   <ZoomImage id="campaign-setup.webp" />
-
-4. Name your campaign in the **Campaign name** section.
-5. In the **Budget** section, in **Budget strategy**, select how you want to control the budget:
+3. Name your campaign in the **Campaign name** section.
+4. In the **Budget** section, in **Budget strategy**, select how you want to control the budget:
    - **Campaign budget**: The easiest option if you are not sure which opportunities would work best. If you select this, Meta Ads will automatically detect top performers to allocate more budget on better-performing ad sets.
    
      Then, select whether you need **Daily** or **Lifetime** budget and enter the limit in your currency. **Daily** budget allows you more flexibility while you are still learning, so you can start with smaller amounts and gradually adjust them on the go. Or, you can select **Schedule budget increase** and set rules to automatically increase the budget by value amount or percentage.
      <ZoomImage id="daily-budget.webp" />
    - **Ad set budget**: Select this option if you want to manually define which audiences will get more or less campaign budget. If not completely sure, you can select **Share some of your budget with other ad sets** to allow Meta to automatically adjust ad set budgets by up to 20% if it benefits the ad performance.
      <ZoomImage id="ad-set-budget.webp" />
-6. In **Campaign bid strategy**, select the best option for your goals:
+5. In **Campaign bid strategy**, select the best option for your goals:
    - **Highest volume (default)**: The easiest option to get started. If you select this, you let Meta optimize the click cost to get the best results for your budget.
    - **Cost per result goal**: Aim for a certain cost per result if you know your benchmarks.
    - **Bid cap**: Set the highest cost you are ready to bid.
    <ZoomImage id="campaign-bid.webp" />
-7. If you want to test different creatives, audiences, or placements against each other, enable A/B tests. Read more about A/B tests in Meta Ads Manager [here](https://www.facebook.com/business/help/1159714227408868).
-8. Now, it's time to add the first ad set to your campaign. Click **Next** to proceed.
+6. Adapty lets you conduct comprehensive [A/B tests](ab-tests.md). However, you can also enable A/B tests in Meta Ads if needed. Read more about A/B tests in Meta Ads Manager [here](https://www.facebook.com/business/help/1159714227408868).
+7. Now, it's time to add the first ad set to your campaign. Click **Next** to proceed.
 
-## Step 3. Create ad set
+## Step 4. Create ad set
 
 To create an ad set:
 1. Give your ad set a name in the **Ad set name** field.
-2. In the **Conversion** section, select **Website**. 
-    :::tip
-    In [Adapty User Acquisition](adapty-user-acquisition.md), you can create a link that will contain tracking parameters and automatically send users to your app in stores.
-    :::
+2. In the **Conversion location** dropdown, select **Website**. 
    <ZoomImage id="conversion-location.webp" />
-3. In the **Performance goal** field, select **Maximize number of landing page views** or **Maximize number of link clicks**. Both will work in our case.
+3. In the **Performance goal** field, select **Maximize number of landing page views** if you have a landing page or **Maximize number of link clicks** if you use a smart link navigating users directly to the store.
 
    <ZoomImage id="performance-goal.webp" />
 
-4. If you have some audiences or placements that are worth more to your business than the others, you can set **Value rules**. Read more [here](https://www.facebook.com/business/help/535014515741813).
-5. If, when setting up the campaign, you have selected **Ad set budget**, select whether you need **Daily** or **Lifetime** budget and enter the limit in your currency. **Daily** budget allows you more flexibility while you are still learning, so you can start with smaller amounts and gradually adjust them on the go. 
+4. In the **Dataset** field, select the dataset you've created on [Step 2](#step-2-add-meta-pixel).
+5. Select a **Conversion event**. In our case, it is probably going to be **Purchase** or **Start trial**. Don't worry if you see a warning that your dataset doesn't have any events yet – that just means that your dataset is new.
+   <ZoomImage id="conversion-event.webp" />
+
+6. If, when setting up the campaign, you have selected **Ad set budget**, select whether you need **Daily** or **Lifetime** budget and enter the limit in your currency. **Daily** budget allows you more flexibility while you are still learning, so you can start with smaller amounts and gradually adjust them on the go. 
    
    Set the start and, if applicable, end dates for the ad set. For example, if you want to advertise a promotional offer in your app, it is crucial to align the ad set timeframe with the offer.
 
    <ZoomImage id="ad-set-money.webp" />
 
-6. In the **Audience controls** section, set the audience settings:
+7. In the **Audience controls** section, set the audience settings:
     - **Location**: Locations can be as broad or narrow as you need them to be. You can limit **Locations** in the ad set to work with the region specifics in your ads.
     - **Minimum age**: Select the minimum age of users that will see your ad. For some ads, it may be legally required. You can't select a minimum age below 18 globally or 20 in Thailand.
     - **Language**: Set **Language** only if it is not the most common language in selected countries. For example, you won't need to select **English** in the United States, but, if you target Spanish-speaking people living there, you might want to select **Spanish**.
 
    <ZoomImage id="meta-audience.webp" width="500px" />
 
-7. By default, Meta automatically finds smaller groups of people to whom your ad will be relevant. However, if you add an audience suggestion, you can guide Meta towards people you think are likely to respond. In the **Advantage+ audience** section, you can adjust:
+8. By default, Meta automatically finds smaller groups of people to whom your ad will be relevant. However, if you add an audience suggestion, you can guide Meta towards people you think are likely to respond. In the **Advantage+ audience** section, you can adjust:
     - **Age**: Set a specific age range to target, so you better match specific of different age groups.
     - **Gender**: Show your ad to all users or target them by their gender.
     - **Detailed targeting**: This setting allows you the most specific control over the audience for your ad and/or app. Here, you can form groups based on **Demographics**, **Interests**, or **Behaviors**. Depending on what your app is doing, for example, you can focus on different professions, fans of specific music bands, parents of newborns, or those who tend to shop online a lot.
@@ -105,12 +120,12 @@ To create an ad set:
     The **Detailed targeting** settings apply with the **Or** operator. If you want to apply conditions with the **And** operator, click **Define further** and select new conditions.
     :::
     <ZoomImage id="advantage-audience.webp" />
-8. In the **Placements** section, you can select where your ad will appear. By default, the **Advantage+** setting is selected, letting Meta allocate your ad set's budget across multiple placements based on where they're likely to perform best. We recommend you to use this option if you are not sure where to place your ad. If you want to select specific placements manually, select **Manual placements** and customize them. Read more [here](https://www.facebook.com/business/help/965529646866485).
+9. In the **Placements** section, you can select where your ad will appear. By default, the **Advantage+** setting is selected, letting Meta allocate your ad set's budget across multiple placements based on where they're likely to perform best. We recommend you to use this option if you are not sure where to place your ad. If you want to select specific placements manually, select **Manual placements** and customize them. Read more [here](https://www.facebook.com/business/help/965529646866485).
 
    <ZoomImage id="meta-placements.webp" width="500px" />
-9. When you're ready, click **Next** to proceed.
+10. When you're ready, click **Next** to proceed.
 
-## Step 4. Create ads
+## Step 5. Create ads
 
 To create an ad in Meta Ads Manager:
 
@@ -129,6 +144,6 @@ To create an ad in Meta Ads Manager:
 
 ## What's next
 
-Once your ad is live:
-- [Set up a Meta pixel](https://www.facebook.com/business/help/952192354843755?id=1205376682832142) to collect more insights on the campaign performance.
-- [Explore how the campaign affects your app revenue in Adapty User Acquisition](adapty-user-acquisition.md)
+To activate your ad, you will need to add a payment method if you haven't done it before.
+
+If you use Adapty User Acquisition, [you can explore how the campaign affects your app revenue in the dashboard](adapty-user-acquisition.md)
