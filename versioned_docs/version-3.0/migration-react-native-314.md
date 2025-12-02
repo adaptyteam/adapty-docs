@@ -27,7 +27,7 @@ The change has been introduced to make the method behavior clearer: Handlers now
 Note that when using React components like `AdaptyOnboardingView` or `AdaptyPaywallView`, you don't need to return `true`/`false` from event handlers since you control the component's visibility through your own state management. Return values are only needed for modal screen presentation where the SDK manages the view lifecycle.
 
 :::important
-Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
 :::
 
 ```diff showLineNumbers 

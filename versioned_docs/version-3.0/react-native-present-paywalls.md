@@ -127,7 +127,7 @@ try {
 ```
 
 :::important
-Calling `setEventHandlers` multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
 :::
 
 </TabItem>

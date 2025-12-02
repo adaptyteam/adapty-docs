@@ -28,6 +28,10 @@ Before you start, ensure that:
 
 To handle events for modal presentation, use the event handlers method:
 
+:::important
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
+:::
+
 <Tabs groupId="version" queryString>
 <TabItem value="new" label="SDK version 3.14 or later" default>
 ```javascript showLineNumbers title="React Native"
