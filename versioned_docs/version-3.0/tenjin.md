@@ -112,9 +112,9 @@ Where
    />
    </Zoom>
 
-5. Select the app you want to integrate and navigate to the **App and SDK** tab.
+5. Select the app for your platform (iOS or Android) and navigate to the **App and SDK** tab.
 
-6. In the **App and SDK** tab, click **Copy** in the **SDK Key** column. If you don’t have an SDK key yet, click the **Generate SDK Key** button to create one.
+6. In the **App and SDK** tab, click **Copy** in the **SDK Key** column. If you don't have an SDK key yet, click the **Generate SDK Key** button to create one.
 
    <Zoom>
      <img src={require('./img/tenjin-copy-sdk-key.webp').default}
@@ -127,17 +127,31 @@ Where
    />
    </Zoom>
 
-
-9. Paste the copied SDK Key into the **SDK Key** or **Sandbox SDK Key** field in the Adapty Dashboard. 
+7. Return to the Adapty Dashboard and paste the copied SDK Key into the appropriate platform field:
+   - For iOS apps: paste into the **iOS SDK Key** or **iOS Sandbox SDK Key** field
+   - For Android apps: paste into the **Android SDK Key** or **Android Sandbox SDK Key** field
 
    :::info
 
-   Tenjin doesn’t have a specific Sandbox mode for server-to-server integration. Use a separate Tenjin app or the same key for both production and sandbox events.
+   Tenjin doesn't have a specific Sandbox mode for server-to-server integration. Use a separate Tenjin app or the same key for both production and sandbox events.
    :::
 
-10. (optional) Adjust the **How the revenue data should be sent** section if needed. For a detailed explanation of its settings, refer to the [Integration settings](configuration#integration-settings).
+   <Zoom>
+   <img src={require('./img/tenjin-keys.webp').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 
-11. Click **Save** to finalize the setup.
+8. If you have apps on both platforms, repeat steps 5-7 for your other platform.
+
+9. (optional) Adjust the **How the revenue data should be sent** section if needed. For a detailed explanation of its settings, refer to the [Integration settings](configuration#integration-settings).
+
+10. Click **Save** to finalize the setup.
 
 Adapty will now send purchase events to Tenjin and receive attribution data. You can adjust event sharing in the **Events names** section.
 
