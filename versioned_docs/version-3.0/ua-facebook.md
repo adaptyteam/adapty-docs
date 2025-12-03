@@ -6,8 +6,13 @@ keywords: ['adapty ua', 'user acquisition']
 import ZoomImage from '@site/src/components/ZoomImage';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 Adapty UA’s Meta integration lets you track and optimize campaign performance across Facebook, Instagram, Messenger, and Audience Network.
+
+:::tip
+See our [guide on setting up ads in Meta Ads Manager](meta-create-campaign.md).
+:::
 
 ## Step 1. Connect your Facebook account
 
@@ -39,11 +44,11 @@ To add a Meta campaign to Adapty User Acquisition and track how your Meta ads wo
 
 <ZoomImage id="ua-url.webp" width="900px" />
 
-3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your campaign and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
+3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your ad and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
 
 <ZoomImage id="ua-lnk.webp" width="900px" />
 
-4. (Optional) To send the conversion events back to Meta, you can also associate your pixels from Meta with campaigns in Adapty UA. To do that, select one of your existing pixels in the **Pixel** dropdown.
+4. To send the conversion events back to Meta, you can also associate your pixels from Meta with campaigns in Adapty UA. To do that, select one of your existing pixels in the **Pixel** dropdown.
 
 :::tip
 You can also set additional link parameters to [work with deferred data](ua-deferred-data). For example, you can implement deferred deep linking.
