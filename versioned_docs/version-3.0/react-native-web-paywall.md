@@ -16,11 +16,13 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
-```swift showLineNumbers title="Swift"
-do {
-    try await Adapty.openWebPaywall(for: product)
-} catch {
-    print("Failed to open web paywall: \(error)")
+```typescript showLineNumbers title="React Native (TSX)"
+import { adapty } from 'react-native-adapty';
+
+try {
+    await adapty.openWebPaywall(product);
+} catch (error) {
+    console.warn('Failed to open web paywall:', error);
 }
 ```
 

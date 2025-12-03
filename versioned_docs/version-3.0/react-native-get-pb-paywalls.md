@@ -79,7 +79,8 @@ The result of the `createPaywallView` method can only be used once. If you need 
 :::
 
 ```typescript showLineNumbers
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {createPaywallView} from 'react-native-adapty';
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 if (paywall.hasViewConfiguration) {
   try {
