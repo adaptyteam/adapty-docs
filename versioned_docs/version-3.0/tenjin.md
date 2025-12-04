@@ -172,7 +172,7 @@ Tenjin only accepts purchase and **Trial started** events. In the **Events names
 
 ## SDK configuration
 
-It's very important to send Tenjin attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+It's very important to send Tenjin attribution data from the device to Adapty using `Adapty.setIntegrationIdentifier()` SDK method. The example below shows how to do that.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
