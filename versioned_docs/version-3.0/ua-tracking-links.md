@@ -25,21 +25,22 @@ To create a tracking link:
 
 <ZoomImage id="new-tracking-link.webp" width="700px" />
 
-2. Select your app from the list and give your tracking link a name.
+2. Select your app from the list and click **Next**.
 
 <ZoomImage id="ua-choose-app.webp" width="700px" />
 
 3. Fill in the link parameters to match it with the campaign and ad you want to track. All the parameters are required.
 
-| Parameter                    | Description                                                                                   |
-| ---------------------------- | --------------------------------------------------------------------------------------------- |
-| **Channel**                  | The source of traffic, such as Meta, Reddit, or TikTok. Used to group campaigns in analytics. |
-| **Campaign ID**              | The unique identifier of the campaign in your ad platform.                                    |
-| **Campaign name**            | The readable name of the campaign.                                                            |
-| **Ad set ID**                | The unique identifier of the ad set (ad group) in your ad platform.                           |
-| **Ad set name**              | The name of the ad set.                                                                       |
-| **Ad ID**                    | The unique identifier of the individual ad creative.                                          |
-| **Ad name**                  | The name of the ad creative or variation.                                                     |
+| Parameter         | Description                                                                                   |
+|-------------------|-----------------------------------------------------------------------------------------------|
+| **Name**          | The internal tracking link name.                                                              |
+| **Channel**       | The source of traffic, such as Meta, Reddit, or TikTok. Used to group campaigns in analytics. |
+| **Campaign ID**   | The unique identifier of the campaign in your ad platform.                                    |
+| **Campaign name** | The readable name of the campaign.                                                            |
+| **Ad set ID**     | The unique identifier of the ad set (ad group) in your ad platform.                           |
+| **Ad set name**   | The name of the ad set.                                                                       |
+| **Ad ID**         | The unique identifier of the individual ad creative.                                          |
+| **Ad name**       | The name of the ad creative or variation.                                                     |
 
 4. By default, you are creating a One Link. It automatically detects the user’s platform and redirects them to the App Store or Google Play after tracking the click.
 
