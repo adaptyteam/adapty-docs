@@ -135,6 +135,12 @@ dependencyResolutionManagement {
 
 ### Basic setup
 
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 

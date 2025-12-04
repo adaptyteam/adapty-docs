@@ -63,6 +63,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Activate Adapty module of Adapty SDK
 
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 ```csharp showLineNumbers title="C#"
 using UnityEngine;
 using AdaptySDK;
