@@ -101,6 +101,12 @@ This will create a `.xcworkspace` file for your app. Use this file for all futur
 
 ## Activate Adapty module of Adapty SDK
 
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swiftui" label="SwiftUI">
 
