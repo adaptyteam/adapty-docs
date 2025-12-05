@@ -1,84 +1,48 @@
 ---
-title: "Use fallback paywalls"
+title: "Use fallbacks in Unity SDK"
 description: "Handle cases when users are offline or Adapty servers aren't available"
-metadataTitle: "Work with Paywalls Offline | Unity SDK | Adapty Docs"
+metadataTitle: "Using fallback paywalls | Unity SDK | Adapty Docs"
 slug: /unity-use-fallback-paywalls
 displayed_sidebar: sdkunity
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
-## Fallback paywalls
+To use fallback paywalls, call the `SetFallbackPaywalls` method.
 
-Fallback paywalls allow your app to work offline by using locally cached paywall data.
+For this to work, place the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `Assets/StreamingAssets` folder of your Unity project.
 
-## Set fallback paywalls
+Place the `SetFallbackPaywalls` method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
 
-To set fallback paywalls for offline use:
-
-```csharp
-using Adapty;
-
-// Set fallback paywalls
-var fallbackPaywalls = new List<AdaptyPaywall>
-{
-    // Your fallback paywall data
-};
-Adapty.SetFallbackPaywalls(fallbackPaywalls);
-```
-
-## Use fallback paywalls
-
-When network is unavailable, Adapty automatically uses fallback paywalls:
+Here's an example of retrieving fallback paywall data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
 
 ```csharp
-try
-{
-    var paywalls = await Adapty.GetPaywalls();
-    // Use online paywalls
-}
-catch (Exception error)
-{
-    Debug.Log("Using fallback paywalls due to network error");
-    // Adapty will automatically use fallback paywalls
-}
-```
+using UnityEngine;
+using AdaptySDK;
 
-## Cache paywalls locally
+#if UNITY_IOS
+    string fileName = "ios_fallback.json";
+#elif UNITY_ANDROID
+    string fileName = "android_fallback.json";
+#else
+    // Optional: handle Editor or other platforms
+    string fileName = "fallback.json"; 
+#endif
 
-Paywalls are automatically cached for offline use:
-
-```csharp
-// Get paywalls (will be cached automatically)
-var paywalls = await Adapty.GetPaywalls();
-
-// Later, when offline, these cached paywalls will be used
-var cachedPaywalls = await Adapty.GetPaywalls();
-```
-
-## Handle offline scenarios
-
-Handle cases when the app is offline:
-
-```csharp
-public class PaywallManager : MonoBehaviour
-{
-    public async void ShowPaywall()
-    {
-        try
-        {
-            var paywalls = await Adapty.GetPaywalls();
-            await Adapty.PresentPaywall(paywalls[0]);
-        }
-        catch (Exception error)
-        {
-            Debug.Log("Network error, using cached paywalls");
-            // Adapty will use cached paywalls automatically
-        }
+Adapty.SetFallbackPaywalls(fileName, (error) => {
+    if (error != null) {
+        Debug.LogError($"Failed to set fallback: {error}");
+        return;
     }
-}
+    
+    // Fallback set successfully
+});
 ```
 
-<SampleApp />
+Parameters:
+
+| Parameter    | Description                                          |
+|:-------------|:-----------------------------------------------------|
+| **fileName** | The object represents the name of the file resource. |
