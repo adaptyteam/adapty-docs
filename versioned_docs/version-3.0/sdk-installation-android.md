@@ -22,9 +22,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 
 ## Requirements
 
-Minimum SDK requirements:
-- `minSdkVersion 19` for core SDK functionality
-- `minSdkVersion 21` required when using Adapty Paywall Builder or Onboarding Builder
+Minimum SDK requirement: `minSdkVersion 21`
 
 :::info
 Adapty is compatible with Google Play Billing Library up to 8.x. 
