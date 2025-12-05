@@ -45,16 +45,25 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
           // use the product object to handle the purchase
           // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
    }
+
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
+                                                onFinishRestore: @escaping () -> Void) {
+          // use the onStartRestore and onFinishRestore callbacks to notify AdaptyUI about the process of the restore
+   }
    ```
 
    The `observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` event will inform you that the user has initiated a purchase. You can trigger your custom purchase flow in response to this callback.
 
-   Also, remember to invoke the following callbacks to notify AdaptyUI about the process of the purchase. This is necessary for proper paywall behavior, such as showing the loader, among other things:
+   The `observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` event will inform you that the user has initiated a restore. You can trigger your custom restore flow in response to this callback.
+
+   Also, remember to invoke the following callbacks to notify AdaptyUI about the process of the purchase or restore. This is necessary for proper paywall behavior, such as showing the loader, among other things:
 
    | Callback           | Description                                                                      |
    | :----------------- | :------------------------------------------------------------------------------- |
    | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.  |
    | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished. |
+   | onStartRestore()   | The callback should be invoked to notify AdaptyUI that the restore is started.   |
+   | onFinishRestore()  | The callback should be invoked to notify AdaptyUI that the restore is finished.  |
 
 2. Create a paywall configuration object:
 

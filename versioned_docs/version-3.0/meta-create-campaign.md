@@ -54,7 +54,7 @@ When you're ready, create a pixel:
    <ZoomImage id="new-data-source.webp" />
 3. Give your dataset a name and click **Create**.
    <ZoomImage id="new-dataset.webp" />
-4. If you are planning to use Meta Ads with some MMP service (e.g., [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, when asked about the integration, you can just click **Cancel** in the setup window, and your pixel will still appear on the list.
+4. For [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, when asked about the integration, you can just click **Cancel** in the setup window, and your pixel will still appear on the list.
 5. When your dataset appears on the list, you can proceed with creating a campaign.
 
 ## Step 3. Create campaign
@@ -123,7 +123,9 @@ To create an ad set:
 9. In the **Placements** section, you can select where your ad will appear. By default, the **Advantage+** setting is selected, letting Meta allocate your ad set's budget across multiple placements based on where they're likely to perform best. We recommend you to use this option if you are not sure where to place your ad. If you want to select specific placements manually, select **Manual placements** and customize them. Read more [here](https://www.facebook.com/business/help/965529646866485).
 
    <ZoomImage id="meta-placements.webp" width="500px" />
-10. When you're ready, click **Next** to proceed.
+10. **Recommended**: Targeting by device helps you optimize your spending. In the **Placements** section, click **Show more settings**. In the **Devices and operating system** subsection, select which devices, operating systems, and OS versions should be included in your audience. This ensures your ads are shown only to relevant users. For example, desktop users won't see your ad, and users with old OS versions that your app doesn't support will be excluded.
+    <ZoomImage id="meta-devices.webp" width="500px" />
+11. When you're ready, click **Next** to proceed.
 
 ## Step 5. Create ads
 
@@ -134,8 +136,8 @@ To create an ad in Meta Ads Manager:
    <ZoomImage id="meta-identity.webp" width="500px" />
 3. In **Ad setup**, select how you want to post your ad. When advertising apps, we recommend selecting **Create ad**, so your post will redirect users to your app instead of the Facebook page. In the **Format** field, select an option depending on how many creatives you have and how you want to display them.
    <ZoomImage id="meta-ad-setup.webp" width="500px" />
-4. In the **Destination** section, keep **Website** selected. In the **Website URL** field, paste the link to your app. If you're working with [Adapty User Acquisition](adapty-user-acquisition.md), [create a web campaign](ua-facebook.md) there and paste **Click link** to the **Website URL** field.
-   <ZoomImage id="meta-destination.webp" width="500px" />
+4. In the **Destination** section, keep **Website** selected as **Main destination**. In the **Website URL** field, paste `https://api-ua.adapty.io/api/v1/attribution/click`. In [Adapty User Acquisition](adapty-user-acquisition.md), [create a web campaign](ua-facebook.md) and paste the **Click link** content after `https://api-ua.adapty.io/api/v1/attribution/click` to the **URL parameters** field in the **Tracking** section.
+   <ZoomImage id="meta-destination.webp" width="700px" />
 5. In the **Ad creative** section, click **Set up creative** and select **Image ad** or **Video ad**. This will open a new window prompting you to upload media files, crop them, and add texts.
    <ZoomImage id="meta-creative.webp" width="500px" />
 6. If you want to automatically translate your ad texts, in the **Languages** section, click **Add languages**. Then, add a primary language – it will automatically pull texts from your creative. Then, add translation languages for automatic translation.
@@ -146,4 +148,6 @@ To create an ad in Meta Ads Manager:
 
 To activate your ad, you will need to add a payment method if you haven't done it before.
 
-If you use Adapty User Acquisition, [you can explore how the campaign affects your app revenue in the dashboard](adapty-user-acquisition.md)
+Then, you can [explore how the campaign affects your app revenue in the Adapty User Acquisition dashboard](adapty-user-acquisition.md).
+
+Not using Adapty User Acquisition yet? [Book a call with us](https://calendly.com/tnurutdinov-adapty/30min) to learn how it can help you track and optimize your ad campaigns.

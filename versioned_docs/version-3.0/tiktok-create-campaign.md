@@ -34,17 +34,21 @@ You will need a TikTok pixel to connect your campaign data to revenue and get be
 5. Select **TikTok pixel** and click **Next**.
 6. Give your pixel a name and click **Create**.
    <ZoomImage id="tiktok-pixel.webp" />
-7. If you are planning to use TikTok for Business with some MMP service (e.g., [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
-8. To make this pixel available for use in campaigns, you need to send a test event to it. In [Adapty User Acquisition](adapty-user-acquisition.md):
-   1. Create a new TikTok campaign.
+7. For [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
+8. To make this pixel available for use in campaigns, you need to send a test event to it from [Adapty User Acquisition](adapty-user-acquisition.md):
+   1. [Create a new TikTok campaign](ua-tiktok.md).
    2. Expand a platform-specific section – e.g., iOS.
    3. Select a pixel from the dropdown.
    4. Click **Send test event**.
-   5. Select any event from the dropdown.
+   5. In the dropdown, select an event you will be using for optimization in the ad.
       <ZoomImage id="tiktok-test-event.webp" />
 9. The test event will appear in TikTok in several minutes. When you see it in your pixel details, you can proceed with the campaign setup in TikTok Ads Manager.
 
 ## Step 3. Select the campaign objective
+
+:::important
+This tutorial uses the Quick setup view in TikTok Ads Manager. A few recommended settings appear only in the Full view, which we point out in the relevant steps.
+:::
 
 Go to the [ad creation page](https://ads.tiktok.com/i18n/nb_creation/create/objectives) in the Ads Manager.
 
@@ -61,19 +65,20 @@ Next, fill in the campaign info:
 1. Name your campaign in the **Campaign name** field.
 2. In the **Optimization goal** field, select **Conversion**. 
    <ZoomImage id="tiktok-campaign-info.webp" />
-3. Your ad will be displayed in the TikTok feed and search. For additional setup, click **Advanced settings**. In **Placements**, configure the placement settings:
+3. Select your active pixel from the dropdown and choose an **Optimization event**. Note that only active events are available for selection. If the event you need is unavailable, send a test event following the instructions in [Step 2](#step-2-create-a-pixel).
+4. Your ad will be displayed in the TikTok feed and search. For additional setup, click **Advanced settings**. In **Placements**, configure the placement settings:
    - **User comment**: Select if you want to display your ad in the comments section as well. TikTok recommends keeping user comments on to help your ads achieve more impressions.
    - **Allow video download**: Allow viewers to download your ad.
    - **Allow video sharing**: Allow viewers to share your ad.
    <ZoomImage id="tiktok-placement.webp" />
-4. Click **Continue**.
+5. Click **Continue**.
 
 ## Step 5. Add ad content
 
 Now, it's time to set up your creatives and destination URL:
 
 1. In the **TikTok account** field, select an account that will be used for posting.
-2. In the **Destination URL** field, paste the link to your app. If you're working with [Adapty User Acquisition](adapty-user-acquisition.md), [create a web campaign](ua-tiktok.md) there and paste **Click link** to the **Destination URL** field.
+2. In [Adapty User Acquisition](adapty-user-acquisition.md), [create a web campaign](ua-tiktok.md) and paste **Click link** to the **Destination URL** field.
    <ZoomImage id="tiktok-ad-content.webp" width="700px" />
 3. In the **Creatives** section, click **+ Videos and images**.
 4. If you want to use your TikTok posts as creatives, select them on the **TikTok post tab**. Otherwise, switch to the **Creative library** tab and click **Upload**. Files you upload there will be accessible from this tab later, so you can reuse them in other campaigns.
@@ -95,7 +100,10 @@ Finally, set up who should see your ad and how much you plan to pay for it:
    - **Location**: The default location is the location of your ad account. If you select more than one targeting country or region, ad review results will be returned separately for each location. Actual ads delivery may also vary depending on the supported locations of different placements. 
    - **Languages**: By default, all languages are selected. Select the targeting language based on the language used most often in your selected location. 
    - **Gender**: By default, all genders are selected.
-   <ZoomImage id="tiktok-targeting.webp" width="700px" />
+   :::tip
+   If you switch to Full mode, you’ll find an additional **Device** section under **Targeting**. Here you can limit your audience by device type, OS, and OS version—useful if your app requires a minimum version.
+   :::
+  <ZoomImage id="tiktok-targeting.webp" width="700px" />
 3. In the **Budget** section, select one of the suggested options or select **Custom**.
 4. If you have selected **Custom**, select whether you need **Daily** or **Lifetime** budget and enter the limit in your currency. **Daily** budget allows you more flexibility while you are still learning, so you can start with smaller amounts and gradually adjust them on the go.
    <ZoomImage id="tiktok-budget.webp" width="700px" />
@@ -112,4 +120,6 @@ To start running the ad, after you configure targeting and ad budget, enter your
 
 ## What's next
 
-If you use Adapty User Acquisition, [you can explore how the campaign affects your app revenue in the dashboard](adapty-user-acquisition.md)
+Now, you can [explore how the campaign affects your app revenue in the Adapty User Acquisition dashboard](adapty-user-acquisition.md).
+
+Not using Adapty User Acquisition yet? [Book a call with us](https://calendly.com/tnurutdinov-adapty/30min) to learn how it can help you track and optimize your ad campaigns.
