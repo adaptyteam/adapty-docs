@@ -6,8 +6,13 @@ keywords: ['adapty ua', 'user acquisition']
 import ZoomImage from '@site/src/components/ZoomImage';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
 
 Adapty UA’s TikTok for Business integration lets you track and optimize campaign performance in TikTok.
+
+:::tip
+See our [guide on setting up ads in TikTok for Business](tiktok-create-campaign.md).
+:::
 
 ## Step 1. Connect your TikTok account
 

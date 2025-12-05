@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from '@docusaurus/router';
 import { useActiveDocContext } from '@docusaurus/plugin-content-docs/client';
 import { isMobileSdkDocument, getCorrespondingDocId } from '../../lib/sidebarMapping';
+import styles from './styles.module.css';
 
 
 
@@ -132,56 +133,20 @@ export default function SidebarMenu() {
 
 
   return (
-    <div style={{
-      width: '100%',
-      padding: '24px 16px 8px 16px',
-      background: '#f8f9fa',
-      borderBottom: '1px solid #e9ecef',
-      flexShrink: 0,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <div style={{
-          color: '#495057',
-          fontWeight: '600',
-          fontSize: '15px',
-          whiteSpace: 'nowrap'
-        }}>
+    <div className={styles.platformSwitcher}>
+      <div className={styles.switcherInner}>
+        <div className={styles.switcherLabel}>
           Platform:
         </div>
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div className={styles.selectWrapper}>
           <button
-            style={{
-              width: '100%',
-              background: 'white',
-              border: '1px solid #dee2e6',
-              borderRadius: '8px',
-              color: '#495057',
-              fontSize: '15px',
-              fontWeight: '500',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              minWidth: '0'
-            }}
+            className={styles.selectButton}
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
           >
             <span>{currentPlatform.name}</span>
             <svg
-              style={{
-                width: '12px',
-                height: '12px',
-                marginLeft: '8px',
-                transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease'
-              }}
+              className={`${styles.selectIcon} ${isDropdownOpen ? styles.selectIconOpen : ''}`}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -190,53 +155,14 @@ export default function SidebarMenu() {
           </button>
 
           {isDropdownOpen && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: '0',
-              right: '0',
-              background: 'white',
-              border: '1px solid #dee2e6',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              zIndex: 1000,
-              marginTop: '2px',
-              padding: '8px'
-            }}>
+            <div className={styles.dropdown}>
               {platforms.map((platform) => (
                 <button
                   key={platform.name}
-                  style={{
-                    width: '100%',
-                    padding: '6px 16px',
-                    background: platform.name === currentPlatform.name ? 'var(--ifm-menu-color-background-active)' : 'transparent',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    color: platform.name === currentPlatform.name ? 'var(--purplePrimary)' : 'var(--textSecondary)',
-                    fontWeight: platform.name === currentPlatform.name ? '600' : '400',
-                    borderRadius: '8px',
-                    margin: '0'
-                  }}
+                  className={`${styles.dropdownItem} ${platform.name === currentPlatform.name ? styles.dropdownItemActive : ''}`}
                   onClick={() => {
                     handlePlatformChange(platform);
                     setIsDropdownOpen(false);
-                  }}
-                  onMouseEnter={(e) => {
-                    if (platform.name !== currentPlatform.name) {
-                      e.target.style.background = 'var(--ifm-menu-color-background-hover)';
-                      e.target.style.color = 'var(--textPrimary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (platform.name !== currentPlatform.name) {
-                      e.target.style.background = 'transparent';
-                      e.target.style.color = 'var(--textSecondary)';
-                    } else {
-                      e.target.style.background = 'var(--ifm-menu-color-background-active)';
-                      e.target.style.color = 'var(--purplePrimary)';
-                    }
                   }}
                 >
                   {platform.name}

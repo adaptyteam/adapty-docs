@@ -43,6 +43,10 @@ npx cap sync
 
 ## Activate Adapty module of Adapty SDK
 
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
+
 Copy the following code to any app file to activate Adapty:
 
 ```typescript showLineNumbers

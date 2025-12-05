@@ -46,7 +46,7 @@ Want to see how it all comes together? We've got you covered:
 - [React](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-react-example)
 - [Vue.js](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-vue-example)
 - [Angular](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/basic-angular-example)
-- [Advanced development tools with all the methods – useful for more complicated cases](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
+- [Advanced development tools](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples/adapty-devtools)
 
 ## Main concepts
 
