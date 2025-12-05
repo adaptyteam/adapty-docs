@@ -61,4 +61,4 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                       |
 | :---------- | :------- |:------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](unity-sdk-models#adaptypaywall) object.      | 
+| **paywall** | required | An [`AdaptyPaywall`](uhttps://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) object.      | 

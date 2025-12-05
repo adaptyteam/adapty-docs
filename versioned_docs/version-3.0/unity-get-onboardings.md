@@ -47,7 +47,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                       |
 |:----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Onboarding      | An [`AdaptyOnboarding`](unity-sdk-models#adaptyonboarding) object with: the onboarding identifier and configuration, remote config, and several other properties. |
+| Onboarding      | An [`AdaptyOnboarding`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_onboarding.html) object with: the onboarding identifier and configuration, remote config, and several other properties. |
 
 After fetching the onboarding, call the `CreateOnboardingView` method.
 

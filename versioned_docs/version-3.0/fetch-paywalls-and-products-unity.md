@@ -67,7 +67,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                  |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | An [`AdaptyPaywall`](unity-sdk-models#adaptypaywall)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html)  object with: a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch products
 
@@ -88,9 +88,9 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                                                 |
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Products  | List of  [`AdaptyPaywallProduct`](unity-sdk-models#adaptypaywallproduct)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
+| Products  | List of  [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html)  objects with: product identifier, product name, price, currency, subscription length, and several other properties. |
 
-When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](unity-sdk-models#adaptypaywallproduct) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
+When implementing your own paywall design, you will likely need access to these properties from the [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) object. Illustrated below are the most commonly used properties, but refer to the linked document for full details on all available properties.
 
 | Property                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
