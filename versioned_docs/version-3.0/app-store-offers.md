@@ -54,7 +54,7 @@ So, to enable introductory offers for products you are selling, you only need to
 
 1. Open your app in App Store Connect and switch to **Monetization > Subscriptions** from the left menu.
 2. Select a subscription group and navigate to the subscription you need. Note that it must have duration set up.
-3. Click **View all Subscription Pricing** and switch to the **Introductory offers** tab. Click **+**.
+3. Click **View all Subscription Pricing** and switch to the **Introductory offers** tab. Click **Set up introductory offer**.
 
 <Zoom>
   <img src={require('./img/apple-intro-offer.webp').default}
@@ -116,7 +116,7 @@ In Adapty, promotional offers are applied automatically if users are eligible. Y
 
 1. Open your app in App Store Connect and switch to **Monetization > Subscriptions** from the left menu.
 2. Select a subscription group and navigate to the subscription you need. Note that it must have duration set up.
-3. Click **View all Subscription Pricing** and switch to the **Promotional offers** tab. Click **+**.
+3. Click **View all Subscription Pricing** and switch to the **Promotional offers** tab. Click **Set up promotional offer**.
 
 <Zoom>
   <img src={require('./img/apple-promo-offer.webp').default}

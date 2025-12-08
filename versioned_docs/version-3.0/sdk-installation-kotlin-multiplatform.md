@@ -135,6 +135,10 @@ dependencyResolutionManagement {
 
 Add the initialization as early as possible—typically in your shared Kotlin code for both platforms.
 
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
+
 ```kotlin title="Kotlin" showLineNumbers
 import com.adapty.kmp.Adapty
 import com.adapty.kmp.models.AdaptyConfig

@@ -38,6 +38,6 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                                                                                                                   |
 |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Profile** | <p>An [`AdaptyProfile`](unity-sdk-models#adaptyprofile) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
+| **Profile** | <p>An [`AdaptyProfile`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) object. This model contains info about access levels, subscriptions, and non-subscription purchases.</p><p>Сheck the **access level status** to determine whether the user has access to the app.</p> |
 
 <SampleApp />

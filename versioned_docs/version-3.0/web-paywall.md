@@ -10,11 +10,11 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 :::important
-Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later.
+Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later. To display web paywalls in Android apps, you need Adapty SDK version 3.15 or later.
 :::
 
-With Adapty, you can create a paywall with a button that redirects your iOS app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
-This allows you to bypass App Store fees while effectively tracking user payments.
+With Adapty, you can create a paywall with a button that redirects your app users to their browser for payment. Then, when they return to your app after a successful purchase, the subscription activates.
+This allows you to bypass store fees while effectively tracking user payments.
 
    <Zoom>
    <img src={require('./img/web_paywall.gif').default}
@@ -129,6 +129,7 @@ If you are using the **paywall from the Builder**, you need to add a web paywall
 If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. Read the framework-specific guides:
 
 - [iOS](ios-web-paywall)
+- [Android](android-web-paywall.md)
 - [Flutter](flutter-web-paywall)
 - [React Native](react-native-web-paywall)
 - [Unity](unity-web-paywalls.md)

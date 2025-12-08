@@ -6,6 +6,10 @@ slug: /unity-sdk-models
 displayed_sidebar: sdkunity
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://unity.adapty.io/).
+:::
+
 ## Interfaces
 
 ### AdaptyPaywallProduct
