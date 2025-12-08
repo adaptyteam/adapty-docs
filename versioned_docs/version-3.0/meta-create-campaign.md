@@ -26,7 +26,7 @@ To get started with Meta Ads, you need to have a Facebook Business page because 
 
 So, you need to link your business page to your Meta Ads business portfolio:
 
-1. Go to [business.facebook.com](business.facebook.com). If you don't have a business page in the business portfolio yet, you need to add it. Click **Go to settings**.
+1. Go to [business.facebook.com](https://business.facebook.com/). If you don't have a business page in the business portfolio yet, you need to add it. Click **Go to settings**.
    <ZoomImage id="meta-ads-settings.webp" />
 
 2. Go to **Account > Pages** from the left sidebar. Click **Add** and select **Add an existing Facebook page** or **Create a new Facebook page**. See the [guide on creating a business page](https://www.facebook.com/business/help/473994396650734) if you don't have one yet.
