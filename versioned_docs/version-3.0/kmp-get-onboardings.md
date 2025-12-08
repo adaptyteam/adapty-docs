@@ -12,7 +12,7 @@ After [you designed the visual part for your onboarding](design-onboarding.md) w
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform.md) version 3.8.0 or higher.
+1. You have installed [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform.md) version 3.14.0 or higher.
 2. You have [created an onboarding](create-onboarding.md).
 3. You have added the onboarding to a [placement](placements.md).
 

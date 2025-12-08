@@ -1,13 +1,13 @@
 ---
-title: "Migration guide to Adapty Kotlin Multiplatform SDK 3.12.x"
-description: "Migration steps for Adapty Kotlin Multiplatform SDK 3.12.x"
-metadataTitle: "Migration to Adapty KMP SDK 3.12.x | Adapty Docs"
+title: "Migration guide to Adapty Kotlin Multiplatform SDK 3.14.0"
+description: "Migration steps for Adapty Kotlin Multiplatform SDK 3.14.0"
+metadataTitle: "Migration to Adapty KMP SDK 3.14.0 | Adapty Docs"
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Adapty Kotlin Multiplatform SDK 3.12.0 is a major release that brings new features and improvements which, however, may require some migration steps from you.
+Adapty Kotlin Multiplatform SDK 3.14.0 is a major release that brings new features and improvements which, however, may require some migration steps from you.
 
 1. Update the observer class and method names.
 2. Update the fallback paywalls method name.
