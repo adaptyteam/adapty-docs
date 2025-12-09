@@ -23,11 +23,28 @@ Reusing the same `view` without recreating it may result in an error.
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.models.AdaptyPaywall
 import kotlinx.coroutines.launch
 
 viewModelScope.launch {
-    val view = AdaptyUI.createOnboardingView(onboarding = onboarding)
-    view?.present()
+    AdaptyUI.createOnboardingView(onboarding = onboarding).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## Configure iOS presentation style
+
+Configure how the onboarding is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.FULLSCREEN` (default) or `AdaptyUIIOSPresentationStyle.PAGESHEET` values.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyUIIOSPresentationStyle
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    val view = AdaptyUI.createOnboardingView(onboarding = onboarding).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
 }
 ```

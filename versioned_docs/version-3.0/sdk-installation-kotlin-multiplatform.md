@@ -284,6 +284,19 @@ val config = AdaptyConfig
     .build()
 ```
 
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are disabled for Android. To enable them, set `withLocalAccessLevelAllowed` to `true`:
+
+```kotlin title="Kotlin" showLineNumbers
+import com.adapty.kmp.models.AdaptyConfig
+
+val config = AdaptyConfig
+     .Builder("PUBLIC_SDK_KEY")
+     .withLocalAccessLevelAllowed(true)
+     .build()  
+```
+
 ## Troubleshooting
 
 ####  Android backup rules (Auto Backup configuration)

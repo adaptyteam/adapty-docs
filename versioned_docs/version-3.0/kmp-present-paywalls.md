@@ -25,12 +25,14 @@ Reusing the same `view` without recreating it may result in an error.
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.models.AdaptyPaywall
 import kotlinx.coroutines.launch
 
 viewModelScope.launch {
-    val view = AdaptyUI.createPaywallView(paywall = paywall)
-    view?.present()
+    AdaptyUI.createPaywallView(paywall = paywall).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
 }
 ```
 
@@ -57,6 +59,7 @@ In some cases, your app might not know what to replace a custom tag with—espec
 To use custom tags in your paywall, pass them when creating the paywall view:
 
 ```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
 import kotlinx.coroutines.launch
 
 viewModelScope.launch {
@@ -65,11 +68,14 @@ viewModelScope.launch {
         "DAY_OF_WEEK" to "Thursday"
     )
     
-    val view = AdaptyUI.createPaywallView(
+    AdaptyUI.createPaywallView(
         paywall = paywall,
         customTags = customTags
-    )
-    view?.present()
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
 }
 ```
 
@@ -82,6 +88,7 @@ You can customize the text before and after the timer to create the desired mess
 To use custom timers in your paywall, pass them when creating the paywall view:
 
 ```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 
@@ -91,11 +98,14 @@ viewModelScope.launch {
         "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
     )
     
-    val view = AdaptyUI.createPaywallView(
+    AdaptyUI.createPaywallView(
         paywall = paywall,
         customTimers = customTimers
-    )
-    view?.present()
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
 }
 ```
 
@@ -104,18 +114,38 @@ viewModelScope.launch {
 Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import kotlinx.coroutines.launch
+
 viewModelScope.launch {
-    val action = view.showDialog(
+    view.showDialog(
         title = "Close paywall?",
         content = "You will lose access to exclusive offers.",
         primaryActionTitle = "Stay",
         secondaryActionTitle = "Close"
-    )
-    
-    if (action == AdaptyUIDialogActionType.SECONDARY) {
-        // User confirmed - close the paywall
-        view.dismiss()
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the paywall
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
     }
-    // If primary - do nothing, user stays
+}
+```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.FULLSCREEN` (default) or `AdaptyUIIOSPresentationStyle.PAGESHEET` values.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyUIIOSPresentationStyle
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    val view = AdaptyUI.createPaywallView(paywall = paywall).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
 }
 ```
