@@ -125,7 +125,9 @@ class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
         actionId: String
     ) {
         // Dismiss the onboarding screen
-        view.dismiss()
+        mainUiScope.launch {
+            view.dismiss()
+        }
 
         // Additional cleanup or navigation logic can be added here
         // For example, navigate back or show main app content
