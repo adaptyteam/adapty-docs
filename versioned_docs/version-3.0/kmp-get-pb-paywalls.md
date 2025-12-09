@@ -77,16 +77,19 @@ After fetching the paywall, check if it includes a `ViewConfiguration`, which in
 Use the `createPaywallView` method to load the view configuration.
 
 ```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import kotlin.time.Duration.Companion.seconds
+
 if (paywall.hasViewConfiguration) {
-    val paywallView = AdaptyUI.createPaywallView(
+    AdaptyUI.createPaywallView(
         paywall = paywall,
         loadTimeout = 5.seconds,
-        preloadProducts = true,
-        androidPersonalizedOffers = mapOf(
-            "product_id" to true
-        )
-    )
-    // use paywallView
+        preloadProducts = true
+    ).onSuccess { paywallView ->
+        // use paywallView
+    }.onError { error ->
+        // handle the error
+    }
 } else {
     // use your custom logic
 }
@@ -94,9 +97,9 @@ if (paywall.hasViewConfiguration) {
 | Parameter                    | Presence       | Description                                                  |
 | :--------------------------- | :------------- | :----------------------------------------------------------- |
 | **paywall**                  | required       | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **loadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. For Kotlin Multiplatform: You can create `TimeInterval` with extension functions (like `5.seconds`, where `.seconds` is from `import com.adapty.utils.seconds`), or `TimeInterval.seconds(5)`. To set no limitation, use `TimeInterval.INFINITE`. |
+| **loadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. You can use extension functions like `5.seconds` from `kotlin.time.Duration.Companion`. |
 | **preloadProducts**          | optional       | Set to `true` to preload products for better performance. When enabled, products are loaded in advance, reducing the time needed to display the paywall. |
-| **androidPersonalizedOffers** | optional       | Define a dictionary of product IDs and their personalized offer status for Android. When set to `true` for a product ID, it indicates that the product has a personalized offer available. This is used to display personalized pricing or offers to users. |
+| **productPurchaseParams**    | optional       | A map of [`AdaptyProductIdentifier`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-product-identifier/) to [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/). Use this to configure purchase-specific parameters like personalized offers or subscription update parameters for individual products in the paywall. |
 
 :::note
 If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder).
@@ -170,42 +173,63 @@ The Kotlin Multiplatform SDK supports local assets only. For remote content, you
 ```kotlin showLineNumbers
 import com.adapty.kmp.AdaptyUI
 import com.adapty.kmp.models.AdaptyCustomAsset
+import kotlinx.coroutines.launch
+// Import generated Res class for accessing resources
+import myapp.composeapp.generated.resources.Res
 
-// Create custom assets map
-val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
-    // Load image from app resources (common in Compose Multiplatform)
-    "hero_image" to AdaptyCustomAsset.localImageResource(
-        path = "images/hero_image.png"  // Path in src/commonMain/resources
-    ),
-
-    // Load video from app resources
-    "demo_video" to AdaptyCustomAsset.localVideoResource(
-        path = "videos/demo_video.mp4"
-    ),
-
-    // Apply custom brand colors
-    "brand_primary" to AdaptyCustomAsset.color(
-        colorHex = "#FF6B35"
-    ),
-
-    // Create gradient background
-    "card_gradient" to AdaptyCustomAsset.linearGradient(
-        colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
-        stops = listOf(0.0f, 0.5f, 1.0f)
+viewModelScope.launch {
+    // Get URIs for bundled resources using Res.getUri()
+    val heroImagePath = Res.getUri("files/images/hero_image.png")
+    val demoVideoPath = Res.getUri("files/videos/demo_video.mp4")
+    
+    // Or read image as byte data
+    val imageByteData = Res.readBytes("files/images/avatar.png")
+    
+    // Create custom assets map
+    val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+        // Load image from app resources (bundled with the app)
+        // Files should be placed in commonMain/composeResources/files/
+        "hero_image" to AdaptyCustomAsset.localImageResource(
+            path = heroImagePath
+        ),
+        
+        // Or use image byte data
+        "avatar" to AdaptyCustomAsset.localImageData(
+            data = imageByteData
+        ),
+        
+        // Load video from app resources
+        "demo_video" to AdaptyCustomAsset.localVideoResource(
+            path = demoVideoPath
+        ),
+        
+        // Or use a video file from device storage
+        "intro_video" to AdaptyCustomAsset.localVideoFile(
+            path = "/path/to/local/video.mp4"
+        ),
+        
+        // Apply custom brand colors
+        "brand_primary" to AdaptyCustomAsset.color(
+            colorHex = "#FF6B35"
+        ),
+        
+        // Create gradient background
+        "card_gradient" to AdaptyCustomAsset.linearGradient(
+            colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+            stops = listOf(0.0f, 0.5f, 1.0f)
+        )
     )
-)
-
-// Use custom assets when creating paywall view
-val paywallViewResult = AdaptyUI.createPaywallView(
-    paywall = paywall,
-    customAssets = customAssets
-)
-paywallViewResult.onSuccess { paywallView ->
-    // Present the paywall with custom assets
-    paywallView.present()
-}.onError { error ->
-    // Handle the error - paywall will fall back to default appearance
-    AppLogger.e("Failed to create paywall view: ${error.message}")
+    
+    // Use custom assets when creating paywall view
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customAssets = customAssets
+    ).onSuccess { paywallView ->
+        // Present the paywall with custom assets
+        paywallView.present()
+    }.onError { error ->
+        // Handle the error - paywall will fall back to default appearance
+    }
 }
 ```
 
