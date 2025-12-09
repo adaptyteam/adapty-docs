@@ -25,4 +25,6 @@ So, before you impl
 
 ### Manage users
 
-You can 
+You can work either with or without backend authentication on your side.
+
+However, the Adapty SDK handles anonymous and identified users differently. Read the [identification quickstart guide](ios-quickstart-identify.md)
