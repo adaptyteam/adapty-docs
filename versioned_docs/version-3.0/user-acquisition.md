@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
+User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place. 
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
@@ -18,7 +18,7 @@ User Acquisition is only available with:
 - iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
 - React Native Adapty SDK version 3.10.0 or higher.
 - Unity SDK version 3.12.0 or higher.
-  :::
+:::
 
 ## Enable the User Acquisition integration
 
