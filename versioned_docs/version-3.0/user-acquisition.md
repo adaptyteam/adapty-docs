@@ -1,5 +1,5 @@
 ---
-title: "User Acquisition"
+title: "Get started with Adapty User Acquisition"
 description: "Connect with Adapty User Acquisition to blend ad spending and subscription revenue and see the whole app economy in one place."
 metadataTitle: "Connecting with Adapty User Acquisition | Adapty Docs"
 ---
@@ -9,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place. 
+User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
@@ -17,10 +17,11 @@ This is a one-way integration — to see your revenue data in User Acquisition, 
 User Acquisition is only available with:
 - iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
 - React Native Adapty SDK version 3.10.0 or higher.
-- Unity and Kotlin Multiplatform Adapty SDK version 3.14.0 or higher.
-:::
+- Unity SDK version 3.12.0 or higher.
+  :::
 
-## How to set up User Acquisition integration
+## Enable the User Acquisition integration
+
 To enable the integration:
 1. Go to [Integrations > Adapty](https://app.adapty.io/integrations/user-acquisition) in the Adapty Dashboard.
 2. Turn on the toggle.
@@ -62,7 +63,11 @@ You can check the full list of supported events [here](events.md).
 />
 </Zoom>
 
-## SDK configuration
+## Listen for installation details updates
+
+:::important
+You need to [install and activate the Adapty SDK](installation-of-adapty-sdks.md) first.
+:::
 
 To listen for installation details updates, use these two methods:
 
@@ -123,6 +128,24 @@ Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
 Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
     // installation details update failed
 });
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.SetEventListener(this);
+
+public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details)
+{
+    // use installation details
+}
+
+public void OnInstallationDetailsFail(AdaptyError error)
+{
+    // installation details update failed
+}
 ```
 
 </TabItem>
@@ -223,6 +246,32 @@ try {
 } catch (e) {
     // handle the error
 }
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetCurrentInstallationStatus((status, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    switch (status) {
+        case AdaptyInstallationStatusNotAvailable notAvailable:
+            // Installation details are not available on this device
+            break;
+        case AdaptyInstallationStatusNotDetermined notDetermined:
+            // Installation details have not been determined yet
+            break;
+        case AdaptyInstallationStatusDetermined determined:
+            // Use the installation details
+            var details = determined.Details;
+            break;
+    }
+});
 ```
 
 </TabItem>
