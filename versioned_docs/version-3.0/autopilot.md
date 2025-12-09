@@ -22,6 +22,10 @@ So, you need to clearly understand **which prices to set** and **which paywalls 
 
 Adapty Growth Autopilot helps you to automate these tasks, so you have less to worry about.
 
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/u0HZep9X9e4?si=AKEfLK8NPeNdYpSM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
 ## How it works
 
 1. You select your app to analyze. This app must already have transactions in the production environment.
@@ -39,7 +43,7 @@ Before you start, consider the following:
 
 To create a report on your app:
 
-1. Go to **A/B tests** from the dashboard sidebar and click **Start Pricing Analysis**.
+1. Go to **A/B tests** from the dashboard sidebar and click **Adapty autopilot**.
 
 <Zoom>
   <img src={require('./img/pricing-analysis.webp').default}
@@ -61,13 +65,12 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 - Your top-performing paywall has two or more products with the same period.
 :::
 
-2. Select your app from the list and click **Analyze this app**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
-
+2. We automatically detect your top-performing placement based on revenue data. If you'd like to analyze a different placement, select one from the **Placement** dropdown. Then, click **Analyze this placement**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
 <Zoom>
-  <img src={require('./img/select-app.webp').default}
+  <img src={require('./img/select-placement.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
+    width: '500px', /* image width */
     display: 'block', /* for alignment */
     margin: '0 auto' /* center alignment */
   }}
@@ -150,6 +153,23 @@ The recommendations page will show you the target number of subscribers and the 
 
 <Zoom>
   <img src={require('./img/recommendation.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Why will it work?
+
+Every recommendation comes with a clear hypothesis that explains the reasoning behind it. You'll see how your current metrics stack up against competitors and industry averages, what opportunity we've identified, and which key metrics the test is expected to improve.
+
+For a detailed look at how Autopilot analyzes your growth strategy and which data sources it uses to create recommendations, check out [our article](autopilot-how-it-works.md).
+
+<Zoom>
+  <img src={require('./img/hypothesis.png').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

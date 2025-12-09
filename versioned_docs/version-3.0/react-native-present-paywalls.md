@@ -75,3 +75,27 @@ try {
   // handle error
 }
 ```
+
+## Replace one subscription with another
+
+When a user attempts to purchase a new subscription while another subscription is active on Android, you can control how the new purchase should be handled by passing subscription update parameters when creating the paywall view. To replace the current subscription with the new one, use `productPurchaseParams` in `createPaywallView` with the `oldSubVendorProductId` and `prorationMode` parameters.
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { Platform } from 'react-native';
+import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```

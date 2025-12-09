@@ -11,6 +11,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your Flutter app:
 
@@ -53,6 +54,12 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
    ```
 
 ## Activate Adapty module of Adapty SDK
+
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 
 ```dart showLineNumbers title="main.dart"
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -240,3 +247,9 @@ await Adapty().activate(
 | memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Default is 100 MB.                       |
 | memoryStorageCountLimit     | optional | The item count limit of the memory storage. Default is max int value.              |
 | diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Default is 100 MB.              |
+
+## Troubleshooting
+
+#### Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />

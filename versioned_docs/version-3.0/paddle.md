@@ -297,9 +297,9 @@ Integrations you can use to forward and analyze your Paddle events:
 
 - **Refunds**: Adapty tracks full and partial refunds. 
 
-- **Grace period**: Paddle has a fixed grace period of 30 days for billing issues, which cannot be customized. During this period, the subscription remains active even if there are billing issues. This means users will continue to have access to premium features for the full grace period duration, regardless of payment status. 
+- **Grace period**: By default, Paddle applies a fixed 30-day grace period for billing issues, during which the subscription remains active. You can [customize the grace period duration and the action after its end (pausing or canceling the subscription)](https://developer.paddle.com/build/retain/configure-payment-recovery-dunning#prerequisites).
   
-  Note that for trials, there is no grace period - if there is a billing issue after a trial, the subscription will be cancelled immediately.
+  **Trials**: If payment collection fails after a trial ends, the subscription status changes to `past_due`. In production, Paddle's Retain applies a dunning window to attempt payment recovery before the subscription is canceled or paused. In sandbox, Retain is unavailable, so no payment retries are attempted and the subscription remains `past_due` indefinitely.
 
 ---
 

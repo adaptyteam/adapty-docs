@@ -9,6 +9,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your mobile app:
 
@@ -16,7 +17,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-KMP/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 :::info
@@ -134,6 +135,10 @@ dependencyResolutionManagement {
 ### Basic setup
 
 Add the initialization as early as possible—typically in your shared Kotlin code for both platforms.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 
 ```kotlin title="Kotlin" showLineNumbers
 import com.adapty.kmp.Adapty
@@ -278,3 +283,15 @@ val config = AdaptyConfig
     )
     .build()
 ```
+
+## Troubleshooting
+
+####  Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />
+
+:::important
+In a Kotlin Multiplatform project, apply these changes in the Android application module (the one that produces the APK/AAB), for example, `androidApp` or `app`:
+- Manifest: `androidApp/src/main/AndroidManifest.xml`
+- Backup rules XML: `androidApp/src/main/res/xml/`
+:::

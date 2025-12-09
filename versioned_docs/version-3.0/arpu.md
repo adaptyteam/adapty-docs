@@ -33,7 +33,7 @@ ARPU = Revenue / Number of new users
 
 For instance, if your app generated $10,000 in revenue over the course of a week, and had 2,000 non-unique users during that same period, the ARPU for that week would be $5 ($10,000/2,000). 
 
-The calculation is done before the store's fee and the refund amount is excluded from the revenue.
+The calculation is done before the store's fee, and the refund amount is excluded from the revenue.
 
 ### Available filters and grouping
 

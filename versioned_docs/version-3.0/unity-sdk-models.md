@@ -6,6 +6,10 @@ slug: /unity-sdk-models
 displayed_sidebar: sdkunity
 ---
 
+:::danger
+This page has been deprecated. For SDK models, go to [this reference](https://unity.adapty.io/).
+:::
+
 ## Interfaces
 
 ### AdaptyPaywallProduct
@@ -230,11 +234,6 @@ Configuration for SDK initialization.
 | AppleIdfaCollectionDisabled             | bool (optional)                                                                           | Whether Apple IDFA collection is disabled                                                                                                      |
 | GoogleAdvertisingIdCollectionDisabled   | bool (optional)                                                                           | Whether Google Advertising ID collection is disabled                                                                                           |
 | IpAddressCollectionDisabled             | bool (optional)                                                                           | Whether IP address collection is disabled                                                                                                      |
-| BackendBaseUrl                          | string (optional)                                                                         | Custom backend base URL                                                                                                                        |
-| BackendFallbackBaseUrl                  | string (optional)                                                                         | Custom backend fallback base URL                                                                                                               |
-| BackendConfigsBaseUrl                   | string (optional)                                                                         | Custom backend configs base URL                                                                                                                |
-| BackendProxyHost                        | string (optional)                                                                         | Backend proxy host                                                                                                                             |
-| BackendProxyPort                        | int (optional)                                                                            | Backend proxy port                                                                                                                             |
 | LogLevel                                | [AdaptyLogLevel](#adaptyloglevel) (optional)                                              | Log level for SDK                                                                                                                              |
 | ActivateUI                              | bool (optional)                                                                           | Whether to activate UI features                                                                                                                |
 | AdaptyUIMediaCache                      | [AdaptyUIMediaCacheConfiguration](#adaptyuimediacacheconfiguration) (optional)            | Media cache configuration for UI                                                                                                               |

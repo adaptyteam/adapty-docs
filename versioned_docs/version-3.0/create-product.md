@@ -17,6 +17,8 @@ The way you create products in Adapty depends on whether you already have them i
 Before you start, ensure you've configured the integration with the stores you need:
 - [App Store](initial_ios.md)
 - [Google Play](initial-android.md)
+
+If you configured the App Store integration some time ago, ensure you've [added the App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key) as well.
 :::
 
 To add a new product to your app:
@@ -73,8 +75,8 @@ To add a new product to your app:
 5. Click **Save & Continue**.
 6. Configure the product information for App Store if you plan to publish there:
    - **Product ID**: Create a permanent unique ID for the product.
-   - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name and ID. After Adapty creates it, you can select it from the dropdown.
-   - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store.
+   - **Product group**: Select an existing product group you've created in App Store Connect or click **Create new Product Group** and set its name. After Adapty creates it, you can select it from the dropdown.
+   - **Screenshot**: Upload a screenshot of the in-app purchase that clearly shows the item or service being offered. This screenshot is used for the App Store review only and isn't displayed on the App Store. See the official Apple [recommendations and specifications](https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots/) for submitting screenshots.
 
 <Zoom>
   <img src={require('./img/push-app-store.webp').default}
@@ -182,7 +184,7 @@ To add a new product to your app:
       - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
       - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
       - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
-   - **Price (USD)**: The product price in USD.
+   - **Price (USD)**: The product price in USD. If your product is already in the store, this value won't affect its actual price in the store; you can select any value from the list.
 
 <Zoom>
   <img src={require('./img/product-info.webp').default}
@@ -217,6 +219,10 @@ To add a new product to your app:
 8. Click **Save product** to finalize the product creation. The product status synchronization may take up to five minutes, so wait until they update in the table.
 
 9. You can [create offers](create-offer) for the product if needed. To add offers, click **Yes, add offers**. Otherwise, click **No, thanks**.
+
+:::note
+Introductory offers are created in Adapty only when pushing a product to the store. When importing or for previously created products, introductory offers are not synced and are not displayed in Adapty but will still work correctly in the app.
+:::
 
 ## Next steps
 

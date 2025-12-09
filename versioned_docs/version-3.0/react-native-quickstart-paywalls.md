@@ -53,7 +53,7 @@ To get the view configuration, you must switch on the **Show on device** toggle 
 :::
 
 ```typescript showLineNumbers title="React Native"
-import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 try {
     const placementId = 'YOUR_PLACEMENT_ID';
@@ -126,7 +126,8 @@ Here is how all those steps can be integrated in your app together.
 ```javascript showLineNumbers title="React Native"
 import React, { useEffect } from 'react';
 import { Button, View } from 'react-native';
-import { adapty, createPaywallView } from 'react-native-adapty';
+import { adapty } from 'react-native-adapty';
+import { createPaywallView } from 'react-native-adapty/dist/ui';
 
 export default function PaywallScreen() {
   const showPaywall = async () => {

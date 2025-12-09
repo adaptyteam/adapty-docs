@@ -25,9 +25,9 @@ After setup, you can use the Adapty Dashboard as usual at `app.adapty.io`.
 <Tabs groupId="current-os" queryString> 
 <TabItem value="swift" label="iOS"> 
 
-Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-android). During configuration, add the EU cluster as follows:
+Install Adapty SDK 3.0.3 or later as described in [Adapty SDK Installation & Configuration](sdk-installation-ios). During configuration, add the EU cluster as follows:
 
-Include the `backendBaseUrl` parameter in your configuration:
+Include the `serverCluster` parameter in your configuration:
 
 <Tabs groupId="current-os" queryString>
 
@@ -45,7 +45,7 @@ let configurationBuilder =
         .with(idfaCollectionDisabled: false)
         .with(ipAddressCollectionDisabled: false)
         // highlight-next-line
-        .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
+        .with(serverCluster: .eu)
 
 Adapty.activate(with: configurationBuilder.build()) { error in
   // handle the error
@@ -69,7 +69,7 @@ struct SampleApp: App {
           .with(idfaCollectionDisabled: false) // optional
           .with(ipAddressCollectionDisabled: false) // optional
           // highlight-next-line
-          .with(backendBaseUrl: URL(string: "https://api-eu.adapty.io/api/v1")!)
+          .with(serverCluster: .eu)
   
         Adapty.activate(with: configurationBuilder.build()) { error in
           // handle the error
@@ -91,7 +91,7 @@ Parameters:
 
 | Parameter          | Description                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| **backendBaseUrl** | Use the `URL(string: "https://api-eu.adapty.io/api/v1")!` value to connect your app to Adapty’s European servers. |
+| **serverCluster** | Use the `.eu` value to connect your app to Adapty's European servers. |
 
 
 </TabItem> 
@@ -167,4 +167,4 @@ New users or existing users logging in from a new device must use https://app.ad
 
 :::
 
-This should help ensure you comply with EU data regulations while using Adapty!x
+This should help ensure you comply with EU data regulations while using Adapty!

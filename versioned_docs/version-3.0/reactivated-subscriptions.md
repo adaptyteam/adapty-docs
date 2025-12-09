@@ -29,10 +29,14 @@ The New subscriptions chart displays the amount of new (first-time activated) su
 
 Adapty's calculation logic for the New subscriptions chart counts the number of new (first-time activated) subscriptions during a given period, including both subscriptions that start from scratch and free trials that convert into paid subscriptions. At a daily resolution, the count of new subscriptions represents the number of new subscriptions activated on that day. Therefore, the count of new subscriptions for a given day indicates the number of new subscriptions activated on that day. At a monthly resolution, the count of new subscriptions represents the number of new subscriptions activated during that month.
 
+:::note
+The New subscriptions count includes all subscriptions that were initially activated during the period, even if they were later refunded. This means the displayed count may be higher than the number of subscriptions that ultimately generated revenue. To understand the net impact, compare this metric with the Refund events chart.
+:::
+
 ### Available filters and grouping
 
 - ✅ Filter by: Attribution, country, paywall, store, product, and duration. 
-- ✅ Group by: Product, country, store, paywall, duration, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
+- ✅ Group by: Product, country, store, paywall, duration, renewal status, attribution status, attribution channel, attribution campaign, attribution ad group, attribution ad set, and attribution creative.
 
 You can find more information about the available controls, filters, grouping options, and how to use them in [this documentation.](controls-filters-grouping-compare-proceeds)
 

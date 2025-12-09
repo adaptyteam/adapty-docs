@@ -257,11 +257,3 @@ The most reliable way to test offers is using a completely new [Sandbox test acc
 :::danger
 If you repeat testing using the same Sandbox test account, make sure to [clear purchase history](#step-5-clear-purchase-history) to avoid eligibility-related issues.
 :::
-
-## Test using local StoreKit files
-
-If you are not ready to test in-app purchases in the sandbox yet (e.g., products are not yet in the **Ready to submit** status), you can set up a local StoreKit file to test them locally.
-
-:::important
-Testing with StoreKit files comes with important limitations: since the Adapty SDK won't communicate with the App Store server, you will see the payment  
-:::

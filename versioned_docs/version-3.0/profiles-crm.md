@@ -2,7 +2,7 @@
 title: "Profiles/CRM"
 description: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
 metadataTitle: "Managing Profiles & CRM | Adapty Docs"
-keywords: ['profile', 'customer_user_id', 'customer user id']
+keywords: ['profile', 'customer_user_id', 'customer user id', 'custom attribute']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -13,7 +13,7 @@ import SubscriptionState from '@site/src/components/reusable/SubscriptionState.m
 
 Profiles is a CRM for your users. With Profiles, you can:
 
-1. Find a user with any ID you have including email and phone number.
+1. Find specific users by profile ID, customer user ID, email, or transaction ID.
 2. Explore the full payment path of a user including billing issues, grace periods, and other [events](events).
 3. Analyze user's properties such as subscription state, total revenue/proceeds, and more.
 4. Grant the user a subscription.
@@ -105,23 +105,37 @@ It's most useful for users without an active subscription so you can grant the i
 
 ## Profile record creation
 
-Adapty creates an internal profile ID for every user. However, if you have your own authentication system, [set your own Customer User ID](identifying-users), a unique identifier for each user in your system. In this case, Adapty will add this ID to the user profile, which will give you several advantages:
+Adapty creates an internal profile ID for every user to track their purchases, events, and subscription state. You can optionally [set a Customer User ID](identifying-users) to identify users in your own system.
 
-1. All transactions and events will be tied to the same profile.
+**Without a Customer User ID**, a new profile is created each time:
+- A user launches your app for the first time after installation
+- A user reinstalls the app
+- A user logs out of your app
+
+**With a Customer User ID**, profile behavior depends on when you identify:
+
+- **Identify during SDK activation**: Adapty uses the existing profile with that customer user ID (for returning users) or creates a new profile (for first-time users).
+- **Identify after SDK activation**: Adapty creates an anonymous profile on activation. When you later identify the user, it links that customer user ID to the anonymous profile (for first-time users) or switches to the existing profile with that ID (for returning users).
+
+Using a customer user ID gives you several advantages:
+
+1. You can track a user across app reinstalls and multiple devices, making it easier to maintain a complete user history.
 2. You can find users by their customer user ID in the [**Profiles**](profiles-crm) section and view their transactions and events.
 3. You can use the customer user ID in the [server-side API](getting-started-with-server-side-api).
 4. The customer user ID will be sent to all integrations.
 
-If no customer user ID is passed to Adapty, Adapty will create a new additional internal profile ID in the following cases:
+### Parent and inheritor profiles
 
-- When a user launches your app for the first time after installation and reinstallation.
-- When a user logs out of your app.
+When multiple profiles are connected to the same subscription (through the same Apple/Google ID), Adapty tracks them using a parent-inheritor relationship. This happens when a user reinstalls the app without identifying, or when different identified users restore purchases on the same device. 
 
-This means that a user who installs, then uninstalls, and reinstalls your app may have several profile records in Adapty if no customer user ID is used. All transactions in a chain are tied to the profile that generated the first transaction — the "original" profile. This helps keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
+The **parent profile** is the one that made the purchase—not necessarily the first profile created. For example, if you install the app, don't buy anything, then reinstall and purchase a subscription, your second profile becomes the parent (it made the purchase), while your first profile becomes the inheritor (it gains access through sharing).
 
-A new profile record that generates a subsequent transaction, called a "non-original" profile, may not have any events associated with it but will retain the granted access level. In some cases, you will also see "access_level_updated" events here.
+**How events are distributed:**
 
-Here is an example of a non-original profile. Notice the absence of events in the **User history** and the presence of an access level.
+- **Transactional events** (purchases, renewals, cancellations, billing issues, grace periods, refunds): Only appear on the **parent profile** that made the purchase. All subscription renewals and updates continue appearing on this profile.
+- **access_level_updated events**: Appear on **both parent and inheritor profiles** whenever the access level state changes, ensuring all connected profiles stay updated about their current access status.
+
+This means the parent profile (the one that purchased) shows the complete transaction history, while inheritor profiles show only their access level updates along with a link to the parent profile in the **Access level** section.
 
 <Zoom>
   <img src={require('./img/98d0dad-non-original_profile.webp').default}
@@ -133,6 +147,12 @@ Here is an example of a non-original profile. Notice the absence of events in th
   }}
 />
 </Zoom>
+
+The [**Sharing paid access between user accounts**](profiles-crm#sharing-access-levels-between-profiles) setting controls which profiles receive access level updates:
+
+- **Enabled (default)**: Both parent and inheritor profiles receive access_level_updated events as long as access remains shared
+- **Transfer access to new user**: When access is transferred, the new owner becomes the active profile and receives access_level_updated events, while the previous owner stops receiving them
+- **Disabled**: Only the parent profile maintains the access level. Inheritor profiles don't receive access unless explicitly granted
 
 ## Event timestamps with future dates
 
