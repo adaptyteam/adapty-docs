@@ -235,7 +235,7 @@ const config = {
               },
               {
                 label: "Unity",
-                href: "https://android.adapty.io",
+                href: "https://unity.adapty.io",
               },
               {
                 label: "Kotlin Multiplatform",
