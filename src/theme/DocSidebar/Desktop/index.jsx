@@ -3,11 +3,12 @@ import clsx from 'clsx';
 import { useThemeConfig } from '@docusaurus/theme-common';
 import Logo from '@theme/Logo';
 import CollapseButton from '@theme/DocSidebar/Desktop/CollapseButton';
-import Content from '@theme/DocSidebar/Desktop/Content';
+import Content from './Content';
 import styles from './styles.module.css';
 import SidebarMenu from '../../../components/SidebarMenu';
 
 function DocSidebarDesktop({ path, sidebar, onCollapse, isHidden }) {
+  console.log('DocSidebarDesktop mounted');
   const {
     navbar: { hideOnScroll },
     docs: {
