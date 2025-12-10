@@ -293,7 +293,7 @@ import com.adapty.kmp.models.AdaptyConfig
 
 val config = AdaptyConfig
      .Builder("PUBLIC_SDK_KEY")
-     .withLocalAccessLevelAllowed(true)
+     .withGoogleLocalAccessLevelAllowed(true)
      .build()  
 ```
 

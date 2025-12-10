@@ -32,7 +32,7 @@ Adapty.getOnboarding(
     placementId = "YOUR_PLACEMENT_ID",
     locale = "en",
     fetchPolicy = AdaptyPaywallFetchPolicy.Default,
-    loadTimeout = 5
+    loadTimeout = 5.seconds
 ).onSuccess { paywall ->
     // the requested paywall
 }.onError { error ->
