@@ -82,8 +82,15 @@ To replace the subscription with another one in Android, call `.makePurchase()` 
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyAndroidSubscriptionUpdateParameters
+import com.adapty.kmp.models.AdaptyAndroidSubscriptionUpdateReplacementMode
 import com.adapty.kmp.models.AdaptyPurchaseParameters
 import com.adapty.kmp.models.AdaptyPurchaseResult
+
+val subscriptionUpdateParams = AdaptyAndroidSubscriptionUpdateParameters(
+    oldSubVendorProductId = "old_subscription_product_id",
+    replacementMode = AdaptyAndroidSubscriptionUpdateReplacementMode.CHARGE_FULL_PRICE
+)
 
 val purchaseParams = AdaptyPurchaseParameters.Builder()
     .setSubscriptionUpdateParams(subscriptionUpdateParams)
@@ -112,9 +119,9 @@ Adapty.makePurchase(
 ```
 Additional request parameter:
 
-| Parameter                    | Presence | Description                                                                                                                                                      |
-| :--------------------------- | :------- |:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **subscriptionUpdateParams** | required | an [`AdaptyAndroidSubscriptionUpdateParameters`](https://kmp.adapty.io/////adapty/com.adapty.kmp.models/-adapty-android-subscription-update-parameters/) object passed through [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/). |
+| Parameter      | Presence | Description                                                                                                                                                      |
+|:---------------|:---------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **parameters** | optional | an [`AdaptyAndroidSubscriptionUpdateParameters`](https://kmp.adapty.io/////adapty/com.adapty.kmp.models/-adapty-android-subscription-update-parameters/) object passed through [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/). |
 
 You can read more about subscriptions and replacement modes in the Google Developer documentation:
 
