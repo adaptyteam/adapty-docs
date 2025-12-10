@@ -31,7 +31,8 @@ You will need a TikTok pixel to connect your campaign data to revenue and get be
    <ZoomImage id="add-your-website.webp" />
 4. Select **Manual setup** and click **Next**.
    <ZoomImage id="manual-setup-tiktok.webp" />
-5. Select **TikTok pixel** and click **Next**.
+5. Select **TikTok pixel + Events API** and click **Next**.
+   <ZoomImage id="pixel-setup-tiktok.webp" />
 6. Give your pixel a name and click **Create**.
    <ZoomImage id="tiktok-pixel.webp" />
 7. For [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
@@ -40,8 +41,12 @@ You will need a TikTok pixel to connect your campaign data to revenue and get be
    2. Expand a platform-specific section – e.g., iOS.
    3. Select a pixel from the dropdown.
    4. Click **Send test event**.
-   5. In the dropdown, select an event you will be using for optimization in the ad.
       <ZoomImage id="tiktok-test-event.webp" />
+   5. In the dropdown, select an event you will be using for optimization in the ad.
+   6. In TikTok for Business, open your pixel and switch to the **Test events** tab. Copy `test_event_code`.
+      <ZoomImage id="test-event-code.webp" />
+   7. Paste it to the **Test event code** field in Adapty and click **Send**.
+      <ZoomImage id="adapty-test-event.webp" width="500px" />
 9. The test event will appear in TikTok in several minutes. When you see it in your pixel details, you can proceed with the campaign setup in TikTok Ads Manager.
 
 ## Step 3. Select the campaign objective
