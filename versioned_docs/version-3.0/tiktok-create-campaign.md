@@ -35,7 +35,7 @@ You will need a TikTok pixel to connect your campaign data to revenue and get be
    <ZoomImage id="pixel-setup-tiktok.webp" />
 6. Give your pixel a name and click **Create**.
    <ZoomImage id="tiktok-pixel.webp" />
-7. For [Adapty User Acquisition](adapty-user-acquisition.md)), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
+7. For [Adapty User Acquisition](adapty-user-acquisition.md), you won't need to complete the full installation of the pixel. So, you can just close the setup window, and your pixel will appear on the list.
 8. To make this pixel available for use in campaigns, you need to send a test event to it from [Adapty User Acquisition](adapty-user-acquisition.md):
    1. [Create a new TikTok campaign](ua-tiktok.md).
    2. Expand a platform-specific section – e.g., iOS.
