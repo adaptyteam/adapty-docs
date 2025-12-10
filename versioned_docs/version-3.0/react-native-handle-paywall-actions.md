@@ -31,17 +31,81 @@ To add a button that will close your paywall:
 In the React Native SDK, the `close` action triggers closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+For React component, handle the close action through individual event handler props:
+
+```javascript
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
+
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
+    // Handle Android back button
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+For modal presentation, implement the close handler:
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+For SDK version < 3.14, only modal presentation is supported:
+
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 
 const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-      return true; // allow paywall closing
-  }
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
 });
 ```
+
+</TabItem>
+</Tabs>
 
 ## Open URLs from paywalls
 
@@ -58,6 +122,63 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 In the React Native SDK, the `openUrl` action triggers opening the URL by default. However, you can override this behavior in your code if needed.
 :::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+For React component, handle URL opening through the event handler prop:
+
+```javascript
+import React, { useCallback } from 'react';
+import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+For modal presentation, implement the URL handler:
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+import {Linking} from 'react-native';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+For SDK version < 3.14, only modal presentation is supported:
+
 ```javascript
 import {createPaywallView} from 'react-native-adapty/dist/ui';
 import {Linking} from 'react-native';
@@ -72,6 +193,9 @@ const unsubscribe = view.registerEventHandlers({
 });
 ```
 
+</TabItem>
+</Tabs>
+
 ## Log into the app
 
 To add a button that logs users into your app:
@@ -79,8 +203,67 @@ To add a button that logs users into your app:
 1. In the paywall builder, add a button and assign it the **Login** action.
 2. In your app code, implement a handler for the `login` action that identifies your user.
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+For React component, handle login through the event handler prop:
+
 ```javascript
-import {createPaywallView} from 'react-native-adapty/dist/ui';
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'login') {
+      navigation.navigate('Login');
+    }
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+For modal presentation, implement the login handler:
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+For SDK version < 3.14, only modal presentation is supported:
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty';
 
 const view = await createPaywallView(paywall);
 
@@ -93,6 +276,9 @@ const unsubscribe = view.registerEventHandlers({
 });
 ```
 
+</TabItem>
+</Tabs>
+
 ## Handle custom actions
 
 To add a button that handles any other actions:
@@ -101,6 +287,60 @@ To add a button that handles any other actions:
 2. In your app code, implement a handler for the action ID you've created.
 
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+For React component, handle custom actions through the event handler prop:
+
+```javascript
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another paywall
+    }
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+For modal presentation, implement custom action handlers:
+
+```javascript
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript
 const unsubscribe = view.registerEventHandlers({
@@ -111,3 +351,6 @@ const unsubscribe = view.registerEventHandlers({
     },
 });
 ```
+
+</TabItem>
+</Tabs>
