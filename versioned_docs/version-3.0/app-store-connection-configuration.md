@@ -101,7 +101,7 @@ into the **Private key (.p8 file)** field in the Adapty Dashboard.
 ## Step 4. For trials and special offers – set up promotional offers
 
 :::important
-This step is required if your app has trials or other promotional offers.
+This step is required if your app has [trials or other promotional offers](offers).
 :::
 
 1. Copy the same key ID you used in [Step 2](#step-2-provide-issuer-id-and-key-id) to the **Subscription key ID** field in the **App Store promotional offers** section. 

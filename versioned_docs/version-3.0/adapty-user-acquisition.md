@@ -22,6 +22,10 @@ Adapty UA provides built-in attribution and unified analytics. You can focus on 
 
 ## Get started
 
+:::tip
+Want to learn more about the way Adapty User Acquisition might be useful to you? [Book a call](https://calendly.com/tnurutdinov-adapty/30min) with us.
+:::
+
 To get started with Adapty User Acquisition:
 
 1. [Enable Adapty UA](user-acquisition.md)

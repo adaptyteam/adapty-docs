@@ -14,7 +14,10 @@ User Acquisition helps you connect ad spend with subscription revenue, giving yo
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
-User Acquisition is only available with the Adapty SDK version 3.9.1 or higher.
+User Acquisition is only available with:
+- iOS, Android, and Flutter Adapty SDK version 3.9.0 or higher.
+- React Native Adapty SDK version 3.10.0 or higher.
+- Unity SDK version 3.12.0 or higher.
 :::
 
 ## Enable the User Acquisition integration
@@ -129,6 +132,24 @@ Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
 
 </TabItem>
 
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.SetEventListener(this);
+
+public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details)
+{
+    // use installation details
+}
+
+public void OnInstallationDetailsFail(AdaptyError error)
+{
+    // installation details update failed
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 You can also retrieve the installation status manually:
@@ -225,6 +246,32 @@ try {
 } catch (e) {
     // handle the error
 }
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetCurrentInstallationStatus((status, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    switch (status) {
+        case AdaptyInstallationStatusNotAvailable notAvailable:
+            // Installation details are not available on this device
+            break;
+        case AdaptyInstallationStatusNotDetermined notDetermined:
+            // Installation details have not been determined yet
+            break;
+        case AdaptyInstallationStatusDetermined determined:
+            // Use the installation details
+            var details = determined.Details;
+            break;
+    }
+});
 ```
 
 </TabItem>

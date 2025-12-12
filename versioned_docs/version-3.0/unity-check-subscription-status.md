@@ -46,7 +46,7 @@ public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
     
     void Start() {
         // Register this object as an Adapty event listener
-        Adapty.AddEventListener(this);
+        Adapty.SetEventListener(this);
     }
     
     // Store the profile when it updates

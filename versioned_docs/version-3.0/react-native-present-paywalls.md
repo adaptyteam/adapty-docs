@@ -29,7 +29,7 @@ This guide is for **new Paywall Builder paywalls** only, which require SDK v3.0 
 
 Adapty React Native SDK provides two ways to present paywalls:
 
-- **React component**: Embedded component gives you complete control over the UI and logic. 
+- **React component**: Embedded component allows you to integrate it into your app's architecture and navigation system.
 
 - **Modal presentation**
 
@@ -40,13 +40,8 @@ The **React component** approach requires SDK 3.14.0 or later.
 :::
 
 
-To embed a paywall within your existing component tree, use the `AdaptyPaywallView` component directly in your React Native component hierarchy. This approach gives you full control over when and how the paywall can be dismissed.
+To embed a paywall within your existing component tree, use the `AdaptyPaywallView` component directly in your React Native component hierarchy. Embedded component allows you to integrate it into your app's architecture and navigation system.
 
-:::note
-
-This approach is ideal for required paywalls, mandatory purchase flows, or any scenario where you need to ensure users complete the purchase before proceeding. You can control dismissal through your own UI elements and logic. The paywall cannot be dismissed by system gestures (swipe, back button) when embedded.
-
-:::
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import React, { useCallback, useMemo } from 'react';
@@ -103,10 +98,10 @@ function MyPaywall({ paywall }) {
 
 ## Modal presentation
 
-To display a paywall as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more time to create a new `view` instance.
+To display a paywall as a standalone screen, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more time to create a new `view` instance.
 
 :::warning
-Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
 <Tabs groupId="version" queryString>
@@ -150,6 +145,17 @@ try {
 </TabItem>
 </Tabs>
 
+### Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
 
 ## Use developer-defined timer
 
@@ -224,16 +230,4 @@ const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
 });
 
 const view = await createPaywallView(paywall, { productPurchaseParams });
-```
-
-## Configure iOS presentation style
-
-Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
-
-```typescript showLineNumbers
-try {
-  await view.present(iosPresentationStyle: 'page_sheet');
-} catch (error) {
-  // handle the error
-}
 ```

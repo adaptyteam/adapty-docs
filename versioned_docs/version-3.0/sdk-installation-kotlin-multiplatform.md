@@ -17,7 +17,7 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 - **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-KMP/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
 :::info
@@ -135,6 +135,10 @@ dependencyResolutionManagement {
 ### Basic setup
 
 Add the initialization as early as possible—typically in your shared Kotlin code for both platforms.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 
 ```kotlin title="Kotlin" showLineNumbers
 import com.adapty.kmp.Adapty

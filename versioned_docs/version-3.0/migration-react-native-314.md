@@ -16,6 +16,7 @@ Adapty React Native SDK 3.14.0 is a major release that introduces improvements t
 - A new, simplified import style has been introduced for UI components
 - The `logShowOnboarding` method has been deleted
 - The minimum React Native version has been updated to 0.73.0
+- The default iOS presentation style for paywalls and onboardings has changed from page sheet to full screen
 
 ## Replace `registerEventHandlers` with `setEventHandlers`
 
@@ -127,3 +128,17 @@ Instead, you can [create onboardings in the Adapty no-code onboarding builder](o
 ## Update React Native
 
 Starting from Adapty SDK 3.14.0, the minimum supported version of React Native is 0.73.0. If you are using an earlier version, update React Native to version 0.73.0 or later, so your experience with the Adapty SDK is consistent and reliable.
+
+## Update iOS presentation style for modal paywalls and onboardings
+
+In Adapty SDK 3.14.0, the default iOS presentation style for paywalls and onboardings displayed using the `view.present()` method has changed from page sheet to full screen.
+
+If you want to keep the previous page sheet presentation style, pass the `iosPresentationStyle` parameter to the `present()` method:
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
