@@ -40,7 +40,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 1. Install Adapty SDK:
    ```sh showLineNumbers title="Shell"
-   yarn add react-native-adapty
+   # using npm
+   npm install react-native-adapty
+   
+   # or using yarn
+   yarn add react-native-adapty  
    ```
 2. For iOS, install pods:
    ```sh showLineNumbers title="Shell"
