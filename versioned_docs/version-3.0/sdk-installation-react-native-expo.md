@@ -38,8 +38,6 @@ For a complete implementation walkthrough, you can also see the video:
 
 The Adapty React Native SDK supports iOS 13.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
 
-When using Expo, you must set the iOS deployment target in your Expo config (see [Minimum iOS version error](#minimum-ios-version-error)).
-
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
@@ -49,7 +47,9 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
 
 :::important
-[Expo DevClient](https://docs.expo.dev/versions/latest/sdk/dev-client/) is required. Expo Go will **not** work because the Adapty SDK includes native dependencies.
+[Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (a custom development build) is required to use Adapty in an Expo project.
+
+Expo Go doesn't support custom native modules, so you can only use it with [**mock mode**](#set-up-mock-mode-for-expo-go--expo-web) for UI/logic development (no real purchases and no AdaptyUI/Paywall Builder rendering).
 :::
 
 1. Install Adapty SDK:
@@ -202,6 +202,72 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 ```
 
 ## Development environment tips
+
+#### Set up mock mode for Expo Go / Expo Web
+
+Expo Go and Expo Web environments don't have access to Adapty's native module (StoreKit / Google Play Billing). To avoid runtime errors while still being able to build and test your app's UI and paywall logic, Adapty provides **mock mode**.
+
+::::important
+Mock mode is **not** a tool for testing real purchases:
+
+- It **doesn't open** App Store / Google Play purchase flows and **doesn't create** real transactions.
+- It **doesn't render** paywalls/onboardings created with **Adapty Paywall Builder (AdaptyUI)**.
+
+To test real purchases and Paywall Builder paywalls, use an Expo Dev Client / production build where mock mode is automatically disabled.
+::::
+
+**By default**, the SDK automatically detects Expo Go and web environments and enables mock mode. You don't need to configure anything unless you want to customize the mock data.
+
+When mock mode is active:
+- All Adapty methods return mock data without making network requests to Adapty's servers.
+- By default, the initial mock profile has no active subscriptions.
+- By default, `makePurchase(...)` simulates a successful purchase and grants premium access.
+
+You can customize the mock data using `__mockConfig`:
+
+```typescript showLineNumbers title="App.tsx"
+import { adapty } from 'react-native-adapty';
+
+try {
+  await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+    __mockConfig: {
+      // Customize the initial mock profile (optional)
+      profile: {
+        customerUserId: 'test_user_123',
+      },
+      
+      // Whether to grant premium after makePurchase (default: true)
+      autoGrantPremium: true,
+      
+      // Which access level ID to grant (default: 'premium')
+      premiumAccessLevelId: 'premium',
+      
+      // Custom paywalls by placement ID (optional)
+      paywalls: {
+        'onboarding': {
+          name: 'Custom Onboarding Paywall',
+          // ... other paywall properties
+        },
+      },
+      
+      // Custom products by variation ID (optional)
+      products: {
+        'mock_variation_id': [
+          {
+            vendorProductId: 'custom_monthly',
+            localizedTitle: 'Custom Monthly Plan',
+            price: { amount: 4.99, currencyCode: 'USD' },
+            // ... other product properties
+          },
+        ],
+      },
+    },
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
 
 #### Delay SDK activation for development purposes
 
