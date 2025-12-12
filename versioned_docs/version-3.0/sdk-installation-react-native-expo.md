@@ -205,13 +205,14 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 
 #### Set up mock mode for Expo Go / Expo Web
 
-Expo Go and Expo Web environments don't have access to Adapty's native module (StoreKit / Google Play Billing). To avoid runtime errors while still being able to build and test your app's UI and paywall logic, Adapty provides **mock mode**.
+Expo Go and Expo Web environments don't have access to Adapty's native modules. To avoid runtime errors while still being able to build and test your app's UI and paywall logic, Adapty provides **mock mode**.
 
 ::::important
 Mock mode is **not** a tool for testing real purchases:
 
 - It **doesn't open** App Store / Google Play purchase flows and **doesn't create** real transactions.
 - It **doesn't render** paywalls/onboardings created with **Adapty Paywall Builder (AdaptyUI)**.
+- Adapty's native modules are **completely bypassed**—even missing native SDK files in the Xcode/Android build or an invalid API key won't trigger errors.
 
 To test real purchases and Paywall Builder paywalls, use an Expo Dev Client / production build where mock mode is automatically disabled.
 ::::
@@ -223,7 +224,7 @@ When mock mode is active:
 - By default, the initial mock profile has no active subscriptions.
 - By default, `makePurchase(...)` simulates a successful purchase and grants premium access.
 
-You can customize the mock data using `__mockConfig`:
+You can customize the mock data using `__mockConfig`. See the config format and supported parameters [here](https://react-native.adapty.io/types/adaptymockconfig).
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
@@ -232,35 +233,6 @@ try {
   await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
     __mockConfig: {
       // Customize the initial mock profile (optional)
-      profile: {
-        customerUserId: 'test_user_123',
-      },
-      
-      // Whether to grant premium after makePurchase (default: true)
-      autoGrantPremium: true,
-      
-      // Which access level ID to grant (default: 'premium')
-      premiumAccessLevelId: 'premium',
-      
-      // Custom paywalls by placement ID (optional)
-      paywalls: {
-        'onboarding': {
-          name: 'Custom Onboarding Paywall',
-          // ... other paywall properties
-        },
-      },
-      
-      // Custom products by variation ID (optional)
-      products: {
-        'mock_variation_id': [
-          {
-            vendorProductId: 'custom_monthly',
-            localizedTitle: 'Custom Monthly Plan',
-            price: { amount: 4.99, currencyCode: 'USD' },
-            // ... other product properties
-          },
-        ],
-      },
     },
   });
 } catch (error) {
