@@ -224,41 +224,41 @@ const config = {
             title: "Adapty SDK Sample Apps",
             items: [
               {
-                label: "iOS",
-                href: "https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples",
-              },
-              {
-                label: "Android",
-                href: "https://github.com/adaptyteam/AdaptySDK-Android",
-              },
-              {
-                label: "Flutter",
-                href: "https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example",
-              },
-              {
-                label: "Unity",
-                href: "https://github.com/adaptyteam/AdaptySDK-Unity",
-              },
-            ],
+                "label": "Sample apps",
+                "to": "/sample-apps"
+              }
+            ]
           },
           {
             title: "SDK Reference",
             items: [
               {
                 label: "iOS",
-                href: "/sdk-installation-ios",
+                href: "https://swift.adapty.io",
               },
               {
                 label: "Android",
-                href: "/sdk-installation-android",
+                href: "https://android.adapty.io",
               },
               {
                 label: "Flutter",
-                href: "/sdk-installation-flutter",
+                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/#classes",
               },
               {
                 label: "React Native",
-                href: "/sdk-installation-reactnative",
+                href: "https://react-native.adapty.io",
+              },
+              {
+                label: "Unity",
+                href: "https://unity.adapty.io",
+              },
+              {
+                label: "Kotlin Multiplatform",
+                href: "https://kmp.adapty.io",
+              },
+              {
+                label: "Capacitor",
+                href: "https://capacitor.adapty.io",
               }
             ],
           },
@@ -267,10 +267,6 @@ const config = {
             items: [
               {
                 label: "Server-side API",
-                href: "/docs/getting-started-with-server-side-api",
-              },
-              {
-                label: "Adapty API",
                 href: "/api-adapty",
               },
               {

@@ -123,9 +123,7 @@ makePurchase(product, {
             oldSubVendorProductId: 'old_product_id',
             prorationMode: 'charge_prorated_price'
         },
-        isOfferPersonalized: true, 
-        obfuscatedAccountId: 'account_123',
-        obfuscatedProfileId: 'profile_456'
+        isOfferPersonalized: true
     }
 });
 ```
@@ -154,3 +152,14 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+
+## Manage prepaid plans (Android)
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

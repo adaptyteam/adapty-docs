@@ -26,81 +26,62 @@ This guide is for **new Paywall Builder paywalls** only which require Adapty SDK
 To control or monitor processes occurring on the paywall screen within your mobile app, implement event handlers:
 
 <Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.12 or later" default>
+<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-For React component, you handle events directly through the `eventHandlers` prop in the `AdaptyPaywallView` component:
+For React component, you handle events through individual event handler props in the `AdaptyPaywallView` component:
 
-```javascript showLineNumbers title="React Native (TSX)"
-import { AdaptyPaywallView } from 'react-native-adapty';
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
 import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
 
-const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
-  // Handle close button press
-}, []);
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
 
-const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
-  // Handle Android back button
-}, []);
-
-const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {
-  // Handle successful purchase
-}, []);
-
-const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {
-  // Handle purchase start
-}, []);
-
-const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {
-  // Handle purchase failure
-}, []);
-
-const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {
-  // Handle successful restore
-}, []);
-
-const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {
-  // Handle restore failure
-}, []);
-
-const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {
-  // Handle product selection
-}, []);
-
-const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {
-  // Handle rendering errors
-}, []);
-
-const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {
-  // Handle product loading errors
-}, []);
-
-const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
-  Linking.openURL(url);
-}, []);
-
-const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
-  // Handle custom actions
-}, []);
-
-<AdaptyPaywallView
-  paywall={paywall}
-  style={styles.container}
-  onCloseButtonPress={onCloseButtonPress}
-  onAndroidSystemBack={onAndroidSystemBack}
-  onPurchaseCompleted={onPurchaseCompleted}
-  onPurchaseStarted={onPurchaseStarted}
-  onPurchaseFailed={onPurchaseFailed}
-  onRestoreCompleted={onRestoreCompleted}
-  onRestoreFailed={onRestoreFailed}
-  onProductSelected={onProductSelected}
-  onRenderingFailed={onRenderingFailed}
-  onLoadingProductsFailed={onLoadingProductsFailed}
-  onUrlPress={onUrlPress}
-  onCustomAction={onCustomAction}
-/>
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onPaywallClosed={onPaywallClosed}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
 ```
 
 </TabItem>
@@ -109,7 +90,7 @@ const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) =
 For modal presentation, implement the event handlers method.
 
 :::important
-Calling this method multiple times will re-register **all** event handlers (both default and provided ones), not just the ones you pass. This means all previous event listeners will be replaced with the new merged set.
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
 :::
 
 ```javascript showLineNumbers title="React Native (TSX)"
@@ -139,6 +120,9 @@ const unsubscribe = view.setEventHandlers({
       Linking.openURL(url);
       return false; // Keep paywall open
   },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },  
 });
 ```
 
@@ -147,13 +131,13 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 
-<TabItem value="old" label="SDK version < 3.12" default>
+<TabItem value="old" label="SDK version < 3.14" default>
 
-For SDK version < 3.12, only modal presentation is supported:
+For SDK version < 3.14, only modal presentation is supported:
 
 ```javascript showLineNumbers title="React Native (TSX)"
 import { Linking } from 'react-native';
-import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty/dist/ui';
 
 const view = await createPaywallView(paywall);
 
