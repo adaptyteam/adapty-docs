@@ -43,6 +43,8 @@ If you don't have backend authentication, **you don't need to handle authenticat
 
 So, with anonymous users, new profiles will be created on each installation, but that's not a problem because, in the Adapty analytics, you can [configure what will be considered a new installation](general#4-installs-definition-for-analytics).
 
+For anonymous users, you need to count installs by **device IDs**. In this case, each app installation on a device is counted as an install, including reinstalls.
+
 ## Identified users
 
 You have two options to identify users in the app:
@@ -96,7 +98,12 @@ If you know a customer user ID but set it only after the activation, that will m
 You can pass either an existing customer user ID (the one you have used before) or a new one. If you pass a new one, a new profile created upon activation will be automatically linked to the customer user ID.
 
 :::note
-By default, created anonymous profiles won't affect the dashboard [analytics](analytics-charts.md), because installs will be counted by new device IDs. However, if you want to change this behavior and count new customer user IDs instead of device IDs, go to **App settings** and set up [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+By default, creating anonymous profiles does not affect analytics dashboards, because installs are counted based on device IDs.
+A device ID represents a single installation of the app on a device and is regenerated after the app is reinstalled.
+
+Logging in or logging out without reinstalling the app does not create additional installs.
+
+If you want to count installs based on unique users rather than devices, go to **App settings** and configure [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
 :::
 
 ```kotlin showLineNumbers
