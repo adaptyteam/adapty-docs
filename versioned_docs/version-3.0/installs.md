@@ -39,7 +39,7 @@ This setting determines what is considered a new install event.
 The available options differ in how installs are grouped:
 
 - **By device installations** — each app installation on a device is counted as a separate install, including reinstalls.
-- **By unique users** — only the first installation associated with an identified user is counted; installations on additional devices are ignored. Use this setting only if you identify users in Adapty.
+- **By unique users** — only the first installation associated with an identified user is counted; installations on additional devices are ignored. Use this setting only if you identify users in Adapty. Note that app stores and attribution platforms (such as App Store Connect, Google Play Console, and AppsFlyer) use a device-based approach to counting installs. If you count installs by customer user IDs in Adapty, install numbers may differ from these external services.
 
 Because a single user may install the app on multiple devices, switching between these options can change install counts and conversion metrics.
 
