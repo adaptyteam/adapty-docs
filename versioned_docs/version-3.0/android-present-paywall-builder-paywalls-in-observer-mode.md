@@ -137,12 +137,12 @@ The `onPurchaseInitiated` event will inform you that the user has initiated a pu
 
    Remember to invoke the following callbacks to notify AdaptyUI about the purchase or restore process. This is necessary for proper paywall behavior, such as showing the loader:
 
-   | Callback           | Description                                                                       |
-   | :----------------- | :-------------------------------------------------------------------------------- |
-   | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.   |
-   | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished.  |
-   | onStartRestore()   | The callback should be invoked to notify AdaptyUI that the restore is started.    |
-   | onFinishRestore()  | The callback should be invoked to notify AdaptyUI that the restore is finished.   |
+   | Callback           | Description                                                                            |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.        |
+   | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished.       |
+   | onStartRestore()   | Optional. The callback can be invoked to notify AdaptyUI that the restore is started.  |
+   | onFinishRestore()  | Optional. The callback can be invoked to notify AdaptyUI that the restore is finished. |
 
 2. In order to display the visual paywall on the device screen, you must first configure it.
 
