@@ -16,13 +16,18 @@ If you've customized a paywall using remote config, you'll need to implement ren
 To get a remote config of a paywall, access the `remoteConfig` property and extract the needed values.
 
 ```csharp showLineNumbers
-Adapty.GetPaywall("YOUR_PLACEMENT_ID", (result) => {
-    if (result.IsSuccess) {
-        var paywall = result.Value;
-        var headerText = paywall.RemoteConfig?["header_text"] as string;
-    } else {
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if (error != null) {
         // handle the error
+        return;
     }
+    
+    // Access remote config dictionary
+    var dictionary = paywall.RemoteConfig?.Dictionary;
+    var headerText = dictionary?["header_text"] as string;
+    
+    // Or access raw JSON data
+    var jsonData = paywall.RemoteConfig?.Data;
 });
 ```
 
@@ -56,4 +61,4 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                       |
 | :---------- | :------- |:------------------------------------------------------------------|
-| **paywall** | required | An [`AdaptyPaywall`](unity-sdk-models#adaptypaywall) object.      | 
+| **paywall** | required | An [`AdaptyPaywall`](uhttps://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) object.      | 

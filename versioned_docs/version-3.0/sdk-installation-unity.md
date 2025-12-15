@@ -13,6 +13,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your Unity app:
 
@@ -62,6 +63,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 ## Activate Adapty module of Adapty SDK
 
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 ```csharp showLineNumbers title="C#"
 using UnityEngine;
 using AdaptySDK;
@@ -113,7 +119,7 @@ using UnityEngine;
 using AdaptySDK;
 
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-     public void OnLoadLatestProfile(Adapty.Profile profile) {
+     public void OnLoadLatestProfile(AdaptyProfile profile) {
        // handle updated profile data
      }
 }
@@ -208,8 +214,8 @@ You can set the log level in your app during Adapty configuration:
 
 ```csharp showLineNumbers title="C#"
 // 'verbose' is recommended for development and the first production release
-var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetLogLevel(AdaptyLogLevel.Verbose);
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
 ```
 
 ### Data policies
@@ -235,7 +241,7 @@ Use this parameter to comply with App Store/Google Play policies, avoid triggeri
 
 ```csharp showLineNumbers title="C#"
 var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
-    .SetAppleIDFACollectionDisabled(true);
+    .SetAppleIDFACollectionDisabled(true)
     .SetGoogleAdvertisingIdCollectionDisabled(true);
 ```
 
@@ -260,3 +266,13 @@ Parameters:
 | memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
+
+## Troubleshooting
+
+#### Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />
+
+:::important
+In Unity, apply these changes to `Assets/Plugins/Android/AndroidManifest.xml` and create backup rule files under `Assets/Plugins/Android/res/xml/`.
+:::

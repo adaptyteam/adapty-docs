@@ -60,13 +60,13 @@ Request parameters:
 
 | Parameter   | Presence | Description                                                                                           |
 | :---------- | :------- |:------------------------------------------------------------------------------------------------------|
-| **Product** | required | An [`AdaptyPaywallProduct`](unity-sdk-models#adaptypaywallproduct) object retrieved from the paywall. |
+| **Product** | required | An [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) object retrieved from the paywall. |
 
 Response parameters:
 
 | Parameter | Description                                                                                                                                                                                                                                                                                                                                                                  |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](unity-sdk-models#adaptyprofile) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
+| **Profile** | <p>If the request has been successful, the response contains this object. An [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) object provides comprehensive information about a user's access levels, subscriptions, and non-subscription purchases within the app.</p><p>Check the access level status to ascertain whether the user has the required access to the app.</p> |
 
 :::warning
 **Note:** if you're still on Apple's StoreKit version lower than v2.0 and Adapty SDK version lowers than v.2.9.0, you need to provide [Apple App Store shared secret](app-store-connection-configuration#step-4-enter-app-store-shared-secret) instead. This method is currently deprecated by Apple.
@@ -96,7 +96,7 @@ Additional request parameter:
 
 | Parameter                    | Presence | Description                                                                                            |
 | :--------------------------- | :------- |:-------------------------------------------------------------------------------------------------------|
-| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](unity-sdk-models#adaptysubscriptionupdateparameters) object. |
+| **subscriptionUpdateParams** | required | an [`AdaptySubscriptionUpdateParameters`](uhttps://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_subscription_update_parameters.html) object. |
 
 
 You can read more about subscriptions and replacement modes in the Google Developer documentation:
@@ -105,7 +105,6 @@ You can read more about subscriptions and replacement modes in the Google Develo
 - [Recommendations from Google for replacement modes](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
 - Replacement mode [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Note: this method is available only for subscription upgrades. Downgrades are not supported.
 - Replacement mode [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Note: A real subscription change will occur only when the current subscription billing period ends.
-
 
 ## Redeem Offer Code in iOS
 
@@ -123,3 +122,22 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Manage prepaid plans (Android)
+
+If your app users can purchase [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (e.g., buy a non-renewable subscription for several months), you can enable [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) for prepaid plans.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```

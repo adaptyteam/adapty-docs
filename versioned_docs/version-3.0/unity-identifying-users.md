@@ -69,4 +69,73 @@ Adapty.Logout((error) => {
 });
 ```
 
-You can then login the user using `.identify()` method. 
+You can then login the user using `.identify()` method.
+
+## Assign `appAccountToken` (iOS)
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a **UUID** that lets you link App Store transactions to your internal user identity.  
+StoreKit associates this token with every transaction, so your backend can match App Store data to your users.
+
+Use a stable UUID generated per user and reuse it for the same account across devices.
+This ensures that purchases and App Store notifications stay correctly linked.
+
+You can set the token in two ways – during the SDK activation or when identifying the user.
+
+:::important
+You must always pass `appAccountToken` together with `customerUserId`.
+If you pass only the token, it will not be included in the transaction.
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+// During configuration:
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID", (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```

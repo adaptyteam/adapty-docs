@@ -28,13 +28,13 @@ You can migrate only paywalls created in the **new** Adapty paywall builder. To 
 
 To migrate a paywall builder configuration:
 
-1. **For new paywall**: Start [paywall creation](create-paywall.md) and add products.
+1. **For new paywall**: Start [paywall creation](create-paywall.md) and add products. Then, click **Build no-code paywall** to open the template library. 
 
-    **For existing paywall**: Go to the **Layout settings** section of the **Builder & Generator** tab.
+    **For existing paywall**: Go to the **Layout settings** section of the **Builder & Generator** tab and click **Change template**.
 2. Click **Migrate** when editing the paywall template.
 
 <Zoom>
-  <img src={require('./img/migrate-paywall-builder.png').default}
+  <img src={require('./img/migrate-paywall-builder.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

@@ -59,8 +59,13 @@ In Xcode, go to **File** -> **Add Package Dependency...**. Note that the steps t
    ```
 2. Select the version (latest stable version is recommended) and click **Add Package**.
 3. In the **Choose Package Products** window, select the modules you need:
-   - **Adapty** (mandatory - always select this)
+   - **Adapty** (core module)
    - **AdaptyUI** (optional - only if you plan to use Paywall Builder)
+   :::note
+   Note:
+     - To enable the [Kids mode](kids-mode.md), select **Adapty_KidsMode** instead of **Adapty**.
+     - Don't select any other packages from the list – you won't need them. 
+   :::
 4. Click **Add Package** to complete the installation.
 5. **Verify installation:** In your project navigator, you should see "Adapty" (and "AdaptyUI" if selected) under **Package Dependencies**.
 
@@ -95,6 +100,12 @@ This will create a `.xcworkspace` file for your app. Use this file for all futur
 </Tabs>
 
 ## Activate Adapty module of Adapty SDK
+
+Activate the Adapty SDK in your app code.
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swiftui" label="SwiftUI">

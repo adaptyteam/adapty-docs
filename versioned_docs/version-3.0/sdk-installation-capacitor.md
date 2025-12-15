@@ -10,6 +10,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your Capacitor app:
 
@@ -41,6 +42,10 @@ npx cap sync
 
 
 ## Activate Adapty module of Adapty SDK
+
+:::note
+The Adapty SDK only needs to be activated once in your app.
+:::
 
 Copy the following code to any app file to activate Adapty:
 
@@ -203,3 +208,11 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+####  Android backup rules (Auto Backup configuration)
+
+<AndroidBackupRules />
+
+:::tip
+After changing native Android files, run `npx cap sync android` so Capacitor picks up the updated resources if you regenerate the platform.
+:::

@@ -56,7 +56,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                 |
 | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | An [`AdaptyPaywall`](unity-sdk-models#adaptypaywall)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
+| Paywall   | An [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html)  object with a list of product IDs, the paywall identifier, remote config, and several other properties. |
 
 ## Fetch the view configuration of paywall designed using Paywall Builder
 

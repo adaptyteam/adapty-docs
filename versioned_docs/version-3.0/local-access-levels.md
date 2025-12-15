@@ -4,8 +4,10 @@ description: "Manage access levels in case of temporary outages."
 metadataTitle: "Local access levels | Adapty Docs"
 ---
 
-:::note
-Local access levels are supported in the Adapty SDK starting from version 3.12.
+:::important
+Note the following:
+- Local access levels are supported in the Adapty SDK starting from version 3.12.
+- By default, local access levels are disabled on Android. If you need them, enable them during the SDK activation: [Android](sdk-installation-android#enable-local-access-levels), [React Native](sdk-installation-reactnative#enable-local-access-levels-android).
 :::
 
 Each product you configure has an [**access level**](access-level.md) linked to it. When your users make a purchase, the Adapty SDK assigns the access level to the user [profile](profiles-crm.md), so you need to use this access level to determine whether users can access paid content in the app.

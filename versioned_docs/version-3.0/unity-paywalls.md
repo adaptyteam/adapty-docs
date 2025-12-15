@@ -25,4 +25,4 @@ For more guides on implementing paywalls and handling purchases manually, see th
 
 ## Useful features
 
-<CustomDocCardList ids={['unity-use-fallback-paywalls']} />
+<CustomDocCardList ids={['unity-use-fallback-paywalls', 'unity-web-paywalls']} />

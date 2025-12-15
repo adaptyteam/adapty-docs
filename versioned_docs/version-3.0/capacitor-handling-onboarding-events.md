@@ -40,6 +40,9 @@ try {
     },
     onPaywall(actionId, meta) {
       console.log('Paywall action:', actionId);
+      view.dismiss().then(() => {
+        openPaywall(actionId);
+      });
     },
     onStateUpdated(action, meta) {
       console.log('State updated:', action);
@@ -190,15 +193,23 @@ view.setEventHandlers({
 Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle the close action and open a paywall without relying on the event data.
 :::
 
-If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID:
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID.
+
+Note that, for iOS, only one view (paywall or onboarding) can be displayed on screen at a time. If you present a paywall on top of an onboarding, you cannot programmatically control the onboarding in the background. Attempting to dismiss the onboarding will close the paywall instead, leaving the onboarding visible. To avoid this, always dismiss the onboarding view before presenting the paywall.
 
 ```typescript showLineNumbers
 view.setEventHandlers({
   onPaywall(actionId, meta) {
-    console.log('Paywall action triggered:', actionId);
-    // Implement your paywall opening logic here
+    // Dismiss onboarding before presenting paywall
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
   },
 });
+
+async function openPaywall(placementId: string) {
+  // Implement your paywall opening logic here
+}
 ```
 
 <Details>

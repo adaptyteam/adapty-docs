@@ -20,7 +20,7 @@ To present remote config paywalls, see [Render paywalls designed with remote con
 
 :::
 
-To display a paywall, use the `view.Present()` method on the `view` created by the `CreateView` method. Each `view` can only be used once. If you need to display the paywall again, call `createView` one more to create a new `view` instance. 
+To display a paywall, use the `view.Present()` method on the `view` created by the `CreatePaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `CreatePaywallView` one more to create a new `view` instance. 
 
 :::warning
 
@@ -53,5 +53,15 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
         }
         // If primary - do nothing, user stays
     }
+});
+```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `Present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.FullScreen` (default) or `AdaptyUIIOSPresentationStyle.PageSheet` values.
+
+```csharp showLineNumbers title="Unity"
+view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
+    // handle the error
 });
 ```

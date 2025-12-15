@@ -7,9 +7,16 @@ metadataTitle: "Presenting Paywalls in React Native | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
+
+Before you start, ensure that:
+
+1. You have [created a paywall](create-paywall.md).
+2. You have added the paywall to a [placement](placements.md).
 
 :::warning
 
@@ -20,13 +27,107 @@ This guide is for **new Paywall Builder paywalls** only, which require SDK v3.0 
 
 :::
 
-To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
+Adapty React Native SDK provides two ways to present paywalls:
 
-:::warning
+- **React component**: Embedded component allows you to integrate it into your app's architecture and navigation system.
 
-Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+- **Modal presentation**
+
+## React component
+
+:::note
+The **React component** approach requires SDK 3.14.0 or later.
 :::
 
+
+To embed a paywall within your existing component tree, use the `AdaptyPaywallView` component directly in your React Native component hierarchy. Embedded component allows you to integrate it into your app's architecture and navigation system.
+
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback, useMemo } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onAndroidSystemBack={onAndroidSystemBack}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onPaywallClosed={onPaywallClosed}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## Modal presentation
+
+To display a paywall as a standalone screen, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more time to create a new `view` instance.
+
+:::warning
+Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createPaywallView } from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+// Optional: handle paywall events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
+:::
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty/dist/ui';
 
@@ -41,16 +142,47 @@ try {
 }
 ```
 
-## Use developer-defined timer
+</TabItem>
+</Tabs>
 
-To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+### Configure iOS presentation style
 
-```typescript showLineNumbers title="React Native (TSX)"
-let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-//and then you can pass it to createPaywallView as follows:
-view = await createPaywallView(paywall, { customTimers })
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
 ```
 
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+<Tabs>
+<TabItem value="component" label="React component">
+```typescript showLineNumbers title="React Native (TSX)"
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyPaywallView
+  paywall={paywall}
+  params={paywallParams}
+  // ... your event handlers
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+</TabItem>
+</Tabs>
 In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
 
 ## Show dialog
@@ -82,7 +214,7 @@ When a user attempts to purchase a new subscription while another subscription i
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import { Platform } from 'react-native';
-import { createPaywallView } from 'react-native-adapty/dist/ui';
+import { createPaywallView } from 'react-native-adapty';
 
 const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
   let params = {};

@@ -20,22 +20,118 @@ Before you start, ensure that:
 
 Adapty React Native SDK provides two ways to present onboardings:
 
-- **Standalone screen**: Modal presentation that can be dismissed by users through native platform gestures (swipe, back button). Best for optional onboardings where users should be able to skip or dismiss the content.
+- **React component**: Embedded component allows you to integrate it into your app's architecture and navigation system.
 
-- **Embedded component**: Embedded component gives you complete control over dismissal through your own UI and logic. Ideal for required onboardings where you want to ensure users complete the flow before proceeding.
+- **Modal presentation**
 
-## Present as standalone screen
+## React component
+
+To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your React Native component hierarchy. Embedded component allows you to integrate it into your app's architecture and navigation system.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) { 
+          // Handle analytics events
+        },
+        onClose(actionId, meta) { 
+          // Handle close actions
+        },
+        onCustom(actionId, meta) { 
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) { 
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) { 
+          // Handle state updates
+        },
+        onFinishedLoading(meta) { 
+          // Handle when onboarding finishes loading
+        },
+        onError(error) { 
+          // Handle errors
+        },
+      }}
+    />
+  );
+}
+```
+</TabItem>
+</Tabs>
+
+
+## Modal presentation
 
 To display an onboarding as a standalone screen that users can dismiss, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
-Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
+Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-:::note
-This approach is best for optional onboardings where users should have the freedom to dismiss the screen using native gestures (swipe down on iOS, back button on Android). To have more customization options, [embed it in the component hierarchy](#embed-in-component-hierarchy).
-:::
 
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+// Optional: handle onboarding events (close, custom actions, etc)
+// view.setEventHandlers({ ... });
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createOnboardingView } from 'react-native-adapty/dist/ui';
 
@@ -49,47 +145,19 @@ try {
     // handle the error
 }
 ```
+</TabItem>
+</Tabs>
 
+### Configure iOS presentation style
 
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
 
-## Embed in component hierarchy
-
-To embed an onboarding within your existing component tree, use the `AdaptyOnboardingView` component directly in your React Native component hierarchy. This approach gives you full control over when and how the onboarding can be dismissed.
-
-:::note
-This approach is ideal for required onboardings, mandatory tutorials, or any flow where you need to ensure users complete the onboarding before proceeding. You can control dismissal through your own UI elements and logic.
-:::
-
-```typescript showLineNumbers title="React Native (TSX)"
-import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
-
-<AdaptyOnboardingView
-  onboarding={onboarding}
-  style={{ /* your styles */ }}
-  eventHandlers={{
-    onAnalytics(event, meta) { 
-      // Handle analytics events
-    },
-    onClose(actionId, meta) { 
-      // Handle close actions
-    },
-    onCustom(actionId, meta) { 
-      // Handle custom actions
-    },
-    onPaywall(actionId, meta) { 
-      // Handle paywall actions
-    },
-    onStateUpdated(action, meta) { 
-      // Handle state updates
-    },
-    onFinishedLoading(meta) { 
-      // Handle when onboarding finishes loading
-    },
-    onError(error) { 
-      // Handle errors
-    },
-  }}
-/>
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
 ```
 
 ## Next steps

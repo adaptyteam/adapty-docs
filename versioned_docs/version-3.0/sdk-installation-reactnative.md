@@ -10,6 +10,7 @@ import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 
 Adapty SDK includes two key modules for seamless integration into your React Native app:
 
@@ -218,6 +219,18 @@ Parameters:
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are enabled on iOS and disabled on Android. To enable them on Android as well, set `localAccessLevelAllowed` to `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  android: {
+     localAccessLevelAllowed: true,      
+  },
+});
+```
+
 ## Development environment tips
 
 #### Delay SDK activation for development purposes
@@ -271,3 +284,37 @@ If you get a minimum iOS version error, update your Podfile:
 # OR
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
+
+#### Android Auto Backup manifest conflict (pure React Native)
+
+<AndroidBackupRules />
+
+#### Android Auto Backup manifest conflict (Expo)
+
+When using Expo with multiple SDKs that configure Android Auto Backup (such as Adapty, AppsFlyer, or expo-secure-store), you may encounter a manifest merger conflict.
+
+A typical error looks like this: `Manifest merger failed : Attribute application@fullBackupContent value=(@xml/secure_store_backup_rules) from AndroidManifest.xml:24:248-306
+is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 value=(@xml/adapty_backup_rules).`
+
+To resolve this conflict, you need to let the Adapty plugin manage Android backup configuration.
+If your project also uses `expo-secure-store`, disable its own backup setup to avoid overlap.
+
+Here’s how to configure your `app.json`:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "replaceAndroidBackupConfig": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }]
+    ]
+  }
+}
+```
+The `replaceAndroidBackupConfig` option is `false` by default. When enabled, it lets the Adapty plugin control Android backup rules.
+Include `"configureAndroidBackup": false` if you use `expo-secure-store` to prevent warnings, since SecureStore’s backup configuration will now be handled by Adapty.
+
+:::important
+This setup only respects backup requirements for Adapty, AppsFlyer, and expo-secure-store.
+If other libraries in your project define custom backup rules, you’ll need to configure those manually.
+:::

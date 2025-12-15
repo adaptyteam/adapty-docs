@@ -2,7 +2,7 @@
 title: "Profiles/CRM"
 description: "Manage user profiles and CRM data in Adapty to enhance audience segmentation."
 metadataTitle: "Managing Profiles & CRM | Adapty Docs"
-keywords: ['profile', 'customer_user_id', 'customer user id']
+keywords: ['profile', 'customer_user_id', 'customer user id', 'custom attribute']
 ---
 
 import Zoom from 'react-medium-image-zoom';

@@ -10,7 +10,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 Adapty's onboardings let your non-technical teams create attractive and customizable onboarding flows without coding. Our no-code builder helps you design a series of screens that guide users through their first app experience.
 
 :::important
-Onboardings are available only for apps using Adapty iOS, Android, Flutter, and React Native SDK version 3.8.0 or higher. 
+Onboardings are available only for apps using Adapty iOS, Android, Flutter, React Native, and Unity SDK version 3.8.0 or higher. 
 :::
 
 ## What it is for
@@ -54,6 +54,7 @@ To launch your onboarding:
    - [Android](android-onboardings.md)
    - [Flutter](flutter-onboardings.md)
    - [React Native](react-native-onboardings.md)
+   - [Unity](unity-onboardings.md)
 4. Test the onboarding and release it for your users.
 
 To grow further, you can also try more advanced ways to work with onboardings:

@@ -80,8 +80,8 @@ export default function CustomDocCardList({ ids = null }) {
 
         if (filteredItems.length === 0) {
             return (
-                <div style={{padding: '20px', border: '1px solid #e1e5e9', borderRadius: '8px', margin: '20px 0', backgroundColor: '#f8f9fa'}}>
-                    <h3 style={{color: '#4a5568', margin: '0 0 10px 0'}}>Related Topics</h3>
+                <div className={styles.emptyState}>
+                    <h3>Related Topics</h3>
                     <p>No related topics found for the specified IDs.</p>
                 </div>
             );
@@ -99,8 +99,8 @@ export default function CustomDocCardList({ ids = null }) {
     // Default behavior: use current category items
     if (!category || !category.items) {
         return (
-            <div style={{padding: '20px', border: '1px solid #e1e5e9', borderRadius: '8px', margin: '20px 0', backgroundColor: '#f8f9fa'}}>
-                <h3 style={{color: '#4a5568', margin: '0 0 10px 0'}}>Related Topics</h3>
+            <div className={styles.emptyState}>
+                <h3>Related Topics</h3>
                 <p>No related topics found. This might be because the current page doesn't have child pages in the sidebar.</p>
             </div>
         );
@@ -114,8 +114,8 @@ export default function CustomDocCardList({ ids = null }) {
 
     if (filteredItems.length === 0) {
         return (
-            <div style={{padding: '20px', border: '1px solid #e1e5e9', borderRadius: '8px', margin: '20px 0', backgroundColor: '#f8f9fa'}}>
-                <h3 style={{color: '#4a5568', margin: '0 0 10px 0'}}>Related Topics</h3>
+            <div className={styles.emptyState}>
+                <h3>Related Topics</h3>
                 <p>No related topics found. This might be because the current page doesn't have child pages in the sidebar.</p>
             </div>
         );

@@ -3,6 +3,7 @@ title: "Web paywall"
 description: "Set up a web paywall to get paid without the App Store fees and audits."
 metadataTitle: "Accept payments in web for iOS apps in the US"
 keywords: ['web', 'web paywalls']
+rank: 100
 ---
 import Zoom from 'react-medium-image-zoom';
 import Tabs from '@theme/Tabs';
@@ -108,6 +109,10 @@ If you are using the **paywall from the Builder**, you need to add a web paywall
    If you are using a template or an existing/duplicated paywall, add the web paywall button you just added to the previous purchase button.
    You can set up the web paywall button just as you would the purchase button. 
 
+3. Select the way you want to open the web paywall in the **Open paywall in** dropdown:
+    - **External browser**: Open the paywall in the default browser app.
+    - **In-app browser**: Open the paywall in the in-app browser on top of your app without having to leave it.
+
 <Zoom>
    <img src={require('./img/web-paywall-5.png').default}
    style={{
@@ -126,6 +131,7 @@ If you are working with a paywall you developed yourself, you need to handle web
 - [iOS](ios-web-paywall)
 - [Flutter](flutter-web-paywall)
 - [React Native](react-native-web-paywall)
+- [Unity](unity-web-paywalls.md)
 
 ## Step 3. Set up a placement
 
