@@ -271,7 +271,7 @@ try {
 }
 ```
 
-If you need to call SDK methods before activation (such as `isActivated()`, `getPaywallForDefaultAudience()`, or `getOnboardingForDefaultAudience()`), use `enableMock()` before `activate()`. If the bridge is already initialized, this method does nothing.
+If you need to call SDK methods before activation (such as `isActivated()` or `setLogLevel()`), use `enableMock()` before `activate()`. If the bridge is already initialized, this method does nothing.
 
 ```typescript showLineNumbers title="App.tsx"
 adapty.enableMock(); // Optional: pass mockConfig to customize mock data
