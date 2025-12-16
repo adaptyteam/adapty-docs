@@ -7,7 +7,7 @@ metadataTitle: "Tracking Installs & Attribution | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Installs chart shows the total number of users who have installed the app for the first time, as well as any reinstalls by existing users. This includes multiple installations by the same user on different devices. Please note that incomplete downloads or installations that are canceled before completion are not counted toward the install count.
+The Installs chart shows the total number of app installations, including both first-time installs and reinstalls by existing users. This includes multiple installations by the same user on different devices. Incomplete downloads or installations that are canceled before completion are not counted.
 
 
 <Zoom>
@@ -23,15 +23,27 @@ The Installs chart shows the total number of users who have installed the app fo
 
 
 
-
-
 ### Calculation
 
-Adapty’s Installs chart counts the total number of times the app has been installed, including by both new and existing users, as well as any reinstalls on different devices. However, incomplete installs or downloads canceled before finishing are not counted.
+The Installs chart counts how many times your app has been installed. This includes:
+- first-time installs;
+- reinstalls;
+- installations on multiple devices by the same user.
 
-You can define what qualifies as a new install event—whether it’s an installation on a specific device or one made by a specific user. Since a single user can have more than one device, this choice may affect your results. Set this in [**App Settings**](https://app.adapty.io/settings/general) under the [Installs definition for analytics](general#4-installs-definition-for-analytics) parameter.
+Incomplete installations or downloads that are canceled before completion are not counted.
 
-If you’re using the legacy **Installs definition for analytics** option based on profiles, the Installs chart might also include counts of new logged-in users who have accessed your app multiple times.
+You can choose how installs are defined for analytics in **App Settings** under
+[**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+This setting determines what is considered a new install event.
+
+The available options differ in how installs are grouped:
+
+- **By device installations** — each app installation on a device is counted as a separate install, including reinstalls.
+- **By unique users** — only the first installation associated with an identified user is counted; installations on additional devices are ignored. Use this setting only if you identify users in Adapty. Note that app stores and attribution platforms (such as App Store Connect, Google Play Console, and AppsFlyer) use a device-based approach to counting installs. If you count installs by customer user IDs in Adapty, install numbers may differ from these external services.
+
+Because a single user may install the app on multiple devices, switching between these options can change install counts and conversion metrics.
+
+If you are using the legacy option based on profiles, installs are calculated using a profile-based approach, which may result in higher install counts compared to device- or user-based definitions.
 
 ### Available filters and grouping
 
