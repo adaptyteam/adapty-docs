@@ -104,9 +104,9 @@ To create a tracking link for Meta Ads:
 
 <ZoomImage id="ua-new-campaign.webp" width="500px" />
 
-5. In the **General** tab, paste your App Store and/or Google Play application URLs.
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
 
-<ZoomImage id="ua-url.webp" width="900px" />
+<ZoomImage id="ua-url.gif" width="900px" />
 
 6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
 
@@ -129,9 +129,9 @@ To create a tracking link for TikTok for Business:
 
     <ZoomImage id="ua-new-campaign-tiktok.webp" width="500px" />
 
-5. In the **General** tab, paste your App Store and/or Google Play application URLs.
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
 
-    <ZoomImage id="ua-url.webp" width="900px" />
+    <ZoomImage id="ua-url.gif" width="900px" />
 
 6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
 

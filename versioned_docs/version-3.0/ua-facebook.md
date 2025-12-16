@@ -40,9 +40,9 @@ To add a Meta campaign to Adapty User Acquisition and track how your Meta ads wo
 
 <ZoomImage id="ua-new-campaign.webp" width="500px" />
 
-2. In the **General** tab, paste your App Store and/or Google Play application URLs.
+2. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs.
 
-<ZoomImage id="ua-url.webp" width="900px" />
+<ZoomImage id="ua-url.gif" width="900px" />
 
 3. Copy the **Click link** field value. Then, in Meta Ads Manager, open your ad and paste this link. This will allow Adapty to connect installs and purchases to ads in Meta.
 
