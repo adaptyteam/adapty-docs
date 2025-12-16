@@ -29,7 +29,7 @@ To create a tracking link:
 
 <ZoomImage id="ua-choose-app.webp" width="700px" />
 
-3. Fill in the link parameters to match it with the campaign and ad you want to track. All the parameters are required.
+3. Fill in the link parameters to match it with the campaign and ad you want to track. 
 
 | Parameter         | Description                                                                                   |
 |-------------------|-----------------------------------------------------------------------------------------------|
