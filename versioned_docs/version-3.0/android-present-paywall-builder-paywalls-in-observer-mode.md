@@ -32,13 +32,15 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 
 <p> </p>
 
-1. Implement the `AdaptyUiObserverModeHandler`. The `AdaptyUiObserverModeHandler`'s callback (`onPurchaseInitiated`) informs you when the user initiates a purchase. You can trigger your custom purchase flow in response to this callback like this:
+1. Implement the `AdaptyUiObserverModeHandler`. 
+
+The `onPurchaseInitiated` event will inform you that the user has initiated a purchase. You can trigger your custom purchase flow in response to this callback:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
-   AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
        yourBillingClient.makePurchase(
            product,
@@ -82,14 +84,65 @@ This section refers to [Observer mode](observer-vs-full-mode) only. If you do no
 </TabItem>
 </Tabs>
 
+   To handle restores in Observer mode, override `getRestoreHandler()`. By default it returns `null`, which uses Adapty's built-in `Adapty.restorePurchases()` flow. To provide your own restore implementation:
 
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler = object : AdaptyUiObserverModeHandler {
+       // onPurchaseInitiated implementation (see above)
 
-   Also, remember to invoke these callbacks to AdaptyUI. This is necessary for proper paywall behavior, such as showing the loader, among other things:
+       override fun getRestoreHandler() =
+           AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+               onStartRestore()
+               yourBillingClient.restorePurchases(
+                   onSuccess = { restoredPurchases ->
+                       onFinishRestore()
+                       //handle successful restore
+                   },
+                   onError = {
+                       onFinishRestore()
+                       //handle error
+                   }
+               )
+           }
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
+       // onPurchaseInitiated implementation (see above)
 
-   | Callback in Kotlin | Callback in Java          | Description                                                                                                                       |
-   | :----------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
-   | onStartPurchase()  | onStartPurchase.invoke()  | The callback should be invoked to notify AdaptyUI that the purchase is started.                                                   |
-   | onFinishPurchase() | onFinishPurchase.invoke() | The callback should be invoked to notify AdaptyUI that the purchase is finished successfully or not, or the purchase is canceled. |
+       @Override
+       public RestoreHandler getRestoreHandler() {
+           return (onStartRestore, onFinishRestore) -> {
+               onStartRestore.invoke();
+               yourBillingClient.restorePurchases(
+                   restoredPurchases -> {
+                       onFinishRestore.invoke();
+                       //handle successful restore
+                   },
+                   error -> {
+                       onFinishRestore.invoke();
+                       //handle error
+                   }
+               );
+           };
+       }
+   };
+   ```
+</TabItem>
+</Tabs>
+
+   Remember to invoke the following callbacks to notify AdaptyUI about the purchase or restore process. This is necessary for proper paywall behavior, such as showing the loader:
+
+   | Callback           | Description                                                                            |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.        |
+   | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished.       |
+   | onStartRestore()   | Optional. The callback can be invoked to notify AdaptyUI that the restore is started.  |
+   | onFinishRestore()  | Optional. The callback can be invoked to notify AdaptyUI that the restore is finished. |
 
 2. In order to display the visual paywall on the device screen, you must first configure it.
 

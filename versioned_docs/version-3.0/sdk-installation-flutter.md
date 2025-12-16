@@ -248,6 +248,17 @@ await Adapty().activate(
 | memoryStorageCountLimit     | optional | The item count limit of the memory storage. Default is max int value.              |
 | diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Default is 100 MB.              |
 
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are enabled on iOS and disabled on Android. To enable them on Android as well, set `withGoogleLocalAccessLevelAllowed` to `true`:
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withGoogleLocalAccessLevelAllowed(true),
+);
+```
+
 ## Troubleshooting
 
 #### Android backup rules (Auto Backup configuration)
