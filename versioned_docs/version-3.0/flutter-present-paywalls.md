@@ -62,11 +62,11 @@ try {
 
 ## Configure iOS presentation style
 
-Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.fullScreen` (default) or `AdaptyUIIOSPresentationStyle.pageSheet` values.
 
 ```dart showLineNumbers
 try {
-  await view.present(iosPresentationStyle: 'page_sheet');
+  await view.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
 } on AdaptyError catch (e) {
   // handle the error
 } catch (e) {
