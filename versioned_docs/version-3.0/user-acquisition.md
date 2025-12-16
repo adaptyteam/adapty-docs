@@ -27,14 +27,7 @@ To connect your revenue data with the campaign performance, let Adapty keep trac
 
 - If you **already have in-app purchases implemented with Adapty**, you don't need to do anything else at this stage.
 - If you **don't have in-app purchases implemented yet and want to use Adapty**, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty.
-- If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, install the Adapty SDK for your platform in the observer mode. At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
-    - [iOS](implement-observer-mode.md)
-    - [Android](implement-observer-mode-android.md)
-    - [Flutter](implement-observer-mode-flutter.md)
-    - [React Native](implement-observer-mode-react-native.md)
-    - [Unity](implement-observer-mode-unity.md)
-    - [Kotlin Multiplatform](implement-observer-mode-kmp.md)
-    - [Capacitor (Beta)](implement-observer-mode-capacitor.md)
+- If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, [install the Adapty SDK for your platform in the observer mode](implement-observer-mode.md). At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
 
 This setup enables web-to-app attribution:
 - When users install your app, the Adapty SDK gets the installation details from the link parameters, so Adapty UA can get the campaign details
