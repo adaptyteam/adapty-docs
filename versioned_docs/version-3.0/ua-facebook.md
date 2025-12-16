@@ -30,7 +30,7 @@ Ensure your Facebook account has access to campaigns and pixels you need.
 
 3. Review the requested permissions and click **Save**.
 
-After that, all your companies will be added to Adapty UA. You can proceed with adding campaigns.
+After that, all your ad accounts will be added to Adapty UA. You can proceed with adding campaigns.
 
 ## Step 2. Add campaigns
 

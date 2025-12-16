@@ -1,6 +1,6 @@
 ---
 title: "User Acquisition (Adapty UA)"
-description: "Eliminate the need of MMPs and calculate the whole app economy in one place."
+description: "Eliminate the need for MMPs and calculate the whole app economy in one place."
 metadataTitle: "Using Adapty User Acquisition | Adapty Docs"
 keywords: ['adapty ua', 'user acquisition']
 ---
@@ -9,11 +9,12 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 <CustomDocCardList ids={['user-acquisition', 'ua-analytics', 'ua-integrations', 'ua-tracking-links', 'ua-deferred-data']} />
 
-Adapty User Acquisition is a web-to-app attribution solution that connects ad campaigns with app installs and subscription revenue by combining data from ad platforms, tracking links, and your app.
+Adapty User Acquisition is an attribution solution that connects ad campaigns with app installs and subscription revenue by combining data from ad platforms, tracking links, and your app. It provides a unified marketing analytics dashboard that consolidates all your acquisition data in one place.
 
 - Calculate ROAS (return on ad spend) across all your channels
 - See your entire app economy in one place
 - Get accurate attribution data for better decisions
+- Analyze cohort performance and user behavior over time
 
 :::tip
 Want to learn more about the way Adapty User Acquisition might be useful to you? [Book a call](https://calendly.com/tnurutdinov-adapty/30min) with us.
@@ -23,7 +24,7 @@ Want to learn more about the way Adapty User Acquisition might be useful to you?
 
 Measuring user acquisition performance is challenging. Data is often scattered across platforms, attribution becomes difficult due to privacy changes, and building custom solutions takes significant time.
 
-Adapty UA provides built-in attribution and unified analytics. You can focus on growing your app instead of managing data systems.
+Adapty UA provides built-in attribution and unified analytics in a single marketing dashboard. All your acquisition metrics—from ad spend to installs to subscription revenue—are automatically consolidated and updated in real-time. No more reconciling data across spreadsheets or switching between multiple tools. You can focus on growing your app instead of managing data systems.
 
 ## How it works
 
@@ -48,7 +49,7 @@ The attribution flow works as follows:
 
 5. **Ad spend and revenue are connected.** Adapty pulls ad spend data from supported ad platforms (currently – Meta Ads and TikTok for Business) and links subscription and purchase events to the attributed installs.
 
-As a result, Adapty provides campaign-level metrics such as installs, revenue, LTV, and ROAS in a single dashboard.
+As a result, Adapty provides campaign-level metrics such as installs, revenue, LTV, and ROAS in a unified analytics dashboard. You can analyze cohorts, track performance over time, and make data-driven optimization decisions—all without manually reconciling data from different sources.
 
 :::tip
 Tracking links can also include custom parameters, allowing your app to handle [deferred deep links](ua-deferred-data.md) and react to campaign data when processing the install event.

@@ -10,9 +10,9 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import ZoomImage from '@site/src/components/ZoomImage';
 
-User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
+Adapty User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
 
-This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
+To see your revenue data in Adapty User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
 User Acquisition is only available with:
@@ -108,7 +108,7 @@ To create a tracking link for Meta Ads:
 
 <ZoomImage id="ua-url.webp" width="900px" />
 
-6. Copy the **Click link** field value for **one link** or for platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
 
 :::important
 In the **Website URL** field, paste `https://api-ua.adapty.io/api/v1/attribution/click`. Paste the rest of the link to the **URL parameters** field in the **Tracking** section. It will help your Meta ad to get approved. See more [recommendations on setting up your ads in Meta Ads Manager](meta-create-campaign.md).
@@ -133,7 +133,7 @@ To create a tracking link for TikTok for Business:
 
     <ZoomImage id="ua-url.webp" width="900px" />
 
-6. Copy the **Click link** field value for **one link** or for platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
 
     <ZoomImage id="ua-tiktok-lnk.webp" width="900px" />
 7. Now, when you launch your ad in TikTok for Business, its data will become available for analysis in the Adapty UA dashboard.
