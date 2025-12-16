@@ -40,7 +40,7 @@ Choose your platform and dive right in:
 
 **React Native**
 - **[SDK Quickstart](react-native-sdk-overview.md)**
-- **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples)**
+- **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/)**
 
 **Unity**
 - **[SDK Quickstart](unity-sdk-overview.md)**
