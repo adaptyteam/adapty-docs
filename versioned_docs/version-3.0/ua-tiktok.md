@@ -26,7 +26,7 @@ See our [guide on setting up ads in TikTok for Business](tiktok-create-campaign.
 
 <ZoomImage id="ua-tiktok-sign.webp" width="500px" />
 
-After that, all your companies will be added to Adapty UA. You can proceed with adding campaigns.
+After that, all your ad accounts will be added to Adapty UA. You can proceed with adding campaigns.
 
 ## Step 2. Add campaigns
 
